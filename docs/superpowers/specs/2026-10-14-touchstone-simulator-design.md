@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 4.5, after nine rounds of three-model review (Fable
+Date: 2026-10-14. Version 4.6, after nine rounds; three-seat consensus re-established after the external read of three-model review (Fable
 5.1, Opus 5.5, Astra) and one external read (GPT Pro). Status: draft for
 review. Section 14 maps review objections to changes.
 
@@ -358,8 +358,9 @@ Its twin is the same actor with the claim clipped to <= q by the harness.
 Rule description. Each rule implements `describe()`, which returns a
 structured record with locked fields and a locked vocabulary: allocation
 order, eligibility, payment formula, audit selection, audit tolerance,
-consequence of a failed audit, ban length, hold-back schedule. A sealed
-template renders that record into prose identically for every rule. No
+consequence of a failed audit, ban length, hold-back schedule. A locked
+template in `sim/llm_actor.py`, frozen at the lock, renders that record into
+prose identically for every rule. No
 source code, comments, literals, or names reach the actor. A test asserts
 every field value is in the vocabulary. Every field also admits the value
 "not expressible"; if the proposed rule's record uses it in any field, H1
@@ -370,9 +371,10 @@ rule's behaviour on a fixture, and the record is frozen in the
 evaluation-freeze tag; the vocabulary is frozen at the lock, before the rule
 exists.
 
-Comprehension fixture. Before the unseal, the actor answers a locked set of
-factual questions about each rule from its description (for example, what
-happens after a failed audit). This does not run the market. A rule whose
+Comprehension fixture. At the unseal, before any market run with H1, the
+actor answers a locked set of factual questions about each rule from its
+description (for example, what happens after a failed audit). This does not
+run the market. A rule whose
 description the actor answers worse than the baselines by more than one
 question is reported, and H1 against it is INCONCLUSIVE.
 
@@ -423,12 +425,12 @@ exists. The lock commit contains:
   `scripts/run.py`, `scripts/sweep.py`, the CSV schema, and
   `experiments/vocabulary.yaml`, is frozen at the lock. So the LLM harness
   and the H3 policy are built and tested on development families before the
-  lock. After the evaluation freeze, `check_claim.py` compares allow-listed
-  files to the freeze tag instead, and refuses any tracked file that is new
-  since the lock and outside the allow-list. `sealed/` and
-  `sealed/patches/` are excluded from both tag comparisons, because they
-  arrive after the freeze: `sealed/` is checked against the bundle hash in
-  the lock commit, and each patch against its own logged hash;
+  lock. After the evaluation freeze, `check_claim.py` compares `proposed.py`, its
+  config, and its `describe()` record to the freeze tag, checks `sealed/`
+  against the bundle hash in the lock commit and each file in
+  `sealed/patches/` against its logged hash, does not check `scripts/plot.py`
+  or `docs/` (neither enters the predicate), and refuses any tracked file
+  that is new since the lock and outside the allow-list;
 - `scripts/check_claim.py` with the predicate of section 8 and the final
   threshold numbers, tested on synthetic CSVs;
 - the coverage-study report (section 8) and its pre-registered consequences
@@ -840,7 +842,7 @@ Round 7 (4 to 4.1):
   makes H1 INCONCLUSIVE; custodian check at the unseal.
 - README said analysis scripts freeze at the second tag (Opus): aligned.
 
-Round 8 (4.2 to 4.3):
+Round 8 (4.2 to 4.4):
 
 - Section 4.0 put forfeits in the operator's position (Astra): audit cost
   only.
@@ -858,5 +860,13 @@ Round 8 (4.2 to 4.3):
 Round 9 (4.4 to 4.5):
 
 - Blanket freeze-tag comparison contradicted the sealed-folder hash check
-  (Astra): sealed paths excluded from tag comparison and checked by their
-  hashes; README names the exception.
+  (Astra, Opus): post-freeze check scoped to the rule files; sealed paths
+  by hash; plot and docs unchecked; README names the exception.
+- Template location and comprehension-fixture timing (Opus): locked
+  template in the harness; fixture at the unseal before any H1 market run.
+
+Consensus (round 9): Fable 5.1 accept-with-caveat, Opus 5.5 accept, Astra
+accept-with-caveat. No material objection outstanding. Remaining caveat
+(Fable): the 0.05 inflation-caused-loss threshold is half the
+single-deviator ceiling of about 1/N; it is set at the lock from baseline
+runs, and gain is the primary clause.
