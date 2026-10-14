@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 4.1, after seven rounds of three-model review (Fable
+Date: 2026-10-14. Version 4.2, after seven rounds of three-model review (Fable
 5.1, Opus 5.5, Astra) and one external read (GPT Pro). Status: draft for
 review. Section 14 maps review objections to changes.
 
@@ -262,10 +262,11 @@ the same family run through the same procedure with one harness change: the
 claim is clipped to min(c, q) before it reaches the market, so the twin can
 adapt effort, bids, abstention, and (for H1) its round-by-round choices
 exactly as F does, but cannot inflate. The twin is searched or run first
-with the same budget. The reference profit is
-pi_ref = max(pi_twin, pi_honest_max, 0), the last term being abstention.
-Gain measures what inflation adds on top of the best matched truthful
-behaviour.
+with the same budget. The reference policy for a cell is one policy, chosen
+on dev-train seeds by mean profit among the twin, honest-max, and abstention
+(profit 0); pi_ref on evaluation seeds is the per-seed profit of that one
+chosen policy, never a per-seed maximum. Gain measures what inflation adds
+on top of the best matched truthful behaviour.
 
 Because pi_ref is itself a best-found quantity, the paper states that gain
 is the difference of two searched values and can be biased in either
@@ -277,19 +278,23 @@ All families act on the provider view of section 3. Knobs are mapped from
 CMA-ES's unbounded space to their domains by a logistic transform; the
 transform and domains are part of the locked families file.
 
-D1 fixed cheat. Knobs u in [0, 1], m in [0, 1], w in [0, 2].
-Effort q = q_max_i * (1 - u). Claim c = min(1, q + m). Bid = (1 + w) *
+D1 fixed cheat. Knobs u in [0, 1], m in [0, 1], s in [0, 0.3], w in [0, 2].
+Effort q = q_max_i * (1 - u). Claim c = min(1, max(0, q + m - s)); s lets
+the policy claim below effort, which lowers false failures. Bid = (1 + w) *
 (a_i + b_i * q). Never abstains, never exits.
 
-D2 adaptive cheat. Knobs u0, m0 in [0, 1]; d in [0, 1]; r in [0, 0.2];
-w in [0, 2]. State: markup level m_t, initialized m_1 = m0. Each round:
-effort q_t = q_max_i * (1 - u0); claim c_t = min(1, q_t + m_t); bid as D1.
+D2 adaptive cheat. Knobs u0, m0 in [0, 1]; s in [0, 0.3]; d in [0, 1];
+r in [0, 0.2]; w in [0, 2]. State: markup level m_t, initialized m_1 = m0.
+Each round: effort q_t = q_max_i * (1 - u0); claim
+c_t = min(1, max(0, q_t + m_t - s)); bid as D1.
 After the round: if the identity failed an audit this round, m_{t+1} =
 m_t * (1 - d); else m_{t+1} = min(m0, m_t + r * m0). During a ban the
 identity submits nothing and m_t is unchanged. Never abstains, never exits.
 D2 contains D1 (d = r = 0).
 
-Twins. D1-twin and D2-twin are D1 and D2 with the claim clipped to <= q.
+Twins. D1-twin and D2-twin are D1 and D2 with the claim clipped to <= q; the
+margin knob s stays free, so a twin can claim conservatively. The sealed H2
+claim map must also permit claims below effort (section 6.1).
 
 Search. CMA-ES (pycma) with population size 8, initial step 0.3 in the
 transformed space, 5 restarts from fixed registered initial points in the
@@ -300,7 +305,8 @@ iterations, no boundary handling beyond the transform. The exact corners
 (knobs at 0 or 1) are evaluated once each as registered controls outside
 the search budget and reported next to the best-found value. Objective: the mean
 over 5 dev-train seeds of the headline statistic, per-seed normalized gain
-(pi - pi_ref) / (S* / N), with pi_ref from the twin on the same seeds. The
+(pi - pi_ref) / (S* / N), with pi_ref from the cell's chosen reference
+policy (section 5.2) on the same seeds. The
 best candidate by objective is then evaluated on 20 dev-val seeds during
 development and on 20 final-eval seeds after the freeze. All reported
 numbers come from the seed namespace stated in section 6.
@@ -323,8 +329,10 @@ doubling the budget changes best-found gain by less than 0.5 points; (c) the
 spread of best-found gain across restarts; (d) the twin's objective is never
 below honest-max's by more than 1%.
 
-All-deviators (iterated best response, 3 sweeps, every provider on D2) is a
-robustness table.
+All-deviators (iterated best response, 3 sweeps, every provider on D2 with
+1 restart x 100 evaluations x 3 dev-train seeds per sweep and provider, one
+cell per rule at beta = 0.05, median rho) is a robustness table; it is in
+the manifest at about 3 x 10 x 3 x 300 x 4 = 108,000 runs.
 
 Cell manifest and workload. `scripts/manifest.py` enumerates every cell
 (rule, family, beta, rho, position, horizon, twin or attack, tuning or
@@ -332,10 +340,11 @@ control) and its run count, and the gate is a benchmark of the full path
 through `sweep.py` for every baseline, not of one episode. Scope: the rho
 sweep runs at beta = 0.05 only, D2 and its twin, median position, every
 rule; H1 does not span rho. Expected counts at one rho: development 360,000;
-twins 360,000; tuning about 300,000; controls about 50,000. The two extra
-rho values add about 2 x 2 x 3 x 7,500 = 90,000. Total about 1.2 million
-runs. Gate: the manifest completes in under 16 core-hours, which needs a run
-under 45 ms; cells are embarrassingly parallel.
+twins 360,000; tuning about 300,000; controls about 50,000; all-deviators
+about 108,000. The two extra rho values add about 2 x 2 x 3 x 7,500 =
+90,000. Total about 1.3 million runs. Gate: the manifest completes in under
+17 core-hours, which needs a run under 45 ms; cells are embarrassingly
+parallel.
 
 ### 5.4 LLM actor and H1 procedure
 
@@ -350,9 +359,14 @@ order, eligibility, payment formula, audit selection, audit tolerance,
 consequence of a failed audit, ban length, hold-back schedule. A sealed
 template renders that record into prose identically for every rule. No
 source code, comments, literals, or names reach the actor. A test asserts
-every field value is in the vocabulary. The rule designer fills the record
-for the proposed rule, and the record is frozen in the evaluation-freeze
-tag; the vocabulary is frozen at the lock, before the rule exists.
+every field value is in the vocabulary. Every field also admits the value
+"not expressible"; if the proposed rule's record uses it in any field, H1
+against that rule is INCONCLUSIVE, so a coarse record cannot hide a feature
+from H1. The rule designer fills the record for the proposed rule, the
+separate session checks at the unseal that the record matches the frozen
+rule's behaviour on a fixture, and the record is frozen in the
+evaluation-freeze tag; the vocabulary is frozen at the lock, before the rule
+exists.
 
 Comprehension fixture. Before the unseal, the actor answers a locked set of
 factual questions about each rule from its description (for example, what
@@ -394,9 +408,14 @@ exists. The lock commit contains:
   cap, and the interval algorithms of section 8;
 - `experiments/families.md`: the executable definitions of D1, D2, their
   twins, and the knob transforms;
-- SHA-256 hashes of the measurement pipeline: `sim/metrics.py`,
-  `scripts/run.py`, `scripts/sweep.py`, `scripts/check_claim.py`, the CSV
-  schema, and `experiments/vocabulary.yaml` for `describe()`;
+- the lock tag itself fixes every tracked file. `check_claim.py` refuses a
+  run if any tracked file differs from the lock tag except those on the
+  post-lock allow-list: the proposed-rule module
+  `sim/mechanisms/proposed.py`, its tuned-parameter config, its `describe()`
+  record, `scripts/plot.py`, and `docs/`. Everything else, including
+  `sim/market.py`, `sim/search.py`, `sim/policies/`, `sim/mechanisms/base.py`
+  and the baselines, `sim/metrics.py`, `scripts/run.py`, `scripts/sweep.py`,
+  the CSV schema, and `experiments/vocabulary.yaml`, is frozen at the lock;
 - `scripts/check_claim.py` with the predicate of section 8 and the final
   threshold numbers, tested on synthetic CSVs;
 - the coverage-study report (section 8) and its pre-registered consequence
@@ -423,9 +442,9 @@ demotes the affected cell from confirmatory to exploratory.
 
 - H1 LLM provider (section 5.4), with a sealed system prompt.
 - H2 a parametrized family with a sealed executable definition, knob
-  domains, and an explicit containment statement: whether H2 contains D2,
-  is contained by it, or is non-nested, and which observation or memory it
-  uses that D2 cannot.
+  domains, a claim map that permits claims below effort, and an explicit
+  containment statement: whether H2 contains D2, is contained by it, or is
+  non-nested, and which observation or memory it uses that D2 cannot.
 
 Neither H1 nor H2 exits or re-enters. Identity replacement is tested only by
 H3 (section 6.2).
@@ -480,9 +499,10 @@ computed per seed.
   uses gross; tables report both.
 - Audit spend = audit cost / S*, per seed; also the fraction of served jobs
   audited.
-- Reference run. For a focal entity in a cell, the reference run is the
-  twin run of section 5.2 (or honest-max or abstention, whichever gives
-  pi_ref) with every other provider on honest-max, same seeds.
+- Reference run. For a focal entity in a cell, the reference run is the run
+  of the cell's chosen reference policy (section 5.2: twin, honest-max, or
+  abstention, selected once on dev-train seeds) with every other provider on
+  honest-max, same seeds.
 - Adversary gain. Per seed, gain = (pi_attack - pi_ref) / (S* / N). The
   statistic is the mean over evaluation seeds with a paired bound. Tables
   also report (pi_attack - pi_ref) / pi_ref where pi_ref > 0.
@@ -532,10 +552,14 @@ repetitions, or the bootstrap if the coverage study selects it.
 Coverage study, pre-lock, on dev-val seeds. Simulate the bound procedures on
 development cells chosen to include rare profitable histories and
 ban-induced multimodality, and report empirical coverage. Pre-registered
-consequence: H1 is confirmatory (in the predicate) only if the 10-repetition
-bound achieves at least 90% empirical coverage at nominal 95% in that study;
-otherwise H1 is reported as exploratory and the predicate's rule clause uses
-H2 only, and the paper says so.
+consequences: H1 is confirmatory (in the predicate) only if the
+10-repetition bound achieves at least 90% empirical coverage at nominal 95%
+in that study; otherwise H1 is reported as exploratory and the predicate's
+rule clause uses H2 only, and the paper says so. For the 20-seed bootstrap
+used by parametrized families, if empirical coverage is below 90%, the
+locked remedy is a studentized bootstrap; if that is still below 90%, the
+final-eval namespace is 40 seeds instead of 20, and the manifest and gate
+are recomputed before the lock.
 
 Claim predicate, evaluated by `scripts/check_claim.py` at beta = 0.05 on
 final-eval seeds. R* is the proposed rule. The rule clause requires every
@@ -663,9 +687,9 @@ Anthropic SDK behind a thin interface for the LLM actor.
 ## 12. Tests
 
 - Honest-max equals its twin exactly, round by round, under every rule.
-- Headline gain of honest-max against the full reference
-  max(pi_twin, pi_honest_max, 0) is exactly 0 when pi_honest_max >= 0 and
-  equals pi_honest_max / (S* / N) < 0 otherwise.
+- Headline gain of honest-max in a cell whose chosen reference is honest-max
+  is exactly 0; in a cell whose chosen reference is abstention it equals
+  pi_honest_max / (S* / N).
 - All-honest mean gross efficiency <= 1 + 2 SE.
 - One provider, one job, zero noise: S* matches the closed form.
 - Same config and seed give a byte-identical CSV for every non-LLM family;
@@ -702,7 +726,7 @@ Anthropic SDK behind a thin interface for the LLM actor.
 | Dates | Work | Gate |
 |---|---|---|
 | 10-14 to 10-17 | Market, ledger, B1 to B3, honest-max, twin wrapper, metrics, tiny-market tests | One T = 200 B2 episode under 45 ms on one core |
-| 10-18 to 10-24 | Search with namespaces, D1, D2, twins, manifest, calibrate, tune baselines, coverage study, token pilot | B1 fixture check passes; full manifest under 16 core-hours |
+| 10-18 to 10-24 | Search with namespaces, D1, D2, twins, manifest, calibrate, tune baselines, coverage study, token pilot | B1 fixture check passes; full manifest under 17 core-hours |
 | 10-25 to 10-28 | Separate session writes sealed bundle and final-eval seeds; vocabulary; check_claim.py; lock | Signed tag, public timestamp |
 | 10-29 to 11-11 | Proposed rule within 4.0; its describe() record; LLM plumbing on development families only; H3 | Evaluation freeze tag |
 | 11-12 to 11-18 | Unseal; comprehension fixture; run H1, H2 and twins on frozen rule and baselines; figures | Hash verified; check_claim output |
@@ -786,3 +810,15 @@ Round 7 (4 to 4.1):
   registered points; exact corners as controls outside the budget.
 - README gain definition and honest-max test ignored the full reference
   (Astra): aligned.
+- D-families and twins could not claim below effort (Opus): margin knob s;
+  H2 claim map must permit it.
+- Lock hashed only the metric scripts (Opus): the lock tag fixes every
+  tracked file; post-lock allow-list named.
+- Reference was a per-seed maximum of three runs (Opus): one reference
+  policy per cell chosen on dev-train seeds.
+- Coverage remedy for the 20-seed bootstrap (Opus): studentized bootstrap,
+  then 40 seeds.
+- All-deviators budget and manifest entry (Opus): stated.
+- describe() could hide a novel feature (Opus): "not expressible" value
+  makes H1 INCONCLUSIVE; custodian check at the unseal.
+- README said analysis scripts freeze at the second tag (Opus): aligned.
