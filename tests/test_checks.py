@@ -56,10 +56,24 @@ def test_consequences_require_failed_records_and_respect_caps():
     for bad, msg in [
         (Consequences(refunds={1: 0.1}), "failed"), (Consequences(refunds={2: 0.1}), "failed"),
         (Consequences(bans={1: 5}), "failed"), (Consequences(bans={0: 51}), "ban"),
-        (Consequences(bans={0: 2.5}), "integer"), (Consequences(holdbacks={0: 0.6}), "hold-back"),
+        (Consequences(bans={0: 2.5}), "integer"), (Consequences(holdbacks={0: 1.7}), "hold-back"),
         (Consequences(forfeits={0: 0.6}), "forfeit"), (Consequences(forfeits={1: 0.0001}), "forfeit"),
         (Consequences(forfeits={0: 0.3}, releases={0: 0.3}), "release"),
         (Consequences(refunds={0: float("nan")}), "finite"),
     ]:
         with pytest.raises(ValueError, match=msg):
             ok(bad)
+
+
+def test_holdback_bounded_by_this_rounds_release_and_window_including_it():
+    recs = ()
+    escrow, owner = {0: 1.0, 1: 1.0}, {0: 0, 1: 0}        # identity 0 releases 2.0 this round
+    bond = np.array([0.0, 0.0, 0.0]); recent = np.array([0.5, 0.0, 0.0]); active = {0}
+    ok = lambda c: validate_consequences(c, recs, escrow, owner, bond, recent, active)
+    # window = 0.5 (past) + (2.0 - hb) (this round, net of the hold-back) must cover bond + hb:
+    # 0 + hb <= 0.5 + 2.0 - hb  ->  hb <= 1.25
+    ok(Consequences(holdbacks={0: 1.25}))
+    with pytest.raises(ValueError, match="hold-back"):
+        ok(Consequences(holdbacks={0: 1.26}))
+    with pytest.raises(ValueError, match="release this round"):
+        validate_consequences(Consequences(holdbacks={0: 2.1}), recs, escrow, owner, bond, np.array([9.0, 0, 0]), active)

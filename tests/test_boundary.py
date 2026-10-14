@@ -69,3 +69,60 @@ def test_enforce_output_type_is_checked():
     cfg = cfgb(budget=5.0)
     with pytest.raises(TypeError):
         run_episode(cfg, WrongType(0.25, 0.40, 0.55, tol=0.12, L=10), [HonestMax() for _ in range(cfg.N)], 0)
+
+
+def _honest_baseline(cfg, d):
+    return run_episode(cfg, PostedRandomAudit(0.25, 0.40, 0.55, tol=0.12, L=10), [HonestMax() for _ in range(cfg.N)], 0, draws=d)
+
+
+def test_rule_cannot_change_values_it_was_given():
+    class Scaler(PostedRandomAudit):
+        def allocate(self, values_t, offers, view):
+            values_t *= 10.0
+            return super().allocate(values_t, offers, view)
+    cfg = cfgb(budget=5.0)
+    with pytest.raises(ValueError, match="read-only"):
+        run_episode(cfg, Scaler(0.25, 0.40, 0.55, tol=0.12, L=10), [HonestMax() for _ in range(cfg.N)], 0)
+
+
+def test_rule_cannot_forge_claims_through_the_offers_dict():
+    class Forger(PostedRandomAudit):
+        def allocate(self, values_t, offers, view):
+            out = super().allocate(values_t, offers, view)
+            for i in list(offers):
+                offers[i] = Offer(claim=1.0, bid=offers[i].bid)
+            return out
+    cfg = cfgb(budget=5.0)
+    d = make_draws(cfg, 0)
+    base = _honest_baseline(cfg, d)
+    forged = run_episode(cfg, Forger(0.25, 0.40, 0.55, tol=0.12, L=10), [HonestMax() for _ in range(cfg.N)], 0, draws=d)
+    assert forged.failures.sum() == base.failures.sum()
+    assert np.array_equal(forged.claims, base.claims, equal_nan=True)
+
+
+def test_rule_cannot_reassign_jobs_during_audit():
+    class Swapper(PostedRandomAudit):
+        def audit(self, assignment, view):
+            jobs = super().audit(assignment, view)
+            for j in list(assignment):
+                assignment[j] = 9
+            return jobs
+    cfg = cfgb(budget=5.0)
+    d = make_draws(cfg, 0)
+    base = _honest_baseline(cfg, d)
+    swapped = run_episode(cfg, Swapper(0.25, 0.40, 0.55, tol=0.12, L=10), [HonestMax() for _ in range(cfg.N)], 0, draws=d)
+    assert np.array_equal(swapped.failures, base.failures)
+    assert np.array_equal(swapped.served, base.served)
+
+
+def test_tie_keys_in_memory_do_not_expose_other_rounds():
+    seen = {}
+    class Peeker(PostedRandomAudit):
+        def allocate(self, values_t, offers, view):
+            tk = view.memory["tie_key"]
+            seen["base_is_none"] = tk.base is None
+            seen["shape"] = tk.shape
+            return super().allocate(values_t, offers, view)
+    cfg = cfgb(budget=0.0, T=3)
+    run_episode(cfg, Peeker(0.25, 0.40, 0.55, tol=0.12, L=0), [HonestMax() for _ in range(cfg.N)], 0)
+    assert seen["base_is_none"] and seen["shape"] == (cfg.J, cfg.N)

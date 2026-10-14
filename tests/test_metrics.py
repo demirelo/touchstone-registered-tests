@@ -62,3 +62,40 @@ def test_run_script_byte_identical(tmp_path):
         subprocess.run([sys.executable, "scripts/run.py", "--rule", "B2", "--seed", "4", "--budget", "1.0",
                         "--T", "40", "--out", str(out)], check=True)
     assert hashlib.sha256(outs[0].read_bytes()).hexdigest() == hashlib.sha256(outs[1].read_bytes()).hexdigest()
+
+
+class BondRule(PostedRandomAudit):
+    """Test-only rule in the admissible class: holds back 20% of each round's
+    release and forfeits bond on failure, so the harm identity meets bonds."""
+    def enforce(self, records, view):
+        from sim.mechanisms.base import Consequences
+        cons = super().enforce(records, view)
+        released = {}
+        for j, amt in view.escrow.items():
+            i = view.memory["owner"][j]
+            released[i] = released.get(i, 0.0) + amt - cons.refunds.get(j, 0.0)
+        failed = {r.provider for r in records if r.failed}
+        for i, rel in released.items():
+            if i in failed and view.bond[i] > 0:
+                fail_escrow = sum(view.escrow[r.job] for r in records if r.failed and r.provider == i)
+                cons.forfeits[i] = min(float(view.bond[i]), fail_escrow)
+            hb = 0.2 * rel
+            cons.holdbacks[i] = hb
+        return cons
+
+    def allocate(self, values_t, offers, view):
+        out = super().allocate(values_t, offers, view)
+        view.memory["owner"] = dict(out)
+        return out
+
+
+def test_harm_identity_and_conservation_hold_with_bonds():
+    cfg = cfgb(5.0)   # 100 audits over 60 rounds so the cheater is audited and forfeits
+    rule = BondRule(0.25, 0.40, 0.55, tol=0.12, L=10)
+    d = make_draws(cfg, 2); focal = 7
+    att = honest(cfg.N); att[focal] = FixedCheat(u=0.5, m=0.5, s=0.0, w=0.0, clip=0)
+    ref = honest(cfg.N); ref[focal] = Twin(FixedCheat(u=0.5, m=0.5, s=0.0, w=0.0, clip=0))
+    a, b = run_episode(cfg, rule, att, 2, draws=d), run_episode(cfg, rule, ref, 2, draws=d)
+    assert a.ledger.holdback_in.sum() > 0 and a.ledger.forfeits.sum() > 0
+    acc, direct = harm(a, b, focal)
+    assert acc == pytest.approx(direct, abs=1e-9)

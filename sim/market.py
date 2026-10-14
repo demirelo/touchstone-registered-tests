@@ -68,13 +68,15 @@ def run_episode(cfg: MarketConfig, rule, policies, seed: int, draws: Draws | Non
             if act.offer is not None:
                 offers[i] = Offer(claim=float(act.offer.claim), bid=float(act.offer.bid))
                 claims[t, i] = offers[i].claim
-        memory["tie_key"] = d.tie_key[t]
+        tie_key = np.array(d.tie_key[t], copy=True); tie_key.setflags(write=False)
+        memory["tie_key"] = tie_key
+        values_ro = values_t.copy(); values_ro.setflags(write=False)
         hist = tuple(records_all)
         view = StateView(t=t, T=T, N=N, audits_left=allowance, audit_u=float(d.audit_u[t]), audit_key=d.audit_key[t],
                          banned_until=banned_until, bond=ledger.bond, capacity=caps, escrow={}, history=hist, memory=memory)
         try:
-            assignment = rule.allocate(values_t, offers, view)
-            payments = rule.price(assignment, values_t, offers, view)
+            assignment = dict(rule.allocate(values_ro, dict(offers), view))
+            payments = dict(rule.price(dict(assignment), values_ro, dict(offers), view))
         except ValueError as exc:
             if "read-only" in str(exc):
                 raise ValueError("rule attempted to write read-only state") from exc
@@ -101,7 +103,7 @@ def run_episode(cfg: MarketConfig, rule, policies, seed: int, draws: Draws | Non
             delivered = dict(zip(jobs.tolist(), y.tolist()))
         view_a = StateView(t=t, T=T, N=N, audits_left=allowance, audit_u=float(d.audit_u[t]), audit_key=d.audit_key[t],
                            banned_until=banned_until, bond=ledger.bond, capacity=caps, escrow=escrow, history=hist, memory=memory)
-        to_audit = list(rule.audit(assignment, view_a))
+        to_audit = list(rule.audit(dict(assignment), view_a))
         validate_audits(to_audit, assignment, view_a)
         records = tuple(AuditRecord(job=j, provider=assignment[j], delivered=delivered[j], claim=offers[assignment[j]].claim,
                                     failed=(tol is not None and delivered[j] < offers[assignment[j]].claim - tol))

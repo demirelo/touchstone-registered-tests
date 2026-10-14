@@ -64,3 +64,20 @@ def test_conservation_rejects_nan():
     led.released[0, 0] = float("nan")
     with pytest.raises(AssertionError):
         led.check_conservation(0.0)
+
+
+def test_validated_holdback_is_never_force_released_in_the_same_round():
+    led = Ledger(N=1, T=3)
+    esc, own = {}, {}
+    led.fund(0, 0, 0, 2.0, esc, own)
+    # window including this round: 0 (past) + (2.0 - hb); bond + hb <= that  ->  hb <= 1.0
+    led.settle(0, esc, own, Consequences(holdbacks={0: 1.0}), {})
+    assert led.bond[0] == pytest.approx(1.0) and led.holdback_out[0, 0] == pytest.approx(0.0)
+
+
+def test_ledger_rejects_holdback_above_this_rounds_release():
+    led = Ledger(N=1, T=3)
+    esc, own = {}, {}
+    led.fund(0, 0, 0, 1.0, esc, own)
+    with pytest.raises(ValueError, match="hold-back"):
+        led.settle(0, esc, own, Consequences(holdbacks={0: 1.5}), {})

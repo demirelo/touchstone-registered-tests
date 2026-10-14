@@ -88,10 +88,18 @@ def validate_consequences(cons: Consequences, records: tuple[AuditRecord, ...], 
         if amt > bond_after[ident] + 1e-12:
             raise ValueError(f"release for identity {ident} exceeds its bond")
         bond_after[ident] -= amt
+    release_now: dict[int, float] = {}
+    for job, amt in escrow.items():
+        i = owner[job]
+        release_now[i] = release_now.get(i, 0.0) + amt - cons.refunds.get(job, 0.0)
     for ident, amt in cons.holdbacks.items():
         if not _finite(amt) or amt < 0:
             raise ValueError(f"hold-back for identity {ident} must be finite and non-negative")
         if ident not in active:
             raise ValueError(f"hold-back for identity {ident} without an offer this round")
-        if bond_after[ident] + amt > recent_receipts[ident] + 1e-12:
+        rel = release_now.get(ident, 0.0)
+        if amt > rel + 1e-12:
+            raise ValueError(f"hold-back for identity {ident} exceeds its release this round")
+        # window = last H_MAX settled rounds including this one, net of this hold-back
+        if bond_after[ident] + amt > recent_receipts[ident] + (rel - amt) + 1e-12:
             raise ValueError(f"hold-back for identity {ident} exceeds the H_MAX-round receipts cap")

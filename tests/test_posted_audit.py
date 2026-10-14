@@ -94,11 +94,13 @@ def test_negative_delivery_exact_contribution_and_failure():
     c = MarketConfig.default()
     cfg = MarketConfig(N=1, J=1, T=1, sigma=2.0, e=0.0, v_min=1.0, v_max=1.0,
                        providers=(c.providers[9],), alpha=0.05, budget=0.05)
-    d = make_draws(cfg, 0)
-    res = run_episode(cfg, b2(tol=0.0, L=0), honest(1), 0, draws=d)
+    seed = next(s for s in range(50) if 1.0 + make_draws(cfg, s).noise[0, 0, 0] < 0.0)
+    d = make_draws(cfg, seed)
+    res = run_episode(cfg, b2(tol=0.0, L=0), honest(1), seed, draws=d)
     y = 1.0 + d.noise[0, 0, 0]
+    assert y < 0.0
     assert res.value == pytest.approx(1.0 * y)
-    assert res.failures.sum() == (1 if y < 1.0 else 0)
+    assert res.failures.sum() == 1
 
 
 def test_failed_audit_without_refund_still_counts_as_failure():

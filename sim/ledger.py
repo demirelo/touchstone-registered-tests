@@ -54,10 +54,11 @@ class Ledger:
             self.bond[ident] -= amount
             self.holdback_out[t, ident] += amount
         for ident, amount in cons.holdbacks.items():
-            take = min(amount, released[ident])
-            released[ident] -= take
-            self.holdback_in[t, ident] += take
-            self.bond[ident] += take
+            if amount > released[ident] + 1e-12:
+                raise ValueError(f"hold-back for identity {ident} exceeds its release this round")
+            released[ident] -= amount
+            self.holdback_in[t, ident] += amount
+            self.bond[ident] += amount
         self.released[t] += released
         self._settled = t + 1
         excess = np.maximum(self.bond - self.recent_receipts(), 0.0)
