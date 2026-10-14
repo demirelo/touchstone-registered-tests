@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 5.2, after ten rounds of three-model review
+Date: 2026-10-14. Version 5.3, after eleven rounds of three-model review
 (Fable 5.1, Opus 5.5, Astra) and two external reads (GPT Pro). Status: draft
 for review. Section 14 maps review objections to changes.
 
@@ -376,12 +376,15 @@ control) and its run count, and the gate is a benchmark of the full path
 through `sweep.py` for every baseline, not of one episode. Scope: the rho
 sweep runs at beta = 0.05 only, D2 and its twin, median position, every
 rule; H1 does not span rho. Expected counts at one rho: development 360,000;
-twins 360,000; tuning about 400,000 (3 rules x 243 grid points x 150
-evaluations x 3 seeds, plus re-checks); controls about 50,000;
-all-deviators about 72,000. The two extra rho values add about
-2 x 2 x 3 x 7,500 = 90,000. Total about 1.4 million runs. Gate: the
-manifest completes in under 18 core-hours, which needs a run under 45 ms;
-cells are embarrassingly parallel.
+twins 360,000; tuning about 450,000 (3 rules x 243 grid points x (100
+attack + 100 twin) evaluations x 3 seeds = 437,400, plus 9 full
+re-checks); controls about 50,000; all-deviators about 72,000; candidate
+bank about 14,400; ablation re-search about 60,000. The two extra rho
+values add about 2 x 2 x 3 x 7,500 = 90,000. Total about 1.55 million
+runs. Gate: the search manifest completes in under 20 core-hours, which
+needs a run under 45 ms; cells are embarrassingly parallel. The coverage
+study (section 8, about 0.5 million runs) is outside this gate and has its
+own entry in the manifest.
 
 ### 5.4 LLM actor and H1 procedure
 
@@ -631,7 +634,7 @@ seeds, selected by that mechanical rule, not by hand; for each, a
 high-precision reference mean from a dedicated 2,000-seed pool inside the
 dev-val range; 2,000 replications of each bound procedure, each drawing
 the final sample size from a fresh disjoint dev-val sub-range (about 0.5
-million runs, in the manifest, outside the 18 core-hour search gate); the
+million runs, in the manifest, outside the 20 core-hour search gate); the
 four (statistic, side, level) triples the predicate uses: gain upper 95%,
 gross efficiency lower 95%, inflation-caused-loss difference lower 98.75%
 with a baseline pair (B2 versus B3) standing in for the proposed rule, and
@@ -861,7 +864,7 @@ Anthropic SDK behind a thin interface for the LLM actor.
 | Dates | Work | Gate |
 |---|---|---|
 | 10-14 to 10-17 | Market, ledger, B1 to B3, honest-max, twin wrapper, metrics, tiny-market tests | One T = 200 B2 episode under 45 ms on one core |
-| 10-18 to 10-24 | Search with namespaces, D1, D2, twins, LLM harness and renderer on development families, H3 policy, manifest, calibrate, tune baselines, coverage study, token pilot | B1 fixture check passes; full manifest under 18 core-hours |
+| 10-18 to 10-24 | Search with namespaces, D1, D2, twins, LLM harness and renderer on development families, H3 policy, manifest, calibrate, tune baselines, coverage study, token pilot | B1 fixture check passes; search manifest under 20 core-hours |
 | 10-25 to 10-28 | Separate session writes sealed bundle and final-eval seeds; vocabulary; check_claim.py; lock | Signed tag, public timestamp |
 | 10-29 to 11-11 | Proposed rule within 4.0; its describe() record; its tuning; H3 runs on the proposed rule | Evaluation freeze tag |
 | 11-12 to 11-18 | Unseal; comprehension fixture; run H1, H2 and twins on frozen rule and baselines; figures | Hash verified; check_claim output |
@@ -1034,3 +1037,9 @@ Round 10 (5 to 5.1):
   state updates kept.
 - Text drift: quadruple, header, forfeit cap, H2 clip knob, custodian runs
   the H2 containment test (Opus).
+
+Round 11 (5.2 to 5.3):
+
+- Tuning workload used 150 evaluations per grid point where section 4.2
+  requires 200 (Astra): 437,400 plus re-checks; total 1.55 million; gate
+  20 core-hours; coverage study stated outside the gate.
