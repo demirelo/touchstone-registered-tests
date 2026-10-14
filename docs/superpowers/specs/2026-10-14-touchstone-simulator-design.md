@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 3.4, after four rounds of three-model review (Fable
+Date: 2026-10-14. Version 3.5, after five rounds of three-model review (Fable
 5.1, Opus 5.5, Astra). Status: draft for review. Section 14 maps review
 objections to changes.
 
@@ -145,8 +145,9 @@ Baseline B1, posted prices, no audit.
 
 Baseline B2, posted prices, random audit. B1 plus a spread audit schedule:
 in round t the number of audits is the stochastic rounding of
-(budget_left / alpha) / (T - t + 1), capped by the number of served jobs and
-by 2 * B / (T * alpha); the rounding draw is keyed by (seed, round). Audited
+(budget_left / alpha) / (T - t + 1), then capped by the number of served
+jobs, by floor(2 * B / (T * alpha)), and by floor(budget_left / alpha); the
+rounding draw is keyed by (seed, round). Audited
 jobs are chosen uniformly at random among served jobs. A failed audit refunds
 that job's payment to the buyer and bans the identity for L rounds. Banned
 identities cannot submit offers.
@@ -175,7 +176,9 @@ loop is not affordable:
 - outer grid: 27 ordered price triples built as follows. Let c_min be the
   lowest honest-max per-unit cost over providers and P_top = 0.9 * q90(v_j),
   the price buyers at the 0.9 quantile of value pay for a tier-3 claim of
-  0.9; the validity condition makes P_top > c_min. P3 takes 3 geometric
+  0.9. P_top > c_min is an explicit configuration requirement checked by
+  `calibrate.py`; it does not follow from the validity condition. P3 takes 3
+  geometric
   points between c_min and P_top inclusive. P2 = f2 * P3 and P1 = f1 * P2
   with f1, f2 each in {0.5, 0.7, 0.9}. Every triple satisfies
   0 < P1 < P2 < P3, and `tune_baselines.py` asserts it before running. Also
@@ -536,6 +539,8 @@ Anthropic SDK behind a thin interface for the LLM actor.
 - Total audit spend never exceeds B; the per-round cap holds for B2 and B3.
 - Spread schedule: in the all-honest run, audits in rounds T/2+1..T are
   within 10% of audits in rounds 1..T/2.
+- A fractional remaining budget in the last round never produces an audit
+  that exceeds it.
 - Every rule's LLM description is produced by the sealed template.
 - On the B1 fixture of section 5.3, D1 at u = 1, m = 1 gives positive gain
   and the search recovers it within 1%.
@@ -673,3 +678,9 @@ Round 4 (version 3.3 to 3.4):
   grid defined as P3 geometric with multiplicative ratios, asserted ordered.
 - README omitted the H1 position exception and kept the 4-hour gate (Astra):
   aligned.
+
+Round 5 (version 3.4 to 3.5):
+
+- P_top > c_min did not follow from validity (Astra): explicit requirement.
+- Audit count could exceed the remaining budget after rounding (Astra): hard
+  cap by floor(budget_left / alpha); test.
