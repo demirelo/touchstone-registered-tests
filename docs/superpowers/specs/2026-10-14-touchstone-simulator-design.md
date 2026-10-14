@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 4.6, after nine rounds; three-seat consensus re-established after the external read of three-model review (Fable
+Date: 2026-10-14. Version 5, after nine panel rounds and two external reads (GPT Pro) of three-model review (Fable
 5.1, Opus 5.5, Astra) and one external read (GPT Pro). Status: draft for
 review. Section 14 maps review objections to changes.
 
@@ -166,8 +166,13 @@ Enforcement. The only consequences a rule may impose are:
 - a ban of an identity for a finite number of rounds, at most L_max = 50;
 - holding back up to H_max = 3 rounds of an identity's net released receipts
   as a bond, released or forfeited under a rule-stated schedule. A forfeit
-  is booked once, to the buyers of the failed jobs that triggered it, up to
-  the escrowed payments of those jobs; any excess is released to the
+  is booked once, to the buyers of the failed jobs that triggered it. The
+  refund cap and the forfeit cap are separate: one failed job with escrow P
+  can cost the provider up to P in refund plus up to P in forfeit, so the
+  class permits stronger immediate consequences than B2 and B3 use. The
+  paper reports refund and forfeit contributions separately and includes an
+  enforcement-matched ablation (section 8) before attributing any win to
+  allocation or audit selection. Any excess over the cap is released to the
   provider. Bond ownership follows the entity: on exit, the identity's
   remaining bond is settled under the same schedule as if the identity had
   stayed, and the entity receives the releases. At the end of the episode
@@ -230,7 +235,8 @@ pre-registered reduced procedure:
   geometric points between c_min and P_top inclusive; P2 = f2 * P3 and
   P1 = f1 * P2 with f1, f2 in {0.5, 0.7, 0.9}. `tune_baselines.py` asserts
   0 < P1 < P2 < P3. Also tol_R in {0.08, 0.12, 0.16} (honest failure rates
-  5.5%, 0.8%, 0.07% at sigma = 0.05) and L in {10, 20};
+  5.5%, 0.8%, 0.07% at sigma = 0.05) and L in {10, 20, 50}, so a long ban is
+  not an advantage reserved for the proposed rule;
 - inner search: D2 at the median position, 1 restart x 100 evaluations x 3
   dev-train seeds, with its truthful twin (section 5.2) searched first at
   the same budget;
@@ -262,15 +268,29 @@ the same family run through the same procedure with one harness change: the
 claim is clipped to min(c, q) before it reaches the market, so the twin can
 adapt effort, bids, abstention, and (for H1) its round-by-round choices
 exactly as F does, but cannot inflate. The twin is searched or run first
-with the same budget. The reference policy for a cell is one policy, chosen
-on dev-train seeds by mean profit among the twin, honest-max, and abstention
+with the same budget, and its objective is the same normalized statistic
+the attacker uses: the mean over dev-train seeds of pi / (S* / N). The
+reference policy for a cell is one policy, chosen on dev-train seeds by that
+same normalized objective among the twin, honest-max, and abstention
 (profit 0); pi_ref on evaluation seeds is the per-seed profit of that one
-chosen policy, never a per-seed maximum. Gain measures what inflation adds
-on top of the best matched truthful behaviour.
+chosen policy, never a per-seed maximum. One preference ordering is used
+throughout, so subtracting the fixed reference does not change the
+attacker's ranking of candidates.
+
+Containment. Every reference policy must be executable by the unrestricted
+attacker. For parametrized families this is enforced by construction: the
+attacker family is closed under the clip, with a binary knob clip in
+{0, 1} that applies the same harness projection (section 5.3), so every twin
+policy is a point of the attacker family. For H1, the twin's realized
+actions are in the attacker's action space (any claim <= q is a legal
+output), and the paper states that this is action containment, not policy
+containment. A pre-lock test checks that every twin candidate re-run as an
+attacker with clip = 1 reproduces its trajectory exactly.
 
 Because pi_ref is itself a best-found quantity, the paper states that gain
 is the difference of two searched values and can be biased in either
-direction by search error; the search checks of 5.3 bound that error.
+direction by search error; the search checks of 5.3 are diagnostics of that
+error, not a bound on it.
 
 ### 5.3 Development families and the search
 
@@ -292,9 +312,12 @@ m_t * (1 - d); else m_{t+1} = min(m0, m_t + r * m0). During a ban the
 identity submits nothing and m_t is unchanged. Never abstains, never exits.
 D2 contains D1 (d = r = 0).
 
-Twins. D1-twin and D2-twin are D1 and D2 with the claim clipped to <= q; the
-margin knob s stays free, so a twin can claim conservatively. The sealed H2
-claim map must also permit claims below effort (section 6.1).
+Clip knob and twins. Both families carry a binary knob clip in {0, 1}; with
+clip = 1 the market-facing claim is min(c, q). D1-twin and D2-twin are D1
+and D2 with clip fixed at 1; the attacker searches over clip too, so the
+attacker family contains its twin by construction. The margin knob s stays
+free in both, so a twin can claim conservatively. The sealed H2 family must
+carry the same knob and the same containment (section 6.1).
 
 Search. CMA-ES (pycma) with population size 8, initial step 0.3 in the
 transformed space, 5 restarts from fixed registered initial points in the
@@ -353,7 +376,8 @@ parallel.
 Provider role only. The actor returns, in a fixed JSON schema, a private
 effort q in [0, q_max_i] and either an offer (claim, bid) or abstain. Effort
 goes to provider state and never to the Mechanism. The actor cannot exit.
-Its twin is the same actor with the claim clipped to <= q by the harness.
+Its twin is the same actor with the claim clipped to <= q by the harness;
+containment is at the action level (section 5.2).
 
 Rule description. Each rule implements `describe()`, which returns a
 structured record with locked fields and a locked vocabulary: allocation
@@ -380,9 +404,17 @@ question is reported, and H1 against it is INCONCLUSIVE.
 
 Procedure. Pinned model snapshot ID, temperature 0, every request and
 response cached by prompt hash so replay is deterministic. A malformed
-response falls back to honest-max for that round and is counted. If more
-than 5% of rounds in a repetition fall back, that repetition is invalid; if
-more than 2 of 10 repetitions are invalid, the cell is INCONCLUSIVE. The
+response falls back to honest-max for that round and is counted. The
+statistic always includes all 10 attempted repetitions with their fallback
+behaviour; no repetition is ever dropped or replaced, so the paired
+comparison with the twin and the baselines keeps the same seeds. A
+repetition with more than 5% fallback rounds is marked invalid; invalidity
+gates only whether the cell can support a claim: if more than 2 of 10 are
+invalid, the cell is INCONCLUSIVE, and a required cell that becomes
+INCONCLUSIVE after the freeze stays in the confirmatory quantifiers as
+INCONCLUSIVE. H1 is a five-episode adaptive procedure with profit feedback,
+not the normalized-gain search of section 5.3; section 8 and the README
+state this exception. The
 evaluated object is the adaptive procedure: 5 episodes of T = 100 rounds in
 which the actor sees its profit between episodes. Episodes 1 to 4 use
 dev-train seeds; episode 5 uses one seed from the evaluation namespace, and
@@ -528,11 +560,18 @@ computed per seed.
   (minus audit cost), which the code computes directly after terminal
   settlement. The equality is a test, run on fixtures with outstanding,
   released, and forfeited bonds.
-- Efficiency triple, per rule and budget: all-honest gross efficiency,
-  gross efficiency in the reference run, gross efficiency with the attack.
-  The inflation-caused loss is eff(ref) - eff(attack). The gap
-  eff(honest-max) - eff(ref) is truthful re-optimization and is reported
-  separately.
+- Clipped-attack run. The selected attacker policy re-run with its
+  parameters (or, for H1, its recorded decision procedure replayed from
+  cache) unchanged and the harness clip applied, same seeds. This is the
+  counterfactual "same policy, inflation removed".
+- Efficiency quadruple, per rule and budget: all-honest gross efficiency,
+  gross efficiency in the reference run, gross efficiency in the
+  clipped-attack run, gross efficiency with the attack. The
+  inflation-caused loss is eff(clipped attack) - eff(attack): the effect of
+  the intervention that prevents inflation for that policy. The gap
+  eff(ref) - eff(clipped attack) is selection difference, and
+  eff(honest-max) - eff(ref) is truthful re-optimization; both are reported
+  separately and neither enters the predicate.
 - Scripted-participant diagnostics: expected profit, audit exposure,
   false-ban frequency, and lost capacity of non-focal providers, per rule.
 
@@ -564,17 +603,26 @@ unit, one-sided; if all per-seed values are identical the bound equals that
 value and the cell is flagged degenerate. H1: one-sided t bound on 10
 repetitions, or the bootstrap if the coverage study selects it.
 
-Coverage study, pre-lock, on dev-val seeds. Simulate the bound procedures on
-development cells chosen to include rare profitable histories and
-ban-induced multimodality, and report empirical coverage. Pre-registered
-consequences: H1 is confirmatory (in the predicate) only if the
-10-repetition bound achieves at least 90% empirical coverage at nominal 95%
-in that study; otherwise H1 is reported as exploratory and the predicate's
-rule clause uses H2 only, and the paper says so. For the 20-seed bootstrap
-used by parametrized families, if empirical coverage is below 90%, the
-locked remedy is a studentized bootstrap; if that is still below 90%, the
-final-eval namespace is 40 seeds instead of 20, and the manifest and gate
-are recomputed before the lock.
+Coverage study, pre-lock, on dev-val seeds. Locked design: 6 development
+cells chosen to include rare profitable histories and ban-induced
+multimodality; for each, a high-precision reference mean from 2,000 dev-val
+seeds; 2,000 replications of each bound procedure at the final sample size;
+both one-sided endpoints actually asserted (95% and 98.75%); empirical
+coverage reported with its Monte Carlo standard error (about 0.5 points at
+2,000 replications). Admission criterion: empirical coverage at least the
+nominal level minus 1 point, at every tested endpoint and cell. The paper
+states that this calibrates the procedures on development distributions
+and is not a guarantee for the unseen held-out distributions under the
+later rule.
+
+Pre-registered consequences. H1 is confirmatory only if its 10-repetition
+bound meets the criterion; otherwise H1 is exploratory and the rule clause
+uses H2 only. For the 20-seed bootstrap of parametrized families: if it
+fails the criterion, the locked remedy is a studentized bootstrap; if that
+fails, the final-eval namespace becomes 40 seeds and the manifest and gate
+are recomputed; if 40 seeds still fail, every clause that depends on that
+bound is reported as exploratory with nominal intervals and the claim is
+INCONCLUSIVE. No remedy admits a bound that failed the criterion.
 
 Claim predicate, evaluated by `scripts/check_claim.py` at beta = 0.05 on
 final-eval seeds. R* is the proposed rule. The rule clause requires every
@@ -595,11 +643,28 @@ below holds; the clause is PASS if any (family, alternative) pair is PASS,
 FAIL if all are FAIL, and INCONCLUSIVE otherwise:
 
 - lower 98.75% bound of the inflation-caused loss difference
-  [eff(B, ref_B) - eff(B, F)] - [eff(R*, ref_R*) - eff(R*, F)] >= 0.05,
-  paired per seed, where ref is each rule's own reference run; or
+  [eff(B, clip_B) - eff(B, F)] - [eff(R*, clip_R*) - eff(R*, F)] >= 0.05,
+  paired per seed, where clip is each rule's clipped-attack run (section
+  7); or
 - lower 98.75% bound of gain(B, F) >= 1.0, in units of S* / N.
 
-The all-honest gap and the truthful re-optimization gap are reported as
+Enforcement-matched ablation, reported outside the predicate: the proposed
+rule's allocation and audit selection combined with B2's enforcement
+(refund plus ban at B2's tuned L, no hold-back), on the same cells. The
+paper attributes a win to allocation or audit selection only if the
+ablation retains it.
+
+Candidate bank, registered before the lock: every best-found attack policy
+and exact-corner control from every (rule, family, budget) cell on
+development families is stored. For each cell the bank is evaluated on
+dev-train seeds against that cell's frozen rule under a fixed additional
+budget (one evaluation per bank member), the best bank member seeds the
+search's incumbent, and a transfer table reports how each rule fares
+against attacks found elsewhere. This tests whether a rule's robustness
+survives a profitable policy discovered against another rule.
+
+The all-honest gap, the selection difference, and the truthful
+re-optimization gap are reported as
 labeled results outside the predicate.
 
 B1 is reported but is not part of the predicate, because it spends no audit
@@ -611,9 +676,10 @@ INCONCLUSIVE otherwise. The claim is PASS only if every clause is PASS, FAIL
 if any clause is FAIL, and INCONCLUSIVE otherwise. INCONCLUSIVE counts as
 not PASS for the kill criteria and is reported.
 
-The gain in every clause is the gain achieved by the search of section 5.3,
-whose objective is that same statistic; the paper calls it best-found gain
-and never maximal gain. Efficiency in the predicate is measured under that
+The gain in every H2 clause is the gain achieved by the search of section
+5.3, whose objective is that same statistic; the gain in every H1 clause is
+the output of the section 5.4 procedure, which is not a search. The paper
+calls both best-found gain and never maximal gain. Efficiency in the predicate is measured under that
 attack at the cell's headline position for H2, and under the section 5.4
 procedure at the median position for H1; the paper states that this does
 not bound efficiency under other attacks or positions.
@@ -644,19 +710,27 @@ with the supremum over the policy class of section 5.1, never best-found.
   admissible class; hold participation and T fixed; measure expected audit
   spend. Restrict to the nondegenerate subclass in which each identity is
   served in at least two rounds with an audit opportunity between them, and
-  e = infinity. Statement: for any uniform selection rule with positive
-  expected spend that holds supremum gain at most epsilon, there exists a
-  history-conditioned selection rule that holds gain at most epsilon at
-  weakly lower expected spend; the target is a strict reduction with a
-  lower bound in terms of rho, sigma, T, and the audit-opportunity count.
+  e = infinity. The weak statement (a history-conditioned rule reaches gain
+  at most epsilon at weakly lower expected spend than any uniform rule) is
+  class inclusion, since uniform rules are history-measurable, and is not a
+  result. The target is a strict reduction with a lower bound that depends
+  on rho, sigma, T, the audit-opportunity count, and the incentive
+  constraint (payment P, effort-cost scale b, and epsilon); the conditions
+  under which the reduction is strictly positive are to be identified
+  before any theorem is claimed.
   Known qualitatively in tax-audit theory (Landsberger and Meilijson 1982;
   Greenberg 1984); the contribution would be the quantitative bound.
 - Proposition B, cheap identities. Stationary setting: fixed prices, fixed
   allocation probabilities, the audit budget uncoupled from identity
   history, and consequences limited to identity-linked continuation value
-  with fresh identities treated as clean. Then the stage cheat gain g is the
-  same in every round, and with e = 0 and immediate re-entry supremum gain
-  is at least T * g. Outside that setting the bound is a conjecture. Rules
+  with fresh identities treated as clean. Let g be the raw stage cheat
+  profit in currency units, measured against the stage truthful comparator
+  (the best truthful stage action under the same prices), and let s be the
+  deterministic per-round first-best surplus. Then with e = 0 and immediate
+  re-entry the raw episode gain is at least T * g, and in the section 7
+  normalized units the episode gain is at least N * g / s, not T times a
+  per-round normalized gain. Outside that setting the bound is a
+  conjecture. Rules
   with refunds or hold-backs (B2, B3, and anything in 4.0 that uses them)
   are outside the proposition's class; experiments on them test deterrence
   by immediate consequences, which the proposition does not cover. The
@@ -712,8 +786,12 @@ Anthropic SDK behind a thin interface for the LLM actor.
 - Total audit spend never exceeds B; the per-round cap holds; a fractional
   remaining budget in the last round never produces an audit that exceeds
   it.
-- Spread schedule: on a fixture with at least 20 expected audits per half,
-  audits in the two halves differ by less than 10%.
+- Spread schedule: the scheduler's per-round expected audit count equals
+  (budget_left / alpha) / (T - t + 1) before caps (exact check on the
+  rounding rule); feasibility and terminal budget accounting hold on every
+  seed; and over 200 seeds of a fixture with 20 expected audits per half,
+  the mean absolute half-difference is within 2 standard errors of its
+  hypergeometric expectation. No single realization is a correctness test.
 - On the B1 fixture of section 5.3, D1 at u = 1, m = 1 gives positive gain
   and the search recovers it within 1%.
 - A deviation in round t changes no job draw or noise draw in round t + 1.
@@ -865,8 +943,33 @@ Round 9 (4.4 to 4.5):
 - Template location and comprehension-fixture timing (Opus): locked
   template in the harness; fixture at the unseal before any H1 market run.
 
-Consensus (round 9): Fable 5.1 accept-with-caveat, Opus 5.5 accept, Astra
-accept-with-caveat. No material objection outstanding. Remaining caveat
-(Fable): the 0.05 inflation-caused-loss threshold is half the
-single-deviator ceiling of about 1/N; it is set at the lock from baseline
-runs, and gain is the primary clause.
+Consensus (round 9) on version 4.6: Fable 5.1 accept-with-caveat, Opus 5.5
+accept, Astra accept-with-caveat.
+
+Second external read (GPT Pro, on 4.6) and the changes in version 5:
+
+- Reference selected by mean profit while the attacker optimized normalized
+  gain: one normalized objective for twin, reference selection, and attack.
+- Clipped twin not contained in the D2 representation (counterexample with
+  two failed audits): binary clip knob in the attacker family; containment
+  by construction; action-level containment stated for H1; re-run test.
+- Loss contrast confounded selection with inflation: clipped-attack run
+  (same policy, inflation removed) defines inflation-caused loss; selection
+  difference reported separately.
+- Coverage gate admitted 90% for nominal 95% and left 98.75% untested, with
+  no final failure branch: locked study design with Monte Carlo error, both
+  endpoints, nominal minus 1 point, and a terminal INCONCLUSIVE branch.
+- One or two invalid H1 repetitions undefined: all ten always included;
+  invalidity gates claim support only; H1 exception stated in section 8.
+- Enforcement menu stronger than baselines: caps stated as separate;
+  L grid includes 50; enforcement-matched ablation outside the predicate.
+- Proposition A weak form is class inclusion; Proposition B units:
+  restated.
+- Spread test deterministic on one realization: expectation, feasibility,
+  and repeated-seed criterion.
+- Candidate bank registered as the cheapest guard against optimizer-specific
+  wins.
+- "Search checks bound the error" softened to diagnostics.
+- Caveat on 1/N: in a heterogeneous-capacity market one provider can serve
+  most jobs, so 1/N is not a ceiling; the 0.05 threshold is a pre-registered
+  practical effect size set at the lock.

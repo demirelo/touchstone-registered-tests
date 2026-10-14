@@ -29,10 +29,12 @@ formal predicate lives in the design spec, section 8, and in
 > honest-max, or abstention, selected per cell on training seeds), against the
 > **sealed held-out adversary families that the pre-lock coverage study
 > admits as confirmatory**, under a pre-registered search whose objective
-> is that same gain statistic, while posted prices with random audits and a
+> is that same gain statistic (for the LLM family, a fixed five-episode
+> procedure rather than a search), while posted prices with random audits and a
 > second-score auction with random audits, at the same budget, each either
 > suffer at least **5 points more inflation-caused efficiency loss** than
-> the proposed rule or allow best-found gain of **1.0 or more** in the same
+> the proposed rule (loss measured against the same attack policy with its
+> inflation removed) or allow best-found gain of **1.0 or more** in the same
 > units (lower 98.75% bounds), for at least one confirmatory held-out
 > family.
 
