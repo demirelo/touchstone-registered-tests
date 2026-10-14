@@ -26,9 +26,9 @@ formal predicate lives in the design spec, section 8, and in
 > positions; for H1, the median position) at or below **0.30 of the mean
 > first-best surplus per provider** (upper 95% bound), where gain is profit
 > beyond a **chosen truthful reference policy** (the best on training seeds
-> among its matched truthful twin, honest-max, abstention, and the truthful
-> projection of every candidate the search discovered, selected last),
-> against the
+> among its matched truthful twin, honest-max, abstention, and the bounded
+> set of projected reference candidates specified in the design spec,
+> section 5.2, selected last), against the
 > **sealed held-out adversary families that the pre-lock coverage study
 > admits as confirmatory**, under a pre-registered search whose objective
 > is that same gain statistic (for the LLM family, a fixed five-episode
@@ -56,7 +56,7 @@ must be dated and must explain which number moved and why.
 | First-best surplus, S* | Maximum-weight assignment of jobs to providers at full effort on true quality, no audits. Computed per seed. |
 | Truthful claim | A claim at or below the effort chosen for the round. Claim semantics are the same under every rule. |
 | Gross efficiency | Realized surplus before audit cost, divided by S*, measured with true delivered quality. |
-| Adversary gain | (Adversary's profit minus its reference profit, same seeds) divided by S*/N, per seed, where the reference is one policy chosen per cell on training seeds, as the last step before evaluation, among its matched truthful twin, honest-max, abstention, and the truthful projection of every candidate the search or the candidate bank discovered; reported as the mean of per-seed ratios. |
+| Adversary gain | (Adversary's profit minus its reference profit, same seeds) divided by S*/N, per seed, where the reference is one policy chosen per cell on training seeds, as the last step before evaluation, among its matched truthful twin, honest-max, abstention, and the bounded set of projected reference candidates specified in the design spec, section 5.2; reported as the mean of per-seed ratios. |
 | Audit spend | Total audit cost; must not exceed the calibrated budget B in any seed. Reported also as cost divided by S*. |
 | Held-out family | A family sealed before the lock by a separate session and never executed before the evaluation freeze, on final evaluation seeds held by that session. |
 

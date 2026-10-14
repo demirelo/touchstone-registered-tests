@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 7.2, after fifteen rounds of three-model review
+Date: 2026-10-14. Version 7.3, after sixteen rounds of three-model review
 (Fable 5.1, Opus 5.5, Astra) and four external reads (GPT Pro). Status:
 draft for review. Section 14 maps review objections to changes.
 
@@ -736,12 +736,15 @@ simulated pools of size M with 20,000 replications each, minus a margin
 set per level, because the binomial spread of measured coverage is about
 twice as large at 95% as at 98.75%: 2.0 points at 95% and 1.0 point at
 98.75%, at every n. The margins are sized for the joint gate of 48
-endpoints (6 cells x 8 sides), not for one endpoint: on the normal fixture
-(1,000 independent pools per row for the exact procedure, 400 for the
-control) they give a union-bound joint admission of an exact procedure of
-at least 0.99 at every n with the base M and R, and rejection of the
-negative control of the power paragraph of at least 0.94 at every n and
-level. Narrower margins (1.5 and 0.75) were simulated too: they raise
+endpoints (6 cells x 8 sides), not for one endpoint. On the normal fixture,
+numerical integration over reference-pool uncertainty and binomial
+replication error (Astra, two quadrature resolutions) gives union-bound
+joint admission of an exact procedure of 0.987, 0.979, and 0.993 at
+n = 10, 20, and 40 with the base M and R, and minimum rejection of the
+negative control of 0.938 across n and level; a Monte Carlo estimate
+(Fable, 1,000 pools per row for the exact procedure and 400 for the
+control, standard error up to 0.012) agrees within its error. Even the
+lowest admission figure reaches 190 of 200 with probability above 0.996. Narrower margins (1.5 and 0.75) were simulated too: they raise
 power to 0.99 but drop joint admission to about 0.78 at n = 10 and 0.90
 at n = 20, which would make both doubling remedies the expected path and
 double the study's cost. The joint fixture test below is the binding
@@ -1358,3 +1361,10 @@ Round 15, second pass (7.1 to 7.2):
 - Projected reference set was unbounded and its runs unbudgeted (Opus):
   evaluated set named; no new runs except the selected attack's
   projection and the bank's entry.
+
+Round 16 (7.2 to 7.3):
+
+- Fixture figures overstated as universal bounds (Astra): integrated
+  values reported; Monte Carlo estimate labeled with its error.
+- README still said "every candidate the search discovered" (Astra):
+  points to the bounded set of section 5.2.
