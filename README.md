@@ -25,7 +25,8 @@ formal predicate lives in the design spec, section 8, and in
 > position** (for H2, selected on training seeds from three pre-registered
 > positions; for H1, the median position) at or below **0.30 of the mean
 > first-best surplus per provider** (upper 95% bound), where gain is profit
-> beyond a **matched truthful twin** of the same adversary, against the
+> beyond a **chosen truthful reference policy** (its matched truthful twin,
+> honest-max, or abstention, selected per cell on training seeds), against the
 > **sealed held-out adversary families that the pre-lock coverage study
 > admits as confirmatory**, under a pre-registered search whose objective
 > is that same gain statistic, while posted prices with random audits and a
@@ -106,7 +107,9 @@ Two freezes.
    designed.
 2. Evaluation freeze, **2026-11-11**: the proposed rule, its parameters, and
    its rule description are frozen in a second signed tag. Everything else
-   was already fixed by the lock tag. Held-out families run only after this
+   was already fixed by the lock tag, except a named allow-list (the
+   proposed-rule module, its config and description, the plot script, and
+   docs). Held-out families run only after this
    tag.
 
 Lock commit: _not yet locked_. Freeze commit: _not yet frozen_.
@@ -116,7 +119,7 @@ Lock commit: _not yet locked_. Freeze commit: _not yet frozen_.
 | Dates | Work | Gate |
 |---|---|---|
 | 10-14 to 10-17 | Market, baselines, honest policies, metrics | Timed pilot |
-| 10-18 to 10-24 | Search, families and twins, manifest, calibration, baseline tuning, coverage study, token pilot | B1 fixture check; full manifest under 16 core-hours |
+| 10-18 to 10-24 | Search, families and twins, manifest, calibration, baseline tuning, coverage study, token pilot | B1 fixture check; full manifest under 17 core-hours |
 | 10-25 to 10-28 | Sealed bundle by a separate session; claim script; lock | Signed tag, public timestamp |
 | 10-29 to 11-11 | Proposed rule; LLM plumbing; stress test | Evaluation freeze |
 | 11-12 to 11-18 | Unseal; held-out runs; figures | Hash verified; claim check |

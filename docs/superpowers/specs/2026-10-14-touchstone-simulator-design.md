@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 4.2, after seven rounds of three-model review (Fable
+Date: 2026-10-14. Version 4.3, after eight rounds of three-model review (Fable
 5.1, Opus 5.5, Astra) and one external read (GPT Pro). Status: draft for
 review. Section 14 maps review objections to changes.
 
@@ -157,8 +157,8 @@ must be invariant to relabeling them.
 
 Transfers. All payments to providers are funded by buyer escrow for jobs
 those providers served. The operator injects no money. The operator's net
-position is the audit cost it spends plus any held-back amounts it forfeits
-under the rule; it is reported.
+position is the audit cost it spends, nothing else; forfeits go to buyers
+(section 7). It is reported.
 
 Enforcement. The only consequences a rule may impose are:
 
@@ -822,3 +822,10 @@ Round 7 (4 to 4.1):
 - describe() could hide a novel feature (Opus): "not expressible" value
   makes H1 INCONCLUSIVE; custodian check at the unseal.
 - README said analysis scripts freeze at the second tag (Opus): aligned.
+
+Round 8 (4.2 to 4.3):
+
+- Section 4.0 put forfeits in the operator's position (Astra): audit cost
+  only.
+- README claim, freeze summary, and gate wording lagged the spec (Astra):
+  aligned.
