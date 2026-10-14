@@ -1,8 +1,8 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 5.1, after ten panel rounds and two external reads (GPT Pro) of three-model review (Fable
-5.1, Opus 5.5, Astra) and one external read (GPT Pro). Status: draft for
-review. Section 14 maps review objections to changes.
+Date: 2026-10-14. Version 5.2, after ten rounds of three-model review
+(Fable 5.1, Opus 5.5, Astra) and two external reads (GPT Pro). Status: draft
+for review. Section 14 maps review objections to changes.
 
 ## 1. Goal
 
@@ -166,7 +166,8 @@ Enforcement. The only consequences a rule may impose are:
 - a ban of an identity for a finite number of rounds, at most L_max = 50;
 - holding back up to H_max = 3 rounds of an identity's net released receipts
   as a bond, released or forfeited under a rule-stated schedule. A forfeit
-  is booked once, to the buyers of the failed jobs that triggered it. The
+  is booked once, to the buyers of the failed jobs that triggered it, and
+  the forfeit for a failed job is at most that job's escrowed payment. The
   refund cap and the forfeit cap are separate: one failed job with escrow P
   can cost the provider up to P in refund plus up to P in forfeit, so the
   class permits stronger immediate consequences than B2 and B3 use. The
@@ -284,8 +285,15 @@ attacker family is closed under the clip, with a binary knob clip in
 policy is a point of the attacker family. For H1, the twin's realized
 actions are in the attacker's action space (any claim <= q is a legal
 output), and the paper states that this is action containment, not policy
-containment. A pre-lock test checks that every twin candidate re-run as an
-attacker with clip = 1 reproduces its trajectory exactly.
+containment. Abstention is not a point of D1 or D2 and is not claimed to be
+contained; a cell whose chosen reference is abstention is labeled as such.
+The cell's chosen reference point (the twin's knob vector with clip = 1, or
+the honest-max point) is added to the registered incumbent set of the attack
+search, so best-found dev-train gain is at least 0 by construction when the
+reference is the twin or honest-max. A pre-lock test checks that every twin
+candidate re-run as an attacker with clip = 1 reproduces its trajectory
+exactly; for H2 the separate session runs this test against B1 before the
+lock.
 
 Because pi_ref is itself a best-found quantity, the paper states that gain
 is the difference of two searched values and can be biased in either
@@ -426,9 +434,11 @@ its profit is the reported statistic. The procedure is repeated 10 times
 with 10 evaluation seeds; the actor learns within a procedure, never across
 repetitions. S_hat, B, and the twin are calibrated and run at T = 100. Scope:
 beta in {0.02, 0.05, 0.10}, 4 rules, one rho. Calls: 3 x 4 x 10 x 5 x 100 =
-60,000 for the attack and the same for the twin. A token and latency pilot
-of 200 calls is run before the lock and its measured cost per call sets the
-cost cap in the lock commit.
+60,000 for the attack, the same for the twin on evaluation seeds, up to the
+same again for the twin on dev-train seeds during reference selection, and
+up to 60,000 more for the closed-loop clipped-attack run (section 7):
+240,000 worst case. A token and latency pilot of 200 calls is run before the
+lock and its measured cost per call sets the cost cap in the lock commit.
 
 ## 6. Pre-registration protocol
 
@@ -493,7 +503,8 @@ demotes the affected cell from confirmatory to exploratory.
 
 - H1 LLM provider (section 5.4), with a sealed system prompt.
 - H2 a parametrized family with a sealed executable definition, knob
-  domains, a claim map that permits claims below effort, and an explicit
+  domains, a claim map that permits claims below effort, the same binary
+  clip knob so that H2 contains its twin by construction, and an explicit
   containment statement: whether H2 contains D2, is contained by it, or is
   non-nested, and which observation or memory it uses that D2 cannot.
 
@@ -600,12 +611,12 @@ S* are precomputed per seed and shared across cells.
 Budget grid: beta in {0, 0.01, 0.02, 0.05, 0.10, 0.20}. For each rule R, each
 family F, and each beta, run the search of section 5.3 (or the H1 procedure)
 and its twin, and record gain, gross and net efficiency, audit spend, and
-the efficiency triple on evaluation seeds (20 for parametrized families, 10
+the efficiency quadruple on evaluation seeds (20 for parametrized families, 10
 for H1).
 
 Figure 1: gain against audit spend, one line per rule, one panel per family,
 mean and bound, with the honest failure rate Phi(-tol_R / sigma) of each
-rule annotated. Figure 2: efficiency triple against audit spend.
+rule annotated. Figure 2: efficiency quadruple against audit spend.
 
 Interval algorithms, locked. Parametrized families: percentile bootstrap on
 the per-seed paired statistic, 10,000 resamples, seed as the resampling
@@ -613,13 +624,21 @@ unit, one-sided; if all per-seed values are identical the bound equals that
 value and the cell is flagged degenerate. H1: one-sided t bound on 10
 repetitions, or the bootstrap if the coverage study selects it.
 
-Coverage study, pre-lock, on dev-val seeds. Locked design: 6 development
-cells chosen to include rare profitable histories and ban-induced
-multimodality; for each, a high-precision reference mean from 2,000 dev-val
-seeds; 2,000 replications of each bound procedure at the final sample size;
-both one-sided endpoints actually asserted (95% and 98.75%); empirical
-coverage reported with its Monte Carlo standard error (about 0.5 points at
-2,000 replications). Admission criterion: empirical coverage at least the
+Coverage study, pre-lock, on dev-val seeds. Locked design: the 6
+development cells at beta = 0.05 (baselines, D1 and D2) with the highest
+per-seed skewness of gain or the highest ban-rate bimodality on dev-train
+seeds, selected by that mechanical rule, not by hand; for each, a
+high-precision reference mean from a dedicated 2,000-seed pool inside the
+dev-val range; 2,000 replications of each bound procedure, each drawing
+the final sample size from a fresh disjoint dev-val sub-range (about 0.5
+million runs, in the manifest, outside the 18 core-hour search gate); the
+four (statistic, side, level) triples the predicate uses: gain upper 95%,
+gross efficiency lower 95%, inflation-caused-loss difference lower 98.75%
+with a baseline pair (B2 versus B3) standing in for the proposed rule, and
+gain lower 98.75%; empirical coverage reported with its Monte Carlo
+standard error (about 0.5 points at 2,000 replications). The remedy order
+is percentile bootstrap, then studentized bootstrap, then 40 seeds with the
+studentized bootstrap. Admission criterion: empirical coverage at least the
 nominal level minus 1 point, at every tested endpoint and cell. The paper
 states that this calibrates the procedures on development distributions
 and is not a guarantee for the unseen held-out distributions under the
@@ -660,17 +679,26 @@ FAIL if all are FAIL, and INCONCLUSIVE otherwise:
 
 Enforcement-matched ablation, reported outside the predicate: the proposed
 rule's allocation and audit selection combined with B2's enforcement
-(refund plus ban at B2's tuned L, no hold-back), on the same cells. The
+(refund plus ban at B2's tuned L, no hold-back), on the same cells. Only
+the consequence outputs of `enforce` are replaced; its state updates are
+kept. The attack is searched again against the ablated rule at the full
+budget for development families (about 60,000 runs, in the manifest). The
 paper attributes a win to allocation or audit selection only if the
-ablation retains it.
+ablation retains it under that fresh search.
 
-Candidate bank, registered before the lock: every best-found attack policy
-and exact-corner control from every (rule, family, budget) cell on
-development families is stored. For each cell the bank is evaluated on
-dev-train seeds against that cell's frozen rule under a fixed additional
-budget (one evaluation per bank member), the best bank member seeds the
-search's incumbent, and a transfer table reports how each rule fares
-against attacks found elsewhere. This tests whether a rule's robustness
+Candidate bank, registered before the lock, development families only.
+Order: a first search pass per cell without the bank; then every best-found
+attack policy and exact-corner control from every (rule, family, budget)
+cell is stored; then for each cell every bank member is evaluated once on
+dev-train seeds against that cell's frozen rule, and the incumbent is
+replaced if a member scores higher on the normalized objective; a transfer
+table reports how each rule fares against attacks found elsewhere. The
+bank does not seed H2 unless the sealed H2 definition declares an embedding
+of D2, in which case the embedding is applied; otherwise the bank is a
+diagnostic for H2. Bank members found against the proposed rule exist only
+after the lock and are applied to the baselines' post-lock re-runs. Bank
+runs are in the manifest at about 4 rules x 2 families x 6 budgets x 60
+members x 5 seeds = 14,400 runs. This tests whether a rule's robustness
 survives a profitable policy discovered against another rule.
 
 The all-honest gap, the selection difference, and the truthful
@@ -993,3 +1021,16 @@ Round 10 (5 to 5.1):
   at 0.5, registered initial values.
 - Tuning budget said 162 after the L grid grew (Astra): 243 everywhere;
   manifest and gate updated.
+- H1 call count omitted the twin's reference-selection calls and the
+  counterfactual (Opus): 240,000 worst case.
+- Abstention not contained; search not guaranteed to find the twin point
+  (Opus): reference point in the incumbent set; abstention labeled.
+- Candidate bank scope, order, and count (Opus): development families
+  only; first pass, then bank; H2 only via a declared embedding; in the
+  manifest.
+- Coverage study selection, triples, seeds, order (Opus): mechanical cell
+  rule; four named triples; fresh seed sub-ranges; in the manifest.
+- Ablation attack reuse (Opus): fresh search against the ablated rule;
+  state updates kept.
+- Text drift: quadruple, header, forfeit cap, H2 clip knob, custodian runs
+  the H2 containment test (Opus).
