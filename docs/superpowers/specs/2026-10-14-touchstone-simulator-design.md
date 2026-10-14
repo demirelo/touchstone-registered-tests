@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 6, after eleven rounds of three-model review
+Date: 2026-10-14. Version 6.1, after twelve rounds of three-model review
 (Fable 5.1, Opus 5.5, Astra) and three external reads (GPT Pro). Status:
 draft for review. Section 14 maps review objections to changes.
 
@@ -397,7 +397,8 @@ attack + 100 twin) evaluations x 3 seeds = 437,400, plus 9 full re-checks
 at 15,000 each); controls about 50,000; all-deviators about 72,000;
 candidate bank about 46,000 (section 8); ablation about 90,000 (section
 8). The two extra rho values add about 2 x 2 x 3 x 7,500 = 90,000. Total
-about 1.65 million runs. These prose totals are generated from
+about 1.74 million runs (360,000 + 360,000 + 572,000 + 50,000 + 72,000 +
+46,000 + 90,000 + 90,000). These prose totals are generated from
 `manifest.py`, which separates pre-lock, post-lock, simulator, interval,
 and LLM workloads; the manifest is authoritative. Gate: the pre-lock entries of the search manifest complete in under 20
 core-hours, which needs a run under 45 ms; post-lock entries (bank and
@@ -587,9 +588,10 @@ computed per seed.
 - Audit spend = audit cost / S*, per seed; also the fraction of served jobs
   audited.
 - Reference run. For a focal entity in a cell, the reference run is the run
-  of the cell's chosen reference policy (section 5.2: twin, honest-max, or
-  abstention, selected once on dev-train seeds) with every other provider on
-  honest-max, same seeds.
+  of the cell's chosen reference policy (section 5.2: the best, on dev-train
+  seeds, among the twin, honest-max, abstention, and every discovered
+  admissible truthful candidate, selected once as the last step before
+  evaluation) with every other provider on honest-max, same seeds.
 - Adversary gain. Per seed, gain = (pi_attack - pi_ref) / (S* / N). The
   statistic is the mean over evaluation seeds with a paired bound. Tables
   also report (pi_attack - pi_ref) / pi_ref where pi_ref > 0.
@@ -731,12 +733,15 @@ Ablation tests: actual exclusion duration equals B2's L, hold-back balance
 is zero throughout, and the ledger conserves cash. Because pricing and
 tolerance are retained, a retained win is attributed to the non-enforcement
 components collectively, not to allocation or audit selection alone.
-Against the ablated rule the twin is searched again, the reference is
-selected again, and the attack is searched again, all at the full budget. Cells: D1 and D2 at beta = 0.05, all three positions, median rho
-(2 families x 3 positions x 2 searches x 7,500 = 90,000 runs, in the
-manifest as a post-lock estimate). H2 is not ablated; the ablation is a
-development-family diagnostic. The paper attributes a win to allocation or
-audit selection only if the ablation retains it under that fresh search.
+Against the ablated rule the twin and the attack are searched again at the
+full budget, the bank pass is applied, and then the reference is selected
+as the last step by the section 5.2 rule. Cells: D1 and D2 at beta = 0.05,
+all three positions, median rho (2 families x 3 positions x 2 searches x
+7,500 = 90,000 runs, in the manifest as a post-lock estimate). H2 is not
+ablated; the ablation is a development-family diagnostic. The paper
+attributes a retained win to the non-enforcement components collectively
+(allocation, audit selection, pricing, and tolerance together), never to
+allocation or audit selection alone.
 
 Candidate bank, registered before the lock, development families only.
 Order: a first search pass per cell without the bank; then every best-found
@@ -1133,3 +1138,11 @@ Third external read (GPT Pro, on 5.4) and the changes in version 6:
   counterfactual calls stated consistently.
 - Gain decomposition into inflation effect and clipped-versus-reference
   difference, reported with a registered interpretation rule.
+
+Round 12 (6 to 6.1):
+
+- README and section 7 kept the old three-candidate reference list (Astra):
+  aligned with the section 5.2 rule.
+- Ablation wording kept the old selection order and attribution (Astra):
+  reference last; collective attribution.
+- Workload total did not match its components (Astra): 1.74 million.
