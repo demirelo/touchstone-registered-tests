@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 3.3, after three rounds of three-model review (Fable
+Date: 2026-10-14. Version 3.4, after four rounds of three-model review (Fable
 5.1, Opus 5.5, Astra). Status: draft for review. Section 14 maps review
 objections to changes.
 
@@ -172,11 +172,14 @@ Before the lock, each baseline's free parameters are tuned by a
 pre-registered reduced procedure, because the full search inside a tuning
 loop is not affordable:
 
-- outer grid: 27 price triples (P1, P2, P3), each tier price on a geometric
-  grid of 3 points from the lowest honest cost up to what buyers will pay for
-  that tier, the 0.9 quantile of v_j times the tier's lower claim bound, so
-  that the grid can reach the price at which refunds alone deter; 3 values
-  of tol in {0.03, 0.05, 0.08}; 2 values of L in {10, 20};
+- outer grid: 27 ordered price triples built as follows. Let c_min be the
+  lowest honest-max per-unit cost over providers and P_top = 0.9 * q90(v_j),
+  the price buyers at the 0.9 quantile of value pay for a tier-3 claim of
+  0.9; the validity condition makes P_top > c_min. P3 takes 3 geometric
+  points between c_min and P_top inclusive. P2 = f2 * P3 and P1 = f1 * P2
+  with f1, f2 each in {0.5, 0.7, 0.9}. Every triple satisfies
+  0 < P1 < P2 < P3, and `tune_baselines.py` asserts it before running. Also
+  3 values of tol in {0.03, 0.05, 0.08} and 2 values of L in {10, 20};
 - inner best response: D2, 1 restart x 100 evaluations x 3 training seeds;
 - objective: the smaller of the two normalized predicate margins at
   beta = 0.05, that is min((gross efficiency - 0.90) / 0.90,
@@ -242,8 +245,10 @@ all three. The headline position is the one with the highest training-seed
 gain (section 7 units, computed against that position's own reference run on
 training seeds), not the highest profit; its evaluation-seed statistics are
 reported, so no selection happens on evaluation seeds. All three positions
-appear in a table. At other budgets only the median position runs. The claim
-is about the headline position selected this way, not about every provider.
+appear in a table. At other budgets only the median position runs. H1 plays
+the median position only (section 5.4). The claim is about the headline
+position selected this way for H2 and the median position for H1, not about
+every provider.
 
 Search checks, reported in the paper: (a) on a fixed B1 fixture in which
 every job accepts tier 3 (v_j >= P3 for all j), the search must recover the
@@ -661,3 +666,10 @@ Round 3 (version 3.1 to 3.2):
 - Pre-lock workload omitted reference searches and tuning (Opus): counted;
   gate is 12 core-hours.
 - Proposition B trivial as stated (Opus): restated with the e = 0 content.
+
+Round 4 (version 3.3 to 3.4):
+
+- Tier-1 price grid had a zero endpoint and no ordering guarantee (Astra):
+  grid defined as P3 geometric with multiplicative ratios, asserted ordered.
+- README omitted the H1 position exception and kept the 4-hour gate (Astra):
+  aligned.

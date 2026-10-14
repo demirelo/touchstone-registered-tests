@@ -22,8 +22,8 @@ formal predicate lives in the design spec, section 8, and in
 > total audit budget of **5% of the calibrated first-best surplus**, the
 > proposed rule keeps gross efficiency at or above **90% of first-best**
 > (lower 95% bound) and holds the best-found gain of the **headline adversary
-> position, selected on training seeds from three pre-registered positions**,
-> at or below **0.30 of the mean first-best surplus per provider** (upper 95%
+> position** (for H2, selected on training seeds from three pre-registered
+> positions; for H1, the median position) at or below **0.30 of the mean first-best surplus per provider** (upper 95%
 > bound), against **two sealed held-out adversary families** under a
 > pre-registered search budget, while posted prices with random audits and a
 > second-score auction with random audits, at the same budget, each either
@@ -107,7 +107,7 @@ Lock commit: _not yet locked_. Freeze commit: _not yet frozen_.
 | Dates | Work | Gate |
 |---|---|---|
 | 10-14 to 10-17 | Market, baselines, honest policies, metrics | Timed pilot |
-| 10-18 to 10-24 | Search, development families, sweep, calibration, baseline tuning | Analytic check; sweep under 4 h |
+| 10-18 to 10-24 | Search, development families, sweep, calibration, baseline tuning | B1 fixture check; all pre-lock runs under 12 core-hours |
 | 10-25 to 10-28 | Sealed bundle by a separate session; claim script; lock | Signed tag, public timestamp |
 | 10-29 to 11-11 | Proposed rule; LLM plumbing; stress test | Evaluation freeze |
 | 11-12 to 11-18 | Unseal; held-out runs; figures | Hash verified; claim check |
