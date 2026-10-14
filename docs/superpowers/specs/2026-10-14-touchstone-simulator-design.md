@@ -156,8 +156,8 @@ All quantities are totals over T rounds unless stated.
 - Audit spend = total audit cost / S*.
 - Adversary gain = (profit of adversary - profit of the same identity under the
   honest policy, same seeds) / S*.
-- Loss to others = (S* - realized surplus) attributable to the adversary,
-  reported in tables.
+- Loss to others = (realized surplus with all providers honest - realized
+  surplus with the adversary present) / S*, same seeds. Reported in tables.
 
 ## 8. The curve and the claim check
 
