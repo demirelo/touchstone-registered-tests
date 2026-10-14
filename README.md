@@ -51,7 +51,7 @@ must be dated and must explain which number moved and why.
 | First-best surplus, S* | Maximum-weight assignment of jobs to providers at full effort on true quality, no audits. Computed per seed. |
 | Truthful claim | A claim at or below the effort chosen for the round. Claim semantics are the same under every rule. |
 | Gross efficiency | Realized surplus before audit cost, divided by S*, measured with true delivered quality. |
-| Adversary gain | (Adversary's profit minus the profit of its matched truthful twin, same seeds) divided by S*/N, per seed; reported as the mean of per-seed ratios. |
+| Adversary gain | (Adversary's profit minus its reference profit, same seeds) divided by S*/N, per seed, where the reference is the largest of its matched truthful twin's profit, honest-max profit, and zero (abstention); reported as the mean of per-seed ratios. |
 | Audit spend | Total audit cost; must not exceed the calibrated budget B in any seed. Reported also as cost divided by S*. |
 | Held-out family | A family sealed before the lock by a separate session and never executed before the evaluation freeze, on final evaluation seeds held by that session. |
 

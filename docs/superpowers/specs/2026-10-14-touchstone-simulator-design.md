@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 4, after six rounds of three-model review (Fable
+Date: 2026-10-14. Version 4.1, after seven rounds of three-model review (Fable
 5.1, Opus 5.5, Astra) and one external read (GPT Pro). Status: draft for
 review. Section 14 maps review objections to changes.
 
@@ -165,11 +165,18 @@ Enforcement. The only consequences a rule may impose are:
 - refund of up to the full escrowed payment of an audited job that failed;
 - a ban of an identity for a finite number of rounds, at most L_max = 50;
 - holding back up to H_max = 3 rounds of an identity's net released receipts
-  as a bond, released or forfeited to the buyers of failed jobs under a
-  rule-stated schedule;
+  as a bond, released or forfeited under a rule-stated schedule. A forfeit
+  is booked once, to the buyers of the failed jobs that triggered it, up to
+  the escrowed payments of those jobs; any excess is released to the
+  provider. Bond ownership follows the entity: on exit, the identity's
+  remaining bond is settled under the same schedule as if the identity had
+  stayed, and the entity receives the releases. At the end of the episode
+  (round T) every outstanding bond that no failed audit has claimed is
+  released to its provider, and that terminal settlement is part of profit;
 - allocation priority and audit selection as functions of allowed inputs.
 
-No fees, no penalties beyond these, no consequences for unaudited jobs.
+No fees, no penalties beyond these, no consequences for unaudited jobs. The
+operator never holds money at the end of an episode.
 
 Budget. Audit spend never exceeds B in any seed.
 
@@ -285,10 +292,13 @@ D2 contains D1 (d = r = 0).
 Twins. D1-twin and D2-twin are D1 and D2 with the claim clipped to <= q.
 
 Search. CMA-ES (pycma) with population size 8, initial step 0.3 in the
-transformed space, 5 restarts from fixed registered initial points (the
-honest corner, the full-cheat corner, and three Sobol points), 300
+transformed space, 5 restarts from fixed registered initial points in the
+transformed space: the near-honest point (logit of 0.02 on every knob), the
+near-full-cheat point (logit of 0.98), and three Sobol points; 300
 evaluations per restart including incumbent re-evaluation every 10
-iterations, no boundary handling beyond the transform. Objective: the mean
+iterations, no boundary handling beyond the transform. The exact corners
+(knobs at 0 or 1) are evaluated once each as registered controls outside
+the search budget and reported next to the best-found value. Objective: the mean
 over 5 dev-train seeds of the headline statistic, per-seed normalized gain
 (pi - pi_ref) / (S* / N), with pi_ref from the twin on the same seeds. The
 best candidate by objective is then evaluated on 20 dev-val seeds during
@@ -454,11 +464,16 @@ computed per seed.
   duplicated slots).
 - Ledger. Per identity and round: gross escrow funding G (buyers' payments
   into escrow for its jobs), refunds F (returned to buyers), held-back
-  amounts K (bond), net released receipts R = G - F - K plus later bond
-  releases, production cost C, entry cost E. Entity profit
-  pi = sum of (R - C - E). A cash-conservation test checks that buyers'
-  payments equal providers' receipts plus refunds plus held-back balances
-  plus forfeits, every round.
+  amounts K (bond), bond releases K_rel (including terminal settlement in
+  round T and post-exit releases credited to the entity), forfeits K_forf
+  (to buyers, booked once), net released receipts R = G - F - K + K_rel,
+  production cost C, entry cost E. Entity profit pi = sum over rounds and
+  over all its identities of (R - C - E), after terminal settlement, so no
+  money owed to a provider is outside pi. A cash-conservation test checks,
+  every round and at the end, that cumulative buyer funding equals
+  cumulative provider receipts plus refunds plus forfeits plus the
+  outstanding bond balance, and that the outstanding balance is zero after
+  round T. The operator's net position is audit cost only.
 - Net surplus W. Sum over served jobs of v_j * y - a_i - b_i * q_i, minus
   entry costs paid, minus audit cost. Uses true quantities, never claims.
 - Gross efficiency = (W + audit cost) / S*. Net efficiency = W / S*. The claim
@@ -473,9 +488,11 @@ computed per seed.
   also report (pi_attack - pi_ref) / pi_ref where pi_ref > 0.
 - Harm to others, per seed in units of S*:
   harm = [(W_ref - W_attack) + (pi_attack - pi_ref)] / S*. This equals the
-  change in the summed utility of buyers, non-focal providers, and the
-  operator's net position, which the code computes directly. The equality is
-  a test.
+  change in the summed utility of buyers (value minus funding plus refunds
+  plus forfeits received), non-focal providers (their pi), and the operator
+  (minus audit cost), which the code computes directly after terminal
+  settlement. The equality is a test, run on fixtures with outstanding,
+  released, and forfeited bonds.
 - Efficiency triple, per rule and budget: all-honest gross efficiency,
   gross efficiency in the reference run, gross efficiency with the attack.
   The inflation-caused loss is eff(ref) - eff(attack). The gap
@@ -645,8 +662,10 @@ Anthropic SDK behind a thin interface for the LLM actor.
 
 ## 12. Tests
 
-- Honest-max against every rule: gain relative to its twin is 0 exactly
-  (the twin of honest-max is honest-max).
+- Honest-max equals its twin exactly, round by round, under every rule.
+- Headline gain of honest-max against the full reference
+  max(pi_twin, pi_honest_max, 0) is exactly 0 when pi_honest_max >= 0 and
+  equals pi_honest_max / (S* / N) < 0 otherwise.
 - All-honest mean gross efficiency <= 1 + 2 SE.
 - One provider, one job, zero noise: S* matches the closed form.
 - Same config and seed give a byte-identical CSV for every non-LLM family;
@@ -758,3 +777,12 @@ repo's, so its README remarks are moot) and the changes in version 4:
 - Scripted participants, ledger terms, m denominator, fixture conditions:
   labeled; ledger with cash-conservation test; m = S_hat / n_FB; conditions
   added.
+
+Round 7 (4 to 4.1):
+
+- Bonds had no terminal settlement, exit ownership, or single-booked
+  forfeits (Astra): defined in 4.0 and the ledger; tests on bond fixtures.
+- Logistic transform cannot reach corner starts (Astra): near-corner
+  registered points; exact corners as controls outside the budget.
+- README gain definition and honest-max test ignored the full reference
+  (Astra): aligned.
