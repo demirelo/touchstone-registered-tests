@@ -12,29 +12,36 @@ def _finite(x) -> bool:
 
 
 def validate_assignment(assignment: dict[int, int], values_t: np.ndarray, offers: Offers, view: StateView) -> None:
+    if not assignment:
+        return
     J = len(values_t)
-    counts = np.zeros(view.N, dtype=np.int64)
-    for j, i in assignment.items():
-        if not (0 <= int(j) < J):
-            raise ValueError(f"assignment names job {j} out of range")
+    jobs = np.fromiter(assignment.keys(), dtype=np.int64, count=len(assignment))
+    provs = np.fromiter(assignment.values(), dtype=np.int64, count=len(assignment))
+    if jobs.min() < 0 or jobs.max() >= J:
+        raise ValueError("assignment names a job out of range")
+    for i in set(provs.tolist()):
         if i not in offers:
             raise ValueError(f"assignment to provider {i} with no offer")
         if not view.is_active(i):
             raise ValueError(f"assignment to banned provider {i}")
-        counts[i] += 1
+    counts = np.bincount(provs, minlength=view.N)
     over = np.flatnonzero(counts > view.capacity)
     if over.size:
         raise ValueError(f"capacity exceeded for providers {over.tolist()}")
 
 
 def validate_payments(payments: dict[int, float], assignment: dict[int, int], values_t: np.ndarray, offers: Offers) -> None:
-    if set(payments.keys()) != set(assignment.keys()):
+    if payments.keys() != assignment.keys():
         raise ValueError("payments must cover exactly the assigned jobs")
-    for j, p in payments.items():
-        if not _finite(p) or p < 0:
-            raise ValueError(f"payment for job {j} must be finite and non-negative")
-        if p > values_t[j] * offers[assignment[j]].claim + 1e-12:
-            raise ValueError(f"payment for job {j} exceeds what the buyer accepts")
+    if not payments:
+        return
+    jobs = np.fromiter(payments.keys(), dtype=np.int64, count=len(payments))
+    pay = np.array(list(payments.values()), dtype=float)
+    if not np.all(np.isfinite(pay)) or (pay < 0).any():
+        raise ValueError("every payment must be finite and non-negative")
+    accept = values_t[jobs] * np.array([offers[assignment[j]].claim for j in payments])
+    if (pay > accept + 1e-12).any():
+        raise ValueError("a payment exceeds what the buyer accepts")
 
 
 def validate_audits(audit_list: list[int], assignment: dict[int, int], view: StateView) -> None:

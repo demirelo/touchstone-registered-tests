@@ -82,14 +82,16 @@ def run_episode(cfg: MarketConfig, rule, policies, seed: int, draws: Draws | Non
         validate_assignment(assignment, values_t, offers, view)
         validate_payments(payments, assignment, values_t, offers)
         escrow: dict[int, float] = {}; owner: dict[int, int] = {}
-        for j, i in assignment.items():
-            ledger.fund(t, j, i, payments[j], escrow, owner)
         delivered: dict[int, float] = {}
         if assignment:
             jobs = np.fromiter(assignment.keys(), dtype=np.int64, count=len(assignment))
             provs = np.fromiter(assignment.values(), dtype=np.int64, count=len(assignment))
+            pay = np.array([payments[j] for j in assignment], dtype=float)
+            ledger.funding[t] += np.bincount(provs, weights=pay, minlength=N)
+            escrow = dict(zip(jobs.tolist(), pay.tolist()))
+            owner = dict(assignment)
             slots = np.zeros(len(provs), dtype=np.int64); seen = np.zeros(N, dtype=np.int64)
-            for n, i in enumerate(provs):
+            for n, i in enumerate(provs.tolist()):
                 slots[n] = seen[i]; seen[i] += 1
             y = effort[provs] + d.noise[t, provs, slots]
             value_total += float((values_t[jobs] * y).sum())
