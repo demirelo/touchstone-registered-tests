@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 6.4, after thirteen rounds of three-model review
+Date: 2026-10-14. Version 6.5, after fourteen rounds of three-model review
 (Fable 5.1, Opus 5.5, Astra) and three external reads (GPT Pro). Status:
 draft for review. Section 14 maps review objections to changes.
 
@@ -413,7 +413,8 @@ candidate bank about 46,000 (section 8); ablation about 90,000 (section
 8). The two extra rho values add about 2 x 2 x 3 x 7,500 = 90,000. Total
 about 1.64 million runs (360,000 + 360,000 + 572,000 + 50,000 + 72,000 +
 46,000 + 90,000 + 90,000). The coverage study's manifest entry includes
-up to two reference-pool doublings per cell. These prose totals are generated from
+the 35,000-seed pools and, only if the joint fixture test fails, one M
+doubling and one R doubling. These prose totals are generated from
 `manifest.py`, which separates pre-lock, post-lock, simulator, interval,
 and LLM workloads; the manifest is authoritative. Gate: the pre-lock entries of the search manifest complete in under 20
 core-hours, which needs a run under 45 ms; post-lock entries (bank and
@@ -700,7 +701,8 @@ scoring, computed analytically from the noncentral t distribution and
 checked by averaging an exact one-sided t bound on normal data over 200
 simulated pools of size M with 20,000 replications each, minus a margin:
 1.5 points at n = 10 and n = 20, 1.75 points at n = 40. There is no "too
-wide" band and no pool doubling: a procedure is admitted at a cell if its
+wide" band and no routine pool doubling (the only doubling is the
+joint-fixture remedy below): a procedure is admitted at a cell if its
 measured conservative coverage is at least the threshold at every tested
 endpoint, and admitted overall if it is admitted at every cell.
 
@@ -1229,3 +1231,8 @@ Round 13, second pass (6.3 to 6.4):
 - Bank filter still said clip = 1 (Opus): truthful by behaviour.
 - Interface still returned a whole State from enforce (Opus): returns
   consequences and policy memory; the ledger owns economic fields.
+
+Round 14 (6.4 to 6.5):
+
+- Pool-doubling statements conflicted across sections 5.3 and 8 (Astra):
+  aligned; the only doubling is the joint-fixture remedy.
