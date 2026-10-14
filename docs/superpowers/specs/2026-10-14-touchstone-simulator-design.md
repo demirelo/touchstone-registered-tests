@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 3.6, after five rounds of three-model review (Fable
+Date: 2026-10-14. Version 3.7, after six rounds of three-model review (Fable
 5.1, Opus 5.5, Astra). Status: draft for review. Section 14 maps review
 objections to changes.
 
@@ -111,8 +111,10 @@ distribution has a known lower support bound v_min and, for every provider,
 v_min * q_max_i - a_i - b_i * q_max_i > 0. Then every job has positive
 first-best weight with every provider, so S* > 0 on every seed and every
 per-seed ratio in section 7 is defined. The condition also requires
-q_max_i >= z * sigma - tol (section 5.2) so the truthful claim is not clipped
-at full effort. It does not guarantee positive provider profit under any
+z * sigma - tol <= q_max_i and q_max_i + tol - z * sigma <= 1 for every
+provider (section 5.2), so the truthful claim at full effort is neither
+clipped at 0 nor above 1; `tune_baselines.py` re-checks the second
+inequality at every tol in its grid. It does not guarantee positive provider profit under any
 rule; section 7 handles that. `calibrate.py` refuses invalid
 configurations.
 
@@ -705,3 +707,8 @@ Round 5 (version 3.4 to 3.5):
 - Tuning gain reference undefined and uncounted (Opus): small reference
   search per grid point, counted.
 - Headline position selection scope (Opus): per (rule, family) cell.
+
+Round 6 (version 3.6 to 3.7):
+
+- Truthful claim could exceed 1 for small sigma (Astra): validity requires
+  c_h(q_max_i) <= 1, re-checked per tuning tol.
