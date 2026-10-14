@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 6.2, after twelve rounds of three-model review
+Date: 2026-10-14. Version 6.3, after thirteen rounds of three-model review
 (Fable 5.1, Opus 5.5, Astra) and three external reads (GPT Pro). Status:
 draft for review. Section 14 maps review objections to changes.
 
@@ -307,10 +307,13 @@ output), and the paper states that this is action containment, not policy
 containment. Abstention is not a point of D1 or D2 and is not claimed to be
 contained; a cell whose chosen reference is abstention is labeled as such.
 The best twin point (clip = 1) and the honest-max point are in the
-registered incumbent set of the attack search, so the attack's best-found
-objective is at least theirs; since the reference is chosen last among a
-set that contains both, best-found dev-train gain is at least 0 by
-construction unless the reference is abstention. A pre-lock test checks that every twin
+registered incumbent set of the attack search, and the clip = 1
+projection of the selected attack is evaluated as an attack candidate too
+and replaces the incumbent when it scores higher. Even so, best-found
+dev-train gain can be negative (for example when the reference is
+abstention, or when a late truthful candidate outscores the selected
+attack); no nonnegativity is claimed, and negative gain is reported as
+such. A pre-lock test checks that every twin
 candidate re-run as an attacker with clip = 1 reproduces its trajectory
 exactly, and that the honest-max point of each family reproduces honest-max;
 for H2 the separate session runs both tests against B1 before the lock.
@@ -681,21 +684,30 @@ interval for the reference mean (an upper bound against the interval's
 upper endpoint, a lower bound against its lower endpoint). That scoring
 penalizes even an exactly calibrated bound by about phi(z) * 1.96 *
 sqrt(n / M) points, so the admission threshold is not the nominal level.
-It is calibrated: an analytic fixture (normal observations with known
-mean, an exact one-sided t bound at the same n and level) is run through
-the identical path, including a simulated M-seed reference pool and the
-same endpoint scoring, with 2,000 replications; the admission threshold
-for each (n, level, side) is the fixture's measured conservative coverage
-minus 1.5 points. A procedure is admitted at a cell if its conservative
-coverage is at least that threshold at every tested endpoint. A
-pre-registered fixture test requires that the exact procedure itself is
-admitted with probability at least 0.9 over 20 independent fixture
-repetitions; if it is not, replications are doubled until it is. "Too
-wide to decide" means the fixture-calibrated threshold and the measured
-coverage differ by less than two Monte Carlo standard errors; then the
-reference pool is doubled, at most twice, and if still undecided the
-procedure is not admitted. Reference error and replication error are
-reported separately. Degenerate
+It is calibrated over repeated reference pools, because the reference
+pool's own error is the dominant term and more replications cannot remove
+it. Calibration: an analytic fixture (normal observations with known mean,
+an exact one-sided t bound at the same n and level) is run through the
+complete decision path, including a freshly simulated M-seed reference
+pool and the same endpoint scoring, with 2,000 replications per pool, for
+R = 200 independent calibration pools. The admission threshold for each
+(n, level, side) is the 10th percentile of the exact procedure's measured
+conservative coverage across those pools, so the exact procedure is
+admitted with probability about 0.9 per endpoint by construction.
+Validation: the same procedure is then run on 50 further independent
+pools not used for calibration; the admission rate must be at least 0.85
+per endpoint and the joint admission over all tested endpoints of a cell
+at least 0.6. If validation fails, M is doubled (at most twice) and the
+threshold is recalibrated; if validation still fails after the last
+doubling, the interval procedure is recorded as not admissible at that
+(n, level), and every clause that depends on it is exploratory. A
+procedure is admitted at a cell if its conservative coverage is at least
+the threshold at every tested endpoint. "Too wide to decide" means the
+measured coverage is within two Monte Carlo standard errors of the
+threshold; then the reference pool is doubled, at most twice, and if
+still undecided the procedure is not admitted. Reference error and
+replication error are reported separately. Fixture calibration and
+validation runs are in the manifest. Degenerate
 inputs: a cell with zero variance in the ranking statistic (for example B1
 ban counts) is excluded from that ranking, undefined moments rank last,
 and if a ranking is exhausted the other ranking fills. The paper states
@@ -1185,3 +1197,14 @@ Round 12, second pass (6.1 to 6.2):
   typed State at the lock; exclusion defined and reported.
 - README claim block, total (1.64 million), tuning reference rule,
   doubling runs (Opus): fixed.
+
+Round 13 (6.2 to 6.3):
+
+- Fixture admission test doubled replications against an error that lives
+  in the reference pool; an exact procedure was admitted only about 79% of
+  the time (Astra, numerically): threshold calibrated as the 10th
+  percentile across 200 independent reference pools; independent
+  validation on 50 pools; M doubling and recalibration with a stopping
+  limit and terminal exploratory outcome.
+- "Gain at least 0 by construction" was false (Astra): removed; the
+  projection also enters attack selection; negative gain reported.
