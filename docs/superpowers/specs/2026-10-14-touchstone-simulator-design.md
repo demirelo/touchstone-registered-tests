@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 7.1, after fifteen rounds of three-model review
+Date: 2026-10-14. Version 7.2, after fifteen rounds of three-model review
 (Fable 5.1, Opus 5.5, Astra) and four external reads (GPT Pro). Status:
 draft for review. Section 14 maps review objections to changes.
 
@@ -281,9 +281,16 @@ reference policy for a cell is one policy, chosen on dev-train seeds by that
 same normalized objective among the twin, honest-max, and abstention
 (profit 0), and among every other admissible truthful candidate discovered
 for that cell before final evaluation. A candidate is admitted only in its
-projected form: the clip = 1 version of any attack-search candidate or
-compatible candidate-bank member, and the clip = 1 projection of the
-selected attack, each evaluated on dev-train seeds. "No inflation observed
+projected form, and the evaluated set is bounded so that no unbudgeted
+runs are needed: every clip = 1 point the attack search evaluated (already
+run); every clip = 0 point that never inflated on its dev-train runs,
+whose projection has the same trajectory under the same randomness, so
+its observed value is its projected value (no new run); the clip = 1
+projection of the selected attack (one new run per seed); and the
+projection of each compatible candidate-bank member (in the bank's
+manifest entry). Clip = 0 points that inflated on dev-train are not
+projected and not admitted; their projections are different policies
+that the search did not evaluate. "No inflation observed
 on dev-train runs" is a diagnostic, never a certification: an adaptive
 policy can be truthful on every development history and inflate on an
 evaluation history, and an unprojected candidate selected as reference
@@ -727,13 +734,18 @@ scoring, computed analytically from the noncentral t distribution and
 checked by averaging an exact one-sided t bound on normal data over 200
 simulated pools of size M with 20,000 replications each, minus a margin
 set per level, because the binomial spread of measured coverage is about
-twice as large at 95% as at 98.75%: at 95%, 1.5 points at n = 10 and
-n = 20 and 1.75 points at n = 40; at 98.75%, 0.75 points at n = 10 and
-n = 20 and 0.9 points at n = 40. On the normal fixture (400 independent
-pools per row) these margins give per-endpoint false rejection of an exact
-procedure at or below 0.5% and rejection of the negative control of the
-power paragraph at or above 0.98 at every n and level; the joint fixture
-test below is the binding check. There is no "too
+twice as large at 95% as at 98.75%: 2.0 points at 95% and 1.0 point at
+98.75%, at every n. The margins are sized for the joint gate of 48
+endpoints (6 cells x 8 sides), not for one endpoint: on the normal fixture
+(1,000 independent pools per row for the exact procedure, 400 for the
+control) they give a union-bound joint admission of an exact procedure of
+at least 0.99 at every n with the base M and R, and rejection of the
+negative control of the power paragraph of at least 0.94 at every n and
+level. Narrower margins (1.5 and 0.75) were simulated too: they raise
+power to 0.99 but drop joint admission to about 0.78 at n = 10 and 0.90
+at n = 20, which would make both doubling remedies the expected path and
+double the study's cost. The joint fixture test below is the binding
+check; the doublings stay as spare remedies, not the expected path. There is no "too
 wide" band and no routine pool doubling (the only doubling is the
 joint-fixture remedy below): a procedure is admitted at a cell if its
 measured conservative coverage is at least the threshold at every tested
@@ -1334,3 +1346,15 @@ Round 15 (7 to 7.1):
   limit is computed directly.
 - Bank paragraph still admitted members by observed truthfulness (Astra):
   projected form.
+
+Round 15, second pass (7.1 to 7.2):
+
+- With 48 endpoints the 7.1 margins admitted an exact procedure only about
+  0.78 to 0.90 of the time at n = 10 and 20, making both doublings the
+  expected path and doubling the study's cost (Opus, by simulation):
+  margins widened to 2.0 and 1.0 points; joint admission >= 0.99 and
+  power >= 0.94 on the fixture (Fable, by simulation); doublings are spare
+  remedies.
+- Projected reference set was unbounded and its runs unbudgeted (Opus):
+  evaluated set named; no new runs except the selected attack's
+  projection and the bank's entry.
