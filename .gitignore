@@ -4,3 +4,7 @@ __pycache__/
 .venv/
 docs/superpowers/reviews/final-read-bundle.md
 *.profraw
+.venv/
+*.egg-info/
+.pytest_cache/
+.superpowers/
