@@ -12,6 +12,8 @@
 
 **Scope split, stated once:** Plan 2A ends when `scripts/sweep.py --stage all` runs the development cells, the rho sweep, the H3 cells, the no-ban cells, the controls, the bank pass, reference selection, dev-val evaluation, headline selection, the search checks, and the all-deviators table from `locked.yaml` and a calibration file; `scripts/tune_baselines.py` runs the tuning grid; `scripts/manifest.py` reports run counts derived from the same schedule; and `scripts/bench_sweep.py` measures the full path. Nothing in this plan designs or runs a proposed rule, touches held-out families, or computes a confidence bound.
 
+**Changes from version 3 (round 3: both seats reject):** replacement identities' tie keys come from one-way BLAKE2b secrets (a reversible hash let a rule link successors to predecessors); archive lookups in reference selection use exact keys (rounded keys caused re-runs that broke the H3 reference bound); exact keys also de-duplicate bank members and candidates; the registered start order puts near-full-cheat first so one-restart searches (inner tuning, all-deviators) can cheat (R14, with tests that B1 inner gain is positive and all-deviators attack profiles inflate); the best exact corner replaces a cell's attack incumbent in every cell including H3 (R15) and the bank pass reuses corner values; the bank total counts full cells only; records bind budget, mode, and cell name, and every consumed record is checked; the settings hash covers the whole locked configuration; tuned files bind their calibration seeds and non-quick tuning requires the full calibration namespace; focal banned rounds count only the entity's current identity; the ablation enforcer's memory contract is stated and enforced; the all-deviators stage honors `--sections`; test counts corrected.
+
 **Changes from version 2 (round 2: Astra reject, Opus accept-with-caveat):** replacement identities draw tie keys from their entity's per-round `fresh_seed` and their generation, and same-round entrants get ids in a keyed random order (relabeling invariance with re-entry, both reversed-order and unequal-history tests); the archive keys points by exact value and the inflation flag is strict; the ablation adapter runs the rule's own `enforce` for its memory and gives the enforcer a separate memory; the bank holds each target family's corners; the doubling check starts from the bank-finalized attack and reports pre-projection clip values; the H3 family carries an exit knob `x` so its honest point is honest-max; all-deviators runs the attack and the twin procedure and evaluates both on dev-val; the schedule has exact entries and bounds, the sweep records its counter after all work and asserts every stage, and the benchmark times every stage; per-seed rows carry the refund and forfeit split, the participant diagnostics, the focal ban count, and the reference name; tuned files and the calibration are bound to the market key and the settings hash; `restart_spread` reports the gain differences; the two test defects of version 2 are fixed.
 
 **Changes from version 1 (two reviews, both reject):** retired identities are no longer marked in the rule's view and fresh identities get their own tie-break keys (identity opacity); an exit takes effect in the round the policy makes it, so H3 re-enters in the round after a failure (ruling, recorded in Task 14); exits do not change bans or bond schedules; the search keeps an archive and the attack search carries the twin best and the honest-max point as incumbents and replaces its best by its projection when that scores higher; reference candidates come from the archive and the bank, in registered order with abstention first; `evaluate_gain` subtracts the reference profit on the seeds it is given; corner controls use exact knobs; the doubling check reports gain, attack objective, and reference objective; tuning rechecks score on dev-val; calibration validates its input and binds to the market; `locked.yaml` carries the provider table, the value distribution, the admissible-class constants, and the candidate order; the sweep has stages and calls the bank, the controls, and headline selection; the manifest derives counts from the schedule the sweep executes; the per-seed row schema carries every section 7 metric; the all-deviators runner, the H3 cells, the no-ban diagnostic, the enforcement-ablation adapter, `families.md`, and the full-path benchmark are in this plan; the four test defects of version 1 are fixed.
@@ -55,7 +57,7 @@
 - Test: `tests/test_locked.py`
 
 **Interfaces:**
-- Produces: `load_locked(path="experiments/locked.yaml") -> dict`; `seeds(locked, namespace) -> list[int]` for `"dev_train"`, `"dev_val"`, `"calibration"`; `sha256_file(path) -> str`; `settings_hash(locked) -> str` (sha256 of the `market`, `search`, `tuning`, `reference_order`, `seeds.dev_train`, and `seeds.dev_val` blocks, sorted keys; artifacts record it so a stale tuning or search record is refused); `market_config_from_locked(locked) -> MarketConfig` (every market primitive from the YAML; `alpha` and `budget` zero until a cell derives them).
+- Produces: `load_locked(path="experiments/locked.yaml") -> dict`; `seeds(locked, namespace) -> list[int]` for `"dev_train"`, `"dev_val"`, `"calibration"`; `sha256_file(path) -> str`; `settings_hash(locked) -> str` (sha256 of the whole locked configuration except `version`, `tuned`, and `calibration`, sorted keys; artifacts record it so a stale tuning or search record is refused); `market_config_from_locked(locked) -> MarketConfig` (every market primitive from the YAML; `alpha` and `budget` zero until a cell derives them).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -96,12 +98,15 @@ def test_sha256_is_stable(tmp_path):
     assert sha256_file(p) == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
 
 
-def test_settings_hash_tracks_the_bound_blocks_only():
+def test_settings_hash_covers_every_experimental_setting():
     lk = load_locked()
     h = settings_hash(lk)
-    other = dict(lk); other["tuning"] = dict(lk["tuning"], inner_evals=101)
-    assert settings_hash(other) != h and len(h) == 64
-    same = dict(lk); same["version"] = "something-else"
+    assert len(h) == 64
+    for key, value in (("tuning", dict(lk["tuning"], inner_evals=101)), ("beta_headline", 0.1), ("rho", dict(lk["rho"], default=0.5)),
+                       ("seeds", dict(lk["seeds"], calibration=[4000]))):
+        other = dict(lk); other[key] = value
+        assert settings_hash(other) != h
+    same = dict(lk); same["version"] = "something-else"; same["tuned"] = {"B1": "x"}
     assert settings_hash(same) == h
 ```
 
@@ -216,9 +221,8 @@ def sha256_file(path: str | Path) -> str:
 
 
 def settings_hash(locked: dict) -> str:
-    bound = {"market": locked["market"], "search": locked["search"], "tuning": locked["tuning"],
-             "reference_order": locked["reference_order"],
-             "seeds": {"dev_train": locked["seeds"]["dev_train"], "dev_val": locked["seeds"]["dev_val"]}}
+    """Hash of every experimental setting: the whole file except the version label and the blocks the lock tooling fills."""
+    bound = {k: v for k, v in locked.items() if k not in ("version", "tuned", "calibration")}
     return hashlib.sha256(json.dumps(bound, sort_keys=True).encode()).hexdigest()
 
 
@@ -258,7 +262,7 @@ git commit -m "feat: locked configuration draft with the market table, seed name
   - `ProviderView.identity: int` (current identity id of the entity).
   - `validate_action` no longer raises on `exit`.
   - `Draws.fresh_seed: np.ndarray` of shape `(T, N)`, int64, drawn in `draws_for_round` after `policy_seed` (every earlier draw keeps its value); `draws_for_round` returns seven arrays.
-  - `fresh_tie_keys(bases, generations, J) -> np.ndarray` of shape `(J, len(bases))`, read-only: column `c` is a pure function of `(bases[c], generations[c], j)` through a splitmix64 hash, so the keys of a re-entered identity depend only on its entity's per-round `fresh_seed` and its generation, never on the order in which identities were created. They permute with the entity under relabeling and expose no entity id.
+  - `identity_secret(seed, t, fresh_seed_e, generation) -> int` and `retired_secret(seed, t, identity) -> int`: 64-bit BLAKE2b digests (one-way; the per-entity `fresh_seed` never reaches a rule, so no computation on public keys recovers which identities share an entity). `fresh_tie_keys(secrets, J) -> np.ndarray` of shape `(J, len(secrets))`, read-only: column `c` is `default_rng(SeedSequence(secrets[c])).random(J)`. A live replacement identity's column comes from `identity_secret(seed, t, fresh_seed[t, entity], generation)`, so it depends only on the entity and the generation, never on creation order, and permutes with the entity under relabeling; a retired replacement identity's column comes from `retired_secret(seed, t, identity)` (fresh each round, no entity information, never used for an allocation because a retired identity never offers).
   - `run_episode` keeps `entity_of: list[int]` (identity to entity), `identity_of: list[int]` (entity to identity), `generation: list[int]` (0 for an initial identity, 1 for the first replacement, and so on), and a harness-private `alive` list. Each round has three passes: every entity acts; exits are applied in a keyed random order of entities (`SeedSequence([seed, t, 2])`, drawn only in rounds with an exit) so that the ids of same-round entrants carry no entity information; offers are then recorded under each entity's current identity. An exit retires the current identity (never offers again; its `capacity`, `banned_until`, and `bond` entries in the view are left as they are), creates a fresh identity with capacity `k_i`, `banned_until 0`, no bond, and charges `cfg.e` in that round; the action's offer, if any, is submitted under the fresh identity. An initial identity uses its entity's column of `Draws.tie_key`; a replacement identity uses `fresh_tie_keys(fresh_seed[t, entity], generation)`.
   - `EpisodeResult.profit` stays per entity; new fields `n_identities: int`, `entity_of: tuple[int, ...]`, `identity_round: tuple[int, ...]` (creation round, 0 for initial identities), `identity_generation: tuple[int, ...]`, `identity_profit: np.ndarray`.
   - `IdentityReplacement(policy)` wrapper (H3): acts like `policy` and sets `exit=True` in the round after a failed audit. `h3_family(family) -> Family`: the family `<name>+H3` with one more binary knob `x` (placed before `clip`): with `x = 1` the policy is wrapped in `IdentityReplacement`, with `x = 0` it is the base policy. Its honest point (`x = 0`, `clip = 1`) therefore reproduces honest-max, so reference containment holds for the H3 cells (spec 5.2). Defined here on top of Task 4's `Family` fields by `dataclasses.replace`; Task 4 tests it.
@@ -278,7 +282,7 @@ from sim.policies.base import Action, ProviderView, ProviderHistory
 from sim.policies.honest import HonestMax
 from sim.policies.identity import IdentityReplacement
 from sim.ledger import Ledger
-from sim.rng import fresh_tie_keys, make_draws, Draws
+from sim.rng import fresh_tie_keys, identity_secret, retired_secret, make_draws, Draws
 
 
 def cfgb(budget, e=0.0, T=40, N=None):
@@ -317,11 +321,12 @@ def test_ledger_grow_keeps_totals():
     led.check_conservation(0.0)
 
 
-def test_fresh_tie_keys_depend_only_on_base_and_generation():
-    a = fresh_tie_keys(np.array([11, 22]), np.array([1, 1]), 50)
-    b = fresh_tie_keys(np.array([22, 11, 5]), np.array([1, 1, 2]), 50)
+def test_fresh_tie_keys_depend_only_on_the_secret():
+    s1, s2, s3 = identity_secret(7, 3, 11, 1), identity_secret(7, 3, 22, 1), identity_secret(7, 3, 11, 2)
+    assert len({s1, s2, s3, retired_secret(7, 3, 10), identity_secret(7, 4, 11, 1)}) == 5     # entity, generation, round, retirement all matter
+    a = fresh_tie_keys([s1, s2], 50); b = fresh_tie_keys([s2, s1, s3], 50)
     assert a.shape == (50, 2) and np.array_equal(a[:, 0], b[:, 1]) and np.array_equal(a[:, 1], b[:, 0])
-    assert not np.array_equal(fresh_tie_keys(np.array([11]), np.array([2]), 50), a[:, :1])     # generation matters
+    assert not np.array_equal(b[:, 2], a[:, 0])
     assert not a.flags.writeable and a.min() >= 0.0 and a.max() < 1.0 and len(np.unique(a[:, 0])) == 50
     d = make_draws(MarketConfig.default(), 3)
     assert d.fresh_seed.shape == (200, 10) and d.fresh_seed.dtype == np.int64
@@ -478,7 +483,7 @@ with
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `uv run pytest tests/test_identity.py tests/test_policies.py -v`
-Expected: FAIL on `ImportError: cannot import name 'fresh_tie_keys'`, then on `sim.policies.identity`, `Ledger.grow`, `n_identities`, `fresh_seed`, and `NotImplementedError`.
+Expected: FAIL on `ImportError: cannot import name 'fresh_tie_keys'` (and `identity_secret`, `retired_secret`), then on `sim.policies.identity`, `Ledger.grow`, `n_identities`, `fresh_seed`, and `NotImplementedError`.
 
 - [ ] **Step 3: Write the implementation**
 
@@ -500,29 +505,32 @@ Add to `sim/ledger.py` inside `class Ledger` after `__init__`:
 Change `sim/rng.py`: add the field `fresh_seed: np.ndarray   # (T, N) per-entity base for replacement identities' tie keys` as the last field of `Draws`; in `draws_for_round` add `fresh_seed = g.integers(0, 2**62, size=cfg.N)` after the `policy_seed` draw and return it as the seventh value; in `make_draws` allocate `fresh_seed = np.empty((cfg.T, cfg.N), dtype=np.int64)`, fill it from the seventh value, include it in the read-only loop, and pass it to `Draws`. Then add after `make_draws`:
 
 ```python
-_M1, _M2, _M3, _M4 = np.uint64(0x9E3779B97F4A7C15), np.uint64(0xBF58476D1CE4E5B9), np.uint64(0x94D049BB133111EB), np.uint64(0xD1B54A32D192ED03)
+def _secret(*parts) -> int:
+    """One-way 64-bit digest; a rule that sees the derived keys cannot recover the parts."""
+    return int.from_bytes(hashlib.blake2b(":".join(str(int(x)) for x in parts).encode(), digest_size=8).digest(), "little")
 
 
-def _splitmix64(x: np.ndarray) -> np.ndarray:
-    x = x + _M1
-    x = (x ^ (x >> np.uint64(30))) * _M2
-    x = (x ^ (x >> np.uint64(27))) * _M3
-    return x ^ (x >> np.uint64(31))
+def identity_secret(seed: int, t: int, fresh_seed_e: int, generation: int) -> int:
+    return _secret(1, seed, t, fresh_seed_e, generation)
 
 
-def fresh_tie_keys(bases, generations, J: int) -> np.ndarray:
-    """Tie-break keys for identities created by re-entry, (J, len(bases)). Column c is a
-    pure function of (bases[c], generations[c], j): the entity's per-round fresh_seed and
-    the identity's generation. No dependence on creation order, so relabeling entities
-    permutes the columns, and a rule sees uniform keys with no entity information."""
-    b = np.asarray(bases, dtype=np.uint64)[None, :]
-    g = (np.asarray(generations, dtype=np.uint64) + np.uint64(1))[None, :]
-    j = np.arange(int(J), dtype=np.uint64)[:, None]
-    h = _splitmix64(_splitmix64(b * _M1 ^ g * _M4) ^ (j * _M3))
-    out = (h >> np.uint64(11)).astype(np.float64) * (1.0 / float(1 << 53))
+def retired_secret(seed: int, t: int, identity: int) -> int:
+    return _secret(2, seed, t, identity)
+
+
+def fresh_tie_keys(secrets, J: int) -> np.ndarray:
+    """Tie-break keys for identities created by re-entry, (J, len(secrets)): column c is the
+    uniform stream seeded by secrets[c]. A live replacement identity's secret depends on its
+    entity's per-round fresh_seed and its generation only, so relabeling entities permutes
+    the columns and creation order is irrelevant; the secret never reaches a rule."""
+    out = np.empty((int(J), len(secrets)))
+    for c, sec in enumerate(secrets):
+        out[:, c] = np.random.default_rng(np.random.SeedSequence(int(sec))).random(int(J))
     out.setflags(write=False)
     return out
 ```
+
+and add `import hashlib` at the top of `sim/rng.py`.
 
 In `sim/policies/base.py`: add the field `identity: int = -1` as the last field of `ProviderView`, and replace the body of `validate_action` so that `exit` is accepted:
 
@@ -589,7 +597,7 @@ from .firstbest import first_best_episode
 from .ledger import Ledger
 from .mechanisms.base import AuditRecord, Consequences, Offer, RoundRecord, StateView
 from .policies.base import ProviderHistory, ProviderView, validate_action
-from .rng import Draws, fresh_tie_keys, make_draws
+from .rng import Draws, fresh_tie_keys, identity_secret, make_draws, retired_secret
 
 
 @dataclass
@@ -685,9 +693,10 @@ def run_episode(cfg: MarketConfig, rule, policies, seed: int, draws: Draws | Non
         ent_arr = np.array(entity_of, dtype=np.int64)
         if M == N:
             tie_key = np.array(d.tie_key[t], copy=True)
-        else:   # replacement identities: keys from their entity's fresh_seed and their generation, never from creation order
-            fresh = fresh_tie_keys(d.fresh_seed[t, ent_arr[N:]], np.array(generation[N:], dtype=np.int64), J)
-            tie_key = np.concatenate([d.tie_key[t], fresh], axis=1)
+        else:   # replacement identities: one-way keyed streams; live ones by (entity secret, generation), retired ones by identity
+            secrets = [identity_secret(seed, t, int(d.fresh_seed[t, entity_of[i]]), generation[i]) if alive[i] else retired_secret(seed, t, i)
+                       for i in range(N, M)]
+            tie_key = np.concatenate([d.tie_key[t], fresh_tie_keys(secrets, J)], axis=1)
         tie_key.setflags(write=False)
         memory["tie_key"] = tie_key
         values_ro = values_t.copy(); values_ro.setflags(write=False)
@@ -780,7 +789,7 @@ def run_episode(cfg: MarketConfig, rule, policies, seed: int, draws: Draws | Non
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `uv run pytest tests/test_identity.py tests/test_policies.py tests/test_rng.py tests/test_boundary.py -v && uv run pytest -q`
-Expected: PASS (9 new test functions, 10 test items with the parametrized relabeling test; whole suite green, 101 items). The plan 1 relabeling test still passes because initial identity ids equal entity indices. `scripts/bench.py` stays under the gate (the identity loop adds about 2 ms on an M4 Max).
+Expected: PASS (9 new test functions, 10 test items with the parametrized relabeling test; whole suite green, 105 items after Task 1's four). The plan 1 relabeling test still passes because initial identity ids equal entity indices. `scripts/bench.py` stays under the gate (the identity loop adds about 2 ms on an M4 Max).
 
 - [ ] **Step 5: Commit**
 
@@ -936,7 +945,10 @@ class EnforcementAblation(Mechanism):
 
     def enforce(self, records: tuple[AuditRecord, ...], view: StateView) -> Consequences:
         self.rule.enforce(records, view)          # side effects on the rule's memory only; its consequences are discarded
-        return self.enforcer.enforce(records, replace(view, memory=self._enforcer_memory))
+        try:
+            return self.enforcer.enforce(records, replace(view, memory=self._enforcer_memory))
+        except KeyError as exc:                   # the enforcer's allocate never runs, so its memory holds only what its own enforce wrote
+            raise ValueError("an ablation enforcer must not depend on allocation-time memory") from exc
 
     def describe(self) -> dict[str, str]:
         d = dict(self.rule.describe())
@@ -990,8 +1002,8 @@ git commit -m "feat: enforcement-ablation adapter and exclusion-by-allocation co
 
 **Interfaces:**
 - Produces:
-  - `Family` frozen dataclass: `name`, `knobs: tuple[str, ...]`, `bounds: dict[str, tuple[float, float]]`, `factory`, `dim`; a knob absent from `bounds` is binary (`clip`, and `x` for H3) and is a logistic coordinate thresholded at 0.5; methods `transform(x) -> dict`, `inverse(knobs, near) -> np.ndarray`, `project(knobs) -> dict` (clip forced to 1, every other knob unchanged), `make(knobs) -> Policy` (fresh instance), `corners() -> list[dict]` (all bound corners times every binary knob in {0,1}, de-duplicated), `registered_starts(settings) -> list[np.ndarray]` (near-honest: every coordinate at logit 0.02 except clip at 0.98; near-full-cheat: every coordinate at logit 0.98 except `s` and clip at 0.02; three Sobol), `honest_point() -> dict` (every bounded knob at its lower bound, every binary knob 0 except clip 1: reproduces honest-max).
-  - `knob_key(knobs) -> tuple` (knobs rounded to 9 decimals, sorted: the de-duplication key for bank members and candidate lists) and `exact_key(knobs) -> tuple` (exact floats, sorted: the archive key, so two distinct policies never share an entry).
+  - `Family` frozen dataclass: `name`, `knobs: tuple[str, ...]`, `bounds: dict[str, tuple[float, float]]`, `factory`, `dim`; a knob absent from `bounds` is binary (`clip`, and `x` for H3) and is a logistic coordinate thresholded at 0.5; methods `transform(x) -> dict`, `inverse(knobs, near) -> np.ndarray`, `project(knobs) -> dict` (clip forced to 1, every other knob unchanged), `make(knobs) -> Policy` (fresh instance), `corners() -> list[dict]` (all bound corners times every binary knob in {0,1}, de-duplicated), `registered_starts(settings) -> list[np.ndarray]` in the registered order near-full-cheat (every coordinate at logit 0.98 except `s` and clip at 0.02), near-honest (every coordinate at logit 0.02 except clip at 0.98), three Sobol; the order matters for searches with fewer than five restarts (the inner tuning search and all-deviators use one), which must start where cheating is reachable (ruling R14), `honest_point() -> dict` (every bounded knob at its lower bound, every binary knob 0 except clip 1: reproduces honest-max).
+  - `exact_key(knobs) -> tuple` (exact floats, sorted: the key for the archive, for bank membership, and for candidate de-duplication, so two distinct policies never share an entry or drop each other) and `knob_key(knobs) -> tuple` (rounded to 9 decimals, sorted: for grouping in reports only).
   - `D1`, `D2`, `FAMILIES = {"D1": D1, "D2": D2}`, `embed_d1_in_d2(knobs) -> dict`.
   - `AdaptiveCheat(u0, m0, s, d, r, w, clip)` policy with per-instance markup state.
 
@@ -1038,7 +1050,7 @@ def test_inverse_round_trips_and_registered_starts():
     settings = {"near_corner": 0.02, "sobol_seed": 7}
     starts = D2.registered_starts(settings)
     assert len(starts) == 5
-    honest = D2.transform(starts[0]); cheat = D2.transform(starts[1])
+    cheat = D2.transform(starts[0]); honest = D2.transform(starts[1])      # near-full-cheat first: a one-restart search can cheat
     assert honest["u0"] == pytest.approx(0.02) and honest["clip"] == 1
     assert cheat["u0"] == pytest.approx(0.98) and cheat["s"] == pytest.approx(0.3 * 0.02) and cheat["clip"] == 0
 
@@ -1108,7 +1120,7 @@ def test_h3_family_adds_the_exit_knob_and_keeps_honest_max_inside():
     for t, failed in enumerate(([], [1], [1, 0])):
         assert honest.act(view(i=0, t=t, failed=failed)) == HonestMax().act(view(i=0, t=t, failed=failed))
     starts = h3.registered_starts({"near_corner": 0.02, "sobol_seed": 7})
-    assert h3.transform(starts[0])["x"] == 0 and h3.transform(starts[1])["x"] == 1 and h3.transform(starts[1])["clip"] == 0
+    assert h3.transform(starts[0])["x"] == 1 and h3.transform(starts[0])["clip"] == 0 and h3.transform(starts[1])["x"] == 0
     assert h3.project(dict(k, x=1))["x"] == 1 and h3.project(dict(k, x=1))["clip"] == 1
 ```
 
@@ -1188,14 +1200,15 @@ def _logit(p: float) -> float:
     return float(np.log(p / (1 - p)))
 
 
-def knob_key(knobs: dict) -> tuple:
-    """De-duplication key for bank members and candidate lists: knobs rounded to 9 decimals, sorted by name."""
-    return tuple(sorted((k, round(float(v), 9)) for k, v in knobs.items()))
-
-
 def exact_key(knobs: dict) -> tuple:
-    """Archive key: exact values, sorted by name. Two distinct policies never share an archive entry."""
+    """Identity of a policy: exact values, sorted by name. Used by the archive, the bank, and candidate
+    de-duplication, so two distinct policies never share an entry or drop each other."""
     return tuple(sorted((k, float(v)) for k, v in knobs.items()))
+
+
+def knob_key(knobs: dict) -> tuple:
+    """Rounded key (9 decimals) for grouping in reports only; never for de-duplication."""
+    return tuple(sorted((k, round(float(v), 9)) for k, v in knobs.items()))
 
 
 @dataclass(frozen=True)
@@ -1247,7 +1260,7 @@ class Family:
             k = {}
             for name, b in zip(self.knobs, bits):
                 k[name] = b if self.is_binary(name) else float(self.bounds[name][b])
-            key = knob_key(k)
+            key = exact_key(k)
             if key not in seen:
                 seen.add(key); out.append(k)
         return out
@@ -1265,7 +1278,7 @@ class Family:
                 cheat[self.knobs.index(name)] = lo_x
         sob = qmc.Sobol(d=self.dim, scramble=True, seed=int(settings["sobol_seed"])).random(4)[1:4]
         sobol = [np.array([_logit(float(v)) for v in row]) for row in sob]
-        return [honest, cheat] + sobol
+        return [cheat, honest] + sobol      # registered order: a search with one restart starts where cheating is reachable
 
 
 D1 = Family("D1", ("u", "m", "s", "w", "clip"),
@@ -1491,7 +1504,7 @@ git commit -m "feat: seed cache keyed on the market, profile runner, focal cell 
 - Test: `tests/test_search.py`
 
 **Interfaces:**
-- Consumes: `Family`, `knob_key`, `Cell`, `run_focal`, `SeedCache`.
+- Consumes: `Family`, `exact_key`, `Cell`, `run_focal`, `SeedCache`.
 - Produces:
   - `SearchSettings(popsize, sigma0, restarts, evals_per_restart, reeval_every, near_corner, sobol_seed)` and `settings_from_locked(locked) -> SearchSettings`.
   - `ArchiveEntry(knobs, f, per_seed_profit, per_seed_normalized, inflated: bool, source: str)`.
@@ -1563,7 +1576,7 @@ def test_search_recovers_b1_analytic_best_response_within_one_percent():
     k = res.best_knobs
     assert k["clip"] == 0 and k["u"] > 0.99 and k["m"] - k["s"] >= 0.8
     assert res.evals == 5 * 300 and len(res.restart_bests) == 5
-    # the optimizer, not only the registered near-full-cheat start, reaches the optimum: a Sobol restart gets there
+    # the optimizer, not only the registered near-full-cheat start (restart 0), reaches the optimum: a Sobol restart gets there
     assert max(res.restart_bests[2:]) >= analytic * 0.99
     assert res.replaced_by_projection is False and res.projection_f < res.best_f
 
@@ -1814,7 +1827,7 @@ git commit -m "feat: objective with evaluation archive, CMA-ES search with regis
   - `Candidate(name, policy_factory, knobs: dict | None, known_profit: np.ndarray | None = None, known_normalized: np.ndarray | None = None)`: a known value is a dev-train observation the archive already holds, so selection needs no new run for it.
   - `twin_search(cell, family, cache, settings, seed) -> SearchResult` (forced clip; `best_knobs` is the projected point).
   - `attack_search(cell, family, cache, settings, seed, twin: SearchResult) -> SearchResult` with incumbents `twin_best` and `honest_point`.
-  - `reference_candidates(cell, family, attack: SearchResult, twin: SearchResult, bank_members: list[dict], order=REFERENCE_ORDER) -> list[Candidate]`: abstention (known 0), honest-max, the twin best (known), the projection of the selected attack (known from the search's projection evaluation), the best archived clip = 1 point (known), the best archived clip = 0 point that never inflated (admitted as its projection with its observed values), and the projection of every bank member; de-duplicated by `knob_key`, first in order wins.
+  - `reference_candidates(cell, family, attack: SearchResult, twin: SearchResult, bank_members: list[dict], order=REFERENCE_ORDER) -> list[Candidate]`: abstention (known 0), honest-max, the twin best (known), the projection of the selected attack (known from the search's projection evaluation), the best archived clip = 1 point (known), the best archived clip = 0 point that never inflated (admitted as its projection with its observed values), and the projection of every bank member; de-duplicated by `exact_key`, first in order wins.
   - `select_reference(cell, candidates, cache) -> ReferenceChoice(candidate, per_seed_profit, per_seed_normalized, scores: dict[str, float])`: highest mean normalized profit on the cell's seeds, ties to the earlier candidate.
   - `evaluate_gain(cell, family, attack_knobs, reference: Candidate, cache) -> GainResult`: runs the attack, the clipped attack, the reference, and honest-max on the cell's seeds; `gain = (profit_attack - profit_ref) / (S*/N)` per seed, `inflation_term = (profit_attack - profit_clip) / (S*/N)`, `selection_term = (profit_clip - profit_ref) / (S*/N)`; gross and net efficiencies; audit cost, audit spend, audited fraction (attack run); harm (accounting and direct); focal served, failures, entry cost, identities; others' profit; enforcement totals of the attack run (refunds, forfeits, hold-backs, spec 4.0 reports refund and forfeit separately); participant diagnostics of the attack run (spec 7): focal audited count and banned rounds, non-focal audited count, non-focal bans (false bans, since non-focal providers are honest-max), non-focal lost capacity (sum over rounds of the capacity of banned non-focal identities).
   - `participant_diagnostics(res, cfg, focal) -> dict`; `seed_rows(cell, g: GainResult, meta: dict) -> list[dict]` and `ROW_FIELDS` (the CSV schema: `meta` keys first, then the metrics).
@@ -1828,7 +1841,7 @@ import pytest
 from sim.cell import SeedCache, Cell, run_focal
 from sim.config import MarketConfig
 from sim.mechanisms.posted import PostedPrices
-from sim.policies.families import D1, knob_key
+from sim.policies.families import D1, exact_key
 from sim.policies.honest import HonestMax
 from sim.reference import (REFERENCE_ORDER, Candidate, twin_search, attack_search, reference_candidates,
                            select_reference, evaluate_gain, seed_rows, ROW_FIELDS)
@@ -1859,7 +1872,7 @@ def test_candidates_come_from_archive_in_registered_order_and_known_values_skip_
     assert names[:3] == ["abstain", "honest_max", "twin_search"]          # the attack projection may de-duplicate against the twin
     assert set(names) <= set(REFERENCE_ORDER) | {n for n in names if n.startswith("bank_")}
     assert all(c.knobs is None or c.knobs["clip"] == 1 for c in cands)
-    assert len({knob_key(c.knobs) for c in cands if c.knobs}) == len([c for c in cands if c.knobs])
+    assert len({exact_key(c.knobs) for c in cands if c.knobs}) == len([c for c in cands if c.knobs])
     runs_before = cache.runs
     ref = select_reference(cell, cands, cache)
     assert cache.runs - runs_before == len(cell.seeds)          # only honest_max needed a run
@@ -1875,7 +1888,7 @@ def test_twin_point_as_attacker_reproduces_trajectory():
     for entry in list(tw.archive.values())[:5]:
         # the twin candidate re-run as an attacker with clip = 1 reproduces its value and never inflates (spec 5.2 pre-lock test)
         att.eval_knobs(entry.knobs)
-        a = att.archive[knob_key(entry.knobs)]
+        a = att.archive[exact_key(entry.knobs)]
         assert a.knobs["clip"] == 1 and a.f == entry.f and np.array_equal(a.per_seed_profit, entry.per_seed_profit) and a.inflated is False
     # the clipped-attack run of section 7 is the same policy with the clip knob set: efforts unchanged, claims = min(claim, effort)
     k = {"u": 0.4, "m": 0.9, "s": 0.05, "w": 0.2, "clip": 0}
@@ -1956,6 +1969,19 @@ def test_participant_diagnostics_count_audits_bans_and_lost_capacity():
     assert g.others_bans_attack[0] > 0 and g.others_lost_capacity_attack[0] > 0
     assert g.refunds_attack[0] > 0 and g.forfeits_attack[0] == 0 and g.holdback_in_attack[0] == 0
     assert g.refunds_focal_attack[0] <= g.refunds_attack[0] and (g.focal_bans_attack[0] > 0) == (g.focal_banned_rounds_attack[0] > 0)
+
+
+def test_focal_banned_rounds_ignore_retired_identities():
+    from sim.mechanisms.posted_audit import PostedRandomAudit
+    from sim.policies.identity import h3_family
+    from sim.reference import participant_diagnostics
+    c = fixture_cfg(budget=5.0)
+    cache = SeedCache()
+    cell = Cell(cfg=c, rule_factory=lambda: PostedRandomAudit(0.20, 0.35, 0.50, tol=-10.0, L=50), focal=3, seeds=(1,), name="h3")
+    h3 = h3_family(D1)
+    res = run_focal(cell, lambda: h3.make(dict(D1.honest_point(), x=1)), cache).results[0]      # exits after every failure
+    d = participant_diagnostics(res, c, 3)
+    assert res.n_identities > 4 and d["focal_banned_rounds"] <= c.T and d["focal_bans"] >= 1
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -1976,7 +2002,7 @@ import numpy as np
 
 from .cell import Abstain, Cell, SeedCache, run_focal
 from .metrics import harm
-from .policies.families import Family, knob_key
+from .policies.families import Family, exact_key
 from .policies.honest import HonestMax
 from .search import Objective, SearchResult, SearchSettings, best_archived, cma_search
 
@@ -2020,15 +2046,15 @@ def _known(entry) -> dict:
 
 def reference_candidates(cell: Cell, family: Family, attack: SearchResult, twin: SearchResult,
                          bank_members: list[dict], order=REFERENCE_ORDER) -> list[Candidate]:
-    """Every reference candidate in projected form, in registered tie order (spec 5.2)."""
+    """Every reference candidate in projected form, in registered tie order (spec 5.2); de-duplicated by exact key."""
     n = len(cell.seeds)
     groups: dict[str, list[Candidate]] = {}
     groups["abstain"] = [Candidate("abstain", Abstain, None, np.zeros(n), np.zeros(n))]
     groups["honest_max"] = [Candidate("honest_max", HonestMax, None)]
     tw = family.project(twin.best_knobs)
-    groups["twin_search"] = [Candidate("twin_search", _factory(family, tw), tw, **_known(twin.archive.get(knob_key(tw))))]
+    groups["twin_search"] = [Candidate("twin_search", _factory(family, tw), tw, **_known(twin.archive.get(exact_key(tw))))]
     proj = family.project(attack.best_knobs)
-    groups["attack_projection"] = [Candidate("attack_projection", _factory(family, proj), proj, **_known(attack.archive.get(knob_key(proj))))]
+    groups["attack_projection"] = [Candidate("attack_projection", _factory(family, proj), proj, **_known(attack.archive.get(exact_key(proj))))]
     e1 = best_archived(attack.archive, clip=1)
     groups["archive_clip1"] = [] if e1 is None else [Candidate("archive_clip1", _factory(family, e1.knobs), dict(e1.knobs), **_known(e1))]
     e0 = best_archived(attack.archive, clip=0, truthful_only=True)
@@ -2041,7 +2067,7 @@ def reference_candidates(cell: Cell, family: Family, attack: SearchResult, twin:
     out, seen = [], set()
     for g in order:
         for c in groups.get(g, []):
-            key = knob_key(c.knobs) if c.knobs is not None else ("name", c.name)
+            key = exact_key(c.knobs) if c.knobs is not None else ("name", c.name)
             if key in seen:
                 continue
             seen.add(key); out.append(c)
@@ -2118,19 +2144,22 @@ ROW_FIELDS = METRIC_FIELDS
 def participant_diagnostics(res, cfg, focal: int) -> dict:
     """Spec 7 scripted-participant diagnostics from one episode: audits on the focal entity's identities and on
     the others, bans on the others (false bans: the others are honest-max), rounds the focal entity spent banned,
-    and the capacity the others lost while banned (sum over banned identity-rounds of k_i)."""
+    and the capacity the others lost while banned (sum over banned identity-rounds of k_i). A ban on a retired
+    focal identity does not count: the entity acts through its current identity."""
     ids_f = {i for i, e in enumerate(res.entity_of) if e == focal}
     k_of = [cfg.providers[e].k for e in res.entity_of]
+    created = sorted((r, i) for i, (e, r) in enumerate(zip(res.entity_of, res.identity_round)) if e == focal)
     banned_until: dict[int, int] = {}
     out = {"focal_audited": 0, "others_audited": 0, "others_bans": 0, "focal_bans": 0, "focal_banned_rounds": 0, "others_lost_capacity": 0,
            "refunds_focal": float(sum(res.ledger.refunds[:, i].sum() for i in ids_f)),
            "forfeits_focal": float(sum(res.ledger.forfeits[:, i].sum() for i in ids_f))}
     for rec in res.history:
+        current = max((i for r, i in created if r <= rec.t), key=lambda i: res.identity_round[i])   # the focal entity's identity in this round
         for i, until in banned_until.items():
             if rec.t < until:
-                if i in ids_f:
-                    out["focal_banned_rounds"] += 1
-                else:
+                if i == current:
+                    out["focal_banned_rounds"] += 1      # a ban on a retired identity excludes nothing
+                elif i not in ids_f:
                     out["others_lost_capacity"] += k_of[i]
         for r in rec.audits:
             out["focal_audited" if r.provider in ids_f else "others_audited"] += 1
@@ -2207,7 +2236,7 @@ def seed_rows(cell: Cell, g: GainResult, meta: dict) -> list[dict]:
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `uv run pytest tests/test_reference.py -v`
-Expected: PASS (8 tests)
+Expected: PASS (9 tests)
 
 - [ ] **Step 5: Commit**
 
@@ -2226,7 +2255,7 @@ git commit -m "feat: twin and attack searches with incumbents, reference selecti
 
 **Interfaces:**
 - Consumes: Tasks 4 to 6.
-- Produces: `Bank()` with `add(family_name, knobs, origin)`, `members_for(family_name) -> list[dict]` (typed filter: D1 members enter D2 cells through `embed_d1_in_d2`; D2 members never enter D1; the target family's exact corners are members of every cell of that family with origin `corner`, so the 32 D1 corners enter D1 cells and the 128 D2 corners enter D2 cells, spec 8; duplicates removed by `knob_key`), `projected_members_for(family_name) -> list[dict]` (the projection of every compatible member, de-duplicated; what reference selection admits), `evaluate(cell, family, cache) -> list[tuple[dict, float, str]]` sorted by mean normalized profit (members as attacks, unprojected), `bank_pass(cell, family, cache, incumbent_f: float) -> BankPass(ranked, best_knobs, best_f, best_origin, improved)` (the incumbent is replaced when a member scores higher, spec 8), `transfer_rows(cell_name, incumbent_f, bp) -> dict`, `to_json() / from_json(text)`.
+- Produces: `Bank()` with `add(family_name, knobs, origin)`, `members_for(family_name) -> list[dict]` (typed filter: D1 members enter D2 cells through `embed_d1_in_d2`; D2 members never enter D1; the target family's exact corners are members of every cell of that family with origin `corner`, so the 32 D1 corners enter D1 cells and the 128 D2 corners enter D2 cells, spec 8; duplicates removed by `exact_key`), `projected_members_for(family_name) -> list[dict]` (the projection of every compatible member, de-duplicated; what reference selection admits), `evaluate(cell, family, cache, known: dict | None = None) -> list[tuple[dict, float, str]]` sorted by mean normalized profit (members as attacks, unprojected; a member whose exact key is in `known` takes that value without a run, which is how the search stage's corner values are reused), `bank_pass(cell, family, cache, incumbent_f: float, known=None) -> BankPass(ranked, best_knobs, best_f, best_origin, improved)` (the incumbent is replaced when a member scores higher, spec 8), `transfer_rows(cell_name, incumbent_f, bp) -> dict`, `to_json() / from_json(text)`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -2237,7 +2266,7 @@ from sim.bank import Bank
 from sim.cell import SeedCache, Cell
 from sim.config import MarketConfig
 from sim.mechanisms.posted import PostedPrices
-from sim.policies.families import D1, D2, knob_key
+from sim.policies.families import D1, D2, exact_key
 
 
 def fixture_cfg():
@@ -2249,15 +2278,17 @@ def fixture_cfg():
 def test_typed_filter_corners_projection_and_dedupe():
     b = Bank()
     b.add("D1", {"u": 0.5, "m": 0.5, "s": 0.0, "w": 0.0, "clip": 0}, origin="B1/D1/0.05")
-    b.add("D1", {"u": 0.5000000000001, "m": 0.5, "s": 0.0, "w": 0.0, "clip": 0}, origin="dup")
+    b.add("D1", {"u": 0.5, "m": 0.5, "s": 0.0, "w": 0.0, "clip": 0}, origin="same-again")
+    b.add("D1", {"u": 0.5 + 1e-12, "m": 0.5, "s": 0.0, "w": 0.0, "clip": 0}, origin="one-ulp-away")      # a distinct policy, kept
+    b.add("D1", {"u": 1.0, "m": 1.0, "s": 0.0, "w": 0.0, "clip": 0}, origin="is-a-corner")                 # equals a D1 corner: one entry, member origin kept
     b.add("D2", {"u0": 0.1, "m0": 0.2, "s": 0.0, "d": 0.5, "r": 0.1, "w": 0.0, "clip": 1}, origin="B2/D2/0.05")
     d1 = b.members_for("D1"); d2 = b.members_for("D2")
-    assert len(d1) == 1 + 32                              # the D1 member (duplicate removed) plus the D1 corners; the D2 member never enters D1
-    assert len(d2) == 2 + 128                             # both members (D1 embedded) plus the D2 corners
+    assert len(d1) == 3 + 32 - 1                          # three distinct D1 members plus the 32 D1 corners, one of them already a member
+    assert len(d2) == 3 + 1 + 128 - 1                     # three D1 members embedded, the D2 member, 128 D2 corners; the embedded full cheat is a D2 corner
     assert any(m["d"] == 0.0 and m["u0"] == 0.5 for m in d2)
     p1 = b.projected_members_for("D1"); p2 = b.projected_members_for("D2")
-    assert len(p1) == 1 + 16 and len(p2) == 2 + 64 and all(m["clip"] == 1 for m in p2)
-    assert len({knob_key(m) for m in p2}) == len(p2)
+    assert len(p1) == 3 + 16 - 1 and all(m["clip"] == 1 for m in p1)
+    assert len({exact_key(m) for m in p2}) == len(p2) and all(m["clip"] == 1 for m in p2)
     b2 = Bank.from_json(b.to_json())
     assert len(b2.members_for("D2")) == len(d2)
 
@@ -2269,7 +2300,11 @@ def test_bank_pass_replaces_incumbent_when_a_member_or_corner_scores_higher():
     cell = Cell(cfg=fixture_cfg(), rule_factory=lambda: PostedPrices(0.20, 0.35, 0.50), focal=3, seeds=(1,), name="c")
     cache = SeedCache()
     ranked = b.evaluate(cell, D1, cache)
-    assert len(ranked) == 2 + 32 and ranked[0][2] == "corner"          # the exact full-cheat corner (u = m = 1) beats the stored member
+    assert len(ranked) == 1 + 32 and ranked[0][2] == "corner"          # the honest member is itself a corner (de-duplicated, keeps its origin); the full-cheat corner (u = m = 1) wins
+    assert sum(1 for _, _, o in ranked if o == "honest") == 1
+    runs = cache.runs
+    known = {exact_key(m): f for m, f, _ in ranked}
+    assert b.evaluate(cell, D1, cache, known=known) == ranked and cache.runs == runs      # known values need no run
     assert ranked[0][1] > ranked[-1][1]
     bp = b.bank_pass(cell, D1, cache, incumbent_f=ranked[-1][1])
     assert bp.improved is True and bp.best_origin == "corner" and bp.best_f == ranked[0][1] and bp.best_knobs["u"] == 1.0
@@ -2294,7 +2329,7 @@ import json
 from dataclasses import dataclass, field
 
 from .cell import Cell, SeedCache, run_focal
-from .policies.families import FAMILIES, Family, embed_d1_in_d2, knob_key
+from .policies.families import FAMILIES, Family, embed_d1_in_d2, exact_key
 
 
 @dataclass
@@ -2313,7 +2348,7 @@ class Bank:
     def add(self, family_name: str, knobs: dict, origin: str) -> None:
         if family_name not in FAMILIES:
             raise ValueError(f"unknown family {family_name}")
-        if not any(f == family_name and knob_key(k) == knob_key(knobs) for f, k, _ in self.entries):
+        if not any(f == family_name and exact_key(k) == exact_key(knobs) for f, k, _ in self.entries):
             self.entries.append((family_name, dict(knobs), origin))
 
     def _compatible(self, target: str) -> list[tuple[dict, str]]:
@@ -2325,11 +2360,11 @@ class Bank:
                 m = embed_d1_in_d2(k)
             else:
                 continue
-            key = knob_key(m)
+            key = exact_key(m)
             if key not in seen:
                 seen.add(key); out.append((m, origin))
         for c in FAMILIES[target].corners():      # the target family's exact-corner controls are members too (spec 8)
-            key = knob_key(c)
+            key = exact_key(c)
             if key not in seen:
                 seen.add(key); out.append((c, "corner"))
         return out
@@ -2341,21 +2376,24 @@ class Bank:
         fam = FAMILIES[family_name]
         out, seen = [], set()
         for m, _ in self._compatible(family_name):
-            p = fam.project(m); key = knob_key(p)
+            p = fam.project(m); key = exact_key(p)
             if key not in seen:
                 seen.add(key); out.append(p)
         return out
 
-    def evaluate(self, cell: Cell, family: Family, cache: SeedCache) -> list[tuple[dict, float, str]]:
+    def evaluate(self, cell: Cell, family: Family, cache: SeedCache, known: dict | None = None) -> list[tuple[dict, float, str]]:
+        """Members as attacks on the cell's seeds; a member whose exact key is in `known` takes that value without a run."""
+        known = known or {}
         scored = []
         for m, origin in self._compatible(family.name):
-            fr = run_focal(cell, lambda m=m: family.make(m), cache)
-            scored.append((m, float(fr.normalized.mean()), origin))
+            key = exact_key(m)
+            f = known[key] if key in known else float(run_focal(cell, lambda m=m: family.make(m), cache).normalized.mean())
+            scored.append((m, f, origin))
         scored.sort(key=lambda t: -t[1])
         return scored
 
-    def bank_pass(self, cell: Cell, family: Family, cache: SeedCache, incumbent_f: float) -> BankPass:
-        ranked = self.evaluate(cell, family, cache)
+    def bank_pass(self, cell: Cell, family: Family, cache: SeedCache, incumbent_f: float, known: dict | None = None) -> BankPass:
+        ranked = self.evaluate(cell, family, cache, known)
         if not ranked:
             return BankPass(ranked=[], best_knobs=None, best_f=float(incumbent_f), best_origin=None, improved=False)
         m, f, origin = ranked[0]
@@ -2848,8 +2886,8 @@ def test_iterated_best_response_terminates_and_records_profiles():
     assert all(set(k) == set(D2.knobs) for p in res.profiles for k in p)
     assert len(res.values) == 2 and all(np.isfinite(v) for row in res.values for v in row)
     assert res.final_profile == res.profiles[-1] and np.isfinite(res.final_gross_eff) and res.eval_seeds == (2, 3)
-    # under B1 without audits every provider gains from cheating: no one stays at the honest point after sweep 1
-    assert all(k != D2.honest_point() for k in res.profiles[0])
+    # under B1 without audits every provider gains from cheating: every provider's policy inflates (clip = 0) after sweep 1
+    assert all(k["clip"] == 0 for k in res.profiles[0])
     assert cache.runs == 2 * 4 * (16 + 1 + 1) + 2     # per provider and sweep: search, projection, current-value evaluation; final profile on two evaluation seeds
 
 
@@ -2948,7 +2986,7 @@ git commit -m "feat: all-deviators iterated best response with the matched twin 
   - `TuningScore(eff, gain, margin, namespace)`; `margin = min((eff - 0.90)/0.90, (0.30 - gain)/0.30)`.
   - `score_point(rule_name, params, cfg, locked, cache, family=D2, inner_override=None, recheck=False) -> TuningScore`: inner scoring searches twin and attack at the inner budget on the first `inner_seeds` dev-train seeds, selects the reference last, and scores gain and efficiency on those seeds (`namespace = "dev_train"`); the recheck searches at the full budget on all dev-train seeds, selects the reference there, and scores on the seeds of `locked["tuning"]["recheck_namespace"]` (`namespace = "dev_val"`).
   - `tune(rule_name, cfg, locked, cache, inner_override=None, grid_limit=None) -> TuningResult(best_params, scores, rechecked)`; the locked winner is the rechecked point with the highest dev-val margin.
-  - `scripts/tune_baselines.py --calibration experiments/calibration.json --rule B2 --out experiments/tuned/tuned_B2.json [--quick]`. Tuning runs at `beta_headline` and the default rho. The output JSON binds the result: `rule`, `market_key` (from the calibration), `calibration_seeds`, `settings_hash` (Task 1), `quick`, `best_params`, `rechecked`, `scores`. The sweep (Task 13) refuses a tuned file whose `rule`, `market_key`, or `settings_hash` does not match, or whose `quick` is true.
+  - `scripts/tune_baselines.py --calibration experiments/calibration.json --rule B2 --out experiments/tuned/tuned_B2.json [--quick]`. Tuning runs at `beta_headline` and the default rho. The output JSON binds the result: `rule`, `market_key` (from the calibration), `calibration_seeds`, `settings_hash` (Task 1, which covers `beta_headline` and the rho default the tuning ran at), `quick`, `best_params`, `rechecked`, `scores`. A non-quick tuning run refuses a calibration that is not the full calibration namespace. The sweep (Task 13) refuses a tuned file whose `rule`, `market_key`, `settings_hash`, or `calibration_seeds` does not match, or whose `quick` is true.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -2997,6 +3035,8 @@ def test_inner_score_is_in_sample_and_recheck_scores_on_dev_val():
     assert sc.namespace == "dev_train" and sc.margin <= 0.0 and sc.eff < 0.9
     rc = score_point("B2", params, cfg, lk, cache, inner_override=QUICK, recheck=True)
     assert rc.namespace == "dev_val" and rc.margin == pytest.approx(min((rc.eff - 0.90) / 0.90, (0.30 - rc.gain) / 0.30))
+    b1 = score_point("B1", {"P1": 0.20, "P2": 0.35, "P3": 0.50}, cfg, lk, cache, inner_override=QUICK)
+    assert b1.gain > 0.0                       # a one-restart inner search starts near full cheat, so B1's manipulability is measured
 
 
 def test_quick_tune_terminates_and_picks_by_recheck():
@@ -3154,7 +3194,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from sim.calibrate import cell_config, load_calibration
 from sim.cell import SeedCache
-from sim.locked import load_locked, market_config_from_locked, settings_hash
+from sim.locked import load_locked, market_config_from_locked, seeds, settings_hash
 from sim.tuning import tune
 
 
@@ -3167,6 +3207,8 @@ def main() -> None:
     args = ap.parse_args()
     lk = load_locked()
     cal = load_calibration(args.calibration)
+    if not args.quick and list(cal.seeds) != seeds(lk, "calibration"):
+        raise SystemExit("tuning for the lock needs the full calibration namespace (pass --quick for a smoke run)")
     cfg = cell_config(market_config_from_locked(lk), cal, rho=float(lk["rho"]["default"]), beta=float(lk["beta_headline"]))
     override = {"inner_evals": 16, "inner_seeds": 1, "recheck_top": 1, "recheck_evals": 16, "recheck_restarts": 1, "recheck_val_seeds": 2} if args.quick else None
     res = tune(args.rule, cfg, lk, SeedCache(), inner_override=override, grid_limit=3 if args.quick else None)
@@ -3204,11 +3246,11 @@ git commit -m "feat: baseline tuning on the locked grid with in-sample inner sco
 **Interfaces:**
 - Consumes: every earlier task.
 - Produces:
-  - `sim/schedule.py`: `Budget(restarts, evals, n_train, n_val)`, `budget_from_locked(locked) -> Budget`, `SMOKE_BUDGET = Budget(1, 16, 1, 2)`, `search_runs(b)`, `cell_runs(family_name, b) -> dict[str, int]` with keys `twin, twin_projection, attack, incumbents, attack_projection, reference, corners, evaluation` (exact), `stage_runs(family_name, stage, b)` for the exact stages `search` and `evaluate`, `bank_stage_bound(n_compatible, b) = (n_compatible + 2) * n_train`, `reference_bound(n_projected, b) = (1 + n_projected) * n_train`, `doubling_bound(n_projected, b) = 2 * (restarts * (evals // 2) * n_train + n_train) + 2 * reference_bound(n_projected, b)`, `all_deviators_runs(locked, N, b)` (attack and twin procedures, plus both final profiles on dev-val), `tuning_point_runs(locked)`, `tuning_recheck_runs(b)`, `tuning_grid_sizes(locked)`, `bank_members(n_dev_cells_per_family) -> dict` giving per target family `n_compatible` and `n_projected` (D1 target: D1 members plus 32 corners, projected at most D1 members plus 16; D2 target: D1 and D2 members plus 128 corners, projected at most both member sets plus 64).
+  - `sim/schedule.py`: `Budget(restarts, evals, n_train, n_val)`, `budget_from_locked(locked) -> Budget`, `SMOKE_BUDGET = Budget(1, 16, 1, 2)`, `search_runs(b)`, `cell_runs(family_name, b) -> dict[str, int]` with keys `twin, twin_projection, attack, incumbents, attack_projection, reference, corners, evaluation` (exact), `stage_runs(family_name, stage, b)` for the exact stages `search` and `evaluate`, `bank_stage_bound(n_unknown, b) = (n_unknown + 2) * n_train` (members without a known value; the target family's corners are known from the search stage), `reference_bound(n_projected, b) = (1 + n_projected) * n_train`, `doubling_bound(n_projected, b) = 2 * (restarts * (evals // 2) * n_train + n_train) + 2 * reference_bound(n_projected, b)`, `all_deviators_runs(locked, N, b)` (attack and twin procedures, plus both final profiles on dev-val), `tuning_point_runs(locked)`, `tuning_recheck_runs(b)`, `tuning_grid_sizes(locked)`, `bank_members(n_dev_cells_per_family) -> dict` giving per target family `n_unknown` (members without a known value: D1 target the D1 members, D2 target the D1 and D2 members; corners are known) and `n_projected` (D1: D1 members plus 16 projected corners; D2: both member sets plus 64).
   - `sim/manifest.py`: `CellSpec(section, rule, family, beta, rho, position, kind, runs, exact, post_lock, name, params_override)`, `enumerate_manifest(locked, rules, budget=None) -> list[CellSpec]` (sections `development`, `rho_sweep`, `no_ban`, `h3`, `controls`, `all_deviators`, `tuning`, `bank`, and post-lock `bank_post_lock`, `all_deviators_post_lock`, `ablation`), `totals(cells)` by section plus `pre_lock`, `post_lock`, `pre_lock_exact`, `pre_lock_upper_bound`, `cell_name(...)`.
   - `sim/records.py`: `cfg_to_dict / cfg_from_dict`, `search_to_json / search_from_json`, `candidate_to_json / candidate_from_record(family, d)`.
   - `scripts/manifest.py --ms-per-run 45 [--smoke]`.
-  - `scripts/sweep.py --stage {search,bank,reference,evaluate,checks,all_deviators,all} --sections ... --rules ... --calibration FILE (--tuned-dir DIR | --smoke) --workers K [--select SUBSTRING] [--limit N] --out DIR`, with `run_stages(opts: dict) -> dict` as the in-process entry point. Every stage writes `DIR/<stage>/<cell>.json` with `runs` (counted after all of the stage's work) and `scheduled` (the exact count or the bound); exact stages (`search`, `evaluate`, `all_deviators`) raise when `runs != scheduled`, bounded stages (`bank`, `reference`, `checks`) raise when `runs > scheduled`. Records carry `params`, `cfg`, and `settings_hash`; a later stage refuses a record that does not match the current configuration. `load_params` refuses a tuned file whose `rule`, `market_key`, or `settings_hash` mismatches or whose `quick` is true; without `--smoke` the calibration must use the full calibration namespace. `evaluate` writes `DIR/<section>.csv` with `META_FIELDS + ROW_FIELDS` (`META_FIELDS` ends with `reference`, the selected candidate's name) and `DIR/headline.json`; `bank` writes `DIR/bank.json` and `DIR/transfer.csv`; `checks` writes `DIR/checks.json`; `all_deviators` writes `DIR/all_deviators.json` with the attack and twin procedures and per-provider gain on dev-val.
+  - `scripts/sweep.py --stage {search,bank,reference,evaluate,checks,all_deviators,all} --sections ... --rules ... --calibration FILE (--tuned-dir DIR | --smoke) --workers K [--select SUBSTRING] [--limit N] --out DIR`, with `run_stages(opts: dict) -> dict` as the in-process entry point. Every stage writes `DIR/<stage>/<cell>.json` with `runs` (counted after all of the stage's work) and `scheduled` (the exact count or the bound); exact stages (`search`, `evaluate`, `all_deviators`) raise when `runs != scheduled`, bounded stages (`bank`, `reference`, `checks`) raise when `runs > scheduled`. Records carry `params`, `cfg`, `settings_hash`, `budget`, `smoke`, and the cell name; every record a later stage consumes (search, bank, reference) is checked against the current run, so a smoke record never feeds a real run and a stale bank record never supplies candidates. `load_params` refuses a tuned file whose `rule`, `market_key`, `settings_hash`, or `calibration_seeds` mismatches or whose `quick` is true; without `--smoke` the calibration must use the full calibration namespace. `evaluate` writes `DIR/<section>.csv` with `META_FIELDS + ROW_FIELDS` (`META_FIELDS` ends with `reference`, the selected candidate's name) and `DIR/headline.json`; `bank` writes `DIR/bank.json` and `DIR/transfer.csv`; `checks` writes `DIR/checks.json`; `all_deviators` writes `DIR/all_deviators.json` with the attack and twin procedures and per-provider gain on dev-val.
   - `scripts/bench_sweep.py`: runs every stage in-process (`run_stages` with `--smoke`) for the `beta_headline` median D1 and D2 development cells and the H3 cell of each baseline, sums the recorded `runs`, reports ms per run and the pre-lock manifest in core-hours at that rate, and exits 1 above 20 core-hours.
 
 - [ ] **Step 1: Write the failing tests**
@@ -3231,13 +3273,13 @@ def test_schedule_arithmetic_is_explicit():
                   "reference": 5, "corners": 32 * 5, "evaluation": 4 * 20}
     assert sum(d1.values()) == 15265 and sum(d2.values()) == 15265 - 160 + 640 and sum(h3.values()) == 15265 - 160 + 1280
     assert stage_runs("D1", "search", b) == 7500 + 5 + 7500 + 10 + 5 + 160 and stage_runs("D1", "evaluate", b) == 80
-    assert bank_stage_bound(56, b) == (56 + 2) * 5 and reference_bound(40, b) == 41 * 5
+    assert bank_stage_bound(24, b) == (24 + 2) * 5 and reference_bound(40, b) == 41 * 5
     assert doubling_bound(40, b) == 2 * (5 * 150 * 5 + 5) + 2 * 41 * 5
     assert tuning_point_runs(lk) == 2 * (1 * 100 * 3) + 3 + 6 + 3 + 3 + 4 * 3
     assert tuning_recheck_runs(b) == 2 * 7500 + 5 + 10 + 5 + 5 + 4 * 20
     assert all_deviators_runs(lk, 10, b) == 2 * (3 * 10 * (100 + 2) * 3) + 2 * 20
     m = bank_members(24)
-    assert m == {"D1": {"n_compatible": 24 + 32, "n_projected": 24 + 16}, "D2": {"n_compatible": 48 + 128, "n_projected": 48 + 64}}
+    assert m == {"D1": {"n_unknown": 24, "n_projected": 24 + 16}, "D2": {"n_unknown": 48, "n_projected": 48 + 64}}
     assert all_deviators_runs(lk, 10, SMOKE_BUDGET) == 2 * (3 * 10 * (16 + 2) * 1) + 2 * 2     # the smoke budget caps evaluations and seeds
 
 
@@ -3254,9 +3296,9 @@ def test_manifest_totals_follow_the_schedule():
     assert t["all_deviators"] == 3 * all_deviators_runs(lk, 10, b)
     assert t["tuning"] == (27 + 243 + 9) * tuning_point_runs(lk) + 9 * tuning_recheck_runs(b)
     # bank: every pre-lock D1 and D2 full cell is a target (24 D1; 24 + 6 + 2 = 32 D2); bank stage plus the extra reference candidates
-    per_d1 = bank_stage_bound(m["D1"]["n_compatible"], b) + m["D1"]["n_projected"] * 5
-    per_d2 = bank_stage_bound(m["D2"]["n_compatible"], b) + m["D2"]["n_projected"] * 5
-    assert t["bank"] == 24 * per_d1 + 32 * per_d2
+    per_d1 = bank_stage_bound(m["D1"]["n_unknown"], b) + m["D1"]["n_projected"] * 5
+    per_d2 = bank_stage_bound(m["D2"]["n_unknown"], b) + m["D2"]["n_projected"] * 5
+    assert t["bank"] == 24 * per_d1 + 32 * per_d2 == 24 * 330 + 32 * 810
     assert t["ablation"] == 3 * c1 + 3 * c2 and t["all_deviators_post_lock"] == all_deviators_runs(lk, 10, b)
     assert t["bank_post_lock"] > 0
     assert t["pre_lock"] == sum(t[k] for k in ("development", "rho_sweep", "no_ban", "h3", "controls", "all_deviators", "tuning", "bank"))
@@ -3304,18 +3346,21 @@ def test_sweep_refuses_unbound_tuned_file_and_partial_calibration(cal_path, tmp_
     td = tmp_path / "tuned"; td.mkdir()
     lk = load_locked()
     good = {"rule": "B1", "market_key": json.loads(cal_path.read_text())["market_key"], "settings_hash": settings_hash(lk), "quick": False,
-            "best_params": {"P1": 0.25, "P2": 0.40, "P3": 0.55}}
+            "calibration_seeds": [4000], "best_params": {"P1": 0.25, "P2": 0.40, "P3": 0.55}}
     (td / "tuned_B1.json").write_text(json.dumps(dict(good, rule="B3")))
     r = run_sweep(cal_path, tmp_path / "r1", "--stage", "search", "--rules", "B1", "--limit", "1", "--tuned-dir", str(td))
     assert r.returncode != 0 and "rule" in (r.stderr + r.stdout)
-    (td / "tuned_B1.json").write_text(json.dumps(good))
+    (td / "tuned_B1.json").write_text(json.dumps(dict(good, calibration_seeds=[4000, 4001])))
     r = run_sweep(cal_path, tmp_path / "r2", "--stage", "search", "--rules", "B1", "--limit", "1", "--tuned-dir", str(td))
-    assert r.returncode != 0 and "calibration" in (r.stderr + r.stdout)     # one calibration seed is not the full namespace
+    assert r.returncode != 0 and "calibration seeds" in (r.stderr + r.stdout)   # tuned with another calibration
+    (td / "tuned_B1.json").write_text(json.dumps(good))
+    r = run_sweep(cal_path, tmp_path / "r3", "--stage", "search", "--rules", "B1", "--limit", "1", "--tuned-dir", str(td))
+    assert r.returncode != 0 and "calibration namespace" in (r.stderr + r.stdout)     # one calibration seed is not the full namespace
 
 
 def test_smoke_sweep_runs_every_stage_with_counted_runs(cal_path, tmp_path):
     out = tmp_path / "res"
-    r = run_sweep(cal_path, out, "--stage", "all", "--sections", "development,h3", "--rules", "B1",
+    r = run_sweep(cal_path, out, "--stage", "all", "--sections", "development,h3,all_deviators", "--rules", "B1",
                   "--select", "beta0.05_rho0.2_median", "--smoke", "--workers", "1")
     assert r.returncode == 0, r.stderr
     assert (out / "SMOKE").exists()
@@ -3395,9 +3440,10 @@ def stage_runs(family_name: str, stage: str, b: Budget) -> int:
     return sum(runs[k] for k in STAGE_KEYS[stage])
 
 
-def bank_stage_bound(n_compatible: int, b: Budget) -> int:
-    """Every compatible member as an attack, plus a re-evaluation and a projection when the incumbent is replaced."""
-    return (n_compatible + 2) * b.n_train
+def bank_stage_bound(n_unknown: int, b: Budget) -> int:
+    """Every member without a known value as an attack (corners are known from the search stage),
+    plus a re-evaluation and a projection when the incumbent is replaced."""
+    return (n_unknown + 2) * b.n_train
 
 
 def reference_bound(n_projected: int, b: Budget) -> int:
@@ -3437,10 +3483,11 @@ def tuning_grid_sizes(locked: dict) -> dict[str, int]:
 
 def bank_members(n_dev_cells_per_family: int) -> dict:
     """Bank composition per target family: members are the best-found attacks of the development cells of each
-    family plus the target family's exact corners; D1 members enter D2 through the embedding."""
+    family plus the target family's exact corners (known from the search stage, so they cost no bank run);
+    D1 members enter D2 through the embedding."""
     m = n_dev_cells_per_family
-    return {"D1": {"n_compatible": m + N_CORNERS["D1"], "n_projected": m + N_PROJECTED_CORNERS["D1"]},
-            "D2": {"n_compatible": 2 * m + N_CORNERS["D2"], "n_projected": 2 * m + N_PROJECTED_CORNERS["D2"]}}
+    return {"D1": {"n_unknown": m, "n_projected": m + N_PROJECTED_CORNERS["D1"]},
+            "D2": {"n_unknown": 2 * m, "n_projected": 2 * m + N_PROJECTED_CORNERS["D2"]}}
 ```
 
 ```python
@@ -3498,8 +3545,8 @@ def _bank_total(cells: list[CellSpec], b: Budget) -> int:
     m = bank_members(n_dev)
     total = 0
     for c in cells:
-        if c.family in m:
-            total += bank_stage_bound(m[c.family]["n_compatible"], b) + m[c.family]["n_projected"] * b.n_train
+        if c.kind == "full_cell" and c.family in m:      # targets: every D1 and D2 full cell; controls, tuning, all-deviators rows are not cells
+            total += bank_stage_bound(m[c.family]["n_unknown"], b) + m[c.family]["n_projected"] * b.n_train
     return total
 
 
@@ -3653,7 +3700,7 @@ from sim.calibrate import cell_config, load_calibration
 from sim.cell import Cell, SeedCache
 from sim.locked import load_locked, market_config_from_locked, seeds as locked_seeds, settings_hash
 from sim.manifest import CellSpec, enumerate_manifest
-from sim.policies.families import D2, FAMILIES
+from sim.policies.families import D2, FAMILIES, exact_key
 from sim.policies.identity import h3_family
 from sim.positions import headline_position, positions
 from sim.records import candidate_from_record, candidate_to_json, cfg_from_dict, cfg_to_dict, search_from_json, search_to_json
@@ -3675,7 +3722,7 @@ def family_of(name: str):
     return ALL_FAMILIES[name]
 
 
-def load_params(rule: str, tuned_dir: Path | None, smoke: bool, market_key: str, shash: str) -> dict:
+def load_params(rule: str, tuned_dir: Path | None, smoke: bool, market_key: str, shash: str, cal_seeds) -> dict:
     if tuned_dir is None:
         if not smoke:
             raise SystemExit("refusing to run without tuned parameters: pass --tuned-dir, or --smoke for a smoke run")
@@ -3692,6 +3739,8 @@ def load_params(rule: str, tuned_dir: Path | None, smoke: bool, market_key: str,
         raise SystemExit(f"{p} was tuned under other locked settings (settings_hash mismatch)")
     if d.get("quick"):
         raise SystemExit(f"{p} is a quick tuning result and cannot be used for a real run")
+    if list(d.get("calibration_seeds", [])) != list(cal_seeds):
+        raise SystemExit(f"{p} was tuned with another calibration (calibration seeds differ)")
     return dict(d["best_params"])
 
 
@@ -3710,10 +3759,13 @@ def job_for(spec: CellSpec, locked: dict, cal, base, params: dict, budget: Budge
 
 
 def check_record(job: dict, rec: dict) -> None:
-    """A later stage refuses a record from another configuration (stale tuned parameters, calibration, or settings)."""
-    for key in ("params", "cfg", "settings_hash"):
+    """A later stage refuses a record from another configuration or mode (stale tuned parameters, calibration,
+    settings, budget, or a smoke record under a real run)."""
+    for key in ("params", "cfg", "settings_hash", "budget", "smoke"):
         if rec.get(key) != job[key]:
-            raise SystemExit(f"{job['spec']['name']}: stored {key} differs from the current configuration; rerun the search stage")
+            raise SystemExit(f"{job['spec']['name']}: stored {key} differs from the current run; rerun the earlier stages")
+    if rec.get("spec", {}).get("name") != job["spec"]["name"]:
+        raise SystemExit(f"{job['spec']['name']}: record belongs to another cell")
 
 
 def make_cell(job: dict, seeds: tuple[int, ...], suffix: str = "") -> Cell:
@@ -3733,7 +3785,7 @@ def base_record(job: dict, cache: SeedCache, scheduled: int, exact: bool) -> dic
     if not exact and cache.runs > scheduled:
         raise AssertionError(f"{job['spec']['name']}: ran {cache.runs} episodes, schedule bound is {scheduled}")
     return {"spec": job["spec"], "cfg": job["cfg"], "params": job["params"], "settings_hash": job["settings_hash"], "smoke": job["smoke"],
-            "runs": cache.runs, "scheduled": scheduled}
+            "budget": job["budget"], "runs": cache.runs, "scheduled": scheduled}
 
 
 def stage_search(job: dict) -> dict:
@@ -3743,7 +3795,14 @@ def stage_search(job: dict) -> dict:
     settings = settings_for(job["locked"], b)
     tw = twin_search(cell, fam, cache, settings, seed=0)
     at = attack_search(cell, fam, cache, settings, seed=1, twin=tw)
-    corners = corner_controls(Objective(cell, fam, cache), fam)
+    obj = Objective(cell, fam, cache); obj.archive.update(at.archive)
+    corners = corner_controls(obj, fam)
+    best_corner, best_corner_f = max(corners, key=lambda kf: kf[1])
+    if best_corner_f > at.best_f:     # an exact corner control replaces the incumbent when it scores higher (spec 8); its projection is a corner, already evaluated
+        proj = fam.project(best_corner); pf = obj.archive[exact_key(proj)].f
+        at.best_knobs, at.best_f, at.best_source = (proj, pf, "projection") if pf > best_corner_f else (best_corner, best_corner_f, "corner")
+        at.projection_f, at.replaced_by_projection = pf, pf > best_corner_f
+    at.archive = obj.archive
     rec = base_record(job, cache, stage_runs(job["spec"]["family"], "search", b), exact=True)
     rec.update({"twin": search_to_json(tw), "attack": search_to_json(at), "corners": [{"knobs": k, "f": f} for k, f in corners],
                 "restart_spread": restart_spread(at, tw), "twin_vs_honest": twin_vs_honest(tw, at.incumbent_scores["honest_point"]).__dict__})
@@ -3757,8 +3816,9 @@ def stage_bank(job: dict, rec: dict, bank_json: str) -> dict:
     cell = make_cell(job, train)
     bank = Bank.from_json(bank_json)
     attack = search_from_json(rec["attack"])
-    n_compatible = len(bank.members_for(fam.name))
-    bp = bank.bank_pass(cell, fam, cache, incumbent_f=attack.best_f)
+    known = {exact_key(c["knobs"]): float(c["f"]) for c in rec["corners"]}          # corner controls were evaluated in the search stage
+    n_unknown = sum(1 for m in bank.members_for(fam.name) if exact_key(m) not in known)
+    bp = bank.bank_pass(cell, fam, cache, incumbent_f=attack.best_f, known=known)
     if bp.improved:
         obj = Objective(cell, fam, cache); obj.archive.update(attack.archive)
         f = obj.eval_knobs(bp.best_knobs, source=f"bank:{bp.best_origin}")
@@ -3766,7 +3826,7 @@ def stage_bank(job: dict, rec: dict, bank_json: str) -> dict:
         best, best_f, src = (proj, pf, "projection") if pf > f else (bp.best_knobs, f, f"bank:{bp.best_origin}")
         attack.best_knobs, attack.best_f, attack.best_source, attack.archive = best, best_f, src, obj.archive
         attack.projection_f, attack.replaced_by_projection = pf, pf > f
-    out = base_record(job, cache, bank_stage_bound(n_compatible, b), exact=False)
+    out = base_record(job, cache, bank_stage_bound(n_unknown, b), exact=False)
     out.update({"transfer": Bank.transfer_rows(cell.name, float(rec["attack"]["best_f"]), bp), "ranked_top": bp.ranked[:10],
                 "attack": search_to_json(attack), "projected_members": bank.projected_members_for(fam.name)})
     return out
@@ -3774,6 +3834,8 @@ def stage_bank(job: dict, rec: dict, bank_json: str) -> dict:
 
 def stage_reference(job: dict, rec: dict, bank_rec: dict | None) -> dict:
     check_record(job, rec)
+    if bank_rec is not None:
+        check_record(job, bank_rec)
     train, _, b = train_val(job)
     fam = family_of(job["spec"]["family"]); cache = SeedCache()
     cell = make_cell(job, train)
@@ -3806,7 +3868,9 @@ def stage_evaluate(job: dict, ref_rec: dict) -> dict:
 
 
 def stage_checks(job: dict, rec: dict, bank_rec: dict | None, ref_rec: dict) -> dict:
-    check_record(job, rec)
+    check_record(job, rec); check_record(job, ref_rec)
+    if bank_rec is not None:
+        check_record(job, bank_rec)
     train, _, b = train_val(job)
     fam = family_of(job["spec"]["family"]); cache = SeedCache()
     cell = make_cell(job, train)
@@ -3852,7 +3916,7 @@ def run_stages(o: dict) -> dict:
     budget = SMOKE_BUDGET if o["smoke"] else budget_from_locked(lk)
     rules = o["rules"].split(","); sections = o["sections"].split(",")
     tuned = Path(o["tuned_dir"]) if o.get("tuned_dir") else None
-    params = {r: load_params(r, tuned, o["smoke"], cal.market_key, settings_hash(lk)) for r in rules}
+    params = {r: load_params(r, tuned, o["smoke"], cal.market_key, settings_hash(lk), cal.seeds) for r in rules}
     if not o["smoke"] and list(cal.seeds) != locked_seeds(lk, "calibration"):
         raise SystemExit("calibration must use the full calibration namespace for a real run (pass --smoke for a smoke run)")
     out = Path(o["out"]); out.mkdir(parents=True, exist_ok=True)
@@ -3925,7 +3989,7 @@ def run_stages(o: dict) -> dict:
                 counted["checks"] = counted.get("checks", 0) + int(rec["runs"])
                 write_json(out / "checks" / f"{rec['spec']['name']}.json", rec)
             write_json(out / "checks.json", results)
-        if stage == "all_deviators":
+        if stage == "all_deviators" and (o["stage"] == "all_deviators" or "all_deviators" in sections):
             specs = [c for c in manifest if c.section == "all_deviators" and c.rule in rules]
             adj = [job_for(c, lk, cal, base, params[c.rule], budget, o["smoke"]) for c in specs]
             results = list(pool.map(stage_all_deviators, adj))
@@ -3939,7 +4003,8 @@ def run_stages(o: dict) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--stage", required=True, choices=STAGES + ("all",))
-    ap.add_argument("--sections", default="development,rho_sweep,no_ban,h3")
+    ap.add_argument("--sections", default="development,rho_sweep,no_ban,h3,all_deviators",
+                    help="cell sections for the search stage; the all_deviators stage runs under --stage all only when listed here")
     ap.add_argument("--rules", default="B1,B2,B3")
     ap.add_argument("--calibration", required=True)
     ap.add_argument("--tuned-dir", dest="tuned_dir", default=None)
@@ -3958,8 +4023,10 @@ if __name__ == "__main__":
 
 ```python
 # scripts/bench_sweep.py
-"""The spec 5.3 gate: time every stage of sweep.py for the headline median D1, D2, and H3 cells of each
-baseline at the smoke budget, and extrapolate the pre-lock manifest. Exits 1 above 20 core-hours."""
+"""The spec 5.3 gate: time every cell stage of sweep.py (search, bank, reference, evaluate, checks) for the
+headline median D1, D2, and H3 cells of each baseline at the smoke budget, and extrapolate the pre-lock
+manifest. All-deviators is left out so the benchmark mix matches the manifest mix (it is 4% of the manifest
+and would be half of the benchmark). Exits 1 above 20 core-hours."""
 from __future__ import annotations
 
 import argparse, sys, tempfile, time
@@ -4057,10 +4124,11 @@ points (corners, the honest point, registered incumbents) are evaluated
 from knob dictionaries, never through the inverse transform; the archive
 keys points by their exact values.
 
-Registered starts (spec 5.3): near-honest (logit 0.02 on every coordinate,
-clip at logit 0.98); near-full-cheat (logit 0.98 on every coordinate, s and
-clip at logit 0.02); three scrambled Sobol points with seed
-`search.sobol_seed` from `locked.yaml`. Honest point: every bounded knob at
+Registered starts (spec 5.3), in this order: near-full-cheat (logit 0.98
+on every coordinate, s and clip at logit 0.02); near-honest (logit 0.02 on
+every coordinate, clip at logit 0.98); three scrambled Sobol points with
+seed `search.sobol_seed` from `locked.yaml`. A search with one restart
+(inner tuning, all-deviators) uses the first start only. Honest point: every bounded knob at
 its lower bound, every binary knob 0 except clip = 1; it reproduces
 honest-max (`tests/test_families.py`).
 
@@ -4078,12 +4146,13 @@ Append to section 14:
 ```
 Implementation (plan 2A, version 3 after two review rounds): identities
 separate from entities; a retired identity is not marked in the rule's
-view; replacement identities draw tie-break keys from their entity's
-per-round fresh_seed and their generation (`fresh_tie_keys`), and
-same-round entrants receive ids in a keyed random order, so a rule cannot
-link a successor to its predecessor beyond the timing of one identity
-going silent and one appearing (N is fixed), and decisions are invariant
-to relabeling with re-entry; an exit made in the action of round t takes
+view; replacement identities draw tie-break keys from a one-way BLAKE2b
+secret of their entity's per-round fresh_seed and their generation
+(`identity_secret`, `fresh_tie_keys`), retired ones from a secret of the
+round and identity, and same-round entrants receive ids in a keyed random
+order, so a rule cannot link a successor to its predecessor beyond the
+timing of one identity going silent and one appearing (N is fixed), and
+decisions are invariant to relabeling with re-entry; an exit made in the action of round t takes
 effect in round t (section 3 wording updated), which matches Proposition
 B; an exited identity's bans and bond keep their schedule as if it had
 stayed and stopped serving. Enforcement-ablation adapter
@@ -4105,9 +4174,11 @@ abstention. The bank holds every development cell's best-found attack and
 each target family's exact corners. Calibration of S_hat, n_FB, m bound to
 the market; every cell derives alpha = rho m and B = beta S_hat; the
 calibration seed namespace 4000-4019 is disjoint from dev-train 1000-1004
-and dev-val 2000-2019; a real sweep requires the full calibration
-namespace. Tuned parameters are bound by rule, market key, and a hash of
-the locked settings; the lock tooling (plan 2B) copies the tuned files and
+and dev-val 2000-2019; a real sweep and a non-quick tuning run require the
+full calibration namespace. Tuned parameters are bound by rule, market
+key, calibration seeds, and a hash of every locked setting; sweep records
+are bound by configuration, budget, mode, and cell, and every consumed
+record is checked; the lock tooling (plan 2B) copies the tuned files and
 the calibration into `locked.yaml` at the lock. Tuning rechecks search on
 dev-train and score on dev-val. All-deviators runs the attack and the
 matched twin procedure and evaluates both frozen profiles on dev-val.
@@ -4119,13 +4190,17 @@ is the single source of run counts: exact entries are asserted equal by
 `sweep.py`, bounds (bank, reference candidates, controls) are asserted as
 upper limits. Manifest at this version, pre-lock: development 744,240;
 rho sweep 94,470; no-ban 31,490; H3 49,155; controls 49,680 (bound);
-all-deviators 55,200; tuning 310,878; bank 58,160 (bound); total 1,393,273
+all-deviators 55,200; tuning 310,878; bank 33,840 (bound); total 1,368,953
 [the executor replaces these figures with the output of
 `scripts/manifest.py` and adds the measured ms per run and core-hours from
 `scripts/bench_sweep.py`; round 2 measured 45.7 ms per run on the search
 stage, B3 about 80 ms]; these figures supersede the prose totals in
 section 5.3 (tuning is 279 grid points, not 3 x 243; corners are counted
-per cell; bank and controls are bounds). Per-seed output rows carry the
+per cell and their values are reused in the bank pass; bank and controls
+are bounds). Registered start order is near-full-cheat, near-honest,
+Sobol, so one-restart searches (inner tuning, all-deviators) start where
+cheating is reachable; the best exact corner replaces a cell's attack
+incumbent when it scores higher, in every cell including H3. Per-seed output rows carry the
 section 7 metrics and the section 4.0 refund and forfeit split
 (`sim/reference.py::ROW_FIELDS`), and the selected reference's name.
 ```
@@ -4169,4 +4244,4 @@ git commit -m "docs: plan 2A implementation note with rulings and manifest figur
 
 **Review Focus.** Item 1: Task 2 `test_rule_view_does_not_reveal_exit_or_successor`, `test_relabeling_with_reentry_relabels_decisions`. Item 2: Task 2 `test_banned_identity_can_still_exit_and_fresh_identity_is_not_banned`, `test_exit_does_not_change_ban_or_bond_schedule`. Item 3: Task 4 `test_make_returns_fresh_instances`. Item 4: Task 6 `test_flat_objective_terminates_and_counts`, Task 7 `test_abstention_wins_when_everything_loses_money`. Item 5: Task 6 `test_corner_controls_use_exact_knobs_at_tier_boundaries`. Item 6: Task 7 `test_gain_on_other_seeds_subtracts_reference_on_those_seeds`. Item 7: Task 9 `test_cell_config_refuses_foreign_calibration`, Task 13 `test_sweep_refuses_untuned_run_without_smoke_flag`, `test_sweep_refuses_unbound_tuned_file_and_partial_calibration`.
 
-**Rulings carried in this plan (for the executor's ledger and the spec note):** (R1) exits take effect in the round the policy makes them, and the section 3 sentence is updated; (R2) retired identities are not marked in the view; (R3) abstention is first in the registered candidate order; (R4) the twin search has no incumbents so that check (d) stays a diagnostic; (R5) the projection of the best point is always evaluated so the exact schedule entries stay exact; (R6) the H3 cell is a full cell over D2+H3 (D2 plus the exit knob x), whose honest point is honest-max; (R7) bank members come from development cells plus each target family's corners, and the bank pass targets every D1 and D2 cell including rho-sweep and no-ban cells; (R8) tuning runs at `beta_headline` and the default rho; (R9) the doubling check gives each clip-fixed search half of one extra base budget and starts from the bank-finalized attack; (R10) a calibration seed namespace exists next to the three of section 6; (R11) before the lock, tuned files and the calibration are bound to the market key and the settings hash, and the lock tooling of plan 2B writes them into `locked.yaml`; (R12) the all-deviators gain is the per-provider difference between the attack profile and the twin profile on dev-val; (R13) same-round entrants get ids in a keyed random order.
+**Rulings carried in this plan (for the executor's ledger and the spec note):** (R1) exits take effect in the round the policy makes them, and the section 3 sentence is updated; (R2) retired identities are not marked in the view; (R3) abstention is first in the registered candidate order; (R4) the twin search has no incumbents so that check (d) stays a diagnostic; (R5) the projection of the best point is always evaluated so the exact schedule entries stay exact; (R6) the H3 cell is a full cell over D2+H3 (D2 plus the exit knob x), whose honest point is honest-max; (R7) bank members come from development cells plus each target family's corners, and the bank pass targets every D1 and D2 cell including rho-sweep and no-ban cells; (R8) tuning runs at `beta_headline` and the default rho; (R9) the doubling check gives each clip-fixed search half of one extra base budget and starts from the bank-finalized attack; (R10) a calibration seed namespace exists next to the three of section 6; (R11) before the lock, tuned files and the calibration are bound to the market key and the settings hash, and the lock tooling of plan 2B writes them into `locked.yaml`; (R12) the all-deviators gain is the per-provider difference between the attack profile and the twin profile on dev-val; (R13) same-round entrants get ids in a keyed random order; (R14) the registered start order is near-full-cheat, near-honest, three Sobol, so a one-restart attack search can reach a cheating point; (R15) the best exact corner control replaces a cell's attack incumbent when it scores higher, in every cell including H3, and the bank pass reuses the corner values of the search stage.
