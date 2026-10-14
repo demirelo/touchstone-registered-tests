@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 4.4, after eight rounds of three-model review (Fable
+Date: 2026-10-14. Version 4.5, after nine rounds of three-model review (Fable
 5.1, Opus 5.5, Astra) and one external read (GPT Pro). Status: draft for
 review. Section 14 maps review objections to changes.
 
@@ -425,7 +425,10 @@ exists. The lock commit contains:
   and the H3 policy are built and tested on development families before the
   lock. After the evaluation freeze, `check_claim.py` compares allow-listed
   files to the freeze tag instead, and refuses any tracked file that is new
-  since the lock and outside the allow-list;
+  since the lock and outside the allow-list. `sealed/` and
+  `sealed/patches/` are excluded from both tag comparisons, because they
+  arrive after the freeze: `sealed/` is checked against the bundle hash in
+  the lock commit, and each patch against its own logged hash;
 - `scripts/check_claim.py` with the predicate of section 8 and the final
   threshold numbers, tested on synthetic CSVs;
 - the coverage-study report (section 8) and its pre-registered consequences
@@ -851,3 +854,9 @@ Round 8 (4.2 to 4.3):
   minimum there.
 - All-deviators count, lock list wording, README adversary wording (Opus):
   corrected.
+
+Round 9 (4.4 to 4.5):
+
+- Blanket freeze-tag comparison contradicted the sealed-folder hash check
+  (Astra): sealed paths excluded from tag comparison and checked by their
+  hashes; README names the exception.

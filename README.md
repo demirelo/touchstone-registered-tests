@@ -109,7 +109,8 @@ Two freezes.
    its rule description are frozen in a second signed tag. Everything else
    was already fixed by the lock tag, except a named allow-list (the
    proposed-rule module, its config and description, the plot script, and
-   docs). Held-out families run only after this
+   docs), and the sealed bundle and its logged repair patches, which are
+   checked by their own hashes. Held-out families run only after this
    tag.
 
 Lock commit: _not yet locked_. Freeze commit: _not yet frozen_.
