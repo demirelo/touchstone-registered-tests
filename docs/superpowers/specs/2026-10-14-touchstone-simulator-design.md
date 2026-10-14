@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 6.3, after thirteen rounds of three-model review
+Date: 2026-10-14. Version 6.4, after thirteen rounds of three-model review
 (Fable 5.1, Opus 5.5, Astra) and three external reads (GPT Pro). Status:
 draft for review. Section 14 maps review objections to changes.
 
@@ -136,11 +136,16 @@ class Mechanism:
     def allocate(self, jobs, offers, state) -> Assignment
     def price(self, assignment, offers, state) -> Payments
     def audit(self, assignment, state, budget_left) -> list[JobId]
-    def enforce(self, audit_results, state) -> State
+    def enforce(self, audit_results, state) -> (Consequences, PolicyMemory)
     def describe(self) -> RuleDescription   # section 5.4
 ```
 
-`offers` carries claims and bids only. `state` is the operator's memory:
+`offers` carries claims and bids only. `enforce` returns the consequences
+it imposes (from the section 4.0 menu) and the rule's own policy memory;
+the harness ledger applies the consequences to the economic fields of
+`state` (bans, hold-back balances, releases, forfeits, receipts), which a
+rule reads but never writes. The output-type test of section 12 checks the
+consequences object. `state` is the operator's memory:
 per-identity history of claims, allocations, audits, failures, payments,
 bans, and held-back balances, plus the remaining audit budget.
 
@@ -666,54 +671,56 @@ universe of 18 development cells at beta = 0.05 (3 baselines x 2 families x
 3 positions), take the top 3 by per-seed skewness of gain and the top 3 by
 the Sarle bimodality coefficient of per-seed ban counts on dev-train seeds,
 filling ties or overlaps from the other ranking, for 6 distinct cells;
-selected by that mechanical rule, not by hand; for each, a
-high-precision reference mean from a dedicated 2,000-seed pool inside the
-dev-val range; 2,000 replications of each bound procedure, each drawing
-the final sample size from a fresh disjoint dev-val sub-range (about 0.5
-million runs, in the manifest, outside the 20 core-hour search gate); the
-four (statistic, side, level) triples the predicate uses: gain upper 95%,
-gross efficiency lower 95%, inflation-caused-loss difference lower 98.75%
-with a baseline pair (B2 versus B3) standing in for the proposed rule, and
-gain lower 98.75%; empirical coverage reported with its Monte Carlo
-standard error (about 0.5 points at 2,000 replications). The remedy order
-is percentile bootstrap, then studentized bootstrap, then 40 seeds with the
-studentized bootstrap. The reference mean is itself an estimate: its
-standard error from the 2,000-seed pool is reported separately from the
-replication error, and admission is scored conservatively over a 95%
-interval for the reference mean (an upper bound against the interval's
-upper endpoint, a lower bound against its lower endpoint). That scoring
-penalizes even an exactly calibrated bound by about phi(z) * 1.96 *
-sqrt(n / M) points, so the admission threshold is not the nominal level.
-It is calibrated over repeated reference pools, because the reference
-pool's own error is the dominant term and more replications cannot remove
-it. Calibration: an analytic fixture (normal observations with known mean,
-an exact one-sided t bound at the same n and level) is run through the
-complete decision path, including a freshly simulated M-seed reference
-pool and the same endpoint scoring, with 2,000 replications per pool, for
-R = 200 independent calibration pools. The admission threshold for each
-(n, level, side) is the 10th percentile of the exact procedure's measured
-conservative coverage across those pools, so the exact procedure is
-admitted with probability about 0.9 per endpoint by construction.
-Validation: the same procedure is then run on 50 further independent
-pools not used for calibration; the admission rate must be at least 0.85
-per endpoint and the joint admission over all tested endpoints of a cell
-at least 0.6. If validation fails, M is doubled (at most twice) and the
-threshold is recalibrated; if validation still fails after the last
-doubling, the interval procedure is recorded as not admissible at that
-(n, level), and every clause that depends on it is exploratory. A
-procedure is admitted at a cell if its conservative coverage is at least
-the threshold at every tested endpoint. "Too wide to decide" means the
-measured coverage is within two Monte Carlo standard errors of the
-threshold; then the reference pool is doubled, at most twice, and if
-still undecided the procedure is not admitted. Reference error and
-replication error are reported separately. Fixture calibration and
-validation runs are in the manifest. Degenerate
-inputs: a cell with zero variance in the ranking statistic (for example B1
-ban counts) is excluded from that ranking, undefined moments rank last,
-and if a ranking is exhausted the other ranking fills. The paper states
-that this calibrates the procedures on development distributions and is
-not a guarantee for the unseen held-out distributions under the later
-rule.
+selected by that mechanical rule, not by hand. Degenerate inputs: a cell
+with zero variance in the ranking statistic (for example B1 ban counts) is
+excluded from that ranking, undefined moments rank last, and if a ranking
+is exhausted the other ranking fills.
+
+Reference means. One reference pool per cell, shared by every sample size
+n, because the pool estimates the per-seed mean and does not depend on n:
+M = 35,000 dev-val seeds per cell (about 210,000 runs, in the manifest,
+outside the search gate). At that size the coverage error induced by the
+pool, about phi(z) * sqrt(n / M), is at most 0.35 points at n = 40. The
+pool standard error is reported next to the replication standard error.
+
+Replications. R = 2,000 replications of each bound procedure per cell and
+endpoint (R = 4,000 at n = 40), each drawing the final sample size from a
+fresh disjoint dev-val sub-range. Coverage is scored conservatively
+against a 95% interval for the reference mean (an upper bound against the
+interval's upper endpoint, a lower bound against its lower endpoint).
+
+Endpoints. The four (statistic, side, level) triples the predicate uses:
+gain upper 95%, gross efficiency lower 95%, inflation-caused-loss
+difference lower 98.75% with a baseline pair (B2 versus B3) standing in
+for the proposed rule, and gain lower 98.75%.
+
+Threshold. For each (n, level, side) the threshold is the expected
+conservative coverage of an exactly calibrated procedure under this
+scoring, computed analytically from the noncentral t distribution and
+checked by averaging an exact one-sided t bound on normal data over 200
+simulated pools of size M with 20,000 replications each, minus a margin:
+1.5 points at n = 10 and n = 20, 1.75 points at n = 40. There is no "too
+wide" band and no pool doubling: a procedure is admitted at a cell if its
+measured conservative coverage is at least the threshold at every tested
+endpoint, and admitted overall if it is admitted at every cell.
+
+Joint fixture test, pre-registered. The exact procedure is pushed through
+the complete joint gate (6 cells x 4 endpoints, one shared threshold per
+endpoint, fresh pools and replications) 200 times; it must be admitted
+overall with probability at least 0.9. If it is not, the remedy order is:
+double M (once), then double R (once); if the joint test still fails, the
+interval procedure is recorded as not admissible at that (n, level) and
+every clause that depends on it is exploratory. The paper reports the
+measured joint admission probability. The alternative of keeping M = 2,000
+with a margin of z(1 - 0.1 / 24) * sqrt(SE_rep^2 + SE_pool^2) (about 2.7
+points at n = 20 and 3.7 at n = 40) is not used, because it has little
+power to reject an undercovering bootstrap.
+
+The remedy order for the interval procedure itself is percentile
+bootstrap, then studentized bootstrap, then 40 seeds with the studentized
+bootstrap. The paper states that this calibrates the procedures on
+development distributions and is not a guarantee for the unseen held-out
+distributions under the later rule.
 
 Pre-registered consequences. The H1 admission is a proxy calibration: the
 10-observation t bound is tested on the D1/D2 development distributions at
@@ -785,8 +792,8 @@ attack policy and exact-corner control from every (rule, family, budget)
 cell is stored; then for each cell every bank member is evaluated once on
 dev-train seeds against that cell's frozen rule, through a typed
 compatibility filter (a D1 member enters a D2 cell through d = r = 0; a D2
-member never enters a D1 cell; truthful members with clip = 1 also enter
-reference selection, section 5.2), and the incumbent is replaced if a
+member never enters a D1 cell; members that are truthful by behaviour
+also enter reference selection, section 5.2), and the incumbent is replaced if a
 member scores higher on the normalized objective; a transfer table reports
 how each rule fares against attacks found elsewhere. The
 bank does not seed H2 unless the sealed H2 definition declares an embedding
@@ -1208,3 +1215,17 @@ Round 13 (6.2 to 6.3):
   limit and terminal exploratory outcome.
 - "Gain at least 0 by construction" was false (Astra): removed; the
   projection also enters attack selection; negative gain reported.
+
+Round 13, second pass (6.3 to 6.4):
+
+- The calibrated gate still rejected exact procedures: pool variance at
+  M = 2,000 (SD up to 1.46 points at n = 40), a one-run threshold, and a
+  two-sided "too wide" band that could not shrink (Opus, by simulation;
+  Astra's percentile fix in 6.3 addressed only part of it): one 35,000-seed
+  pool per cell shared across n; analytic expected-coverage threshold
+  checked over 200 pools; margins 1.5/1.5/1.75 points; no "too wide" band,
+  no pool doubling; joint fixture test across all cells and endpoints at
+  0.9 with remedy order M then R and a terminal exploratory outcome.
+- Bank filter still said clip = 1 (Opus): truthful by behaviour.
+- Interface still returned a whole State from enforce (Opus): returns
+  consequences and policy memory; the ledger owns economic fields.
