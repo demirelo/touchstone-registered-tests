@@ -50,7 +50,7 @@ must be dated and must explain which number moved and why.
 
 A simulated compute market with a trusted operator.
 
-- Buyers have workloads, budgets, and a value that depends on delivered quality.
+- Buyers have jobs and a value per unit of delivered quality. They are passive.
 - Providers have a true quality, a claimed quality, and a cost.
 - The operator allocates workloads, pays providers, and spends an audit budget
   to verify claims.
