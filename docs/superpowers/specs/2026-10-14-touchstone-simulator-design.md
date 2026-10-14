@@ -1,8 +1,8 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 5.4, after eleven rounds; three-seat consensus re-established after the second external read of three-model review
-(Fable 5.1, Opus 5.5, Astra) and two external reads (GPT Pro). Status: draft
-for review. Section 14 maps review objections to changes.
+Date: 2026-10-14. Version 6, after eleven rounds of three-model review
+(Fable 5.1, Opus 5.5, Astra) and three external reads (GPT Pro). Status:
+draft for review. Section 14 maps review objections to changes.
 
 ## 1. Goal
 
@@ -273,10 +273,26 @@ with the same budget, and its objective is the same normalized statistic
 the attacker uses: the mean over dev-train seeds of pi / (S* / N). The
 reference policy for a cell is one policy, chosen on dev-train seeds by that
 same normalized objective among the twin, honest-max, and abstention
-(profit 0); pi_ref on evaluation seeds is the per-seed profit of that one
-chosen policy, never a per-seed maximum. One preference ordering is used
-throughout, so subtracting the fixed reference does not change the
-attacker's ranking of candidates.
+(profit 0), and among every other admissible truthful candidate discovered
+for that cell before final evaluation: attack-search candidates with
+clip = 1 and truthful candidate-bank members that pass the family's
+compatibility filter. Reference selection is therefore the last step before
+evaluation, after the attack search and the bank pass, and gains and the
+headline position are recomputed with the finalized reference. Ties are
+broken deterministically by the registered candidate order. pi_ref on
+evaluation seeds is the per-seed profit of that one chosen policy, never a
+per-seed maximum, and the reference is fixed on evaluation seeds. One
+preference ordering is used throughout, so subtracting the fixed reference
+does not change the attacker's ranking of candidates.
+
+Decomposition, reported per cell on evaluation seeds with a registered
+interpretation rule: headline gain = (pi_attack - pi_clip) / (S* / N) +
+(pi_clip - pi_ref) / (S* / N), where pi_clip is the profit of the
+clipped-attack run (section 7). The first term is the profit effect of
+allowing inflation for the selected policy; the second is the difference
+between the clipped policy and the reference. Only the first term is ever
+described as profit from inflation. If the selected attacker is itself
+truthful the first term is zero and the paper says so.
 
 Containment. Every reference policy must be executable by the unrestricted
 attacker. For parametrized families this is enforced by construction: the
@@ -376,12 +392,14 @@ control) and its run count, and the gate is a benchmark of the full path
 through `sweep.py` for every baseline, not of one episode. Scope: the rho
 sweep runs at beta = 0.05 only, D2 and its twin, median position, every
 rule; H1 does not span rho. Expected counts at one rho: development 360,000;
-twins 360,000; tuning about 450,000 (3 rules x 243 grid points x (100
-attack + 100 twin) evaluations x 3 seeds = 437,400, plus 9 full
-re-checks); controls about 50,000; all-deviators about 72,000; candidate
-bank about 14,400; ablation re-search about 60,000. The two extra rho
-values add about 2 x 2 x 3 x 7,500 = 90,000. Total about 1.55 million
-runs. Gate: the pre-lock entries of the search manifest complete in under 20
+twins 360,000; tuning about 572,000 (3 rules x 243 grid points x (100
+attack + 100 twin) evaluations x 3 seeds = 437,400, plus 9 full re-checks
+at 15,000 each); controls about 50,000; all-deviators about 72,000;
+candidate bank about 46,000 (section 8); ablation about 90,000 (section
+8). The two extra rho values add about 2 x 2 x 3 x 7,500 = 90,000. Total
+about 1.65 million runs. These prose totals are generated from
+`manifest.py`, which separates pre-lock, post-lock, simulator, interval,
+and LLM workloads; the manifest is authoritative. Gate: the pre-lock entries of the search manifest complete in under 20
 core-hours, which needs a run under 45 ms; post-lock entries (bank and
 ablation against the proposed rule) are estimates. Cells are
 embarrassingly parallel. The coverage
@@ -588,7 +606,7 @@ computed per seed.
   is applied in episode 5 only, prompts that match a cached prompt replay
   from cache, prompts that differ because clipping changed allocation,
   payment, or bans are new calls, and those calls are in the cost budget
-  (worst case another 60,000). This is the intervention "same decision
+  (at most 12,000, since the clip applies in episode 5 only). This is the intervention "same decision
   procedure, inflation removed", not action replay, and the paper says so.
   A test runs a case where clipping changes the next prompt and asserts a
   new call is made.
@@ -647,14 +665,29 @@ with a baseline pair (B2 versus B3) standing in for the proposed rule, and
 gain lower 98.75%; empirical coverage reported with its Monte Carlo
 standard error (about 0.5 points at 2,000 replications). The remedy order
 is percentile bootstrap, then studentized bootstrap, then 40 seeds with the
-studentized bootstrap. Admission criterion: empirical coverage at least the
-nominal level minus 1 point, at every tested endpoint and cell. The paper
-states that this calibrates the procedures on development distributions
-and is not a guarantee for the unseen held-out distributions under the
-later rule.
+studentized bootstrap. The reference mean is itself an estimate: its
+standard error from the 2,000-seed pool is reported separately from the
+replication error, and admission is evaluated conservatively over a 95%
+interval for the reference mean (an upper bound is scored against the
+interval's upper endpoint, a lower bound against its lower endpoint). If
+that interval is too wide to decide, the reference pool is doubled under a
+registered rule, at most twice. An analytic fixture (normal observations
+with known mean) validates the study machinery itself. Admission
+criterion: conservative empirical coverage at least the nominal level minus
+1 point, at every tested endpoint and cell; the 1-point tolerance is an
+explicit engineering choice and does not absorb reference error. Degenerate
+inputs: a cell with zero variance in the ranking statistic (for example B1
+ban counts) is excluded from that ranking, undefined moments rank last,
+and if a ranking is exhausted the other ranking fills. The paper states
+that this calibrates the procedures on development distributions and is
+not a guarantee for the unseen held-out distributions under the later
+rule.
 
-Pre-registered consequences. H1 is confirmatory only if its 10-repetition
-bound meets the criterion; otherwise H1 is exploratory and the rule clause
+Pre-registered consequences. The H1 admission is a proxy calibration: the
+10-observation t bound is tested on the D1/D2 development distributions at
+sample size 10, because the H1 procedure cannot run before the freeze; the
+paper calls it that. H1 is confirmatory only if that proxy bound meets the
+criterion; otherwise H1 is exploratory and the rule clause
 uses H2 only. For the 20-seed bootstrap of parametrized families: if it
 fails the criterion, the locked remedy is a studentized bootstrap; if that
 fails, the final-eval namespace becomes 40 seeds and the manifest and gate
@@ -688,11 +721,18 @@ FAIL if all are FAIL, and INCONCLUSIVE otherwise:
 
 Enforcement-matched ablation, reported outside the predicate: the proposed
 rule's allocation and audit selection combined with B2's enforcement
-(refund plus ban at B2's tuned L, no hold-back), on the same cells. Only
-the consequence outputs of `enforce` are replaced; its state updates are
-kept. Against the ablated rule the twin is searched again, the reference
-is selected again, and the attack is searched again, all at the full
-budget. Cells: D1 and D2 at beta = 0.05, all three positions, median rho
+(refund plus ban at B2's tuned L, no hold-back); pricing and audit
+tolerance stay the proposed rule's. The consequence outputs of `enforce`
+are replaced, and the authoritative economic state (bans, hold-back
+balances, releases, forfeits, receipts) is recomputed from the consequences
+the ablation actually applies; only non-economic policy memory of the
+original rule is retained, and it operates on the counterfactual history.
+Ablation tests: actual exclusion duration equals B2's L, hold-back balance
+is zero throughout, and the ledger conserves cash. Because pricing and
+tolerance are retained, a retained win is attributed to the non-enforcement
+components collectively, not to allocation or audit selection alone.
+Against the ablated rule the twin is searched again, the reference is
+selected again, and the attack is searched again, all at the full budget. Cells: D1 and D2 at beta = 0.05, all three positions, median rho
 (2 families x 3 positions x 2 searches x 7,500 = 90,000 runs, in the
 manifest as a post-lock estimate). H2 is not ablated; the ablation is a
 development-family diagnostic. The paper attributes a win to allocation or
@@ -702,9 +742,12 @@ Candidate bank, registered before the lock, development families only.
 Order: a first search pass per cell without the bank; then every best-found
 attack policy and exact-corner control from every (rule, family, budget)
 cell is stored; then for each cell every bank member is evaluated once on
-dev-train seeds against that cell's frozen rule, and the incumbent is
-replaced if a member scores higher on the normalized objective; a transfer
-table reports how each rule fares against attacks found elsewhere. The
+dev-train seeds against that cell's frozen rule, through a typed
+compatibility filter (a D1 member enters a D2 cell through d = r = 0; a D2
+member never enters a D1 cell; truthful members with clip = 1 also enter
+reference selection, section 5.2), and the incumbent is replaced if a
+member scores higher on the normalized objective; a transfer table reports
+how each rule fares against attacks found elsewhere. The
 bank does not seed H2 unless the sealed H2 definition declares an embedding
 of D2, in which case the embedding is applied; otherwise the bank is a
 diagnostic for H2. Bank members found against the proposed rule exist only
@@ -1068,3 +1111,25 @@ Round 11 (5.2 to 5.3):
 
 Consensus (round 11) on version 5.3: Fable 5.1 accept-with-caveat, Opus
 5.5 accept, Astra accept-with-caveat. No material objection outstanding.
+
+Third external read (GPT Pro, on 5.4) and the changes in version 6:
+
+- Coverage gate treated a 2,000-seed reference mean as truth; a calibrated
+  bound could fail the 94% threshold from reference error alone:
+  reference-mean interval, conservative scoring, separate error reporting,
+  registered pool doubling, analytic fixture.
+- Ablation kept state updates that could re-impose the original bans or
+  fictitious bond balances: economic state recomputed from applied
+  consequences; tests; attribution to non-enforcement components
+  collectively.
+- Candidate bank could install a better truthful policy as the attack
+  while the reference stayed stale (construction: two truthful tier-3
+  policies differing only in effort): reference selection is the last
+  step and includes every discovered truthful candidate; typed
+  compatibility filter; deterministic ties.
+- H1 coverage admission is a proxy calibration and is labeled so;
+  degenerate ranking inputs defined.
+- Stale workload counts: generated from the manifest; 12,000 H1
+  counterfactual calls stated consistently.
+- Gain decomposition into inflation effect and clipped-versus-reference
+  difference, reported with a registered interpretation rule.
