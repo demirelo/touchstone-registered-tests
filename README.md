@@ -128,10 +128,14 @@ Three layers, bottom to top:
    commodity with standard delivery terms. Regulatory and contract-design work
    lives here.
 
-Related prior work by the author (links to be added):
+Related prior work by the author:
 
-- Proof-of-demand and proof-of-useful-work work: layer 1 input.
-- Commodity-market and regulatory work: layer 3 consumer of this project.
+- `../touchstone-meter`: buyer-side auditor for paid inference (model, precision,
+  token billing). A layer 1 primitive. It measures one audit; this project
+  decides when to spend one.
+- Proof-of-demand and proof-of-useful-work work: layer 1 input (link to add).
+- Commodity-market and regulatory work: layer 3 consumer of this project
+  (link to add).
 
 ## Prior art
 
