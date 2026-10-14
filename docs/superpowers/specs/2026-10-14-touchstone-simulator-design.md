@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 7, after fourteen rounds of three-model review
+Date: 2026-10-14. Version 7.1, after fifteen rounds of three-model review
 (Fable 5.1, Opus 5.5, Astra) and four external reads (GPT Pro). Status:
 draft for review. Section 14 maps review objections to changes.
 
@@ -725,8 +725,15 @@ Threshold. For each (n, level, side) the threshold is the expected
 conservative coverage of an exactly calibrated procedure under this
 scoring, computed analytically from the noncentral t distribution and
 checked by averaging an exact one-sided t bound on normal data over 200
-simulated pools of size M with 20,000 replications each, minus a margin:
-1.5 points at n = 10 and n = 20, 1.75 points at n = 40. There is no "too
+simulated pools of size M with 20,000 replications each, minus a margin
+set per level, because the binomial spread of measured coverage is about
+twice as large at 95% as at 98.75%: at 95%, 1.5 points at n = 10 and
+n = 20 and 1.75 points at n = 40; at 98.75%, 0.75 points at n = 10 and
+n = 20 and 0.9 points at n = 40. On the normal fixture (400 independent
+pools per row) these margins give per-endpoint false rejection of an exact
+procedure at or below 0.5% and rejection of the negative control of the
+power paragraph at or above 0.98 at every n and level; the joint fixture
+test below is the binding check. There is no "too
 wide" band and no routine pool doubling (the only doubling is the
 joint-fixture remedy below): a procedure is admitted at a cell if its
 measured conservative coverage is at least the threshold at every tested
@@ -739,7 +746,9 @@ the true joint admission probability, not the observed rate: the exact
 one-sided lower confidence limit of the admitted count must be at least
 0.9, at level 1 - 0.05 / 3 because at most three attempts are allowed
 (the initial test and the two remedies). At 200 trials that means at
-least 189 admissions on a single attempt. If the test fails, the remedy
+least 190 admissions on a single attempt (the Clopper-Pearson lower limit
+is 0.9063 at 190 and 0.8999 at 189); the limit is computed directly, the
+count is only a reading aid. If the test fails, the remedy
 order is: double M (once), then double R (once); if the joint test still
 fails, the interval procedure is recorded as not admissible at that n,
 both levels, and every clause that depends on it is exploratory. The paper
@@ -753,7 +762,11 @@ power is reported for a predeclared negative control, an exact t bound
 run at a critical value whose true coverage is the nominal level minus the
 target deficit, pushed through the complete admission procedure on
 synthetic observations; the control must be rejected at a single cell and
-endpoint with probability at least 0.8. The alternative of keeping M = 2,000
+endpoint with probability at least 0.8, on the same attempt as the
+fixture test. If after the two remedies either the fixture admission or
+the control power requirement is unmet at some n, the interval procedure
+is recorded as not admissible at that n, both levels, and every clause
+that depends on it is exploratory. The alternative of keeping M = 2,000
 with a margin of z(1 - 0.1 / 24) * sqrt(SE_rep^2 + SE_pool^2) (about 2.7
 points at n = 20 and 3.7 at n = 40) is not used, because it has little
 power to reject an undercovering bootstrap.
@@ -834,8 +847,8 @@ attack policy and exact-corner control from every (rule, family, budget)
 cell is stored; then for each cell every bank member is evaluated once on
 dev-train seeds against that cell's frozen rule, through a typed
 compatibility filter (a D1 member enters a D2 cell through d = r = 0; a D2
-member never enters a D1 cell; members that are truthful by behaviour
-also enter reference selection, section 5.2), and the incumbent is replaced if a
+member never enters a D1 cell; every compatible member enters reference
+selection in projected form, section 5.2), and the incumbent is replaced if a
 member scores higher on the normalized objective; a transfer table reports
 how each rule fares against attacks found elsewhere. The
 bank does not seed H2 unless the sealed H2 definition declares an embedding
@@ -1309,3 +1322,15 @@ Fourth external read (GPT Pro, on 6.6) and the changes in version 7:
 - The gate's threshold construction was checked analytically (noncentral
   t; thresholds about 93.2, 93.0, 92.5 at 95% and 97.2, 97.1, 96.8 at
   98.75% for n = 10, 20, 40) and found consistent.
+
+Round 15 (7 to 7.1):
+
+- The 98.75% margin (1.75 points at n = 40) exceeded the 1.5-point deficit
+  the gate claimed to detect, so the power requirement was unmeetable
+  (Astra, by numerical integration: power 0.61, 0.61, 0.44): margins set
+  per level, 0.75/0.75/0.9 at 98.75%; simulated false rejection <= 0.5%
+  and power >= 0.98; terminal outcome if either requirement fails.
+- 189 of 200 did not meet the corrected confidence limit (Astra): 190; the
+  limit is computed directly.
+- Bank paragraph still admitted members by observed truthfulness (Astra):
+  projected form.
