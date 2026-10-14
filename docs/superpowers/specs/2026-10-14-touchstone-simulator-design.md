@@ -1,9 +1,8 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 6.6, after fourteen rounds of three-model review
-(Fable 5.1, Opus 5.5, Astra) and three external reads (GPT Pro); three-seat
-consensus re-established after the third external read. Status: draft for
-review. Section 14 maps review objections to changes.
+Date: 2026-10-14. Version 7, after fourteen rounds of three-model review
+(Fable 5.1, Opus 5.5, Astra) and four external reads (GPT Pro). Status:
+draft for review. Section 14 maps review objections to changes.
 
 ## 1. Goal
 
@@ -281,11 +280,17 @@ the attacker uses: the mean over dev-train seeds of pi / (S* / N). The
 reference policy for a cell is one policy, chosen on dev-train seeds by that
 same normalized objective among the twin, honest-max, and abstention
 (profit 0), and among every other admissible truthful candidate discovered
-for that cell before final evaluation: any attack-search candidate or
-compatible candidate-bank member whose market-facing claim is at most its
-effort in every round of its dev-train runs, whatever its clip value, and
-the clip = 1 projection of the selected attack evaluated on dev-train
-seeds. Reference selection is therefore the last step before
+for that cell before final evaluation. A candidate is admitted only in its
+projected form: the clip = 1 version of any attack-search candidate or
+compatible candidate-bank member, and the clip = 1 projection of the
+selected attack, each evaluated on dev-train seeds. "No inflation observed
+on dev-train runs" is a diagnostic, never a certification: an adaptive
+policy can be truthful on every development history and inflate on an
+evaluation history, and an unprojected candidate selected as reference
+could then cheat on evaluation seeds while its own gain reads zero. The
+projection enforces claim <= effort on every reachable history; on
+trajectories where the candidate never inflated it changes nothing under
+the same randomness. Reference selection is therefore the last step before
 evaluation, after the attack search and the bank pass, and gains and the
 headline position are recomputed with the finalized reference. Ties are
 broken deterministically by the registered candidate order. pi_ref on
@@ -391,7 +396,12 @@ Search checks, reported in the paper: (a) on a fixed B1 fixture in which
 every job accepts tier 3, P3 > a_i, and the focal provider has positive
 expected allocation, the search must recover the analytic best response
 (claim 1, effort 0) within 1% of its profit; (b) on two cells per rule,
-doubling the budget changes best-found gain by less than 0.5 points; (c) the
+doubling the budget changes best-found gain by less than 0.5 points, and
+the doubled budget is split between a search with clip fixed at 0 and a
+search with clip fixed at 1 on the same dev-train seeds, whose best values
+are compared with the mixed-coordinate incumbent, so that a low reported
+gain can be checked against the optimizer's handling of the discrete clip
+choice; (c) the
 spread of best-found gain across restarts; (d) the twin's objective is never
 below honest-max's by more than 1%.
 
@@ -669,8 +679,14 @@ rule annotated. Figure 2: efficiency quadruple against audit spend.
 Interval algorithms, locked. Parametrized families: percentile bootstrap on
 the per-seed paired statistic, 10,000 resamples, seed as the resampling
 unit, one-sided; if all per-seed values are identical the bound equals that
-value and the cell is flagged degenerate. H1: one-sided t bound on 10
-repetitions, or the bootstrap if the coverage study selects it.
+value and the cell is flagged degenerate. Studentized bootstrap, when the
+remedy selects it: bootstrap-t with each resample studentized by the
+standard error of its own mean; a resample with zero estimated standard
+error uses the full-sample standard error. H1: one-sided t bound on 10
+repetitions, always; the coverage study decides only whether that bound is
+admitted. Reference-mean interval in the coverage study: the ordinary
+two-sided t interval at 95% on the M-seed pool. The analytic fixture uses
+these same definitions.
 
 Coverage study, pre-lock, on dev-val seeds. Locked design: from the
 universe of 18 development cells at beta = 0.05 (3 baselines x 2 families x
@@ -695,10 +711,15 @@ fresh disjoint dev-val sub-range. Coverage is scored conservatively
 against a 95% interval for the reference mean (an upper bound against the
 interval's upper endpoint, a lower bound against its lower endpoint).
 
-Endpoints. The four (statistic, side, level) triples the predicate uses:
-gain upper 95%, gross efficiency lower 95%, inflation-caused-loss
-difference lower 98.75% with a baseline pair (B2 versus B3) standing in
-for the proposed rule, and gain lower 98.75%.
+Endpoints. Every (statistic, side, level) triple that `check_claim.py`
+uses for either PASS or FAIL, eight in all: gain upper and lower 95%,
+gross efficiency lower and upper 95%, inflation-caused-loss difference
+lower and upper 98.75% with a baseline pair (B2 versus B3) standing in for
+the proposed rule, and gain lower and upper 98.75%. A FAIL verdict uses
+the opposite side of the PASS bound, and a one-sided procedure can be
+conservative on one side and undercover on the other (a Bernoulli mixture
+with 20 seeds shows it), so both sides are validated. The extra sides
+reuse the same seed-level observations and resamples.
 
 Threshold. For each (n, level, side) the threshold is the expected
 conservative coverage of an exactly calibrated procedure under this
@@ -712,13 +733,27 @@ measured conservative coverage is at least the threshold at every tested
 endpoint, and admitted overall if it is admitted at every cell.
 
 Joint fixture test, pre-registered. The exact procedure is pushed through
-the complete joint gate (6 cells x 4 endpoints, one shared threshold per
-endpoint, fresh pools and replications) 200 times; it must be admitted
-overall with probability at least 0.9. If it is not, the remedy order is:
-double M (once), then double R (once); if the joint test still fails, the
-interval procedure is recorded as not admissible at that n, both levels, and
-every clause that depends on it is exploratory. The paper reports the
-measured joint admission probability. The alternative of keeping M = 2,000
+the complete joint gate (6 cells x 8 endpoints, one shared threshold per
+endpoint, fresh pools and replications) 200 times. The requirement is on
+the true joint admission probability, not the observed rate: the exact
+one-sided lower confidence limit of the admitted count must be at least
+0.9, at level 1 - 0.05 / 3 because at most three attempts are allowed
+(the initial test and the two remedies). At 200 trials that means at
+least 189 admissions on a single attempt. If the test fails, the remedy
+order is: double M (once), then double R (once); if the joint test still
+fails, the interval procedure is recorded as not admissible at that n,
+both levels, and every clause that depends on it is exploratory. The paper
+reports the observed admission count and its confidence limit.
+
+Power, pre-registered. The gate is intended to detect a coverage deficit of
+at least 3 points at nominal 95% and 1.5 points at nominal 98.75%; smaller
+deficits lie inside the admission margin by design, and the paper says
+that passing the gate does not establish nominal coverage. Rejection
+power is reported for a predeclared negative control, an exact t bound
+run at a critical value whose true coverage is the nominal level minus the
+target deficit, pushed through the complete admission procedure on
+synthetic observations; the control must be rejected at a single cell and
+endpoint with probability at least 0.8. The alternative of keeping M = 2,000
 with a margin of z(1 - 0.1 / 24) * sqrt(SE_rep^2 + SE_pool^2) (about 2.7
 points at n = 20 and 3.7 at n = 40) is not used, because it has little
 power to reject an undercovering bootstrap.
@@ -823,8 +858,10 @@ B1 is reported but is not part of the predicate, because it spends no audit
 budget.
 
 Decision rule per clause: PASS if the stated one-sided bound clears the
-threshold; FAIL if the opposite one-sided bound at the same level misses it;
-INCONCLUSIVE otherwise. The claim is PASS only if every clause is PASS, FAIL
+threshold and that side was admitted by the coverage study; FAIL if the
+opposite one-sided bound at the same level misses it and that side was
+admitted; INCONCLUSIVE otherwise, including whenever the needed side was
+not admitted. The claim is PASS only if every clause is PASS, FAIL
 if any clause is FAIL, and INCONCLUSIVE otherwise. INCONCLUSIVE counts as
 not PASS for the kill criteria and is reported.
 
@@ -1249,3 +1286,26 @@ Consensus (round 14) on version 6.4/6.5: Fable 5.1 accept-with-caveat,
 Opus 5.5 accept (gate re-simulated: joint admission 0.968, 0.927, 0.990
 at n = 10, 20, 40), Astra accept-with-caveat (independent check: 0.96,
 0.93, 0.99). No material objection outstanding.
+
+Fourth external read (GPT Pro, on 6.6) and the changes in version 7:
+
+- "Truthful on dev-train runs" admitted unprojected adaptive candidates
+  that can inflate on evaluation histories, so a cheating reference could
+  read zero gain (construction with a one-audit trigger): every reference
+  candidate is admitted in projected form only; observed truthfulness is
+  a diagnostic.
+- FAIL used opposite-side bounds the gate never validated (Bernoulli
+  mixture: lower side conservative, upper side undercovers): all eight
+  sides validated from the same resamples; FAIL only on admitted sides,
+  else INCONCLUSIVE.
+- The 200-trial joint test estimated an admission rate, it did not bound
+  it: exact one-sided lower confidence limit at least 0.9, corrected for
+  three attempts (189 of 200).
+- The gate's tolerated deficit and its power were unstated: target deficit
+  stated; negative-control power reported.
+- Reference-interval, studentizer, zero-SE, and H1-branch conventions
+  named.
+- Clip-split search diagnostic added to the existing doubled-budget check.
+- The gate's threshold construction was checked analytically (noncentral
+  t; thresholds about 93.2, 93.0, 92.5 at 95% and 97.2, 97.1, 96.8 at
+  98.75% for n = 10, 20, 40) and found consistent.
