@@ -118,7 +118,7 @@ Lock commit: _not yet locked_. Freeze commit: _not yet frozen_.
 Stop the project if either of these holds at the end of week 5:
 
 - All rules produce the same curve within seed noise.
-- A plain random-audit rule dominates every proposed rule.
+- A plain random-audit rule dominates the proposed rule.
 
 Either outcome is a cheap, honest answer.
 
