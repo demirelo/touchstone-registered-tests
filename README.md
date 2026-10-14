@@ -25,8 +25,9 @@ formal predicate lives in the design spec, section 8, and in
 > position** (for H2, selected on training seeds from three pre-registered
 > positions; for H1, the median position) at or below **0.30 of the mean
 > first-best surplus per provider** (upper 95% bound), where gain is profit
-> beyond a **chosen truthful reference policy** (its matched truthful twin,
-> honest-max, or abstention, selected per cell on training seeds), against the
+> beyond a **chosen truthful reference policy** (the best on training seeds
+> among its matched truthful twin, honest-max, abstention, and every
+> truthful candidate the search discovered, selected last), against the
 > **sealed held-out adversary families that the pre-lock coverage study
 > admits as confirmatory**, under a pre-registered search whose objective
 > is that same gain statistic (for the LLM family, a fixed five-episode

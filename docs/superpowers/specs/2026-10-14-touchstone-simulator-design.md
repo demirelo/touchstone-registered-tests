@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 6.1, after twelve rounds of three-model review
+Date: 2026-10-14. Version 6.2, after twelve rounds of three-model review
 (Fable 5.1, Opus 5.5, Astra) and three external reads (GPT Pro). Status:
 draft for review. Section 14 maps review objections to changes.
 
@@ -239,8 +239,9 @@ pre-registered reduced procedure:
   5.5%, 0.8%, 0.07% at sigma = 0.05) and L in {10, 20, 50}, so a long ban is
   not an advantage reserved for the proposed rule;
 - inner search: D2 at the median position, 1 restart x 100 evaluations x 3
-  dev-train seeds, with its truthful twin (section 5.2) searched first at
-  the same budget;
+  dev-train seeds, with its truthful twin (section 5.2) searched at the
+  same budget and the reference selected last by the section 5.2 rule over
+  the candidates that inner search discovered;
 - objective: the smaller of the two normalized predicate margins at
   beta = 0.05, min((gross efficiency - 0.90) / 0.90, (0.30 - gain) / 0.30);
 - the top 3 grid points are re-checked at the full search budget of section
@@ -274,9 +275,11 @@ the attacker uses: the mean over dev-train seeds of pi / (S* / N). The
 reference policy for a cell is one policy, chosen on dev-train seeds by that
 same normalized objective among the twin, honest-max, and abstention
 (profit 0), and among every other admissible truthful candidate discovered
-for that cell before final evaluation: attack-search candidates with
-clip = 1 and truthful candidate-bank members that pass the family's
-compatibility filter. Reference selection is therefore the last step before
+for that cell before final evaluation: any attack-search candidate or
+compatible candidate-bank member whose market-facing claim is at most its
+effort in every round of its dev-train runs, whatever its clip value, and
+the clip = 1 projection of the selected attack evaluated on dev-train
+seeds. Reference selection is therefore the last step before
 evaluation, after the attack search and the bank pass, and gains and the
 headline position are recomputed with the finalized reference. Ties are
 broken deterministically by the registered candidate order. pi_ref on
@@ -303,10 +306,11 @@ actions are in the attacker's action space (any claim <= q is a legal
 output), and the paper states that this is action containment, not policy
 containment. Abstention is not a point of D1 or D2 and is not claimed to be
 contained; a cell whose chosen reference is abstention is labeled as such.
-The cell's chosen reference point (the twin's knob vector with clip = 1, or
-the honest-max point) is added to the registered incumbent set of the attack
-search, so best-found dev-train gain is at least 0 by construction when the
-reference is the twin or honest-max. A pre-lock test checks that every twin
+The best twin point (clip = 1) and the honest-max point are in the
+registered incumbent set of the attack search, so the attack's best-found
+objective is at least theirs; since the reference is chosen last among a
+set that contains both, best-found dev-train gain is at least 0 by
+construction unless the reference is abstention. A pre-lock test checks that every twin
 candidate re-run as an attacker with clip = 1 reproduces its trajectory
 exactly, and that the honest-max point of each family reproduces honest-max;
 for H2 the separate session runs both tests against B1 before the lock.
@@ -356,8 +360,10 @@ iterations, no boundary handling beyond the transform. The exact corners
 (knobs at 0 or 1) are evaluated once each as registered controls outside
 the search budget and reported next to the best-found value. Objective: the mean
 over 5 dev-train seeds of the headline statistic, per-seed normalized gain
-(pi - pi_ref) / (S* / N), with pi_ref from the cell's chosen reference
-policy (section 5.2) on the same seeds. The
+(pi - pi_ref) / (S* / N). Because pi_ref is a per-seed constant for a
+fixed reference, the search optimizes the mean of pi / (S* / N) and pi_ref
+is subtracted after reference selection, which is the last step (section
+5.2); the ranking of candidates is the same either way. The
 best candidate by objective is then evaluated on 20 dev-val seeds during
 development and on 20 final-eval seeds after the freeze. All reported
 numbers come from the seed namespace stated in section 6.
@@ -397,8 +403,9 @@ attack + 100 twin) evaluations x 3 seeds = 437,400, plus 9 full re-checks
 at 15,000 each); controls about 50,000; all-deviators about 72,000;
 candidate bank about 46,000 (section 8); ablation about 90,000 (section
 8). The two extra rho values add about 2 x 2 x 3 x 7,500 = 90,000. Total
-about 1.74 million runs (360,000 + 360,000 + 572,000 + 50,000 + 72,000 +
-46,000 + 90,000 + 90,000). These prose totals are generated from
+about 1.64 million runs (360,000 + 360,000 + 572,000 + 50,000 + 72,000 +
+46,000 + 90,000 + 90,000). The coverage study's manifest entry includes
+up to two reference-pool doublings per cell. These prose totals are generated from
 `manifest.py`, which separates pre-lock, post-lock, simulator, interval,
 and LLM workloads; the manifest is authoritative. Gate: the pre-lock entries of the search manifest complete in under 20
 core-hours, which needs a run under 45 ms; post-lock entries (bank and
@@ -669,15 +676,26 @@ standard error (about 0.5 points at 2,000 replications). The remedy order
 is percentile bootstrap, then studentized bootstrap, then 40 seeds with the
 studentized bootstrap. The reference mean is itself an estimate: its
 standard error from the 2,000-seed pool is reported separately from the
-replication error, and admission is evaluated conservatively over a 95%
-interval for the reference mean (an upper bound is scored against the
-interval's upper endpoint, a lower bound against its lower endpoint). If
-that interval is too wide to decide, the reference pool is doubled under a
-registered rule, at most twice. An analytic fixture (normal observations
-with known mean) validates the study machinery itself. Admission
-criterion: conservative empirical coverage at least the nominal level minus
-1 point, at every tested endpoint and cell; the 1-point tolerance is an
-explicit engineering choice and does not absorb reference error. Degenerate
+replication error, and admission is scored conservatively over a 95%
+interval for the reference mean (an upper bound against the interval's
+upper endpoint, a lower bound against its lower endpoint). That scoring
+penalizes even an exactly calibrated bound by about phi(z) * 1.96 *
+sqrt(n / M) points, so the admission threshold is not the nominal level.
+It is calibrated: an analytic fixture (normal observations with known
+mean, an exact one-sided t bound at the same n and level) is run through
+the identical path, including a simulated M-seed reference pool and the
+same endpoint scoring, with 2,000 replications; the admission threshold
+for each (n, level, side) is the fixture's measured conservative coverage
+minus 1.5 points. A procedure is admitted at a cell if its conservative
+coverage is at least that threshold at every tested endpoint. A
+pre-registered fixture test requires that the exact procedure itself is
+admitted with probability at least 0.9 over 20 independent fixture
+repetitions; if it is not, replications are doubled until it is. "Too
+wide to decide" means the fixture-calibrated threshold and the measured
+coverage differ by less than two Monte Carlo standard errors; then the
+reference pool is doubled, at most twice, and if still undecided the
+procedure is not admitted. Reference error and replication error are
+reported separately. Degenerate
 inputs: a cell with zero variance in the ranking statistic (for example B1
 ban counts) is excluded from that ranking, undefined moments rank last,
 and if a ranking is exhausted the other ranking fills. The paper states
@@ -729,7 +747,13 @@ are replaced, and the authoritative economic state (bans, hold-back
 balances, releases, forfeits, receipts) is recomputed from the consequences
 the ablation actually applies; only non-economic policy memory of the
 original rule is retained, and it operates on the counterfactual history.
-Ablation tests: actual exclusion duration equals B2's L, hold-back balance
+The split is typed: `base.py`, frozen at the lock, defines a State with
+economic fields (bans, hold-back balances, releases, forfeits, receipts)
+owned by the harness ledger and a separate policy-memory field a rule may
+use freely. Exclusion is defined as zero allocation of an eligible offer
+after a failed audit, whatever mechanism produces it; exclusion through
+allocation priority is reported in the ablation table next to bans.
+Ablation tests: exclusion duration by ban equals B2's L, hold-back balance
 is zero throughout, and the ledger conserves cash. Because pricing and
 tolerance are retained, a retained win is attributed to the non-enforcement
 components collectively, not to allocation or audit selection alone.
@@ -1145,4 +1169,19 @@ Round 12 (6 to 6.1):
   aligned with the section 5.2 rule.
 - Ablation wording kept the old selection order and attribution (Astra):
   reference last; collective attribution.
-- Workload total did not match its components (Astra): 1.74 million.
+- Workload total did not match its components (Astra): corrected.
+
+Round 12, second pass (6.1 to 6.2):
+
+- Endpoint scoring over the reference interval rejected exact bounds, so
+  the gate was INCONCLUSIVE by construction (Opus, by simulation):
+  threshold calibrated on an exact fixture through the identical path,
+  minus 1.5 points; fixture admission test; "too wide" defined; terminal
+  outcome stated.
+- Behaviourally truthful clip = 0 candidates were excluded from reference
+  selection; incumbent sentence and objective wording predated late
+  selection (Opus): truthful-by-behaviour admission; wording fixed.
+- Ablation state split untyped; exclusion by priority uncovered (Opus):
+  typed State at the lock; exclusion defined and reported.
+- README claim block, total (1.64 million), tuning reference rule,
+  doubling runs (Opus): fixed.
