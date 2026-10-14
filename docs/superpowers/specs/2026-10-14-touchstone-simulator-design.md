@@ -674,11 +674,17 @@ Noise and the benchmark. S* uses E[y]. W uses draws. A single seed can exceed
 S*. The test is: mean gross efficiency over evaluation seeds <= 1 + 2
 standard errors in the all-honest run.
 
-Common random numbers. Job values and delivery noise are drawn from
-`numpy.random.SeedSequence` children keyed by (seed, round, job) and
-(seed, round, provider, job slot), independent of any action. Policy
-randomness is keyed by (seed, round, provider). Action-independent draws and
-S* are precomputed per seed and shared across cells.
+Common random numbers. Every random input of an episode (job values, delivery
+noise, allocation tie-break keys, the audit-count rounding uniform, audit
+priority keys, and policy seeds) is a pure function of (seed, t), drawn in a
+fixed order from one `numpy.random.SeedSequence([seed, t])` child and laid
+out in fixed positions (job index; provider index and slot index). No action
+can change any draw; `tests/test_rng.py`, `tests/test_market.py`,
+`tests/test_posted_audit.py`, and `tests/test_boundary.py` check it. One
+child per round instead of one per job costs nothing in the per-run gate
+(draws are shared across cells) and saves about 117 core-hours in the
+coverage study. S* is computed once per seed and passed to every run on that
+seed.
 
 ## 8. The claim and its check
 
@@ -1410,3 +1416,13 @@ to implementation. Changes in version 7.5:
   seed possible in loss-difference cells; bank summary 61,000.
 - Renderer test changed from token disjointness to noninterference.
 - Convergence report shows attack and reference objectives separately.
+
+Implementation (plan 1, core engine, version 2 after two reviews): draws
+keyed per (seed, round) with fixed intra-round layout; operator randomness
+precomputed per job and per round so audit counts and selections are
+action-independent; a read-only StateView for rules with the harness
+validating every rule output against section 4.0; audit outcomes recorded by
+the harness from the rule's declared tolerance; integer audit allowance;
+bonds, forfeits, and releases in the ledger before the lock; package path
+`sim/` as in section 11. Pilot gate measured at 24.9 ms per T = 200 B2
+episode at B = 0.05 S_hat on an Apple M4 Max.
