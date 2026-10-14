@@ -23,18 +23,23 @@ formal predicate lives in the design spec, section 8, and in
 > proposed rule keeps gross efficiency at or above **90% of first-best**
 > (lower 95% bound) and holds the best-found gain of the **headline adversary
 > position** (for H2, selected on training seeds from three pre-registered
-> positions; for H1, the median position) at or below **0.30 of the mean first-best surplus per provider** (upper 95%
-> bound), against **two sealed held-out adversary families** under a
-> pre-registered search budget, while posted prices with random audits and a
+> positions; for H1, the median position) at or below **0.30 of the mean
+> first-best surplus per provider** (upper 95% bound), where gain is profit
+> beyond a **matched truthful twin** of the same adversary, against the
+> **sealed held-out adversary families that the pre-lock coverage study
+> admits as confirmatory**, under a pre-registered search whose objective
+> is that same gain statistic, while posted prices with random audits and a
 > second-score auction with random audits, at the same budget, each either
-> suffer at least **5 points more attack-caused efficiency loss** than the
-> proposed rule or allow best-found gain of **1.0 or more** in the same units
-> (lower 98.75% bounds), for at least one held-out family.
+> suffer at least **5 points more inflation-caused efficiency loss** than
+> the proposed rule or allow best-found gain of **1.0 or more** in the same
+> units (lower 98.75% bounds), for at least one confirmatory held-out
+> family.
 
 "Best-found" is deliberate. A search gives a lower bound on the true best
-response. The claim is about the pre-registered search, not about all
-strategies. Each clause returns PASS, FAIL, or INCONCLUSIVE; the claim passes
-only if every clause passes.
+response, and gain is the difference of two searched values. The claim is
+about the pre-registered search, not about all strategies. Each clause
+returns PASS, FAIL, or INCONCLUSIVE; the claim passes only if every clause
+passes.
 
 If this claim fails, the project stops or the claim is rewritten. The rewrite
 must be dated and must explain which number moved and why.
@@ -44,10 +49,11 @@ must be dated and must explain which number moved and why.
 | Term | Definition |
 |---|---|
 | First-best surplus, S* | Maximum-weight assignment of jobs to providers at full effort on true quality, no audits. Computed per seed. |
+| Truthful claim | A claim at or below the effort chosen for the round. Claim semantics are the same under every rule. |
 | Gross efficiency | Realized surplus before audit cost, divided by S*, measured with true delivered quality. |
-| Adversary gain | (Adversary's profit under the searched policy minus its profit under the best truthful policy, same seeds) divided by S*/N, per seed; reported as the mean of per-seed ratios. |
+| Adversary gain | (Adversary's profit minus the profit of its matched truthful twin, same seeds) divided by S*/N, per seed; reported as the mean of per-seed ratios. |
 | Audit spend | Total audit cost; must not exceed the calibrated budget B in any seed. Reported also as cost divided by S*. |
-| Held-out family | A family sealed before the lock by a separate session and never executed before the evaluation freeze. |
+| Held-out family | A family sealed before the lock by a separate session and never executed before the evaluation freeze, on final evaluation seeds held by that session. |
 
 ## Setting
 
@@ -74,8 +80,8 @@ baselines 2 and 3 on the predicate is not a result.
 ## Adversary model
 
 Adversaries are optimizers, not hand-written scripts. Each provider policy is
-searched to maximize its own profit against the frozen mechanism, under a
-search budget fixed at the lock.
+searched to maximize normalized gain over its truthful twin against the
+frozen mechanism, under a search budget fixed at the lock.
 
 Development families: fixed cheat (D1) and adaptive cheat (D2). Neither can
 exit or re-enter.
@@ -92,10 +98,12 @@ identity.
 
 Two freezes.
 
-1. Lock, **2026-10-28**: locked evaluation config, tuned baselines, the claim
-   predicate script, the sealed held-out bundle hash, and a statement that
-   exactly one proposed rule will be evaluated. Signed tag, public timestamp.
-   Only then is the proposed rule designed.
+1. Lock, **2026-10-28**: locked evaluation config, the admissible rule class,
+   tuned baselines, executable family definitions, hashes of the measurement
+   pipeline, the claim predicate script, the coverage study, the sealed
+   held-out bundle hash, and a statement that exactly one proposed rule will
+   be evaluated. Signed tag, public timestamp. Only then is the proposed rule
+   designed.
 2. Evaluation freeze, **2026-11-11**: the proposed rule and the analysis
    scripts are frozen in a second signed tag. Held-out families run only after
    this tag.
@@ -107,7 +115,7 @@ Lock commit: _not yet locked_. Freeze commit: _not yet frozen_.
 | Dates | Work | Gate |
 |---|---|---|
 | 10-14 to 10-17 | Market, baselines, honest policies, metrics | Timed pilot |
-| 10-18 to 10-24 | Search, development families, sweep, calibration, baseline tuning | B1 fixture check; all pre-lock runs under 12 core-hours |
+| 10-18 to 10-24 | Search, families and twins, manifest, calibration, baseline tuning, coverage study, token pilot | B1 fixture check; full manifest under 16 core-hours |
 | 10-25 to 10-28 | Sealed bundle by a separate session; claim script; lock | Signed tag, public timestamp |
 | 10-29 to 11-11 | Proposed rule; LLM plumbing; stress test | Evaluation freeze |
 | 11-12 to 11-18 | Unseal; held-out runs; figures | Hash verified; claim check |
