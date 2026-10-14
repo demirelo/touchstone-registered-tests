@@ -1,4 +1,4 @@
-# Touchstone plan 2A (version 2): identities, D2, search, reference selection, bank, calibration, tuning, manifest and sweep
+# Touchstone plan 2A (version 6): identities, D2, search, reference selection, bank, calibration, tuning, manifest and sweep
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -11,6 +11,8 @@
 **Spec:** `docs/superpowers/specs/2026-10-14-touchstone-simulator-design.md` (version 7.5 plus the plan 1 implementation note). This plan implements sections 3 (identity replacement, entry cost, calibration constants), 4.0 (identity opacity), 4.1 (no-ban diagnostic), 4.2 (baseline tuning), 5.1 to 5.3 (families, twins, containment tests, search with incumbents and projection replacement, positions and headline selection, search checks, all-deviators, candidate bank, workload manifest and the full-path gate), 6 (seed namespaces, `locked.yaml` contents, `families.md`), 6.2 (H3), 7 (reference run, gain, clipped-attack run, efficiency quadruple, per-seed output schema), and the enforcement-ablation adapter of section 8. Plan 2B covers the interval algorithms, the coverage study, `check_claim.py`, the lock tooling and hash checks, the LLM and Jev actor harness with the `describe()` renderer and comprehension fixture, the custodian instructions for the sealed bundle, the token pilot, and `plot.py`. Nothing else is deferred.
 
 **Scope split, stated once:** Plan 2A ends when `scripts/sweep.py --stage all` runs the development cells, the rho sweep, the H3 cells, the no-ban cells, the controls, the bank pass, reference selection, dev-val evaluation, headline selection, the search checks, and the all-deviators table from `locked.yaml` and a calibration file; `scripts/tune_baselines.py` runs the tuning grid; `scripts/manifest.py` reports run counts derived from the same schedule; and `scripts/bench_sweep.py` measures the full path. Nothing in this plan designs or runs a proposed rule, touches held-out families, or computes a confidence bound.
+
+**Changes from version 5 (round 5: Astra reject with one material finding, Opus accept-with-caveat):** same-round exits are ordered by a salted per-entity rank (`entrant_rank`), with a test that the order depends on the salt and is not the seed-only permutation; reference records carry the bank hash and the evaluate stage checks the bank too; records carry a salt fingerprint; the one-restart inner search is stated as a lower bound; the benchmark margin and the B3 optimization fallback are stated; the heading and stale call examples are fixed.
 
 **Changes from version 4 (round 4: Astra reject with two material findings, Opus accept-with-caveat):** replacement identities' secrets are keyed with a 32-byte identity salt stored in `experiments/identity_salt.hex`, a harness secret outside the config a rule may read, because the episode seed itself can be recovered from public job values; the bank stage validates every source record before building the bank, `bank.json` records its sources with hashes and a bank hash, bank records carry it, and the reference and checks stages refuse a stale bank, a missing bank record, or a bank whose sources changed; twin searches start near-honest first (R14 amended) so a one-restart twin search keeps positive truthful profit; the focal entity's current identity breaks creation-round ties by generation; search coordinates follow a corner or bank replacement.
 
@@ -265,8 +267,8 @@ git commit -m "feat: locked configuration draft with the market table, seed name
   - `ProviderView.identity: int` (current identity id of the entity).
   - `validate_action` no longer raises on `exit`.
   - `Draws.fresh_seed: np.ndarray` of shape `(T, N)`, int64, drawn in `draws_for_round` after `policy_seed` (every earlier draw keeps its value); `draws_for_round` returns seven arrays.
-  - `load_identity_salt(path=DEFAULT_SALT_PATH) -> bytes` (32 bytes from `experiments/identity_salt.hex`, cached): a harness secret that is not part of the locked config a rule may read (spec 4.0) and never reaches a rule. `identity_secret(salt, seed, t, fresh_seed_e, generation) -> int` and `retired_secret(salt, seed, t, identity) -> int`: 64-bit keyed BLAKE2b digests. Every public stream (values, keys) is a function of the small episode seed, so a rule could recover the seed by brute force from the job values; the keyed digest makes that useless, because the salt is high-entropy and unavailable to the rule. `fresh_tie_keys(secrets, J) -> np.ndarray` of shape `(J, len(secrets))`, read-only: column `c` is `default_rng(SeedSequence(secrets[c])).random(J)`. A live replacement identity's column comes from `identity_secret(seed, t, fresh_seed[t, entity], generation)`, so it depends only on the entity and the generation, never on creation order, and permutes with the entity under relabeling; a retired replacement identity's column comes from `retired_secret(seed, t, identity)` (fresh each round, no entity information, never used for an allocation because a retired identity never offers).
-  - `run_episode` keeps `entity_of: list[int]` (identity to entity), `identity_of: list[int]` (entity to identity), `generation: list[int]` (0 for an initial identity, 1 for the first replacement, and so on), and a harness-private `alive` list. Each round has three passes: every entity acts; exits are applied in a keyed random order of entities (`SeedSequence([seed, t, 2])`, drawn only in rounds with an exit) so that the ids of same-round entrants carry no entity information; offers are then recorded under each entity's current identity. An exit retires the current identity (never offers again; its `capacity`, `banned_until`, and `bond` entries in the view are left as they are), creates a fresh identity with capacity `k_i`, `banned_until 0`, no bond, and charges `cfg.e` in that round; the action's offer, if any, is submitted under the fresh identity. An initial identity uses its entity's column of `Draws.tie_key`; a replacement identity uses `fresh_tie_keys(fresh_seed[t, entity], generation)`.
+  - `load_identity_salt(path=DEFAULT_SALT_PATH) -> bytes` (32 bytes from `experiments/identity_salt.hex`, cached): a harness secret that is not part of the locked config a rule may read (spec 4.0) and never reaches a rule. `identity_secret(salt, seed, t, fresh_seed_e, generation) -> int` and `retired_secret(salt, seed, t, identity) -> int`: 64-bit keyed BLAKE2b digests. Every public stream (values, keys) is a function of the small episode seed, so a rule could recover the seed by brute force from the job values; the keyed digest makes that useless, because the salt is high-entropy and unavailable to the rule. `fresh_tie_keys(secrets, J) -> np.ndarray` of shape `(J, len(secrets))`, read-only: column `c` is `default_rng(SeedSequence(secrets[c])).random(J)`. A live replacement identity's column comes from `identity_secret(salt, seed, t, fresh_seed[t, entity], generation)`, so it depends only on the entity and the generation, never on creation order, and permutes with the entity under relabeling; a retired replacement identity's column comes from `retired_secret(salt, seed, t, identity)` (fresh each round, no entity information, never used for an allocation because a retired identity never offers).
+  - `run_episode` keeps `entity_of: list[int]` (identity to entity), `identity_of: list[int]` (entity to identity), `generation: list[int]` (0 for an initial identity, 1 for the first replacement, and so on), and a harness-private `alive` list. Each round has three passes: every entity acts; exits are applied in the order of `entrant_rank(salt, seed, t, fresh_seed[t, entity])` (a keyed secret per exiting entity, so the ids of same-round entrants carry no entity information even to a rule that recovered the episode seed, and the order permutes with the entity under relabeling); offers are then recorded under each entity's current identity. An exit retires the current identity (never offers again; its `capacity`, `banned_until`, and `bond` entries in the view are left as they are), creates a fresh identity with capacity `k_i`, `banned_until 0`, no bond, and charges `cfg.e` in that round; the action's offer, if any, is submitted under the fresh identity. An initial identity uses its entity's column of `Draws.tie_key`; a replacement identity uses `fresh_tie_keys([identity_secret(salt, seed, t, fresh_seed[t, entity], generation)], J)`.
   - `EpisodeResult.profit` stays per entity; new fields `n_identities: int`, `entity_of: tuple[int, ...]`, `identity_round: tuple[int, ...]` (creation round, 0 for initial identities), `identity_generation: tuple[int, ...]`, `identity_profit: np.ndarray`.
   - `IdentityReplacement(policy)` wrapper (H3): acts like `policy` and sets `exit=True` in the round after a failed audit. `h3_family(family) -> Family`: the family `<name>+H3` with one more binary knob `x` (placed before `clip`): with `x = 1` the policy is wrapped in `IdentityReplacement`, with `x = 0` it is the base policy. Its honest point (`x = 0`, `clip = 1`) therefore reproduces honest-max, so reference containment holds for the H3 cells (spec 5.2). Defined here on top of Task 4's `Family` fields by `dataclasses.replace`; Task 4 tests it.
 
@@ -285,7 +287,7 @@ from sim.policies.base import Action, ProviderView, ProviderHistory
 from sim.policies.honest import HonestMax
 from sim.policies.identity import IdentityReplacement
 from sim.ledger import Ledger
-from sim.rng import fresh_tie_keys, identity_secret, retired_secret, load_identity_salt, make_draws, Draws
+from sim.rng import fresh_tie_keys, identity_secret, retired_secret, entrant_rank, load_identity_salt, make_draws, Draws
 
 
 def cfgb(budget, e=0.0, T=40, N=None):
@@ -329,7 +331,21 @@ def test_fresh_tie_keys_depend_only_on_the_secret():
     s1, s2, s3 = identity_secret(salt, 7, 3, 11, 1), identity_secret(salt, 7, 3, 22, 1), identity_secret(salt, 7, 3, 11, 2)
     assert len({s1, s2, s3, retired_secret(salt, 7, 3, 10), identity_secret(salt, 7, 4, 11, 1)}) == 5     # entity, generation, round, retirement all matter
     assert identity_secret(bytes(32), 7, 3, 11, 1) != s1          # without the salt, knowing seed, round, fresh_seed and generation gives nothing
+    assert entrant_rank(salt, 7, 3, 11) != entrant_rank(bytes(32), 7, 3, 11) and entrant_rank(salt, 7, 3, 11) != s1
     assert len(load_identity_salt()) == 32
+
+
+def test_same_round_entrant_order_is_not_a_function_of_the_seed_alone():
+    """A rule that recovers the episode seed must not be able to map same-round entrants to their predecessors."""
+    cfg = cfgb(budget=0.0, T=5)
+    orders = {}
+    for salt in (bytes(range(32)), bytes(range(1, 33))):
+        pols = [ExitAt(when=2) for _ in range(cfg.N)]                       # every entity exits in round 2
+        res = run_episode(cfg, PostedRandomAudit(0.25, 0.40, 0.55, tol=0.12, L=10), pols, 0, identity_salt=salt)
+        orders[salt] = tuple(res.entity_of[cfg.N:])                          # entity of identity N, N + 1, ... in creation order
+    assert len(set(orders.values())) == 2                                   # the order depends on the salt, not on the seed alone
+    public = tuple(int(x) for x in np.random.default_rng(np.random.SeedSequence([0, 2, 2])).permutation(cfg.N))
+    assert all(o != public for o in orders.values())
     a = fresh_tie_keys([s1, s2], 50); b = fresh_tie_keys([s2, s1, s3], 50)
     assert a.shape == (50, 2) and np.array_equal(a[:, 0], b[:, 1]) and np.array_equal(a[:, 1], b[:, 0])
     assert not np.array_equal(b[:, 2], a[:, 0])
@@ -540,6 +556,12 @@ def retired_secret(salt: bytes, seed: int, t: int, identity: int) -> int:
     return _secret(salt, 2, seed, t, identity)
 
 
+def entrant_rank(salt: bytes, seed: int, t: int, fresh_seed_e: int) -> int:
+    """Order in which same-round exits are processed: a keyed secret per entity, so the ids of
+    same-round entrants reveal nothing to a rule, even one that recovered the episode seed."""
+    return _secret(salt, 3, seed, t, fresh_seed_e)
+
+
 def fresh_tie_keys(secrets, J: int) -> np.ndarray:
     """Tie-break keys for identities created by re-entry, (J, len(secrets)): column c is the
     uniform stream seeded by secrets[c]. A live replacement identity's secret depends on its
@@ -619,7 +641,7 @@ from .firstbest import first_best_episode
 from .ledger import Ledger
 from .mechanisms.base import AuditRecord, Consequences, Offer, RoundRecord, StateView
 from .policies.base import ProviderHistory, ProviderView, validate_action
-from .rng import Draws, fresh_tie_keys, identity_secret, load_identity_salt, make_draws, retired_secret
+from .rng import Draws, entrant_rank, fresh_tie_keys, identity_secret, load_identity_salt, make_draws, retired_secret
 
 
 @dataclass
@@ -696,9 +718,8 @@ def run_episode(cfg: MarketConfig, rule, policies, seed: int, draws: Draws | Non
             actions.append(act)
             effort_e[e] = float(act.effort); efforts[t, e] = effort_e[e]
         exiting = [e for e in range(N) if actions[e].exit]
-        if exiting:   # pass 2: exits in a keyed random order, so same-round entrants' ids carry no entity information
-            order = np.random.default_rng(np.random.SeedSequence([int(seed), int(t), 2])).permutation(N)
-            for e in (int(x) for x in order if actions[x].exit):
+        if exiting:   # pass 2: exits in the order of a salted per-entity rank, so same-round entrants' ids carry no entity information
+            for e in sorted(exiting, key=lambda e: entrant_rank(salt, seed, t, int(d.fresh_seed[t, e]))):
                 # retire the current identity now; the fresh identity makes this round's offer and pays e now
                 alive[identity_of[e]] = False
                 new = len(entity_of)
@@ -3026,7 +3047,7 @@ git commit -m "feat: all-deviators iterated best response with the matched twin 
   - `tuning_grid(rule_name, cfg, locked) -> list[dict]`: B1 has price triples only; B2 has price triples x tol x L; B3 has tol x L.
   - `rule_from_params(rule_name, params) -> Mechanism`.
   - `TuningScore(eff, gain, margin, namespace)`; `margin = min((eff - 0.90)/0.90, (0.30 - gain)/0.30)`.
-  - `score_point(rule_name, params, cfg, locked, cache, family=D2, inner_override=None, recheck=False) -> TuningScore`: inner scoring searches twin and attack at the inner budget on the first `inner_seeds` dev-train seeds, selects the reference last, and scores gain and efficiency on those seeds (`namespace = "dev_train"`); the recheck searches at the full budget on all dev-train seeds, selects the reference there, and scores on the seeds of `locked["tuning"]["recheck_namespace"]` (`namespace = "dev_val"`).
+  - `score_point(rule_name, params, cfg, locked, cache, family=D2, inner_override=None, recheck=False) -> TuningScore`: inner scoring searches twin and attack at the inner budget (one restart from the near-full-cheat start: a lower bound on manipulability that can miss small within-tolerance cheats under audited rules; the recheck at the full budget is the measurement that picks the locked winner) on the first `inner_seeds` dev-train seeds, selects the reference last, and scores gain and efficiency on those seeds (`namespace = "dev_train"`); the recheck searches at the full budget on all dev-train seeds, selects the reference there, and scores on the seeds of `locked["tuning"]["recheck_namespace"]` (`namespace = "dev_val"`).
   - `tune(rule_name, cfg, locked, cache, inner_override=None, grid_limit=None) -> TuningResult(best_params, scores, rechecked)`; the locked winner is the rechecked point with the highest dev-val margin.
   - `scripts/tune_baselines.py --calibration experiments/calibration.json --rule B2 --out experiments/tuned/tuned_B2.json [--quick]`. Tuning runs at `beta_headline` and the default rho. The output JSON binds the result: `rule`, `market_key` (from the calibration), `calibration_seeds`, `settings_hash` (Task 1, which covers `beta_headline` and the rho default the tuning ran at), `quick`, `best_params`, `rechecked`, `scores`. A non-quick tuning run refuses a calibration that is not the full calibration namespace. The sweep (Task 13) refuses a tuned file whose `rule`, `market_key`, `settings_hash`, or `calibration_seeds` does not match, or whose `quick` is true.
 
@@ -3292,7 +3313,7 @@ git commit -m "feat: baseline tuning on the locked grid with in-sample inner sco
   - `sim/manifest.py`: `CellSpec(section, rule, family, beta, rho, position, kind, runs, exact, post_lock, name, params_override)`, `enumerate_manifest(locked, rules, budget=None) -> list[CellSpec]` (sections `development`, `rho_sweep`, `no_ban`, `h3`, `controls`, `all_deviators`, `tuning`, `bank`, and post-lock `bank_post_lock`, `all_deviators_post_lock`, `ablation`), `totals(cells)` by section plus `pre_lock`, `post_lock`, `pre_lock_exact`, `pre_lock_upper_bound`, `cell_name(...)`.
   - `sim/records.py`: `cfg_to_dict / cfg_from_dict`, `search_to_json / search_from_json`, `candidate_to_json / candidate_from_record(family, d)`.
   - `scripts/manifest.py --ms-per-run 45 [--smoke]`.
-  - `scripts/sweep.py --stage {search,bank,reference,evaluate,checks,all_deviators,all} --sections ... --rules ... --calibration FILE (--tuned-dir DIR | --smoke) --workers K [--select SUBSTRING] [--limit N] --out DIR`, with `run_stages(opts: dict) -> dict` as the in-process entry point. Every stage writes `DIR/<stage>/<cell>.json` with `runs` (counted after all of the stage's work) and `scheduled` (the exact count or the bound); exact stages (`search`, `evaluate`, `all_deviators`) raise when `runs != scheduled`, bounded stages (`bank`, `reference`, `checks`) raise when `runs > scheduled`. Records carry `params`, `cfg`, `settings_hash`, `budget`, `smoke`, and the cell name; every record a later stage consumes (search, bank, reference) is checked against the current run, so a smoke record never feeds a real run. The bank stage validates every source record before any member enters the bank; `bank.json` lists its sources with their file hashes and a `bank_hash` over members and sources; every bank record carries that hash; the reference and checks stages refuse a bank record whose hash is not the current bank's, and refuse a bank whose source records changed or disappeared. `load_params` refuses a tuned file whose `rule`, `market_key`, `settings_hash`, or `calibration_seeds` mismatches or whose `quick` is true; without `--smoke` the calibration must use the full calibration namespace. `evaluate` writes `DIR/<section>.csv` with `META_FIELDS + ROW_FIELDS` (`META_FIELDS` ends with `reference`, the selected candidate's name) and `DIR/headline.json`; `bank` writes `DIR/bank.json` and `DIR/transfer.csv`; `checks` writes `DIR/checks.json`; `all_deviators` writes `DIR/all_deviators.json` with the attack and twin procedures and per-provider gain on dev-val.
+  - `scripts/sweep.py --stage {search,bank,reference,evaluate,checks,all_deviators,all} --sections ... --rules ... --calibration FILE (--tuned-dir DIR | --smoke) --workers K [--select SUBSTRING] [--limit N] --out DIR`, with `run_stages(opts: dict) -> dict` as the in-process entry point. Every stage writes `DIR/<stage>/<cell>.json` with `runs` (counted after all of the stage's work) and `scheduled` (the exact count or the bound); exact stages (`search`, `evaluate`, `all_deviators`) raise when `runs != scheduled`, bounded stages (`bank`, `reference`, `checks`) raise when `runs > scheduled`. Records carry `params`, `cfg`, `settings_hash`, `budget`, `smoke`, `salt_hash` (sha256 of the identity salt: results with replacement identities depend on it, so a regenerated salt invalidates the records), and the cell name; every record a later stage consumes (search, bank, reference) is checked against the current run, so a smoke record never feeds a real run. The bank stage validates every source record before any member enters the bank; `bank.json` lists its sources with their file hashes and a `bank_hash` over members and sources; every bank record carries that hash; the reference and checks stages refuse a bank record whose hash is not the current bank's, and refuse a bank whose source records changed or disappeared. `load_params` refuses a tuned file whose `rule`, `market_key`, `settings_hash`, or `calibration_seeds` mismatches or whose `quick` is true; without `--smoke` the calibration must use the full calibration namespace. `evaluate` writes `DIR/<section>.csv` with `META_FIELDS + ROW_FIELDS` (`META_FIELDS` ends with `reference`, the selected candidate's name) and `DIR/headline.json`; `bank` writes `DIR/bank.json` and `DIR/transfer.csv`; `checks` writes `DIR/checks.json`; `all_deviators` writes `DIR/all_deviators.json` with the attack and twin procedures and per-provider gain on dev-val.
   - `scripts/bench_sweep.py`: runs every stage in-process (`run_stages` with `--smoke`) for the `beta_headline` median D1 and D2 development cells and the H3 cell of each baseline, sums the recorded `runs`, reports ms per run and the pre-lock manifest in core-hours at that rate, and exits 1 above 20 core-hours.
 
 - [ ] **Step 1: Write the failing tests**
@@ -3428,6 +3449,8 @@ def test_smoke_sweep_runs_every_stage_with_counted_runs(cal_path, tmp_path):
     assert r.returncode != 0 and "differs" in (r.stderr + r.stdout)
     r = run_sweep(cal_path, out, "--stage", "reference", "--rules", "B1", "--smoke", "--workers", "1")
     assert r.returncode != 0 and "bank source" in (r.stderr + r.stdout)
+    r = run_sweep(cal_path, out, "--stage", "evaluate", "--rules", "B1", "--smoke", "--workers", "1")
+    assert r.returncode != 0 and "bank" in (r.stderr + r.stdout)           # the evaluate stage checks the bank too
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -3749,6 +3772,7 @@ from sim.calibrate import cell_config, load_calibration
 from sim.cell import Cell, SeedCache
 from sim.locked import load_locked, market_config_from_locked, seeds as locked_seeds, settings_hash
 from sim.manifest import CellSpec, enumerate_manifest
+from sim.rng import load_identity_salt
 from sim.policies.families import D2, FAMILIES, exact_key
 from sim.policies.identity import h3_family
 from sim.positions import headline_position, positions
@@ -3804,13 +3828,14 @@ def job_for(spec: CellSpec, locked: dict, cal, base, params: dict, budget: Budge
     p = dict(params); p.update(spec.params_override or {})
     return {"spec": {"name": spec.name, "section": spec.section, "rule": spec.rule, "family": spec.family, "beta": spec.beta,
                      "rho": spec.rho, "position": spec.position}, "cfg": cfg_to_dict(cfg), "params": p, "locked": locked,
-            "budget": [budget.restarts, budget.evals, budget.n_train, budget.n_val], "smoke": smoke, "settings_hash": settings_hash(locked)}
+            "budget": [budget.restarts, budget.evals, budget.n_train, budget.n_val], "smoke": smoke, "settings_hash": settings_hash(locked),
+            "salt_hash": hashlib.sha256(load_identity_salt()).hexdigest()}
 
 
 def check_record(job: dict, rec: dict) -> None:
     """A later stage refuses a record from another configuration or mode (stale tuned parameters, calibration,
     settings, budget, or a smoke record under a real run)."""
-    for key in ("params", "cfg", "settings_hash", "budget", "smoke"):
+    for key in ("params", "cfg", "settings_hash", "budget", "smoke", "salt_hash"):
         if rec.get(key) != job[key]:
             raise SystemExit(f"{job['spec']['name']}: stored {key} differs from the current run; rerun the earlier stages")
     if rec.get("spec", {}).get("name") != job["spec"]["name"]:
@@ -3834,7 +3859,7 @@ def base_record(job: dict, cache: SeedCache, scheduled: int, exact: bool) -> dic
     if not exact and cache.runs > scheduled:
         raise AssertionError(f"{job['spec']['name']}: ran {cache.runs} episodes, schedule bound is {scheduled}")
     return {"spec": job["spec"], "cfg": job["cfg"], "params": job["params"], "settings_hash": job["settings_hash"], "smoke": job["smoke"],
-            "budget": job["budget"], "runs": cache.runs, "scheduled": scheduled}
+            "budget": job["budget"], "salt_hash": job["salt_hash"], "runs": cache.runs, "scheduled": scheduled}
 
 
 def stage_search(job: dict) -> dict:
@@ -3891,9 +3916,12 @@ def load_bank_doc(out: Path) -> dict:
     return doc
 
 
-def check_bank_record(bank_rec: dict | None, doc: dict | None) -> None:
-    if bank_rec is not None and (doc is None or bank_rec.get("bank_hash") != doc["bank_hash"]):
-        raise SystemExit(f"{bank_rec['spec']['name']}: bank record belongs to another bank; rerun the bank stage")
+def check_bank_record(rec: dict | None, doc: dict | None, stage: str) -> None:
+    """A bank or reference record must come from the current bank (its hash); H3 records carry no bank."""
+    if rec is None or rec.get("bank_hash") is None:
+        return
+    if doc is None or rec["bank_hash"] != doc["bank_hash"]:
+        raise SystemExit(f"{rec['spec']['name']}: record belongs to another bank; rerun the bank stage before {stage}")
 
 
 def stage_bank(job: dict, rec: dict, bank_doc: dict) -> dict:
@@ -3933,7 +3961,8 @@ def stage_reference(job: dict, rec: dict, bank_rec: dict | None) -> dict:
     ref = select_reference(cell, cands, cache)
     out = base_record(job, cache, reference_bound(len(members), b), exact=False)
     out.update({"candidate": candidate_to_json(ref.candidate), "scores": ref.scores, "attack_knobs": attack.best_knobs,
-                "attack_f": attack.best_f, "attack_source": attack.best_source, "gain_train": attack.best_f - ref.scores[ref.candidate.name]})
+                "attack_f": attack.best_f, "attack_source": attack.best_source, "gain_train": attack.best_f - ref.scores[ref.candidate.name],
+                "bank_hash": bank_rec["bank_hash"] if bank_rec else None})
     return out
 
 
@@ -4041,17 +4070,22 @@ def run_stages(o: dict) -> dict:
             with open(out / "transfer.csv", "w", newline="") as f:
                 w = csv.DictWriter(f, fieldnames=["cell", "incumbent", "best_bank", "best_origin", "improved"]); w.writeheader(); w.writerows(trows)
         bank_recs = read_dir(out / "bank")
-        bank_doc = load_bank_doc(out) if (out / "bank.json").exists() else None
-        if stage in ("reference", "checks"):
+        bank_doc = None
+        if stage in ("reference", "evaluate", "checks"):
+            bank_doc = load_bank_doc(out) if (out / "bank.json").exists() else None
             for n, r in search.items():
                 if r["spec"]["family"] in FAMILIES and n not in bank_recs:
                     raise SystemExit(f"{n}: no bank record; run the bank stage before {stage}")
-                check_bank_record(bank_recs.get(n), bank_doc)
+                check_bank_record(bank_recs.get(n), bank_doc, stage)
+        refs = read_dir(out / "reference")
+        if stage in ("evaluate", "checks"):
+            for n, r in refs.items():
+                check_bank_record(r, bank_doc, stage)
         if stage == "reference":
             names = list(search)
             for rec in pool.map(stage_reference, [jobs[n] for n in names], [search[n] for n in names], [bank_recs.get(n) for n in names]):
                 record("reference", rec)
-        refs = read_dir(out / "reference")
+            refs = read_dir(out / "reference")
         if stage == "evaluate":
             names = list(refs)
             by_section: dict[str, list] = {}
@@ -4166,7 +4200,7 @@ if __name__ == "__main__":
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `uv run pytest tests/test_manifest.py tests/test_sweep.py -v && uv run python scripts/bench_sweep.py`
-Expected: PASS (6 tests). The smoke sweep test runs the B1 headline median D1, D2, and H3 cells through every stage (about 2,500 runs at T = 200), under three minutes with one worker. `bench_sweep.py` prints the ms per run and the extrapolated core-hours, under 20 (round 2 measured 45.7 ms per run on the search stage alone on an Apple M4 Max, with B3 at about 80 ms per run because its allocation loop is NumPy-heavy; record the measured figure in Task 14).
+Expected: PASS (6 tests). The smoke sweep test runs the B1 headline median D1, D2, and H3 cells through every stage (about 2,500 runs at T = 200), under three minutes with one worker. `bench_sweep.py` prints the ms per run and the extrapolated core-hours, under 20 on an idle machine (rounds 4 and 5 measured 48.6 to 49.6 ms per run blended on an Apple M4 Max, 18.5 to 18.9 core-hours, and 20.1 under load; B3 costs about 86 ms per run because its allocation loop is NumPy-heavy). Run the benchmark on an idle machine and record the figure in Task 14. If the production machine misses the gate, the first optimization is B3's allocation loop in plain Python like B1's; that change is a plan 2B item and does not touch results.
 
 - [ ] **Step 5: Commit**
 
@@ -4241,11 +4275,11 @@ separate from entities; a retired identity is not marked in the rule's
 view; replacement identities draw tie-break keys from a keyed one-way
 BLAKE2b secret of their entity's per-round fresh_seed and their generation
 (`identity_secret`, `fresh_tie_keys`), retired ones from a secret of the
-round and identity; the key is the identity salt in
+round and identity, and same-round entrants are ordered by a salted
+per-entity rank; the key is the identity salt in
 `experiments/identity_salt.hex`, a harness secret outside the config a
 rule may read, so recovering the episode seed from public values (which
-is feasible, the seeds are small) yields nothing; and same-round entrants receive ids in a keyed random
-order, so a rule cannot link a successor to its predecessor beyond the
+is feasible, the seeds are small) yields nothing; so a rule cannot link a successor to its predecessor beyond the
 timing of one identity going silent and one appearing (N is fixed), and
 decisions are invariant to relabeling with re-entry; an exit made in the action of round t takes
 effect in round t (section 3 wording updated), which matches Proposition
@@ -4295,7 +4329,10 @@ per cell and their values are reused in the bank pass; bank and controls
 are bounds). Registered start order is near-full-cheat, near-honest,
 Sobol for attack searches (twin searches swap the first two), so
 one-restart searches (inner tuning, all-deviators) start where cheating,
-or truthful profit, is reachable; the best exact corner replaces a cell's attack
+or truthful profit, is reachable; a one-restart search is a lower bound on
+manipulability (it can miss small within-tolerance cheats under audited
+rules), which is why the tuning winner is picked by the full-budget
+recheck and the all-deviators table is labeled a robustness table; the best exact corner replaces a cell's attack
 incumbent when it scores higher, in every cell including H3. Per-seed output rows carry the
 section 7 metrics and the section 4.0 refund and forfeit split
 (`sim/reference.py::ROW_FIELDS`), and the selected reference's name.
@@ -4340,4 +4377,4 @@ git commit -m "docs: plan 2A implementation note with rulings and manifest figur
 
 **Review Focus.** Item 1: Task 2 `test_rule_view_does_not_reveal_exit_or_successor`, `test_relabeling_with_reentry_relabels_decisions`. Item 2: Task 2 `test_banned_identity_can_still_exit_and_fresh_identity_is_not_banned`, `test_exit_does_not_change_ban_or_bond_schedule`. Item 3: Task 4 `test_make_returns_fresh_instances`. Item 4: Task 6 `test_flat_objective_terminates_and_counts`, Task 7 `test_abstention_wins_when_everything_loses_money`. Item 5: Task 6 `test_corner_controls_use_exact_knobs_at_tier_boundaries`. Item 6: Task 7 `test_gain_on_other_seeds_subtracts_reference_on_those_seeds`. Item 7: Task 9 `test_cell_config_refuses_foreign_calibration`, Task 13 `test_sweep_refuses_untuned_run_without_smoke_flag`, `test_sweep_refuses_unbound_tuned_file_and_partial_calibration`.
 
-**Rulings carried in this plan (for the executor's ledger and the spec note):** (R1) exits take effect in the round the policy makes them, and the section 3 sentence is updated; (R2) retired identities are not marked in the view; (R3) abstention is first in the registered candidate order; (R4) the twin search has no incumbents so that check (d) stays a diagnostic; (R5) the projection of the best point is always evaluated so the exact schedule entries stay exact; (R6) the H3 cell is a full cell over D2+H3 (D2 plus the exit knob x), whose honest point is honest-max; (R7) bank members come from development cells plus each target family's corners, and the bank pass targets every D1 and D2 cell including rho-sweep and no-ban cells; (R8) tuning runs at `beta_headline` and the default rho; (R9) the doubling check gives each clip-fixed search half of one extra base budget and starts from the bank-finalized attack; (R10) a calibration seed namespace exists next to the three of section 6; (R11) before the lock, tuned files and the calibration are bound to the market key and the settings hash, and the lock tooling of plan 2B writes them into `locked.yaml`; (R12) the all-deviators gain is the per-provider difference between the attack profile and the twin profile on dev-val; (R13) same-round entrants get ids in a keyed random order; (R14) the registered start order is near-full-cheat, near-honest, three Sobol for attack searches and near-honest, near-full-cheat, three Sobol for twin searches, so a one-restart attack search can reach a cheating point and a one-restart twin search starts where truthful profit is positive; (R15) the best exact corner control replaces a cell's attack incumbent when it scores higher, in every cell including H3, and the bank pass reuses the corner values of the search stage.
+**Rulings carried in this plan (for the executor's ledger and the spec note):** (R1) exits take effect in the round the policy makes them, and the section 3 sentence is updated; (R2) retired identities are not marked in the view; (R3) abstention is first in the registered candidate order; (R4) the twin search has no incumbents so that check (d) stays a diagnostic; (R5) the projection of the best point is always evaluated so the exact schedule entries stay exact; (R6) the H3 cell is a full cell over D2+H3 (D2 plus the exit knob x), whose honest point is honest-max; (R7) bank members come from development cells plus each target family's corners, and the bank pass targets every D1 and D2 cell including rho-sweep and no-ban cells; (R8) tuning runs at `beta_headline` and the default rho; (R9) the doubling check gives each clip-fixed search half of one extra base budget and starts from the bank-finalized attack; (R10) a calibration seed namespace exists next to the three of section 6; (R11) before the lock, tuned files and the calibration are bound to the market key and the settings hash, and the lock tooling of plan 2B writes them into `locked.yaml`; (R12) the all-deviators gain is the per-provider difference between the attack profile and the twin profile on dev-val; (R13) same-round entrants get ids in the order of a salted per-entity secret rank, so the order is unavailable to a rule even with the episode seed; (R14) the registered start order is near-full-cheat, near-honest, three Sobol for attack searches and near-honest, near-full-cheat, three Sobol for twin searches, so a one-restart attack search can reach a cheating point and a one-restart twin search starts where truthful profit is positive; (R15) the best exact corner control replaces a cell's attack incumbent when it scores higher, in every cell including H3, and the bank pass reuses the corner values of the search stage.
