@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 7.3, after sixteen rounds of three-model review
+Date: 2026-10-14. Version 7.4, after sixteen rounds; three-seat consensus re-established after the fourth external read of three-model review
 (Fable 5.1, Opus 5.5, Astra) and four external reads (GPT Pro). Status:
 draft for review. Section 14 maps review objections to changes.
 
@@ -744,10 +744,11 @@ n = 10, 20, and 40 with the base M and R, and minimum rejection of the
 negative control of 0.938 across n and level; a Monte Carlo estimate
 (Fable, 1,000 pools per row for the exact procedure and 400 for the
 control, standard error up to 0.012) agrees within its error. Even the
-lowest admission figure reaches 190 of 200 with probability above 0.996. Narrower margins (1.5 and 0.75) were simulated too: they raise
-power to 0.99 but drop joint admission to about 0.78 at n = 10 and 0.90
-at n = 20, which would make both doubling remedies the expected path and
-double the study's cost. The joint fixture test below is the binding
+lowest admission figure reaches 190 of 200 with probability above 0.996.
+Narrower margins (1.5 and 0.75) were simulated too: they raise power to
+0.99 but drop direct joint admission to about 0.8 at n = 10 and n = 20
+(Opus, direct simulation: 0.82 and 0.78), which would make both doubling
+remedies the expected path and double the study's cost. The joint fixture test below is the binding
 check; the doublings stay as spare remedies, not the expected path. There is no "too
 wide" band and no routine pool doubling (the only doubling is the
 joint-fixture remedy below): a procedure is admitted at a cell if its
@@ -874,8 +875,10 @@ position) cell, about 64 for four rules, plus the exact-corner controls of
 D2 with the clip knob (128), de-duplicated; D1 members enter D2 cells
 through d = r = 0; members do not cross between D2 and H2 except through a
 declared embedding. Bank runs are in the manifest at about 4 rules x 2
-families x 6 budgets x 192 members x 5 seeds = 46,000 runs, listed as a
-post-lock estimate for the proposed rule's cells. This tests whether a rule's robustness
+families x 6 budgets x 192 members x 5 seeds = 46,000 runs, plus the
+clip = 1 projection runs of up to 64 best-found members with clip = 0
+(about 15,000), about 61,000 in all; `manifest.py` counts them; listed as
+a post-lock estimate for the proposed rule's cells. This tests whether a rule's robustness
 survives a profitable policy discovered against another rule.
 
 The all-honest gap, the selection difference, and the truthful
@@ -1353,7 +1356,7 @@ Round 15 (7 to 7.1):
 Round 15, second pass (7.1 to 7.2):
 
 - With 48 endpoints the 7.1 margins admitted an exact procedure only about
-  0.78 to 0.90 of the time at n = 10 and 20, making both doublings the
+  0.8 of the time at n = 10 and 20 (Opus, direct: 0.82, 0.78), making both doublings the
   expected path and doubling the study's cost (Opus, by simulation):
   margins widened to 2.0 and 1.0 points; joint admission >= 0.99 and
   power >= 0.94 on the fixture (Fable, by simulation); doublings are spare
@@ -1368,3 +1371,11 @@ Round 16 (7.2 to 7.3):
   values reported; Monte Carlo estimate labeled with its error.
 - README still said "every candidate the search discovered" (Astra):
   points to the bounded set of section 5.2.
+- The 7.1 record used union-bound figures with large sampling error; the
+  bank count omitted projection runs (Opus): direct values; 61,000.
+
+Consensus (round 16) on version 7.2/7.3: Fable 5.1 accept-with-caveat,
+Opus 5.5 accept-with-caveat (direct simulation: joint admission 0.990,
+0.984, 0.993; control rejection >= 0.94), Astra accept-with-caveat
+(numerical integration: 0.987, 0.979, 0.993; minimum power 0.938). No
+material objection outstanding.
