@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 3.1, after two rounds of three-model review (Fable
+Date: 2026-10-14. Version 3.2, after three rounds of three-model review (Fable
 5.1, Opus 5.5, Astra). Status: draft for review. Section 14 maps review
 objections to changes.
 
@@ -106,11 +106,15 @@ a typical job surplus). Because rho sets the audit rate (beta / rho of jobs at
 uniform audits), the sweep over rho in {0.05, 0.2, 1} is in the main text,
 not an appendix. Alpha does not depend on the job.
 
-Configuration validity. A configuration is valid only if S_hat > 0 and, for
-every provider, v_bar * q_max_i - a_i - b_i * q_max_i > 0 at the mean job
-value. This guarantees that serving at full effort is efficient for the
-average job. It does not guarantee positive provider profit under any rule;
-section 7 handles that.
+Configuration validity. A configuration is valid only if the job value
+distribution has a known lower support bound v_min and, for every provider,
+v_min * q_max_i - a_i - b_i * q_max_i > 0. Then every job has positive
+first-best weight with every provider, so S* > 0 on every seed and every
+per-seed ratio in section 7 is defined. The condition also requires
+q_max_i >= z * sigma - tol (section 5.2) so the truthful claim is not clipped
+at full effort. It does not guarantee positive provider profit under any
+rule; section 7 handles that. `calibrate.py` refuses invalid
+configurations.
 
 ## 4. Mechanism interface and baselines
 
@@ -199,12 +203,17 @@ Two honest policies are defined. Both never exit.
   and bid chosen freely, found by the same search as section 5.3 over the
   one-dimensional effort knob and a bid markup knob.
 
-The truthful claim is c_h(q) = clip(q + tol - z * sigma, 0, 1) with z = 2.326.
+The truthful claim is c_h(q) = max(0, q + tol - z * sigma) with z = 2.326.
 With unclipped noise, a provider with effort q and claim c fails an audit
-with probability Phi((c - tol - q) / sigma), so an honest provider fails with
-probability Phi(-z) = 1%. Claim inflation above c_h raises that probability
-toward and past 50% at c = q + tol. This trade-off is drawn as a reference
-curve on Figure 1. It is not a floor on gain.
+with probability Phi((c - tol - q) / sigma). For q >= z * sigma - tol the
+claim is not clipped and an honest provider fails with probability
+Phi(-z) = 1%. For lower effort the claim is 0 and the failure probability is
+Phi(-(tol + q) / sigma), up to Phi(-tol / sigma) at q = 0, which is 15.9% at
+the defaults. The 1% statement, its test, and the validation fixtures in
+section 9 apply only to the unclipped range; honest-max is always in that
+range by the validity condition. Claim inflation above c_h raises the
+failure probability toward and past 50% at c = q + tol. This trade-off is
+drawn as a reference curve on Figure 1. It is not a floor on gain.
 
 Honest-max is used for calibration and for all-honest runs. Best-truthful is
 the reference policy for adversary gain and harm (section 7).
@@ -226,10 +235,12 @@ reported numbers come from evaluation seeds.
 
 Adversary position. Three pre-registered positions: the providers with the
 lowest, median, and highest b_i * q_max_i. At beta = 0.05 the search runs at
-all three, and the headline position is the one with the highest training
-objective; its evaluation-seed statistics are reported, so no selection
-happens on evaluation seeds. At other budgets only the median position runs.
-The claim is about these three positions, not about every provider.
+all three. The headline position is the one with the highest training-seed
+gain (section 7 units, computed against that position's own reference run on
+training seeds), not the highest profit; its evaluation-seed statistics are
+reported, so no selection happens on evaluation seeds. All three positions
+appear in a table. At other budgets only the median position runs. The claim
+is about the headline position selected this way, not about every provider.
 
 Search checks, reported in the paper: (a) on a fixed B1 fixture in which
 every job accepts tier 3 (v_j >= P3 for all j), the search must recover the
@@ -377,10 +388,12 @@ per family, mean and 95% band, with the truthful-claim trade-off curve of
 section 5.2 as a reference. Figure 2: efficiency triple against audit spend.
 
 Claim predicate, evaluated by `scripts/check_claim.py` at beta = 0.05. R* is
-the proposed rule. All bounds are one-sided over evaluation seeds. Because
-the baseline clause is "at least one of two families", bounds in that clause
-use level 97.5% (Bonferroni over families); bounds in the rule clause use
-95%. Numbers are provisional until the lock.
+the proposed rule. All bounds are one-sided over evaluation seeds. The rule
+clause requires every bound to hold, so its bounds use level 95%. The
+baseline clause passes through any one of four alternatives (two families
+times two metrics), so its bounds use level 98.75% (Bonferroni over the four
+alternatives), which controls false acceptance at 5% per baseline. Numbers
+are provisional until the lock.
 
 Rule clause. For each held-out family F in {H1, H2}, all of:
 
@@ -392,11 +405,11 @@ Rule clause. For each held-out family F in {H1, H2}, all of:
 Baseline clause. For each baseline B in {B2, B3} at the same beta, there is at
 least one F such that:
 
-- lower 97.5% bound of the attack-caused loss difference
+- lower 98.75% bound of the attack-caused loss difference
   [eff(B, honest) - eff(B, F)] - [eff(R*, honest) - eff(R*, F)] >= 0.05,
   paired per seed, where eff is gross efficiency and "honest" is the
   all-honest-max run; or
-- lower 97.5% bound of gain(B, F) >= 1.0, in units of S* / N.
+- lower 98.75% bound of gain(B, F) >= 1.0, in units of S* / N.
 
 The all-honest efficiency gap eff(R*, honest) - eff(B, honest) is reported as
 its own labeled result. It measures allocation quality and false-ban cost,
@@ -506,7 +519,9 @@ Anthropic SDK behind a thin interface for the LLM actor.
   change of others, to floating-point tolerance.
 - The mechanism interface cannot read effort: a test passes offers with an
   effort field and asserts it is rejected.
-- Honest failure rate under audit is 1% within binomial tolerance.
+- Honest failure rate under audit is 1% within binomial tolerance for
+  efforts in the unclipped range, and matches Phi(-(tol + q) / sigma) below it.
+- S* > 0 on every seed of a valid configuration.
 - Every mechanism passes one shared harness test on a tiny market, with a
   worked-example assertion for B3's payment.
 - Locked config hash check refuses a modified config.
@@ -601,3 +616,17 @@ Round 2 (version 2 to 3):
 - Propositions used best-found gain (Opus): supremum over the policy class.
 - rho = 0.2 had no source (Opus): labeled an assumption; rho sweep in main
   text.
+
+Round 3 (version 3.1 to 3.2):
+
+- Baseline clause had four alternatives but corrected for two (Astra):
+  98.75% bounds.
+- S* could be zero on a seed (Astra): validity condition on v_min makes
+  every pair weight positive; test added.
+- Truthful claim clipped at 0 broke the 1% statement (Astra): exact formula
+  in both ranges; 1% restricted to the unclipped range; validity requires
+  q_max in that range.
+- README claim drifted from the predicate (Astra): README rewritten to the
+  predicate's quantities and quantifiers.
+- Headline position selected by profit, not gain (Astra): selected by
+  training-seed gain; all positions tabled.

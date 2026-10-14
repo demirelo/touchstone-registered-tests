@@ -16,22 +16,25 @@ outcomes are verified, and how participants can manipulate the rules.
 
 Provisional numbers, locked on 2026-10-28 from the tuned-baseline runs. The
 formal predicate lives in the design spec, section 8, and in
-`scripts/check_claim.py`.
+`scripts/check_claim.py`. This paragraph restates it and nothing more.
 
-> In a simulated claimed-quality market with heterogeneous providers, at an
-> audit budget of **5% of first-best surplus**, the proposed rule keeps gross
-> efficiency at or above **90% of first-best** and holds the best-found gain
-> of each of **three pre-registered adversary positions** at or below **0.30
-> of the mean first-best surplus per provider**, against **two sealed
-> held-out adversary families** under a pre-registered search budget, while
-> posted prices with random audits and a second-score auction with random
-> audits, at the same budget, either fall **20 or more points of gross
-> efficiency** below the proposed rule or allow best-found gain of **1.0 or
-> more** in the same units.
+> In a simulated claimed-quality market with heterogeneous providers, with a
+> total audit budget of **5% of the calibrated first-best surplus**, the
+> proposed rule keeps gross efficiency at or above **90% of first-best**
+> (lower 95% bound) and holds the best-found gain of the **headline adversary
+> position, selected on training seeds from three pre-registered positions**,
+> at or below **0.30 of the mean first-best surplus per provider** (upper 95%
+> bound), against **two sealed held-out adversary families** under a
+> pre-registered search budget, while posted prices with random audits and a
+> second-score auction with random audits, at the same budget, each either
+> suffer at least **5 points more attack-caused efficiency loss** than the
+> proposed rule or allow best-found gain of **1.0 or more** in the same units
+> (lower 98.75% bounds), for at least one held-out family.
 
 "Best-found" is deliberate. A search gives a lower bound on the true best
 response. The claim is about the pre-registered search, not about all
-strategies.
+strategies. Each clause returns PASS, FAIL, or INCONCLUSIVE; the claim passes
+only if every clause passes.
 
 If this claim fails, the project stops or the claim is rewritten. The rewrite
 must be dated and must explain which number moved and why.
@@ -42,8 +45,8 @@ must be dated and must explain which number moved and why.
 |---|---|
 | First-best surplus, S* | Maximum-weight assignment of jobs to providers at full effort on true quality, no audits. Computed per seed. |
 | Gross efficiency | Realized surplus before audit cost, divided by S*, measured with true delivered quality. |
-| Adversary gain | (Adversary's profit under the searched policy minus its profit under the best truthful policy) divided by S*/N, same seeds. |
-| Audit spend | Audit cost divided by S*, per seed. |
+| Adversary gain | (Adversary's profit under the searched policy minus its profit under the best truthful policy, same seeds) divided by S*/N, per seed; reported as the mean of per-seed ratios. |
+| Audit spend | Total audit cost; must not exceed the calibrated budget B in any seed. Reported also as cost divided by S*. |
 | Held-out family | A family sealed before the lock by a separate session and never executed before the evaluation freeze. |
 
 ## Setting
