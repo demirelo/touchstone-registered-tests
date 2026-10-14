@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 5.3, after eleven rounds of three-model review
+Date: 2026-10-14. Version 5.4, after eleven rounds; three-seat consensus re-established after the second external read of three-model review
 (Fable 5.1, Opus 5.5, Astra) and two external reads (GPT Pro). Status: draft
 for review. Section 14 maps review objections to changes.
 
@@ -292,8 +292,8 @@ the honest-max point) is added to the registered incumbent set of the attack
 search, so best-found dev-train gain is at least 0 by construction when the
 reference is the twin or honest-max. A pre-lock test checks that every twin
 candidate re-run as an attacker with clip = 1 reproduces its trajectory
-exactly; for H2 the separate session runs this test against B1 before the
-lock.
+exactly, and that the honest-max point of each family reproduces honest-max;
+for H2 the separate session runs both tests against B1 before the lock.
 
 Because pi_ref is itself a best-found quantity, the paper states that gain
 is the difference of two searched values and can be biased in either
@@ -381,8 +381,10 @@ attack + 100 twin) evaluations x 3 seeds = 437,400, plus 9 full
 re-checks); controls about 50,000; all-deviators about 72,000; candidate
 bank about 14,400; ablation re-search about 60,000. The two extra rho
 values add about 2 x 2 x 3 x 7,500 = 90,000. Total about 1.55 million
-runs. Gate: the search manifest completes in under 20 core-hours, which
-needs a run under 45 ms; cells are embarrassingly parallel. The coverage
+runs. Gate: the pre-lock entries of the search manifest complete in under 20
+core-hours, which needs a run under 45 ms; post-lock entries (bank and
+ablation against the proposed rule) are estimates. Cells are
+embarrassingly parallel. The coverage
 study (section 8, about 0.5 million runs) is outside this gate and has its
 own entry in the manifest.
 
@@ -439,8 +441,10 @@ repetitions. S_hat, B, and the twin are calibrated and run at T = 100. Scope:
 beta in {0.02, 0.05, 0.10}, 4 rules, one rho. Calls: 3 x 4 x 10 x 5 x 100 =
 60,000 for the attack, the same for the twin on evaluation seeds, up to the
 same again for the twin on dev-train seeds during reference selection, and
-up to 60,000 more for the closed-loop clipped-attack run (section 7):
-240,000 worst case. A token and latency pilot of 200 calls is run before the
+up to 12,000 more for the closed-loop clipped-attack run (episode 5 only,
+3 x 4 x 10 x 100): 192,000 worst case. The invalidity rule (more than 5%
+fallback rounds in a repetition) applies to every H1 run that enters a
+predicate term: attack, twin, and clipped-attack. A token and latency pilot of 200 calls is run before the
 lock and its measured cost per call sets the cost cap in the lock commit.
 
 ## 6. Pre-registration protocol
@@ -627,10 +631,12 @@ unit, one-sided; if all per-seed values are identical the bound equals that
 value and the cell is flagged degenerate. H1: one-sided t bound on 10
 repetitions, or the bootstrap if the coverage study selects it.
 
-Coverage study, pre-lock, on dev-val seeds. Locked design: the 6
-development cells at beta = 0.05 (baselines, D1 and D2) with the highest
-per-seed skewness of gain or the highest ban-rate bimodality on dev-train
-seeds, selected by that mechanical rule, not by hand; for each, a
+Coverage study, pre-lock, on dev-val seeds. Locked design: from the
+universe of 18 development cells at beta = 0.05 (3 baselines x 2 families x
+3 positions), take the top 3 by per-seed skewness of gain and the top 3 by
+the Sarle bimodality coefficient of per-seed ban counts on dev-train seeds,
+filling ties or overlaps from the other ranking, for 6 distinct cells;
+selected by that mechanical rule, not by hand; for each, a
 high-precision reference mean from a dedicated 2,000-seed pool inside the
 dev-val range; 2,000 replications of each bound procedure, each drawing
 the final sample size from a fresh disjoint dev-val sub-range (about 0.5
@@ -684,10 +690,13 @@ Enforcement-matched ablation, reported outside the predicate: the proposed
 rule's allocation and audit selection combined with B2's enforcement
 (refund plus ban at B2's tuned L, no hold-back), on the same cells. Only
 the consequence outputs of `enforce` are replaced; its state updates are
-kept. The attack is searched again against the ablated rule at the full
-budget for development families (about 60,000 runs, in the manifest). The
-paper attributes a win to allocation or audit selection only if the
-ablation retains it under that fresh search.
+kept. Against the ablated rule the twin is searched again, the reference
+is selected again, and the attack is searched again, all at the full
+budget. Cells: D1 and D2 at beta = 0.05, all three positions, median rho
+(2 families x 3 positions x 2 searches x 7,500 = 90,000 runs, in the
+manifest as a post-lock estimate). H2 is not ablated; the ablation is a
+development-family diagnostic. The paper attributes a win to allocation or
+audit selection only if the ablation retains it under that fresh search.
 
 Candidate bank, registered before the lock, development families only.
 Order: a first search pass per cell without the bank; then every best-found
@@ -699,9 +708,13 @@ table reports how each rule fares against attacks found elsewhere. The
 bank does not seed H2 unless the sealed H2 definition declares an embedding
 of D2, in which case the embedding is applied; otherwise the bank is a
 diagnostic for H2. Bank members found against the proposed rule exist only
-after the lock and are applied to the baselines' post-lock re-runs. Bank
-runs are in the manifest at about 4 rules x 2 families x 6 budgets x 60
-members x 5 seeds = 14,400 runs. This tests whether a rule's robustness
+after the lock and are applied to the baselines' post-lock re-runs. Members: every best-found policy from every (rule, family, budget,
+position) cell, about 64 for four rules, plus the exact-corner controls of
+D2 with the clip knob (128), de-duplicated; D1 members enter D2 cells
+through d = r = 0; members do not cross between D2 and H2 except through a
+declared embedding. Bank runs are in the manifest at about 4 rules x 2
+families x 6 budgets x 192 members x 5 seeds = 46,000 runs, listed as a
+post-lock estimate for the proposed rule's cells. This tests whether a rule's robustness
 survives a profitable policy discovered against another rule.
 
 The all-honest gap, the selection difference, and the truthful
@@ -798,7 +811,7 @@ touchstone/
     policies/        # honest.py, fixed_cheat.py, adaptive.py, llm.py, identity.py,
                      # twin.py (claim-clipping wrapper)
     search.py        # CMA-ES best response, registered settings, seed namespaces
-    metrics.py       # S*, ledger, W, efficiency, gain, harm, triple
+    metrics.py       # S*, ledger, W, efficiency, gain, harm, quadruple
     llm_actor.py     # schema, cache, fallback, episode procedure, describe() renderer
   experiments/       # locked.yaml, families.md, vocabulary.yaml, sweep configs
   scripts/
@@ -1015,7 +1028,7 @@ Second external read (GPT Pro, on 4.6) and the changes in version 5:
   most jobs, so 1/N is not a ceiling; the 0.05 threshold is a pre-registered
   practical effect size set at the lock.
 
-Round 10 (5 to 5.1):
+Round 10 (5 to 5.2):
 
 - H1 clipped-attack run by cache replay was ill-defined once clipping
   changed the history (Astra): the frozen procedure re-runs on the
@@ -1043,3 +1056,15 @@ Round 11 (5.2 to 5.3):
 - Tuning workload used 150 evaluations per grid point where section 4.2
   requires 200 (Astra): 437,400 plus re-checks; total 1.55 million; gate
   20 core-hours; coverage study stated outside the gate.
+- Ablation reference not re-selected, cells unnamed (Opus): twin and
+  reference re-selected; cells and count stated; development only.
+- Bank member count (Opus): de-duplicated corners with clip, D1 via D2,
+  about 192 members, 46,000 runs.
+- Coverage cell rule (Opus): universe of 18, top 3 by each of two named
+  statistics, tie rule.
+- H1 counterfactual calls and invalidity scope (Opus): 12,000; rule applies
+  to every H1 run in a predicate term.
+- Gate scope, layout comment, round label, H2 honest-max test (Opus): fixed.
+
+Consensus (round 11) on version 5.3: Fable 5.1 accept-with-caveat, Opus
+5.5 accept, Astra accept-with-caveat. No material objection outstanding.
