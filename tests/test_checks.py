@@ -77,3 +77,15 @@ def test_holdback_bounded_by_this_rounds_release_and_window_including_it():
         ok(Consequences(holdbacks={0: 1.26}))
     with pytest.raises(ValueError, match="release this round"):
         validate_consequences(Consequences(holdbacks={0: 2.1}), recs, escrow, owner, bond, np.array([9.0, 0, 0]), active)
+
+
+def test_consequence_keys_must_be_valid_identities_and_jobs():
+    recs = (AuditRecord(job=0, provider=0, delivered=0.5, claim=0.9, failed=True),)
+    escrow, owner = {0: 0.8}, {0: 0}
+    bond = np.array([0.5, 0.0, 0.0]); recent = np.array([1.0, 1.0, 0.0]); active = {0}
+    ok = lambda c: validate_consequences(c, recs, escrow, owner, bond, recent, active)
+    for bad in (Consequences(releases={-1: 0.1}), Consequences(releases={3: 0.1}), Consequences(releases={1.0: 0.1}),
+                Consequences(holdbacks={-1: 0.1}), Consequences(forfeits={-1: 0.1}), Consequences(bans={-1: 1}),
+                Consequences(refunds={-1: 0.1}), Consequences(refunds={0.0: 0.1})):
+        with pytest.raises(ValueError, match="identity|job"):
+            ok(bad)

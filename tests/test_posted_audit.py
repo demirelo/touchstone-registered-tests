@@ -110,3 +110,11 @@ def test_failed_audit_without_refund_still_counts_as_failure():
     cfg = cfgb(budget=40.0, T=50)
     res = run_episode(cfg, NoRefund(0.25, 0.40, 0.55, tol=0.0, L=0), honest(cfg.N), 0)
     assert res.failures.sum() > 0 and res.ledger.refunds.sum() == 0.0
+
+
+def test_realized_audit_cost_never_exceeds_budget_by_rounding():
+    for budget in (0.15, 0.3, 3.0):
+        cfg = cfgb(budget=budget, T=20)
+        res = run_episode(cfg, b2(L=0), honest(cfg.N), 0)
+        assert res.audit_cost <= cfg.budget
+        assert res.audits.sum() == int(np.floor(cfg.budget / cfg.alpha + 1e-12))

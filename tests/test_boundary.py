@@ -126,3 +126,16 @@ def test_tie_keys_in_memory_do_not_expose_other_rounds():
     cfg = cfgb(budget=0.0, T=3)
     run_episode(cfg, Peeker(0.25, 0.40, 0.55, tol=0.12, L=0), [HonestMax() for _ in range(cfg.N)], 0)
     assert seen["base_is_none"] and seen["shape"] == (cfg.J, cfg.N)
+
+
+def test_rule_cannot_rewrite_past_history():
+    class Rewriter(PostedRandomAudit):
+        def allocate(self, values_t, offers, view):
+            if view.history:
+                rec = view.history[0]
+                for target in (rec.assignment, rec.payments, rec.offers, rec.consequences.refunds):
+                    with pytest.raises(TypeError):
+                        target[0] = 0
+            return super().allocate(values_t, offers, view)
+    cfg = cfgb(budget=2.0, T=5)
+    run_episode(cfg, Rewriter(0.25, 0.40, 0.55, tol=0.12, L=10), [HonestMax() for _ in range(cfg.N)], 0)

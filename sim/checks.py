@@ -54,8 +54,19 @@ def validate_audits(audit_list: list[int], assignment: dict[int, int], view: Sta
         raise ValueError("audit list exceeds the remaining allowance")
 
 
+def _check_keys(mapping: dict, kind: str, n: int) -> None:
+    for k in mapping:
+        if isinstance(k, bool) or not isinstance(k, (int, np.integer)) or not (0 <= int(k) < n):
+            raise ValueError(f"{kind} key {k!r} is not a valid {kind} index")
+
+
 def validate_consequences(cons: Consequences, records: tuple[AuditRecord, ...], escrow: dict, owner: dict,
                           bond: np.ndarray, recent_receipts: np.ndarray, active: set[int]) -> None:
+    N = len(bond)
+    J = max([max(escrow) + 1 if escrow else 0, max((r.job for r in records), default=-1) + 1])
+    _check_keys(cons.refunds, "job", max(J, 1))
+    for name in ("bans", "holdbacks", "forfeits", "releases"):
+        _check_keys(getattr(cons, name), "identity", N)
     failed_jobs = {r.job for r in records if r.failed}
     failed_idents = {r.provider for r in records if r.failed}
     for job, amt in cons.refunds.items():

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from types import MappingProxyType
 
 import numpy as np
 
@@ -127,8 +128,11 @@ def run_episode(cfg: MarketConfig, rule, policies, seed: int, draws: Draws | Non
             refunded[owner[j]] += amt
         ledger.settle(t, escrow, owner, cons, failed_jobs_of)
         ledger.check_conservation(escrow_outstanding=0.0)
-        records_all.append(RoundRecord(t=t, offers=dict(offers), assignment=dict(assignment), payments=dict(payments),
-                                       audits=records, consequences=cons))
+        frozen_cons = Consequences(refunds=MappingProxyType(dict(cons.refunds)), bans=MappingProxyType(dict(cons.bans)),
+                                   holdbacks=MappingProxyType(dict(cons.holdbacks)), forfeits=MappingProxyType(dict(cons.forfeits)),
+                                   releases=MappingProxyType(dict(cons.releases)))
+        records_all.append(RoundRecord(t=t, offers=MappingProxyType(dict(offers)), assignment=MappingProxyType(dict(assignment)),
+                                       payments=MappingProxyType(dict(payments)), audits=records, consequences=frozen_cons))
         audited_by = np.bincount([r.provider for r in records], minlength=N) if records else np.zeros(N, dtype=np.int64)
         for i in range(N):
             histories[i].append(int(served[t, i]), float(ledger.funding[t, i]), int(audited_by[i]), int(failures[t, i]),
@@ -136,7 +140,8 @@ def run_episode(cfg: MarketConfig, rule, policies, seed: int, draws: Draws | Non
 
     ledger.terminal_settlement()
     ledger.check_conservation(escrow_outstanding=0.0)
-    cost = float(ledger.cost.sum()); entry = float(ledger.entry.sum()); audit_cost = float(ledger.audit_cost.sum())
+    cost = float(ledger.cost.sum()); entry = float(ledger.entry.sum())
+    audit_cost = min(float(ledger.audit_cost.sum()), float(cfg.budget))   # integer audits; never above B by rounding
     W = value_total - cost - entry - audit_cost
     buyer_surplus = value_total - float(ledger.funding.sum()) + ledger.buyer_credit()
     return EpisodeResult(sstar=sstar_v, profit=ledger.profit(), value=value_total, cost=cost, entry=entry,

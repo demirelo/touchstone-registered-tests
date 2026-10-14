@@ -133,19 +133,24 @@ One abstract class with five methods.
 
 ```python
 class Mechanism:
-    def allocate(self, jobs, offers, state) -> Assignment
-    def price(self, assignment, offers, state) -> Payments
-    def audit(self, assignment, state, budget_left) -> list[JobId]
-    def enforce(self, audit_results, state) -> (Consequences, PolicyMemory)
+    def allocate(self, values_t, offers, view) -> Assignment
+    def price(self, assignment, values_t, offers, view) -> Payments
+    def audit(self, assignment, view) -> list[JobId]
+    def enforce(self, records, view) -> Consequences
     def describe(self) -> RuleDescription   # section 5.4
 ```
 
-`offers` carries claims and bids only. `enforce` returns the consequences
-it imposes (from the section 4.0 menu) and the rule's own policy memory;
-the harness ledger applies the consequences to the economic fields of
-`state` (bans, hold-back balances, releases, forfeits, receipts), which a
-rule reads but never writes. The output-type test of section 12 checks the
-consequences object. `state` is the operator's memory:
+`offers` carries claims and bids only, and every input a rule receives is a
+read-only copy: `values_t`, `offers`, `assignment`, the arrays in `view`,
+and the records in `view.history`. `view.memory` is the rule's own mutable
+dict and holds its policy memory. `enforce` returns the consequences it
+imposes (from the section 4.0 menu); the harness validates every output
+(`allocate`, `price`, `audit`, `enforce`) against section 4.0 and only then
+lets the ledger apply the consequences to the economic fields (bans,
+hold-back balances, releases, forfeits, receipts), which a rule reads but
+never writes. The harness records each audit's outcome itself with the
+rule's declared tolerance `tol`. The output-type test of section 12 checks
+the consequences object. `view` is the operator's memory:
 per-identity history of claims, allocations, audits, failures, payments,
 bans, and held-back balances, plus the remaining audit budget.
 
