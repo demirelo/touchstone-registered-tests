@@ -14,14 +14,23 @@ outcomes are verified, and how participants can manipulate the rules.
 
 ## The falsifiable claim
 
-> In a simulated compute market with heterogeneous buyers and providers, an
-> allocation-plus-audit rule with audit spend of at most **5% of first-best
-> surplus** keeps realized efficiency at or above **90% of first-best** and
-> holds any single adversary's best-response gain below **3% of first-best
-> surplus**, against **two adversary families and one identity-replacement
-> attack** not used during development, while posted prices and a second-price
-> auction under the same audit budget either lose **20 or more points of
-> efficiency** or allow adversary gain above **10%**.
+Provisional numbers, locked on 2026-10-28 from the tuned-baseline runs. The
+formal predicate lives in the design spec, section 8, and in
+`scripts/check_claim.py`.
+
+> In a simulated claimed-quality market with heterogeneous providers, at an
+> audit budget of **5% of first-best surplus**, the proposed rule keeps gross
+> efficiency at or above **90% of first-best** and holds the best-found gain
+> of any single adversary at or below **5% of that adversary's best truthful
+> profit**, against **two sealed held-out adversary families** under a
+> pre-registered search budget, while posted prices with random audits and a
+> second-score auction with random audits, at the same budget, either lose
+> **20 or more points of gross efficiency** relative to the proposed rule or
+> allow best-found gain of **25% or more**.
+
+"Best-found" is deliberate. A search gives a lower bound on the true best
+response. The claim is about the pre-registered search, not about all
+strategies.
 
 If this claim fails, the project stops or the claim is rewritten. The rewrite
 must be dated and must explain which number moved and why.
@@ -60,38 +69,44 @@ result.
 ## Adversary model
 
 Adversaries are optimizers, not hand-written scripts. Each provider policy is
-trained to maximize its own profit against the frozen mechanism.
+searched to maximize its own profit against the frozen mechanism, under a
+search budget fixed at the lock.
 
-Development adversaries:
+Development families: fixed cheat (D1) and adaptive cheat (D2). Neither can
+exit or re-enter.
 
-- Quality overclaiming with a fixed markup.
-- Learned overclaiming (RL or LLM policy) against the frozen rule.
+Held-out families, sealed before the lock by a separate session, never run
+before the evaluation freeze: an LLM provider (H1) and a parametrized family
+that uses information D2 cannot (H2).
 
-Held-out adversaries (chosen and sealed before the lock, not run until
-evaluation):
+Pre-declared stress test, public and reported separately: identity
+replacement (H3), exit after a failed audit and re-enter under a fresh
+identity.
 
-- Family A: to be sealed on the lock date.
-- Family B: to be sealed on the lock date.
-- Identity replacement: a provider that exits after a bad audit and re-enters
-  as a new identity.
+## Pre-registration protocol
 
-## Threshold lock protocol
+Two freezes.
 
-1. Build the market and run the three baselines first.
-2. On the lock date, fix every number in the claim and seal the held-out
-   adversary families. Record the commit hash in this file.
-3. Only then design the proposed rule.
+1. Lock, **2026-10-28**: locked evaluation config, tuned baselines, the claim
+   predicate script, the sealed held-out bundle hash, and a statement that
+   exactly one proposed rule will be evaluated. Signed tag, public timestamp.
+   Only then is the proposed rule designed.
+2. Evaluation freeze, **2026-11-11**: the proposed rule and the analysis
+   scripts are frozen in a second signed tag. Held-out families run only after
+   this tag.
 
-Lock date: **2026-10-28**. Lock commit: _not yet locked_.
+Lock commit: _not yet locked_. Freeze commit: _not yet frozen_.
 
 ## Plan
 
-| Weeks | Dates | Work |
+| Dates | Work | Gate |
 |---|---|---|
-| 1 to 2 | 2026-10-14 to 2026-10-28 | Smallest market. Three baselines. Lock thresholds. |
-| 3 to 4 | 2026-10-29 to 2026-11-11 | Optimizer adversaries. Proposed rule. Identity replacement. |
-| 5 | 2026-11-12 to 2026-11-18 | The one curve: adversary gain against audit spend, one line per rule. |
-| 6 | 2026-11-19 to 2026-11-25 | One page. Decide. |
+| 10-14 to 10-17 | Market, baselines, honest policies, metrics | Timed pilot |
+| 10-18 to 10-24 | Search, development families, sweep, calibration, baseline tuning | Analytic check; sweep under 4 h |
+| 10-25 to 10-28 | Sealed bundle by a separate session; claim script; lock | Signed tag, public timestamp |
+| 10-29 to 11-11 | Proposed rule; LLM plumbing; stress test | Evaluation freeze |
+| 11-12 to 11-18 | Unseal; held-out runs; figures | Hash verified; claim check |
+| 11-19 to 11-25 | One page. Decide. | |
 
 ## Kill criteria
 
