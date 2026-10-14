@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 3.7, after six rounds of three-model review (Fable
+Date: 2026-10-14. Version 3.8, after six rounds; three-seat consensus reached of three-model review (Fable
 5.1, Opus 5.5, Astra). Status: draft for review. Section 14 maps review
 objections to changes.
 
@@ -148,8 +148,8 @@ Baseline B1, posted prices, no audit.
 Baseline B2, posted prices, random audit. B1 plus a spread audit schedule:
 in round t the number of audits is the stochastic rounding of
 (budget_left / alpha) / (T - t + 1), then capped by the number of served
-jobs, by floor(2 * B / (T * alpha)), and by floor(budget_left / alpha); the
-rounding draw is keyed by (seed, round). Audited
+jobs, by max(1, floor(2 * B / (T * alpha))), and by floor(budget_left /
+alpha); the rounding draw is keyed by (seed, round). Audited
 jobs are chosen uniformly at random among served jobs. A failed audit refunds
 that job's payment to the buyer and bans the identity for L rounds. Banned
 identities cannot submit offers.
@@ -185,8 +185,9 @@ loop is not affordable:
   with f1, f2 each in {0.5, 0.7, 0.9}. Every triple satisfies
   0 < P1 < P2 < P3, and `tune_baselines.py` asserts it before running. Also
   3 values of tol in {0.03, 0.05, 0.08} and 2 values of L in {10, 20};
-- inner best response: D2, 1 restart x 100 evaluations x 3 training seeds,
-  and a best-truthful reference search at the same grid point with
+- inner best response: D2 at the median position, 1 restart x 100
+  evaluations x 3 training seeds, and a best-truthful reference search for
+  the same position at the same grid point with
   1 restart x 50 evaluations x 3 seeds, so tuning gain uses the same
   reference definition as the predicate;
 - objective: the smaller of the two normalized predicate margins at
@@ -712,3 +713,12 @@ Round 6 (version 3.6 to 3.7):
 
 - Truthful claim could exceed 1 for small sigma (Astra): validity requires
   c_h(q_max_i) <= 1, re-checked per tuning tol.
+- Per-round audit cap could be zero at low beta and high rho (Opus):
+  max(1, ...).
+- Tuning inner search position unstated (Opus): median position.
+
+Consensus (round 6): Fable 5.1 accept-with-caveat, Opus 5.5 accept, Astra
+accept-with-caveat. No material objection outstanding. Remaining caveat
+(Fable): the 0.05 attack-caused-loss threshold is half the single-deviator
+ceiling of about 1/N; it is set at the lock from baseline runs, and gain is
+the primary clause.
