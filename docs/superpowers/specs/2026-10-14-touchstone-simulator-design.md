@@ -1,8 +1,9 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 6.6, after fourteen rounds; three-seat consensus re-established after the third external read of three-model review
-(Fable 5.1, Opus 5.5, Astra) and three external reads (GPT Pro). Status:
-draft for review. Section 14 maps review objections to changes.
+Date: 2026-10-14. Version 6.6, after fourteen rounds of three-model review
+(Fable 5.1, Opus 5.5, Astra) and three external reads (GPT Pro); three-seat
+consensus re-established after the third external read. Status: draft for
+review. Section 14 maps review objections to changes.
 
 ## 1. Goal
 
