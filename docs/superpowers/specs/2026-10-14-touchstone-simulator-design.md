@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 4.3, after eight rounds of three-model review (Fable
+Date: 2026-10-14. Version 4.4, after eight rounds of three-model review (Fable
 5.1, Opus 5.5, Astra) and one external read (GPT Pro). Status: draft for
 review. Section 14 maps review objections to changes.
 
@@ -299,7 +299,8 @@ claim map must also permit claims below effort (section 6.1).
 Search. CMA-ES (pycma) with population size 8, initial step 0.3 in the
 transformed space, 5 restarts from fixed registered initial points in the
 transformed space: the near-honest point (logit of 0.02 on every knob), the
-near-full-cheat point (logit of 0.98), and three Sobol points; 300
+near-full-cheat point (logit of 0.98 on every knob except the margin s,
+which is at logit of 0.02), and three Sobol points; 300
 evaluations per restart including incumbent re-evaluation every 10
 iterations, no boundary handling beyond the transform. The exact corners
 (knobs at 0 or 1) are evaluated once each as registered controls outside
@@ -332,7 +333,8 @@ below honest-max's by more than 1%.
 All-deviators (iterated best response, 3 sweeps, every provider on D2 with
 1 restart x 100 evaluations x 3 dev-train seeds per sweep and provider, one
 cell per rule at beta = 0.05, median rho) is a robustness table; it is in
-the manifest at about 3 x 10 x 3 x 300 x 4 = 108,000 runs.
+the manifest at 3 sweeps x 10 providers x 300 runs x 4 rules x 2 (attack
+and twin) = 72,000 runs.
 
 Cell manifest and workload. `scripts/manifest.py` enumerates every cell
 (rule, family, beta, rho, position, horizon, twin or attack, tuning or
@@ -341,7 +343,7 @@ through `sweep.py` for every baseline, not of one episode. Scope: the rho
 sweep runs at beta = 0.05 only, D2 and its twin, median position, every
 rule; H1 does not span rho. Expected counts at one rho: development 360,000;
 twins 360,000; tuning about 300,000; controls about 50,000; all-deviators
-about 108,000. The two extra rho values add about 2 x 2 x 3 x 7,500 =
+about 72,000. The two extra rho values add about 2 x 2 x 3 x 7,500 =
 90,000. Total about 1.3 million runs. Gate: the manifest completes in under
 17 core-hours, which needs a run under 45 ms; cells are embarrassingly
 parallel.
@@ -412,14 +414,22 @@ exists. The lock commit contains:
   run if any tracked file differs from the lock tag except those on the
   post-lock allow-list: the proposed-rule module
   `sim/mechanisms/proposed.py`, its tuned-parameter config, its `describe()`
-  record, `scripts/plot.py`, and `docs/`. Everything else, including
-  `sim/market.py`, `sim/search.py`, `sim/policies/`, `sim/mechanisms/base.py`
-  and the baselines, `sim/metrics.py`, `scripts/run.py`, `scripts/sweep.py`,
-  the CSV schema, and `experiments/vocabulary.yaml`, is frozen at the lock;
+  record, `scripts/plot.py`, `docs/`, `sealed/` (checked instead by the
+  bundle hash), and `sealed/patches/` (logged repairs by the separate
+  session). Everything else, including `sim/market.py`, `sim/search.py`,
+  `sim/policies/` (with `llm.py` and `identity.py`), `sim/llm_actor.py`
+  (schema, cache, episode procedure, and the `describe()` renderer),
+  `sim/mechanisms/base.py` and the baselines, `sim/metrics.py`,
+  `scripts/run.py`, `scripts/sweep.py`, the CSV schema, and
+  `experiments/vocabulary.yaml`, is frozen at the lock. So the LLM harness
+  and the H3 policy are built and tested on development families before the
+  lock. After the evaluation freeze, `check_claim.py` compares allow-listed
+  files to the freeze tag instead, and refuses any tracked file that is new
+  since the lock and outside the allow-list;
 - `scripts/check_claim.py` with the predicate of section 8 and the final
   threshold numbers, tested on synthetic CSVs;
-- the coverage-study report (section 8) and its pre-registered consequence
-  for H1;
+- the coverage-study report (section 8) and its pre-registered consequences
+  for H1 and for the 20-seed bootstrap;
 - the SHA-256 of the sealed held-out bundle (section 6.1);
 - a statement that exactly one proposed rule will be evaluated.
 
@@ -718,7 +728,11 @@ Anthropic SDK behind a thin interface for the LLM actor.
   rendered text contains no token from the rule's source.
 - Every mechanism passes one shared harness test on a tiny market, with a
   worked-example assertion for B3's payment.
-- Locked config and pipeline hash check refuses a modified file.
+- Locked config and pipeline hash check refuses a modified file; after the
+  freeze, allow-listed files are compared to the freeze tag and a new
+  tracked file outside the allow-list is refused.
+- `proposed.py` imports only `sim/mechanisms/base.py` and standard numerical
+  libraries, and no frozen module's attributes change after importing it.
 - Sealed bundle hash check passes once the bundle is present.
 
 ## 13. Timeline and gates
@@ -726,9 +740,9 @@ Anthropic SDK behind a thin interface for the LLM actor.
 | Dates | Work | Gate |
 |---|---|---|
 | 10-14 to 10-17 | Market, ledger, B1 to B3, honest-max, twin wrapper, metrics, tiny-market tests | One T = 200 B2 episode under 45 ms on one core |
-| 10-18 to 10-24 | Search with namespaces, D1, D2, twins, manifest, calibrate, tune baselines, coverage study, token pilot | B1 fixture check passes; full manifest under 17 core-hours |
+| 10-18 to 10-24 | Search with namespaces, D1, D2, twins, LLM harness and renderer on development families, H3 policy, manifest, calibrate, tune baselines, coverage study, token pilot | B1 fixture check passes; full manifest under 17 core-hours |
 | 10-25 to 10-28 | Separate session writes sealed bundle and final-eval seeds; vocabulary; check_claim.py; lock | Signed tag, public timestamp |
-| 10-29 to 11-11 | Proposed rule within 4.0; its describe() record; LLM plumbing on development families only; H3 | Evaluation freeze tag |
+| 10-29 to 11-11 | Proposed rule within 4.0; its describe() record; its tuning; H3 runs on the proposed rule | Evaluation freeze tag |
 | 11-12 to 11-18 | Unseal; comprehension fixture; run H1, H2 and twins on frozen rule and baselines; figures | Hash verified; check_claim output |
 | 11-19 to 11-25 | One page. Decide. | |
 
@@ -829,3 +843,11 @@ Round 8 (4.2 to 4.3):
   only.
 - README claim, freeze summary, and gate wording lagged the spec (Astra):
   aligned.
+- Whole-tree lock froze the LLM harness and H3 that the timeline built after
+  the lock, and the allow-list lacked the sealed folder and repairs (Opus):
+  harness and H3 moved before the lock; sealed/ and sealed/patches/
+  allow-listed; post-freeze comparison to the freeze tag; import test.
+- Near-full-cheat start put the margin near its maximum (Opus): s at its
+  minimum there.
+- All-deviators count, lock list wording, README adversary wording (Opus):
+  corrected.
