@@ -1,6 +1,6 @@
 # Touchstone simulator: design
 
-Date: 2026-10-14. Version 5, after nine panel rounds and two external reads (GPT Pro) of three-model review (Fable
+Date: 2026-10-14. Version 5.1, after ten panel rounds and two external reads (GPT Pro) of three-model review (Fable
 5.1, Opus 5.5, Astra) and one external read (GPT Pro). Status: draft for
 review. Section 14 maps review objections to changes.
 
@@ -245,8 +245,8 @@ pre-registered reduced procedure:
 - the top 3 grid points are re-checked at the full search budget of section
   5.3 and the best is locked.
 
-The proposed rule's own parameters get the same outer budget (162
-configurations) and the same inner search, logged.
+The proposed rule's own parameters get the same outer budget (243
+configurations, matching 27 x 3 x 3) and the same inner search, logged.
 
 ## 5. Actors
 
@@ -312,7 +312,10 @@ m_t * (1 - d); else m_{t+1} = min(m0, m_t + r * m0). During a ban the
 identity submits nothing and m_t is unchanged. Never abstains, never exits.
 D2 contains D1 (d = r = 0).
 
-Clip knob and twins. Both families carry a binary knob clip in {0, 1}; with
+Clip knob and twins. Both families carry a binary knob clip in {0, 1},
+searched as one more logistic coordinate thresholded at 0.5 (registered
+initial values: 1 at the near-honest point, 0 at the near-full-cheat point,
+0.5 threshold on the Sobol points); it costs no extra evaluations. With
 clip = 1 the market-facing claim is min(c, q). D1-twin and D2-twin are D1
 and D2 with clip fixed at 1; the attacker searches over clip too, so the
 attacker family contains its twin by construction. The margin knob s stays
@@ -365,11 +368,12 @@ control) and its run count, and the gate is a benchmark of the full path
 through `sweep.py` for every baseline, not of one episode. Scope: the rho
 sweep runs at beta = 0.05 only, D2 and its twin, median position, every
 rule; H1 does not span rho. Expected counts at one rho: development 360,000;
-twins 360,000; tuning about 300,000; controls about 50,000; all-deviators
-about 72,000. The two extra rho values add about 2 x 2 x 3 x 7,500 =
-90,000. Total about 1.3 million runs. Gate: the manifest completes in under
-17 core-hours, which needs a run under 45 ms; cells are embarrassingly
-parallel.
+twins 360,000; tuning about 400,000 (3 rules x 243 grid points x 150
+evaluations x 3 seeds, plus re-checks); controls about 50,000;
+all-deviators about 72,000. The two extra rho values add about
+2 x 2 x 3 x 7,500 = 90,000. Total about 1.4 million runs. Gate: the
+manifest completes in under 18 core-hours, which needs a run under 45 ms;
+cells are embarrassingly parallel.
 
 ### 5.4 LLM actor and H1 procedure
 
@@ -561,9 +565,15 @@ computed per seed.
   settlement. The equality is a test, run on fixtures with outstanding,
   released, and forfeited bonds.
 - Clipped-attack run. The selected attacker policy re-run with its
-  parameters (or, for H1, its recorded decision procedure replayed from
-  cache) unchanged and the harness clip applied, same seeds. This is the
-  counterfactual "same policy, inflation removed".
+  parameters unchanged and the harness clip applied, same seeds. For H1 the
+  frozen procedure itself is re-run on the counterfactual history: the clip
+  is applied in episode 5 only, prompts that match a cached prompt replay
+  from cache, prompts that differ because clipping changed allocation,
+  payment, or bans are new calls, and those calls are in the cost budget
+  (worst case another 60,000). This is the intervention "same decision
+  procedure, inflation removed", not action replay, and the paper says so.
+  A test runs a case where clipping changes the next prompt and asserts a
+  new call is made.
 - Efficiency quadruple, per rule and budget: all-honest gross efficiency,
   gross efficiency in the reference run, gross efficiency in the
   clipped-attack run, gross efficiency with the attack. The
@@ -823,7 +833,7 @@ Anthropic SDK behind a thin interface for the LLM actor.
 | Dates | Work | Gate |
 |---|---|---|
 | 10-14 to 10-17 | Market, ledger, B1 to B3, honest-max, twin wrapper, metrics, tiny-market tests | One T = 200 B2 episode under 45 ms on one core |
-| 10-18 to 10-24 | Search with namespaces, D1, D2, twins, LLM harness and renderer on development families, H3 policy, manifest, calibrate, tune baselines, coverage study, token pilot | B1 fixture check passes; full manifest under 17 core-hours |
+| 10-18 to 10-24 | Search with namespaces, D1, D2, twins, LLM harness and renderer on development families, H3 policy, manifest, calibrate, tune baselines, coverage study, token pilot | B1 fixture check passes; full manifest under 18 core-hours |
 | 10-25 to 10-28 | Separate session writes sealed bundle and final-eval seeds; vocabulary; check_claim.py; lock | Signed tag, public timestamp |
 | 10-29 to 11-11 | Proposed rule within 4.0; its describe() record; its tuning; H3 runs on the proposed rule | Evaluation freeze tag |
 | 11-12 to 11-18 | Unseal; comprehension fixture; run H1, H2 and twins on frozen rule and baselines; figures | Hash verified; check_claim output |
@@ -973,3 +983,13 @@ Second external read (GPT Pro, on 4.6) and the changes in version 5:
 - Caveat on 1/N: in a heterogeneous-capacity market one provider can serve
   most jobs, so 1/N is not a ceiling; the 0.05 threshold is a pre-registered
   practical effect size set at the lock.
+
+Round 10 (5 to 5.1):
+
+- H1 clipped-attack run by cache replay was ill-defined once clipping
+  changed the history (Astra): the frozen procedure re-runs on the
+  counterfactual history with new calls, budgeted and tested.
+- Clip knob had no search mapping (Astra): logistic coordinate thresholded
+  at 0.5, registered initial values.
+- Tuning budget said 162 after the L grid grew (Astra): 243 everywhere;
+  manifest and gate updated.

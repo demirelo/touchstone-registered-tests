@@ -122,7 +122,7 @@ Lock commit: _not yet locked_. Freeze commit: _not yet frozen_.
 | Dates | Work | Gate |
 |---|---|---|
 | 10-14 to 10-17 | Market, baselines, honest policies, metrics | Timed pilot |
-| 10-18 to 10-24 | Search, families and twins, LLM harness, stress-test policy, manifest, calibration, baseline tuning, coverage study, token pilot | B1 fixture check; full manifest under 17 core-hours |
+| 10-18 to 10-24 | Search, families and twins, LLM harness, stress-test policy, manifest, calibration, baseline tuning, coverage study, token pilot | B1 fixture check; full manifest under 18 core-hours |
 | 10-25 to 10-28 | Sealed bundle by a separate session; claim script; lock | Signed tag, public timestamp |
 | 10-29 to 11-11 | Proposed rule and its description; stress test on it | Evaluation freeze |
 | 11-12 to 11-18 | Unseal; held-out runs; figures | Hash verified; claim check |
