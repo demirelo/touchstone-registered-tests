@@ -29,10 +29,11 @@ def test_round_draws_are_pure_function_of_seed_and_round():
     cfg = MarketConfig.default()
     full = make_draws(cfg, seed=11)
     for t in (0, 1, 57, cfg.T - 1):
-        v, n, tk, au, ak, ps = draws_for_round(cfg, seed=11, t=t)
+        v, n, tk, au, ak, ps, fs = draws_for_round(cfg, seed=11, t=t)
         assert np.array_equal(v, full.values[t])
         assert np.array_equal(n, full.noise[t])
         assert np.array_equal(tk, full.tie_key[t])
         assert au == full.audit_u[t]
         assert np.array_equal(ak, full.audit_key[t])
         assert np.array_equal(ps, full.policy_seed[t])
+        assert np.array_equal(fs, full.fresh_seed[t])

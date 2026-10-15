@@ -52,7 +52,7 @@ def test_relabeling_identities_relabels_decisions():
     cfg_p = MarketConfig(N=cfg.N, J=cfg.J, T=cfg.T, sigma=cfg.sigma, e=cfg.e, v_min=cfg.v_min, v_max=cfg.v_max,
                          providers=tuple(cfg.providers[o] for o in perm), alpha=cfg.alpha, budget=cfg.budget)
     d_p = Draws(values=d.values, noise=d.noise[:, perm, :], tie_key=d.tie_key[:, :, perm], audit_u=d.audit_u,
-                audit_key=d.audit_key, policy_seed=d.policy_seed[:, perm])
+                audit_key=d.audit_key, policy_seed=d.policy_seed[:, perm], fresh_seed=d.fresh_seed[:, perm])
     r = PostedRandomAudit(0.25, 0.40, 0.55, tol=0.12, L=10)
     a = run_episode(cfg, r, [HonestMax() for _ in range(cfg.N)], 5, draws=d)
     b = run_episode(cfg_p, r, [HonestMax() for _ in range(cfg.N)], 5, draws=d_p)

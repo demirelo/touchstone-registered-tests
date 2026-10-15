@@ -18,6 +18,17 @@ class Ledger:
         self.bond = np.zeros(N)
         self._settled = 0
 
+    def grow(self, m: int) -> None:
+        """Extend every per-identity array to m columns (new identities on re-entry)."""
+        cur = self.bond.shape[0]
+        if m <= cur:
+            return
+        pad = m - cur
+        for name in ("funding", "refunds", "released", "holdback_in", "holdback_out", "forfeits", "cost", "entry"):
+            setattr(self, name, np.pad(getattr(self, name), ((0, 0), (0, pad))))
+        self.bond = np.pad(self.bond, (0, pad))
+        self.N = m
+
     def fund(self, t: int, job: int, provider: int, amount: float, escrow: dict, owner: dict) -> None:
         if not np.isfinite(amount) or amount < 0:
             raise ValueError("payment must be finite and non-negative")

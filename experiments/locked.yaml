@@ -1,0 +1,59 @@
+# Draft until the lock on 2026-10-28. At the lock this file is frozen by the
+# lock tag and check_claim.py refuses any run whose config hash differs.
+version: draft
+seeds:
+  dev_train: [1000, 1001, 1002, 1003, 1004]
+  dev_val: [2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009,
+            2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019]
+  final_eval: null          # generated and held by the separate session
+  calibration: [4000, 4001, 4002, 4003, 4004, 4005, 4006, 4007, 4008, 4009,
+                4010, 4011, 4012, 4013, 4014, 4015, 4016, 4017, 4018, 4019]
+market:
+  N: 10
+  J: 50
+  T: 200
+  sigma: 0.05
+  e: 0.0
+  v_min: 0.6
+  v_max: 1.4
+  providers:                # spec 3 provider table; k = 6 for every provider
+    q_max: [0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.00]
+    a:     [0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02]
+    b:     [0.40, 0.38, 0.36, 0.34, 0.32, 0.30, 0.28, 0.26, 0.24, 0.22]
+    k:     [6, 6, 6, 6, 6, 6, 6, 6, 6, 6]
+admissible:
+  L_max: 50
+  H_max: 3
+beta_grid: [0.0, 0.01, 0.02, 0.05, 0.10, 0.20]
+beta_headline: 0.05
+rho:
+  default: 0.2
+  sweep: [0.05, 0.2, 1.0]
+search:
+  popsize: 8
+  sigma0: 0.3
+  restarts: 5
+  evals_per_restart: 300
+  reeval_every: 10
+  sobol_seed: 20261028
+  near_corner: 0.02
+reference_order: [abstain, honest_max, twin_search, attack_projection, archive_clip1, archive_truthful_clip0, bank]
+tuning:
+  price_f: [0.5, 0.7, 0.9]
+  tol: [0.08, 0.12, 0.16]
+  L: [10, 20, 50]
+  inner_restarts: 1
+  inner_evals: 100
+  inner_seeds: 3
+  recheck_top: 3
+  recheck_namespace: dev_val
+tuned: null                 # at the lock, the lock tooling (plan 2B) lists experiments/tuned/tuned_<rule>.json with sha256 here
+identity_salt_sha256: null  # at the lock, the separate session commits the SHA-256 of the final salt here; the salt itself is released with the sealed bundle
+positions: [low, median, high]
+doubling_cells: [[D1, median], [D2, median]]     # per rule, at beta_headline and rho default
+no_ban_rules: [B2, B3]
+all_deviators:
+  sweeps: 3
+  restarts: 1
+  evals: 100
+  seeds: 3

@@ -186,9 +186,12 @@ Read before designing the rule.
 
 ## Status
 
-Week 1. Core engine implemented: market with a validated rule interface,
-ledger with bonds, first-best, B1 to B3, honest-max and fixed-cheat policies
-with the truthful twin, metrics, run script, and the pilot benchmark (24.9 ms
-per episode on an M4 Max against a 45 ms gate). Plan 2 (search, families,
-manifest, calibration, tuning, coverage study, claim script, model actors,
-identity replacement) next.
+Week 2. Identities and H3, enforcement-ablation adapter, D1/D2 families,
+CMA-ES search with an archive, incumbents and projection replacement, twin
+search, reference selection from the bounded projected set, candidate bank
+pass, calibration, baseline tuning with dev-val rechecks, all-deviators
+with its twin procedure, search checks, schedule-driven manifest, staged
+sweep runner with counted runs, and the full-path benchmark implemented.
+Plan 2B (intervals, coverage study, claim script, lock tooling, model
+actors, custodian instructions) next.
+

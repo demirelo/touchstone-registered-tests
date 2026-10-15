@@ -53,8 +53,7 @@ def test_validate_action():
     for bad in (Action(effort=0.61, offer=Offer(0.5, 0.1)), Action(effort=-0.01, offer=None), Action(effort=float("nan"), offer=None)):
         with pytest.raises(ValueError):
             validate_action(bad, p)
-    with pytest.raises(NotImplementedError):
-        validate_action(Action(effort=0.5, offer=None, exit=True), p)
+    validate_action(Action(effort=0.5, offer=None, exit=True), p)   # exit is a legal decision
 
 
 def test_view_rng_is_cached_and_seeded():

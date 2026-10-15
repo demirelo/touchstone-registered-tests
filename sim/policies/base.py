@@ -33,6 +33,7 @@ class ProviderView:
     posted_prices: tuple[float, ...] | None
     history: ProviderHistory
     policy_seed: int
+    identity: int = -1
 
     @cached_property
     def rng(self) -> np.random.Generator:
@@ -47,8 +48,6 @@ class Action:
 
 
 def validate_action(action: Action, params: ProviderParams) -> None:
-    if action.exit:
-        raise NotImplementedError("exit and re-entry arrive with identity replacement in plan 2")
     e = action.effort
     if not (isinstance(e, (int, float, np.floating)) and math.isfinite(float(e))):
         raise ValueError("effort must be finite")
