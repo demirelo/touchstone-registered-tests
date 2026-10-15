@@ -3,7 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Callable
 
-import cma
+import warnings
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", message="Could not import matplotlib.pyplot", category=UserWarning)
+    import cma
 import numpy as np
 
 from .cell import Cell, SeedCache, run_focal

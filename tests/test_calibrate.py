@@ -49,3 +49,10 @@ def test_calibrate_script_writes_json(tmp_path):
     subprocess.run([sys.executable, "scripts/calibrate.py", "--seeds", "2", "--out", str(out)], check=True)
     cal = json.loads(out.read_text())
     assert set(cal) == {"S_hat", "n_FB", "m", "market_key", "T", "seeds"} and cal["seeds"] == [4000, 4001]
+
+
+def test_calibrate_refuses_a_market_with_no_served_job(monkeypatch):
+    import sim.calibrate as cal
+    monkeypatch.setattr(cal, "first_best_served", lambda cfg, values_t: 0)       # a valid market always serves; force the edge
+    with pytest.raises(ValueError, match="positive first-best surplus"):
+        cal.calibrate(MarketConfig.default(), seeds=[4000])

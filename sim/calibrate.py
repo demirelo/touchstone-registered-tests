@@ -46,6 +46,8 @@ def calibrate(cfg_base: MarketConfig, seeds) -> Calibration:
         totals.append(first_best_episode(cfg_base, d))
         served.append(sum(first_best_served(cfg_base, d.values[t]) for t in range(cfg_base.T)))
     S_hat = float(np.mean(totals)); n_FB = float(np.mean(served))
+    if n_FB <= 0:
+        raise ValueError("no job has positive first-best surplus: calibration is undefined for this market")
     return Calibration(S_hat=S_hat, n_FB=n_FB, m=S_hat / n_FB, market_key=market_key(cfg_base), T=int(cfg_base.T), seeds=tuple(seeds))
 
 

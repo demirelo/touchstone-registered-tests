@@ -33,9 +33,14 @@ def sha256_file(path: str | Path) -> str:
 
 def settings_hash(locked: dict) -> str:
     """Hash of every experimental setting: the whole file except the version label and the blocks written at the lock
-    (tuned and calibration by the lock tooling, identity_salt_sha256 by the separate session), so installing them
-    at the lock keeps the pre-lock artifacts valid."""
-    bound = {k: v for k, v in locked.items() if k not in ("version", "tuned", "calibration", "identity_salt_sha256")}
+    (tuned, calibration, the coverage report hash and consequences, the comprehension fixture hash, and the sealed
+    bundle hash by the lock tooling; identity_salt_sha256 by the separate session; h1.cost_cap_usd from the token
+    pilot), so installing them at the lock keeps the pre-lock artifacts valid."""
+    skip = ("version", "tuned", "calibration", "identity_salt_sha256", "sealed_bundle_sha256", "coverage_report_sha256",
+            "comprehension_fixture_sha256", "coverage_consequences")
+    bound = {k: v for k, v in locked.items() if k not in skip}
+    if isinstance(bound.get("h1"), dict):
+        bound["h1"] = {k: v for k, v in bound["h1"].items() if k != "cost_cap_usd"}
     return hashlib.sha256(json.dumps(bound, sort_keys=True).encode()).hexdigest()
 
 
