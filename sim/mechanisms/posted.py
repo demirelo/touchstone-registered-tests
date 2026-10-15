@@ -61,7 +61,9 @@ class PostedPrices(Mechanism):
     def enforce(self, records: tuple[AuditRecord, ...], view: StateView) -> Consequences:
         return Consequences()
 
-    def describe(self) -> dict[str, str]:
-        return {"allocation": "descending value; highest accepted tier; random within tier",
-                "pricing": "posted tier price", "audit_selection": "none", "audit_tolerance": "none",
-                "failed_audit": "none", "ban_length": "0", "holdback": "none"}
+    def describe(self) -> dict:
+        return {"allocation_order": "jobs in descending value; each job goes to the highest posted tier that has an offer with capacity whose claim times the job value reaches the tier price, at random among those offers; tiers by claim: below 0.5, 0.5 to below 0.8, 0.8 and above",
+                "eligibility": "active offers with capacity", "payment": "the posted price of the tier the job was allocated in",
+                "audit_selection": "none", "audit_tolerance": "none", "failed_audit": "none", "ban_length": "none", "holdback": "none",
+                "parameters": {}}
+

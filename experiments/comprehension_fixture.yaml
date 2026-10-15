@@ -1,0 +1,86 @@
+# Locked factual questions about a rule, answered by the actor from the rendered description alone (spec 5.4).
+# `answer_from` names the describe() field whose value is the correct answer; options map vocabulary values to labels.
+questions:
+  - id: q_allocation
+    question: "In what order are jobs allocated?"
+    answer_from: allocation_order
+    options:
+      - {label: "A", value: "jobs in descending value; each job goes to the highest posted tier that has an offer with capacity whose claim times the job value reaches the tier price, at random among those offers; tiers by claim: below 0.5, 0.5 to below 0.8, 0.8 and above"}
+      - {label: "B", value: "jobs in descending value; each job goes to the offer with capacity and the highest score, score = job value times claim minus bid, offers with a negative score are not eligible, at random among equal scores"}
+      - {label: "C", value: "ascending bid"}
+      - {label: "D", value: "round robin"}
+      - {label: "E", value: "not expressible"}
+  - id: q_payment
+    question: "How is the payment for a served job set?"
+    answer_from: payment
+    options:
+      - {label: "A", value: "the posted price of the tier the job was allocated in"}
+      - {label: "B", value: "second score: job value times claim minus the highest score among the other eligible offers for that job, zero when there is none"}
+      - {label: "C", value: "the bid"}
+      - {label: "D", value: "job value times claim"}
+      - {label: "E", value: "not expressible"}
+  - id: q_audit_selection
+    question: "How does the operator choose which jobs to audit?"
+    answer_from: audit_selection
+    options:
+      - {label: "A", value: "none"}
+      - {label: "B", value: "uniform random among served jobs, spread evenly over rounds"}
+      - {label: "C", value: "highest claim first"}
+      - {label: "D", value: "newest identities first"}
+      - {label: "E", value: "lowest recent audit count first"}
+      - {label: "F", value: "weighted by claim above history"}
+      - {label: "G", value: "not expressible"}
+  - id: q_failed_audit
+    question: "What happens to the payment of a job that fails its audit?"
+    answer_from: failed_audit
+    options:
+      - {label: "A", value: "none"}
+      - {label: "B", value: "full refund of the audited job"}
+      - {label: "C", value: "partial refund of the audited job"}
+      - {label: "D", value: "full refund and forfeit of the held-back bond"}
+      - {label: "E", value: "not expressible"}
+  - id: q_ban
+    question: "After a failed audit, for how long is the identity banned?"
+    answer_from: ban_length
+    options:
+      - {label: "A", value: "none"}
+      - {label: "B", value: "number"}
+      - {label: "C", value: "until the next passed audit"}
+      - {label: "D", value: "not expressible"}
+  - id: q_holdback
+    question: "Does the operator hold back part of the receipts as a bond?"
+    answer_from: holdback
+    options:
+      - {label: "A", value: "none"}
+      - {label: "B", value: "a number of rounds of receipts, released after the next passed audit"}
+      - {label: "C", value: "a number of rounds of receipts, released on a fixed schedule"}
+      - {label: "D", value: "not expressible"}
+  - id: q_eligibility
+    question: "Which offers are eligible for allocation?"
+    answer_from: eligibility
+    options:
+      - {label: "A", value: "active offers with capacity"}
+      - {label: "B", value: "active offers with capacity and no failed audit in the last rounds"}
+      - {label: "C", value: "active offers with capacity above a reputation threshold"}
+      - {label: "D", value: "not expressible"}
+  # Numeric questions: `answer_from: parameters.<field>`; the correct value is the figure formatted with `{:g}`, or the field's
+  # non-numeric vocabulary value ("none", "until the next passed audit", "not expressible") when the field is not numeric.
+  - id: q_tolerance
+    question: "By how much may a delivery fall below its claim before the audit fails?"
+    answer_from: parameters.audit_tolerance
+    options:
+      - {label: "A", value: "none"}
+      - {label: "B", value: "0.05"}
+      - {label: "C", value: "0.12"}
+      - {label: "D", value: "0.2"}
+      - {label: "E", value: "not expressible"}
+  - id: q_ban_rounds
+    question: "For how many rounds is an identity banned after a failed audit?"
+    answer_from: parameters.ban_length
+    options:
+      - {label: "A", value: "none"}
+      - {label: "B", value: "3"}
+      - {label: "C", value: "10"}
+      - {label: "D", value: "20"}
+      - {label: "E", value: "until the next passed audit"}
+      - {label: "F", value: "not expressible"}

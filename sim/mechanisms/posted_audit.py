@@ -13,9 +13,10 @@ class PostedRandomAudit(RandomAuditMixin, PostedPrices):
         self.tol = float(tol)
         self.L = int(L)
 
-    def describe(self) -> dict[str, str]:
+    def describe(self) -> dict:
         d = PostedPrices.describe(self)
-        d.update({"audit_selection": "uniform random among served jobs, spread schedule",
-                  "audit_tolerance": f"{self.tol}", "failed_audit": "full refund",
-                  "ban_length": f"{self.L}", "holdback": "none"})
+        d.update({"audit_selection": "uniform random among served jobs, spread evenly over rounds", "audit_tolerance": "number",
+                  "failed_audit": "full refund of the audited job", "ban_length": "number" if self.L > 0 else "none", "holdback": "none",
+                  "parameters": {"audit_tolerance": float(self.tol), **({"ban_length": int(self.L)} if self.L > 0 else {})}})
         return d
+
