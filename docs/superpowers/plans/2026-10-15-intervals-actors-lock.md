@@ -1,4 +1,4 @@
-# Touchstone plan 2B (version 2): intervals, coverage study, model actors, describe renderer, claim check, lock tooling, plots, custodian instructions
+# Touchstone plan 2B (version 3): intervals, coverage study, model actors, describe renderer, claim check, lock tooling, plots, custodian instructions
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -12,9 +12,11 @@
 
 **Scope split, stated once:** Plan 2B ends when `scripts/check_claim.py --verify-lock` passes on a lock-candidate tree, `scripts/coverage_study.py` runs end to end at a smoke size and at the registered size from the manifest, the model actor runs the H1 procedure against B1 to B3 with the fake backend and with cached real responses, the token pilot script exists and has been run once per backend by the user, `scripts/plot.py` draws figures 1 and 2 from the sweep CSVs, and `docs/custodian.md` tells the separate session exactly what to produce. The proposed rule, the sealed H1 prompt and H2 definition, and every post-lock run are outside this plan.
 
+**Changes from version 2 (both seats rejected v2):** the frozen post-lock paths now run end to end (the manifest drops `proposed` from the pre-lock entries and lists it once in `heldout`; the schedule counts corners of a registered family through the registry; the sweep loads H2 through `available_families(locked)`, writes the bundle hash into every record, computes headline positions for `heldout`, and evaluates `4 x final_eval_n` runs under `final_eval`); a test runs `--sections heldout --rules B2,proposed` through every stage with a synthetic H2 whose corner count differs from D2's; the conditional n = 40 run triggers when both n = 20 procedures fail; the pool is observed once per cell and reused across n; `nct.cdf` NaN tails are filled by the sign of the noncentrality; the threshold check uses the between-pool standard error, runs at every M used, and a failure withholds admission at that n; `manifest_weights` ignores coverage rows when it collects rule names; the vocabulary uses block lists, carries B1's acceptance condition and tier rule and B3's eligibility and runner-up rule in words, and refuses non-finite figures; the budgeted backend reserves the cost of the next request and keeps a cumulative ledger across runs; the patch log entries name the file they replace and `effective_path` applies them to the prompt, the family, and the seeds without touching the original bundle; `check_proposed_module` snapshots every loaded `sim.*` module including function code and defaults and re-checks after `make(params)`; confirmatory `check_claim.py` rebuilds every held-out job and runs the sweep's own record check, requires the exact first `final_eval_n` sealed seeds in order, the LLM model, the locked T = 100 calibration hash, complete comprehension scores, and the frozen description record; the lock script requires both commitments, a finite positive cap, a complete pilot of the registered size, complete fixture, power, and threshold-check evidence, and re-validates under `--check`; tree checks use `git diff --name-status -z`; H1 figures use the t bound in every mode; the custodian and run-book commands were executed as written; the H1 cache directory is allow-listed (D3 amended); the coverage study runs one cell per process or per machine (`--cell`) with a `--merge` step, so the six cells can run on six CPU pods.
+
 **Changes from version 1 (both seats rejected v1):** registries for the proposed rule and the sealed H2 family, the `heldout` section, and the final-eval sample size from the coverage consequences, so no frozen file needs a post-lock edit (new Task 1b); the import and attribute check for `proposed.py` written now against synthetic modules; `budget` in the CSV schema; the evaluation namespace checked before any record; `settings_hash` ignores `h1.cost_cap_usd` and `coverage_consequences`; vocabulary values that carry the baselines' selection rules and payment formulas, numeric frames, and numeric fixture questions; the backend protocol carries `instructions`, the cache stores the canonical request, and every wrapper forwards the prompt; a budgeted backend enforces the calls and cost caps and the pilot target before each uncached request; invalid repetitions counted once per repetition and applied to baseline H1 cells; H1 reference selection on dev-train (D10); the coverage study rewritten for memory (chunked scalar observations, serializable worker payloads), scipy's Hermite rule, the registered selection rule (D12), the registered threshold simulation saved in the report, independent statistics in the joint fixture, one coherent (M, R) per n, conditional n = 40, input validation through the sweep's own record check, and the manifest's trajectory graph outside the search gate (D8); required families from the lock, mandatory provenance in confirmatory mode, `--verify-only`, headline position for H2, patch demotions, caches outside `sealed/`, `-z` git parsing; the lock script's hash invariance and input validation with `--salt-hash`; figures read the admitted method and the per-budget position and take H1 rows; corrected run-book commands.
 
-**Design decisions in this plan (rulings for the executor's ledger and the spec note):** (D1) Jev is a second model backend behind the same actor interface as the LLM, with the action space discretized into a registered menu (effort levels and claim offsets as Choice questions); it is a development-side actor for the model-actor table, not a held-out family, because H1 is defined as the sealed LLM. (D2) The coverage study draws its reference pools and replications from a dedicated contiguous seed range `seeds.coverage` (start 3,000,000), disjoint from dev-train, dev-val, calibration, and the custodian's final-eval range, because the 20-element dev-val list cannot supply 35,000 seeds per cell; the spec note records this as the dev-val namespace's coverage sub-range. (D3) The prompt cache is a content-addressed directory of JSON files keyed by the SHA-256 of the canonical request, committed under `experiments/cache/` for the development runs and under `sealed/` for H1, so replay is byte-identical without the network. (D4) Fallback rounds are counted per repetition and the invalidity rule (more than 5% fallback rounds) marks the repetition; the statistic always includes all 10 repetitions. (D5) `check_claim.py` reads the admitted-sides table from the coverage report by (statistic, side, level, n) and refuses a clause whose needed side is absent. (D6) The lock script writes `tuned`, `calibration`, `coverage_report_sha256`, `sealed_bundle_sha256`, `h1` (budget, cost cap, model ids), and `intervals` into `locked.yaml`, and prints the `git tag -s` command; the salt commitment is written by the separate session. (D7) T = 100 for every H1 run with its own calibration (`scripts/calibrate.py --T 100`), as the spec says S_hat, B, and the twin are calibrated at T = 100. (D8) The coverage study's workload follows spec 5.3 lines 450 to 463: `manifest.py` enumerates unique trajectory keys per cell seed (the cell rule's attack, clipped attack, and reference unless abstain; the B2 and B3 attacks and clipped attacks for the loss-difference endpoint; a key is reused when the cell rule is B2 or B3), the base entry is the pools plus the replications at n = 10 and n = 20, and n = 40, the M doubling, and the R doubling are conditional entries run only when the registered remedy order reaches them; the study runs n = 10 and n = 20 first. The base entry is about 6 x 95,000 seeds x 4 to 7 keys, 2.3 to 4.0 million episodes, 19 to 33 core-hours at 29 ms (the spec's planning figure is 2.3 to 2.9 million), outside the search gate and excluded from `manifest_weights`; the observations are reduced to scalars per seed in chunks so memory stays flat. (D9) Baseline parameters for the H1 market are the T = 200 tuned parameters: `scripts/h1.py` verifies the tuned files against the T = 200 calibration's market key and settings hash, and builds the H1 market from the T = 100 calibration; both calibrations are inputs and both are hashed into `locked.yaml`. (D10) H1 reference selection (spec 5.2 and 5.4) runs the twin procedure with the evaluation episode on each of the 5 dev-train seeds (episodes 1 to 4 on `dev_train[:4]` as always), compares the mean normalized profit of the twin, honest-max, and abstention on those seeds in the registered order (abstain, honest_max, twin; ties to the earlier), and evaluates the chosen reference on the evaluation seeds; the H1 gain is attack minus that reference, and the twin difference is reported next to it. The 10 repetitions share the dev-train episodes, so with a deterministic cached actor they differ only in episode 5; the spec note and README say so. (D11) The comprehension rule compares the proposed rule's score with the minimum of B2's and B3's scores (B1 is not in the predicate): H1 is INCONCLUSIVE when `score(R*) < min(score(B2), score(B3)) - 1`. (D12) The coverage selection rule, registered exactly: take the top 3 by gain skewness and the top 3 by the Sarle coefficient of ban counts (finite values only, descending, cell name as the tie-break); their union, in the order skewness picks then Sarle picks, is the selection; while fewer than 6, add the next unused entry of the ranking that has contributed fewer distinct cells (ties go to skewness), and when a ranking is exhausted take from the other; `--smoke` selects the first 6 cells by name and marks the report `unranked`.
+**Design decisions in this plan (rulings for the executor's ledger and the spec note):** (D1) Jev is a second model backend behind the same actor interface as the LLM, with the action space discretized into a registered menu (effort levels and claim offsets as Choice questions); it is a development-side actor for the model-actor table, not a held-out family, because H1 is defined as the sealed LLM. (D2) The coverage study draws its reference pools and replications from a dedicated contiguous seed range `seeds.coverage` (start 3,000,000), disjoint from dev-train, dev-val, calibration, and the custodian's final-eval range, because the 20-element dev-val list cannot supply 35,000 seeds per cell; the spec note records this as the dev-val namespace's coverage sub-range. (D3) The prompt cache is a content-addressed directory of JSON files keyed by the SHA-256 of the canonical request (which includes the system prompt), under `experiments/cache/<backend>/` for development runs and `experiments/cache/h1/<backend>/` for the H1 runs after the unseal, never under `sealed/`; `experiments/cache/h1/` is on the allow-list so the post-lock cache can be committed as the replay evidence; replay is byte-identical without the network. (D4) Fallback rounds are counted per repetition and the invalidity rule (more than 5% fallback rounds) marks the repetition; the statistic always includes all 10 repetitions. (D5) `check_claim.py` reads the admitted-sides table from the coverage report by (statistic, side, level, n) and refuses a clause whose needed side is absent. (D6) The lock script writes `tuned`, `calibration`, `coverage_report_sha256`, `sealed_bundle_sha256`, `h1` (budget, cost cap, model ids), and `intervals` into `locked.yaml`, and prints the `git tag -s` command; the salt commitment is written by the separate session. (D7) T = 100 for every H1 run with its own calibration (`scripts/calibrate.py --T 100`), as the spec says S_hat, B, and the twin are calibrated at T = 100. (D8) The coverage study's workload follows spec 5.3 lines 450 to 463: `manifest.py` enumerates unique trajectory keys per cell seed (the cell rule's attack, clipped attack, and reference unless abstain; the B2 and B3 attacks and clipped attacks for the loss-difference endpoint; a key is reused when the cell rule is B2 or B3), the base entry is the pools plus the replications at n = 10 and n = 20, and n = 40, the M doubling, and the R doubling are conditional entries run only when the registered remedy order reaches them; the study runs n = 10 and n = 20 first. The base entry is about 6 x 95,000 seeds x 4 to 7 keys, 2.3 to 4.0 million episodes, 19 to 33 core-hours at 29 ms (the spec's planning figure is 2.3 to 2.9 million), outside the search gate and excluded from `manifest_weights`; the observations are reduced to scalars per seed in chunks so memory stays flat. (D9) Baseline parameters for the H1 market are the T = 200 tuned parameters: `scripts/h1.py` verifies the tuned files against the T = 200 calibration's market key and settings hash, and builds the H1 market from the T = 100 calibration; both calibrations are inputs and both are hashed into `locked.yaml`. (D10) H1 reference selection (spec 5.2 and 5.4) runs the twin procedure with the evaluation episode on each of the 5 dev-train seeds (episodes 1 to 4 on `dev_train[:4]` as always), compares the mean normalized profit of the twin, honest-max, and abstention on those seeds in the registered order (abstain, honest_max, twin; ties to the earlier), and evaluates the chosen reference on the evaluation seeds; the H1 gain is attack minus that reference, and the twin difference is reported next to it. The 10 repetitions share the dev-train episodes, so with a deterministic cached actor they differ only in episode 5; the spec note and README say so. (D11) The comprehension rule compares the proposed rule's score with the minimum of B2's and B3's scores (B1 is not in the predicate): H1 is INCONCLUSIVE when `score(R*) < min(score(B2), score(B3)) - 1`. (D12) The coverage selection rule, registered exactly: take the top 3 by gain skewness and the top 3 by the Sarle coefficient of ban counts (finite values only, descending, cell name as the tie-break); their union, in the order skewness picks then Sarle picks, is the selection; while fewer than 6, add the next unused entry of the ranking that has contributed fewer distinct cells (ties go to skewness), and when a ranking is exhausted take from the other; `--smoke` selects the first 6 cells by name and marks the report `unranked`.
 
 ## Global Constraints
 
@@ -47,7 +49,7 @@
 
 **Interfaces:**
 - Produces:
-  - `locked.yaml` gains `seeds.coverage: {start: 3000000, block: 600000, pool: 35000, replications: {"10": 2000, "20": 2000, "40": 4000}, n_grid: [10, 20, 40]}` (one block of 600,000 seeds per selected cell: room for the pool and the replications with both doublings), `intervals: {bootstrap_resamples: 10000, bootstrap_seed: 20261111, h1_repetitions: 10, reference_level: 0.95, margins: {"0.95": 2.0, "0.9875": 1.0}, deficits: {"0.95": 3.0, "0.9875": 1.5}, joint_trials: 200, joint_min_admitted: 190, quadrature_nodes: 200, remedy_order: [percentile, studentized, studentized_n40]}`, `h1: {model: claude-opus-5-5, jev_model: jev-1.14.0, T: 100, episodes: 5, repetitions: 10, betas: [0.02, 0.05, 0.10], fallback_limit: 0.05, invalid_limit: 2, cost_cap_usd: null, calls_cap: 192000}`, `claim: {beta: 0.05, eff_min: 0.90, gain_max: 0.30, loss_diff_min: 0.05, baseline_gain_min: 1.0, rule_level: 0.95, baseline_level: 0.9875}`, `allow_list: [sim/mechanisms/proposed.py, experiments/proposed.yaml, experiments/proposed_describe.yaml, scripts/plot.py, docs/, sealed/, sealed/patches/]`, `calibration: null`, `sealed_bundle_sha256: null`, `coverage_report_sha256: null`, `comprehension_fixture_sha256: null`.
+  - `locked.yaml` gains `seeds.coverage: {start: 3000000, block: 600000, pool: 35000, replications: {"10": 2000, "20": 2000, "40": 4000}, n_grid: [10, 20, 40]}` (one block of 600,000 seeds per selected cell: room for the pool and the replications with both doublings), `intervals: {bootstrap_resamples: 10000, bootstrap_seed: 20261111, h1_repetitions: 10, reference_level: 0.95, margins: {"0.95": 2.0, "0.9875": 1.0}, deficits: {"0.95": 3.0, "0.9875": 1.5}, joint_trials: 200, joint_min_admitted: 190, quadrature_nodes: 200, remedy_order: [percentile, studentized, studentized_n40]}`, `h1: {model: claude-opus-5-5, jev_model: jev-1.14.0, T: 100, episodes: 5, repetitions: 10, betas: [0.02, 0.05, 0.10], fallback_limit: 0.05, invalid_limit: 2, cost_cap_usd: null, calls_cap: 192000}`, `claim: {beta: 0.05, eff_min: 0.90, gain_max: 0.30, loss_diff_min: 0.05, baseline_gain_min: 1.0, rule_level: 0.95, baseline_level: 0.9875}`, `allow_list: [sim/mechanisms/proposed.py, experiments/proposed.yaml, experiments/proposed_describe.yaml, experiments/cache/h1/, scripts/plot.py, docs/, sealed/, sealed/patches/]`, `calibration: null`, `sealed_bundle_sha256: null`, `coverage_report_sha256: null`, `comprehension_fixture_sha256: null`.
   - `sweep.py` reference records carry `attack_per_seed_normalized` and `reference_per_seed_normalized` (dev-train) and `reference_per_seed_profit`; `--eval-namespace {dev_val,final_eval}` selects the evaluation seeds of the `evaluate` stage (default `dev_val`; `final_eval` refuses to run, before any record is read, unless the namespace is available: `locked.yaml` or the verified sealed bundle, Task 7); under `final_eval` the number of evaluation seeds is `locked["coverage_consequences"]["final_eval_n"]` (20 or 40) instead of the budget's `n_val`; `META_FIELDS` gains `budget` and `meta_of` writes `float(job["cfg"]["budget"])` into every per-seed row; a record whose rule is not in the current `--rules` raises `SystemExit` naming the rule.
   - `calibrate` raises `ValueError("no job has positive first-best surplus")` when `n_FB == 0`.
   - `EpisodeResult.efforts` comment states that efforts are recorded in banned rounds too.
@@ -102,6 +104,11 @@ def test_reference_records_carry_per_seed_values_and_foreign_rules_are_refused(c
     r = run_sweep(cal_path, out, "--stage", "reference", "--rules", "B2", "--smoke", "--workers", "1")
     assert r.returncode != 0 and "B1" in (r.stderr + r.stdout)
     r = run_sweep(cal_path, out, "--stage", "evaluate", "--rules", "B1", "--smoke", "--workers", "1", "--eval-namespace", "final_eval")
+    from scripts.sweep import train_val
+    from sim.schedule import Budget, stage_runs
+    job = {"budget": [1, 16, 1, 2], "locked": dict(lk, coverage_consequences={"final_eval_n": 3}, seeds=dict(lk["seeds"], final_eval=[9, 8, 7, 6])), "eval_namespace": "final_eval"}
+    _, val, b = train_val(job)
+    assert val == (9, 8, 7) and b == Budget(1, 16, 1, 3) and stage_runs("D1", "evaluate", b) == 12      # the evaluate count follows final_eval_n
     assert r.returncode != 0 and "final_eval" in (r.stderr + r.stdout)
 ```
 
@@ -190,7 +197,9 @@ with warnings.catch_warnings():
 
 In `scripts/sweep.py`:
 - in `stage_reference`, add to the record: `"attack_per_seed_normalized": [float(v) for v in attack.archive[exact_key(attack.best_knobs)].per_seed_normalized]`, `"reference_per_seed_normalized": [float(v) for v in ref.per_seed_normalized]`, `"reference_per_seed_profit": [float(v) for v in ref.per_seed_profit]`;
-- in `train_val`, take the evaluation namespace from `job["eval_namespace"]` (default `"dev_val"`); under `final_eval` use `n_eval = int((lk.get("coverage_consequences") or {}).get("final_eval_n") or b.n_val)` seeds, else `b.n_val`; in `run_stages`, before `load_params` and before any record is read, `try: locked_seeds(lk, ns) except ValueError as e: raise SystemExit(f"evaluation namespace {ns} is not available: {e}")`;
+- in `train_val`, take the evaluation namespace from `job["eval_namespace"]` (default `"dev_val"`); under `final_eval` use `n_eval = int((lk.get("coverage_consequences") or {}).get("final_eval_n") or b.n_val)` seeds and return `Budget(b.restarts, b.evals, b.n_train, n_eval)` as the budget, so `stage_runs(family, "evaluate", b)` in `stage_evaluate` counts `4 x n_eval` (the 40-seed remedy then passes the exact run check); in `run_stages`, before `load_params` and before any record is read, `try: locked_seeds(lk, ns) except ValueError as e: raise SystemExit(f"evaluation namespace {ns} is not available: {e}")`;
+- in the evaluate stage's headline computation, include every section whose cells run all three positions at the headline beta (`development` and `heldout`), so `headline.json` carries `"<rule>/H2"` keys after the unseal;
+- `--shard K/N` (search stage only): the selected cells are sorted by name and cell `i` runs when `i % N == K`; each shard writes its own records into `--out`, and the later stages run once over the union of the shard outputs (copy the `search/` directories together); a test runs `--shard 0/2` and `--shard 1/2` into one directory and checks the record set equals the unsharded run's;
 - `META_FIELDS = ["cell", "section", "rule", "family", "beta", "rho", "position", "smoke", "reference", "budget"]` and `meta_of` adds `"budget": float(job["cfg"]["budget"])`; update the header assertion in `tests/test_sweep.py::test_smoke_sweep_runs_every_stage_with_counted_runs` to the new `META_FIELDS + ROW_FIELDS`;
 - in `job_for`, add `"eval_namespace": eval_namespace` (a new parameter, default `"dev_val"`), and in `run_stages` pass `o.get("eval_namespace", "dev_val")`; add `ap.add_argument("--eval-namespace", dest="eval_namespace", default="dev_val", choices=["dev_val", "final_eval"])`;
 - in `run_stages`, when building `jobs` from the search records, raise `SystemExit(f"record {name} belongs to rule {rule}, which is not in --rules; pass it or use another output directory")` instead of a `KeyError`;
@@ -227,8 +236,9 @@ git commit -m "feat: plan 2B configuration blocks, coverage seed range, per-seed
   - `make_rule(rule_name: str, params: dict)`: B1 to B3 as `rule_from_params`, `"proposed"` through the module.
   - `available_families(locked: dict | None = None) -> dict[str, Family]`: `FAMILIES` plus `"D2+H3"`, plus `"H2"` (from `sealed/h2/family.py`, attribute `H2`) when `SEALED_DIR / "h2/family.py"` exists and, if `locked` is given, the bundle verifies; `"H2+H3"` is not registered (H2 never exits, spec 6.1).
   - `available_rules() -> list[str]`: `["B1", "B2", "B3"]` plus `"proposed"` when available.
-- Produces (`sim/manifest.py`): `_full_cells` takes `families: tuple[str, ...]`; `enumerate_manifest(locked, rules, budget=None, families=None)` lists, when `"H2"` is in the registry, a `heldout` section: for every rule in `rules` (and `proposed` when available) and every beta in the grid, positions at the headline beta, `kind = "full_cell"`, `post_lock = True`, family `"H2"`, `runs = sum(cell_runs("D2", b).values())` (H2's budget is D2's, spec 6.1 and 8).
-- Produces (`scripts/sweep.py`): `family_of(name)` reads `available_families()`; `load_params("proposed", ...)` reads `proposed_params()` and applies the same four checks as a tuned file; `rule_from_params` is replaced by `make_rule` everywhere in the script; the `heldout` section is accepted by `--sections`.
+- Produces (`sim/manifest.py`): `_full_cells` takes `families: tuple[str, ...]`; `enumerate_manifest(locked, rules, budget=None)` separates `baselines = [r for r in rules if r != "proposed"]` (the pre-lock entries, tuning grids, and bank are built from the baselines only, so `rules` may contain `proposed` without a `KeyError`) and lists, when `"H2"` is in the registry, a `heldout` section: for every rule in `baselines + (["proposed"] if proposed_available() else [])` (once each) and every beta in the grid, positions at the headline beta, `kind = "full_cell"`, `post_lock = True`, family `"H2"`, `runs = sum(cell_runs("H2", b_eval).values())` where `b_eval` replaces `n_val` by `coverage_consequences.final_eval_n` when set.
+- Produces (`sim/schedule.py`): `cell_runs(family_name, b)` counts corners as `N_CORNERS[family_name]` when known, else `len(available_families()[family_name].corners()) * b.n_train` (the custodian's family declares its own knobs), so a registered H2 schedules without an edit.
+- Produces (`scripts/sweep.py`): `family_of(name)` reads `available_families(locked)` (the bundle is verified against the lock commitment before H2 is used; before the lock, with no commitment, `available_families(None)`); every record of an H2 cell carries `"bundle_hash": bundle_hash(SEALED_DIR)`; `load_params("proposed", ...)` reads `proposed_params()` and applies the same four checks as a tuned file; `rule_from_params` is replaced by `make_rule` everywhere in the script; the `heldout` section is accepted by `--sections`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -253,8 +263,10 @@ def make(params):
     return PostedRandomAudit(params["P1"], params["P2"], params["P3"], tol=params["tol"], L=params["L"])
 '''
 H2_SRC = '''
-from sim.policies.families import D2 as H2
-CONTAINMENT = "H2 is D2 (synthetic test family)"
+from sim.policies.families import D2, Family
+# A synthetic family named H2 with its own knob set so the corner count differs from D2's (schedule test).
+H2 = Family("H2", D2.knob_names[:-1] + ("clip",), D2.make, D2.project, D2.registered_starts_fn, D2.exact_key_fn, D2.knob_key_fn)
+CONTAINMENT = "H2 is D2 with one fewer knob (synthetic test family)"
 '''
 
 
@@ -277,9 +289,11 @@ def test_registry_loads_the_proposed_rule_and_the_sealed_family(tmp_path, monkey
     import sim.registry as reg; importlib.reload(reg)
     assert reg.proposed_available() and reg.available_rules() == ["B1", "B2", "B3", "proposed"]
     rule = reg.make_rule("proposed", reg.proposed_params()["best_params"])
-    assert rule.describe()["audit_tolerance"] == "number" and rule.describe()["parameters"]["ban_length"] == 5
+    assert rule.tol == 0.1 and rule.L == 5                       # the describe() record is checked in Task 3's tests
     fams = reg.available_families()
-    assert set(fams) == {"D1", "D2", "D2+H3", "H2"} and fams["H2"].name == "D2"
+    assert set(fams) == {"D1", "D2", "D2+H3", "H2"} and fams["H2"].name == "H2" and len(fams["H2"].corners()) != len(fams["D2"].corners())
+    from sim.schedule import cell_runs, budget_from_locked
+    b = budget_from_locked(lk); assert cell_runs("H2", b)["corners"] == len(fams["H2"].corners()) * b.n_train
     from sim.tuning import rule_from_params
     assert rule_from_params("proposed", {"P1": 0.25, "P2": 0.4, "P3": 0.55, "tol": 0.1, "L": 5}).name == rule.name
 
@@ -301,30 +315,38 @@ def test_manifest_lists_heldout_cells_only_when_h2_is_registered(tmp_path, monke
     cells = enumerate_manifest(lk, ["B1", "B2", "B3"])
     assert not any(c.section == "heldout" for c in cells)
     synthetic_env(tmp_path, monkeypatch); importlib.reload(reg)
-    cells = enumerate_manifest(lk, ["B1", "B2", "B3"])
+    cells = enumerate_manifest(lk, ["B1", "B2", "B3", "proposed"])            # proposed in --rules never reaches the tuning grids or the bank
     held = [c for c in cells if c.section == "heldout"]
     n_betas = len(lk["beta_grid"]); n_pos = len(lk["positions"])
     assert len(held) == 4 * (n_betas - 1 + n_pos) and all(c.post_lock and c.family == "H2" for c in held) and {c.rule for c in held} == {"B1", "B2", "B3", "proposed"}
+    assert len({c.name for c in held}) == len(held) and not any(c.rule == "proposed" and c.section != "heldout" for c in cells if not c.post_lock)
     t = totals(cells)
     assert t["heldout"] > 0 and t["pre_lock"] == totals([c for c in cells if c.section != "heldout"])["pre_lock"]
+    from sim.schedule import budget_from_locked
+    lk40 = dict(lk, coverage_consequences={"final_eval_n": 40, "h1": "confirmatory", "parametrized": "studentized_n40"})
+    held40 = [c for c in enumerate_manifest(lk40, ["B2"]) if c.section == "heldout"]
+    assert held40[0].runs - held[0].runs == 4 * (40 - budget_from_locked(lk).n_val)
 
 
-def test_sweep_smoke_runs_the_proposed_rule_and_h2(tmp_path, monkeypatch):
+def test_sweep_smoke_runs_the_proposed_rule_and_h2_through_every_stage(tmp_path, monkeypatch):
+    # The documented post-lock command on the locked market with a smoke budget: every stage, a baseline and the proposed
+    # rule, the synthetic H2 whose corner count differs from D2's, the bundle hash in the records, and the H2 headline.
+    import os
     from sim.calibrate import calibrate, save_calibration
+    from sim.locked import market_config_from_locked
     synthetic_env(tmp_path, monkeypatch)
-    c = MarketConfig.default()
-    cfg = MarketConfig(N=4, J=30, T=6, sigma=c.sigma, e=0.0, v_min=0.6, v_max=1.4, providers=c.providers[6:10], alpha=0.0, budget=0.0)
-    save_calibration(calibrate(cfg, [4000, 4001]), tmp_path / "cal.json")
-    env = dict(__import__("os").environ)
-    r = subprocess.run([sys.executable, str(ROOT / "scripts" / "sweep.py"), "--stage", "search", "--sections", "heldout", "--rules", "proposed",
-                        "--calibration", str(tmp_path / "cal.json"), "--smoke", "--limit", "1", "--out", str(tmp_path / "out")],
-                       capture_output=True, text=True, cwd=ROOT, env=env)
+    lk = load_locked(); save_calibration(calibrate(market_config_from_locked(lk), [4000, 4001]), tmp_path / "cal.json")
+    r = subprocess.run([sys.executable, str(ROOT / "scripts" / "sweep.py"), "--stage", "all", "--sections", "heldout", "--rules", "B2,proposed",
+                        "--calibration", str(tmp_path / "cal.json"), "--smoke", "--select", "beta0.05", "--out", str(tmp_path / "out")],
+                       capture_output=True, text=True, cwd=ROOT, env=dict(os.environ))
     assert r.returncode == 0, r.stderr
-    recs = list((tmp_path / "out" / "search").glob("*.json"))
-    assert len(recs) == 1 and json.loads(recs[0].read_text())["spec"]["family"] == "H2" and json.loads(recs[0].read_text())["spec"]["rule"] == "proposed"
+    evals = {p.stem: json.loads(p.read_text()) for p in (tmp_path / "out" / "evaluate").glob("*.json")}
+    assert {v["spec"]["rule"] for v in evals.values()} == {"B2", "proposed"} and all(v["spec"]["family"] == "H2" and v.get("bundle_hash") for v in evals.values())
+    head = json.loads((tmp_path / "out" / "headline.json").read_text())
+    assert "B2/H2" in head and "proposed/H2" in head and head["B2/H2"]["headline"] in ("low", "median", "high")
 ```
 
-(`--smoke` with `--rules proposed` uses `DEFAULT_PARAMS`; add `"proposed": dict(DEFAULT_PARAMS["B2"])` to `DEFAULT_PARAMS` so the smoke path has parameters for the synthetic module, which wraps B2.)
+(`--smoke` with `--rules proposed` uses `DEFAULT_PARAMS`; add `"proposed": dict(DEFAULT_PARAMS["B2"])` to `DEFAULT_PARAMS` so the smoke path has parameters for the synthetic module, which wraps B2. The `Family` constructor's positional argument order and the attribute names `knob_names`, `registered_starts_fn`, `exact_key_fn`, `knob_key_fn` used by `H2_SRC` must match `sim/policies/families.py`; read the class before writing the fixture and adapt the fixture, not the class. The `--select beta0.05` substring keeps the smoke run to the headline-beta cells of both rules, which is where the headline position is computed. Before the lock `sealed_bundle_sha256` is null, so `family_of` loads the synthetic H2 without a bundle check; after the lock the check is mandatory.)
 
 - [ ] **Step 2: Run tests to verify they fail**
 
@@ -413,7 +435,7 @@ In `sim/tuning.py::rule_from_params`, before `raise ValueError(rule_name)`: `if 
 
 In `scripts/sweep.py`: `ALL_FAMILIES` is replaced by `def family_of(name): return available_families()[name]` (the registry re-reads the sealed path each call so a bundle unsealed later is seen without a restart); every `rule_from_params(rule, params)` call becomes `make_rule(rule, params)`; in `load_params`, when `rule == "proposed"` and `tuned_dir` is not `None` or not smoke, read `proposed_params()` instead of `tuned_dir / "tuned_proposed.json"` and apply the same `rule`, `market_key`, `settings_hash`, `calibration_seeds` checks; `DEFAULT_PARAMS["proposed"] = dict(DEFAULT_PARAMS["B2"])`; the `--sections` help lists `heldout`.
 
-In `sim/manifest.py`: `_full_cells(locked, rules, b, post_lock, families=("D1", "D2"), section="development")` loops over `families`; `enumerate_manifest` appends, when `"H2" in available_families()` (imported lazily from `sim.registry`), `_full_cells(locked, rules + (["proposed"] if proposed_available() else []), b, post_lock=True, families=("H2",), section="heldout")` using `cell_runs("D2", b)` for the run count (add a `budget_family` argument to `_full_cells`, default the family itself, `"D2"` for H2); `totals` already keys by section and `post_lock`; `manifest_weights` already skips `post_lock` rows.
+In `sim/manifest.py`: `_full_cells(locked, rules, b, post_lock, families=("D1", "D2"), section="development")` loops over `families`; `enumerate_manifest(locked, rules, budget=None)` sets `baselines = [r for r in rules if r != "proposed"]` and builds every existing entry from `baselines`; then, when `"H2" in available_families()` (imported lazily from `sim.registry`), it appends `_full_cells(locked, baselines + (["proposed"] if proposed_available() else []), b_eval, post_lock=True, families=("H2",), section="heldout")` with `b_eval = Budget(b.restarts, b.evals, b.n_train, final_eval_n or b.n_val)`; `totals` already keys by section and `post_lock`; `manifest_weights` already skips `post_lock` rows. In `sim/schedule.py::cell_runs`: `corners = N_CORNERS[family_name] if family_name in N_CORNERS else len(available_families()[family_name].corners())` (lazy import of `sim.registry`). In `scripts/sweep.py`, `family_of` calls `available_families(lk if lk.get("sealed_bundle_sha256") else None)`, and `base_record` adds `"bundle_hash": bundle_hash(SEALED_DIR) if job["spec"]["family"] == "H2" else None`; the headline loop in the evaluate stage includes `s["section"] in ("development", "heldout")`.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
@@ -682,12 +704,18 @@ def test_renderer_receives_only_the_record_and_is_noninterfering(monkeypatch):
     rec = describe_record(PostedRandomAudit(0.25, 0.40, 0.55, tol=0.12, L=10))
     text = render(rec, voc)
     assert "0.12" in text and "banned for 10 rounds" in text and "uniform random" in text and "PostedRandomAudit" not in text
-    assert "highest posted tier its claim reaches" in text and "posted price of the highest tier" in text        # the selection rule and the payment formula reach the actor
+    assert "claim times the job value reaches the tier price" in text and "0.5 to below 0.8" in text and "tier the job was allocated in" in text   # the acceptance condition, the tiers, the payment
     b3 = render(describe_record(SecondScore(tol=0.12, L=10)), voc)
-    assert "job value times claim minus bid" in b3 and "minus the runner-up score" in b3
-    bad_number = dict(rec, parameters=dict(rec["parameters"], audit_tolerance="twelve"))
-    with pytest.raises(ValueError, match="numeric"):
-        validate_record(bad_number, voc)
+    assert "score = job value times claim minus bid" in b3 and "negative score are not eligible" in b3 and "zero when there is none" in b3
+    for bad in ("twelve", float("nan"), float("inf"), True):
+        with pytest.raises(ValueError, match="numeric"):
+            validate_record(dict(rec, parameters=dict(rec["parameters"], audit_tolerance=bad)), voc)
+    assert len(voc["numeric"]["holdback"]) == 2 and all("," in v for v in voc["numeric"]["holdback"])             # YAML kept the two values whole
+    hb = dict(rec, holdback=voc["numeric"]["holdback"][0])
+    with pytest.raises(ValueError, match="holdback"):
+        validate_record(hb, voc)                                                                                   # a hold-back value needs its figure
+    hb["parameters"] = dict(rec["parameters"], holdback=7)
+    assert "last 7 rounds are held back" in render(hb, voc)
     # the renderer sees the record only: a spy record with a changed numeric parameter changes the bytes; nothing else can
     spy = dict(rec, parameters=dict(rec["parameters"], audit_tolerance=0.16))
     assert render(spy, voc) != text
@@ -727,13 +755,17 @@ not_expressible: "not expressible"
 # Values carry the operational rule in words (selection order, payment formula), so the actor reads what the mechanism does.
 # `numeric` lists the values that need a figure in the record's `parameters` map under the field's name.
 numeric:
-  audit_tolerance: [number]
-  ban_length: [number]
-  holdback: [a number of rounds of receipts, released after the next passed audit, a number of rounds of receipts, released on a fixed schedule]
+  audit_tolerance:
+    - number
+  ban_length:
+    - number
+  holdback:
+    - "a number of rounds of receipts, released after the next passed audit"
+    - "a number of rounds of receipts, released on a fixed schedule"
 fields:
   allocation_order:
-    - descending job value, each job to the highest posted tier its claim reaches, at random within a tier
-    - descending score, where score = job value times claim minus bid, capacity respected
+    - "jobs in descending value; each job goes to the highest posted tier that has an offer with capacity whose claim times the job value reaches the tier price, at random among those offers; tiers by claim: below 0.5, 0.5 to below 0.8, 0.8 and above"
+    - "jobs in descending value; each job goes to the offer with capacity and the highest score, score = job value times claim minus bid, offers with a negative score are not eligible, at random among equal scores"
     - ascending bid
     - round robin
     - not expressible
@@ -743,8 +775,8 @@ fields:
     - active offers with capacity above a reputation threshold
     - not expressible
   payment:
-    - the posted price of the highest tier the claim reaches
-    - second score, equal to job value times claim minus the runner-up score
+    - the posted price of the tier the job was allocated in
+    - "second score: job value times claim minus the highest score among the other eligible offers for that job, zero when there is none"
     - the bid
     - job value times claim
     - not expressible
@@ -773,10 +805,12 @@ fields:
     - not expressible
   holdback:
     - none
-    - a number of rounds of receipts, released after the next passed audit
-    - a number of rounds of receipts, released on a fixed schedule
+    - "a number of rounds of receipts, released after the next passed audit"
+    - "a number of rounds of receipts, released on a fixed schedule"
     - not expressible
 ```
+
+(Every value that contains a comma is quoted so YAML keeps it as one string; a test checks that `numeric.holdback` has exactly two entries.)
 
 ```yaml
 # experiments/comprehension_fixture.yaml
@@ -787,8 +821,8 @@ questions:
     question: "In what order are jobs allocated?"
     answer_from: allocation_order
     options:
-      - {label: "A", value: "descending job value, each job to the highest posted tier its claim reaches, at random within a tier"}
-      - {label: "B", value: "descending score, where score = job value times claim minus bid, capacity respected"}
+      - {label: "A", value: "jobs in descending value; each job goes to the highest posted tier that has an offer with capacity whose claim times the job value reaches the tier price, at random among those offers; tiers by claim: below 0.5, 0.5 to below 0.8, 0.8 and above"}
+      - {label: "B", value: "jobs in descending value; each job goes to the offer with capacity and the highest score, score = job value times claim minus bid, offers with a negative score are not eligible, at random among equal scores"}
       - {label: "C", value: "ascending bid"}
       - {label: "D", value: "round robin"}
       - {label: "E", value: "not expressible"}
@@ -796,8 +830,8 @@ questions:
     question: "How is the payment for a served job set?"
     answer_from: payment
     options:
-      - {label: "A", value: "the posted price of the highest tier the claim reaches"}
-      - {label: "B", value: "second score, equal to job value times claim minus the runner-up score"}
+      - {label: "A", value: "the posted price of the tier the job was allocated in"}
+      - {label: "B", value: "second score: job value times claim minus the highest score among the other eligible offers for that job, zero when there is none"}
       - {label: "C", value: "the bid"}
       - {label: "D", value: "job value times claim"}
       - {label: "E", value: "not expressible"}
@@ -875,6 +909,7 @@ The numeric options list the tuned figures of the baselines after tuning (replac
 """describe() records: vocabulary validation, the frozen prose renderer, and the comprehension fixture (spec 5.4)."""
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 import yaml
@@ -927,8 +962,8 @@ def validate_record(record: dict, vocabulary: dict) -> None:
             raise ValueError(f"describe() field {name!r} has the value {value!r}, which is not in the vocabulary")
         if value in vocabulary.get("numeric", {}).get(name, []):
             figure = record.get("parameters", {}).get(name)
-            if not isinstance(figure, (int, float)) or isinstance(figure, bool):
-                raise ValueError(f"describe() field {name!r} is numeric ({value!r}) but parameters has no number for {name!r}")
+            if not isinstance(figure, (int, float)) or isinstance(figure, bool) or not math.isfinite(float(figure)):
+                raise ValueError(f"describe() field {name!r} is numeric ({value!r}) but parameters has no finite number for {name!r}")
 
 
 def uses_not_expressible(record: dict) -> bool:
@@ -988,8 +1023,8 @@ Change the baselines' `describe()` methods to return vocabulary values with a `p
 ```python
 # sim/mechanisms/posted.py (B1)
     def describe(self) -> dict:
-        return {"allocation_order": "descending job value, each job to the highest posted tier its claim reaches, at random within a tier",
-                "eligibility": "active offers with capacity", "payment": "the posted price of the highest tier the claim reaches",
+        return {"allocation_order": "jobs in descending value; each job goes to the highest posted tier that has an offer with capacity whose claim times the job value reaches the tier price, at random among those offers; tiers by claim: below 0.5, 0.5 to below 0.8, 0.8 and above",
+                "eligibility": "active offers with capacity", "payment": "the posted price of the tier the job was allocated in",
                 "audit_selection": "none", "audit_tolerance": "none", "failed_audit": "none", "ban_length": "none", "holdback": "none",
                 "parameters": {}}
 ```
@@ -1007,8 +1042,8 @@ Change the baselines' `describe()` methods to return vocabulary values with a `p
 ```python
 # sim/mechanisms/second_score.py (B3)
     def describe(self) -> dict:
-        return {"allocation_order": "descending score, where score = job value times claim minus bid, capacity respected",
-                "eligibility": "active offers with capacity", "payment": "second score, equal to job value times claim minus the runner-up score",
+        return {"allocation_order": "jobs in descending value; each job goes to the offer with capacity and the highest score, score = job value times claim minus bid, offers with a negative score are not eligible, at random among equal scores",
+                "eligibility": "active offers with capacity", "payment": "second score: job value times claim minus the highest score among the other eligible offers for that job, zero when there is none",
                 "audit_selection": "uniform random among served jobs, spread evenly over rounds", "audit_tolerance": "number",
                 "failed_audit": "full refund of the audited job", "ban_length": "number" if self.L > 0 else "none", "holdback": "none",
                 "parameters": {"audit_tolerance": float(self.tol), **({"ban_length": int(self.L)} if self.L > 0 else {})}}
@@ -1046,7 +1081,7 @@ git commit -m "feat: locked describe() vocabulary, validation, frozen renderer, 
   - `canonical_request(backend_name, model, kind, payload) -> str`, `request_hash(...) -> str` (SHA-256).
   - `PromptCache(directory)`: `get(key) -> response | None`, `put(key, request: str, response)` (one JSON file `{"request": ..., "response": ...}` per key), `entry(key) -> dict | None`, counters `hits`, `misses`.
   - `AnthropicBackend(model, instructions)`, `JevBackend(model, instructions)` (menu `EFFORT_LEVELS`, `CLAIM_OFFSETS`, `MARKUPS`, serve/abstain; usage fields `or 0`), `FakeBackend(fn, model="fake-1", instructions=ACTOR_INSTRUCTIONS)`, `make_backend(name, locked, instructions=None)`.
-  - `CapExceeded(Exception)` with `.reason`; `PilotTargetReached(Exception)`; `BudgetedBackend(inner, max_calls=None, max_cost_usd=None, prices=None, stop_at=None)`: forwards `name`, `model`, `instructions`; before every call raises `CapExceeded("calls cap N")` when `calls + 1 > max_calls`, `CapExceeded("cost cap X USD")` when the cost so far exceeds `max_cost_usd`, and `PilotTargetReached` when `calls >= stop_at`; after every call records `calls`, `usage`, `latencies` (seconds), `cost_usd` (from `prices[model]` per million tokens when present, else 0).
+  - `CapExceeded(Exception)` with `.reason`; `PilotTargetReached(Exception)`; `BudgetedBackend(inner, max_calls=None, max_cost_usd=None, prices=None, stop_at=None, ledger=None, max_request_tokens=(8000, 512))`: forwards `name`, `model`, `instructions`; `ledger` is a JSON path holding the cumulative `calls`, `usage`, and `cost_usd` of every earlier run with this backend (loaded at construction, written after every call), so a restarted run continues the same allowance; before every call raises `CapExceeded("calls cap N ...")` when `calls + 1 > max_calls`, `CapExceeded("cost cap X USD ...")` when `cost_usd + reserve > max_cost_usd` where `reserve` is the price of one request of `max_request_tokens` (input, output) at `prices[model]` (so the cap is never crossed), and `PilotTargetReached` when `calls >= stop_at`; after every call records `calls`, `usage`, `latencies` (seconds, this run only), `cost_usd`; `calls_this_run` counts this run only.
   - `build_state(view, feedback, T) -> dict`.
   - `ProcedureResult(profits (5), fallback_rounds, total_rounds, invalid, calls, cache_hits, usage, episode5)`; `run_procedure(cfg, rule_factory, focal, backend, cache, rendered_rule, train_seeds (4), eval_seed, locked, clip_episode5=False, twin=False)`.
   - `H1Reference(name, scores: dict[str, float], twin_results: list[ProcedureResult])`; `select_h1_reference(cfg, rule_factory, focal, backend, cache, rendered_rule, train_seeds, selection_seeds, locked) -> H1Reference` (ruling D10: twin procedures whose episode 5 runs on each selection seed; honest-max and abstention without calls; the chosen name is the maximizer of the mean normalized profit `profit / (S* / N)` in the order `REFERENCE_ORDER = ("abstain", "honest_max", "twin")`, ties to the earlier).
@@ -1164,11 +1199,23 @@ def test_budgeted_backend_stops_before_the_call_that_would_exceed(tmp_path):
     with pytest.raises(PilotTargetReached):
         run_episode(cfg, PostedPrices(0.2, 0.35, 0.5), pols, 1)
     assert b2.calls == 3 and len(b2.latencies) == 3 and b2.usage["input_tokens"] > 0
-    b3 = BudgetedBackend(FakeBackend(honest_fn, model="claude-opus-5-5"), max_cost_usd=1e-9, prices=lk["h1"]["prices"])
+    prices = {"fake-1": {"input": 1e6, "output": 0.0}}                 # one USD per input token: every request costs more than a dollar
+    b3 = BudgetedBackend(FakeBackend(honest_fn), max_cost_usd=1.0, prices=prices, max_request_tokens=(1, 0))
     prov = LLMProvider(b3, PromptCache(tmp_path / "e"), rendered, cfg.providers[3], feedback=[], T=cfg.T, counters=ActorCounters()); pols[3] = prov
     with pytest.raises(CapExceeded, match="cost cap"):
         run_episode(cfg, PostedPrices(0.2, 0.35, 0.5), pols, 1)
-    assert b3.calls == 1 and b3.cost_usd > 0
+    assert b3.calls == 0 and b3.cost_usd == 0.0                       # the reserve stops the first request that would cross the cap
+    ledger = tmp_path / "ledger.json"
+    b4 = BudgetedBackend(FakeBackend(honest_fn), max_calls=5, ledger=ledger)
+    prov = LLMProvider(b4, PromptCache(tmp_path / "f"), rendered, cfg.providers[3], feedback=[], T=cfg.T, counters=ActorCounters()); pols[3] = prov
+    with pytest.raises(CapExceeded):
+        run_episode(cfg, PostedPrices(0.2, 0.35, 0.5), pols, 1)
+    b5 = BudgetedBackend(FakeBackend(honest_fn), max_calls=5, ledger=ledger)                # a restart continues the same allowance
+    assert b5.calls == 5 and b5.calls_this_run == 0
+    prov = LLMProvider(b5, PromptCache(tmp_path / "g"), rendered, cfg.providers[3], feedback=[], T=cfg.T, counters=ActorCounters()); pols[3] = prov
+    with pytest.raises(CapExceeded):
+        run_episode(cfg, PostedPrices(0.2, 0.35, 0.5), pols, 1)
+    assert b5.calls == 5 and b5.calls_this_run == 0
 
 
 def test_procedure_runs_five_episodes_with_feedback_and_invalidity_rule(tmp_path):
@@ -1206,7 +1253,7 @@ def test_reference_selection_follows_the_registered_order(tmp_path):
     assert set(ref.scores) == {"abstain", "honest_max", "twin"} and ref.scores["abstain"] == 0.0 and len(ref.twin_results) == len(SEL)
     assert ref.name == max(("abstain", "honest_max", "twin"), key=lambda n: (ref.scores[n], -("abstain", "honest_max", "twin").index(n)))
     assert ref.name == "honest_max"                               # the clipped cheat (effort 0, claim 0) earns less than honest-max under B1
-    ref2 = select_h1_reference(cfg, lambda: PostedPrices(0.2, 0.35, 0.5), 3, FakeBackend(honest_fn), cache, rendered, TRAIN, SEL, lk)
+    ref2 = select_h1_reference(cfg, lambda: PostedPrices(0.2, 0.35, 0.5), 3, FakeBackend(honest_fn, model="fake-honest"), PromptCache(tmp_path / "d"), rendered, TRAIN, SEL, lk)   # its own identity and cache
     assert ref2.scores["twin"] == pytest.approx(ref2.scores["honest_max"]) and ref2.name == "honest_max"   # ties go to the earlier name
 
 
@@ -1521,28 +1568,40 @@ class PilotTargetReached(Exception):
 
 
 class BudgetedBackend:
-    """Enforces the calls cap, the cost cap, and the pilot target before every uncached request (spec 5.4), and records
-    calls, usage, latencies, and cost. Forwards name, model, and instructions so cache keys are unchanged."""
+    """Enforces the calls cap, the cost cap (with a reserve for the next request, so the cap is never crossed), and the
+    pilot target before every uncached request (spec 5.4); keeps a cumulative ledger across runs; records calls, usage,
+    latencies, and cost. Forwards name, model, and instructions so cache keys are unchanged."""
 
-    def __init__(self, inner, max_calls: int | None = None, max_cost_usd: float | None = None, prices: dict | None = None, stop_at: int | None = None) -> None:
+    def __init__(self, inner, max_calls: int | None = None, max_cost_usd: float | None = None, prices: dict | None = None, stop_at: int | None = None,
+                 ledger=None, max_request_tokens=(8000, 512)) -> None:
         self.inner, self.max_calls, self.max_cost_usd, self.prices, self.stop_at = inner, max_calls, max_cost_usd, prices or {}, stop_at
         self.name, self.model, self.instructions = inner.name, inner.model, inner.instructions
-        self.calls = 0; self.usage = {"input_tokens": 0, "output_tokens": 0}; self.latencies: list = []; self.cost_usd = 0.0
+        self.ledger = Path(ledger) if ledger else None; self.max_request_tokens = tuple(int(x) for x in max_request_tokens)
+        self.calls = 0; self.usage = {"input_tokens": 0, "output_tokens": 0}; self.cost_usd = 0.0
+        if self.ledger is not None and self.ledger.exists():
+            led = json.loads(self.ledger.read_text()); self.calls = int(led["calls"]); self.usage = dict(led["usage"]); self.cost_usd = float(led["cost_usd"])
+        self.calls_this_run = 0; self.latencies: list = []
+
+    def _price(self, input_tokens: int, output_tokens: int) -> float:
+        p = self.prices.get(self.model)
+        return 0.0 if p is None else input_tokens / 1e6 * float(p["input"]) + output_tokens / 1e6 * float(p["output"])
 
     def complete(self, kind: str, payload: dict) -> dict:
-        if self.stop_at is not None and self.calls >= self.stop_at:
+        if self.stop_at is not None and self.calls_this_run >= self.stop_at:
             raise PilotTargetReached()
         if self.max_calls is not None and self.calls + 1 > self.max_calls:
-            raise CapExceeded(f"calls cap {self.max_calls} reached after {self.calls} calls")
-        if self.max_cost_usd is not None and self.cost_usd > float(self.max_cost_usd):
-            raise CapExceeded(f"cost cap {self.max_cost_usd} USD exceeded ({self.cost_usd:.4f} USD after {self.calls} calls)")
+            raise CapExceeded(f"calls cap {self.max_calls} reached after {self.calls} calls (cumulative)")
+        reserve = self._price(*self.max_request_tokens)
+        if self.max_cost_usd is not None and self.cost_usd + reserve > float(self.max_cost_usd):
+            raise CapExceeded(f"cost cap {self.max_cost_usd} USD would be crossed ({self.cost_usd:.4f} USD spent after {self.calls} calls, next request up to {reserve:.4f} USD)")
         t0 = time.perf_counter(); out = self.inner.complete(kind, payload); self.latencies.append(time.perf_counter() - t0)
-        self.calls += 1
+        self.calls += 1; self.calls_this_run += 1
         for k in self.usage:
             self.usage[k] += int(out.get("usage", {}).get(k) or 0)
-        if self.model in self.prices:
-            p = self.prices[self.model]
-            self.cost_usd = self.usage["input_tokens"] / 1e6 * float(p["input"]) + self.usage["output_tokens"] / 1e6 * float(p["output"])
+        self.cost_usd = self._price(self.usage["input_tokens"], self.usage["output_tokens"])
+        if self.ledger is not None:
+            self.ledger.parent.mkdir(parents=True, exist_ok=True)
+            self.ledger.write_text(json.dumps({"calls": self.calls, "usage": self.usage, "cost_usd": self.cost_usd, "model": self.model}))
         return out
 
 
@@ -1729,7 +1788,7 @@ def estimate_cost_usd(usage: dict, model: str, locked: dict) -> float:
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `uv run pytest tests/test_llm_actor.py -v`
-Expected: PASS (11 tests). No network is touched. If `test_reference_selection_follows_the_registered_order` finds that the clipped cheat earns more than honest-max under the small B1 fixture, replace the equality on `ref.name` with the registered-order expression that precedes it and record the observed winner in the ledger; the second assertion (ties go to the earlier name) must hold as written.
+Expected: PASS (10 tests). No network is touched. If `test_reference_selection_follows_the_registered_order` finds that the clipped cheat earns more than honest-max under the small B1 fixture, replace the equality on `ref.name` with the registered-order expression that precedes it and record the observed winner in the ledger; the second assertion (ties go to the earlier name) must hold as written.
 
 Call accounting (ruling D10, for the spec note): per (rule, beta) cell at T = 100, the uncached calls are at most 5 x 500 (selection twins) + 10 x (500 + 500 + 100) (attack, twin, clipped) = 13,500, but the 10 repetitions share the four dev-train episodes, so with a deterministic cached actor the real count is about 4 x 100 + 10 x 100 (attack) + 4 x 100 + 10 x 100 (twin) + up to 10 x 100 (clipped) + up to 5 x 100 (selection) about 4,300 per cell and about 39,000 for 3 rules x 3 betas, well under the 192,000 cap.
 
@@ -1765,8 +1824,8 @@ git commit -m "feat: model actor with Anthropic, Jev, and fake backends behind a
   - `fixture_and_power(locked, smoke, rng, n_list) -> dict`: per `n` in `n_list`, attempts `(pool_factor, rep_factor)` in `((1, 1), (2, 1), (2, 2))` each with its own thresholds at `M = base_M * pool_factor` and `R = R_n * rep_factor`, stopping at the first attempt whose fixture and power both pass; returns `per_n`, `remedies` (the passing factors per n, or the last attempt's factors with `admissible = False`), `admissible_n`, `base_M`, `base_R`, and `threshold_check` at the base M.
   - `admission(measured, thr_by_n: dict[int, dict], locked, admissible_n: dict[str, bool] | None = None) -> dict` (`procedure_admitted`, `method_at_n`, `admitted_sides`, `consequences`; a procedure at an `n` whose fixture or power failed is not admitted; an `n` with no measurements is not admitted).
   - `write_report`, `load_report`.
-- Produces (`sim/manifest.py`): `coverage_cells(locked, selection: list | None) -> list[CellSpec]`: per selected cell (or six estimated cells at 5 runs per seed), a `coverage_base` entry (`runs_per_seed * (pool + sum over BASE_N of R_n * n)`) and three `coverage_conditional` entries (`n40`: `runs_per_seed * R_40 * 40`; `double_M`: `runs_per_seed * pool`; `double_R`: `runs_per_seed * sum over all n of R_n * n`), `section = "coverage"`, `post_lock = False`, `exact = True`; `totals` reports `coverage_base` and `coverage_conditional` and excludes `section == "coverage"` from `pre_lock`, `pre_lock_exact`, and `pre_lock_upper_bound`; `manifest_weights` skips `section == "coverage"`.
-- Produces (`scripts/coverage_study.py`): CLI `--sweep-out DIR --calibration PATH [--tuned-dir DIR] --out DIR [--smoke] [--workers K] [--select-only] [--force-n40] [--register]`; validates every reference record with the sweep's own `check_record` against jobs rebuilt from the calibration and tuned parameters (registered mode refuses smoke records, fewer than 18 cells, or fewer than 4 dev-train seeds); writes `<out>/coverage_report.json` and `<out>/coverage_cells.json`; `--register` copies the selection to `experiments/coverage_cells.json` for the manifest; runs n = 10 and n = 20 first and n = 40 only when the n = 20 procedures are both inadmissible (or `--force-n40`).
+- Produces (`sim/manifest.py`): `manifest_weights` collects its rule names and its rows from cells with `section != "coverage"` (the estimate rows carry rule `"?"`); `coverage_cells(locked, selection: list | None) -> list[CellSpec]`: per selected cell (or six estimated cells at 5 runs per seed), a `coverage_base` entry (`runs_per_seed * (pool + sum over BASE_N of R_n * n)`) and three `coverage_conditional` entries (`n40`: `runs_per_seed * R_40 * 40`; `double_M`: `runs_per_seed * pool`; `double_R`: `runs_per_seed * sum over all n of R_n * n`), `section = "coverage"`, `post_lock = False`, `exact = True`; `totals` reports `coverage_base` and `coverage_conditional` and excludes `section == "coverage"` from `pre_lock`, `pre_lock_exact`, and `pre_lock_upper_bound`; `manifest_weights` skips `section == "coverage"`.
+- Produces (`scripts/coverage_study.py`): CLI `--sweep-out DIR --calibration PATH [--tuned-dir DIR] --out DIR [--smoke] [--workers K] [--select-only] [--cell INDEX] [--merge] [--force-n40] [--register]`; validates every reference record with the sweep's own `check_record` against jobs rebuilt from the calibration and tuned parameters, and in registered mode also requires the full calibration namespace, the full dev-train vector in every record (`len(attack_per_seed_normalized) == n_train`), the bank document the records cite (`load_bank_doc` + `check_bank_record`), and no smoke record; writes `<out>/coverage_report.json` and `<out>/coverage_cells.json`; `--register` copies the selection to `experiments/coverage_cells.json` for the manifest. The pool of a cell is observed once per `pool_factor` and saved to `<out>/pool_<cell>_<factor>.npz`, and every n (and the conditional n = 40 later) reads it back. **Per-cell mode for separate machines:** `--cell INDEX` runs the selection step (deterministic, the same on every machine) and then only cell `INDEX`'s pools and replications, writing `<out>/cell_<INDEX>.json`; `--merge` reads the six `cell_*.json` files, runs the fixture and power step, admits, and writes the report, so the six cells can run on six CPU pods and be merged on one. Without `--cell`, one process runs every cell (with `--workers` in parallel) and merges at the end. n = 10 and n = 20 run first; n = 40 runs (per cell, in the same mode) only when `method_at_n["20"]` is `None` after the base admission and n = 40 has not run (or `--force-n40`).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1899,9 +1958,12 @@ def test_control_power_is_high_for_a_3_point_deficit_and_quadrature_converges():
 def test_fixture_and_power_smoke_shape():
     lk = load_locked()
     fp = fixture_and_power(lk, smoke=True, rng=np.random.default_rng(6), n_list=(10, 20))
-    assert set(fp["per_n"]) == {"10", "20"} and set(fp["remedies"]) == {"10", "20"} and "threshold_check" in fp
+    assert set(fp["per_n"]) == {"10", "20"} and set(fp["remedies"]) == {"10", "20"} and str(fp["base_M"]) in fp["threshold_check"]
     assert all(a["fixture"]["M"] == fp["base_M"] * a["pool_factor"] and a["fixture"]["R"] == int(fp["base_R"][n]) * a["rep_factor"]
-               for n, atts in fp["per_n"].items() for a in atts)             # one coherent (M, R) per attempt
+               and str(a["M"]) in fp["threshold_check"] for n, atts in fp["per_n"].items() for a in atts)   # one coherent (M, R) per attempt, each M cross-checked
+    assert np.isfinite(control_power(20, 0.9875, 1.5, 200, 20, 0.9, nodes=400))                     # the smoke M: NaN tails are filled, no FloatingPointError
+    chk = threshold_check(lk, 2000, pools=6, reps=500, rng=np.random.default_rng(7))
+    assert all(v["se"] > 0 for v in chk.values())
 
 
 def test_admission_follows_the_remedy_order_and_sets_consequences():
@@ -2180,12 +2242,22 @@ def thresholds(locked: dict, M: int) -> dict:
     return out
 
 
+def _pool_coverages(n: int, level: float, M: int, pools: int, reps: int, rng) -> np.ndarray:
+    crit = stats.t.ppf(level, n - 1); out = np.empty(pools)
+    for k in range(pools):
+        pool = rng.normal(size=M); _, hi = t_interval(pool, 0.95)
+        X = rng.normal(size=(reps, n)); U = X.mean(axis=1) + crit * X.std(axis=1, ddof=1) / math.sqrt(n)
+        out[k] = float((U >= hi).mean())
+    return out
+
+
 def threshold_check(locked: dict, M: int, pools: int, reps: int, rng) -> dict:
-    """The registered cross-check of the analytic threshold: 200 pools of size M, 20,000 replications each (spec 8)."""
+    """The registered cross-check of the analytic threshold: 200 pools of size M, 20,000 replications each (spec 8). The
+    replications in one pool share its mean error, so the standard error is the between-pool one: sd(per-pool coverage) / sqrt(pools)."""
     out = {}
     for key, t in thresholds(locked, M).items():
-        sim = simulated_conservative_coverage(t["n"], t["level"], M, pools, reps, rng)
-        se = math.sqrt(max(sim * (1 - sim), 1e-12) / (pools * reps))
+        cov = _pool_coverages(t["n"], t["level"], M, pools, reps, rng); sim = float(cov.mean())
+        se = float(cov.std(ddof=1) / math.sqrt(pools)) if pools > 1 else float("inf")
         out[key] = {"analytic": t["exact"], "simulated": sim, "gap": t["exact"] - sim, "se": se, "pools": pools, "reps": reps, "pass_": bool(abs(t["exact"] - sim) <= 3 * se + 1e-4)}
     return out
 
@@ -2228,11 +2300,13 @@ def control_power(n: int, level: float, deficit_points: float, M: int, R: int, t
     z = stats.norm.ppf(0.5 + ref_level / 2.0); delta = z / math.sqrt(M)
     x, w = roots_hermite(int(nodes))
     eps = math.sqrt(2.0) / math.sqrt(M) * x                       # pool-mean error in units of sigma
-    p = 1.0 - stats.nct.cdf(-c, n - 1, -(eps + delta) * math.sqrt(n))
+    nc = -(eps + delta) * math.sqrt(n)
+    p = 1.0 - stats.nct.cdf(-c, n - 1, nc)
+    p = np.where(np.isfinite(p), p, (nc < 0).astype(float))      # scipy's nct.cdf returns NaN for |nc| above about 9: coverage is 1 when the pool mean is far below, 0 when far above
     need = int(math.ceil(R * threshold))                         # admitted iff hits >= need; rejected iff hits <= need - 1
     rej = stats.binom.cdf(need - 1, R, p)
     total = float((w * rej).sum() / math.sqrt(math.pi))
-    if not (np.all(np.isfinite(x)) and np.all(np.isfinite(w)) and np.all(np.isfinite(p)) and math.isfinite(total)):
+    if not (np.all(np.isfinite(x)) and np.all(np.isfinite(w)) and math.isfinite(total)):
         raise FloatingPointError("non-finite quadrature in control_power")
     return total
 
@@ -2255,22 +2329,25 @@ def fixture_and_power(locked: dict, smoke: bool, rng, n_list) -> dict:
     cov = locked["seeds"]["coverage"]; iv = locked["intervals"]
     base_M = 200 if smoke else int(cov["pool"]); trials = 10 if smoke else int(iv["joint_trials"])
     base_R = {int(n): (20 if smoke else int(cov["replications"][str(n)])) for n in cov["n_grid"]}
-    per_n = {}; admissible = {}; remedies = {}
+    per_n = {}; admissible = {}; remedies = {}; checks = {}
+    pools_c, reps_c = (5, 500) if smoke else (int(iv.get("threshold_check_pools", 200)), int(iv.get("threshold_check_reps", 20000)))
     for n in n_list:
         n = int(n); attempts = []
         for pf, rf in ((1, 1), (2, 1), (2, 2)):
             M = base_M * pf; R = base_R[n] * rf; thr = thresholds(locked, M)
+            if str(M) not in checks:                                  # the analytic threshold is cross-checked at every M actually used
+                checks[str(M)] = threshold_check(locked, M, pools_c, reps_c, rng)
+            chk_ok = all(v["pass_"] for k, v in checks[str(M)].items() if v and int(k.split("|")[0]) == n)
             fx = joint_fixture(locked, n, M, R, thr, trials, rng)
             pw = power_check(locked, M, {n: R}, {k: v for k, v in thr.items() if v["n"] == n})
-            ok = fx["pass_"] and all(v["pass_"] for v in pw.values())
-            attempts.append({"pool_factor": pf, "rep_factor": rf, "M": M, "R": R, "fixture": fx, "power": pw, "pass_": bool(ok)})
+            ok = fx["pass_"] and all(v["pass_"] for v in pw.values()) and chk_ok
+            attempts.append({"pool_factor": pf, "rep_factor": rf, "M": M, "R": R, "fixture": fx, "power": pw, "threshold_check_pass": bool(chk_ok), "pass_": bool(ok)})
             if ok:
                 break
         per_n[str(n)] = attempts; admissible[str(n)] = bool(attempts[-1]["pass_"])
         remedies[str(n)] = {"pool_factor": attempts[-1]["pool_factor"], "rep_factor": attempts[-1]["rep_factor"], "admissible": admissible[str(n)]}
-    check = threshold_check(locked, base_M, pools=(5 if smoke else 200), reps=(500 if smoke else 20000), rng=rng)
     return {"per_n": per_n, "admissible_n": admissible, "remedies": remedies, "base_M": base_M, "base_R": {str(k): v for k, v in base_R.items()},
-            "threshold_check": check, "smoke": bool(smoke)}
+            "threshold_check": checks, "smoke": bool(smoke)}
 
 
 # ---- admission -------------------------------------------------------------------------------------------------------
@@ -2336,7 +2413,7 @@ def coverage_cells(locked: dict, selection: list | None) -> list[CellSpec]:
     return out
 ```
 
-(the `kind_est` variable is unused; drop it.) In `enumerate_manifest`, after the existing cells are built, append `coverage_cells(locked, _load_selection())` where `_load_selection()` returns the parsed `experiments/coverage_cells.json` if it exists, else `None`. In `totals`: `if c.section == "coverage": t[c.kind] = t.get(c.kind, 0) + c.runs; continue` before the `pre_lock` accounting (so `coverage_base` and `coverage_conditional` are reported and nothing from the study enters `pre_lock*`). In `manifest_weights`: `if c.post_lock or c.section == "coverage": continue`. In `scripts/manifest.py`, print `coverage base (outside the search gate): <runs> runs, <hours> core-hours at the benchmark rate; conditional: <runs> runs`.
+(the `kind_est` variable is unused; drop it.) In `enumerate_manifest`, after the existing cells are built, append `coverage_cells(locked, _load_selection())` where `_load_selection()` returns the parsed `experiments/coverage_cells.json` if it exists, else `None`. In `totals`: `if c.section == "coverage": t[c.kind] = t.get(c.kind, 0) + c.runs; continue` before the `pre_lock` accounting (so `coverage_base` and `coverage_conditional` are reported and nothing from the study enters `pre_lock*`). In `manifest_weights`: build `rules` from `c for c in cells if not c.post_lock and c.section != "coverage" and c.rule not in ("all", "proposed")`, and in the loop `if c.post_lock or c.section == "coverage": continue`. In `scripts/manifest.py`, print `coverage base (outside the search gate): <runs> runs, <hours> core-hours at the benchmark rate; conditional: <runs> runs`.
 
 ```python
 # scripts/coverage_study.py
@@ -2357,12 +2434,12 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from scripts.sweep import SMOKE_BUDGET, check_record, job_for, load_params, make_cell, read_dir, train_val  # noqa: E402
+from scripts.sweep import SMOKE_BUDGET, check_bank_record, check_record, job_for, load_bank_doc, load_params, make_cell, read_dir, train_val  # noqa: E402
 from sim.calibrate import load_calibration  # noqa: E402
 from sim.cell import SeedCache, run_focal  # noqa: E402
 from sim.coverage import (BASE_N, CONDITIONAL_N, CoverageCellSpec, STATISTICS, PROCEDURES_AT_N, admission, fixture_and_power, measure, observe,  # noqa: E402
                           reference_interval, runs_per_seed, sarle_bimodality, seed_blocks, select_cells, skewness, thresholds, write_report)
-from sim.locked import load_locked, market_config_from_locked, settings_hash  # noqa: E402
+from sim.locked import load_locked, market_config_from_locked, seeds as locked_seeds, settings_hash  # noqa: E402
 from sim.manifest import enumerate_manifest  # noqa: E402
 from sim.positions import positions  # noqa: E402
 from sim.records import cfg_from_dict  # noqa: E402
@@ -2414,15 +2491,27 @@ def build_spec(name: str, universe: dict) -> CoverageCellSpec:
                             params_by_rule=params, attack_knobs_by_rule=knobs, ref_candidate=None if cand["name"] == "abstain" else cand)
 
 
+def pool_observations(spec: CoverageCellSpec, pool: np.ndarray, out: Path, tag: str) -> dict:
+    """The pool is observed once per (cell, pool_factor) and saved; every n reads it back (the manifest's base entry)."""
+    path = out / f"pool_{tag}.npz"
+    if path.exists():
+        d = np.load(path)
+        if np.array_equal(d["seeds"], pool):
+            return {s: d[s] for s in STATISTICS}
+    pobs = observe(spec, pool)
+    np.savez(path, seeds=pool, **pobs)
+    return pobs
+
+
 def run_cell(args) -> tuple:
-    name, spec, locked, index, pool_factor, rep_factor, n_list, smoke = args
-    settings = dict(locked["intervals"])
+    name, spec, locked, index, pool_factor, rep_factor, n_list, smoke, out = args
+    out = Path(out); settings = dict(locked["intervals"])
     if smoke:
         settings["bootstrap_resamples"] = 200
     pool, reps = seed_blocks(locked, index, pool_factor, rep_factor, n_list=n_list)
     if smoke:
         pool = pool[:200]; reps = {n: r[:20] for n, r in reps.items()}
-    pobs = observe(spec, pool)
+    pobs = pool_observations(spec, pool, out, f"{index}_{pool_factor}")
     refs = {s: reference_interval(pobs[s], float(locked["intervals"]["reference_level"])) for s in STATISTICS}
     measured = {}; degenerate = {}
     for n, S in reps.items():
@@ -2433,7 +2522,7 @@ def run_cell(args) -> tuple:
     return name, {"measured": measured, "pool_mean": {s: float(pobs[s].mean()) for s in STATISTICS}, "pool_se": {s: refs[s][2] for s in STATISTICS},
                   "pool_size": int(len(pool)), "replications": {str(n): int(S.shape[0]) for n, S in reps.items()},
                   "replication_se": {str(n): float(np.sqrt(0.95 * 0.05 / S.shape[0])) for n, S in reps.items()}, "degenerate_share": degenerate,
-                  "runs": runs_per_seed(spec) * (len(pool) + sum(S.size for S in reps.values()))}
+                  "runs": runs_per_seed(spec) * sum(S.size for S in reps.values()), "pool_runs": runs_per_seed(spec) * len(pool)}
 
 
 def main() -> None:
@@ -2442,11 +2531,21 @@ def main() -> None:
     ap.add_argument("--tuned-dir", dest="tuned_dir", default=None); ap.add_argument("--out", required=True)
     ap.add_argument("--smoke", action="store_true"); ap.add_argument("--workers", type=int, default=1)
     ap.add_argument("--select-only", dest="select_only", action="store_true"); ap.add_argument("--force-n40", dest="force_n40", action="store_true")
+    ap.add_argument("--cell", type=int, default=None, help="run only this selected cell (0 to 5) and write cell_<i>.json; merge later with --merge")
+    ap.add_argument("--merge", action="store_true", help="read cell_*.json from --out, run the fixture and power step, admit, and write the report")
     ap.add_argument("--register", action="store_true", help="copy the selection to experiments/coverage_cells.json for the manifest")
     a = ap.parse_args()
     lk = load_locked(); out = Path(a.out); out.mkdir(parents=True, exist_ok=True); cal = load_calibration(a.calibration)
     tuned = Path(a.tuned_dir) if a.tuned_dir else None
     universe = validated_universe(Path(a.sweep_out), lk, cal, tuned, a.smoke)
+    if not a.smoke:
+        if list(cal.seeds) != list(locked_seeds(lk, "calibration")):
+            raise SystemExit("the calibration must use the full calibration namespace")
+        bank = load_bank_doc(Path(a.sweep_out))
+        for name, (job, rec) in universe.items():
+            check_bank_record(rec, bank, "coverage")
+            if len(rec["attack_per_seed_normalized"]) != job["budget"][2] or len(rec["reference_per_seed_normalized"]) != job["budget"][2]:
+                raise SystemExit(f"{name}: the record's dev-train vectors are not the full n_train = {job['budget'][2]}")
     stats_by_cell = {name: cell_statistics(job, rec) for name, (job, rec) in universe.items()}
     if a.smoke:
         chosen = sorted(universe)[:6]; unranked = True
@@ -2467,29 +2566,47 @@ def main() -> None:
         return
     rng = np.random.default_rng(int(lk["intervals"]["bootstrap_seed"]))
     n_list = list(BASE_N) + (list(CONDITIONAL_N) if a.force_n40 else [])
-    fp = fixture_and_power(lk, a.smoke, rng, n_list)
+    fp = fixture_and_power(lk, a.smoke, rng, n_list)            # cheap and deterministic: every machine computes the same remedies
     results: dict = {}; thr_by_n: dict = {}
+    my_cells = [chosen[a.cell]] if a.cell is not None else list(chosen)
 
     def run_ns(ns):
         for n in ns:
             rem = fp["remedies"][str(n)]; M = fp["base_M"] * rem["pool_factor"]; thr_by_n[int(n)] = thresholds(lk, M)
-            jobs = [(name, specs[name], lk, i, rem["pool_factor"], rem["rep_factor"], (int(n),), a.smoke) for i, name in enumerate(chosen)]
+            jobs = [(name, specs[name], lk, chosen.index(name), rem["pool_factor"], rem["rep_factor"], (int(n),), a.smoke, out) for name in my_cells]
             got = dict(ProcessPoolExecutor(a.workers).map(run_cell, jobs)) if a.workers > 1 else dict(map(run_cell, jobs))
             for name, r in got.items():
-                results.setdefault(name, {"measured": {}, "runs": 0, "per_n": {}})
-                results[name]["measured"].update(r["measured"]); results[name]["runs"] += r["runs"]; results[name]["per_n"][str(n)] = {k: v for k, v in r.items() if k != "measured"}
+                results.setdefault(name, {"measured": {}, "runs": 0, "pool_runs": 0, "per_n": {}})
+                results[name]["measured"].update(r["measured"]); results[name]["runs"] += r["runs"]; results[name]["pool_runs"] = max(results[name]["pool_runs"], r["pool_runs"])
+                results[name]["per_n"][str(n)] = {k: v for k, v in r.items() if k != "measured"}
 
-    run_ns(n_list)
+    def needs_n40(adm):
+        return adm["method_at_n"]["20"] is None and 40 not in thr_by_n and not a.smoke
+
+    if a.merge:
+        for pth in sorted(out.glob("cell_*.json")):
+            results.update(json.loads(pth.read_text())["results"]); thr_by_n.update({int(k): v for k, v in json.loads(pth.read_text())["thr_by_n"].items()})
+        missing = [c for c in chosen if c not in results]
+        if missing:
+            raise SystemExit(f"--merge: no cell_*.json for {missing}")
+    else:
+        run_ns(n_list)
+        adm0 = admission({n: r["measured"] for n, r in results.items()}, thr_by_n, lk, fp["admissible_n"]) if a.cell is None else None
+        if a.cell is None and needs_n40(adm0):
+            fp40 = fixture_and_power(lk, a.smoke, rng, [40]); fp["per_n"].update(fp40["per_n"]); fp["remedies"].update(fp40["remedies"]); fp["admissible_n"].update(fp40["admissible_n"])
+            run_ns([40])
+        if a.cell is not None:
+            (out / f"cell_{a.cell}.json").write_text(json.dumps({"results": results, "thr_by_n": {str(k): v for k, v in thr_by_n.items()}, "cell": chosen[a.cell]}, default=float))
+            print(f"wrote {out / f'cell_{a.cell}.json'}; after all six cells exist run --merge (if the merge reports inconclusive at n = 20, rerun each cell with --force-n40, then --merge again)")
+            return
     adm = admission({n: r["measured"] for n, r in results.items()}, thr_by_n, lk, fp["admissible_n"])
-    if adm["consequences"]["parametrized"] == "studentized_n40" and 40 not in thr_by_n and not a.smoke:
-        fp40 = fixture_and_power(lk, a.smoke, rng, [40]); fp["per_n"].update(fp40["per_n"]); fp["remedies"].update(fp40["remedies"]); fp["admissible_n"].update(fp40["admissible_n"])
-        run_ns([40])
-        adm = admission({n: r["measured"] for n, r in results.items()}, thr_by_n, lk, fp["admissible_n"])
+    if a.merge and needs_n40(adm):
+        print("the n = 20 procedures are not admitted: rerun every cell with --cell i --force-n40, then --merge again", file=sys.stderr)
     provenance = {"settings_hash": settings_hash(lk), "salt_hash": hashlib.sha256(load_identity_salt()).hexdigest(), "calibration_sha256": hashlib.sha256(Path(a.calibration).read_bytes()).hexdigest(),
                   "tuned_sha256": {r: hashlib.sha256((tuned / f"tuned_{r}.json").read_bytes()).hexdigest() for r in ("B1", "B2", "B3")} if tuned else None, "sweep_out": str(a.sweep_out)}
     report = {"smoke": bool(a.smoke), "unranked": unranked, "admission_basis": "smoke (not an admission)" if a.smoke else "registered", "selection": selection,
               "statistics": stats_by_cell, "thresholds": {str(n): t for n, t in thr_by_n.items()}, "fixture_and_power": fp, "cells": results, **adm,
-              "provenance": provenance, "manifest_runs": sum(r["runs"] for r in results.values())}
+              "provenance": provenance, "manifest_runs": sum(r["runs"] + r["pool_runs"] for r in results.values())}
     h = write_report(out / "coverage_report.json", report)
     print(json.dumps({"sha256": h, "method_at_n": adm["method_at_n"], "consequences": adm["consequences"], "runs": report["manifest_runs"]}))
 
@@ -2512,7 +2629,7 @@ uv run python scripts/coverage_study.py --sweep-out /tmp/sweep_smoke --calibrati
 /usr/bin/time -l uv run python -c "import numpy as np, sys; sys.path.insert(0, '.'); from tests.test_coverage import small_spec; from sim.coverage import observe; observe(small_spec('B1'), np.arange(2000), chunk=500)" 2>&1 | grep "maximum resident"
 uv run python scripts/manifest.py
 ```
-Expected: the study prints six selected cells marked `(SMOKE, unranked)`, then a JSON line with `method_at_n`, `consequences`, and `runs`; the memory probe's maximum resident set stays under 1 GB for 2,000 seeds (the chunk, not the seed count, sets the peak); the manifest prints the coverage base and conditional totals on their own lines. Record the manifest's base total and core-hours in the ledger (expected 2.3 to 4.0 million episodes).
+Expected: the study prints six selected cells marked `(SMOKE, unranked)`, then a JSON line with `method_at_n`, `consequences`, and `runs`; the smoke report's `manifest_runs` equals the manifest formula for the smoke sizes (the pool is counted once per cell); the memory probe's maximum resident set stays under 1 GB for 2,000 seeds on the small market (the chunk, not the seed count, sets the peak; on the locked market a worker peaks near 1.3 GB per chunk of 500, so 16 workers need about 24 GB); the manifest prints the coverage base and conditional totals on their own lines. Then exercise the per-cell path: `--cell 0 --smoke` and `--cell 1 --smoke` into the same `--out`, then `--merge --smoke`, and compare the merged report's `cells` for those two cells with the single-process report (equal). Record the manifest's base total and core-hours in the ledger (expected 2.3 to 4.0 million episodes).
 
 - [ ] **Step 6: Commit**
 
@@ -2734,11 +2851,15 @@ def run_h1(o: dict) -> tuple[dict, int]:
     raw = make_fake_cheat(instructions) if o["backend"] == "fake-cheat" else make_backend(o["backend"], lk, instructions)
     calls_cap = int(o["max_calls"] if o["max_calls"] is not None else h["calls_cap"])
     cost_cap = o["max_cost_usd"] if o["max_cost_usd"] is not None else h.get("cost_cap_usd")
-    backend = BudgetedBackend(raw, max_calls=calls_cap, max_cost_usd=cost_cap, prices=h.get("prices", {}), stop_at=int(o["pilot_calls"]) if o["pilot"] else None)
+    backend = BudgetedBackend(raw, max_calls=calls_cap, max_cost_usd=cost_cap, prices=h.get("prices", {}), stop_at=int(o["pilot_calls"]) if o["pilot"] else None,
+                              ledger=None if (smoke or o["pilot"]) else cache.directory / "ledger.json")      # the caps are cumulative across restarts of a real run
     cal200 = load_calibration(o["calibration"]); cal100 = load_calibration(o["calibration_t100"])
     base = dataclasses.replace(smoke_config(), T=int(cal100.T)) if smoke else dataclasses.replace(market_config_from_locked(lk), T=int(h["T"]))
     if not smoke and int(cal100.T) != int(h["T"]):
         raise SystemExit(f"--calibration-t100 has T = {cal100.T}, locked h1.T is {h['T']}")
+    from sim.cell import market_key
+    if cal100.market_key != market_key(base):
+        raise SystemExit("--calibration-t100 belongs to a different market than the H1 market built from locked.yaml (or the smoke market)")
     try:
         eval_seeds = tuple(locked_seeds(lk, o["eval_namespace"]))
     except ValueError as e:
@@ -2752,13 +2873,14 @@ def run_h1(o: dict) -> tuple[dict, int]:
     tuned = Path(o["tuned_dir"]) if o["tuned_dir"] else None
     params = {r: load_params(r, tuned, smoke, cal200.market_key, settings_hash(lk), cal200.seeds) for r in rules}
     summary = {"backend": backend.name, "model": backend.model, "instructions_sha256": hashlib.sha256(instructions.encode()).hexdigest(), "T": int(base.T),
+               "calls_cumulative": backend.calls,
                "eval_namespace": o["eval_namespace"], "calibration_t100_sha256": hashlib.sha256(Path(o["calibration_t100"]).read_bytes()).hexdigest(),
                "calls_cap": calls_cap, "cost_cap_usd": cost_cap, "calls": 0, "cache_hits": 0, "usage": backend.usage, "cost_usd": 0.0,
                "comprehension": {}, "cells": {}, "partial": [], "stopped_by": None, "smoke": smoke}
     rows: list = []; status = 0
 
     def flush():
-        summary["calls"] = backend.calls; summary["cost_usd"] = backend.cost_usd
+        summary["calls"] = backend.calls_this_run; summary["calls_cumulative"] = backend.calls; summary["cost_usd"] = backend.cost_usd
         (out / "h1_summary.json").write_text(json.dumps(summary, indent=1, sort_keys=True, default=float))
         with (out / "h1_rows.csv").open("w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=FIELDS, extrasaction="ignore"); w.writeheader(); w.writerows(rows)
@@ -2786,8 +2908,8 @@ def run_h1(o: dict) -> tuple[dict, int]:
     finally:
         flush()
     if o["pilot"]:
-        n = max(backend.calls, 1); target = int(o["pilot_calls"])
-        pilot = {"backend": backend.name, "model": backend.model, "calls": backend.calls, "target": target, "complete": backend.calls >= target,
+        n = max(backend.calls_this_run, 1); target = int(o["pilot_calls"])
+        pilot = {"backend": backend.name, "model": backend.model, "calls": backend.calls_this_run, "target": target, "complete": backend.calls_this_run >= target,
                  "mean_input_tokens": backend.usage["input_tokens"] / n, "mean_output_tokens": backend.usage["output_tokens"] / n,
                  "mean_latency_s": (sum(backend.latencies) / len(backend.latencies)) if backend.latencies else 0.0,
                  "cost_per_call_usd": backend.cost_usd / n, "projected_cost_usd": backend.cost_usd / n * int(h["calls_cap"])}
@@ -2862,12 +2984,12 @@ git commit -m "feat: H1 runner with the budgeted backend (caps and pilot target 
   - `required_families(coverage) -> list[str]`: `["H2"]` plus `"H1"` when `coverage["consequences"]["h1"] == "confirmatory"`; H2's sample size is `consequences["final_eval_n"]` (an `inconclusive` parametrized consequence makes every H2 bound INCONCLUSIVE).
   - `evaluate_claim(h2, h1, coverage, locked, proposed, h1_summary=None, describe_record=None, h2_headline: dict[str, str] | None = None, demoted: set[str] = frozenset()) -> dict`: families come from `required_families`, never from which inputs are present (missing rows are INCONCLUSIVE with the note `"no rows"`); H2 rows of a rule are those at that rule's headline position (`h2_headline[rule]`, default `"median"`); a demoted cell `"<rule>|<family>"` (from the patch log) is INCONCLUSIVE; baseline H1 cells with invalid repetitions make their pairs INCONCLUSIVE; the audit sub-clause is `audit_cost_attack <= budget` on every seed (the harness clips audit spend to the budget, so this is a consistency check; a violation means corrupt rows); returns `claim`, `confirmatory`, `rule_clause`, `baseline_clause`, `h1_note`, `n`, `demoted`, `proposed`, `beta`.
   - `verdict_json(result) -> dict`.
-  - Git and file checks: `tracked_blobs(repo, ref)` (NUL-separated parsing: `git ls-tree -r -z`, `git ls-files -z`, `git hash-object --stdin-paths`), `allowed(path, allow_list)`, `verify_lock(repo, lock_tag, allow_list) -> list[str]`, `verify_freeze(repo, freeze_tag, locked, allow_list) -> list[str]` (the three `FROZEN_AT_FREEZE` files must exist in the tag and equal the working tree; `sealed/` must exist and match the bundle hash; every file under `sealed/patches/` is in the log with its hash and every logged file exists), `verify_records(records, locked, tuned_dir, expected_seeds: list[int] | None) -> list[str]` (settings hash, salt hash, namespace, smoke, tuned-file hashes, and: each record's row seeds are distinct and, when `expected_seeds` is given, a subset of it with exactly `coverage_consequences.final_eval_n` rows), `verify_h1_summary(summary, locked, prompt_path, cal100_sha) -> list[str]` (model is `h1.model` or `h1.jev_model`, `T == h1.T`, `eval_namespace == "final_eval"`, `instructions_sha256` equals the sealed prompt's hash, `calibration_t100_sha256 == cal100_sha`, not smoke, no partial cells), `verify_coverage_report(report, locked) -> list[str]` (its hash equals `coverage_report_sha256`, `admission_basis == "registered"`, 6 selected cells, `consequences` equal `locked["coverage_consequences"]`).
-  - `check_proposed_module(path, repo) -> list[str]` (spec 12): the module's imports are only `sim.mechanisms.base` (any form), `numpy`, `scipy`, `math`, `dataclasses`, `typing`, `__future__`, `itertools`, `functools`; importing it changes no public attribute of `sim.market`, `sim.mechanisms.base`, `sim.policies.base`, `sim.policies.honest`, `sim.policies.twin`, `sim.metrics`, `sim.rng` (a snapshot of `vars(module)` before and after, compared by identity and by `repr` for plain values).
-- Produces (`sim/sealed.py`): `BUNDLE_FILES`, `bundle_hash(sealed_dir)` (ignores `patches/`, `__pycache__/`, `*.pyc`), `verify_bundle(sealed_dir, locked)`, `patch_log(sealed_dir) -> dict[path, {"sha256", "demotes": [...]}]`, `verify_patches(sealed_dir) -> list[str]`, `demoted_cells(sealed_dir) -> set[str]`, `SealedBundle`, `load_bundle(sealed_dir, locked)`, `final_eval_seeds(sealed_dir)`.
+  - Git and file checks: `tree_changes(repo, ref, paths=None) -> dict[path, status]` (`git diff --name-status -z --no-renames <ref> -- [paths]` between the tag and the working tree: `M`, `A`, `D`; git handles quoting and symlinks), `allowed(path, allow_list)`, `verify_lock(repo, lock_tag, allow_list) -> list[str]` (any change outside the allow-list: changed, new (added to the index), or deleted), `verify_freeze(repo, freeze_tag, locked, allow_list) -> list[str]` (the three `FROZEN_AT_FREEZE` files must exist in the tag (`git ls-tree`) and show no change against it; `sealed/` must exist and match the bundle hash; `verify_patches`), `verify_records(records, locked, jobs: dict[str, dict], expected_seeds: list[int]) -> list[str]` (for every record: the sweep's own `check_record(jobs[name], rec)` (params, cfg, settings hash, budget, smoke, salt), `eval_namespace == "final_eval"`, `bundle_hash` equals the lock commitment for H2 records, and the row seeds are exactly `expected_seeds[:final_eval_n]` in order), `verify_h1_summary(summary, rows, locked, prompt_path, expected_seeds) -> list[str]` (model is `h1.model` (the sealed LLM; Jev is a development actor, ruling D1), `T == h1.T`, `eval_namespace == "final_eval"`, `instructions_sha256` equals the sealed prompt's hash, `calibration_t100_sha256 == locked["calibration"]["T100"]["sha256"]`, not smoke, no partial cells, comprehension scores present for the proposed rule and B2 and B3, and per (rule, beta) the rows' `eval_seed` equal `expected_seeds[:h1_repetitions]` in order with `rep` 0..9 and `sum(invalid) == cells[...]["invalid_count"]`), `verify_coverage_report(path, locked) -> list[str]` (its hash equals `coverage_report_sha256`, `admission_basis == "registered"`, 6 selected cells with distinct names, `consequences` equal `locked["coverage_consequences"]`).
+  - `check_proposed_module(path, repo, params=None) -> list[str]` (spec 12): the module's imports are only `sim.mechanisms.base` (absolute form; a relative import is reported, and `docs/custodian.md` and the run book say absolute imports only), `numpy`, `scipy`, `math`, `dataclasses`, `typing`, `__future__`, `itertools`, `functools`; importing it, and when `params` is given calling `make(params)`, changes no attribute of any loaded `sim.*` module (after importing `FROZEN_MODULES`, the snapshot covers every `sys.modules` entry whose name starts with `sim.`: module attributes, class attributes, and for functions and methods the identity of `__code__`, `__defaults__`, `__kwdefaults__`, and `__dict__`; plain values by `repr`); a detected change is reported and restored where the original is known.
+- Produces (`sim/sealed.py`): `BUNDLE_FILES`, `bundle_hash(sealed_dir)` (ignores `patches/`, `__pycache__/`, `*.pyc`), `verify_bundle(sealed_dir, locked)`, `patch_log(sealed_dir) -> dict[path, {"sha256", "replaces": "<bundle file>", "demotes": [...]}]`, `verify_patches(sealed_dir) -> list[str]` (every patch file is logged with its hash, every logged file exists, and `replaces` names a file in `BUNDLE_FILES`), `demoted_cells(sealed_dir) -> set[str]`, `effective_path(sealed_dir, rel) -> Path` (the logged, hash-verified patch that replaces `rel`, else the original: the overlay by which a repair takes effect while the original bundle and its hash stay untouched), `SealedBundle`, `load_bundle(sealed_dir, locked)` (reads `h1_prompt.txt`, `h2/family.py`, `final_eval_seeds.json` through `effective_path`), `final_eval_seeds(sealed_dir)` (through `effective_path`). `sim/registry.py::available_families` and `scripts/h1.py --prompt` read through `effective_path` too.
 - Produces (`sim/locked.py`): `seeds(locked, "final_eval")` falls back to the verified sealed bundle at `sim.registry.SEALED_DIR`.
 - Produces (`scripts/check_claim.py`): two modes. **Synthetic** (`--synthetic --h2-rows CSV [--h1-rows CSV] --coverage-report PATH --proposed NAME`): the predicate only, no tree or hash checks, output marked `SYNTHETIC`. **Confirmatory** (the default): requires `--verify-lock TAG --verify-freeze TAG --sweep-out DIR --proposed NAME`, optional `--h1-dir DIR --tuned-dir DIR --proposed-describe PATH`; runs the tree checks, `check_proposed_module`, `verify_coverage_report`, `verify_records` against the sealed seed list, `verify_h1_summary`, and refuses (exit 2) on any problem; `--verify-only` stops after the tree, module, and coverage-report checks (exit 0 when clean, 2 otherwise) and needs no results; a verdict exits 0.
-- Produces (`scripts/lock.py`): `--locked PATH --tuned-dir DIR --calibration PATH --calibration-t100 PATH --coverage-report PATH [--fixture PATH] [--bundle-hash HEX] [--salt-hash HEX] [--pilot PATH] [--cost-cap-usd X] [--date 2026-10-28] [--check]`; validates before writing: the calibration's `T` equals the locked market `T` and the T100 calibration's `T` equals `h1.T`; the coverage report is registered (not smoke), has 6 selected cells, `fixture_and_power` has `joint_trials` trials at every n it ran, and is not a partial run; a cost cap comes from `--pilot` (`ceil(projected_cost_usd)`) or `--cost-cap-usd`; `--bundle-hash` and `--salt-hash` are 64 hex characters; writes `version`, `tuned`, `calibration` (with `T100`), `coverage_report_sha256`, `coverage_consequences`, `comprehension_fixture_sha256`, `sealed_bundle_sha256`, `identity_salt_sha256`, `h1.cost_cap_usd`; refuses if the settings hash changes; `--check` verifies every written value against its file and exits 1 on a mismatch; prints the commit, tag, push, and timestamp commands.
+- Produces (`scripts/lock.py`): `--locked PATH --tuned-dir DIR --calibration PATH --calibration-t100 PATH --coverage-report PATH [--fixture PATH] --bundle-hash HEX --salt-hash HEX (--pilot PATH | --cost-cap-usd X) [--date 2026-10-28] [--check]`; validates before writing: the calibration's `T` equals the locked market `T` and the T100 calibration's `T` equals `h1.T`; the coverage report is registered (not smoke), has 6 distinct named cells, complete consequences, fixture and power results for n = 10 and n = 20 with `joint_trials` trials, every threshold cross-check passed, and no partial cell; a finite positive cost cap comes from `--pilot` (a complete Anthropic pilot of at least 200 calls; `ceil(projected_cost_usd)`) or `--cost-cap-usd`; both commitments are required and must be 64 hex characters; `--check` runs the same validation (reading the commitments and the cap from the file when not passed) and then compares every written value; writes `version`, `tuned`, `calibration` (with `T100`), `coverage_report_sha256`, `coverage_consequences`, `comprehension_fixture_sha256`, `sealed_bundle_sha256`, `identity_salt_sha256`, `h1.cost_cap_usd`; refuses if the settings hash changes; `--check` verifies every written value against its file and exits 1 on a mismatch; prints the commit, tag, push, and timestamp commands.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -3050,30 +3172,56 @@ def test_check_claim_accepts_allow_listed_changes_after_freeze(tmp_path):
 
 
 def test_verify_records_summary_and_coverage_report(tmp_path):
-    lk = load_locked(); lk = dict(lk, identity_salt_sha256="ab" * 32, tuned={"B2": hashlib.sha256(b"{}").hexdigest()}, coverage_consequences={"final_eval_n": 3, "h1": "confirmatory", "parametrized": "percentile_n20"})
-    (tmp_path / "tuned_B2.json").write_text("{}")
-    rows = [{"seed": s} for s in (7, 8, 9)]
-    good = {"settings_hash": settings_hash(lk), "salt_hash": "ab" * 32, "eval_namespace": "final_eval", "smoke": False, "spec": {"rule": "B2", "name": "c"}, "rows": rows}
-    assert verify_records([good], lk, tmp_path, expected_seeds=[7, 8, 9, 10]) == []
-    for bad in (dict(good, settings_hash="x"), dict(good, salt_hash="y"), dict(good, eval_namespace="dev_val"), dict(good, smoke=True),
-                dict(good, rows=[{"seed": 7}, {"seed": 7}, {"seed": 9}]), dict(good, rows=[{"seed": 7}, {"seed": 8}, {"seed": 99}]), dict(good, rows=rows[:2])):
-        assert verify_records([bad], lk, tmp_path, expected_seeds=[7, 8, 9, 10]) != []
-    (tmp_path / "tuned_B2.json").write_text("{ }")
-    assert any("tuned" in p for p in verify_records([good], lk, tmp_path, expected_seeds=[7, 8, 9, 10]))
+    from scripts.sweep import check_record
+    lk = load_locked(); lk = dict(lk, identity_salt_sha256="ab" * 32, sealed_bundle_sha256="ee" * 32,
+                                  calibration={"T100": {"sha256": "cc" * 32}}, coverage_consequences={"final_eval_n": 3, "h1": "confirmatory", "parametrized": "percentile_n20"})
+    job = {"spec": {"name": "c", "rule": "B2", "family": "H2"}, "params": {"tol": 0.1}, "cfg": {"T": 200}, "settings_hash": settings_hash(lk), "budget": [1, 2, 3, 4], "smoke": False, "salt_hash": "ab" * 32}
+    good = {**{k: job[k] for k in ("spec", "params", "cfg", "settings_hash", "budget", "smoke", "salt_hash")}, "eval_namespace": "final_eval", "bundle_hash": "ee" * 32,
+            "rows": [{"seed": s} for s in (7, 8, 9)]}
+    seeds = [7, 8, 9, 10]
+    assert verify_records([good], lk, {"c": job}, seeds) == []
+    for bad in (dict(good, settings_hash="x"), dict(good, salt_hash="y"), dict(good, params={"tol": 0.2}), dict(good, cfg={"T": 100}), dict(good, eval_namespace="dev_val"),
+                dict(good, smoke=True), dict(good, bundle_hash="00" * 32), dict(good, rows=[{"seed": 8}, {"seed": 7}, {"seed": 9}]), dict(good, rows=[{"seed": 7}, {"seed": 8}]),
+                dict(good, rows=[{"seed": 7}, {"seed": 8}, {"seed": 10}])):
+        assert verify_records([bad], lk, {"c": job}, seeds) != []
+    assert any("no job" in p for p in verify_records([dict(good, spec=dict(job["spec"], name="zz"))], lk, {"c": job}, seeds))
     prompt = tmp_path / "h1_prompt.txt"; prompt.write_text("sealed prompt")
     summ = {"model": lk["h1"]["model"], "T": lk["h1"]["T"], "eval_namespace": "final_eval", "instructions_sha256": hashlib.sha256(b"sealed prompt").hexdigest(),
-            "calibration_t100_sha256": "cc" * 32, "smoke": False, "partial": []}
-    assert verify_h1_summary(summ, lk, prompt, "cc" * 32) == []
-    for bad in (dict(summ, model="other"), dict(summ, T=5), dict(summ, eval_namespace="dev_val"), dict(summ, instructions_sha256="00" * 32),
-                dict(summ, calibration_t100_sha256="dd" * 32), dict(summ, smoke=True), dict(summ, partial=["B2|0.05"])):
-        assert verify_h1_summary(bad, lk, prompt, "cc" * 32) != []
-    rep = {"admission_basis": "registered", "smoke": False, "selection": [{} for _ in range(6)], "consequences": lk["coverage_consequences"]}
+            "calibration_t100_sha256": "cc" * 32, "smoke": False, "partial": [], "comprehension": {"R": 7, "B2": 7, "B3": 7},
+            "cells": {f"{r}|0.05": {"inconclusive": False, "invalid_count": 0} for r in ("R", "B2", "B3")}}
+    rows = pd.concat([pd.DataFrame({"rule": r, "beta": 0.05, "rep": range(10), "eval_seed": list(range(100, 110)), "invalid": 0}) for r in ("R", "B2", "B3")], ignore_index=True)
+    sealed_seeds = list(range(100, 140))
+    assert verify_h1_summary(summ, rows, lk, prompt, sealed_seeds) == []
+    for bad in (dict(summ, model=lk["h1"]["jev_model"]), dict(summ, T=5), dict(summ, eval_namespace="dev_val"), dict(summ, instructions_sha256="00" * 32),
+                dict(summ, calibration_t100_sha256="dd" * 32), dict(summ, smoke=True), dict(summ, partial=["B2|0.05"]), dict(summ, comprehension={"R": 7, "B2": 7})):
+        assert verify_h1_summary(bad, rows, lk, prompt, sealed_seeds) != []
+    wrong_seeds = rows.copy(); wrong_seeds.loc[wrong_seeds.rule == "R", "eval_seed"] = 0
+    assert verify_h1_summary(summ, wrong_seeds, lk, prompt, sealed_seeds) != []
+    wrong_invalid = rows.copy(); wrong_invalid.loc[wrong_invalid.rule == "B2", "invalid"] = 1
+    assert verify_h1_summary(summ, wrong_invalid, lk, prompt, sealed_seeds) != []
+    rep = {"admission_basis": "registered", "smoke": False, "selection": [{"name": f"c{i}"} for i in range(6)], "consequences": lk["coverage_consequences"]}
     data = json.dumps(rep, sort_keys=True, indent=1).encode(); (tmp_path / "cov.json").write_bytes(data)
     lk2 = dict(lk, coverage_report_sha256=hashlib.sha256(data).hexdigest())
     assert verify_coverage_report(tmp_path / "cov.json", lk2) == []
     assert verify_coverage_report(tmp_path / "cov.json", dict(lk2, coverage_report_sha256="00" * 32)) != []
-    bad = dict(rep, admission_basis="smoke (not an admission)"); (tmp_path / "bad.json").write_text(json.dumps(bad, sort_keys=True, indent=1))
-    assert verify_coverage_report(tmp_path / "bad.json", dict(lk2, coverage_report_sha256=hashlib.sha256((tmp_path / "bad.json").read_bytes()).hexdigest())) != []
+    for bad in (dict(rep, admission_basis="smoke (not an admission)"), dict(rep, selection=[{"name": "c0"}] * 6)):
+        (tmp_path / "bad.json").write_text(json.dumps(bad, sort_keys=True, indent=1))
+        assert verify_coverage_report(tmp_path / "bad.json", dict(lk2, coverage_report_sha256=hashlib.sha256((tmp_path / "bad.json").read_bytes()).hexdigest())) != []
+
+
+def test_patch_overlay_applies_logged_repairs_without_touching_the_bundle(tmp_path):
+    from sim.sealed import bundle_hash, effective_path, verify_patches
+    s = tmp_path / "sealed"; (s / "h2").mkdir(parents=True); (s / "patches").mkdir()
+    (s / "h1_prompt.txt").write_text("original\n"); (s / "h2" / "family.py").write_text("ORIG = 1\n"); h = bundle_hash(s)
+    assert effective_path(s, "h1_prompt.txt") == s / "h1_prompt.txt"
+    (s / "patches" / "h1_prompt.txt").write_text("repaired\n")
+    (s / "patches" / "log.json").write_text(json.dumps({"h1_prompt.txt": {"sha256": hashlib.sha256(b"repaired\n").hexdigest(), "replaces": "h1_prompt.txt", "demotes": []}}))
+    assert verify_patches(s) == [] and effective_path(s, "h1_prompt.txt") == s / "patches" / "h1_prompt.txt" and bundle_hash(s) == h
+    assert effective_path(s, "h1_prompt.txt").read_text() == "repaired\n" and (s / "h1_prompt.txt").read_text() == "original\n"
+    (s / "patches" / "log.json").write_text(json.dumps({"h1_prompt.txt": {"sha256": "00" * 32, "replaces": "h1_prompt.txt", "demotes": []}}))
+    assert verify_patches(s) != [] and effective_path(s, "h1_prompt.txt") == s / "h1_prompt.txt"            # an unverified patch is not applied
+    (s / "patches" / "log.json").write_text(json.dumps({"h1_prompt.txt": {"sha256": hashlib.sha256(b"repaired\n").hexdigest(), "replaces": "nope.txt", "demotes": []}}))
+    assert any("replaces" in p for p in verify_patches(s))
 
 
 def test_check_proposed_module_import_and_attribute_rules(tmp_path):
@@ -3087,6 +3235,12 @@ def test_check_proposed_module_import_and_attribute_rules(tmp_path):
     assert any("sim.policies.honest" in p for p in probs)
     import sim.policies.honest as hm
     assert hm.HonestMax.name != "hacked"                                                  # the check restores what it can and reports
+    code = tmp_path / "code.py"; code.write_text("from sim.mechanisms.base import Mechanism\n\ndef _nop(self, *a, **k):\n    return {}\n\nMechanism.allocate.__code__ = _nop.__code__\n\ndef make(params):\n    return None\n")
+    assert any("Mechanism.allocate" in p for p in check_proposed_module(code, ROOT))      # function code counts as an attribute
+    late = tmp_path / "late.py"; late.write_text("import sim.metrics as m\n\ndef make(params):\n    m.LATE = 1\n    return None\n")
+    assert check_proposed_module(late, ROOT) == [] and any("sim.metrics" in p for p in check_proposed_module(late, ROOT, params={}))   # mutation at factory time
+    rel = tmp_path / "rel.py"; rel.write_text("from .base import Mechanism\n\ndef make(params):\n    return None\n")
+    assert any("relative" in p.lower() or "not allowed" in p for p in check_proposed_module(rel, ROOT))
 
 
 def test_check_claim_cli_synthetic_and_verify_only(tmp_path):
@@ -3100,7 +3254,7 @@ def test_check_claim_cli_synthetic_and_verify_only(tmp_path):
     r2 = subprocess.run(cmd + ["--h2-rows", str(tmp_path / "h2.csv"), "--coverage-report", str(tmp_path / "cov.json"), "--proposed", "R"], capture_output=True, text=True, cwd=ROOT)
     assert r2.returncode == 2 and "synthetic" in (r2.stderr + r2.stdout).lower()           # CSV inputs without --synthetic are refused
     r3 = subprocess.run(cmd + ["--sweep-out", str(tmp_path), "--proposed", "R"], capture_output=True, text=True, cwd=ROOT)
-    assert r3.returncode == 2 and "verify-lock" in (r3.stderr + r3.stdout)                 # confirmatory mode needs both tags
+    assert r3.returncode == 2 and "verify-lock" in (r3.stderr + r3.stdout)                 # confirmatory mode needs both tags, the calibrations, the tuned dir, and the description
     repo = make_repo(tmp_path)
     r4 = subprocess.run(cmd + ["--verify-only", "--verify-lock", "lock-test", "--repo", str(repo), "--proposed", "R"], capture_output=True, text=True, cwd=ROOT)
     assert r4.returncode == 0, r4.stderr
@@ -3180,7 +3334,9 @@ def setup(tmp_path):
     rep = {"admission_basis": "registered", "smoke": False, "selection": [{} for _ in range(6)],
            "fixture_and_power": {"per_n": {"10": [{"fixture": {"trials": lk["intervals"]["joint_trials"]}}], "20": [{"fixture": {"trials": lk["intervals"]["joint_trials"]}}]}},
            "consequences": {"h1": "confirmatory", "parametrized": "percentile_n20", "final_eval_n": 20}}
-    (tmp_path / "cov.json").write_text(json.dumps(rep)); (tmp_path / "pilot.json").write_text(json.dumps({"projected_cost_usd": 118.4, "complete": True}))
+    rep["fixture_and_power"]["threshold_check"] = {"35000": {"10|0.95": {"pass_": True}}}; rep["cells"] = {f"c{i}": {"per_n": {"10": {}, "20": {}}} for i in range(6)}
+    rep["selection"] = [{"name": f"c{i}"} for i in range(6)]
+    (tmp_path / "cov.json").write_text(json.dumps(rep)); (tmp_path / "pilot.json").write_text(json.dumps({"projected_cost_usd": 118.4, "complete": True, "calls": 200, "backend": "anthropic"}))
     return exp, tuned
 
 
@@ -3198,10 +3354,10 @@ def test_lock_script_writes_lock_time_blocks_validates_inputs_and_check_passes(t
     assert lk["sealed_bundle_sha256"] == "ab" * 32 and lk["identity_salt_sha256"] == "cd" * 32 and lk["h1"]["cost_cap_usd"] == 119 and lk["coverage_consequences"]["final_eval_n"] == 20
     assert len(lk["coverage_report_sha256"]) == 64 and len(lk["comprehension_fixture_sha256"]) == 64
     assert settings_hash(lk) == before and "git tag -s lock-2026-10-28" in r.stdout
-    chk = subprocess.run(cmd(tmp_path, exp, tuned, "--check"), capture_output=True, text=True, cwd=ROOT)
+    chk = subprocess.run(cmd(tmp_path, exp, tuned, "--check", "--pilot", str(tmp_path / "pilot.json")), capture_output=True, text=True, cwd=ROOT)
     assert chk.returncode == 0, chk.stderr
     (tuned / "tuned_B2.json").write_text("{}")
-    chk2 = subprocess.run(cmd(tmp_path, exp, tuned, "--check"), capture_output=True, text=True, cwd=ROOT)
+    chk2 = subprocess.run(cmd(tmp_path, exp, tuned, "--check", "--pilot", str(tmp_path / "pilot.json")), capture_output=True, text=True, cwd=ROOT)
     assert chk2.returncode == 1 and "tuned_B2" in (chk2.stdout + chk2.stderr)
 
 
@@ -3217,6 +3373,14 @@ def test_lock_script_refuses_bad_inputs(tmp_path):
     assert r.returncode != 0 and "hex" in (r.stderr + r.stdout).lower()
     r = subprocess.run(cmd(tmp_path, exp, tuned, "--bundle-hash", "ab" * 32, "--salt-hash", "cd" * 32), capture_output=True, text=True, cwd=ROOT)
     assert r.returncode != 0 and "cost cap" in (r.stderr + r.stdout).lower()                 # a cost cap is required (pilot or explicit)
+    r = subprocess.run(cmd(tmp_path, exp, tuned, "--salt-hash", "cd" * 32, "--cost-cap-usd", "120"), capture_output=True, text=True, cwd=ROOT)
+    assert r.returncode != 0 and "bundle-hash" in (r.stderr + r.stdout)                      # both commitments are required
+    r = subprocess.run(cmd(tmp_path, exp, tuned, "--bundle-hash", "ab" * 32, "--salt-hash", "cd" * 32, "--cost-cap-usd", "-1"), capture_output=True, text=True, cwd=ROOT)
+    assert r.returncode != 0 and "positive" in (r.stderr + r.stdout)
+    short = json.loads((tmp_path / "cov.json").read_text()); short["fixture_and_power"]["threshold_check"]["35000"]["10|0.95"]["pass_"] = False
+    (tmp_path / "cov_chk.json").write_text(json.dumps(short))
+    bad_k = [a if a != str(tmp_path / "cov.json") else str(tmp_path / "cov_chk.json") for a in base]
+    r = subprocess.run(bad_k, capture_output=True, text=True, cwd=ROOT); assert r.returncode != 0 and "cross-check" in (r.stderr + r.stdout)
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -3279,10 +3443,23 @@ def verify_patches(sealed_dir) -> list:
             problems.append(f"sealed/patches/{rel}: not in the patch log")
         elif log[rel].get("sha256") != h:
             problems.append(f"sealed/patches/{rel}: hash {h} differs from the logged {log[rel].get('sha256')}")
+        elif log[rel].get("replaces") not in BUNDLE_FILES:
+            problems.append(f"sealed/patches/{rel}: 'replaces' must name a bundle file, got {log[rel].get('replaces')!r}")
     for rel in log:
         if rel not in present:
             problems.append(f"sealed/patches/{rel}: logged but missing")
     return problems
+
+
+def effective_path(sealed_dir, rel: str) -> Path:
+    """The overlay: the logged, hash-verified patch that replaces `rel`, else the original bundle file. The original is
+    never edited, so the bundle hash stays what the lock committed to."""
+    root = Path(sealed_dir); log = patch_log(root)
+    for prel, entry in log.items():
+        p = root / "patches" / prel
+        if entry.get("replaces") == rel and p.exists() and hashlib.sha256(p.read_bytes()).hexdigest() == entry.get("sha256"):
+            return p
+    return root / rel
 
 
 def demoted_cells(sealed_dir) -> set:
@@ -3290,7 +3467,7 @@ def demoted_cells(sealed_dir) -> set:
 
 
 def final_eval_seeds(sealed_dir) -> list:
-    return [int(s) for s in json.loads((Path(sealed_dir) / "final_eval_seeds.json").read_text())]
+    return [int(s) for s in json.loads(effective_path(sealed_dir, "final_eval_seeds.json").read_text())]
 
 
 @dataclass
@@ -3305,10 +3482,10 @@ class SealedBundle:
 
 def load_bundle(sealed_dir, locked: dict) -> SealedBundle:
     root = Path(sealed_dir); verify_bundle(root, locked)
-    spec = importlib.util.spec_from_file_location("sealed_h2_family", root / "h2" / "family.py")
+    spec = importlib.util.spec_from_file_location("sealed_h2_family", effective_path(root, "h2/family.py"))
     mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
     salt = root / "identity_salt.hex"
-    return SealedBundle(h1_prompt=(root / "h1_prompt.txt").read_text(), h2_module=mod, containment=(root / "h2" / "containment.md").read_text(),
+    return SealedBundle(h1_prompt=effective_path(root, "h1_prompt.txt").read_text(), h2_module=mod, containment=(root / "h2" / "containment.md").read_text(),
                         final_eval_seeds=final_eval_seeds(root), salt_hex=salt.read_text().strip() if salt.exists() else None,
                         b1_check=json.loads((root / "b1_check.json").read_text()) if (root / "b1_check.json").exists() else {})
 ```
@@ -3518,25 +3695,18 @@ def verdict_json(result: dict) -> dict:
 
 # ---- lock, freeze, record, summary, report, and module checks -----------------------------------------------------------
 
-def _git(repo: Path, *args: str, input: str | None = None) -> str:
-    return subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True, text=True, input=input).stdout
+def _git(repo: Path, *args: str) -> str:
+    return subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True, text=True).stdout
 
 
-def tracked_blobs(repo: Path, ref: str | None) -> dict:
-    if ref is not None:
-        out = {}
-        for entry in _git(repo, "ls-tree", "-r", "-z", ref).split("\0"):
-            if entry:
-                meta, path = entry.split("\t", 1); out[path] = meta.split()[2]
-        return out
-    paths = [p for p in _git(repo, "ls-files", "-z").split("\0") if p]
-    present = [p for p in paths if (repo / p).is_file() and not (repo / p).is_symlink()]
-    hashes = _git(repo, "hash-object", "--stdin-paths", input="\n".join(present) + "\n").split() if present else []
-    out = dict(zip(present, hashes))
-    for p in paths:
-        if p not in out:
-            out[p] = None                                        # tracked but missing from the working tree (or a symlink)
-    return out
+def tree_changes(repo: Path, ref: str, paths=None) -> dict:
+    """Working tree against `ref`: {path: 'M' | 'A' | 'D'} (git handles quoting, symlinks, and the index)."""
+    out = _git(repo, "diff", "--name-status", "-z", "--no-renames", ref, "--", *(paths or [])).split("\0")
+    changes = {}
+    for status, path in zip(out[0::2], out[1::2]):
+        if status:
+            changes[path] = status[0]
+    return changes
 
 
 def allowed(path: str, allow_list) -> bool:
@@ -3544,29 +3714,19 @@ def allowed(path: str, allow_list) -> bool:
 
 
 def verify_lock(repo, lock_tag: str, allow_list) -> list:
-    repo = Path(repo); locked_tree = tracked_blobs(repo, lock_tag); tree = tracked_blobs(repo, None); problems = []
-    for path, sha in tree.items():
-        if allowed(path, allow_list):
-            continue
-        if path not in locked_tree:
-            problems.append(f"{path}: new tracked file since {lock_tag} and outside the allow-list")
-        elif sha is None:
-            problems.append(f"{path}: deleted since {lock_tag}")
-        elif sha != locked_tree[path]:
-            problems.append(f"{path}: changed since {lock_tag}")
-    for path in locked_tree:
-        if path not in tree and not allowed(path, allow_list):
-            problems.append(f"{path}: deleted since {lock_tag}")
-    return problems
+    words = {"M": "changed", "A": "new tracked file", "D": "deleted"}
+    return [f"{path}: {words.get(st, st)} since {lock_tag} and outside the allow-list" for path, st in sorted(tree_changes(Path(repo), lock_tag).items()) if not allowed(path, allow_list)]
 
 
 def verify_freeze(repo, freeze_tag: str, locked: dict, allow_list) -> list:
-    repo = Path(repo); frozen = tracked_blobs(repo, freeze_tag); tree = tracked_blobs(repo, None); problems = []
+    repo = Path(repo); problems = []
+    in_tag = {e.split("\t", 1)[1] for e in _git(repo, "ls-tree", "-r", "-z", freeze_tag).split("\0") if e}
     for path in FROZEN_AT_FREEZE:
-        if path not in frozen:
+        if path not in in_tag:
             problems.append(f"{path}: missing from the freeze tag {freeze_tag}")
-        elif tree.get(path) != frozen[path]:
-            problems.append(f"{path}: differs from the freeze tag {freeze_tag} (or is missing)")
+    changed = tree_changes(repo, freeze_tag, list(FROZEN_AT_FREEZE))
+    for path, st in changed.items():
+        problems.append(f"{path}: {'deleted' if st == 'D' else 'differs'} since the freeze tag {freeze_tag}")
     sealed = repo / "sealed"
     if not sealed.exists():
         problems.append("sealed/: missing")
@@ -3578,52 +3738,58 @@ def verify_freeze(repo, freeze_tag: str, locked: dict, allow_list) -> list:
     return problems
 
 
-def verify_records(records, locked: dict, tuned_dir, expected_seeds=None) -> list:
-    problems = []; want_settings = settings_hash(locked); want_salt = locked.get("identity_salt_sha256"); tuned = locked.get("tuned") or {}
-    n_final = (locked.get("coverage_consequences") or {}).get("final_eval_n")
+def verify_records(records, locked: dict, jobs: dict, expected_seeds) -> list:
+    """Every held-out record is checked by the sweep's own check_record against the job rebuilt from the lock (params,
+    cfg, settings hash, budget, smoke, salt), then for the namespace, the bundle hash, and the exact seed sequence."""
+    from scripts.sweep import check_record
+    problems = []; n_final = int((locked.get("coverage_consequences") or {}).get("final_eval_n") or 0)
+    want_seeds = [int(x) for x in expected_seeds][:n_final]
     for rec in records:
         name = rec.get("spec", {}).get("name", "?")
-        if rec.get("settings_hash") != want_settings:
-            problems.append(f"{name}: settings hash differs from the lock")
-        if rec.get("salt_hash") != want_salt:
-            problems.append(f"{name}: salt hash differs from the lock")
+        job = jobs.get(name)
+        if job is None:
+            problems.append(f"{name}: no job for this record in the locked manifest"); continue
+        try:
+            check_record(job, rec)
+        except SystemExit as e:
+            problems.append(f"{name}: {e}")
         if rec.get("eval_namespace") != "final_eval":
             problems.append(f"{name}: evaluation namespace is {rec.get('eval_namespace')!r}, not final_eval")
-        if rec.get("smoke"):
-            problems.append(f"{name}: smoke record")
-        seeds = [r.get("seed") for r in rec.get("rows", [])]
-        if len(set(seeds)) != len(seeds):
-            problems.append(f"{name}: duplicate seeds in rows")
-        if expected_seeds is not None and not set(seeds) <= set(int(s) for s in expected_seeds):
-            problems.append(f"{name}: rows carry seeds outside the sealed final-eval list")
-        if n_final and len(seeds) != int(n_final):
-            problems.append(f"{name}: {len(seeds)} rows, expected final_eval_n = {n_final}")
-        rule = rec.get("spec", {}).get("rule")
-        if rule in tuned and tuned_dir is not None:
-            p = Path(tuned_dir) / f"tuned_{rule}.json"
-            got = hashlib.sha256(p.read_bytes()).hexdigest() if p.exists() else None
-            if got != tuned[rule]:
-                problems.append(f"{name}: tuned file {p.name} hash {got} differs from the lock {tuned[rule]}")
+        if rec.get("spec", {}).get("family") == "H2" and rec.get("bundle_hash") != locked.get("sealed_bundle_sha256"):
+            problems.append(f"{name}: bundle hash differs from the lock commitment")
+        seeds = [int(r.get("seed")) for r in rec.get("rows", [])]
+        if seeds != want_seeds:
+            problems.append(f"{name}: row seeds are not the first {n_final} sealed final-eval seeds in order")
     return problems
 
 
-def verify_h1_summary(summary: dict, locked: dict, prompt_path, cal100_sha: str) -> list:
-    h = locked["h1"]; problems = []
-    if summary.get("model") not in (h["model"], h.get("jev_model")):
-        problems.append(f"h1 summary: model {summary.get('model')!r} is not the locked model")
+def verify_h1_summary(summary: dict, rows: pd.DataFrame, locked: dict, prompt_path, expected_seeds) -> list:
+    h = locked["h1"]; problems = []; reps = int(locked["intervals"]["h1_repetitions"]); want = [int(x) for x in expected_seeds][:reps]
+    if summary.get("model") != h["model"]:
+        problems.append(f"h1 summary: model {summary.get('model')!r} is not the sealed LLM {h['model']!r}")
     if int(summary.get("T", -1)) != int(h["T"]):
         problems.append(f"h1 summary: T = {summary.get('T')}, locked h1.T = {h['T']}")
     if summary.get("eval_namespace") != "final_eval":
         problems.append("h1 summary: evaluation namespace is not final_eval")
-    want = hashlib.sha256(Path(prompt_path).read_bytes()).hexdigest() if Path(prompt_path).exists() else None
-    if summary.get("instructions_sha256") != want:
+    want_prompt = hashlib.sha256(Path(prompt_path).read_bytes()).hexdigest() if Path(prompt_path).exists() else None
+    if summary.get("instructions_sha256") != want_prompt:
         problems.append("h1 summary: the instructions hash is not the sealed prompt's hash")
-    if summary.get("calibration_t100_sha256") != cal100_sha:
+    if summary.get("calibration_t100_sha256") != (locked.get("calibration") or {}).get("T100", {}).get("sha256"):
         problems.append("h1 summary: the T = 100 calibration hash differs from the lock")
     if summary.get("smoke"):
         problems.append("h1 summary: smoke run")
     if summary.get("partial"):
         problems.append(f"h1 summary: partial cells {summary['partial']}")
+    comp = summary.get("comprehension", {})
+    if not all(k in comp for k in list(BASELINES) + [r for r in rows["rule"].unique() if r not in BASELINES]):
+        problems.append("h1 summary: comprehension scores missing for a rule in the rows")
+    for (rule, beta), d in rows.groupby(["rule", "beta"]):
+        d = d.sort_values("rep")
+        if list(d["rep"]) != list(range(reps)) or [int(x) for x in d["eval_seed"]] != want:
+            problems.append(f"h1 rows {rule}|{beta}: repetitions or evaluation seeds are not the first {reps} sealed seeds in order")
+        cell = summary.get("cells", {}).get(f"{rule}|{beta}")
+        if cell is None or int(d["invalid"].sum()) != int(cell.get("invalid_count", -1)):
+            problems.append(f"h1 rows {rule}|{beta}: invalid flags do not match the summary")
     return problems
 
 
@@ -3634,53 +3800,77 @@ def verify_coverage_report(path, locked: dict) -> list:
     rep = json.loads(data)
     if rep.get("admission_basis") != "registered" or rep.get("smoke"):
         problems.append("coverage report: not a registered admission")
-    if len(rep.get("selection", [])) != 6:
-        problems.append("coverage report: selection is not 6 cells")
+    names = [c.get("name") for c in rep.get("selection", [])]
+    if len(names) != 6 or len(set(names)) != 6 or not all(names):
+        problems.append("coverage report: selection is not 6 distinct named cells")
     if rep.get("consequences") != locked.get("coverage_consequences"):
         problems.append("coverage report: consequences differ from the lock")
     return problems
 
 
-def check_proposed_module(path, repo) -> list:
-    """Spec 12: proposed.py imports only sim/mechanisms/base.py and standard numerical libraries, and importing it changes
-    no frozen module's attributes. The snapshot compares identity and repr; detected mutations are restored where the
-    original object is known, and reported."""
+def _snapshot() -> dict:
+    """Every loaded sim.* module: module attributes, class attributes, and function internals (code, defaults, dict)."""
+    import sys as _sys, types
+    out = {}
+    def fn_sig(f):
+        return (id(getattr(f, "__code__", None)), id(getattr(f, "__defaults__", None)), id(getattr(f, "__kwdefaults__", None)), repr(sorted(getattr(f, "__dict__", {}).keys())))
+    def val(v):
+        if isinstance(v, (types.FunctionType, types.MethodType, staticmethod, classmethod)):
+            return ("fn", fn_sig(getattr(v, "__func__", v)))
+        if isinstance(v, (int, float, str, tuple, bool, type(None), frozenset)):
+            return ("val", repr(v))
+        return ("id", id(v))
+    for m, mod in list(_sys.modules.items()):
+        if not (m == "sim" or m.startswith("sim.")) or mod is None:
+            continue
+        for k, v in list(vars(mod).items()):
+            if k.startswith("__"):
+                continue
+            out[(m, k)] = val(v)
+            if isinstance(v, type) and getattr(v, "__module__", None) == m:
+                for ak, av in list(vars(v).items()):
+                    if not ak.startswith("__"):
+                        out[(m, f"{k}.{ak}")] = val(av)
+    return out
+
+
+def check_proposed_module(path, repo, params: dict | None = None) -> list:
+    """Spec 12: proposed.py imports only sim/mechanisms/base.py (absolute form) and standard numerical libraries, and
+    neither importing it nor calling make(params) changes any attribute of a loaded sim.* module (functions compared by
+    code, defaults, and dict). A detected change is reported and restored where the original is known."""
+    import sys as _sys
     problems = []; src = Path(path).read_text()
     for node in ast.walk(ast.parse(src)):
+        if isinstance(node, ast.ImportFrom) and node.level:
+            problems.append(f"{Path(path).name}: relative import is not allowed (use absolute imports)"); continue
         names = [a.name for a in node.names] if isinstance(node, ast.Import) else ([node.module or ""] if isinstance(node, ast.ImportFrom) else [])
         for name in names:
             if not any(name == ok or name.startswith(ok + ".") for ok in ALLOWED_IMPORTS):
                 problems.append(f"{Path(path).name}: import of {name!r} is not allowed (only {', '.join(ALLOWED_IMPORTS)})")
-    mods = {m: importlib.import_module(m) for m in FROZEN_MODULES}
-    def snapshot():
-        out = {}
-        for m, mod in mods.items():
-            for k, v in vars(mod).items():
-                if k.startswith("_"):
-                    continue
-                out[(m, k)] = (id(v), repr(v) if isinstance(v, (int, float, str, tuple, bool, type(None))) else None)
-                if isinstance(v, type):
-                    for ak, av in vars(v).items():
-                        if not ak.startswith("_"):
-                            out[(m, f"{k}.{ak}")] = (id(av), repr(av) if isinstance(av, (int, float, str, tuple, bool, type(None))) else None)
-        return out
-    before = snapshot(); originals = {(m, k): v for m, mod in mods.items() for k, v in vars(mod).items()}
-    class_attrs = {(m, k, ak): av for m, mod in mods.items() for k, v in vars(mod).items() if isinstance(v, type) for ak, av in vars(v).items()}
+    for m in FROZEN_MODULES + ("sim.mechanisms.posted", "sim.mechanisms.posted_audit", "sim.mechanisms.second_score"):
+        importlib.import_module(m)
+    originals = {(m, k): v for m, mod in list(_sys.modules.items()) if (m == "sim" or m.startswith("sim.")) and mod is not None for k, v in list(vars(mod).items())}
+    class_originals = {(m, f"{k}.{ak}"): av for (m, k), v in originals.items() if isinstance(v, type) and getattr(v, "__module__", None) == m for ak, av in list(vars(v).items())}
+    before = _snapshot()
     spec = importlib.util.spec_from_file_location("proposed_under_check", path); mod = importlib.util.module_from_spec(spec)
     try:
         spec.loader.exec_module(mod)
-    except Exception as e:                                        # an import error is a problem, not a crash of the checker
-        problems.append(f"{Path(path).name}: import failed: {e!r}")
-    after = snapshot()
-    for key in set(before) | set(after):
+        if params is not None and callable(getattr(mod, "make", None)):
+            mod.make(dict(params))
+    except Exception as e:                                        # an import or factory error is a problem, not a crash of the checker
+        problems.append(f"{Path(path).name}: import or make() failed: {e!r}")
+    after = _snapshot()
+    for key in sorted(set(before) | set(after), key=str):
         if before.get(key) != after.get(key):
-            m, k = key; problems.append(f"{m}.{k}: changed by importing {Path(path).name}")
-            if "." in k:
-                cls, attr = k.split(".", 1)
-                if (m, cls, attr) in class_attrs:
-                    setattr(vars(mods[m])[cls], attr, class_attrs[(m, cls, attr)])
-            elif (m, k) in originals:
-                setattr(mods[m], k, originals[(m, k)])
+            m, k = key; problems.append(f"{m}.{k}: changed by {Path(path).name}")
+            if "." in k and (m, k) in class_originals:
+                cls, attr = k.split(".", 1); setattr(originals[(m, cls)], attr, class_originals[(m, k)])   # a replaced class attribute is restored
+            elif "." not in k and (m, k) in originals:
+                setattr(_sys.modules[m], k, originals[(m, k)])    # a replaced module attribute is restored
+            elif "." not in k and k in vars(_sys.modules[m]):
+                delattr(_sys.modules[m], k)                       # an attribute added by the module is removed
+            # a changed class attribute or function internal cannot be restored from a snapshot of ids: the report is the
+            # guarantee, and check_claim.py refuses the run
     return problems
 ```
 
@@ -3705,9 +3895,9 @@ from scripts.sweep import read_dir  # noqa: E402
 from sim.claimcheck import (check_proposed_module, evaluate_claim, verdict_json, verify_coverage_report, verify_freeze, verify_h1_summary, verify_lock,  # noqa: E402
                             verify_records)
 from sim.coverage import load_report  # noqa: E402
-from sim.locked import load_locked  # noqa: E402
-from sim.registry import PROPOSED_MODULE, SEALED_DIR  # noqa: E402
-from sim.sealed import demoted_cells, final_eval_seeds  # noqa: E402
+from sim.locked import load_locked, settings_hash  # noqa: E402
+from sim.registry import PROPOSED_MODULE, SEALED_DIR, proposed_params  # noqa: E402
+from sim.sealed import demoted_cells, effective_path, final_eval_seeds  # noqa: E402
 
 
 def h2_from_sweep(sweep_out: Path) -> tuple[pd.DataFrame, list, dict]:
@@ -3726,6 +3916,24 @@ def refuse(problems: list) -> None:
     sys.exit(2)
 
 
+def heldout_jobs(locked: dict, calibration: str, tuned_dir: Path) -> dict:
+    """The jobs of every held-out cell, rebuilt from the lock exactly as the sweep builds them (the record check compares
+    params, cfg, settings hash, budget, smoke flag, and salt hash against these)."""
+    from scripts.sweep import job_for, load_params
+    from sim.calibrate import load_calibration
+    from sim.locked import market_config_from_locked
+    from sim.manifest import enumerate_manifest
+    from sim.registry import available_rules
+    from sim.schedule import budget_from_locked
+    cal = load_calibration(calibration); base = market_config_from_locked(locked); b = budget_from_locked(locked); rules = available_rules()
+    params = {r: load_params(r, tuned_dir, False, cal.market_key, settings_hash(locked), cal.seeds) for r in rules}
+    jobs = {}
+    for spec in enumerate_manifest(locked, rules, budget=b):
+        if spec.section == "heldout":
+            jobs[spec.name] = dict(job_for(spec, locked, cal, base, params[spec.rule], b, False), eval_namespace="final_eval")
+    return jobs
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--synthetic", action="store_true"); ap.add_argument("--verify-only", dest="verify_only", action="store_true")
@@ -3735,7 +3943,7 @@ def main() -> None:
     ap.add_argument("--coverage-report", dest="coverage_report", default="experiments/coverage_report.json")
     ap.add_argument("--proposed", required=True); ap.add_argument("--proposed-describe", dest="proposed_describe", default=None)
     ap.add_argument("--verify-lock", dest="verify_lock", default=None); ap.add_argument("--verify-freeze", dest="verify_freeze", default=None)
-    ap.add_argument("--tuned-dir", dest="tuned_dir", default=None); ap.add_argument("--calibration-t100", dest="calibration_t100", default="experiments/calibration_T100.json")
+    ap.add_argument("--tuned-dir", dest="tuned_dir", default=None); ap.add_argument("--calibration", default=None)
     ap.add_argument("--out", default="results/verdict.json")
     a = ap.parse_args()
     lk = load_locked(); repo = Path(a.repo); problems = []
@@ -3746,7 +3954,7 @@ def main() -> None:
         if a.verify_freeze:
             problems += verify_freeze(repo, a.verify_freeze, lk, lk["allow_list"])
         if PROPOSED_MODULE.exists():
-            problems += check_proposed_module(PROPOSED_MODULE, repo)
+            problems += check_proposed_module(PROPOSED_MODULE, repo, params=proposed_params().get("best_params") if a.verify_freeze else None)
         if Path(a.coverage_report).exists():
             problems += verify_coverage_report(a.coverage_report, lk)
         elif not a.verify_only:
@@ -3757,20 +3965,20 @@ def main() -> None:
             print("verified: tree, proposed module, coverage report"); return
         if a.h2_rows or a.h1_rows:
             refuse(["CSV inputs are for synthetic tests; pass --synthetic"])
-        if not a.sweep_out:
-            refuse(["confirmatory mode needs --sweep-out DIR"])
+        if not (a.sweep_out and a.calibration and a.tuned_dir and a.proposed_describe):
+            refuse(["confirmatory mode needs --sweep-out DIR --calibration PATH --tuned-dir DIR --proposed-describe PATH"])
     h2 = h1 = None; h1_summary = None; headline = {}; demoted = set()
     if a.sweep_out:
         h2, records, headline = h2_from_sweep(Path(a.sweep_out))
-        expected = final_eval_seeds(SEALED_DIR) if (SEALED_DIR / "final_eval_seeds.json").exists() else None
-        problems += verify_records(records, lk, a.tuned_dir, expected)
-        demoted = demoted_cells(SEALED_DIR) if SEALED_DIR.exists() else set()
+        expected = final_eval_seeds(SEALED_DIR)
+        jobs = heldout_jobs(lk, a.calibration, Path(a.tuned_dir))
+        problems += verify_records(records, lk, jobs, expected)
+        demoted = demoted_cells(SEALED_DIR)
     elif a.h2_rows:
         h2 = pd.read_csv(a.h2_rows)
     if a.h1_dir:
         d = Path(a.h1_dir); h1 = pd.read_csv(d / "h1_rows.csv"); h1_summary = json.loads((d / "h1_summary.json").read_text())
-        cal_sha = hashlib.sha256(Path(a.calibration_t100).read_bytes()).hexdigest() if Path(a.calibration_t100).exists() else None
-        problems += verify_h1_summary(h1_summary, lk, SEALED_DIR / "h1_prompt.txt", cal_sha)
+        problems += verify_h1_summary(h1_summary, h1, lk, effective_path(SEALED_DIR, "h1_prompt.txt"), final_eval_seeds(SEALED_DIR))
     elif a.h1_rows:
         h1 = pd.read_csv(a.h1_rows); h1_summary = json.loads(Path(a.h1_summary).read_text()) if a.h1_summary else None
     if problems:
@@ -3836,10 +4044,32 @@ def validate(a, lk: dict, cal: dict, cal100: dict, cov: dict) -> list:
     if "consequences" not in cov:
         problems.append("coverage report: no consequences")
     for name, v in (("--bundle-hash", a.bundle_hash), ("--salt-hash", a.salt_hash)):
-        if v is not None and not HEX64.match(v):
-            problems.append(f"{name} must be 64 hex characters")
+        if v is None or not HEX64.match(v):
+            problems.append(f"{name} is required and must be 64 hex characters")
+    names = [c.get("name") for c in cov.get("selection", [])]
+    if len(set(names)) != len(names) or not all(names):
+        problems.append("coverage report: selection names must be present and distinct")
+    cons = cov.get("consequences") or {}
+    if not {"h1", "parametrized", "final_eval_n"} <= set(cons):
+        problems.append("coverage report: consequences incomplete")
+    per_n = (cov.get("fixture_and_power") or {}).get("per_n") or {}
+    if not {"10", "20"} <= set(per_n) or any(not attempts for attempts in per_n.values()):
+        problems.append("coverage report: fixture and power results missing for n = 10 or n = 20")
+    for M, chk in ((cov.get("fixture_and_power") or {}).get("threshold_check") or {}).items():
+        if not chk or any(not v.get("pass_") for v in chk.values()):
+            problems.append(f"coverage report: the threshold cross-check at M = {M} did not pass")
+    if cov.get("partial") or any(not r.get("per_n") for r in (cov.get("cells") or {}).values()):
+        problems.append("coverage report: partial run")
     if a.pilot is None and a.cost_cap_usd is None:
         problems.append("a cost cap is required: --pilot PILOT.json (ceil of projected_cost_usd) or --cost-cap-usd X")
+    if a.cost_cap_usd is not None and not (math.isfinite(a.cost_cap_usd) and a.cost_cap_usd > 0):
+        problems.append("--cost-cap-usd must be a finite positive number")
+    if a.pilot is not None:
+        pilot = json.loads(Path(a.pilot).read_text())
+        if not pilot.get("complete") or int(pilot.get("calls", 0)) < 200 or pilot.get("backend") != "anthropic":
+            problems.append("--pilot must be a complete Anthropic pilot of at least 200 calls")
+        if not (isinstance(pilot.get("projected_cost_usd"), (int, float)) and math.isfinite(pilot["projected_cost_usd"]) and pilot["projected_cost_usd"] > 0):
+            problems.append("--pilot has no finite positive projected cost")
     return problems
 
 
@@ -3859,7 +4089,10 @@ def main() -> None:
            "calibration": {**cal, "sha256": sha(a.calibration), "T100": {**cal100, "sha256": sha(a.calibration_t100)}},
            "coverage_report_sha256": sha(a.coverage_report), "coverage_consequences": cov.get("consequences"), "comprehension_fixture_sha256": sha(a.fixture)}
     if a.check:
-        problems = [f"{k}: {lk.get(k)!r} != {v!r}" for k, v in new.items() if k != "version" and lk.get(k) != v]
+        a.bundle_hash = a.bundle_hash or lk.get("sealed_bundle_sha256"); a.salt_hash = a.salt_hash or lk.get("identity_salt_sha256")
+        a.cost_cap_usd = a.cost_cap_usd if (a.cost_cap_usd is not None or a.pilot) else lk.get("h1", {}).get("cost_cap_usd")
+        problems = validate(a, lk, cal, cal100, cov)                   # the same validation as at write time
+        problems += [f"{k}: {lk.get(k)!r} != {v!r}" for k, v in new.items() if k != "version" and lk.get(k) != v]
         problems += [f"tuned_{r}.json hash differs from the lock" for r in tuned if (lk.get("tuned") or {}).get(r) != tuned[r]]
         if lk.get("h1", {}).get("cost_cap_usd") is None:
             problems.append("h1.cost_cap_usd is not set")
@@ -3872,14 +4105,8 @@ def main() -> None:
     cap = a.cost_cap_usd
     if a.pilot is not None:
         pilot = json.loads(Path(a.pilot).read_text())
-        if not pilot.get("complete"):
-            sys.exit("REFUSED: the pilot is incomplete")
         cap = float(math.ceil(float(pilot["projected_cost_usd"])))
-    lk.update(new); lk["h1"]["cost_cap_usd"] = cap
-    if a.bundle_hash:
-        lk["sealed_bundle_sha256"] = a.bundle_hash
-    if a.salt_hash:
-        lk["identity_salt_sha256"] = a.salt_hash
+    lk.update(new); lk["h1"]["cost_cap_usd"] = cap; lk["sealed_bundle_sha256"] = a.bundle_hash; lk["identity_salt_sha256"] = a.salt_hash
     if settings_hash(lk) != before:
         sys.exit("REFUSED: the lock-time blocks changed the settings hash; nothing written")
     path.write_text(yaml.safe_dump(lk, sort_keys=False, default_flow_style=None, width=120))
@@ -3969,7 +4196,7 @@ def test_plot_writes_figures_and_data(tmp_path):
     from sim.coverage import ENDPOINTS, endpoint_key
     out = fake_sweep(tmp_path); lk = load_locked()
     f1, f2 = figure_frames(out, lk)
-    assert len(f1) == 8 and set(f1.rule) == {"B1", "B2"} and (f1.gain_upper >= f1.gain_mean).all() and (f1.n_seeds == 20).all() and (f1.bound_method == "percentile").all()
+    assert len(f1) == 8 and set(f1.rule) == {"B1", "B2"} and (f1.gain_upper >= f1.gain_mean).all() and (f1.n_seeds == 20).all() and (f1.bound_method == "percentile (nominal)").all()
     cov = {"method_at_n": {"10": "t", "20": "studentized", "40": None}, "admitted_sides": {endpoint_key(s, side, lv, 20): "studentized" for s, side, lv in ENDPOINTS}}
     g1, _ = figure_frames(out, lk, coverage=cov)
     assert (g1.bound_method == "studentized").all() and not np.allclose(g1.gain_upper, f1.gain_upper)
@@ -3985,7 +4212,10 @@ def test_plot_writes_figures_and_data(tmp_path):
     pd.DataFrame({"rule": ["B2"] * 10, "beta": 0.05, "rep": range(10), "eval_seed": range(10), "sstar": 5.0, "gain": 0.3, "eff_attack": 0.9, "eff_clip": 0.92,
                   "eff_ref": 0.95, "audit_cost_attack": 0.1, "budget": 0.25, "invalid": 0}).to_csv(h1dir / "h1_rows.csv", index=False)
     with_h1, f2h = figure_frames(out, lk, h1_dir=h1dir)
-    assert (with_h1.family == "H1").sum() == 1 and with_h1[with_h1.family == "H1"].n_seeds.iloc[0] == 10 and f2h[f2h.family == "H1"].eff_honest.isna().all()
+    h1row = with_h1[with_h1.family == "H1"].iloc[0]
+    assert (with_h1.family == "H1").sum() == 1 and h1row.n_seeds == 10 and h1row.bound_method == "t (nominal)" and f2h[f2h.family == "H1"].eff_honest.isna().all()
+    from sim.intervals import t_bound
+    assert h1row.gain_upper == pytest_approx(t_bound(np.full(10, 0.3), "upper", 0.95).value)
     b2 = f1[f1.rule == "B2"].iloc[0]; assert b2.honest_failure_rate == pytest_approx(stats.norm.cdf(-0.12 / lk["market"]["sigma"]))
     assert f1[f1.rule == "B1"].honest_failure_rate.eq(0.0).all()
     assert len(f2) == 8 and {"eff_honest", "eff_ref", "eff_clip", "eff_attack", "audit_spend"} <= set(f2.columns)
@@ -4030,13 +4260,17 @@ from sim.intervals import bound  # noqa: E402
 from sim.locked import load_locked  # noqa: E402
 
 
-def _upper(g: np.ndarray, iv: dict, coverage: dict | None) -> tuple[float, str]:
-    """The upper 95% bound by the admitted method at this sample size (percentile when no coverage report is given)."""
+def _upper(g: np.ndarray, iv: dict, coverage: dict | None, family: str) -> tuple[float, str]:
+    """The upper 95% bound by the admitted method at this sample size; without a coverage report the nominal method of
+    spec 8 (the t bound for H1, the percentile bootstrap for parametrized families), labeled 'nominal'."""
     n = int(len(g))
-    method = "percentile" if coverage is None else coverage.get("method_at_n", {}).get(str(n))
+    if coverage is None:
+        method = "t" if family == "H1" else "percentile"; label = f"{method} (nominal)"
+    else:
+        method = coverage.get("method_at_n", {}).get(str(n)); label = method
     if method is None or n < 2:
         return float("nan"), "none"
-    return float(bound(method, g, "upper", 0.95, iv).value), method
+    return float(bound(method, g, "upper", 0.95, iv).value), label
 
 
 def figure_frames(sweep_out: Path, locked: dict, coverage: dict | None = None, h1_dir: Path | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -4051,7 +4285,7 @@ def figure_frames(sweep_out: Path, locked: dict, coverage: dict | None = None, h
         if spec["position"] != want:
             continue
         df = pd.DataFrame(rec["rows"]); tol = rec.get("params", {}).get("tol"); g = df["gain"].to_numpy(dtype=float)
-        upper, method = _upper(g, iv, coverage)
+        upper, method = _upper(g, iv, coverage, spec["family"])
         base = {"rule": spec["rule"], "family": spec["family"], "beta": float(spec["beta"]), "position": spec["position"], "audit_spend": float(df["audit_spend_attack"].mean())}
         f1.append({**base, "gain_mean": float(g.mean()), "gain_upper": upper, "bound_method": method, "n_seeds": int(len(g)),
                    "honest_failure_rate": float(stats.norm.cdf(-float(tol) / sigma)) if tol is not None else 0.0})
@@ -4059,7 +4293,7 @@ def figure_frames(sweep_out: Path, locked: dict, coverage: dict | None = None, h
     if h1_dir is not None and (Path(h1_dir) / "h1_rows.csv").exists():
         h1 = pd.read_csv(Path(h1_dir) / "h1_rows.csv")
         for (rule, beta), df in h1.groupby(["rule", "beta"]):
-            g = df["gain"].to_numpy(dtype=float); upper, method = _upper(g, iv, coverage)
+            g = df["gain"].to_numpy(dtype=float); upper, method = _upper(g, iv, coverage, "H1")
             base = {"rule": rule, "family": "H1", "beta": float(beta), "position": "median", "audit_spend": float((df["audit_cost_attack"] / df["sstar"]).mean())}
             f1.append({**base, "gain_mean": float(g.mean()), "gain_upper": upper, "bound_method": method, "n_seeds": int(len(g)), "honest_failure_rate": float("nan")})
             f2.append({**base, "eff_honest": float("nan"), "eff_ref": float(df["eff_ref"].mean()), "eff_clip": float(df["eff_clip"].mean()), "eff_attack": float(df["eff_attack"].mean())})
@@ -4121,7 +4355,7 @@ git commit -m "feat: figures 1 and 2 from the evaluate records with the bootstra
 ### Task 9: Custodian instructions, spec note, README, and the run book for the lock
 
 **Files:**
-- Create: `docs/custodian.md`, `docs/lock-runbook.md`
+- Create: `docs/custodian.md`, `docs/lock-runbook.md`, `scripts/pod_setup.sh`
 - Modify: `docs/superpowers/specs/2026-10-14-touchstone-simulator-design.md` (section 14: plan 2B implementation note), `README.md` (status, the H1 exception sentence, the sealed-bundle hash line)
 - Test: `tests/test_docs.py` (one test: every path named in `docs/custodian.md` under `sealed/` is in `sim.sealed.BUNDLE_FILES` or under `sealed/patches/`; every script named in `docs/lock-runbook.md` exists)
 
@@ -4158,12 +4392,12 @@ Expected: FAIL with `FileNotFoundError` for `docs/custodian.md`.
 1. **Who you are and what you must not see.** The separate session (the custodian) writes the sealed bundle before the lock and never reads any rule-design work. It works from a clone of the repository at the lock-candidate commit, which contains no proposed rule. The author does not read the bundle until the unseal.
 2. **What to produce**, the bundle layout, exactly the files `sim/sealed.py::BUNDLE_FILES` expects: `sealed/README.md` (what the bundle contains and the access log), `sealed/h1_prompt.txt` (the H1 system prompt: it replaces the development `ACTOR_INSTRUCTIONS` in `sim/llm_actor.py` through `scripts/h1.py --prompt`, and because the prompt is part of every cache key, H1 runs with it never replay a development response; its H1 cache lives under `experiments/cache/h1/<backend>/`, never under `sealed/`; it must describe the provider role, the schema, and the goal, and must not name any rule), `sealed/h2/family.py` (a module defining `H2`, an instance of `sim.policies.families.Family` with knob domains, a claim map that permits claims below effort, the binary `clip` knob so that H2 contains its twin by construction, `registered_starts`, `exact_key`, and `knob_key` as in `experiments/families.md`; and `CONTAINMENT`, a string), `sealed/h2/containment.md` (whether H2 contains D2, is contained by it, or is non-nested, and which observation or memory it uses that D2 cannot; if H2 contains D2, the embedding function `embed_d2(knobs) -> knobs` in `family.py`), `sealed/final_eval_seeds.json` (a JSON list of at least 40 distinct integers in `[10_000_000, 20_000_000)`, so disjoint from dev-train, dev-val, calibration, and the coverage block `3,000,000` to `6,600,000`; the first 20 or 40 are used, as `coverage_consequences.final_eval_n` says, and the first 10 for H1), `sealed/identity_salt.hex` (32 random bytes as 64 hex characters; its SHA-256 goes into `experiments/locked.yaml` as `identity_salt_sha256` before the lock commit; the file itself stays sealed until the evaluation freeze, when the author exports it as `TOUCHSTONE_IDENTITY_SALT` for the final-eval runs), `sealed/b1_check.json` (the result of running H2 and the H1 harness with the fake backend against B1 only, recorded as pass or fail per check, with the commands used).
 3. **The commitment.** Compute `python -c "from sim.sealed import bundle_hash; print(bundle_hash('sealed'))"` on the finished bundle, send the hash and the salt hash to the author for `locked.yaml` (`sealed_bundle_sha256`, `identity_salt_sha256`), keep the bundle outside the repository until the unseal, and keep an access log in `sealed/README.md`.
-4. **Checks you run before the lock** (B1 only): `uv run pytest tests/test_families.py -k H2` after adding your family to a scratch copy of the test's family list; `uv run python scripts/h1.py --backend fake-honest --rules B1 --calibration experiments/calibration_T100.json --smoke --out /tmp/b1 --prompt sealed/h1_prompt.txt`; one search cell of H2 against B1 with `scripts/sweep.py --smoke --select B1_H2` after registering H2 in a scratch copy of `scripts/sweep.py`'s family table. Record pass or fail in `b1_check.json`.
-5. **At the unseal (week 5).** The bundle enters the repository under `sealed/`; CI runs `scripts/check_claim.py --verify-freeze <freeze tag>` which checks the bundle hash; the author then registers H2 in the sweep's family table through the allow-listed mechanism (a `sealed/` module is allow-listed; the sweep's table reads `sealed/h2/family.py` when present, the only post-lock code path that imports from `sealed/`), runs the comprehension fixture, then H1, H2, and the twins on the frozen rule and the baselines on the final-eval namespace, then `scripts/check_claim.py`.
-6. **Repairs.** A repair after the unseal is a separately hashed patch under `sealed/patches/` with an entry `{"<file>": {"sha256": "<hex>", "demotes": ["<rule>|<family>", ...]}}` in `sealed/patches/log.json`, written by you, limited to interface errors, logged, and reported; the original bundle is never edited (`bundle_hash` ignores `patches/` and import artifacts). A repair that changes any H1 or H2 decision on a dev-val seed demotes the affected cells to exploratory: list them in `demotes`; `scripts/check_claim.py` reads the log and marks them INCONCLUSIVE.
+4. **Checks you run before the lock** (B1 only), each command as written, with your bundle directory exported as `TOUCHSTONE_SEALED_DIR=/path/to/your/sealed` so the frozen registry loads your family without any edit: `uv run pytest tests/test_registry.py` (your family must load as `H2`); `uv run python scripts/calibrate.py --seeds 2 --out /tmp/cal_smoke.json` then `uv run python scripts/h1.py --backend fake-honest --rules B1 --calibration /tmp/cal_smoke.json --calibration-t100 /tmp/cal_smoke.json --smoke --out /tmp/b1 --prompt $TOUCHSTONE_SEALED_DIR/h1_prompt.txt` (the smoke market is built from the T of the T100 calibration; a non-smoke run needs `experiments/calibration.json`, `experiments/calibration_T100.json`, `--tuned-dir experiments/tuned`, and `--max-calls 2000`); one H2 cell against B1 through every stage: `uv run python scripts/sweep.py --stage all --sections heldout --rules B1 --select B1_H2 --calibration /tmp/cal_locked.json --smoke --out /tmp/b1_sweep` where `/tmp/cal_locked.json` is `scripts/calibrate.py --seeds 2` on the locked market (the smoke budget on the locked market is what the plan's own test runs). Use absolute imports in `h2/family.py` (`from sim.policies.families import Family`), never relative ones. Record pass or fail and the commands in `b1_check.json`.
+5. **At the unseal (week 5).** The bundle enters the repository under `sealed/`; `scripts/check_claim.py --verify-only --verify-lock lock-2026-10-28 --verify-freeze freeze-2026-11-11 --proposed proposed` checks the tree and the bundle hash; no registration step exists: the frozen registry (`sim/registry.py`) finds `sealed/h2/family.py`, the final-eval seeds, and the prompt by itself. The author then runs the comprehension fixture, H1, H2, and the twins on the frozen rule and the baselines on the final-eval namespace (the run book lists the commands), then `scripts/check_claim.py`.
+6. **Repairs.** A repair after the unseal is a complete replacement file under `sealed/patches/` with an entry `{"<patch file>": {"sha256": "<hex>", "replaces": "<bundle file, for example h2/family.py>", "demotes": ["<rule>|<family>", ...]}}` in `sealed/patches/log.json`, written by you, limited to interface errors, logged, and reported; the original bundle is never edited (`bundle_hash` ignores `patches/` and import artifacts), and the frozen code reads the replaced file through `sim.sealed.effective_path`, which applies a patch only when its hash matches the log. A repair that changes any H1 or H2 decision on a dev-val seed demotes the affected cells to exploratory: list them in `demotes`; `scripts/check_claim.py` reads the log and marks them INCONCLUSIVE.
 7. **Timeline.** Bundle complete by 2026-10-27; commitment hashes to the author by 2026-10-27 so the lock commit on 2026-10-28 carries them; unseal on 2026-11-12.
 
-`docs/lock-runbook.md`: the ordered commands for the lock day, each exactly as its script's CLI reads them: `scripts/calibrate.py --out experiments/calibration.json` and `--T 100 --out experiments/calibration_T100.json`; `scripts/tune_baselines.py`; the full `scripts/sweep.py --stage all`; `scripts/coverage_study.py --sweep-out ... --calibration experiments/calibration.json --tuned-dir experiments/tuned --out results/coverage --register --workers 8` (about a day on 8 cores for the base entry; the conditional n = 40 run starts by itself only when the remedy order reaches it); the two pilots (`scripts/h1.py ... --pilot`); `scripts/lock.py --tuned-dir experiments/tuned --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --coverage-report results/coverage/coverage_report.json --bundle-hash <from the custodian> --salt-hash <from the custodian> --pilot results/pilot_anthropic/pilot_anthropic.json`; `scripts/lock.py ... --check`; `git tag lock-candidate && uv run python scripts/check_claim.py --verify-only --verify-lock lock-candidate --proposed none; git tag -d lock-candidate`; the signed tag; the push; the public timestamp. The freeze day: `git tag -s freeze-2026-11-11`; `uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-28 --verify-freeze freeze-2026-11-11 --proposed proposed`. The evaluation: `scripts/sweep.py --stage all --sections heldout --rules B1,B2,B3,proposed --eval-namespace final_eval ...`, `scripts/h1.py --backend anthropic --rules B2,B3,proposed --eval-namespace final_eval --prompt sealed/h1_prompt.txt ...`, then `scripts/check_claim.py --verify-lock lock-2026-10-28 --verify-freeze freeze-2026-11-11 --sweep-out results/final --h1-dir results/h1_final --tuned-dir experiments/tuned --proposed proposed --proposed-describe experiments/proposed_describe.yaml`. The post-lock test that `proposed.py` imports only the base module and mutates nothing runs inside `check_claim.py` (`check_proposed_module`), so no new test file is needed after the lock.
+`docs/lock-runbook.md`: the ordered commands for the lock day, each exactly as its script's CLI reads them (every command in the run book is executed once in a smoke form by the executor before the commit; the ledger records it). Compute notes at the top: the simulator is branchy single-thread Python, so a GPU does not help and core count does; set `OMP_NUM_THREADS=1` before any multi-worker run; the search manifest splits across machines with `scripts/sweep.py --stage search --shard K/N` (copy the shards' `search/` directories together before the later stages) and the coverage study with `scripts/coverage_study.py --cell i` (six machines, one cell each, about 20 to 40 minutes on a 16-vCPU pod) followed by `--merge` on one; a `scripts/pod_setup.sh` (created in this task: `git clone`, `pip install uv`, `uv sync`, `export OMP_NUM_THREADS=1`) prepares a fresh CPU pod. The commands: `scripts/calibrate.py --out experiments/calibration.json` and `--T 100 --out experiments/calibration_T100.json`; `scripts/tune_baselines.py`; the full `scripts/sweep.py --stage all`; `scripts/coverage_study.py --sweep-out ... --calibration experiments/calibration.json --tuned-dir experiments/tuned --out results/coverage --register --workers 8` (about a day on 8 cores for the base entry; the conditional n = 40 run starts by itself only when the remedy order reaches it); the two pilots (`scripts/h1.py ... --pilot`); `scripts/lock.py --tuned-dir experiments/tuned --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --coverage-report results/coverage/coverage_report.json --bundle-hash <from the custodian> --salt-hash <from the custodian> --pilot results/pilot_anthropic/pilot_anthropic.json`; `scripts/lock.py ... --check`; `git tag lock-candidate && uv run python scripts/check_claim.py --verify-only --verify-lock lock-candidate --proposed none; git tag -d lock-candidate`; the signed tag; the push; the public timestamp. The freeze day: `git tag -s freeze-2026-11-11`; `uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-28 --verify-freeze freeze-2026-11-11 --proposed proposed`. The evaluation: `scripts/sweep.py --stage all --sections heldout --rules B1,B2,B3,proposed --eval-namespace final_eval ...`, `scripts/h1.py --backend anthropic --rules B2,B3,proposed --eval-namespace final_eval --prompt sealed/h1_prompt.txt ...`, then `scripts/check_claim.py --verify-lock lock-2026-10-28 --verify-freeze freeze-2026-11-11 --sweep-out results/final --h1-dir results/h1_final --tuned-dir experiments/tuned --proposed proposed --proposed-describe experiments/proposed_describe.yaml`. The post-lock test that `proposed.py` imports only the base module and mutates nothing runs inside `check_claim.py` (`check_proposed_module`), so no new test file is needed after the lock.
 
 Spec section 14: append an implementation note "Plan 2B" listing rulings D1 to D12 with one sentence each, the coverage manifest figures (base and conditional), the H1 call accounting of ruling D10 (the ten repetitions share the dev-train episodes with a deterministic cached actor), the renderer's location (`sim/describe.py`, not `sim/llm_actor.py` as section 11 says), the known-variance label of the analytic threshold, and the statement that `scripts/plot.py` and `docs/` are outside the predicate.
 
@@ -4190,7 +4424,7 @@ git commit -m "docs: custodian instructions for the sealed bundle, lock run book
 
 ## Self-review (done while writing; the executor re-checks against the spec)
 
-1. **Spec coverage.** 5.4 actor, schema, cache, fallback, invalidity, five-episode procedure, twin, clipped re-run, describe renderer, vocabulary, comprehension fixture, token pilot: Tasks 3, 4, 6. 6 lock contents, allow-list, hash checks after the freeze, repairs, final-eval seeds released with the bundle: Tasks 1, 7, 9. 6.1 bundle contents and the custodian's B1-only check: Task 9 (`docs/custodian.md`) and Task 7 (`sim/sealed.py`). 8 interval algorithms, coverage study (selection, pools, replications, endpoints, thresholds, joint fixture, power, remedies, consequences), claim predicate, decision rule, figures, units: Tasks 2, 5, 7, 8. 11 layout: `llm_actor.py`, `policies/llm.py`, `vocabulary.yaml`, `coverage_study.py`, `plot.py`, `check_claim.py`, `sealed/`: present; `scripts/run.py` is plan 1. 12 tests: LLM replay byte-identical (Task 4), describe-record vocabulary and renderer spy and noninterference (Task 3), lock and freeze hash checks and the new-file refusal (Task 7), `proposed.py` import restriction and frozen-module attribute check (not in this plan: `proposed.py` does not exist before the lock; the test is written at the freeze and is listed in `docs/lock-runbook.md` as a post-lock item), sealed bundle hash check (Task 7). 13 gate for 10-18 to 10-28: Task 9 step 5. Gaps: the enforcement-matched ablation runs and the bank's post-lock application are plan 2A code paths run post-lock; the held-out family registration in the sweep's table at the unseal is described in `docs/custodian.md` and is a post-lock, allow-listed step.
+1. **Spec coverage.** 5.4 actor, schema, cache, fallback, invalidity, five-episode procedure, twin, clipped re-run, describe renderer, vocabulary, comprehension fixture, token pilot: Tasks 3, 4, 6. 6 lock contents, allow-list, hash checks after the freeze, repairs, final-eval seeds released with the bundle: Tasks 1, 7, 9. 6.1 bundle contents and the custodian's B1-only check: Task 9 (`docs/custodian.md`) and Task 7 (`sim/sealed.py`). 8 interval algorithms, coverage study (selection, pools, replications, endpoints, thresholds, joint fixture, power, remedies, consequences), claim predicate, decision rule, figures, units: Tasks 2, 5, 7, 8. 11 layout: `llm_actor.py`, `policies/llm.py`, `vocabulary.yaml`, `coverage_study.py`, `plot.py`, `check_claim.py`, `sealed/`: present; `scripts/run.py` is plan 1. 12 tests: LLM replay byte-identical (Task 4), describe-record vocabulary and renderer spy and noninterference (Task 3), lock and freeze hash checks and the new-file refusal (Task 7), `proposed.py` import restriction and frozen-module attribute check (`check_proposed_module`, Task 7, tested on synthetic modules and run by `check_claim.py` on the real one), sealed bundle hash check (Task 7). 13 gate for 10-18 to 10-28: Task 9 step 5. Gaps: the enforcement-matched ablation runs and the bank's post-lock application are plan 2A code paths run post-lock; the held-out family registration in the sweep's table at the unseal is described in `docs/custodian.md` and is a post-lock, allow-listed step.
 2. **Placeholders.** None: every step has its code or its exact command; the two documents in Task 9 have their required sections and commands listed; the pilots are the user's step by design. Test names in the Review Focus section exist in their tasks.
 3. **Type consistency.** `Bound` fields (Task 2) are read by `covered` (Task 5), `decide` (Task 7), and `_upper` (Task 8) as `value`, `side`, `degenerate`; `endpoint_key` (Task 5) is the key format `check_claim.py` reads from `admitted_sides` (Task 7); `H1_ROW_FIELDS` (Task 4) are the columns `scripts/h1.py` writes (Task 6), `h1_frame` reads (Task 7), and the H1 adapter in `plot.py` reads (Task 8); `H1CellResult.reference.twin_results`, `new_calls_clipped`, `invalid_count`, `inconclusive` are read by `scripts/h1.py`; `BudgetedBackend` forwards `name`, `model`, `instructions`, which `build_payload` reads by attribute; `make_backend(name, locked, instructions)` is called by `scripts/h1.py` with three arguments; `coverage_cells` reads `runs_per_seed` from the selection file that `scripts/coverage_study.py` writes with `--register`; `CoverageCellSpec` is JSON-valued so `ProcessPoolExecutor` can pickle it; `validated_universe` rebuilds jobs with the sweep's own `job_for` and checks records with its `check_record`; `make_rule` and `available_families` (Task 1b) replace `rule_from_params` and `ALL_FAMILIES` in `scripts/sweep.py`, and `scripts/h1.py` and `scripts/coverage_study.py` import them from `sim.registry`; `coverage_consequences` is written by `scripts/lock.py`, read by `train_val` (Task 1) for the final-eval sample size, and compared by `verify_coverage_report` (Task 7); `demoted_cells` (Task 7, `sim/sealed.py`) feeds `evaluate_claim(..., demoted=...)`.
 4. **Review Focus.** Every line names its test: 1 and 2 in Task 2; 3 in Task 5 (`test_cell_selection_handles_degenerate_rankings`); 4 and 5 in Task 4; 6 in Tasks 3 and 7; 7 in Task 7.
