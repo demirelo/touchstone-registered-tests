@@ -1505,11 +1505,15 @@ all-deviators 55,200; tuning 310,878; bank 33,840 (bound); total 1,368,953
 (1,285,433 exact plus 83,520 bounded; post-lock estimates 131,450), as
 printed by `scripts/manifest.py` at commit time. Measured on an Apple M4
 Max at execution: `scripts/bench.py` 28.8 ms per T = 200 B2 episode (gate
-45 ms); `scripts/bench_sweep.py` over every cell stage 50.4 ms per run
-blended (B1 29.5, B2 35.0, B3 86.8), which puts the pre-lock manifest at
-19.2 core-hours against the 20-hour gate; the review panel measured 48 to
-50 ms per run across rounds 4 to 9. The margin is thin and B3's allocation
-loop is the first optimization if the production machine misses the gate.
+45 ms); `scripts/bench_sweep.py` over every cell stage, one headline cell
+per (rule, family), weighted by each (rule, family)'s share of the manifest
+(`manifest_weights`): 47.9 ms per run weighted (51.5 blended; B1 29 to 33,
+B2 31 to 42, B3 84 to 94, H3 cells the slowest within a rule), which puts
+the pre-lock manifest at 18.2 core-hours weighted (19.6 blended) against
+the 20-hour gate; the review panel measured 48 to 50 ms per run blended
+across rounds 4 to 9. The margin is thin: B3's allocation loop is the first
+optimization if the production machine misses the gate, and the per-round
+tie-key generation for replacement identities in H3 cells the second.
 These figures supersede the prose totals in
 section 5.3 (tuning is 279 grid points, not 3 x 243; corners are counted
 per cell and their values are reused in the bank pass; bank and controls

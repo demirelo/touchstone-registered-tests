@@ -1,7 +1,7 @@
 import subprocess, sys
 import pytest
 from sim.locked import load_locked
-from sim.manifest import enumerate_manifest, totals
+from sim.manifest import enumerate_manifest, totals, manifest_weights
 from sim.schedule import (Budget, SMOKE_BUDGET, budget_from_locked, cell_runs, search_runs, stage_runs, bank_stage_bound,
                           reference_bound, doubling_bound, tuning_point_runs, tuning_recheck_runs, all_deviators_runs, bank_members)
 
@@ -54,3 +54,13 @@ def test_manifest_totals_follow_the_schedule():
 def test_manifest_script_prints_totals():
     out = subprocess.run([sys.executable, "scripts/manifest.py", "--ms-per-run", "45"], check=True, capture_output=True, text=True).stdout
     assert "pre_lock" in out and "core-hours" in out and "upper bound" in out
+
+
+def test_manifest_weights_split_pre_lock_runs_by_rule_and_family():
+    lk = load_locked(); b = budget_from_locked(lk)
+    cells = enumerate_manifest(lk, ["B1", "B2", "B3"])
+    w = manifest_weights(cells)
+    assert set(w) == {(r, f) for r in ("B1", "B2", "B3") for f in ("D1", "D2", "D2+H3")}
+    assert sum(w.values()) == pytest.approx(totals(cells)["pre_lock"])          # every pre-lock run is attributed once
+    assert w[("B1", "D2+H3")] == sum(cell_runs("D2+H3", b).values())               # the H3 cell alone
+    assert w[("B2", "D2")] > w[("B1", "D2")]                                       # B2 carries the largest tuning grid

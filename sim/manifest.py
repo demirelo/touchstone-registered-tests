@@ -99,3 +99,19 @@ def totals(cells: list[CellSpec]) -> dict[str, int]:
 
 def rows(cells: list[CellSpec]) -> list[dict]:
     return [asdict(c) for c in cells]
+
+
+def manifest_weights(cells: list[CellSpec]) -> dict[tuple[str, str], int]:
+    """Pre-lock runs attributed to (rule, family) for weighting a benchmark by the manifest mix. Rows that
+    belong to every rule ("all") are split evenly across the named rules; "D1+D2" rows are split half and half."""
+    rules = sorted({c.rule for c in cells if not c.post_lock and c.rule not in ("all", "proposed")})
+    out: dict[tuple[str, str], float] = {}
+    for c in cells:
+        if c.post_lock:
+            continue
+        rule_shares = [(r, 1.0 / len(rules)) for r in rules] if c.rule == "all" else [(c.rule, 1.0)]
+        fam_shares = [("D1", 0.5), ("D2", 0.5)] if c.family == "D1+D2" else [(c.family, 1.0)]
+        for r, rs in rule_shares:
+            for f, fs in fam_shares:
+                out[(r, f)] = out.get((r, f), 0.0) + c.runs * rs * fs
+    return {k: int(round(v)) for k, v in out.items()}

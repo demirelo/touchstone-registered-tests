@@ -157,6 +157,7 @@ def test_rule_view_does_not_reveal_exit_or_successor():
     before, after = rule.seen[2], rule.seen[3]
     assert after["N"] == before["N"] + 1
     assert after["cap"][2] == before["cap"][2] and after["ban"][2] == before["ban"][2]    # old identity not marked
+    assert after["bond"][2] == before["bond"][2]                                            # nor its bond
     assert after["cap"][cfg.N] == cfg.providers[2].k and after["ban"][cfg.N] == 0
     assert not np.array_equal(after["tie"][:, 2], after["tie"][:, cfg.N])                  # no shared randomness
     assert 2 not in after["offers"] and cfg.N in after["offers"]
@@ -235,3 +236,20 @@ def test_exit_does_not_change_ban_or_bond_schedule():
     assert with_exit.ledger.bond.sum() == pytest.approx(0.0)
     assert with_exit.ledger.holdback_out[:, 5].sum() == pytest.approx(with_exit.ledger.holdback_in[:, 5].sum())
     with_exit.ledger.check_conservation(0.0)
+
+
+def test_exit_keeps_old_identity_ban_schedule_and_fresh_identity_unbanned():
+    """Focus item 2, ban half: after a failed audit bans identity 0, the entity exits; the old identity's
+    banned_until stays as the rule set it in every later round, and the fresh identity starts unbanned."""
+    cfg = cfgb(budget=50.0, T=10)                                           # every served job is audited and fails
+    rule = Spy(0.25, 0.40, 0.55, tol=-10.0, L=50)
+    pols = [HonestMax() for _ in range(cfg.N)]; pols[0] = IdentityReplacement(HonestMax())
+    res = run_episode(cfg, rule, pols, 0)
+    t0 = int(np.argmax(res.failures[:, 0] > 0))
+    assert res.failures[t0, 0] > 0 and res.identity_round[cfg.N] == t0 + 1    # exit in the round after the failure
+    old_until = rule.seen[t0 + 1]["ban"][0]
+    assert old_until == t0 + 51                                              # the ban the rule imposed in round t0
+    for r in range(t0 + 1, cfg.T):
+        assert rule.seen[r]["ban"][0] == old_until                           # never rewritten by the exit
+    assert rule.seen[t0 + 1]["ban"][cfg.N] == 0                              # the fresh identity starts unbanned
+    assert res.served[t0 + 1, 0] > 0                                         # and serves in the round after the failure
