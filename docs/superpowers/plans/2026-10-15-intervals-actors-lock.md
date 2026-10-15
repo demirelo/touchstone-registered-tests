@@ -1,4 +1,4 @@
-# Touchstone plan 2B (version 7): intervals, coverage study, model actors, describe renderer, claim check, lock tooling, plots, custodian instructions
+# Touchstone plan 2B (version 8): intervals, coverage study, model actors, describe renderer, claim check, lock tooling, plots, custodian instructions
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -11,6 +11,8 @@
 **Spec:** `docs/superpowers/specs/2026-10-14-touchstone-simulator-design.md` (version 7.5 plus the plan 1 and plan 2A implementation notes). This plan implements sections 5.4 (LLM actor, describe renderer, comprehension fixture, H1 procedure, token pilot), 6 (lock contents, allow-list, hash checks, freeze, repairs), 6.1 (what the sealed bundle must contain, as instructions to the separate session), 8 (interval algorithms, coverage study, joint fixture test, power, pre-registered consequences, claim predicate, decision rule, figures), 11 (layout: `llm_actor.py`, `policies/llm.py`, `vocabulary.yaml`, `coverage_study.py`, `plot.py`, `check_claim.py`, `sealed/`), 12 (the remaining tests), and 13 (the gate for 10-18 to 10-28). It also folds the deferred minors of the plan 2A final review that touch frozen files.
 
 **Scope split, stated once:** Plan 2B ends when `scripts/check_claim.py --verify-lock` passes on a lock-candidate tree, `scripts/coverage_study.py` runs end to end at a smoke size and at the registered size from the manifest, the model actor runs the H1 procedure against B1 to B3 with the fake backend and with cached real responses, the token pilot script exists and has been run once per backend by the user, `scripts/plot.py` draws figures 1 and 2 from the sweep CSVs, and `docs/custodian.md` tells the separate session exactly what to produce. The proposed rule, the sealed H1 prompt and H2 definition, and every post-lock run are outside this plan.
+
+**Changes from version 7 (Astra accept-with-caveat, two test defects):** the lock-script refusal test imports `thresholds` and `admission`, loads the lock, and builds its threshold map; its failed-check assertion matches the validator's current message.
 
 **Changes from version 6 (Astra reject, three items):** the lock validator checks every measured cell's pool size, replication count, and factors against the selected attempt and the locked sizes, and requires a finite coverage in [0, 1] for every endpoint and procedure at every measured n; a failed earlier attempt no longer refuses a report whose registered doubling passed (admission derives from the selected attempt, earlier attempts are checked for consistency only), with an integration test; the cached-token test uses a fixed valid action.
 
@@ -3714,7 +3716,8 @@ def test_lock_script_writes_lock_time_blocks_validates_inputs_and_check_passes(t
 
 
 def test_lock_script_refuses_bad_inputs(tmp_path):
-    exp, tuned = setup(tmp_path)
+    from sim.coverage import admission, thresholds
+    exp, tuned = setup(tmp_path); lk = load_locked(); thr = {n: thresholds(lk, 35000) for n in (10, 20)}
     base = cmd(tmp_path, exp, tuned, "--bundle-hash", "ab" * 32, "--salt-hash", "cd" * 32, "--cost-cap-usd", "120")
     bad_t = [a if a != str(tmp_path / "cal100.json") else str(tmp_path / "calbad.json") for a in base]
     r = subprocess.run(bad_t, capture_output=True, text=True, cwd=ROOT); assert r.returncode != 0 and "T" in (r.stderr + r.stdout)
@@ -3778,7 +3781,7 @@ def test_lock_script_refuses_bad_inputs(tmp_path):
     r = subprocess.run(bad_g, capture_output=True, text=True, cwd=ROOT); assert r.returncode != 0 and "admissible_n" in (r.stderr + r.stdout)
     (tmp_path / "cov_chk.json").write_text(json.dumps(short))
     bad_k = [a if a != str(tmp_path / "cov.json") else str(tmp_path / "cov_chk.json") for a in base]
-    r = subprocess.run(bad_k, capture_output=True, text=True, cwd=ROOT); assert r.returncode != 0 and "cross-check" in (r.stderr + r.stdout)
+    r = subprocess.run(bad_k, capture_output=True, text=True, cwd=ROOT); assert r.returncode != 0 and "threshold check" in (r.stderr + r.stdout)   # a failed check with pass_ still True contradicts its values
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
