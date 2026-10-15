@@ -1,4 +1,4 @@
-# Touchstone plan 2B (version 5): intervals, coverage study, model actors, describe renderer, claim check, lock tooling, plots, custodian instructions
+# Touchstone plan 2B (version 6): intervals, coverage study, model actors, describe renderer, claim check, lock tooling, plots, custodian instructions
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -11,6 +11,8 @@
 **Spec:** `docs/superpowers/specs/2026-10-14-touchstone-simulator-design.md` (version 7.5 plus the plan 1 and plan 2A implementation notes). This plan implements sections 5.4 (LLM actor, describe renderer, comprehension fixture, H1 procedure, token pilot), 6 (lock contents, allow-list, hash checks, freeze, repairs), 6.1 (what the sealed bundle must contain, as instructions to the separate session), 8 (interval algorithms, coverage study, joint fixture test, power, pre-registered consequences, claim predicate, decision rule, figures), 11 (layout: `llm_actor.py`, `policies/llm.py`, `vocabulary.yaml`, `coverage_study.py`, `plot.py`, `check_claim.py`, `sealed/`), 12 (the remaining tests), and 13 (the gate for 10-18 to 10-28). It also folds the deferred minors of the plan 2A final review that touch frozen files.
 
 **Scope split, stated once:** Plan 2B ends when `scripts/check_claim.py --verify-lock` passes on a lock-candidate tree, `scripts/coverage_study.py` runs end to end at a smoke size and at the registered size from the manifest, the model actor runs the H1 procedure against B1 to B3 with the fake backend and with cached real responses, the token pilot script exists and has been run once per backend by the user, `scripts/plot.py` draws figures 1 and 2 from the sweep CSVs, and `docs/custodian.md` tells the separate session exactly what to produce. The proposed rule, the sealed H1 prompt and H2 definition, and every post-lock run are outside this plan.
+
+**Changes from version 5 (Astra reject, five items in two places):** every cell keeps its own input hash and all cells share the report's `provenance_hash`, which the lock validator checks instead of equal input hashes; the validator takes the base sizes from the lock, requires power and threshold-check entries at both levels for every attempt, verifies each pass flag against its values (the Clopper-Pearson limit, convergence and 0.8, the 3 se gap), requires thresholds for exactly the measured sample sizes, and validates gates at every n present; the budgeted backend attaches the paid response to the overrun exception only (a pre-dispatch refusal never creates a cache entry), reserves at the highest input-token rate, counts cached tokens as input for the overrun, and latches when the spend crosses the cap.
 
 **Changes from version 4 (Opus accept-with-caveat, Astra reject):** the pool cache is keyed by an input hash (cell specification, settings and salt hashes, calibration, tuned, and reference-record hashes), extends with missing seeds only, returns a prefix for a shorter request, and executed pool work is summed; per-cell files carry that provenance and the merge checks it; the gates (fixture, power, threshold checks) are computed once for n = 10, 20, 40 in one fixed order on every path, and a per-cell `--force-n40` rerun keeps the base results; the lock script derives `admissible_n` from the attempts (order, sizes, fixture, power, threshold checks), recomputes the thresholds, and refuses a report whose recorded gates or consequences do not follow; the H2 headline requires checked reference records at every position for every required rule; the H1 verifier checks the raw invalid flags and requires the T and model columns; the budgeted backend latches after an overrun, caches the paid response, and prices cache writes and reads; the module check refuses `exec`, `eval`, `getattr`, and `__builtins__`; the registry test fixture uses the real `Family` constructor and a conftest fixture reloads the registry after every test.
 
@@ -1264,7 +1266,7 @@ git commit -m "feat: locked describe() vocabulary, validation, frozen renderer, 
   - `canonical_request(backend_name, model, kind, payload) -> str`, `request_hash(...) -> str` (SHA-256).
   - `PromptCache(directory)`: `get(key) -> response | None`, `put(key, request: str, response)` (one JSON file `{"request": ..., "response": ...}` per key), `entry(key) -> dict | None`, counters `hits`, `misses`.
   - `AnthropicBackend(model, instructions)`, `JevBackend(model, instructions)` (menu `EFFORT_LEVELS`, `CLAIM_OFFSETS`, `MARKUPS`, serve/abstain; usage fields `or 0`), `FakeBackend(fn, model="fake-1", instructions=ACTOR_INSTRUCTIONS)`, `make_backend(name, locked, instructions=None)`.
-  - `CapExceeded(Exception)` with `.reason`; `PilotTargetReached(Exception)`; `BudgetedBackend(inner, max_calls=None, max_cost_usd=None, prices=None, stop_at=None, ledger=None, max_request_tokens=(8000, 512))`: forwards `name`, `model`, `instructions`; `ledger` is a JSON path holding the cumulative `calls`, `usage`, and `cost_usd` of every earlier run with this backend (loaded at construction, written after every call), so a restarted run continues the same allowance; before every call raises `CapExceeded` when `calls + 1 > max_calls`, when the request's estimated input size (`ceil(len(json) / 3)` tokens) exceeds `max_request_tokens[0]`, or when `cost_usd + reserve > max_cost_usd` with `reserve` the price of one request of `max_request_tokens` (input, output) at `prices[model]`; after a call whose actual usage exceeded `max_request_tokens` it raises too (the cap can then be crossed by at most that one request, which the Anthropic `max_tokens = 512` output limit and the input estimate make unlikely); `PilotTargetReached` when `calls_this_run >= stop_at`; after every call records `calls`, `usage`, `latencies` (seconds, this run only), `cost_usd`; `calls_this_run` counts this run only.
+  - `CapExceeded(Exception)` with `.reason`; `PilotTargetReached(Exception)`; `BudgetedBackend(inner, max_calls=None, max_cost_usd=None, prices=None, stop_at=None, ledger=None, max_request_tokens=(8000, 512))`: forwards `name`, `model`, `instructions`; `ledger` is a JSON path holding the cumulative `calls`, `usage`, `cost_usd`, and `overrun` of every earlier run with this backend (loaded at construction, written after every call), so a restarted run continues the same allowance and stays latched after an overrun; before every call raises `CapExceeded` when latched, when `calls + 1 > max_calls`, when the request's estimated input size (`ceil(len(json) / 3)` tokens) exceeds `max_request_tokens[0]`, or when `cost_usd + reserve > max_cost_usd` with `reserve` the price of one request of `max_request_tokens` at the highest input-token rate of `prices[model]` (ordinary, cache write, or cache read) plus the output rate; after a call it counts ordinary, cache-creation, and cache-read tokens as input, and when that total or the output exceeded `max_request_tokens` or the spend crossed the cap it latches (`overrun`) and raises `CapExceeded(..., response=<the paid response>)` so the caller caches it; a pre-dispatch refusal carries no response and creates no cache entry; `PilotTargetReached` when `calls_this_run >= stop_at`; after every call records `calls`, `usage`, `latencies` (seconds, this run only), `cost_usd`; `calls_this_run` counts this run only.
   - `build_state(view, feedback, T) -> dict`.
   - `ProcedureResult(profits (5), fallback_rounds, total_rounds, invalid, calls, cache_hits, usage, episode5)`; `run_procedure(cfg, rule_factory, focal, backend, cache, rendered_rule, train_seeds (4), eval_seed, locked, clip_episode5=False, twin=False)`.
   - `H1Reference(name, scores: dict[str, float], twin_results: list[ProcedureResult])`; `select_h1_reference(cfg, rule_factory, focal, backend, cache, rendered_rule, train_seeds, selection_seeds, locked) -> H1Reference` (ruling D10: twin procedures whose episode 5 runs on each selection seed; honest-max and abstention without calls; the chosen name is the maximizer of the mean normalized profit `profit / (S* / N)` in the order `REFERENCE_ORDER = ("abstain", "honest_max", "twin")`, ties to the earlier).
@@ -1376,7 +1378,7 @@ def test_budgeted_backend_stops_before_the_call_that_would_exceed(tmp_path):
     pols = [HonestMax() for _ in range(4)]; pols[3] = prov
     with pytest.raises(CapExceeded, match="calls cap 4"):
         run_episode(cfg, PostedPrices(0.2, 0.35, 0.5), pols, 1)
-    assert b.calls == 4                                             # the fifth call never happened
+    assert b.calls == 4 and len(list((tmp_path / "c").glob("*.json"))) == 4     # the fifth call never happened and left no cache entry
     b2 = BudgetedBackend(FakeBackend(honest_fn), stop_at=3)
     prov = LLMProvider(b2, PromptCache(tmp_path / "d"), rendered, cfg.providers[3], feedback=[], T=cfg.T, counters=ActorCounters()); pols[3] = prov
     with pytest.raises(PilotTargetReached):
@@ -1409,6 +1411,13 @@ def test_budgeted_backend_stops_before_the_call_that_would_exceed(tmp_path):
     b7 = BudgetedBackend(big, max_cost_usd=100.0, prices={"fake-1": {"input": 1.0, "output": 1.0}}, ledger=tmp_path / "l6.json", max_request_tokens=(8000, 512))
     with pytest.raises(CapExceeded, match="latched"):
         b7.complete("action", {"x": 1})                                                             # a restart stays latched until the ledger is cleared knowingly
+    cached = FakeBackend(honest_fn); cached.complete = lambda kind, payload: {"data": honest_fn(kind, payload), "raw": {}, "usage": {"input_tokens": 10, "output_tokens": 1, "cache_creation_input_tokens": 8000}}
+    b8 = BudgetedBackend(cached, max_cost_usd=0.035, prices={"fake-1": {"input": 4.0, "output": 20.0, "cache_write": 5.0, "cache_read": 0.4}}, max_request_tokens=(8000, 512))
+    with pytest.raises(CapExceeded, match="cost cap"):
+        b8.complete("action", {"x": 1})                                                             # the reserve prices 8,000 tokens at the highest input rate (5.0): 0.0400 > 0.035
+    b9 = BudgetedBackend(cached, max_cost_usd=1.0, prices={"fake-1": {"input": 4.0, "output": 20.0, "cache_write": 5.0, "cache_read": 0.4}}, max_request_tokens=(8000, 512))
+    with pytest.raises(CapExceeded, match="overrun"):
+        b9.complete("action", {"x": 1})                                                             # 8,010 input tokens counting the cached ones: an overrun, latched
     prov = LLMProvider(b5, PromptCache(tmp_path / "g"), rendered, cfg.providers[3], feedback=[], T=cfg.T, counters=ActorCounters()); pols[3] = prov
     with pytest.raises(CapExceeded):
         run_episode(cfg, PostedPrices(0.2, 0.35, 0.5), pols, 1)
@@ -1537,10 +1546,9 @@ class LLMProvider:
             try:
                 resp = self.backend.complete("action", payload)
             except CapExceeded as e:
-                paid = getattr(self.backend, "last_response", None)
-                if paid is not None:                       # an overrun: the paid response is cached so a restart never pays for it again
-                    self.cache.put(key, canonical_request(self.backend.name, self.backend.model, "action", payload), paid)
-                raise
+                if e.response is not None:                 # an overrun on this request: its paid response is cached so a restart never pays for it again
+                    self.cache.put(key, canonical_request(self.backend.name, self.backend.model, "action", payload), e.response)
+                raise                                      # a pre-dispatch refusal carries no response and creates no cache entry
             self.cache.put(key, canonical_request(self.backend.name, self.backend.model, "action", payload), resp)
             self.counters.calls += 1
             for k in ("input_tokens", "output_tokens"):
@@ -1764,8 +1772,9 @@ class JevBackend:
 
 
 class CapExceeded(Exception):
-    def __init__(self, reason: str) -> None:
-        super().__init__(reason); self.reason = reason
+    """`response` is set only for an overrun: the paid response of the request that raised, so the caller can cache it."""
+    def __init__(self, reason: str, response: dict | None = None) -> None:
+        super().__init__(reason); self.reason = reason; self.response = response
 
 
 class PilotTargetReached(Exception):
@@ -1808,22 +1817,23 @@ class BudgetedBackend:
         est = self.estimate_input_tokens(kind, payload)
         if est > self.max_request_tokens[0]:
             raise CapExceeded(f"request of about {est} input tokens exceeds the assumed maximum {self.max_request_tokens[0]}; raise max_request_tokens knowingly")
-        reserve = self._price(*self.max_request_tokens)
+        p = self.prices.get(self.model) or {}
+        top_in = max(float(p.get("input", 0.0)), float(p.get("cache_write", 0.0)), float(p.get("cache_read", 0.0)))
+        reserve = self.max_request_tokens[0] / 1e6 * top_in + self.max_request_tokens[1] / 1e6 * float(p.get("output", 0.0))   # worst case over every input-token price
         if self.max_cost_usd is not None and self.cost_usd + reserve > float(self.max_cost_usd):
             raise CapExceeded(f"cost cap {self.max_cost_usd} USD would be crossed ({self.cost_usd:.4f} USD spent after {self.calls} calls, next request up to {reserve:.4f} USD)")
         t0 = time.perf_counter(); out = self.inner.complete(kind, payload); self.latencies.append(time.perf_counter() - t0)
-        self.last_response = out
         self.calls += 1; self.calls_this_run += 1
         for k in ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"):
             self.usage[k] = self.usage.get(k, 0) + int(out.get("usage", {}).get(k) or 0)
         self.cost_usd = self._price(self.usage["input_tokens"], self.usage["output_tokens"], self.usage.get("cache_creation_input_tokens", 0), self.usage.get("cache_read_input_tokens", 0))
-        actual_in, actual_out = int(out.get("usage", {}).get("input_tokens") or 0), int(out.get("usage", {}).get("output_tokens") or 0)
-        if actual_in > self.max_request_tokens[0] or actual_out > self.max_request_tokens[1]:
-            self.overrun = f"a request used {actual_in} input and {actual_out} output tokens, above the assumed maximum {self.max_request_tokens}"
+        u = out.get("usage", {})
+        actual_in = sum(int(u.get(k) or 0) for k in ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")); actual_out = int(u.get("output_tokens") or 0)
+        if actual_in > self.max_request_tokens[0] or actual_out > self.max_request_tokens[1] or (self.max_cost_usd is not None and self.cost_usd > float(self.max_cost_usd)):
+            self.overrun = f"a request used {actual_in} input (ordinary plus cached) and {actual_out} output tokens, above the assumed maximum {self.max_request_tokens}, or the spend {self.cost_usd:.4f} USD crossed the cap"
         self._write_ledger()
         if self.overrun:
-            out["overrun"] = self.overrun                     # the caller caches the paid response before the exception stops the run
-            raise CapExceeded(self.overrun + "; the cap can be crossed by at most this one request; the overrun is latched in the ledger")
+            raise CapExceeded(self.overrun + "; the cap can be crossed by at most this one request; the overrun is latched in the ledger", response=out)
         return out
 
     def _write_ledger(self) -> None:
@@ -2759,6 +2769,11 @@ def build_spec(name: str, universe: dict) -> CoverageCellSpec:
                             params_by_rule=params, attack_knobs_by_rule=knobs, ref_candidate=None if cand["name"] == "abstain" else cand)
 
 
+def provenance_hash(provenance: dict) -> str:
+    """The run-level inputs every cell shares (settings and salt hashes, calibration, tuned, and reference-record hashes)."""
+    return hashlib.sha256(json.dumps({k: v for k, v in provenance.items() if k != "sweep_out"}, sort_keys=True).encode()).hexdigest()
+
+
 def input_hash(spec: CoverageCellSpec, provenance: dict) -> str:
     """Binds saved observations to everything that determines them: the cell specification (market, rules, parameters,
     attack knobs, reference candidate) and the run's provenance (settings hash, salt hash, calibration and tuned hashes,
@@ -2808,7 +2823,7 @@ def run_cell(args) -> tuple:
                   "pool_size": int(len(pool)), "replications": {str(n): int(S.shape[0]) for n, S in reps.items()},
                   "replication_se": {str(n): float(np.sqrt(0.95 * 0.05 / S.shape[0])) for n, S in reps.items()}, "degenerate_share": degenerate,
                   "runs": runs_per_seed(spec) * sum(S.size for S in reps.values()), "pool_runs": runs_per_seed(spec) * new_pool_seeds,
-                  "pool_factor": pool_factor, "rep_factor": rep_factor, "input_hash": key}
+                  "pool_factor": pool_factor, "rep_factor": rep_factor, "input_hash": key, "provenance_hash": provenance_hash(provenance)}
 
 
 def main() -> None:
@@ -2867,7 +2882,7 @@ def main() -> None:
             jobs = [(name, specs[name], lk, chosen.index(name), rem["pool_factor"], rem["rep_factor"], (int(n),), a.smoke, out, chunk_workers, provenance) for name in my_cells]
             got = dict(ProcessPoolExecutor(a.workers).map(run_cell, jobs)) if (a.workers > 1 and len(my_cells) > 1) else dict(map(run_cell, jobs))
             for name, r in got.items():
-                results.setdefault(name, {"measured": {}, "runs": 0, "pool_runs": 0, "per_n": {}, "input_hash": r["input_hash"]})
+                results.setdefault(name, {"measured": {}, "runs": 0, "pool_runs": 0, "per_n": {}, "input_hash": r["input_hash"], "provenance_hash": r["provenance_hash"]})
                 results[name]["measured"].update(r["measured"]); results[name]["runs"] += r["runs"]; results[name]["pool_runs"] += r["pool_runs"]   # executed work is summed
                 results[name]["per_n"][str(n)] = {k: v for k, v in r.items() if k != "measured"}
 
@@ -2907,7 +2922,7 @@ def main() -> None:
         print("the n = 20 procedures are not admitted: rerun every cell with --cell i --force-n40, then --merge again", file=sys.stderr)
     report = {"smoke": bool(a.smoke), "unranked": unranked, "admission_basis": "smoke (not an admission)" if a.smoke else "registered", "selection": selection,
               "statistics": stats_by_cell, "thresholds": {str(n): t for n, t in thr_by_n.items()}, "fixture_and_power": fp, "cells": results, **adm,
-              "provenance": provenance, "manifest_runs": sum(r["runs"] + r["pool_runs"] for r in results.values())}
+              "provenance": provenance, "provenance_hash": provenance_hash(provenance), "manifest_runs": sum(r["runs"] + r["pool_runs"] for r in results.values())}
     h = write_report(out / "coverage_report.json", report)
     print(json.dumps({"sha256": h, "method_at_n": adm["method_at_n"], "consequences": adm["consequences"], "runs": report["manifest_runs"]}))
 
@@ -3656,12 +3671,18 @@ def setup(tmp_path):
     rep["cells"] = {f"c{i}": {"per_n": {"10": {}, "20": {}}, "measured": measured} for i in range(6)}
     rep["selection"] = [{"name": f"c{i}"} for i in range(6)]; rep["thresholds"] = {str(n): t for n, t in thr.items()}
     rep["M"] = 35000; rep["fixture_and_power"]["base_M"] = 35000; rep["fixture_and_power"]["base_R"] = {"10": 2000, "20": 2000, "40": 4000}
-    for n in ("10", "20"):
-        rep["fixture_and_power"]["per_n"][n][0].update({"M": 35000, "R": 2000, "pool_factor": 1, "rep_factor": 1, "power": {"x": {"pass_": True}}, "threshold_check_pass": True, "pass_": True})
-        rep["fixture_and_power"]["per_n"][n][0]["fixture"].update({"cells": 6, "endpoints_per_cell": 8, "pass_": True})
-    rep["fixture_and_power"]["threshold_check"] = {"35000": {k: {"pass_": True} for k in thr[10]}}; rep["fixture_and_power"]["admissible_n"] = {"10": True, "20": True}
-    for c in rep["cells"].values():
-        c["input_hash"] = "ih" * 32
+    from sim.coverage import clopper_pearson_lower
+    rep["fixture_and_power"]["per_n"]["40"] = [{"fixture": {"trials": lk["intervals"]["joint_trials"]}}]
+    for n, R in (("10", 2000), ("20", 2000), ("40", 4000)):
+        att = rep["fixture_and_power"]["per_n"][n][0]; T = lk["intervals"]["joint_trials"]
+        att.update({"M": 35000, "R": R, "pool_factor": 1, "rep_factor": 1, "threshold_check_pass": True, "pass_": True,
+                    "power": {f"{n}|{lv}": {"power_200": 0.95, "power_400": 0.95, "converged": True, "pass_": True} for lv in (0.95, 0.9875)}})
+        att["fixture"].update({"M": 35000, "R": R, "cells": 6, "endpoints_per_cell": 8, "admitted": T, "lower_limit": clopper_pearson_lower(T, T, 1 - 0.05 / 3), "pass_": True})
+    rep["fixture_and_power"]["threshold_check"] = {"35000": {k: {"gap": 0.0, "se": 1e-4, "pass_": True} for n in (10, 20, 40) for k in (f"{n}|0.95", f"{n}|0.9875")}}
+    rep["fixture_and_power"]["admissible_n"] = {"10": True, "20": True, "40": True}            # gates computed for every n; thresholds and cells only for the measured 10 and 20
+    for i, c in enumerate(rep["cells"].values()):
+        c["input_hash"] = f"{i:02d}" * 32; c["provenance_hash"] = "ph" * 32
+    rep["provenance_hash"] = "ph" * 32
     adm = admission({k: v["measured"] for k, v in rep["cells"].items()}, thr, lk, rep["fixture_and_power"]["admissible_n"]); rep.update(adm)
     (tmp_path / "cov.json").write_text(json.dumps(rep)); (tmp_path / "pilot.json").write_text(json.dumps({"projected_cost_usd": 118.4, "complete": True, "calls": 200, "backend": "anthropic"}))
     return exp, tuned
@@ -3717,7 +3738,17 @@ def test_lock_script_refuses_bad_inputs(tmp_path):
     (tmp_path / "cov_zero.json").write_text(json.dumps(zero))
     bad_z = [a if a != str(tmp_path / "cov.json") else str(tmp_path / "cov_zero.json") for a in base]
     r = subprocess.run(bad_z, capture_output=True, text=True, cwd=ROOT); assert r.returncode != 0 and "thresholds(locked" in (r.stderr + r.stdout)
-    gate = json.loads((tmp_path / "cov.json").read_text()); gate["fixture_and_power"]["per_n"]["10"][0]["fixture"]["pass_"] = False; gate["fixture_and_power"]["per_n"]["10"][0]["pass_"] = False
+    small = json.loads((tmp_path / "cov.json").read_text()); small["fixture_and_power"]["per_n"]["10"][0].update({"M": 4, "R": 2}); small["fixture_and_power"]["per_n"]["10"][0]["fixture"].update({"M": 4, "R": 2})
+    (tmp_path / "cov_small.json").write_text(json.dumps(small))
+    bad_s = [a if a != str(tmp_path / "cov.json") else str(tmp_path / "cov_small.json") for a in base]
+    r = subprocess.run(bad_s, capture_output=True, text=True, cwd=ROOT); assert r.returncode != 0 and "locked size" in (r.stderr + r.stdout)
+    onekey = json.loads((tmp_path / "cov.json").read_text()); onekey["fixture_and_power"]["per_n"]["20"][0]["power"].pop("20|0.9875"); (tmp_path / "cov_onekey.json").write_text(json.dumps(onekey))
+    bad_o = [a if a != str(tmp_path / "cov.json") else str(tmp_path / "cov_onekey.json") for a in base]
+    r = subprocess.run(bad_o, capture_output=True, text=True, cwd=ROOT); assert r.returncode != 0 and "incomplete evidence" in (r.stderr + r.stdout)
+    flag = json.loads((tmp_path / "cov.json").read_text()); flag["fixture_and_power"]["per_n"]["10"][0]["fixture"]["admitted"] = 0; (tmp_path / "cov_flag.json").write_text(json.dumps(flag))
+    bad_f = [a if a != str(tmp_path / "cov.json") else str(tmp_path / "cov_flag.json") for a in base]
+    r = subprocess.run(bad_f, capture_output=True, text=True, cwd=ROOT); assert r.returncode != 0 and "contradict" in (r.stderr + r.stdout)   # pass_ True with 0 admitted
+    gate = json.loads((tmp_path / "cov.json").read_text()); gate["fixture_and_power"]["per_n"]["10"][0]["fixture"].update({"pass_": False, "admitted": 0, "lower_limit": 0.0}); gate["fixture_and_power"]["per_n"]["10"][0]["pass_"] = False
     (tmp_path / "cov_gate.json").write_text(json.dumps(gate))                      # admissible_n still says True: the evidence must win
     bad_g = [a if a != str(tmp_path / "cov.json") else str(tmp_path / "cov_gate.json") for a in base]
     r = subprocess.run(bad_g, capture_output=True, text=True, cwd=ROOT); assert r.returncode != 0 and "admissible_n" in (r.stderr + r.stdout)
@@ -4370,39 +4401,58 @@ def validate(a, lk: dict, cal: dict, cal100: dict, cov: dict) -> list:
     need_n = {"10", "20"} | ({str(cons.get("final_eval_n"))} if cons.get("final_eval_n") else set())
     if set(cells) != set(names) or any(not need_n <= set(r.get("per_n") or {}) for r in cells.values()) or not need_n <= set(per_n):
         problems.append(f"coverage report: every selected cell must have results and gates at n in {sorted(need_n)}")
-    fpw = cov.get("fixture_and_power") or {}; checks = fpw.get("threshold_check") or {}; base_M = int(cov.get("M") or fpw.get("base_M") or 0)
+    fpw = cov.get("fixture_and_power") or {}; checks = fpw.get("threshold_check") or {}
+    covs = lk["seeds"]["coverage"]; base_M = int(covs["pool"]); base_R = {str(n): int(r) for n, r in covs["replications"].items()}   # sizes come from the lock, never from the report
+    conf = 1.0 - 0.05 / 3.0; levels = ("0.95", "0.9875")
     derived: dict = {}
+    from sim.coverage import clopper_pearson_lower as _cp
     for n, attempts in per_n.items():
         ok_n = False
         for i, att in enumerate(attempts):
-            fx = att.get("fixture") or {}; pw = att.get("power") or {}; chk = checks.get(str(att.get("M"))) or {}
+            fx = att.get("fixture") or {}; pw = att.get("power") or {}; M = int(att.get("M", 0)); chk = checks.get(str(M)) or {}
             expect = [(1, 1), (2, 1), (2, 2)][i] if i < 3 else None
             if (att.get("pool_factor"), att.get("rep_factor")) != expect or int(fx.get("trials", 0)) != trials or int(fx.get("cells", 0)) != 6 or int(fx.get("endpoints_per_cell", 0)) != 8:
                 problems.append(f"coverage report: attempt {i} at n = {n} is not the registered attempt order or size")
-            if int(att.get("M", 0)) != base_M * att.get("pool_factor", 0) or int(att.get("R", 0)) != int(fpw.get("base_R", {}).get(str(n), 0)) * att.get("rep_factor", 0):
-                problems.append(f"coverage report: attempt {i} at n = {n} has an inconsistent M or R")
-            good = bool(fx.get("pass_")) and bool(pw) and all(v.get("pass_") for v in pw.values()) and bool(chk) and all(v.get("pass_") for k, v in chk.items() if int(k.split("|")[0]) == int(n))
-            if not pw or not chk:
-                problems.append(f"coverage report: attempt {i} at n = {n} lacks power or threshold-check evidence")
-            ok_n = good
+            if M != base_M * (att.get("pool_factor") or 0) or int(att.get("R", 0)) != base_R.get(str(n), -1) * (att.get("rep_factor") or 0) or int(fx.get("M", -1)) != M or int(fx.get("R", -1)) != int(att.get("R", 0)):
+                problems.append(f"coverage report: attempt {i} at n = {n} has an M or R that is not the locked size times the factor")
+            fx_ll = _cp(int(fx.get("admitted", 0)), trials, conf) if trials else 0.0
+            fx_ok = abs(float(fx.get("lower_limit", -1)) - fx_ll) < 1e-9 and bool(fx.get("pass_")) == (fx_ll >= 0.9)
+            pw_keys = {f"{n}|{lv}" for lv in levels}; ck_keys = pw_keys
+            pw_ok = set(pw) == pw_keys and all(isinstance(v.get("power_200"), (int, float)) and isinstance(v.get("power_400"), (int, float))
+                                              and bool(v.get("converged")) == (abs(v["power_200"] - v["power_400"]) <= 0.001)
+                                              and bool(v.get("pass_")) == (bool(v.get("converged")) and v["power_200"] >= 0.8) for v in pw.values())
+            ck_ok = ck_keys <= set(chk) and all(isinstance(v.get("gap"), (int, float)) and isinstance(v.get("se"), (int, float)) and bool(v.get("pass_")) == (abs(v["gap"]) <= 3 * v["se"] + 1e-4)
+                                             for k, v in chk.items() if k in ck_keys)
+            att_ok = fx_ok and pw_ok and ck_ok
+            if not (fx_ok and pw_ok and ck_ok):
+                problems.append(f"coverage report: attempt {i} at n = {n} has incomplete evidence or pass flags that contradict their values")
+            passed = bool(fx.get("pass_")) and all(v.get("pass_") for v in pw.values()) and all(v.get("pass_") for k, v in chk.items() if k in ck_keys) and bool(chk)
+            if bool(att.get("pass_")) != passed or bool(att.get("threshold_check_pass")) != all(v.get("pass_") for k, v in chk.items() if k in ck_keys):
+                problems.append(f"coverage report: attempt {i} at n = {n} has a pass flag that contradicts its fixture, power, or threshold check")
+            ok_n = passed and att_ok
         derived[str(n)] = ok_n and bool(attempts) and attempts[-1].get("pass_") is True
     if derived != {k: bool(v) for k, v in (fpw.get("admissible_n") or {}).items()}:
         problems.append(f"coverage report: admissible_n {fpw.get('admissible_n')} does not follow from the fixture, power, and threshold evidence ({derived})")
+    measured_n = {str(n) for r in cells.values() for n in (r.get("per_n") or {})}
+    if set((cov.get("thresholds") or {}).keys()) != measured_n:
+        problems.append(f"coverage report: thresholds must be recorded for exactly the measured sample sizes {sorted(measured_n)}")
     try:
         from sim.coverage import admission as _adm, thresholds as _thr
         thr = {int(k): v for k, v in (cov.get("thresholds") or {}).items()}
-        for n, attempts in per_n.items():
-            want = _thr(lk, int(attempts[-1]["M"]))
-            if any(abs(float(thr.get(int(n), {}).get(k, {}).get("threshold", -1)) - v["threshold"]) > 1e-12 for k, v in want.items() if v["n"] == int(n)):
-                problems.append(f"coverage report: the thresholds at n = {n} are not thresholds(locked, M = {attempts[-1]['M']})")
+        for n in thr:                                              # measured sample sizes only; the gates at an unmeasured n are validated above
+            attempts = per_n.get(str(n)) or []
+            want = _thr(lk, int(attempts[-1]["M"])) if attempts else {}
+            if not attempts or any(abs(float(thr[n].get(k, {}).get("threshold", -1)) - v["threshold"]) > 1e-12 for k, v in want.items() if v["n"] == int(n)):
+                problems.append(f"coverage report: the thresholds at n = {n} are not thresholds(locked, M) of the last attempt at that n")
         recomputed = _adm({k: v["measured"] for k, v in cells.items()}, thr, lk, derived)
         if recomputed["consequences"] != cov.get("consequences") or recomputed["admitted_sides"] != cov.get("admitted_sides"):
             problems.append("coverage report: the recorded consequences or admitted sides do not follow from its measurements and gates")
     except Exception as e:
         problems.append(f"coverage report: admission could not be recomputed ({e!r})")
-    hashes = {v.get("input_hash") for v in cells.values()}
-    if len(hashes) != 1 or None in hashes:
-        problems.append("coverage report: the cells do not share one input hash")
+    if any(not v.get("input_hash") for v in cells.values()) or {v.get("provenance_hash") for v in cells.values()} != {cov.get("provenance_hash")} or not cov.get("provenance_hash"):
+        problems.append("coverage report: every cell must carry its input hash and the report's provenance hash")
+    if len({v.get("input_hash") for v in cells.values()}) != len(cells):
+        problems.append("coverage report: two cells share one input hash (the cell specification is part of it)")
     if a.pilot is None and a.cost_cap_usd is None:
         problems.append("a cost cap is required: --pilot PILOT.json (ceil of projected_cost_usd) or --cost-cap-usd X")
     if a.cost_cap_usd is not None and not (math.isfinite(a.cost_cap_usd) and a.cost_cap_usd > 0):
