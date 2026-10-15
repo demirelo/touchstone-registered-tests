@@ -95,7 +95,10 @@ Round sequence. Every rule follows this order.
    escrow and are always collectible.
 8. Escrow is settled: refunds go back to buyers, the rest is released to
    providers as net released receipts, except amounts a rule holds back
-   under 4.0. Exit and re-entry decisions take effect next round.
+   under 4.0. An exit decision is made in the action of a round in response to the
+   previous round's outcome and takes effect in that round, before offers:
+   the old identity retires, and the fresh identity makes the round's offer
+   and pays e.
 
 Observations. The operator sees offers, job values, audit results, and the
 full public history. It never sees effort or unaudited delivery. The
@@ -684,7 +687,12 @@ noise, allocation tie-break keys, the audit-count rounding uniform, audit
 priority keys, and policy seeds) is a pure function of (seed, t), drawn in a
 fixed order from one `numpy.random.SeedSequence([seed, t])` child and laid
 out in fixed positions (job index; provider index and slot index). No action
-can change any draw; `tests/test_rng.py`, `tests/test_market.py`,
+can change any draw; a replacement identity draws its tie-break keys and
+its delivery noise from its own fixed stream, keyed by its entity's
+per-round fresh seed, its generation, and the identity salt, so those draws
+are also action-independent; in H3 cells the attack and the reference runs
+share every draw except the exiting entity's tie keys and delivery noise
+after its first exit; `tests/test_rng.py`, `tests/test_market.py`,
 `tests/test_posted_audit.py`, and `tests/test_boundary.py` check it. One
 child per round instead of one per job costs nothing in the per-run gate
 (draws are shared across cells) and saves about 117 core-hours in the
@@ -1431,3 +1439,87 @@ the harness from the rule's declared tolerance; integer audit allowance;
 bonds, forfeits, and releases in the ledger before the lock; package path
 `sim/` as in section 11. Pilot gate measured at 24.9 ms per T = 200 B2
 episode at B = 0.05 S_hat on an Apple M4 Max.
+
+Implementation (plan 2A, version 10 after nine review rounds, consensus of Astra and Opus): identities
+separate from entities; a retired identity is not marked in the rule's
+view; replacement identities draw tie-break keys from a keyed one-way
+BLAKE2b secret of their entity's per-round fresh_seed and their generation
+(`identity_secret`, `fresh_tie_keys`), retired ones from a secret of the
+round and identity, and same-round entrants are ordered by a salted
+per-entity rank; the key is the identity salt in
+`experiments/identity_salt.hex` (the development salt) or, for final-eval
+runs, an untracked file named by `TOUCHSTONE_IDENTITY_SALT` holding the
+final salt, which the separate session generates at the lock, commits by
+hash in `locked.yaml` (`identity_salt_sha256`), holds with the final-eval
+seeds, and releases with the sealed bundle after the proposed rule is
+frozen; `check_claim.py` checks the loaded salt against the commitment.
+The salt is a harness secret outside the config a rule may read, so
+recovering the episode seed from public values (which is feasible, the
+seeds are small) yields no link between a newcomer and its predecessor
+through ids, order, tie keys, or audited deliveries. Two links remain
+and are inherent: in a registered H3 cell only the focal entity exits,
+so timing alone identifies the newcomer; and the newcomer's offer
+reflects its provider type, which with ten distinct types identifies the
+entity. The salted channels matter for rules that would exploit more
+than timing and type. This is stated here and in
+`experiments/families.md` for the reader of the H3 table. Decisions are invariant to relabeling with
+re-entry; an exit made in the action of round t takes
+effect in round t (section 3 wording updated), which matches Proposition
+B; an exited identity's bans and bond keep their schedule as if it had
+stayed and stopped serving. Enforcement-ablation adapter
+(`sim/mechanisms/ablation.py`): the rule's own enforce runs for its policy
+memory and its consequences are discarded, the enforcer has a separate
+memory; exclusion-by-allocation count with its competition baseline. D1 and
+D2 as families with logistic knob transforms; binary knobs clip and x;
+exact points evaluated from knob dictionaries; the archive keys points by
+exact value. H3 cells run the family D2+H3 (D2 plus the exit knob x), whose
+honest point is honest-max. CMA-ES search with an evaluation archive
+(knobs, per-seed values, strict inflation flag); the twin best and the
+honest point are registered incumbents of the attack search; the projection
+of the best point is always evaluated and replaces it when higher.
+Reference candidates in the registered tie order abstention, honest-max,
+twin best, attack projection, best archived clip = 1 point, best archived
+never-inflated clip = 0 point (as its projection, no new run), projected
+bank members; abstention first so a tie at zero profit is labeled
+abstention. The bank holds every development cell's best-found attack and
+each target family's exact corners. Calibration of S_hat, n_FB, m bound to
+the market; every cell derives alpha = rho m and B = beta S_hat; the
+calibration seed namespace 4000-4019 is disjoint from dev-train 1000-1004
+and dev-val 2000-2019; a real sweep and a non-quick tuning run require the
+full calibration namespace. Tuned parameters are bound by rule, market
+key, calibration seeds, and a hash of every locked setting; sweep records
+are bound by configuration, budget, mode, and cell, and every consumed
+record is checked; the lock tooling (plan 2B) copies the tuned files and
+the calibration into `locked.yaml` at the lock. Tuning rechecks search on
+dev-train and score on dev-val. All-deviators runs the attack and the
+matched twin procedure and evaluates both frozen profiles on dev-val.
+Doubling check on the bank-finalized attack: the extra budget is split
+half and half between clip-fixed searches and the finalized gain is
+compared; twin-vs-honest at relative 1%; restart spread reported for the
+attack and the reference objectives and their difference. `sim/schedule.py`
+is the single source of run counts: exact entries are asserted equal by
+`sweep.py`, bounds (bank, reference candidates, controls) are asserted as
+upper limits. Manifest at this version, pre-lock: development 744,240;
+rho sweep 94,470; no-ban 31,490; H3 49,155; controls 49,680 (bound);
+all-deviators 55,200; tuning 310,878; bank 33,840 (bound); total 1,368,953
+(1,285,433 exact plus 83,520 bounded; post-lock estimates 131,450), as
+printed by `scripts/manifest.py` at commit time. Measured on an Apple M4
+Max at execution: `scripts/bench.py` 28.8 ms per T = 200 B2 episode (gate
+45 ms); `scripts/bench_sweep.py` over every cell stage 50.4 ms per run
+blended (B1 29.5, B2 35.0, B3 86.8), which puts the pre-lock manifest at
+19.2 core-hours against the 20-hour gate; the review panel measured 48 to
+50 ms per run across rounds 4 to 9. The margin is thin and B3's allocation
+loop is the first optimization if the production machine misses the gate.
+These figures supersede the prose totals in
+section 5.3 (tuning is 279 grid points, not 3 x 243; corners are counted
+per cell and their values are reused in the bank pass; bank and controls
+are bounds). Registered start order is near-full-cheat, near-honest,
+Sobol for attack searches (twin searches swap the first two), so
+one-restart searches (inner tuning, all-deviators) start where cheating,
+or truthful profit, is reachable; a one-restart search is a lower bound on
+manipulability (it can miss small within-tolerance cheats under audited
+rules), which is why the tuning winner is picked by the full-budget
+recheck and the all-deviators table is labeled a robustness table; the best exact corner replaces a cell's attack
+incumbent when it scores higher, in every cell including H3. Per-seed output rows carry the
+section 7 metrics and the section 4.0 refund and forfeit split
+(`sim/reference.py::ROW_FIELDS`), and the selected reference's name.
