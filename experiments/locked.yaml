@@ -86,6 +86,9 @@ h1:
   invalid_limit: 2
   calls_cap: 192000
   cost_cap_usd: null                           # set at the lock from the token pilot
+  prices:                                      # USD per million tokens, used by the token pilot and the cost cap (cache writes and reads priced separately)
+    claude-opus-5-5: {input: 4.0, output: 20.0, cache_write: 5.0, cache_read: 0.4}
+    jev-1.14.0: {input: 0.042, output: 0.0}
 claim:
   beta: 0.05
   eff_min: 0.90
