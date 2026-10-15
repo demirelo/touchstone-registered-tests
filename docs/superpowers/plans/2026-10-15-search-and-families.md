@@ -1,4 +1,4 @@
-# Touchstone plan 2A (version 8): identities, D2, search, reference selection, bank, calibration, tuning, manifest and sweep
+# Touchstone plan 2A (version 9): identities, D2, search, reference selection, bank, calibration, tuning, manifest and sweep
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -11,6 +11,8 @@
 **Spec:** `docs/superpowers/specs/2026-10-14-touchstone-simulator-design.md` (version 7.5 plus the plan 1 implementation note). This plan implements sections 3 (identity replacement, entry cost, calibration constants), 4.0 (identity opacity), 4.1 (no-ban diagnostic), 4.2 (baseline tuning), 5.1 to 5.3 (families, twins, containment tests, search with incumbents and projection replacement, positions and headline selection, search checks, all-deviators, candidate bank, workload manifest and the full-path gate), 6 (seed namespaces, `locked.yaml` contents, `families.md`), 6.2 (H3), 7 (reference run, gain, clipped-attack run, efficiency quadruple, per-seed output schema), and the enforcement-ablation adapter of section 8. Plan 2B covers the interval algorithms, the coverage study, `check_claim.py`, the lock tooling and hash checks, the LLM and Jev actor harness with the `describe()` renderer and comprehension fixture, the custodian instructions for the sealed bundle, the token pilot, and `plot.py`. Nothing else is deferred.
 
 **Scope split, stated once:** Plan 2A ends when `scripts/sweep.py --stage all` runs the development cells, the rho sweep, the H3 cells, the no-ban cells, the controls, the bank pass, reference selection, dev-val evaluation, headline selection, the search checks, and the all-deviators table from `locked.yaml` and a calibration file; `scripts/tune_baselines.py` runs the tuning grid; `scripts/manifest.py` reports run counts derived from the same schedule; and `scripts/bench_sweep.py` measures the full path. Nothing in this plan designs or runs a proposed rule, touches held-out families, or computes a confidence bound.
+
+**Changes from version 8 (round 8: both seats reject on the settings hash):** the H3 reading note and the common-random-numbers amendment are made precise (timing alone identifies the newcomer in registered H3 cells; only the exiting entity's draws diverge); the `Draws` docstring and the `fresh_seed` comment are updated; the settings hash excludes `identity_salt_sha256`, which the lock tooling writes, so installing the commitment at the lock does not invalidate the tuned files the lock lists (regression in `test_settings_hash_covers_every_experimental_setting`); the untracked-salt test is placed after the complete secret test.
 
 **Changes from version 7 (round 7: Astra reject on the salt timeline, Opus accept-with-caveat):** replacement noise is computed once per identity per round; Task 14 amends the spec's common-random-numbers sentence (replacement streams are fixed and action-independent; H3 attack and reference share draws until the first exit); `families.md` carries the H3 reading note; the salt lifecycle is made consistent with the freeze dates (development salt tracked; final salt generated and committed by hash at the lock, released with the sealed bundle after the rule freeze, loaded from an untracked path through `TOUCHSTONE_IDENTITY_SALT`, checked by `check_claim.py`); the spec note's opacity claim is limited to the repaired channels; refusal messages name the stages to rerun.
 
@@ -65,7 +67,7 @@
 - Test: `tests/test_locked.py`
 
 **Interfaces:**
-- Produces: `load_locked(path="experiments/locked.yaml") -> dict`; `seeds(locked, namespace) -> list[int]` for `"dev_train"`, `"dev_val"`, `"calibration"`; `sha256_file(path) -> str`; `settings_hash(locked) -> str` (sha256 of the whole locked configuration except `version`, `tuned`, and `calibration`, sorted keys; artifacts record it so a stale tuning or search record is refused); `market_config_from_locked(locked) -> MarketConfig` (every market primitive from the YAML; `alpha` and `budget` zero until a cell derives them).
+- Produces: `load_locked(path="experiments/locked.yaml") -> dict`; `seeds(locked, namespace) -> list[int]` for `"dev_train"`, `"dev_val"`, `"calibration"`; `sha256_file(path) -> str`; `settings_hash(locked) -> str` (sha256 of the whole locked configuration except the blocks written at the lock, `version`, `tuned`, `calibration`, and `identity_salt_sha256`, sorted keys; artifacts record it so a stale tuning or search record is refused, and installing the lock-time blocks does not invalidate the pre-lock artifacts they list); `market_config_from_locked(locked) -> MarketConfig` (every market primitive from the YAML; `alpha` and `budget` zero until a cell derives them).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -114,8 +116,8 @@ def test_settings_hash_covers_every_experimental_setting():
                        ("seeds", dict(lk["seeds"], calibration=[4000]))):
         other = dict(lk); other[key] = value
         assert settings_hash(other) != h
-    same = dict(lk); same["version"] = "something-else"; same["tuned"] = {"B1": "x"}
-    assert settings_hash(same) == h
+    same = dict(lk); same["version"] = "something-else"; same["tuned"] = {"B1": "x"}; same["identity_salt_sha256"] = "ab" * 32
+    assert settings_hash(same) == h          # the blocks written at the lock do not invalidate the artifacts the lock lists
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -230,8 +232,9 @@ def sha256_file(path: str | Path) -> str:
 
 
 def settings_hash(locked: dict) -> str:
-    """Hash of every experimental setting: the whole file except the version label and the blocks the lock tooling fills."""
-    bound = {k: v for k, v in locked.items() if k not in ("version", "tuned", "calibration")}
+    """Hash of every experimental setting: the whole file except the version label and the blocks the lock tooling fills
+    (tuned, calibration, identity_salt_sha256), so installing them at the lock keeps the pre-lock artifacts valid."""
+    bound = {k: v for k, v in locked.items() if k not in ("version", "tuned", "calibration", "identity_salt_sha256")}
     return hashlib.sha256(json.dumps(bound, sort_keys=True).encode()).hexdigest()
 
 
@@ -273,7 +276,7 @@ git commit -m "feat: locked configuration draft with the market table, seed name
   - `validate_action` no longer raises on `exit`.
   - `Draws.fresh_seed: np.ndarray` of shape `(T, N)`, int64, drawn in `draws_for_round` after `policy_seed` (every earlier draw keeps its value); `draws_for_round` returns seven arrays.
   - `load_identity_salt(path=None) -> bytes` (32 bytes, cached, from `path`, else from the file named by the environment variable `TOUCHSTONE_IDENTITY_SALT`, else from `experiments/identity_salt.hex`): a harness secret that is not part of the locked config a rule may read (spec 4.0) and never reaches a rule. `identity_secret(salt, seed, t, fresh_seed_e, generation) -> int` and `retired_secret(salt, seed, t, identity) -> int`: 64-bit keyed BLAKE2b digests. Every public stream (values, keys) is a function of the small episode seed, so a rule could recover the seed by brute force from the job values; the keyed digest makes that useless, because the salt is high-entropy and unavailable to the rule. `fresh_tie_keys(secrets, J) -> np.ndarray` of shape `(J, len(secrets))`, read-only: column `c` is `default_rng(SeedSequence(secrets[c])).random(J)`. A live replacement identity's column comes from `identity_secret(salt, seed, t, fresh_seed[t, entity], generation)`, so it depends only on the entity and the generation, never on creation order, and permutes with the entity under relabeling; a retired replacement identity's column comes from `retired_secret(salt, seed, t, identity)` (fresh each round, no entity information, never used for an allocation because a retired identity never offers).
-  - `run_episode` keeps `entity_of: list[int]` (identity to entity), `identity_of: list[int]` (entity to identity), `generation: list[int]` (0 for an initial identity, 1 for the first replacement, and so on), and a harness-private `alive` list. Each round has three passes: every entity acts; exits are applied in the order of `entrant_rank(salt, seed, t, fresh_seed[t, entity])` (a keyed secret per exiting entity, so the ids of same-round entrants carry no entity information even to a rule that recovered the episode seed, and the order permutes with the entity under relabeling); offers are then recorded under each entity's current identity, and the offers dictionary a rule receives (and the history record) is in identity-id order, never in entity order, so neither the ids nor the order of offers links a newcomer to its predecessor. An exit retires the current identity (never offers again; its `capacity`, `banned_until`, and `bond` entries in the view are left as they are), creates a fresh identity with capacity `k_i`, `banned_until 0`, no bond, and charges `cfg.e` in that round; the action's offer, if any, is submitted under the fresh identity. An initial identity uses its entity's column of `Draws.tie_key`; a replacement identity uses `fresh_tie_keys([identity_secret(salt, seed, t, fresh_seed[t, entity], generation)], J)`, and its deliveries use `replacement_noise(salt, seed, t, fresh_seed[t, entity], generation, kmax, sigma)` (computed once per replacement identity per round) instead of the entity's public noise stream (an audited delivery would otherwise match that stream). These streams are fixed functions of entity, generation, round, and salt, so no action changes a draw; in H3 cells the attack and the reference share draws until the first exit (Task 14 amends the spec's common-random-numbers sentence). What remains linkable is inherent to the market: a newcomer's offer reflects its provider type, and with ten distinct types that identifies the entity; `families.md` and the spec note say so for the reader of the H3 table.
+  - `run_episode` keeps `entity_of: list[int]` (identity to entity), `identity_of: list[int]` (entity to identity), `generation: list[int]` (0 for an initial identity, 1 for the first replacement, and so on), and a harness-private `alive` list. Each round has three passes: every entity acts; exits are applied in the order of `entrant_rank(salt, seed, t, fresh_seed[t, entity])` (a keyed secret per exiting entity, so the ids of same-round entrants carry no entity information even to a rule that recovered the episode seed, and the order permutes with the entity under relabeling); offers are then recorded under each entity's current identity, and the offers dictionary a rule receives (and the history record) is in identity-id order, never in entity order, so neither the ids nor the order of offers links a newcomer to its predecessor. An exit retires the current identity (never offers again; its `capacity`, `banned_until`, and `bond` entries in the view are left as they are), creates a fresh identity with capacity `k_i`, `banned_until 0`, no bond, and charges `cfg.e` in that round; the action's offer, if any, is submitted under the fresh identity. An initial identity uses its entity's column of `Draws.tie_key`; a replacement identity uses `fresh_tie_keys([identity_secret(salt, seed, t, fresh_seed[t, entity], generation)], J)`, and its deliveries use `replacement_noise(salt, seed, t, fresh_seed[t, entity], generation, kmax, sigma)` (computed once per replacement identity per round) instead of the entity's public noise stream (an audited delivery would otherwise match that stream). These streams are fixed functions of entity, generation, round, and salt, so no action changes a draw; in H3 cells the attack and the reference runs share every draw except the exiting entity's tie keys and delivery noise after its first exit (Task 14 amends the spec's common-random-numbers sentence). What remains linkable is inherent: in a registered H3 cell only the focal entity exits, so timing alone identifies every newcomer, and a newcomer's offer reflects its provider type, which with ten distinct types identifies the entity; the salted channels matter for rules that would exploit more than timing and type (several simultaneous exits, or identical types); `families.md` and the spec note say so for the reader of the H3 table.
   - `EpisodeResult.profit` stays per entity; new fields `n_identities: int`, `entity_of: tuple[int, ...]`, `identity_round: tuple[int, ...]` (creation round, 0 for initial identities), `identity_generation: tuple[int, ...]`, `identity_profit: np.ndarray`.
   - `IdentityReplacement(policy)` wrapper (H3): acts like `policy` and sets `exit=True` in the round after a failed audit. `h3_family(family) -> Family`: the family `<name>+H3` with one more binary knob `x` (placed before `clip`): with `x = 1` the policy is wrapped in `IdentityReplacement`, with `x = 0` it is the base policy. Its honest point (`x = 0`, `clip = 1`) therefore reproduces honest-max, so reference containment holds for the H3 cells (spec 5.2). Defined here on top of Task 4's `Family` fields by `dataclasses.replace`; Task 4 tests it.
 
@@ -338,6 +341,12 @@ def test_fresh_tie_keys_depend_only_on_the_secret():
     assert identity_secret(bytes(32), 7, 3, 11, 1) != s1          # without the salt, knowing seed, round, fresh_seed and generation gives nothing
     assert entrant_rank(salt, 7, 3, 11) != entrant_rank(bytes(32), 7, 3, 11) and entrant_rank(salt, 7, 3, 11) != s1
     assert len(load_identity_salt()) == 32
+    a = fresh_tie_keys([s1, s2], 50); b = fresh_tie_keys([s2, s1, s3], 50)
+    assert a.shape == (50, 2) and np.array_equal(a[:, 0], b[:, 1]) and np.array_equal(a[:, 1], b[:, 0])
+    assert not np.array_equal(b[:, 2], a[:, 0])
+    assert not a.flags.writeable and a.min() >= 0.0 and a.max() < 1.0 and len(np.unique(a[:, 0])) == 50
+    d = make_draws(MarketConfig.default(), 3)
+    assert d.fresh_seed.shape == (200, 10) and d.fresh_seed.dtype == np.int64
 
 
 def test_identity_salt_can_be_loaded_from_an_untracked_path(tmp_path, monkeypatch):
@@ -347,12 +356,6 @@ def test_identity_salt_can_be_loaded_from_an_untracked_path(tmp_path, monkeypatc
     bad = tmp_path / "short.hex"; bad.write_text("abcd\n")
     with pytest.raises(ValueError):
         load_identity_salt(bad)
-    a = fresh_tie_keys([s1, s2], 50); b = fresh_tie_keys([s2, s1, s3], 50)
-    assert a.shape == (50, 2) and np.array_equal(a[:, 0], b[:, 1]) and np.array_equal(a[:, 1], b[:, 0])
-    assert not np.array_equal(b[:, 2], a[:, 0])
-    assert not a.flags.writeable and a.min() >= 0.0 and a.max() < 1.0 and len(np.unique(a[:, 0])) == 50
-    d = make_draws(MarketConfig.default(), 3)
-    assert d.fresh_seed.shape == (200, 10) and d.fresh_seed.dtype == np.int64
 
 
 def test_same_round_entrant_order_is_not_a_function_of_the_seed_alone():
@@ -557,7 +560,7 @@ Add to `sim/ledger.py` inside `class Ledger` after `__init__`:
         self.N = m
 ```
 
-Change `sim/rng.py`: add the field `fresh_seed: np.ndarray   # (T, N) per-entity base for replacement identities' tie keys` as the last field of `Draws`; in `draws_for_round` add `fresh_seed = g.integers(0, 2**62, size=cfg.N)` after the `policy_seed` draw and return it as the seventh value; in `make_draws` allocate `fresh_seed = np.empty((cfg.T, cfg.N), dtype=np.int64)`, fill it from the seventh value, include it in the read-only loop, and pass it to `Draws`. Then add after `make_draws`:
+Change `sim/rng.py`: change the `Draws` docstring to `Every random input of an episode, a pure function of (seed, round); replacement identities add fixed streams keyed by entity, generation, round, and the identity salt.`; add the field `fresh_seed: np.ndarray   # (T, N) per-entity base for replacement identities' secrets (tie keys, entrant order, delivery noise)` as the last field of `Draws`; in `draws_for_round` add `fresh_seed = g.integers(0, 2**62, size=cfg.N)` after the `policy_seed` draw and return it as the seventh value; in `make_draws` allocate `fresh_seed = np.empty((cfg.T, cfg.N), dtype=np.int64)`, fill it from the seventh value, include it in the read-only loop, and pass it to `Draws`. Then add after `make_draws`:
 
 ```python
 DEFAULT_SALT_PATH = Path(__file__).resolve().parents[1] / "experiments" / "identity_salt.hex"
@@ -4272,7 +4275,7 @@ git commit -m "feat: one schedule for the manifest and the staged sweep with cou
 
 **Files:**
 - Create: `experiments/families.md`
-- Modify: `docs/superpowers/specs/2026-10-14-touchstone-simulator-design.md` (section 3 one sentence; section 14), `README.md` (Status)
+- Modify: `docs/superpowers/specs/2026-10-14-touchstone-simulator-design.md` (section 3 one sentence; section 7 one insertion; section 14), `README.md` (Status)
 
 - [ ] **Step 1: Write `experiments/families.md`**
 
@@ -4301,10 +4304,14 @@ identity in that round at cost e; with x = 0 it never exits. Its honest
 point (x = 0, clip = 1) is honest-max, so the reference is contained.
 Reading the H3 table: a rule cannot link a fresh identity to its
 predecessor through ids, offer order, tie-break keys, or audited
-deliveries (all salted or ordered by id), but the newcomer's offer
-reflects its provider type, and with ten distinct provider types that
-identifies the entity. Gains in the H3 table are therefore against rules
-that could, in principle, treat a newcomer by its type.
+deliveries (all salted or ordered by id). Two links remain and are
+inherent: in a registered H3 cell only the focal entity exits, so the
+timing of one identity going silent and one appearing identifies the
+newcomer; and the newcomer's offer reflects its provider type, which
+with ten distinct provider types identifies the entity. Gains in the H3
+table are therefore against rules that could, in principle, treat a
+newcomer by timing or by type; the salted channels matter for rules that
+would exploit more (several simultaneous exits, identical types).
 
 Transform. Search coordinate in R^dim; bounded knob = lo + (hi - lo)
 sigmoid(x); a binary knob (clip, x) is 1 iff sigmoid(x) >= 0.5. Exact
@@ -4330,12 +4337,12 @@ families with clip fixed at 1. Containment tests: `tests/test_families.py`,
 
 In section 3, step 8, replace the sentence `Exit and re-entry decisions take effect next round.` with: `An exit decision is made in the action of a round in response to the previous round's outcome and takes effect in that round, before offers: the old identity retires, and the fresh identity makes the round's offer and pays e.`
 
-In section 7, Common random numbers, after `No action can change any draw;` insert: `a replacement identity draws its tie-break keys and its delivery noise from its own fixed stream, keyed by its entity's per-round fresh seed, its generation, and the identity salt, so those draws are also action-independent, but in H3 cells the attack and the reference runs share draws only until the first exit;`.
+In section 7, Common random numbers, after `No action can change any draw;` insert: `a replacement identity draws its tie-break keys and its delivery noise from its own fixed stream, keyed by its entity's per-round fresh seed, its generation, and the identity salt, so those draws are also action-independent; in H3 cells the attack and the reference runs share every draw except the exiting entity's tie keys and delivery noise after its first exit;`.
 
 Append to section 14:
 
 ```
-Implementation (plan 2A, version 8 after seven review rounds): identities
+Implementation (plan 2A, version 9 after eight review rounds): identities
 separate from entities; a retired identity is not marked in the rule's
 view; replacement identities draw tie-break keys from a keyed one-way
 BLAKE2b secret of their entity's per-round fresh_seed and their generation
