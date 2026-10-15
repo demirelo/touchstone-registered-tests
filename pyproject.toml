@@ -17,3 +17,4 @@ packages = ["sim"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+filterwarnings = ["ignore:Could not import matplotlib.pyplot:UserWarning"]   # cma plotting is not used
