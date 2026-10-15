@@ -1,4 +1,4 @@
-# Touchstone plan 2B (version 6): intervals, coverage study, model actors, describe renderer, claim check, lock tooling, plots, custodian instructions
+# Touchstone plan 2B (version 7): intervals, coverage study, model actors, describe renderer, claim check, lock tooling, plots, custodian instructions
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -11,6 +11,8 @@
 **Spec:** `docs/superpowers/specs/2026-10-14-touchstone-simulator-design.md` (version 7.5 plus the plan 1 and plan 2A implementation notes). This plan implements sections 5.4 (LLM actor, describe renderer, comprehension fixture, H1 procedure, token pilot), 6 (lock contents, allow-list, hash checks, freeze, repairs), 6.1 (what the sealed bundle must contain, as instructions to the separate session), 8 (interval algorithms, coverage study, joint fixture test, power, pre-registered consequences, claim predicate, decision rule, figures), 11 (layout: `llm_actor.py`, `policies/llm.py`, `vocabulary.yaml`, `coverage_study.py`, `plot.py`, `check_claim.py`, `sealed/`), 12 (the remaining tests), and 13 (the gate for 10-18 to 10-28). It also folds the deferred minors of the plan 2A final review that touch frozen files.
 
 **Scope split, stated once:** Plan 2B ends when `scripts/check_claim.py --verify-lock` passes on a lock-candidate tree, `scripts/coverage_study.py` runs end to end at a smoke size and at the registered size from the manifest, the model actor runs the H1 procedure against B1 to B3 with the fake backend and with cached real responses, the token pilot script exists and has been run once per backend by the user, `scripts/plot.py` draws figures 1 and 2 from the sweep CSVs, and `docs/custodian.md` tells the separate session exactly what to produce. The proposed rule, the sealed H1 prompt and H2 definition, and every post-lock run are outside this plan.
+
+**Changes from version 6 (Astra reject, three items):** the lock validator checks every measured cell's pool size, replication count, and factors against the selected attempt and the locked sizes, and requires a finite coverage in [0, 1] for every endpoint and procedure at every measured n; a failed earlier attempt no longer refuses a report whose registered doubling passed (admission derives from the selected attempt, earlier attempts are checked for consistency only), with an integration test; the cached-token test uses a fixed valid action.
 
 **Changes from version 5 (Astra reject, five items in two places):** every cell keeps its own input hash and all cells share the report's `provenance_hash`, which the lock validator checks instead of equal input hashes; the validator takes the base sizes from the lock, requires power and threshold-check entries at both levels for every attempt, verifies each pass flag against its values (the Clopper-Pearson limit, convergence and 0.8, the 3 se gap), requires thresholds for exactly the measured sample sizes, and validates gates at every n present; the budgeted backend attaches the paid response to the overrun exception only (a pre-dispatch refusal never creates a cache entry), reserves at the highest input-token rate, counts cached tokens as input for the overrun, and latches when the spend crosses the cap.
 
@@ -1411,13 +1413,14 @@ def test_budgeted_backend_stops_before_the_call_that_would_exceed(tmp_path):
     b7 = BudgetedBackend(big, max_cost_usd=100.0, prices={"fake-1": {"input": 1.0, "output": 1.0}}, ledger=tmp_path / "l6.json", max_request_tokens=(8000, 512))
     with pytest.raises(CapExceeded, match="latched"):
         b7.complete("action", {"x": 1})                                                             # a restart stays latched until the ledger is cleared knowingly
-    cached = FakeBackend(honest_fn); cached.complete = lambda kind, payload: {"data": honest_fn(kind, payload), "raw": {}, "usage": {"input_tokens": 10, "output_tokens": 1, "cache_creation_input_tokens": 8000}}
+    cached = FakeBackend(honest_fn); cached.complete = lambda kind, payload: {"data": {"effort": 0.0, "offer": None}, "raw": {}, "usage": {"input_tokens": 10, "output_tokens": 1, "cache_creation_input_tokens": 8000}}
     b8 = BudgetedBackend(cached, max_cost_usd=0.035, prices={"fake-1": {"input": 4.0, "output": 20.0, "cache_write": 5.0, "cache_read": 0.4}}, max_request_tokens=(8000, 512))
     with pytest.raises(CapExceeded, match="cost cap"):
         b8.complete("action", {"x": 1})                                                             # the reserve prices 8,000 tokens at the highest input rate (5.0): 0.0400 > 0.035
     b9 = BudgetedBackend(cached, max_cost_usd=1.0, prices={"fake-1": {"input": 4.0, "output": 20.0, "cache_write": 5.0, "cache_read": 0.4}}, max_request_tokens=(8000, 512))
-    with pytest.raises(CapExceeded, match="overrun"):
+    with pytest.raises(CapExceeded, match="overrun") as info:
         b9.complete("action", {"x": 1})                                                             # 8,010 input tokens counting the cached ones: an overrun, latched
+    assert b9.calls == 1 and info.value.response["usage"]["cache_creation_input_tokens"] == 8000 and b9.cost_usd == pytest.approx(10 / 1e6 * 4.0 + 1 / 1e6 * 20.0 + 8000 / 1e6 * 5.0) and b9.overrun
     prov = LLMProvider(b5, PromptCache(tmp_path / "g"), rendered, cfg.providers[3], feedback=[], T=cfg.T, counters=ActorCounters()); pols[3] = prov
     with pytest.raises(CapExceeded):
         run_episode(cfg, PostedPrices(0.2, 0.35, 0.5), pols, 1)
@@ -3668,7 +3671,8 @@ def setup(tmp_path):
     from sim.coverage import ENDPOINTS, PROCEDURES_AT_N, endpoint_key, thresholds, admission
     thr = {n: thresholds(lk, 35000) for n in (10, 20)}
     measured = {f"{endpoint_key(st, side, lv, n)}|{proc}": 0.999 for n in (10, 20) for proc in PROCEDURES_AT_N[n] for st, side, lv in ENDPOINTS}
-    rep["cells"] = {f"c{i}": {"per_n": {"10": {}, "20": {}}, "measured": measured} for i in range(6)}
+    pn = {n: {"pool_size": 35000, "replications": {n: 2000}, "pool_factor": 1, "rep_factor": 1} for n in ("10", "20")}
+    rep["cells"] = {f"c{i}": {"per_n": json.loads(json.dumps(pn)), "measured": dict(measured)} for i in range(6)}
     rep["selection"] = [{"name": f"c{i}"} for i in range(6)]; rep["thresholds"] = {str(n): t for n, t in thr.items()}
     rep["M"] = 35000; rep["fixture_and_power"]["base_M"] = 35000; rep["fixture_and_power"]["base_R"] = {"10": 2000, "20": 2000, "40": 4000}
     from sim.coverage import clopper_pearson_lower
@@ -3748,6 +3752,26 @@ def test_lock_script_refuses_bad_inputs(tmp_path):
     flag = json.loads((tmp_path / "cov.json").read_text()); flag["fixture_and_power"]["per_n"]["10"][0]["fixture"]["admitted"] = 0; (tmp_path / "cov_flag.json").write_text(json.dumps(flag))
     bad_f = [a if a != str(tmp_path / "cov.json") else str(tmp_path / "cov_flag.json") for a in base]
     r = subprocess.run(bad_f, capture_output=True, text=True, cwd=ROOT); assert r.returncode != 0 and "contradict" in (r.stderr + r.stdout)   # pass_ True with 0 admitted
+    tiny = json.loads((tmp_path / "cov.json").read_text()); tiny["cells"]["c0"]["per_n"]["10"].update({"pool_size": 4, "replications": {"10": 2}}); (tmp_path / "cov_tiny.json").write_text(json.dumps(tiny))
+    bad_t = [a if a != str(tmp_path / "cov.json") else str(tmp_path / "cov_tiny.json") for a in base]
+    r = subprocess.run(bad_t, capture_output=True, text=True, cwd=ROOT); assert r.returncode != 0 and "pool size or replication count" in (r.stderr + r.stdout)
+    nan = json.loads((tmp_path / "cov.json").read_text()); nan["cells"]["c1"]["measured"] = {k: 1.5 for k in nan["cells"]["c1"]["measured"]}; (tmp_path / "cov_nan.json").write_text(json.dumps(nan))
+    bad_v = [a if a != str(tmp_path / "cov.json") else str(tmp_path / "cov_nan.json") for a in base]
+    r = subprocess.run(bad_v, capture_output=True, text=True, cwd=ROOT); assert r.returncode != 0 and "finite coverage" in (r.stderr + r.stdout)
+    # a failed first attempt followed by a registered doubling that passes is a valid report
+    rem = json.loads((tmp_path / "cov.json").read_text()); first = rem["fixture_and_power"]["per_n"]["10"][0]
+    failed = json.loads(json.dumps(first)); failed["threshold_check_pass"] = False; failed["pass_"] = False
+    second = json.loads(json.dumps(first)); second.update({"pool_factor": 2, "M": 70000}); second["fixture"].update({"M": 70000})
+    rem["fixture_and_power"]["per_n"]["10"] = [failed, second]
+    rem["fixture_and_power"]["threshold_check"]["35000"]["10|0.95"] = {"gap": 0.01, "se": 1e-4, "pass_": False}
+    rem["fixture_and_power"]["threshold_check"]["70000"] = {k: {"gap": 0.0, "se": 1e-4, "pass_": True} for n in (10, 20, 40) for k in (f"{n}|0.95", f"{n}|0.9875")}
+    rem["thresholds"]["10"] = {k: v for k, v in thresholds(lk, 70000).items()}
+    for c in rem["cells"].values():
+        c["per_n"]["10"].update({"pool_size": 70000, "pool_factor": 2})
+    adm2 = admission({k: v["measured"] for k, v in rem["cells"].items()}, {10: rem["thresholds"]["10"], 20: thr[20]}, lk, rem["fixture_and_power"]["admissible_n"]); rem.update(adm2)
+    (tmp_path / "cov_rem.json").write_text(json.dumps(rem))
+    good_r = [a if a != str(tmp_path / "cov.json") else str(tmp_path / "cov_rem.json") for a in base]
+    r = subprocess.run(good_r, capture_output=True, text=True, cwd=ROOT); assert r.returncode == 0, r.stderr + r.stdout
     gate = json.loads((tmp_path / "cov.json").read_text()); gate["fixture_and_power"]["per_n"]["10"][0]["fixture"].update({"pass_": False, "admitted": 0, "lower_limit": 0.0}); gate["fixture_and_power"]["per_n"]["10"][0]["pass_"] = False
     (tmp_path / "cov_gate.json").write_text(json.dumps(gate))                      # admissible_n still says True: the evidence must win
     bad_g = [a if a != str(tmp_path / "cov.json") else str(tmp_path / "cov_gate.json") for a in base]
@@ -4394,9 +4418,6 @@ def validate(a, lk: dict, cal: dict, cal100: dict, cov: dict) -> list:
     per_n = (cov.get("fixture_and_power") or {}).get("per_n") or {}
     if not {"10", "20"} <= set(per_n) or any(not attempts for attempts in per_n.values()):
         problems.append("coverage report: fixture and power results missing for n = 10 or n = 20")
-    for M, chk in ((cov.get("fixture_and_power") or {}).get("threshold_check") or {}).items():
-        if not chk or any(not v.get("pass_") for v in chk.values()):
-            problems.append(f"coverage report: the threshold cross-check at M = {M} did not pass")
     cells = cov.get("cells") or {}
     need_n = {"10", "20"} | ({str(cons.get("final_eval_n"))} if cons.get("final_eval_n") else set())
     if set(cells) != set(names) or any(not need_n <= set(r.get("per_n") or {}) for r in cells.values()) or not need_n <= set(per_n):
@@ -4436,6 +4457,18 @@ def validate(a, lk: dict, cal: dict, cal100: dict, cov: dict) -> list:
     measured_n = {str(n) for r in cells.values() for n in (r.get("per_n") or {})}
     if set((cov.get("thresholds") or {}).keys()) != measured_n:
         problems.append(f"coverage report: thresholds must be recorded for exactly the measured sample sizes {sorted(measured_n)}")
+    from sim.coverage import ENDPOINTS as _EP, PROCEDURES_AT_N as _PR, endpoint_key as _ek
+    for cname, r in cells.items():
+        for n, pn in (r.get("per_n") or {}).items():
+            attempts = per_n.get(str(n)) or []; sel = attempts[-1] if attempts else {}
+            if (pn.get("pool_factor"), pn.get("rep_factor")) != (sel.get("pool_factor"), sel.get("rep_factor")):
+                problems.append(f"coverage report: cell {cname} at n = {n} ran with other factors than the selected attempt")
+            if int(pn.get("pool_size", -1)) != base_M * (sel.get("pool_factor") or 0) or int((pn.get("replications") or {}).get(str(n), -1)) != base_R.get(str(n), -1) * (sel.get("rep_factor") or 0):
+                problems.append(f"coverage report: cell {cname} at n = {n} has a pool size or replication count that is not the locked size times the factor")
+            keys = [f"{_ek(st, side, lv, int(n))}|{proc}" for proc in _PR[int(n)] for st, side, lv in _EP]
+            vals = [(r.get("measured") or {}).get(k) for k in keys]
+            if any(v is None or not isinstance(v, (int, float)) or not math.isfinite(v) or not (0.0 <= v <= 1.0) for v in vals):
+                problems.append(f"coverage report: cell {cname} at n = {n} lacks a finite coverage in [0, 1] for every endpoint and procedure")
     try:
         from sim.coverage import admission as _adm, thresholds as _thr
         thr = {int(k): v for k, v in (cov.get("thresholds") or {}).items()}
