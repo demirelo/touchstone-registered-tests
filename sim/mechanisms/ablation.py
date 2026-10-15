@@ -40,11 +40,16 @@ class EnforcementAblation(Mechanism):
         except KeyError as exc:                   # the enforcer's allocate never runs, so its memory holds only what its own enforce wrote
             raise ValueError("an ablation enforcer must not depend on allocation-time memory") from exc
 
-    def describe(self) -> dict[str, str]:
+    def describe(self) -> dict:
         d = dict(self.rule.describe())
         e = self.enforcer.describe()
+        params = dict(d.get("parameters", {}))
         for k in ENFORCEMENT_FIELDS:
             d[k] = e[k]
+            params.pop(k, None)
+            if k in e.get("parameters", {}):
+                params[k] = e["parameters"][k]                  # the enforcer's figures for its fields; the rule keeps its audit tolerance
+        d["parameters"] = params
         return d
 
 

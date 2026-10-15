@@ -117,7 +117,13 @@ Two freezes.
    checked by their own hashes. Held-out families run only after this
    tag.
 
+H1 is a five-episode adaptive procedure with profit feedback, not the
+normalized-gain search: its gain is the procedure's output against a
+reference selected on dev-train seeds, and the paper calls it best-found
+gain.
+
 Lock commit: _not yet locked_. Freeze commit: _not yet frozen_.
+Sealed bundle SHA-256: (written at the lock).
 
 ## Plan
 
@@ -192,6 +198,14 @@ search, reference selection from the bounded projected set, candidate bank
 pass, calibration, baseline tuning with dev-val rechecks, all-deviators
 with its twin procedure, search checks, schedule-driven manifest, staged
 sweep runner with counted runs, and the full-path benchmark implemented.
-Plan 2B (intervals, coverage study, claim script, lock tooling, model
-actors, custodian instructions) next.
+Plan 2B implemented: the locked interval algorithms, the coverage study
+(registered selection, pools and replications in chunks, analytic
+thresholds with their simulation check, the joint fixture test and the
+control power, remedies, per-cell runs for pods), the model actors with
+Anthropic and Jev backends behind a prompt-hash cache and a budgeted
+wrapper, the describe() vocabulary and frozen renderer, the comprehension
+fixture, the H1 runner with the token pilot, `check_claim.py` (predicate,
+lock, freeze, record, and module checks), `lock.py`, figures 1 and 2, and
+the custodian instructions. The registered tuning, sweep, and coverage
+runs come next (Runpod CPU pods), then the lock.
 

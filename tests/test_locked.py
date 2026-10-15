@@ -43,3 +43,30 @@ def test_settings_hash_covers_every_experimental_setting():
         assert settings_hash(other) != h
     same = dict(lk); same["version"] = "something-else"; same["tuned"] = {"B1": "x"}; same["identity_salt_sha256"] = "ab" * 32
     assert settings_hash(same) == h          # the blocks written at the lock do not invalidate the artifacts the lock lists
+
+
+def test_locked_has_plan_2b_blocks_and_coverage_range_is_disjoint():
+    lk = load_locked()
+    cov = lk["seeds"]["coverage"]
+    assert cov["start"] == 3_000_000 and cov["pool"] == 35_000 and cov["replications"] == {"10": 2000, "20": 2000, "40": 4000} and cov["n_grid"] == [10, 20, 40]
+    assert cov["block"] >= 2 * cov["pool"] + 2 * sum(int(r) * int(n) for n, r in cov["replications"].items())   # room for both doublings
+    lo, hi = cov["start"], cov["start"] + 6 * cov["block"]
+    for ns in ("dev_train", "dev_val", "calibration"):
+        assert all(not (lo <= s < hi) for s in seeds(lk, ns))
+    assert lk["intervals"]["bootstrap_resamples"] == 10_000 and lk["intervals"]["margins"] == {"0.95": 2.0, "0.9875": 1.0}
+    assert lk["h1"]["model"] == "claude-opus-5-5" and lk["h1"]["jev_model"] == "jev-1.14.0" and lk["h1"]["T"] == 100
+    assert lk["claim"]["eff_min"] == 0.90 and lk["claim"]["gain_max"] == 0.30 and lk["claim"]["baseline_level"] == 0.9875
+    assert "sim/mechanisms/proposed.py" in lk["allow_list"] and "sealed/" in lk["allow_list"]
+    assert lk["calibration"] is None and lk["sealed_bundle_sha256"] is None
+    h = settings_hash(lk)
+    filled = dict(lk); filled["calibration"] = {"S_hat": 1.0}; filled["sealed_bundle_sha256"] = "ab" * 32
+    filled["coverage_report_sha256"] = "cd" * 32; filled["comprehension_fixture_sha256"] = "ef" * 32; filled["coverage_consequences"] = {"final_eval_n": 20}
+    filled["h1"] = dict(lk["h1"], cost_cap_usd=120.0)
+    assert settings_hash(filled) == h          # lock-time blocks never invalidate pre-lock artifacts
+
+
+def test_prices_are_outside_the_settings_hash():
+    """Final review F12: correcting a token price after tuning must not invalidate the tuned files or the sweep records."""
+    lk = load_locked(); h = settings_hash(lk)
+    other = dict(lk, h1=dict(lk["h1"], prices={"claude-opus-5-5": {"input": 1.0, "output": 1.0}}))
+    assert settings_hash(other) == h

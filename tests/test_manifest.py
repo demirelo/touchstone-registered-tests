@@ -64,3 +64,22 @@ def test_manifest_weights_split_pre_lock_runs_by_rule_and_family():
     assert sum(w.values()) == pytest.approx(totals(cells)["pre_lock"])          # every pre-lock run is attributed once
     assert w[("B1", "D2+H3")] == sum(cell_runs("D2+H3", b).values())               # the H3 cell alone
     assert w[("B2", "D2")] > w[("B1", "D2")]                                       # B2 carries the largest tuning grid
+
+
+def test_manifest_lists_the_coverage_study_outside_the_search_gate_and_the_weights():
+    from sim.manifest import coverage_cells, enumerate_manifest, manifest_weights, totals
+    lk = load_locked(); cov = lk["seeds"]["coverage"]
+    base_seeds = cov["pool"] + sum(int(cov["replications"][str(n)]) * n for n in (10, 20))
+    est = coverage_cells(lk, None)
+    assert len(est) == 24 and all(c.section == "coverage" for c in est)
+    assert sum(c.runs for c in est if c.kind == "coverage_base") == 6 * 5 * base_seeds
+    sel = [{"name": "B2_D1_beta0.05_rho0.5_median_development", "rule": "B2", "family": "D1", "position": "median", "runs_per_seed": 4}]
+    real = coverage_cells(lk, sel)
+    kinds = {c.kind: c.runs for c in real}
+    assert kinds["coverage_base"] == 4 * base_seeds and kinds["coverage_conditional"] > 0 and len(real) == 4
+    assert [c for c in real if c.name.endswith("n40")][0].runs == 4 * int(cov["replications"]["40"]) * 40
+    cells = enumerate_manifest(lk, ["B1", "B2", "B3"]); t = totals(cells)
+    no_cov = [c for c in cells if c.section != "coverage"]
+    assert t["coverage_base"] > 0 and t["coverage_conditional"] > 0
+    assert t["pre_lock"] == totals(no_cov)["pre_lock"] and t["pre_lock_exact"] == totals(no_cov)["pre_lock_exact"]
+    assert manifest_weights(cells) == manifest_weights(no_cov)

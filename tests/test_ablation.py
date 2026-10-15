@@ -56,7 +56,7 @@ def test_ablation_uses_enforcer_consequences_and_rule_allocation():
     assert bans and set(bans) == {3}
     res.ledger.check_conservation(0.0)
     d = abl.describe()
-    assert d["ban_length"] == "3" and d["holdback"] == "none" and d["pricing"] == rule.describe()["pricing"]
+    assert d["ban_length"] == "number" and d["parameters"]["ban_length"] == 3 and d["holdback"] == "none" and d["payment"] == rule.describe()["payment"]
 
 
 def test_ablation_keeps_the_rules_enforce_time_memory():

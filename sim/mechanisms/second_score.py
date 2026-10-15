@@ -45,9 +45,10 @@ class SecondScore(RandomAuditMixin, Mechanism):
         s2 = view.memory.get("second_scores", {})
         return {j: float(values_t[j] * offers[i].claim - s2.get(j, 0.0)) for j, i in assignment.items()}
 
-    def describe(self) -> dict[str, str]:
-        return {"allocation": "descending value; highest score v*claim - bid wins; capacity respected",
-                "pricing": "second score: v*claim minus runner-up score",
-                "audit_selection": "uniform random among served jobs, spread schedule",
-                "audit_tolerance": f"{self.tol}", "failed_audit": "full refund",
-                "ban_length": f"{self.L}", "holdback": "none"}
+    def describe(self) -> dict:
+        return {"allocation_order": "jobs in descending value; each job goes to the offer with capacity and the highest score, score = job value times claim minus bid, offers with a negative score are not eligible, at random among equal scores",
+                "eligibility": "active offers with capacity", "payment": "second score: job value times claim minus the highest score among the other eligible offers for that job, zero when there is none",
+                "audit_selection": "uniform random among served jobs, spread evenly over rounds", "audit_tolerance": "number",
+                "failed_audit": "full refund of the audited job", "ban_length": "number" if self.L > 0 else "none", "holdback": "none",
+                "parameters": {"audit_tolerance": float(self.tol), **({"ban_length": int(self.L)} if self.L > 0 else {})}}
+

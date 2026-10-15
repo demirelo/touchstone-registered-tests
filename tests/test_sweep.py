@@ -55,7 +55,7 @@ def test_smoke_sweep_runs_every_stage_with_counted_runs(cal_path, tmp_path):
     headline = json.loads((out / "headline.json").read_text())
     assert set(headline) == {"B1/D1", "B1/D2"} and all(h["headline"] == "median" for h in headline.values())
     rows = (out / "development.csv").read_text().splitlines()
-    assert rows[0] == "cell,section,rule,family,beta,rho,position,smoke,reference," + ",".join(ROW_FIELDS)
+    assert rows[0] == "cell,section,rule,family,beta,rho,position,smoke,reference,budget," + ",".join(ROW_FIELDS)
     assert len(rows) == 1 + 2 * 2 and (out / "h3.csv").exists()
     ad = json.loads((out / "all_deviators.json").read_text())
     assert len(ad) == 1 and ad[0]["runs"] == ad[0]["scheduled"] and len(ad[0]["gain_dev_val"]) == 10
@@ -69,3 +69,45 @@ def test_smoke_sweep_runs_every_stage_with_counted_runs(cal_path, tmp_path):
     assert r.returncode != 0 and "bank source" in (r.stderr + r.stdout)
     r = run_sweep(cal_path, out, "--stage", "evaluate", "--rules", "B1", "--smoke", "--workers", "1")
     assert r.returncode != 0 and "bank" in (r.stderr + r.stdout)           # the evaluate stage checks the bank too
+
+
+def test_reference_records_carry_per_seed_values_and_foreign_rules_are_refused(cal_path, tmp_path):
+    out = tmp_path / "res"
+    r = run_sweep(cal_path, out, "--stage", "all", "--sections", "development", "--rules", "B1",
+                  "--select", "B1_D1_beta0.05_rho0.2_median", "--smoke", "--workers", "1")
+    assert r.returncode == 0, r.stderr
+    rec = json.loads(next((out / "reference").glob("*.json")).read_text())
+    assert len(rec["attack_per_seed_normalized"]) == 1 and len(rec["reference_per_seed_normalized"]) == 1
+    assert rec["gain_train"] == pytest.approx(rec["attack_per_seed_normalized"][0] - rec["reference_per_seed_normalized"][0])
+    r = run_sweep(cal_path, out, "--stage", "reference", "--rules", "B2", "--smoke", "--workers", "1")
+    assert r.returncode != 0 and "B1" in (r.stderr + r.stdout)
+    r = run_sweep(cal_path, out, "--stage", "evaluate", "--rules", "B1", "--smoke", "--workers", "1", "--eval-namespace", "final_eval")
+    from scripts.sweep import train_val
+    from sim.schedule import Budget, stage_runs
+    lk = load_locked()
+    job = {"budget": [1, 16, 1, 2], "locked": dict(lk, coverage_consequences={"final_eval_n": 3}, seeds=dict(lk["seeds"], final_eval=[9, 8, 7, 6])), "eval_namespace": "final_eval"}
+    _, val, b = train_val(job)
+    assert val == (9, 8, 7) and b == Budget(1, 16, 1, 3) and stage_runs("D1", "evaluate", b) == 12      # the evaluate count follows final_eval_n
+    assert r.returncode != 0 and "final_eval" in (r.stderr + r.stdout)
+
+
+def test_search_shards_cover_the_unsharded_record_set(cal_path, tmp_path):
+    whole = tmp_path / "whole"; parts = tmp_path / "parts"
+    common = ["--stage", "search", "--sections", "development", "--rules", "B1", "--select", "B1_D1_beta0.05", "--smoke", "--workers", "1"]
+    r = run_sweep(cal_path, whole, *common); assert r.returncode == 0, r.stderr
+    for shard in ("0/2", "1/2"):
+        r = run_sweep(cal_path, parts, *common, "--shard", shard); assert r.returncode == 0, r.stderr
+    names = lambda d: sorted(p.name for p in (d / "search").glob("*.json"))
+    assert names(whole) == names(parts) and len(names(whole)) == 3                    # three positions at the headline beta, split 2 + 1
+
+
+def test_limit_without_shard_keeps_the_manifest_order(cal_path, tmp_path):
+    """Final review F13: --limit picks the manifest's first cells unless --shard asks for the sorted order."""
+    from sim.manifest import enumerate_manifest
+    from sim.schedule import SMOKE_BUDGET
+    lk = load_locked()
+    first = next(c.name for c in enumerate_manifest(lk, ["B1"], budget=SMOKE_BUDGET) if c.section == "development" and c.kind == "full_cell" and "beta0.05" in c.name)
+    out = tmp_path / "lim"
+    r = run_sweep(cal_path, out, "--stage", "search", "--sections", "development", "--rules", "B1", "--select", "beta0.05", "--smoke", "--workers", "1", "--limit", "1")
+    assert r.returncode == 0, r.stderr
+    assert [p.stem for p in (out / "search").glob("*.json")] == [first]

@@ -36,7 +36,15 @@ def cell_runs(family_name: str, b: Budget) -> dict[str, int]:
     corner controls, and the dev-val evaluation of attack, clipped attack, reference, and honest-max."""
     s = search_runs(b)
     return {"twin": s, "twin_projection": b.n_train, "attack": s, "incumbents": 2 * b.n_train, "attack_projection": b.n_train,
-            "reference": b.n_train, "corners": N_CORNERS[family_name] * b.n_train, "evaluation": 4 * b.n_val}
+            "reference": b.n_train, "corners": _corners(family_name) * b.n_train, "evaluation": 4 * b.n_val}
+
+
+def _corners(family_name: str) -> int:
+    """Known families by the registered count; a sealed family declares its own knobs, so its corner count comes from the registry."""
+    if family_name in N_CORNERS:
+        return N_CORNERS[family_name]
+    from .registry import available_families
+    return len(available_families()[family_name].corners())
 
 
 STAGE_KEYS = {"search": ("twin", "twin_projection", "attack", "incumbents", "attack_projection", "corners"),

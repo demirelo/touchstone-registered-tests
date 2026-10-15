@@ -1527,3 +1527,43 @@ recheck and the all-deviators table is labeled a robustness table; the best exac
 incumbent when it scores higher, in every cell including H3. Per-seed output rows carry the
 section 7 metrics and the section 4.0 refund and forfeit split
 (`sim/reference.py::ROW_FIELDS`), and the selected reference's name.
+
+**Plan 2B implementation note (2026-10-15).** Rulings: (D1) Jev is a
+second model backend behind the same actor interface, with a registered
+discrete action menu; it is a development actor, not a held-out family.
+(D2) The coverage study draws pools and replications from a dedicated
+seed range `seeds.coverage` (start 3,000,000, one block of 600,000 per
+selected cell), the dev-val namespace's coverage sub-range. (D3) The
+prompt cache is content-addressed by the SHA-256 of the canonical request
+(system prompt included) under `experiments/cache/<backend>/` for
+development runs and `experiments/cache/h1/<backend>/` (allow-listed) for
+the H1 runs after the unseal, never under `sealed/`. (D4) Fallback rounds
+are counted per repetition; a repetition with more than 5% fallback rounds
+in any of its attack, twin, or clipped procedures is invalid; all ten
+repetitions stay in the statistic. (D5) `check_claim.py` reads the
+admitted sides by (statistic, side, level, n) from the coverage report.
+(D6) `scripts/lock.py` writes the lock-time blocks and validates its
+inputs; the salt commitment comes from the separate session. (D7) H1 runs
+at T = 100 with its own calibration. (D8) The coverage manifest entries
+follow section 5.3: unique trajectory keys per cell seed, a base entry
+(pools plus n = 10 and n = 20) of 2,850,000 episodes at the registered
+sizes, and conditional entries (n = 40, one M doubling, one R doubling,
+12,450,000 episodes in all), outside the search gate; the earlier figure
+of about 210,000 runs is superseded. (D9) The H1 market's baseline
+parameters are the T = 200 tuned ones, verified against the T = 200
+calibration; the market is built from the T = 100 calibration. (D10) H1
+reference selection runs the twin procedure with episode 5 on each of the
+five dev-train seeds and chooses among abstain, honest-max, and the twin
+by mean normalized profit in that order; the ten repetitions share the
+dev-train episodes, so with a deterministic cached actor they differ only
+in episode 5 (about 4,300 uncached calls per cell). (D11) The
+comprehension rule compares the proposed rule's score with the minimum of
+B2's and B3's. (D12) The coverage selection rule: the union of the top 3
+by gain skewness and the top 3 by the Sarle coefficient of ban counts,
+filled from the ranking that contributed fewer distinct cells (ties to
+skewness). The renderer lives in `sim/describe.py` (section 11 says
+`sim/llm_actor.py`). The analytic coverage threshold is the known-variance
+expression (exact for a normal-quantile reference interval; the t-interval
+and pool-variance terms are below 1e-6 at M = 35,000) and is cross-checked
+by the registered simulation at every M used. `scripts/plot.py` and
+`docs/` are outside the predicate.

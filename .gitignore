@@ -8,3 +8,5 @@ docs/superpowers/reviews/final-read-bundle.md
 *.egg-info/
 .pytest_cache/
 .superpowers/
+.gstack/
+results/

@@ -14,25 +14,28 @@ from sim.locked import load_locked, market_config_from_locked, seeds as locked_s
 from sim.manifest import CellSpec, enumerate_manifest
 from sim.rng import load_identity_salt
 from sim.policies.families import D2, FAMILIES, exact_key
-from sim.policies.identity import h3_family
+from sim.registry import SEALED_DIR, available_families, make_rule, proposed_params
+from sim.sealed import bundle_hash
 from sim.positions import headline_position, positions
 from sim.records import candidate_from_record, candidate_to_json, cfg_from_dict, cfg_to_dict, search_from_json, search_to_json
 from sim.reference import ROW_FIELDS, attack_search, evaluate_gain, reference_candidates, seed_rows, select_reference, twin_search
 from sim.schedule import SMOKE_BUDGET, Budget, all_deviators_runs, bank_stage_bound, budget_from_locked, doubling_bound, reference_bound, stage_runs
 from sim.search import Objective, SearchSettings, corner_controls, settings_from_locked
 from sim.search_checks import doubling_check, restart_spread, twin_vs_honest
-from sim.tuning import rule_from_params
 
 DEFAULT_PARAMS = {"B1": {"P1": 0.25, "P2": 0.40, "P3": 0.55},
                   "B2": {"P1": 0.25, "P2": 0.40, "P3": 0.55, "tol": 0.12, "L": 10},
                   "B3": {"tol": 0.12, "L": 10}}
+DEFAULT_PARAMS["proposed"] = dict(DEFAULT_PARAMS["B2"])          # smoke runs of a synthetic proposed module that wraps B2
 STAGES = ("search", "bank", "reference", "evaluate", "checks", "all_deviators")
-ALL_FAMILIES = dict(FAMILIES, **{"D2+H3": h3_family(D2)})
-META_FIELDS = ["cell", "section", "rule", "family", "beta", "rho", "position", "smoke", "reference"]
+META_FIELDS = ["cell", "section", "rule", "family", "beta", "rho", "position", "smoke", "reference", "budget"]
 
 
 def family_of(name: str):
-    return ALL_FAMILIES[name]
+    """The registry re-reads the sealed path on every call, so a bundle unsealed later is seen without a restart; after the
+    lock the bundle must match its commitment before H2 is used."""
+    lk = load_locked()
+    return available_families(lk if lk.get("sealed_bundle_sha256") else None)[name]
 
 
 def load_params(rule: str, tuned_dir: Path | None, smoke: bool, market_key: str, shash: str, cal_seeds) -> dict:
@@ -40,10 +43,13 @@ def load_params(rule: str, tuned_dir: Path | None, smoke: bool, market_key: str,
         if not smoke:
             raise SystemExit("refusing to run without tuned parameters: pass --tuned-dir, or --smoke for a smoke run")
         return dict(DEFAULT_PARAMS[rule])
-    p = tuned_dir / f"tuned_{rule}.json"
-    if not p.exists():
-        raise SystemExit(f"tuned parameters for {rule} not found at {p}")
-    d = json.loads(p.read_text())
+    if rule == "proposed":
+        d = proposed_params(); p = Path("experiments/proposed.yaml")             # the allow-listed parameter file of the proposed rule
+    else:
+        p = tuned_dir / f"tuned_{rule}.json"
+        if not p.exists():
+            raise SystemExit(f"tuned parameters for {rule} not found at {p}")
+        d = json.loads(p.read_text())
     if d.get("rule") != rule:
         raise SystemExit(f"{p} is a tuning result for rule {d.get('rule')!r}, not {rule}")
     if d.get("market_key") != market_key:
@@ -63,19 +69,19 @@ def settings_for(locked: dict, budget: Budget) -> SearchSettings:
                           reeval_every=s.reeval_every, near_corner=s.near_corner, sobol_seed=s.sobol_seed)
 
 
-def job_for(spec: CellSpec, locked: dict, cal, base, params: dict, budget: Budget, smoke: bool) -> dict:
+def job_for(spec: CellSpec, locked: dict, cal, base, params: dict, budget: Budget, smoke: bool, eval_namespace: str = "dev_val") -> dict:
     cfg = cell_config(base, cal, rho=spec.rho, beta=spec.beta)
     p = dict(params); p.update(spec.params_override or {})
     return {"spec": {"name": spec.name, "section": spec.section, "rule": spec.rule, "family": spec.family, "beta": spec.beta,
                      "rho": spec.rho, "position": spec.position}, "cfg": cfg_to_dict(cfg), "params": p, "locked": locked,
             "budget": [budget.restarts, budget.evals, budget.n_train, budget.n_val], "smoke": smoke, "settings_hash": settings_hash(locked),
-            "salt_hash": hashlib.sha256(load_identity_salt()).hexdigest()}
+            "salt_hash": hashlib.sha256(load_identity_salt()).hexdigest(), "eval_namespace": eval_namespace}
 
 
 def check_record(job: dict, rec: dict) -> None:
     """A later stage refuses a record from another configuration or mode (stale tuned parameters, calibration,
     settings, budget, or a smoke record under a real run)."""
-    for key in ("params", "cfg", "settings_hash", "budget", "smoke", "salt_hash"):
+    for key in ("params", "cfg", "settings_hash", "budget", "smoke", "salt_hash", "eval_namespace"):
         if rec.get(key) != job[key]:
             raise SystemExit(f"{job['spec']['name']}: stored {key} differs from the current run; rerun from the search stage")
     if rec.get("spec", {}).get("name") != job["spec"]["name"]:
@@ -84,13 +90,18 @@ def check_record(job: dict, rec: dict) -> None:
 
 def make_cell(job: dict, seeds: tuple[int, ...], suffix: str = "") -> Cell:
     cfg = cfg_from_dict(job["cfg"]); params = job["params"]; rule = job["spec"]["rule"]
-    return Cell(cfg=cfg, rule_factory=lambda: rule_from_params(rule, params), focal=positions(cfg)[job["spec"]["position"]],
+    return Cell(cfg=cfg, rule_factory=lambda: make_rule(rule, params), focal=positions(cfg)[job["spec"]["position"]],
                 seeds=seeds, name=job["spec"]["name"] + suffix)
 
 
 def train_val(job: dict) -> tuple[tuple[int, ...], tuple[int, ...], Budget]:
-    b = Budget(*job["budget"]); lk = job["locked"]
-    return tuple(locked_seeds(lk, "dev_train")[: b.n_train]), tuple(locked_seeds(lk, "dev_val")[: b.n_val]), b
+    """Dev-train seeds, the evaluation seeds of the job's namespace, and the budget whose n_val is the evaluation size:
+    under final_eval the registered size is coverage_consequences.final_eval_n (20 or 40), so the evaluate stage's exact
+    run count follows it."""
+    b = Budget(*job["budget"]); lk = job["locked"]; ns = job.get("eval_namespace", "dev_val")
+    n_eval = int((lk.get("coverage_consequences") or {}).get("final_eval_n") or b.n_val) if ns == "final_eval" else b.n_val
+    b_eval = Budget(b.restarts, b.evals, b.n_train, n_eval)
+    return tuple(locked_seeds(lk, "dev_train")[: b.n_train]), tuple(locked_seeds(lk, ns)[: n_eval]), b_eval
 
 
 def base_record(job: dict, cache: SeedCache, scheduled: int, exact: bool) -> dict:
@@ -99,7 +110,8 @@ def base_record(job: dict, cache: SeedCache, scheduled: int, exact: bool) -> dic
     if not exact and cache.runs > scheduled:
         raise AssertionError(f"{job['spec']['name']}: ran {cache.runs} episodes, schedule bound is {scheduled}")
     return {"spec": job["spec"], "cfg": job["cfg"], "params": job["params"], "settings_hash": job["settings_hash"], "smoke": job["smoke"],
-            "budget": job["budget"], "salt_hash": job["salt_hash"], "runs": cache.runs, "scheduled": scheduled}
+            "budget": job["budget"], "salt_hash": job["salt_hash"], "eval_namespace": job["eval_namespace"], "runs": cache.runs, "scheduled": scheduled,
+            "bundle_hash": bundle_hash(SEALED_DIR) if job["spec"]["family"] == "H2" else None}
 
 
 def stage_search(job: dict) -> dict:
@@ -207,14 +219,17 @@ def stage_reference(job: dict, rec: dict, bank_rec: dict | None) -> dict:
     out = base_record(job, cache, reference_bound(len(members), b), exact=False)
     out.update({"candidate": candidate_to_json(ref.candidate), "scores": ref.scores, "attack_knobs": attack.best_knobs,
                 "attack_f": attack.best_f, "attack_source": attack.best_source, "gain_train": attack.best_f - ref.scores[ref.candidate.name],
-                "bank_hash": bank_rec["bank_hash"] if bank_rec else None})
+                "bank_hash": bank_rec["bank_hash"] if bank_rec else None,
+                "attack_per_seed_normalized": [float(v) for v in attack.archive[exact_key(attack.best_knobs)].per_seed_normalized],
+                "reference_per_seed_normalized": [float(v) for v in ref.per_seed_normalized],
+                "reference_per_seed_profit": [float(v) for v in ref.per_seed_profit]})
     return out
 
 
 def meta_of(job: dict, reference_name: str) -> dict:
     s = job["spec"]
     return {"cell": s["name"], "section": s["section"], "rule": s["rule"], "family": s["family"], "beta": s["beta"], "rho": s["rho"],
-            "position": s["position"], "smoke": bool(job["smoke"]), "reference": reference_name}
+            "position": s["position"], "smoke": bool(job["smoke"]), "reference": reference_name, "budget": float(job["cfg"]["budget"])}
 
 
 def stage_evaluate(job: dict, ref_rec: dict) -> dict:
@@ -255,8 +270,8 @@ def stage_all_deviators(job: dict) -> dict:
                               reeval_every=s.reeval_every, near_corner=s.near_corner, sobol_seed=s.sobol_seed)
     seeds = tuple(locked_seeds(lk, "dev_train")[: min(int(ad["seeds"]), b.n_train)])
     cache = SeedCache()
-    att = iterated_best_response(cfg, lambda: rule_from_params(rule, params), D2, cache, settings, seeds, sweeps=int(ad["sweeps"]), eval_seeds=val)
-    tw = iterated_best_response(cfg, lambda: rule_from_params(rule, params), D2, cache, settings, seeds, sweeps=int(ad["sweeps"]), force_clip=True, eval_seeds=val)
+    att = iterated_best_response(cfg, lambda: make_rule(rule, params), D2, cache, settings, seeds, sweeps=int(ad["sweeps"]), eval_seeds=val)
+    tw = iterated_best_response(cfg, lambda: make_rule(rule, params), D2, cache, settings, seeds, sweeps=int(ad["sweeps"]), force_clip=True, eval_seeds=val)
     out = base_record(job, cache, all_deviators_runs(lk, cfg.N, b), exact=True)
     out.update({"attack": att.__dict__, "twin": tw.__dict__,
                 "gain_dev_val": [a - t for a, t in zip(att.final_normalized_profit, tw.final_normalized_profit)]})
@@ -277,6 +292,11 @@ def run_stages(o: dict) -> dict:
     lk = load_locked(); cal = load_calibration(o["calibration"]); base = market_config_from_locked(lk)
     budget = SMOKE_BUDGET if o["smoke"] else budget_from_locked(lk)
     rules = o["rules"].split(","); sections = o["sections"].split(",")
+    ns = o.get("eval_namespace", "dev_val")
+    try:
+        locked_seeds(lk, ns)                                            # before any record is read: final_eval exists only after the unseal
+    except ValueError as e:
+        raise SystemExit(f"evaluation namespace {ns} is not available: {e}")
     tuned = Path(o["tuned_dir"]) if o.get("tuned_dir") else None
     params = {r: load_params(r, tuned, o["smoke"], cal.market_key, settings_hash(lk), cal.seeds) for r in rules}
     if not o["smoke"] and list(cal.seeds) != locked_seeds(lk, "calibration"):
@@ -299,11 +319,18 @@ def run_stages(o: dict) -> dict:
             for sec in sections:
                 specs = [c for c in manifest if c.section == sec and c.kind == "full_cell" and c.rule in rules
                          and (not o.get("select") or o["select"] in c.name)]
-                jobs += [job_for(c, lk, cal, base, params[c.rule], budget, o["smoke"]) for c in specs[: o.get("limit")]]
+                specs = specs[: o.get("limit")]                          # manifest order, as in plan 2A
+                if o.get("shard"):
+                    k, n = (int(x) for x in o["shard"].split("/"))    # --shard K/N: cells sorted by name, cell i runs when i % N == K; shards share --out
+                    specs = [c for i, c in enumerate(sorted(specs, key=lambda c: c.name)) if i % n == k]
+                jobs += [job_for(c, lk, cal, base, params[c.rule], budget, o["smoke"], ns) for c in specs]
             for rec in pool.map(stage_search, jobs):
                 record("search", rec)
         search = read_dir(out / "search")
-        jobs = {name: job_for(next(c for c in manifest if c.name == name), lk, cal, base, params[rec["spec"]["rule"]], budget, o["smoke"])
+        for name, rec in search.items():
+            if rec["spec"]["rule"] not in rules:
+                raise SystemExit(f"record {name} belongs to rule {rec['spec']['rule']}, which is not in --rules; pass it or use another output directory")
+        jobs = {name: job_for(next(c for c in manifest if c.name == name), lk, cal, base, params[rec["spec"]["rule"]], budget, o["smoke"], ns)
                 for name, rec in search.items()}
         if stage == "bank":
             doc = build_bank(out, search, jobs)
@@ -343,7 +370,7 @@ def run_stages(o: dict) -> dict:
             headline = {}
             for name, r in refs.items():
                 s = r["spec"]
-                if s["section"] == "development" and float(s["beta"]) == float(lk["beta_headline"]):
+                if s["section"] in ("development", "heldout") and float(s["beta"]) == float(lk["beta_headline"]):
                     headline.setdefault(f"{s['rule']}/{s['family']}", {})[s["position"]] = float(r["gain_train"])
             write_json(out / "headline.json", {k: {"gain_train": v, "headline": headline_position(v)} for k, v in headline.items()})
         if stage == "checks":
@@ -374,7 +401,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--stage", required=True, choices=STAGES + ("all",))
     ap.add_argument("--sections", default="development,rho_sweep,no_ban,h3,all_deviators",
-                    help="cell sections for the search stage; the all_deviators stage runs under --stage all only when listed here")
+                    help="cell sections for the search stage (development, rho_sweep, no_ban, h3, all_deviators, heldout); the all_deviators stage runs under --stage all only when listed here")
     ap.add_argument("--rules", default="B1,B2,B3")
     ap.add_argument("--calibration", required=True)
     ap.add_argument("--tuned-dir", dest="tuned_dir", default=None)
@@ -382,6 +409,8 @@ def main() -> None:
     ap.add_argument("--workers", type=int, default=1)
     ap.add_argument("--select", default=None, help="only cells whose name contains this substring (search stage)")
     ap.add_argument("--limit", type=int, default=None, help="at most this many cells per section (search stage)")
+    ap.add_argument("--shard", default=None, help="K/N (search stage): run the cells whose sorted index i has i %% N == K; shards share --out")
+    ap.add_argument("--eval-namespace", dest="eval_namespace", default="dev_val", choices=["dev_val", "final_eval"])
     ap.add_argument("--out", required=True)
     counted = run_stages(vars(ap.parse_args()))
     print("done: " + ", ".join(f"{k} {v} runs" for k, v in counted.items()))

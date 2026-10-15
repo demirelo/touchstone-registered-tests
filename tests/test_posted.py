@@ -41,4 +41,4 @@ def test_tie_break_uses_smallest_key():
 
 def test_describe_fields():
     d = PostedPrices(0.2, 0.4, 0.6).describe()
-    assert set(d) >= {"allocation", "pricing", "audit_selection", "audit_tolerance", "failed_audit", "ban_length", "holdback"}
+    assert set(d) >= {"allocation_order", "eligibility", "payment", "audit_selection", "audit_tolerance", "failed_audit", "ban_length", "holdback", "parameters"}

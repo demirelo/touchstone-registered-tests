@@ -26,7 +26,7 @@ class EpisodeResult:
     audits: np.ndarray
     failures: np.ndarray          # (T, N) per entity
     claims: np.ndarray            # (T, N) per entity, nan when no offer
-    efforts: np.ndarray           # (T, N) per entity
+    efforts: np.ndarray           # (T, N) per entity: the effort chosen each round, recorded in banned rounds too (no job is served then)
     buyer_surplus: float
     W: float
     history: tuple[RoundRecord, ...]

@@ -1,0 +1,59 @@
+# Locked vocabulary for describe() records (spec 5.4). Frozen at the lock, before any proposed rule exists.
+# A numeric field takes the value "number" and puts its figure in the record's `parameters` map.
+not_expressible: "not expressible"
+# Values carry the operational rule in words (selection order, payment formula), so the actor reads what the mechanism does.
+# `numeric` lists the values that need a figure in the record's `parameters` map under the field's name.
+numeric:
+  audit_tolerance:
+    - number
+  ban_length:
+    - number
+  holdback:
+    - "a number of rounds of receipts, released after the next passed audit"
+    - "a number of rounds of receipts, released on a fixed schedule"
+fields:
+  allocation_order:
+    - "jobs in descending value; each job goes to the highest posted tier that has an offer with capacity whose claim times the job value reaches the tier price, at random among those offers; tiers by claim: below 0.5, 0.5 to below 0.8, 0.8 and above"
+    - "jobs in descending value; each job goes to the offer with capacity and the highest score, score = job value times claim minus bid, offers with a negative score are not eligible, at random among equal scores"
+    - ascending bid
+    - round robin
+    - not expressible
+  eligibility:
+    - active offers with capacity
+    - active offers with capacity and no failed audit in the last rounds
+    - active offers with capacity above a reputation threshold
+    - not expressible
+  payment:
+    - the posted price of the tier the job was allocated in
+    - "second score: job value times claim minus the highest score among the other eligible offers for that job, zero when there is none"
+    - the bid
+    - job value times claim
+    - not expressible
+  audit_selection:
+    - none
+    - uniform random among served jobs, spread evenly over rounds
+    - highest claim first
+    - newest identities first
+    - lowest recent audit count first
+    - weighted by claim above history
+    - not expressible
+  audit_tolerance:
+    - none
+    - number
+    - not expressible
+  failed_audit:
+    - none
+    - full refund of the audited job
+    - partial refund of the audited job
+    - full refund and forfeit of the held-back bond
+    - not expressible
+  ban_length:
+    - none
+    - number
+    - until the next passed audit
+    - not expressible
+  holdback:
+    - none
+    - "a number of rounds of receipts, released after the next passed audit"
+    - "a number of rounds of receipts, released on a fixed schedule"
+    - not expressible

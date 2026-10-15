@@ -3,7 +3,7 @@ name = "touchstone"
 version = "0.1.0"
 description = "Audit-and-allocation rules for markets of adaptive agents: simulator"
 requires-python = ">=3.12"
-dependencies = ["numpy>=2.0", "scipy>=1.13", "cma>=4.0", "pyyaml>=6.0"]
+dependencies = ["numpy>=2.0", "scipy>=1.13", "cma>=4.0", "pyyaml>=6.0", "pandas>=2.2", "matplotlib>=3.9", "anthropic>=1.0", "typesafe-sdk>=0.3"]
 
 [dependency-groups]
 dev = ["pytest>=8.0"]
