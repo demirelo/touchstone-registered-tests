@@ -1,4 +1,4 @@
-# Touchstone plan 2A (version 9): identities, D2, search, reference selection, bank, calibration, tuning, manifest and sweep
+# Touchstone plan 2A (version 10, consensus): identities, D2, search, reference selection, bank, calibration, tuning, manifest and sweep
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -11,6 +11,8 @@
 **Spec:** `docs/superpowers/specs/2026-10-14-touchstone-simulator-design.md` (version 7.5 plus the plan 1 implementation note). This plan implements sections 3 (identity replacement, entry cost, calibration constants), 4.0 (identity opacity), 4.1 (no-ban diagnostic), 4.2 (baseline tuning), 5.1 to 5.3 (families, twins, containment tests, search with incumbents and projection replacement, positions and headline selection, search checks, all-deviators, candidate bank, workload manifest and the full-path gate), 6 (seed namespaces, `locked.yaml` contents, `families.md`), 6.2 (H3), 7 (reference run, gain, clipped-attack run, efficiency quadruple, per-seed output schema), and the enforcement-ablation adapter of section 8. Plan 2B covers the interval algorithms, the coverage study, `check_claim.py`, the lock tooling and hash checks, the LLM and Jev actor harness with the `describe()` renderer and comprehension fixture, the custodian instructions for the sealed bundle, the token pilot, and `plot.py`. Nothing else is deferred.
 
 **Scope split, stated once:** Plan 2A ends when `scripts/sweep.py --stage all` runs the development cells, the rho sweep, the H3 cells, the no-ban cells, the controls, the bank pass, reference selection, dev-val evaluation, headline selection, the search checks, and the all-deviators table from `locked.yaml` and a calibration file; `scripts/tune_baselines.py` runs the tuning grid; `scripts/manifest.py` reports run counts derived from the same schedule; and `scripts/bench_sweep.py` measures the full path. Nothing in this plan designs or runs a proposed rule, touches held-out families, or computes a confidence bound.
+
+**Changes from version 9 (round 9: both seats accept-with-caveat, no material objection; consensus):** the spec note names the timing link too; two wording nits in the settings-hash text.
 
 **Changes from version 8 (round 8: both seats reject on the settings hash):** the H3 reading note and the common-random-numbers amendment are made precise (timing alone identifies the newcomer in registered H3 cells; only the exiting entity's draws diverge); the `Draws` docstring and the `fresh_seed` comment are updated; the settings hash excludes `identity_salt_sha256`, which the lock tooling writes, so installing the commitment at the lock does not invalidate the tuned files the lock lists (regression in `test_settings_hash_covers_every_experimental_setting`); the untracked-salt test is placed after the complete secret test.
 
@@ -67,7 +69,7 @@
 - Test: `tests/test_locked.py`
 
 **Interfaces:**
-- Produces: `load_locked(path="experiments/locked.yaml") -> dict`; `seeds(locked, namespace) -> list[int]` for `"dev_train"`, `"dev_val"`, `"calibration"`; `sha256_file(path) -> str`; `settings_hash(locked) -> str` (sha256 of the whole locked configuration except the blocks written at the lock, `version`, `tuned`, `calibration`, and `identity_salt_sha256`, sorted keys; artifacts record it so a stale tuning or search record is refused, and installing the lock-time blocks does not invalidate the pre-lock artifacts they list); `market_config_from_locked(locked) -> MarketConfig` (every market primitive from the YAML; `alpha` and `budget` zero until a cell derives them).
+- Produces: `load_locked(path="experiments/locked.yaml") -> dict`; `seeds(locked, namespace) -> list[int]` for `"dev_train"`, `"dev_val"`, `"calibration"`; `sha256_file(path) -> str`; `settings_hash(locked) -> str` (sha256 of the whole locked configuration except the version label and the blocks written at the lock, `tuned`, `calibration`, and `identity_salt_sha256`, sorted keys; artifacts record it so a stale tuning or search record is refused, and installing the lock-time blocks does not invalidate the pre-lock artifacts they list); `market_config_from_locked(locked) -> MarketConfig` (every market primitive from the YAML; `alpha` and `budget` zero until a cell derives them).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -232,8 +234,9 @@ def sha256_file(path: str | Path) -> str:
 
 
 def settings_hash(locked: dict) -> str:
-    """Hash of every experimental setting: the whole file except the version label and the blocks the lock tooling fills
-    (tuned, calibration, identity_salt_sha256), so installing them at the lock keeps the pre-lock artifacts valid."""
+    """Hash of every experimental setting: the whole file except the version label and the blocks written at the lock
+    (tuned and calibration by the lock tooling, identity_salt_sha256 by the separate session), so installing them
+    at the lock keeps the pre-lock artifacts valid."""
     bound = {k: v for k, v in locked.items() if k not in ("version", "tuned", "calibration", "identity_salt_sha256")}
     return hashlib.sha256(json.dumps(bound, sort_keys=True).encode()).hexdigest()
 
@@ -4342,7 +4345,7 @@ In section 7, Common random numbers, after `No action can change any draw;` inse
 Append to section 14:
 
 ```
-Implementation (plan 2A, version 9 after eight review rounds): identities
+Implementation (plan 2A, version 10 after nine review rounds, consensus of Astra and Opus): identities
 separate from entities; a retired identity is not marked in the rule's
 view; replacement identities draw tie-break keys from a keyed one-way
 BLAKE2b secret of their entity's per-round fresh_seed and their generation
@@ -4358,11 +4361,13 @@ frozen; `check_claim.py` checks the loaded salt against the commitment.
 The salt is a harness secret outside the config a rule may read, so
 recovering the episode seed from public values (which is feasible, the
 seeds are small) yields no link between a newcomer and its predecessor
-through ids, order, tie keys, or audited deliveries. What remains
-linkable is the newcomer's offer, which reflects its provider type, and
-with ten distinct types that identifies the entity; this is inherent to
-the market and is stated here and in `experiments/families.md` for the
-reader of the H3 table. Decisions are invariant to relabeling with
+through ids, order, tie keys, or audited deliveries. Two links remain
+and are inherent: in a registered H3 cell only the focal entity exits,
+so timing alone identifies the newcomer; and the newcomer's offer
+reflects its provider type, which with ten distinct types identifies the
+entity. The salted channels matter for rules that would exploit more
+than timing and type. This is stated here and in
+`experiments/families.md` for the reader of the H3 table. Decisions are invariant to relabeling with
 re-entry; an exit made in the action of round t takes
 effect in round t (section 3 wording updated), which matches Proposition
 B; an exited identity's bans and bond keep their schedule as if it had
