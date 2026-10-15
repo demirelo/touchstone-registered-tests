@@ -26,15 +26,17 @@ def cell_name(section: str, rule: str, family: str, beta: float, rho: float, pos
     return f"{rule}_{family}_beta{beta}_rho{rho}_{position}_{section}"
 
 
-def _full_cells(locked: dict, rules: list[str], b: Budget, post_lock: bool) -> list[CellSpec]:
+def _full_cells(locked: dict, rules: list[str], b: Budget, post_lock: bool, families: tuple = ("D1", "D2"), section: str = "development") -> list[CellSpec]:
     betas = [float(x) for x in locked["beta_grid"]]; bh = float(locked["beta_headline"]); rho0 = float(locked["rho"]["default"])
     cells: list[CellSpec] = []
     for rule in rules:
-        for fam in ("D1", "D2"):
+        for fam in families:
             for beta in betas:
                 for pos in (locked["positions"] if beta == bh else ["median"]):
-                    cells.append(CellSpec("development", rule, fam, beta, rho0, pos, "full_cell", sum(cell_runs(fam, b).values()), True, post_lock,
-                                          cell_name("development", rule, fam, beta, rho0, pos)))
+                    cells.append(CellSpec(section, rule, fam, beta, rho0, pos, "full_cell", sum(cell_runs(fam, b).values()), True, post_lock,
+                                          cell_name(section, rule, fam, beta, rho0, pos)))
+        if section != "development":
+            continue
         for rho in [float(r) for r in locked["rho"]["sweep"] if float(r) != rho0]:
             cells.append(CellSpec("rho_sweep", rule, "D2", bh, rho, "median", "full_cell", sum(cell_runs("D2", b).values()), True, post_lock,
                                   cell_name("rho_sweep", rule, "D2", bh, rho, "median")))
@@ -57,8 +59,11 @@ def _bank_total(cells: list[CellSpec], b: Budget) -> int:
 
 
 def enumerate_manifest(locked: dict, rules: list[str], budget: Budget | None = None) -> list[CellSpec]:
+    from .registry import available_families, proposed_available
     b = budget or budget_from_locked(locked)
     bh = float(locked["beta_headline"]); rho0 = float(locked["rho"]["default"]); N = int(locked["market"]["N"])
+    baselines = [r for r in rules if r != "proposed"]                  # the pre-lock entries, tuning grids, and bank come from the baselines only
+    rules = baselines
     cells = _full_cells(locked, rules, b, post_lock=False)
     m = bank_members(len([c for c in cells if c.section == "development" and c.family == "D1"]))
     for rule in rules:
@@ -82,6 +87,10 @@ def enumerate_manifest(locked: dict, rules: list[str], budget: Budget | None = N
         for pos in locked["positions"]:
             cells.append(CellSpec("ablation", "proposed", fam, bh, rho0, pos, "full_cell", sum(cell_runs(fam, b).values()), True, True,
                                   cell_name("ablation", "proposed", fam, bh, rho0, pos)))
+    if "H2" in available_families():                                   # the held-out family, once the sealed bundle is present (post-lock)
+        n_final = int((locked.get("coverage_consequences") or {}).get("final_eval_n") or b.n_val)
+        b_eval = Budget(b.restarts, b.evals, b.n_train, n_final)
+        cells += _full_cells(locked, baselines + (["proposed"] if proposed_available() else []), b_eval, post_lock=True, families=("H2",), section="heldout")
     return cells
 
 

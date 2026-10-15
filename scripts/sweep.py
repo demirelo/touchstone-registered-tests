@@ -14,25 +14,28 @@ from sim.locked import load_locked, market_config_from_locked, seeds as locked_s
 from sim.manifest import CellSpec, enumerate_manifest
 from sim.rng import load_identity_salt
 from sim.policies.families import D2, FAMILIES, exact_key
-from sim.policies.identity import h3_family
+from sim.registry import SEALED_DIR, available_families, make_rule, proposed_params
+from sim.sealed import bundle_hash
 from sim.positions import headline_position, positions
 from sim.records import candidate_from_record, candidate_to_json, cfg_from_dict, cfg_to_dict, search_from_json, search_to_json
 from sim.reference import ROW_FIELDS, attack_search, evaluate_gain, reference_candidates, seed_rows, select_reference, twin_search
 from sim.schedule import SMOKE_BUDGET, Budget, all_deviators_runs, bank_stage_bound, budget_from_locked, doubling_bound, reference_bound, stage_runs
 from sim.search import Objective, SearchSettings, corner_controls, settings_from_locked
 from sim.search_checks import doubling_check, restart_spread, twin_vs_honest
-from sim.tuning import rule_from_params
 
 DEFAULT_PARAMS = {"B1": {"P1": 0.25, "P2": 0.40, "P3": 0.55},
                   "B2": {"P1": 0.25, "P2": 0.40, "P3": 0.55, "tol": 0.12, "L": 10},
                   "B3": {"tol": 0.12, "L": 10}}
+DEFAULT_PARAMS["proposed"] = dict(DEFAULT_PARAMS["B2"])          # smoke runs of a synthetic proposed module that wraps B2
 STAGES = ("search", "bank", "reference", "evaluate", "checks", "all_deviators")
-ALL_FAMILIES = dict(FAMILIES, **{"D2+H3": h3_family(D2)})
 META_FIELDS = ["cell", "section", "rule", "family", "beta", "rho", "position", "smoke", "reference", "budget"]
 
 
 def family_of(name: str):
-    return ALL_FAMILIES[name]
+    """The registry re-reads the sealed path on every call, so a bundle unsealed later is seen without a restart; after the
+    lock the bundle must match its commitment before H2 is used."""
+    lk = load_locked()
+    return available_families(lk if lk.get("sealed_bundle_sha256") else None)[name]
 
 
 def load_params(rule: str, tuned_dir: Path | None, smoke: bool, market_key: str, shash: str, cal_seeds) -> dict:
@@ -40,10 +43,13 @@ def load_params(rule: str, tuned_dir: Path | None, smoke: bool, market_key: str,
         if not smoke:
             raise SystemExit("refusing to run without tuned parameters: pass --tuned-dir, or --smoke for a smoke run")
         return dict(DEFAULT_PARAMS[rule])
-    p = tuned_dir / f"tuned_{rule}.json"
-    if not p.exists():
-        raise SystemExit(f"tuned parameters for {rule} not found at {p}")
-    d = json.loads(p.read_text())
+    if rule == "proposed":
+        d = proposed_params(); p = Path("experiments/proposed.yaml")             # the allow-listed parameter file of the proposed rule
+    else:
+        p = tuned_dir / f"tuned_{rule}.json"
+        if not p.exists():
+            raise SystemExit(f"tuned parameters for {rule} not found at {p}")
+        d = json.loads(p.read_text())
     if d.get("rule") != rule:
         raise SystemExit(f"{p} is a tuning result for rule {d.get('rule')!r}, not {rule}")
     if d.get("market_key") != market_key:
@@ -84,7 +90,7 @@ def check_record(job: dict, rec: dict) -> None:
 
 def make_cell(job: dict, seeds: tuple[int, ...], suffix: str = "") -> Cell:
     cfg = cfg_from_dict(job["cfg"]); params = job["params"]; rule = job["spec"]["rule"]
-    return Cell(cfg=cfg, rule_factory=lambda: rule_from_params(rule, params), focal=positions(cfg)[job["spec"]["position"]],
+    return Cell(cfg=cfg, rule_factory=lambda: make_rule(rule, params), focal=positions(cfg)[job["spec"]["position"]],
                 seeds=seeds, name=job["spec"]["name"] + suffix)
 
 
@@ -104,7 +110,8 @@ def base_record(job: dict, cache: SeedCache, scheduled: int, exact: bool) -> dic
     if not exact and cache.runs > scheduled:
         raise AssertionError(f"{job['spec']['name']}: ran {cache.runs} episodes, schedule bound is {scheduled}")
     return {"spec": job["spec"], "cfg": job["cfg"], "params": job["params"], "settings_hash": job["settings_hash"], "smoke": job["smoke"],
-            "budget": job["budget"], "salt_hash": job["salt_hash"], "eval_namespace": job["eval_namespace"], "runs": cache.runs, "scheduled": scheduled}
+            "budget": job["budget"], "salt_hash": job["salt_hash"], "eval_namespace": job["eval_namespace"], "runs": cache.runs, "scheduled": scheduled,
+            "bundle_hash": bundle_hash(SEALED_DIR) if job["spec"]["family"] == "H2" else None}
 
 
 def stage_search(job: dict) -> dict:
@@ -263,8 +270,8 @@ def stage_all_deviators(job: dict) -> dict:
                               reeval_every=s.reeval_every, near_corner=s.near_corner, sobol_seed=s.sobol_seed)
     seeds = tuple(locked_seeds(lk, "dev_train")[: min(int(ad["seeds"]), b.n_train)])
     cache = SeedCache()
-    att = iterated_best_response(cfg, lambda: rule_from_params(rule, params), D2, cache, settings, seeds, sweeps=int(ad["sweeps"]), eval_seeds=val)
-    tw = iterated_best_response(cfg, lambda: rule_from_params(rule, params), D2, cache, settings, seeds, sweeps=int(ad["sweeps"]), force_clip=True, eval_seeds=val)
+    att = iterated_best_response(cfg, lambda: make_rule(rule, params), D2, cache, settings, seeds, sweeps=int(ad["sweeps"]), eval_seeds=val)
+    tw = iterated_best_response(cfg, lambda: make_rule(rule, params), D2, cache, settings, seeds, sweeps=int(ad["sweeps"]), force_clip=True, eval_seeds=val)
     out = base_record(job, cache, all_deviators_runs(lk, cfg.N, b), exact=True)
     out.update({"attack": att.__dict__, "twin": tw.__dict__,
                 "gain_dev_val": [a - t for a, t in zip(att.final_normalized_profit, tw.final_normalized_profit)]})
@@ -394,7 +401,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--stage", required=True, choices=STAGES + ("all",))
     ap.add_argument("--sections", default="development,rho_sweep,no_ban,h3,all_deviators",
-                    help="cell sections for the search stage; the all_deviators stage runs under --stage all only when listed here")
+                    help="cell sections for the search stage (development, rho_sweep, no_ban, h3, all_deviators, heldout); the all_deviators stage runs under --stage all only when listed here")
     ap.add_argument("--rules", default="B1,B2,B3")
     ap.add_argument("--calibration", required=True)
     ap.add_argument("--tuned-dir", dest="tuned_dir", default=None)

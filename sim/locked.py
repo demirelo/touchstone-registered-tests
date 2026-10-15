@@ -17,10 +17,16 @@ def load_locked(path: str | Path = DEFAULT_PATH) -> dict:
 
 
 def seeds(locked: dict, namespace: str) -> list[int]:
-    s = locked["seeds"][namespace]
-    if s is None:
-        raise ValueError(f"seed namespace {namespace!r} is not available in this repo")
-    return [int(x) for x in s]
+    v = locked["seeds"].get(namespace)
+    if v is None and namespace == "final_eval":
+        from .registry import SEALED_DIR
+        if (SEALED_DIR / "final_eval_seeds.json").exists():
+            from .sealed import final_eval_seeds, verify_bundle
+            verify_bundle(SEALED_DIR, locked)                 # the seeds count only from a bundle that matches the lock commitment
+            return final_eval_seeds(SEALED_DIR)
+    if v is None:
+        raise ValueError(f"seed namespace {namespace!r} is not available (final-eval seeds are released with the sealed bundle)")
+    return [int(x) for x in v]
 
 
 def sha256_file(path: str | Path) -> str:

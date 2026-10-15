@@ -49,6 +49,9 @@ def rule_from_params(rule_name: str, params: dict):
         return PostedRandomAudit(params["P1"], params["P2"], params["P3"], tol=params["tol"], L=params["L"])
     if rule_name == "B3":
         return SecondScore(tol=params["tol"], L=params["L"])
+    if rule_name == "proposed":
+        from .registry import load_proposed_module
+        return load_proposed_module().make(dict(params))
     raise ValueError(rule_name)
 
 
