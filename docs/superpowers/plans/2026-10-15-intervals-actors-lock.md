@@ -1,4 +1,4 @@
-# Touchstone plan 2B (version 8): intervals, coverage study, model actors, describe renderer, claim check, lock tooling, plots, custodian instructions
+# Touchstone plan 2B (version 9): intervals, coverage study, model actors, describe renderer, claim check, lock tooling, plots, custodian instructions
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -11,6 +11,8 @@
 **Spec:** `docs/superpowers/specs/2026-10-14-touchstone-simulator-design.md` (version 7.5 plus the plan 1 and plan 2A implementation notes). This plan implements sections 5.4 (LLM actor, describe renderer, comprehension fixture, H1 procedure, token pilot), 6 (lock contents, allow-list, hash checks, freeze, repairs), 6.1 (what the sealed bundle must contain, as instructions to the separate session), 8 (interval algorithms, coverage study, joint fixture test, power, pre-registered consequences, claim predicate, decision rule, figures), 11 (layout: `llm_actor.py`, `policies/llm.py`, `vocabulary.yaml`, `coverage_study.py`, `plot.py`, `check_claim.py`, `sealed/`), 12 (the remaining tests), and 13 (the gate for 10-18 to 10-28). It also folds the deferred minors of the plan 2A final review that touch frozen files.
 
 **Scope split, stated once:** Plan 2B ends when `scripts/check_claim.py --verify-lock` passes on a lock-candidate tree, `scripts/coverage_study.py` runs end to end at a smoke size and at the registered size from the manifest, the model actor runs the H1 procedure against B1 to B3 with the fake backend and with cached real responses, the token pilot script exists and has been run once per backend by the user, `scripts/plot.py` draws figures 1 and 2 from the sweep CSVs, and `docs/custodian.md` tells the separate session exactly what to produce. The proposed rule, the sealed H1 prompt and H2 definition, and every post-lock run are outside this plan.
+
+**Changes from version 8 (Opus round-5 review of v5; its remaining items):** the lock validator compares the coverage report's provenance (settings hash, salt hash, calibration and tuned hashes) with the inputs being locked and the provenance hash with its provenance, with a test; `sweep_out` is outside the input hash so pods with different mount paths agree; a per-cell rerun refuses other provenance, never repeats an n the cell file already holds, and the merge requires the same sample sizes in every cell and names the differing provenance fields; the module check bans `getattr`/`setattr`/`delattr` only with a dunder or computed name, bans dunder attribute chains (`__subclasses__`, `__globals__`, and the rest of `BANNED_ATTRS`), and the run book states every rule for the proposal author.
 
 **Changes from version 7 (Astra accept-with-caveat, two test defects):** the lock-script refusal test imports `thresholds` and `admission`, loads the lock, and builds its threshold map; its failed-check assertion matches the validator's current message.
 
@@ -2784,7 +2786,7 @@ def input_hash(spec: CoverageCellSpec, provenance: dict) -> str:
     attack knobs, reference candidate) and the run's provenance (settings hash, salt hash, calibration and tuned hashes,
     reference-record hashes). Cached data with another hash is never reused."""
     from dataclasses import asdict
-    return hashlib.sha256(json.dumps({"spec": asdict(spec), "provenance": provenance}, sort_keys=True, default=float).encode()).hexdigest()
+    return hashlib.sha256(json.dumps({"spec": asdict(spec), "provenance": {k: v for k, v in provenance.items() if k != "sweep_out"}}, sort_keys=True, default=float).encode()).hexdigest()
 
 
 def pool_observations(spec: CoverageCellSpec, pool: np.ndarray, out: Path, index: int, workers: int, key: str) -> tuple:
@@ -2899,11 +2901,15 @@ def main() -> None:
         for pth in sorted(out.glob("cell_*.json")):
             doc = json.loads(pth.read_text())
             if doc.get("provenance") != prov_key:
-                raise SystemExit(f"{pth.name}: provenance (selection, settings hash, salt hash, smoke flag) differs from this run")
+                diff = sorted(k for k in set(prov_key) | set(doc.get("provenance") or {}) if (doc.get("provenance") or {}).get(k) != prov_key.get(k))
+                raise SystemExit(f"{pth.name}: provenance differs from this run in {diff} (selection, smoke flag, settings, salt, calibration, tuned, reference-record hashes)")
             results.update(doc["results"]); thr_by_n.update({int(k): v for k, v in doc["thr_by_n"].items()})
         missing = [c for c in chosen if c not in results]
         if missing:
             raise SystemExit(f"--merge: no cell_*.json for {missing}")
+        n_sets = {name: tuple(sorted(r["per_n"])) for name, r in results.items()}
+        if len(set(n_sets.values())) != 1:
+            raise SystemExit(f"--merge: the cells do not hold the same sample sizes: {n_sets}")
         for name, r in results.items():
             for n, pn in r["per_n"].items():
                 rem = fp["remedies"][str(n)]
@@ -2912,8 +2918,10 @@ def main() -> None:
     else:
         if a.cell is not None and (out / f"cell_{a.cell}.json").exists():
             prev = json.loads((out / f"cell_{a.cell}.json").read_text())
-            if prev.get("provenance") == prov_key:
-                results.update(prev["results"]); thr_by_n.update({int(k): v for k, v in prev["thr_by_n"].items()})   # a --force-n40 rerun keeps the base results
+            if prev.get("provenance") != prov_key:
+                raise SystemExit(f"cell_{a.cell}.json exists with other provenance (selection, smoke flag, settings, salt, calibration, tuned, or reference-record hashes); use a fresh --out")
+            results.update(prev["results"]); thr_by_n.update({int(k): v for k, v in prev["thr_by_n"].items()})
+            n_list = [n for n in n_list if str(n) not in results[chosen[a.cell]]["per_n"]]      # a rerun never repeats an n the file already holds
         run_ns(n_list)
         adm0 = admission({n: r["measured"] for n, r in results.items()}, thr_by_n, lk, fp["admissible_n"]) if a.cell is None else None
         if a.cell is None and needs_n40(adm0):
@@ -3338,7 +3346,7 @@ git commit -m "feat: H1 runner with the budgeted backend (caps and pilot target 
   - `evaluate_claim(h2, h1, coverage, locked, proposed, h1_summary=None, describe_record=None, h2_headline: dict[str, str] | None = None, demoted: set[str] = frozenset()) -> dict`: families come from `required_families`, never from which inputs are present (missing rows are INCONCLUSIVE with the note `"no rows"`); H2 rows of a rule are those at that rule's headline position (`h2_headline[rule]`, default `"median"`); a demoted cell `"<rule>|<family>"` (from the patch log) is INCONCLUSIVE; baseline H1 cells with invalid repetitions make their pairs INCONCLUSIVE; the audit sub-clause is `audit_cost_attack <= budget` on every seed (the harness clips audit spend to the budget, so this is a consistency check; a violation means corrupt rows); returns `claim`, `confirmatory`, `rule_clause`, `baseline_clause`, `h1_note`, `n`, `demoted`, `proposed`, `beta`.
   - `verdict_json(result) -> dict`.
   - Git and file checks: `tree_changes(repo, ref, paths=None) -> dict[path, status]` (`git diff --name-status -z --no-renames <ref> -- [paths]` between the tag and the working tree: `M`, `A`, `D`; git handles quoting and symlinks), `allowed(path, allow_list)`, `verify_lock(repo, lock_tag, allow_list) -> list[str]` (any change outside the allow-list: changed, new (added to the index), or deleted), `verify_freeze(repo, freeze_tag, locked, allow_list) -> list[str]` (the three `FROZEN_AT_FREEZE` files must exist in the tag (`git ls-tree`) and show no change against it; `sealed/` must exist and match the bundle hash; `verify_patches`), `verify_records(records, locked, jobs: dict[str, dict], expected_seeds: list[int]) -> list[str]` (for every record: the sweep's own `check_record(jobs[name], rec)` (params, cfg, settings hash, budget, smoke, salt), `eval_namespace == "final_eval"`, `bundle_hash` equals the lock commitment for H2 records, and the row seeds are exactly `expected_seeds[:final_eval_n]` in order), `verify_h1_summary(summary, rows, locked, prompt_path, expected_seeds) -> list[str]` (model is `h1.model` (the sealed LLM; Jev is a development actor, ruling D1), `T == h1.T`, `eval_namespace == "final_eval"`, `instructions_sha256` equals the sealed prompt's hash, `calibration_t100_sha256 == locked["calibration"]["T100"]["sha256"]`, not smoke, no partial cells, comprehension scores present for the proposed rule and B2 and B3, and per (rule, beta) the rows' `eval_seed` equal `expected_seeds[:h1_repetitions]` in order with `rep` 0..9 and `sum(invalid) == cells[...]["invalid_count"]`), `verify_coverage_report(path, locked) -> list[str]` (its hash equals `coverage_report_sha256`, `admission_basis == "registered"`, 6 selected cells with distinct names, `consequences` equal `locked["coverage_consequences"]`).
-  - `check_proposed_module(path, repo, params=None) -> list[str]` (spec 12): the module's imports are only `sim.mechanisms.base` (absolute form; a relative import is reported, and `docs/custodian.md` and the run book say absolute imports only), `numpy`, `scipy`, `math`, `dataclasses`, `typing`, `__future__`, `itertools`, `functools`; importing it, and when `params` is given calling `make(params)`, changes no attribute of any loaded `sim.*` module (after importing `FROZEN_MODULES`, the snapshot covers every `sys.modules` entry whose name starts with `sim.`: module attributes, class attributes, and for functions and methods the identity of `__code__`, `__defaults__`, `__kwdefaults__`, and `__dict__`; plain values by `repr`); a detected change is reported and restored where the original is known.
+  - `check_proposed_module(path, repo, params=None) -> list[str]` (spec 12): the module's imports are only `sim.mechanisms.base` (absolute form; a relative import is reported), `numpy`, `scipy`, `math`, `dataclasses`, `typing`, `__future__`, `itertools`, `functools`; refused in the source: `__import__`, `exec`, `eval`, `compile`, `globals`, `vars`, `importlib`/`builtins`/`sys` attribute calls, `getattr`/`setattr`/`delattr` with a dunder or non-literal name, the names `__builtins__` and `__import__`, and attribute access to any of `BANNED_ATTRS` (`__subclasses__`, `__globals__`, `__builtins__`, `__dict__`, `__base__`, `__bases__`, `__mro__`, `__class__`, `__code__`, `__closure__`, `__loader__`, `__spec__`); the run book's freeze section lists these rules for the proposal author; importing it, and when `params` is given calling `make(params)`, changes no attribute of any loaded `sim.*` module (after importing `FROZEN_MODULES`, the snapshot covers every `sys.modules` entry whose name starts with `sim.`: module attributes, class attributes, and for functions and methods the identity of `__code__`, `__defaults__`, `__kwdefaults__`, and `__dict__`; plain values by `repr`); a detected change is reported and restored where the original is known.
 - Produces (`sim/sealed.py`): `BUNDLE_FILES`, `bundle_hash(sealed_dir)` (ignores `patches/`, `__pycache__/`, `*.pyc`), `verify_bundle(sealed_dir, locked)`, `patch_log(sealed_dir) -> dict[path, {"sha256", "replaces": "<bundle file>", "demotes": [...]}]`, `verify_patches(sealed_dir) -> list[str]` (every patch file is logged with its hash, every logged file exists, and `replaces` names a file in `BUNDLE_FILES`), `demoted_cells(sealed_dir) -> set[str]`, `effective_path(sealed_dir, rel) -> Path` (the logged, hash-verified patch that replaces `rel`, else the original: the overlay by which a repair takes effect while the original bundle and its hash stay untouched), `SealedBundle`, `load_bundle(sealed_dir, locked)` (reads `h1_prompt.txt`, `h2/family.py`, `final_eval_seeds.json` through `effective_path`), `final_eval_seeds(sealed_dir)` (through `effective_path`). `sim/registry.py::available_families` and `scripts/h1.py --prompt` read through `effective_path` too.
 - Produces (`sim/locked.py`): `seeds(locked, "final_eval")` falls back to the verified sealed bundle at `sim.registry.SEALED_DIR` (the code block is in this task's Step 3; Task 1b lists the file because the heldout sweep test needs it: apply it in Task 1b and keep it unchanged here).
 - Produces (`scripts/check_claim.py`): two modes. **Synthetic** (`--synthetic --h2-rows CSV [--h1-rows CSV] --coverage-report PATH --proposed NAME`): the predicate only, no tree or hash checks, output marked `SYNTHETIC`. **Confirmatory** (the default): requires `--verify-lock TAG --verify-freeze TAG --sweep-out DIR --proposed NAME`, optional `--h1-dir DIR --tuned-dir DIR --proposed-describe PATH`; runs the tree checks, `check_proposed_module`, `verify_coverage_report`, `verify_records` against the sealed seed list, `verify_h1_summary`, and refuses (exit 2) on any problem; `--verify-only` stops after the tree, module, and coverage-report checks (exit 0 when clean, 2 otherwise) and needs no results; a verdict exits 0.
@@ -3617,9 +3625,12 @@ def test_check_proposed_module_import_and_attribute_rules(tmp_path):
     assert any("relative" in p.lower() or "not allowed" in p for p in check_proposed_module(rel, ROOT))
     dyn = tmp_path / "dyn.py"; dyn.write_text("m = __import__('sim.metrics')\n\ndef make(params):\n    return None\n")
     assert any("dynamic import" in p for p in check_proposed_module(dyn, ROOT))
-    for src in ("exec('import sim.metrics as m')\n", "m = eval('__imp' + 'ort__(\"sim.metrics\")')\n", "m = getattr(__builtins__, '__import__')('sim.metrics')\n"):
+    for src in ("exec('import sim.metrics as m')\n", "m = eval('__imp' + 'ort__(\"sim.metrics\")')\n", "m = getattr(__builtins__, '__import__')('sim.metrics')\n",
+                "x = ().__class__.__base__.__subclasses__()\n", "name = '__imp' + 'ort__'\nm = getattr(object, name)\n"):
         f = tmp_path / "ref.py"; f.write_text(src + "\ndef make(params):\n    return None\n")
-        assert check_proposed_module(f, ROOT) != []                                                  # exec, eval, getattr, and __builtins__ are refused
+        assert check_proposed_module(f, ROOT) != []                                                  # exec, eval, dunder getattr, __builtins__, and dunder attribute chains are refused
+    benign = tmp_path / "benign.py"; benign.write_text("from sim.mechanisms.base import Mechanism\n\nclass R:\n    def f(self):\n        return getattr(self, 'x', 0)\n\ndef make(params):\n    return None\n")
+    assert check_proposed_module(benign, ROOT) == []                                                   # getattr with an ordinary literal name is fine
 
 
 def test_check_claim_cli_synthetic_and_verify_only(tmp_path):
@@ -3686,9 +3697,13 @@ def setup(tmp_path):
         att["fixture"].update({"M": 35000, "R": R, "cells": 6, "endpoints_per_cell": 8, "admitted": T, "lower_limit": clopper_pearson_lower(T, T, 1 - 0.05 / 3), "pass_": True})
     rep["fixture_and_power"]["threshold_check"] = {"35000": {k: {"gap": 0.0, "se": 1e-4, "pass_": True} for n in (10, 20, 40) for k in (f"{n}|0.95", f"{n}|0.9875")}}
     rep["fixture_and_power"]["admissible_n"] = {"10": True, "20": True, "40": True}            # gates computed for every n; thresholds and cells only for the measured 10 and 20
+    import hashlib, sys as _sys
+    _sys.path.insert(0, str(ROOT)); from scripts.coverage_study import provenance_hash
+    rep["provenance"] = {"settings_hash": settings_hash(lk), "salt_hash": "cd" * 32, "calibration_sha256": hashlib.sha256((tmp_path / "cal.json").read_bytes()).hexdigest(),
+                         "tuned_sha256": {r: hashlib.sha256((tuned / f"tuned_{r}.json").read_bytes()).hexdigest() for r in ("B1", "B2", "B3")}, "reference_records_sha256": {}, "sweep_out": "x"}
+    rep["provenance_hash"] = provenance_hash(rep["provenance"])
     for i, c in enumerate(rep["cells"].values()):
-        c["input_hash"] = f"{i:02d}" * 32; c["provenance_hash"] = "ph" * 32
-    rep["provenance_hash"] = "ph" * 32
+        c["input_hash"] = f"{i:02d}" * 32; c["provenance_hash"] = rep["provenance_hash"]
     adm = admission({k: v["measured"] for k, v in rep["cells"].items()}, thr, lk, rep["fixture_and_power"]["admissible_n"]); rep.update(adm)
     (tmp_path / "cov.json").write_text(json.dumps(rep)); (tmp_path / "pilot.json").write_text(json.dumps({"projected_cost_usd": 118.4, "complete": True, "calls": 200, "backend": "anthropic"}))
     return exp, tuned
@@ -3775,6 +3790,12 @@ def test_lock_script_refuses_bad_inputs(tmp_path):
     (tmp_path / "cov_rem.json").write_text(json.dumps(rem))
     good_r = [a if a != str(tmp_path / "cov.json") else str(tmp_path / "cov_rem.json") for a in base]
     r = subprocess.run(good_r, capture_output=True, text=True, cwd=ROOT); assert r.returncode == 0, r.stderr + r.stdout
+    other = json.loads((tmp_path / "cov.json").read_text()); other["provenance"]["tuned_sha256"]["B2"] = "00" * 32; other["provenance_hash"] = provenance_hash(other["provenance"])
+    for c in other["cells"].values():
+        c["provenance_hash"] = other["provenance_hash"]
+    (tmp_path / "cov_other.json").write_text(json.dumps(other))
+    bad_p = [a if a != str(tmp_path / "cov.json") else str(tmp_path / "cov_other.json") for a in base]
+    r = subprocess.run(bad_p, capture_output=True, text=True, cwd=ROOT); assert r.returncode != 0 and "provenance tuned_sha256" in (r.stderr + r.stdout)   # a report from other tuned files never locks
     gate = json.loads((tmp_path / "cov.json").read_text()); gate["fixture_and_power"]["per_n"]["10"][0]["fixture"].update({"pass_": False, "admitted": 0, "lower_limit": 0.0}); gate["fixture_and_power"]["per_n"]["10"][0]["pass_"] = False
     (tmp_path / "cov_gate.json").write_text(json.dumps(gate))                      # admissible_n still says True: the evidence must win
     bad_g = [a if a != str(tmp_path / "cov.json") else str(tmp_path / "cov_gate.json") for a in base]
@@ -3839,6 +3860,7 @@ BASELINES = ("B2", "B3")
 FROZEN_AT_FREEZE = ("sim/mechanisms/proposed.py", "experiments/proposed.yaml", "experiments/proposed_describe.yaml")
 ALLOWED_IMPORTS = ("sim.mechanisms.base", "numpy", "scipy", "math", "dataclasses", "typing", "__future__", "itertools", "functools")
 FROZEN_MODULES = ("sim.market", "sim.mechanisms.base", "sim.policies.base", "sim.policies.honest", "sim.policies.twin", "sim.metrics", "sim.rng")
+BANNED_ATTRS = ("__subclasses__", "__globals__", "__builtins__", "__dict__", "__base__", "__bases__", "__mro__", "__class__", "__code__", "__closure__", "__loader__", "__spec__")
 
 
 @dataclass
@@ -4170,10 +4192,14 @@ def check_proposed_module(path, repo, params: dict | None = None) -> list:
         if isinstance(node, ast.Call):
             f = node.func; fname = f.id if isinstance(f, ast.Name) else (f.attr if isinstance(f, ast.Attribute) else "")
             root = f.value.id if isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name) else ""
-            if fname in ("__import__", "exec", "eval", "compile", "getattr", "globals", "vars") or root in ("importlib", "builtins", "sys") or fname in ("import_module", "spec_from_file_location", "exec_module"):
+            dunder_arg = fname in ("getattr", "setattr", "delattr") and len(node.args) >= 2 and isinstance(node.args[1], ast.Constant) and str(node.args[1].value).startswith("__")
+            nonliteral_attr = fname in ("getattr", "setattr", "delattr") and len(node.args) >= 2 and not isinstance(node.args[1], ast.Constant)
+            if fname in ("__import__", "exec", "eval", "compile", "globals", "vars") or dunder_arg or nonliteral_attr or root in ("importlib", "builtins", "sys") or fname in ("import_module", "spec_from_file_location", "exec_module"):
                 problems.append(f"{Path(path).name}: dynamic import or reflection ({fname}) is not allowed")
         if isinstance(node, ast.Name) and node.id in ("__builtins__", "__import__"):
             problems.append(f"{Path(path).name}: use of {node.id} is not allowed")
+        if isinstance(node, ast.Attribute) and node.attr in BANNED_ATTRS:
+            problems.append(f"{Path(path).name}: access to {node.attr} is not allowed")
         if isinstance(node, ast.ImportFrom) and node.level:
             problems.append(f"{Path(path).name}: relative import is not allowed (use absolute imports)"); continue
         names = [a.name for a in node.names] if isinstance(node, ast.Import) else ([node.module or ""] if isinstance(node, ast.ImportFrom) else [])
@@ -4487,6 +4513,15 @@ def validate(a, lk: dict, cal: dict, cal100: dict, cov: dict) -> list:
         problems.append(f"coverage report: admission could not be recomputed ({e!r})")
     if any(not v.get("input_hash") for v in cells.values()) or {v.get("provenance_hash") for v in cells.values()} != {cov.get("provenance_hash")} or not cov.get("provenance_hash"):
         problems.append("coverage report: every cell must carry its input hash and the report's provenance hash")
+    prov = cov.get("provenance") or {}
+    want_prov = {"settings_hash": settings_hash(lk), "salt_hash": a.salt_hash, "calibration_sha256": sha(a.calibration),
+                 "tuned_sha256": {r: sha(Path(a.tuned_dir) / f"tuned_{r}.json") for r in ("B1", "B2", "B3")}}
+    for k, v in want_prov.items():
+        if prov.get(k) != v:
+            problems.append(f"coverage report: provenance {k} differs from the input being locked")
+    from scripts.coverage_study import provenance_hash as _ph
+    if _ph(prov) != cov.get("provenance_hash"):
+        problems.append("coverage report: provenance_hash does not match its provenance")
     if len({v.get("input_hash") for v in cells.values()}) != len(cells):
         problems.append("coverage report: two cells share one input hash (the cell specification is part of it)")
     if a.pilot is None and a.cost_cap_usd is None:
@@ -4831,7 +4866,7 @@ Expected: FAIL with `FileNotFoundError` for `docs/custodian.md`.
 6. **Repairs.** A repair after the unseal is a complete replacement file under `sealed/patches/` with an entry `{"<patch file>": {"sha256": "<hex>", "replaces": "<bundle file, for example h2/family.py>", "demotes": ["<rule>|<family>", ...]}}` in `sealed/patches/log.json`, written by you, limited to interface errors, logged, and reported; the original bundle is never edited (`bundle_hash` ignores `patches/` and import artifacts), and the frozen code reads the replaced file through `sim.sealed.effective_path`, which applies a patch only when its hash matches the log. A repair that changes any H1 or H2 decision on a dev-val seed demotes the affected cells to exploratory: list them in `demotes`; `scripts/check_claim.py` reads the log and marks them INCONCLUSIVE.
 7. **Timeline.** Bundle complete by 2026-10-27; commitment hashes to the author by 2026-10-27 so the lock commit on 2026-10-28 carries them; unseal on 2026-11-12.
 
-`docs/lock-runbook.md`: the ordered commands for the lock day, each exactly as its script's CLI reads them (every command in the run book is executed once in a smoke form by the executor before the commit; the ledger records it). Compute notes at the top: the simulator is branchy single-thread Python, so a GPU does not help and core count does; set `OMP_NUM_THREADS=1` before any multi-worker run; the search manifest splits across machines with `scripts/sweep.py --stage search --shard K/N` (copy the shards' `search/` directories together before the later stages) and the coverage study with `scripts/coverage_study.py --cell i --workers 16` (six machines, one cell each; one cell's chunks spread over the pod's cores; measure the per-cell time on the smoke run before estimating) followed by `--merge` on one; a `scripts/pod_setup.sh` (created in this task: `git clone`, `pip install uv`, `uv sync`, `export OMP_NUM_THREADS=1`) prepares a fresh CPU pod. The commands: `scripts/calibrate.py --out experiments/calibration.json` and `--T 100 --out experiments/calibration_T100.json`; `scripts/tune_baselines.py`; the full `scripts/sweep.py --stage all`; `scripts/coverage_study.py --sweep-out ... --calibration experiments/calibration.json --tuned-dir experiments/tuned --out results/coverage --register --workers 8` (about a day on 8 cores for the base entry; the conditional n = 40 run starts by itself only when the remedy order reaches it); the two pilots (`scripts/h1.py ... --pilot`); `scripts/lock.py --tuned-dir experiments/tuned --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --coverage-report results/coverage/coverage_report.json --bundle-hash <from the custodian> --salt-hash <from the custodian> --pilot results/pilot_anthropic/pilot_anthropic.json`; `scripts/lock.py ... --check`; `git tag lock-candidate && uv run python scripts/check_claim.py --verify-only --verify-lock lock-candidate --proposed none; git tag -d lock-candidate`; the signed tag; the push; the public timestamp. The freeze day: `git tag -s freeze-2026-11-11`; `uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-28 --verify-freeze freeze-2026-11-11 --proposed proposed`. The evaluation: `scripts/sweep.py --stage all --sections heldout --rules B1,B2,B3,proposed --eval-namespace final_eval ...`, `scripts/h1.py --backend anthropic --rules B2,B3,proposed --eval-namespace final_eval --prompt sealed/h1_prompt.txt ...`, then `scripts/check_claim.py --verify-lock lock-2026-10-28 --verify-freeze freeze-2026-11-11 --sweep-out results/final --h1-dir results/h1_final --calibration experiments/calibration.json --tuned-dir experiments/tuned --coverage-report results/coverage/coverage_report.json --proposed proposed --proposed-describe experiments/proposed_describe.yaml`. The post-lock test that `proposed.py` imports only the base module and mutates nothing runs inside `check_claim.py` (`check_proposed_module`), so no new test file is needed after the lock.
+`docs/lock-runbook.md`: the ordered commands for the lock day, each exactly as its script's CLI reads them (every command in the run book is executed once in a smoke form by the executor before the commit; the ledger records it). Compute notes at the top: the simulator is branchy single-thread Python, so a GPU does not help and core count does; set `OMP_NUM_THREADS=1` before any multi-worker run; the search manifest splits across machines with `scripts/sweep.py --stage search --shard K/N` (copy the shards' `search/` directories together before the later stages) and the coverage study with `scripts/coverage_study.py --cell i --workers 16` (six machines, one cell each; one cell's chunks spread over the pod's cores; measure the per-cell time on the smoke run before estimating) followed by `--merge` on one; a `scripts/pod_setup.sh` (created in this task: `git clone`, `pip install uv`, `uv sync`, `export OMP_NUM_THREADS=1`) prepares a fresh CPU pod. The commands: `scripts/calibrate.py --out experiments/calibration.json` and `--T 100 --out experiments/calibration_T100.json`; `scripts/tune_baselines.py`; the full `scripts/sweep.py --stage all`; `scripts/coverage_study.py --sweep-out ... --calibration experiments/calibration.json --tuned-dir experiments/tuned --out results/coverage --register --workers 8` (about a day on 8 cores for the base entry; the conditional n = 40 run starts by itself only when the remedy order reaches it); the two pilots (`scripts/h1.py ... --pilot`); `scripts/lock.py --tuned-dir experiments/tuned --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --coverage-report results/coverage/coverage_report.json --bundle-hash <from the custodian> --salt-hash <from the custodian> --pilot results/pilot_anthropic/pilot_anthropic.json`; `scripts/lock.py ... --check`; `git tag lock-candidate && uv run python scripts/check_claim.py --verify-only --verify-lock lock-candidate --proposed none; git tag -d lock-candidate`; the signed tag; the push; the public timestamp. The freeze day: `git tag -s freeze-2026-11-11`; `uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-28 --verify-freeze freeze-2026-11-11 --proposed proposed`. The evaluation: `scripts/sweep.py --stage all --sections heldout --rules B1,B2,B3,proposed --eval-namespace final_eval ...`, `scripts/h1.py --backend anthropic --rules B2,B3,proposed --eval-namespace final_eval --prompt sealed/h1_prompt.txt ...`, then `scripts/check_claim.py --verify-lock lock-2026-10-28 --verify-freeze freeze-2026-11-11 --sweep-out results/final --h1-dir results/h1_final --calibration experiments/calibration.json --tuned-dir experiments/tuned --coverage-report results/coverage/coverage_report.json --proposed proposed --proposed-describe experiments/proposed_describe.yaml`. The post-lock test that `proposed.py` imports only the base module and mutates nothing runs inside `check_claim.py` (`check_proposed_module`), so no new test file is needed after the lock. The freeze section states the rules for the proposal author in full: the import allow-list, absolute imports only, no `__import__`, `exec`, `eval`, `compile`, `globals`, `vars`, no `importlib`, `builtins`, or `sys` calls, no `getattr`/`setattr`/`delattr` with a dunder or computed name, no `__builtins__`, and no access to `__subclasses__`, `__globals__`, `__dict__`, `__base__`, `__bases__`, `__mro__`, `__class__`, `__code__`, `__closure__`, `__loader__`, or `__spec__`; and it says to run `scripts/check_claim.py --verify-only --verify-lock lock-2026-10-28 --proposed proposed` before the freeze tag.
 
 Spec section 14: append an implementation note "Plan 2B" listing rulings D1 to D12 with one sentence each, the coverage manifest figures (base and conditional), the H1 call accounting of ruling D10 (the ten repetitions share the dev-train episodes with a deterministic cached actor), the renderer's location (`sim/describe.py`, not `sim/llm_actor.py` as section 11 says), the known-variance label of the analytic threshold, and the statement that `scripts/plot.py` and `docs/` are outside the predicate.
 
