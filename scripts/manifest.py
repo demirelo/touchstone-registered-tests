@@ -22,8 +22,12 @@ def main() -> None:
         print(f"{c.name:60s} {c.runs:>10,d}  {tag}{'  post-lock' if c.post_lock else ''}")
     t = totals(cells)
     for k in sorted(t):
+        if k.startswith("coverage"):
+            continue
         hours = t[k] * args.ms_per_run / 3.6e6
         print(f"{k:24s} {t[k]:>12,d} runs  {hours:8.1f} core-hours at {args.ms_per_run:.0f} ms/run")
+    base, cond = t.get("coverage_base", 0), t.get("coverage_conditional", 0)
+    print(f"coverage base (outside the search gate): {base:,d} runs, {base * args.ms_per_run / 3.6e6:.1f} core-hours at the benchmark rate; conditional: {cond:,d} runs")
 
 
 if __name__ == "__main__":
