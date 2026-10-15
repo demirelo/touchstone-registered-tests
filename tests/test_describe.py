@@ -74,3 +74,13 @@ def test_comprehension_fixture_scores_answers_from_the_record():
     wrong = dict(perfect); first = qs[0]; wrong[first["id"]] = next(o["label"] for o in first["options"] if o["label"] != perfect[first["id"]])
     assert score_comprehension(wrong, rec, qs) == len(qs) - 1
     assert score_comprehension({}, rec, qs) == 0
+
+
+def test_record_keys_outside_the_fields_are_refused():
+    """Final review F10: a record with a key outside the describe() fields is refused, and so is a parameters entry for a
+    non-numeric field."""
+    voc = load_vocabulary(); rec = describe_record(PostedRandomAudit(0.25, 0.40, 0.55, tol=0.12, L=10))
+    with pytest.raises(ValueError, match="note"):
+        validate_record(dict(rec, note="x"), voc)
+    with pytest.raises(ValueError, match="parameters"):
+        validate_record(dict(rec, parameters=dict(rec["parameters"], payment=3)), voc)

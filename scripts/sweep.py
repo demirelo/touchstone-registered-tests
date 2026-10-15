@@ -319,10 +319,10 @@ def run_stages(o: dict) -> dict:
             for sec in sections:
                 specs = [c for c in manifest if c.section == sec and c.kind == "full_cell" and c.rule in rules
                          and (not o.get("select") or o["select"] in c.name)]
-                specs = sorted(specs, key=lambda c: c.name)[: o.get("limit")]
+                specs = specs[: o.get("limit")]                          # manifest order, as in plan 2A
                 if o.get("shard"):
-                    k, n = (int(x) for x in o["shard"].split("/"))    # --shard K/N: cell i runs when i % N == K; shards share --out
-                    specs = [c for i, c in enumerate(specs) if i % n == k]
+                    k, n = (int(x) for x in o["shard"].split("/"))    # --shard K/N: cells sorted by name, cell i runs when i % N == K; shards share --out
+                    specs = [c for i, c in enumerate(sorted(specs, key=lambda c: c.name)) if i % n == k]
                 jobs += [job_for(c, lk, cal, base, params[c.rule], budget, o["smoke"], ns) for c in specs]
             for rec in pool.map(stage_search, jobs):
                 record("search", rec)

@@ -10,14 +10,26 @@ from pathlib import Path
 BUNDLE_FILES = ("README.md", "h1_prompt.txt", "h2/family.py", "h2/containment.md", "final_eval_seeds.json", "identity_salt.hex", "b1_check.json")
 REPLACEABLE = ("h1_prompt.txt", "h2/family.py")               # a repair may replace the prompt or the family, never the seeds or the salt
 IGNORED_DIRS = ("patches", "__pycache__")
+ACCESS_LOG = "access_log.md"                                  # the custodian's running log: outside the hash by design
 
 
 def _bundle_files(root: Path):
-    for p in sorted(q for q in root.rglob("*") if q.is_file()):
-        rel = p.relative_to(root)
-        if any(part in IGNORED_DIRS for part in rel.parts) or p.suffix == ".pyc":
+    """Exactly the registered bundle files, in order; nothing else enters the hash."""
+    for rel in BUNDLE_FILES:
+        p = root / rel
+        if p.is_file():
+            yield rel, p
+
+
+def stray_files(root: Path) -> list:
+    """Files in the bundle directory that are neither bundle files, patches, import artifacts, dotfiles, nor the access log."""
+    out = []
+    for p in sorted(q for q in Path(root).rglob("*") if q.is_file()):
+        rel = p.relative_to(root); name = rel.as_posix()
+        if name in BUNDLE_FILES or name == ACCESS_LOG or any(part in IGNORED_DIRS for part in rel.parts) or p.suffix == ".pyc" or any(part.startswith(".") for part in rel.parts):
             continue
-        yield rel.as_posix(), p
+        out.append(name)
+    return out
 
 
 def bundle_hash(sealed_dir) -> str:
@@ -34,6 +46,9 @@ def verify_bundle(sealed_dir, locked: dict) -> None:
     got = bundle_hash(sealed_dir)
     if got != want:
         raise ValueError(f"sealed bundle hash {got} differs from the lock commitment {want}")
+    strays = stray_files(Path(sealed_dir))
+    if strays:
+        raise ValueError(f"sealed bundle has unexpected files: {strays}")
 
 
 def patch_log(sealed_dir) -> dict:

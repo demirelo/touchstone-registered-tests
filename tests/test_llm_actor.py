@@ -209,3 +209,32 @@ def test_comprehension_and_cost(tmp_path):
     assert estimate_cost_usd({"input_tokens": 1_000_000, "output_tokens": 100_000}, "jev-1.14.0", lk) == pytest.approx(0.042)
     assert make_backend("fake-honest", lk).name == "fake" and make_backend("fake-honest", lk, instructions="sealed").instructions == "sealed"
     assert len(EFFORT_LEVELS) == 5 and len(CLAIM_OFFSETS) == 5 and len(MARKUPS) == 4 and ACTOR_INSTRUCTIONS
+
+
+def test_request_settings_are_in_the_cache_key_and_stop_reasons_are_tallied(tmp_path):
+    """Final review F4: the Anthropic request parameters are part of the canonical request; stop reasons are recorded."""
+    from sim.llm_actor import ANTHROPIC_MAX_TOKENS, AnthropicBackend
+    assert ANTHROPIC_MAX_TOKENS >= 4096
+    b1 = FakeBackend(honest_fn); b2 = FakeBackend(honest_fn); b2.settings = dict(b1.settings, max_tokens=99)
+    k1 = request_hash(b1.name, b1.model, "action", build_payload(b1, "action", "rule", state={"t": 0}))
+    k2 = request_hash(b2.name, b2.model, "action", build_payload(b2, "action", "rule", state={"t": 0}))
+    assert k1 != k2 and "settings" in build_payload(b1, "action", "rule", state={"t": 0})
+    assert AnthropicBackend.default_settings()["max_tokens"] == ANTHROPIC_MAX_TOKENS and "effort" in AnthropicBackend.default_settings()
+    trunc = FakeBackend(honest_fn); trunc.complete = lambda kind, payload: {"data": None, "raw": {"stop_reason": "max_tokens"}, "usage": {"input_tokens": 5, "output_tokens": 1}}
+    b = BudgetedBackend(trunc)
+    cfg = small_cfg(); rendered = rendered_b1(); counters = ActorCounters()
+    prov = LLMProvider(b, PromptCache(tmp_path / "c"), rendered, cfg.providers[3], feedback=[], T=cfg.T, counters=counters)
+    pols = [HonestMax() for _ in range(4)]; pols[3] = prov
+    run_episode(cfg, PostedPrices(0.2, 0.35, 0.5), pols, 1)
+    assert b.stop_reasons == {"max_tokens": cfg.T} and counters.fallbacks == cfg.T
+
+
+def test_jev_answer_mapping_falls_back_on_a_malformed_answer():
+    """Final review F14: a malformed Jev answer gives data None (a counted fallback), never an exception."""
+    from sim.llm_actor import jev_action
+    p = {"q_max": 0.8, "a": 0.1, "b": 0.2}
+    good = {"serve": {"choice": "serve"}, "effort": {"choice": "0.5"}, "claim_offset": {"choice": "0.1"}, "markup": {"choice": "0.25"}}
+    d = jev_action(good, p)
+    assert d["effort"] == pytest.approx(0.4) and d["offer"]["claim"] == pytest.approx(0.5) and d["offer"]["bid"] == pytest.approx(1.25 * (0.1 + 0.2 * 0.4))
+    for bad in ({}, {"serve": {"choice": None}}, {"serve": {"choice": "serve"}, "effort": {"choice": "lots"}}, {"serve": {"choice": "serve"}, "effort": {"choice": "0.5"}}):
+        assert jev_action(bad, p) is None

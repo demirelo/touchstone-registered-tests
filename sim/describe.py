@@ -46,6 +46,13 @@ def load_vocabulary(path: str | Path | None = None) -> dict:
 
 def validate_record(record: dict, vocabulary: dict) -> None:
     fields = vocabulary["fields"]
+    extra = sorted(set(record) - set(DESCRIBE_FIELDS) - {"parameters"})
+    if extra:
+        raise ValueError(f"describe() record has keys outside the fields: {extra}")
+    numeric_now = {name for name in DESCRIBE_FIELDS if record.get(name) in vocabulary.get("numeric", {}).get(name, [])}
+    bad_params = sorted(set(record.get("parameters", {})) - numeric_now)
+    if bad_params:
+        raise ValueError(f"describe() parameters has entries for fields that are not numeric here: {bad_params}")
     for name in DESCRIBE_FIELDS:
         if name not in record:
             raise ValueError(f"describe() record lacks the field {name!r}")

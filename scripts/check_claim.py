@@ -14,11 +14,11 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts.sweep import read_dir  # noqa: E402
-from sim.claimcheck import (check_proposed_module, evaluate_claim, verdict_json, verify_coverage_report, verify_freeze, verify_h1_summary, verify_lock,  # noqa: E402
-                            verify_records)
+from sim.claimcheck import (check_proposed_module_isolated, evaluate_claim, verdict_json, verify_coverage_report, verify_describe_record, verify_freeze,  # noqa: E402
+                            verify_h1_summary, verify_lock, verify_records)
 from sim.coverage import load_report  # noqa: E402
 from sim.locked import load_locked, settings_hash  # noqa: E402
-from sim.registry import PROPOSED_MODULE, SEALED_DIR, proposed_params  # noqa: E402
+from sim.registry import PROPOSED_MODULE, SEALED_DIR, make_rule, proposed_params  # noqa: E402
 from sim.sealed import demoted_cells, effective_path, final_eval_seeds  # noqa: E402
 
 
@@ -104,7 +104,7 @@ def main() -> None:
         if a.verify_freeze:
             problems += verify_freeze(repo, a.verify_freeze, lk, lk["allow_list"])
         if PROPOSED_MODULE.exists():
-            problems += check_proposed_module(PROPOSED_MODULE, repo, params=proposed_params().get("best_params") if a.verify_freeze else None)
+            problems += check_proposed_module_isolated(PROPOSED_MODULE, repo, params=proposed_params().get("best_params") if a.verify_freeze else None)
         if Path(a.coverage_report).exists():
             problems += verify_coverage_report(a.coverage_report, lk)
         elif not a.verify_only:
@@ -140,6 +140,12 @@ def main() -> None:
         refuse(problems)
     cov = load_report(a.coverage_report)
     rec = yaml.safe_load(Path(a.proposed_describe).read_text()) if a.proposed_describe else None
+    if rec is not None and not a.synthetic:
+        rule = make_rule("proposed", proposed_params()["best_params"])
+        dp = verify_describe_record(rec, rule)
+        if dp:
+            refuse(dp)
+        rec = rule.describe()                                      # the record the actor saw, validated against the vocabulary
     res = evaluate_claim(h2, h1, cov, lk, a.proposed, h1_summary=h1_summary, describe_record=rec, h2_headline=headline, demoted=demoted)
     out = verdict_json(res); out["synthetic"] = bool(a.synthetic)
     Path(a.out).parent.mkdir(parents=True, exist_ok=True); Path(a.out).write_text(json.dumps(out, indent=1, default=float))

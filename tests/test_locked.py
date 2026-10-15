@@ -63,3 +63,10 @@ def test_locked_has_plan_2b_blocks_and_coverage_range_is_disjoint():
     filled["coverage_report_sha256"] = "cd" * 32; filled["comprehension_fixture_sha256"] = "ef" * 32; filled["coverage_consequences"] = {"final_eval_n": 20}
     filled["h1"] = dict(lk["h1"], cost_cap_usd=120.0)
     assert settings_hash(filled) == h          # lock-time blocks never invalidate pre-lock artifacts
+
+
+def test_prices_are_outside_the_settings_hash():
+    """Final review F12: correcting a token price after tuning must not invalidate the tuned files or the sweep records."""
+    lk = load_locked(); h = settings_hash(lk)
+    other = dict(lk, h1=dict(lk["h1"], prices={"claude-opus-5-5": {"input": 1.0, "output": 1.0}}))
+    assert settings_hash(other) == h

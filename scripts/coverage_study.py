@@ -121,7 +121,7 @@ def run_cell(args) -> tuple:
         flat = observe(spec, S.ravel(), workers=workers)
         samples = {s: flat[s].reshape(S.shape) for s in STATISTICS}
         measured.update(measure(samples, {s: refs[s][:2] for s in STATISTICS}, int(n), PROCEDURES_AT_N[int(n)], settings))
-        degenerate[str(n)] = {s: float(np.mean(samples[s].std(axis=1) == 0.0)) for s in STATISTICS}     # share of replications with identical values
+        degenerate[str(n)] = {s: float(np.mean((samples[s] == samples[s][:, :1]).all(axis=1))) for s in STATISTICS}     # share of replications with identical values
     return name, {"measured": measured, "pool_mean": {s: float(pobs[s].mean()) for s in STATISTICS}, "pool_se": {s: refs[s][2] for s in STATISTICS},
                   "pool_size": int(len(pool)), "replications": {str(n): int(S.shape[0]) for n, S in reps.items()},
                   "replication_se": {str(n): float(np.sqrt(0.95 * 0.05 / S.shape[0])) for n, S in reps.items()}, "degenerate_share": degenerate,

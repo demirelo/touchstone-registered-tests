@@ -45,8 +45,8 @@ def studentized_bootstrap(x, side: str, level: float, resamples: int, seed: int)
     uses the full-sample standard error (spec 8)."""
     x = _check(x, side, level); n = x.size
     mean = x.mean(); se = x.std(ddof=1) / np.sqrt(n)
-    if se == 0.0:
-        return Bound(float(mean), side, level, "studentized", True, n)
+    if np.all(x == x[0]):                                        # exact constancy, not std == 0: ten copies of 1/3 have a nonzero float std
+        return Bound(float(x[0]), side, level, "studentized", True, n)
     rng = np.random.default_rng(int(seed))
     idx = rng.integers(0, n, size=(int(resamples), n))
     samples = x[idx]
@@ -63,8 +63,8 @@ def t_bound(x, side: str, level: float) -> Bound:
     x = _check(x, side, level); n = x.size
     se = x.std(ddof=1) / np.sqrt(n)
     crit = stats.t.ppf(level, n - 1)
-    degenerate = bool(se == 0.0)
-    value = x.mean() + crit * se if side == "upper" else x.mean() - crit * se
+    degenerate = bool(np.all(x == x[0]))
+    value = float(x[0]) if degenerate else (x.mean() + crit * se if side == "upper" else x.mean() - crit * se)
     return Bound(float(value), side, level, "t", degenerate, n)
 
 

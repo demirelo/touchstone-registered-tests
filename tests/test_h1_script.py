@@ -102,3 +102,13 @@ def test_h1_verifies_tuned_files_against_the_t200_calibration(tmp_path):
     assert r.returncode == 3 and json.loads((out / "h1_summary.json").read_text())["T"] == 6    # the smoke market; the cap stopped it
     r2 = run("--backend", "fake-honest", "--rules", "B1", "--tuned-dir", str(tuned), "--out", str(tmp_path / "o2"), "--smoke")
     assert r2.returncode != 0 and "--calibration" in (r2.stderr + r2.stdout)       # tuned files cannot be verified without the T = 200 calibration
+
+
+def test_pilot_reports_fallbacks_stop_reasons_and_every_token_class(tmp_path):
+    """Final review F4 and F12: the pilot JSON carries what the lock needs to judge the actor, not only cost."""
+    cal = smoke_cal(tmp_path); out = tmp_path / "out"
+    r = run("--backend", "fake-honest", "--rules", "B1", *base_args(cal, out), "--pilot", "--pilot-calls", "12")
+    assert r.returncode == 0, r.stderr
+    p = json.loads((out / "pilot_fake.json").read_text())
+    assert p["fallback_rounds"] == 0 and p["fallback_rate"] == 0.0 and isinstance(p["stop_reasons"], dict)
+    assert {"mean_input_tokens", "mean_cache_creation_input_tokens", "mean_cache_read_input_tokens", "mean_output_tokens"} <= set(p)

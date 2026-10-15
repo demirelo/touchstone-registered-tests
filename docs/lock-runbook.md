@@ -18,23 +18,40 @@ uv run python scripts/coverage_study.py --sweep-out results/sweep --calibration 
 uv run python scripts/h1.py --backend fake-cheat --rules B1,B2,B3 --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --tuned-dir experiments/tuned --out results/h1_fake
 uv run python scripts/h1.py --backend anthropic --rules B2 --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --tuned-dir experiments/tuned --out results/pilot_anthropic --pilot
 uv run python scripts/h1.py --backend jev --rules B2 --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --tuned-dir experiments/tuned --out results/pilot_jev --pilot
-uv run python scripts/lock.py --tuned-dir experiments/tuned --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --coverage-report results/coverage/coverage_report.json --bundle-hash <from the custodian> --salt-hash <from the custodian> --pilot results/pilot_anthropic/pilot_anthropic.json
-uv run python scripts/lock.py --tuned-dir experiments/tuned --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --coverage-report results/coverage/coverage_report.json --pilot results/pilot_anthropic/pilot_anthropic.json --check
-git tag lock-candidate && uv run python scripts/check_claim.py --verify-only --verify-lock lock-candidate --proposed none; git tag -d lock-candidate
-git add experiments/locked.yaml && git commit -S -m "lock: 2026-10-28" && git tag -s lock-2026-10-28 -m "Touchstone lock 2026-10-28" && git push origin main lock-2026-10-28
+cp results/coverage/coverage_report.json experiments/coverage_report.json
+cp results/coverage/coverage_cells.json experiments/coverage_cells.json
+cp results/pilot_anthropic/pilot_anthropic.json experiments/pilot_anthropic.json
+uv run python scripts/lock.py --tuned-dir experiments/tuned --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --coverage-report experiments/coverage_report.json --bundle-hash <from the custodian> --salt-hash <from the custodian> --pilot experiments/pilot_anthropic.json
+uv run python scripts/lock.py --tuned-dir experiments/tuned --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --coverage-report experiments/coverage_report.json --pilot experiments/pilot_anthropic.json --check
+git add experiments/locked.yaml experiments/tuned experiments/calibration.json experiments/calibration_T100.json experiments/coverage_report.json experiments/coverage_cells.json experiments/pilot_anthropic.json
+git commit -S -m "lock: 2026-10-28"
+uv run python scripts/check_claim.py --verify-only --verify-lock HEAD --coverage-report experiments/coverage_report.json --proposed none
+git tag -s lock-2026-10-28 -m "Touchstone lock 2026-10-28" && git push origin main lock-2026-10-28
 ```
 
-Then post the tag hash to the public timestamp (OSF or AsPredicted) the same day. The coverage study's base entry is about 2.85 million episodes (about a day on 8 cores, or under an hour on six 16-vCPU pods with `--cell`); the conditional n = 40 run starts by itself only when the remedy order reaches it.
+The lock commit carries `locked.yaml`, the tuned files, both calibrations, the coverage report and selection, and the pilot (spec 6 lists the coverage report as lock-commit content); the verify-only check runs against the committed tree (`HEAD`), after the commit and before the signed tag, so a lightweight tag is never needed (this machine signs every tag). Then post the tag hash to the public timestamp (OSF or AsPredicted) the same day. The coverage study's base entry is about 2.85 million episodes (about a day on 8 cores, or under an hour on six 16-vCPU pods with `--cell`); the conditional n = 40 run starts by itself only when the remedy order reaches it.
 
 ## Pods
 
+The tuned files, the calibrations, and the sweep outputs are untracked, so every pod gets them by copy (`rsync` over SSH or `runpodctl send`/`receive`); `<pod>` stands for the pod's SSH address.
+
 ```bash
-# on each pod
-bash scripts/pod_setup.sh
-# search shards (N pods)
-uv run python scripts/sweep.py --stage search --rules B1,B2,B3 --calibration experiments/calibration.json --tuned-dir experiments/tuned --workers 16 --shard K/N --out results/sweep
-# coverage cells (six pods), then merge on one
-uv run python scripts/coverage_study.py --sweep-out results/sweep --calibration experiments/calibration.json --tuned-dir experiments/tuned --out results/coverage --cell i --workers 16
+# on each fresh pod: clone the branch being run (HTTPS, no key needed for a public or token-authorized repo), install, and set the thread variable
+curl -fsSL https://raw.githubusercontent.com/demirelo/touchstone/plan-2b/scripts/pod_setup.sh | bash -s -- https://github.com/demirelo/touchstone.git plan-2b
+# from the author's machine: the tuned files and calibrations to every pod
+rsync -a experiments/tuned experiments/calibration.json experiments/calibration_T100.json <pod>:touchstone/experiments/
+# search shards (N pods), then collect the shards' search/ directories into one results/sweep on the author's machine
+ssh <pod> 'cd touchstone && OMP_NUM_THREADS=1 uv run python scripts/sweep.py --stage search --rules B1,B2,B3 --calibration experiments/calibration.json --tuned-dir experiments/tuned --workers 16 --shard K/N --out results/sweep'
+rsync -a <pod>:touchstone/results/sweep/search/ results/sweep/search/
+# the later stages once, on the author's machine (or one pod with the merged search/ directory)
+uv run python scripts/sweep.py --stage bank --rules B1,B2,B3 --calibration experiments/calibration.json --tuned-dir experiments/tuned --workers 8 --out results/sweep
+uv run python scripts/sweep.py --stage reference --rules B1,B2,B3 --calibration experiments/calibration.json --tuned-dir experiments/tuned --workers 8 --out results/sweep
+uv run python scripts/sweep.py --stage evaluate --rules B1,B2,B3 --calibration experiments/calibration.json --tuned-dir experiments/tuned --workers 8 --out results/sweep
+uv run python scripts/sweep.py --stage checks --rules B1,B2,B3 --calibration experiments/calibration.json --tuned-dir experiments/tuned --workers 8 --out results/sweep
+# coverage cells (six pods): every pod needs the merged results/sweep (reference records and bank.json); then the cell files come back to one machine
+rsync -a results/sweep <pod>:touchstone/results/
+ssh <pod> 'cd touchstone && OMP_NUM_THREADS=1 uv run python scripts/coverage_study.py --sweep-out results/sweep --calibration experiments/calibration.json --tuned-dir experiments/tuned --out results/coverage --cell i --workers 16'
+rsync -a <pod>:touchstone/results/coverage/cell_i.json results/coverage/
 uv run python scripts/coverage_study.py --sweep-out results/sweep --calibration experiments/calibration.json --tuned-dir experiments/tuned --out results/coverage --merge --register
 ```
 
@@ -53,7 +70,7 @@ uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-28
 ```bash
 export TOUCHSTONE_IDENTITY_SALT=$(cat sealed/identity_salt.hex)
 uv run python scripts/sweep.py --stage all --sections heldout --rules B1,B2,B3,proposed --calibration experiments/calibration.json --tuned-dir experiments/tuned --eval-namespace final_eval --workers 8 --out results/final
-uv run python scripts/h1.py --backend anthropic --rules B2,B3,proposed --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --tuned-dir experiments/tuned --eval-namespace final_eval --prompt sealed/h1_prompt.txt --out results/h1_final
+uv run python scripts/h1.py --backend anthropic --rules B1,B2,B3,proposed --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --tuned-dir experiments/tuned --eval-namespace final_eval --prompt sealed/h1_prompt.txt --out results/h1_final
 uv run python scripts/check_claim.py --verify-lock lock-2026-10-28 --verify-freeze freeze-2026-11-11 --sweep-out results/final --h1-dir results/h1_final --calibration experiments/calibration.json --tuned-dir experiments/tuned --coverage-report results/coverage/coverage_report.json --proposed proposed --proposed-describe experiments/proposed_describe.yaml
 uv run python scripts/plot.py --sweep-out results/final --out results/figures --coverage-report results/coverage/coverage_report.json --h1-dir results/h1_final
 ```

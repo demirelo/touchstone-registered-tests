@@ -99,3 +99,15 @@ def test_search_shards_cover_the_unsharded_record_set(cal_path, tmp_path):
         r = run_sweep(cal_path, parts, *common, "--shard", shard); assert r.returncode == 0, r.stderr
     names = lambda d: sorted(p.name for p in (d / "search").glob("*.json"))
     assert names(whole) == names(parts) and len(names(whole)) == 3                    # three positions at the headline beta, split 2 + 1
+
+
+def test_limit_without_shard_keeps_the_manifest_order(cal_path, tmp_path):
+    """Final review F13: --limit picks the manifest's first cells unless --shard asks for the sorted order."""
+    from sim.manifest import enumerate_manifest
+    from sim.schedule import SMOKE_BUDGET
+    lk = load_locked()
+    first = next(c.name for c in enumerate_manifest(lk, ["B1"], budget=SMOKE_BUDGET) if c.section == "development" and c.kind == "full_cell" and "beta0.05" in c.name)
+    out = tmp_path / "lim"
+    r = run_sweep(cal_path, out, "--stage", "search", "--sections", "development", "--rules", "B1", "--select", "beta0.05", "--smoke", "--workers", "1", "--limit", "1")
+    assert r.returncode == 0, r.stderr
+    assert [p.stem for p in (out / "search").glob("*.json")] == [first]

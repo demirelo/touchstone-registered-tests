@@ -38,3 +38,16 @@ def test_verify_and_load_bundle_and_seed_fallback(tmp_path, monkeypatch):
     assert patch_log(s) == {} and verify_patches(s) == [] and demoted_cells(s) == set()
     (s / "patches" / "a.diff").write_text("a\n")
     assert verify_patches(s) != []
+
+
+def test_bundle_hash_covers_only_the_bundle_files_and_refuses_strays(tmp_path):
+    """Final review F6: the access log and Finder files never change the commitment; an unexpected file is refused by name."""
+    from sim.sealed import ACCESS_LOG, bundle_hash, verify_bundle
+    s = make_bundle(tmp_path); h = bundle_hash(s); lk = dict(load_locked(), sealed_bundle_sha256=h)
+    (s / ACCESS_LOG).write_text("2026-11-12 opened by the author\n"); (s / ".DS_Store").write_bytes(b"\x00")
+    assert bundle_hash(s) == h
+    verify_bundle(s, lk)
+    (s / "stray.txt").write_text("x\n")
+    assert bundle_hash(s) == h
+    with pytest.raises(ValueError, match="stray.txt"):
+        verify_bundle(s, lk)

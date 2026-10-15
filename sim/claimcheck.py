@@ -25,6 +25,7 @@ BASELINES = ("B2", "B3")
 FROZEN_AT_FREEZE = ("sim/mechanisms/proposed.py", "experiments/proposed.yaml", "experiments/proposed_describe.yaml")
 ALLOWED_IMPORTS = ("sim.mechanisms.base", "numpy", "scipy", "math", "dataclasses", "typing", "__future__", "itertools", "functools")
 FROZEN_MODULES = ("sim.market", "sim.mechanisms.base", "sim.policies.base", "sim.policies.honest", "sim.policies.twin", "sim.metrics", "sim.rng")
+FROZEN_EXTERNAL = ("numpy", "numpy.random", "numpy.linalg", "scipy.stats", "scipy.special", "math", "random")
 BANNED_ATTRS = ("__subclasses__", "__globals__", "__builtins__", "__dict__", "__base__", "__bases__", "__mro__", "__class__", "__code__", "__closure__", "__loader__", "__spec__")
 
 
@@ -334,7 +335,7 @@ def _snapshot() -> dict:
             return ("val", repr(v))
         return ("id", id(v))
     for m, mod in list(_sys.modules.items()):
-        if not (m == "sim" or m.startswith("sim.")) or mod is None:
+        if not (m == "sim" or m.startswith("sim.") or m in FROZEN_EXTERNAL) or mod is None:
             continue
         for k, v in list(vars(mod).items()):
             if k.startswith("__"):
@@ -352,8 +353,28 @@ def check_proposed_module(path, repo, params: dict | None = None) -> list:
     neither importing it nor calling make(params) changes any attribute of a loaded sim.* module (functions compared by
     code, defaults, and dict). A detected change is reported and restored where the original is known."""
     import sys as _sys
-    problems = []; src = Path(path).read_text()
-    for node in ast.walk(ast.parse(src)):
+    problems = []; src = Path(path).read_text(); tree = ast.parse(src)
+    aliases = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            aliases |= {(a.asname or a.name.split(".")[0]) for a in node.names}
+        elif isinstance(node, ast.ImportFrom):
+            aliases |= {(a.asname or a.name) for a in node.names}
+    def root_name(t):
+        while isinstance(t, (ast.Attribute, ast.Subscript)):
+            t = t.value
+        return t.id if isinstance(t, ast.Name) else None
+    for node in ast.walk(tree):
+        targets = []
+        if isinstance(node, (ast.Assign,)):
+            targets = node.targets
+        elif isinstance(node, (ast.AugAssign, ast.AnnAssign)):
+            targets = [node.target]
+        elif isinstance(node, ast.Delete):
+            targets = node.targets
+        for t in targets:
+            if isinstance(t, (ast.Attribute, ast.Subscript)) and root_name(t) in aliases:
+                problems.append(f"{Path(path).name}: attribute assignment on the imported name {root_name(t)!r} is not allowed (monkeypatching)")
         if isinstance(node, ast.Call):
             f = node.func; fname = f.id if isinstance(f, ast.Name) else (f.attr if isinstance(f, ast.Attribute) else "")
             root = f.value.id if isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name) else ""
@@ -371,9 +392,9 @@ def check_proposed_module(path, repo, params: dict | None = None) -> list:
         for name in names:
             if not any(name == ok or name.startswith(ok + ".") for ok in ALLOWED_IMPORTS):
                 problems.append(f"{Path(path).name}: import of {name!r} is not allowed (only {', '.join(ALLOWED_IMPORTS)})")
-    for m in FROZEN_MODULES + ("sim.mechanisms.posted", "sim.mechanisms.posted_audit", "sim.mechanisms.second_score"):
+    for m in FROZEN_MODULES + ("sim.mechanisms.posted", "sim.mechanisms.posted_audit", "sim.mechanisms.second_score") + FROZEN_EXTERNAL:
         importlib.import_module(m)
-    originals = {(m, k): v for m, mod in list(_sys.modules.items()) if (m == "sim" or m.startswith("sim.")) and mod is not None for k, v in list(vars(mod).items())}
+    originals = {(m, k): v for m, mod in list(_sys.modules.items()) if (m == "sim" or m.startswith("sim.") or m in FROZEN_EXTERNAL) and mod is not None for k, v in list(vars(mod).items())}
     class_originals = {(m, f"{k}.{ak}"): av for (m, k), v in originals.items() if isinstance(v, type) and getattr(v, "__module__", None) == m for ak, av in list(vars(v).items())}
     before = _snapshot()
     spec = importlib.util.spec_from_file_location("proposed_under_check", path); mod = importlib.util.module_from_spec(spec)
@@ -395,4 +416,34 @@ def check_proposed_module(path, repo, params: dict | None = None) -> list:
                 delattr(_sys.modules[m], k)                       # an attribute added by the module is removed
             # a changed class attribute or function internal cannot be restored from a snapshot of ids: the report is the
             # guarantee, and check_claim.py refuses the run
+    return problems
+
+
+def check_proposed_module_isolated(path, repo, params: dict | None = None) -> list:
+    """The same check in a subprocess, so the verdict process never imports the proposed module (a module that passes the
+    source rules could still change numpy or scipy state for the process that imported it)."""
+    import subprocess, sys as _sys
+    code = ("import json, sys; sys.path.insert(0, %r); from sim.claimcheck import check_proposed_module; "
+            "print(json.dumps(check_proposed_module(%r, %r, params=json.loads(%r))))") % (str(repo), str(path), str(repo), json.dumps(params) if params is not None else "null")
+    r = subprocess.run([_sys.executable, "-c", code], cwd=str(repo), capture_output=True, text=True)
+    if r.returncode != 0:
+        return [f"{Path(path).name}: the isolated module check crashed: {r.stderr.strip()[-400:]}"]
+    try:
+        return list(json.loads(r.stdout.strip().splitlines()[-1]))
+    except (ValueError, IndexError):
+        return [f"{Path(path).name}: the isolated module check gave no result: {r.stdout[-400:]}"]
+
+
+def verify_describe_record(record: dict, rule) -> list:
+    """The frozen proposed_describe.yaml must be a vocabulary record and equal the record of the rule the actor saw."""
+    from .describe import DESCRIBE_FIELDS, describe_record, load_vocabulary, validate_record
+    problems = []
+    try:
+        validate_record(record, load_vocabulary())
+    except ValueError as e:
+        problems.append(f"proposed_describe.yaml: {e}")
+    want = describe_record(rule)
+    for k in DESCRIBE_FIELDS + ("parameters",):
+        if record.get(k) != want.get(k):
+            problems.append(f"proposed_describe.yaml: field {k!r} is {record.get(k)!r}, the frozen rule's describe() says {want.get(k)!r}")
     return problems

@@ -259,8 +259,10 @@ def test_check_proposed_module_import_and_attribute_rules(tmp_path):
     assert hm.HonestMax.name != "hacked"                                                  # the check restores what it can and reports
     code = tmp_path / "code.py"; code.write_text("from sim.mechanisms.base import Mechanism\n\ndef _nop(self, *a, **k):\n    return {}\n\nMechanism.allocate.__code__ = _nop.__code__\n\ndef make(params):\n    return None\n")
     assert any("Mechanism.allocate" in p for p in check_proposed_module(code, ROOT))      # function code counts as an attribute
-    late = tmp_path / "late.py"; late.write_text("import sim.mechanisms.base as b\n\ndef make(params):\n    b.LATE = 1\n    return None\n")
-    assert check_proposed_module(late, ROOT) == [] and any("sim.mechanisms.base.LATE" in p for p in check_proposed_module(late, ROOT, params={}))   # mutation at factory time
+    late = tmp_path / "late.py"; late.write_text("from sim.mechanisms.base import Mechanism\nM = Mechanism\n\ndef make(params):\n    M.late_flag = 1\n    return None\n")
+    assert check_proposed_module(late, ROOT) == [] and any("Mechanism.late_flag" in p for p in check_proposed_module(late, ROOT, params={}))   # mutation at factory time through an unflagged alias
+    direct = tmp_path / "direct.py"; direct.write_text("import sim.mechanisms.base as b\n\ndef make(params):\n    b.LATE = 1\n    return None\n")
+    assert any("monkeypatching" in p for p in check_proposed_module(direct, ROOT))                       # an attribute assignment on an imported name is refused at the source
     dund = tmp_path / "dund.py"; dund.write_text("from sim.mechanisms.base import Offer\nOffer.__init__.__defaults__ = (9.9,)\n\ndef make(params):\n    return None\n")
     assert any("Offer.__init__" in p for p in check_proposed_module(dund, ROOT))                                        # constructor defaults count
     rel = tmp_path / "rel.py"; rel.write_text("from .base import Mechanism\n\ndef make(params):\n    return None\n")
@@ -293,3 +295,33 @@ def test_check_claim_cli_synthetic_and_verify_only(tmp_path):
     (repo / "sim" / "market.py").write_text("frozen = 2\n")
     r5 = subprocess.run(cmd + ["--verify-only", "--verify-lock", "lock-test", "--repo", str(repo), "--proposed", "R"], capture_output=True, text=True, cwd=ROOT)
     assert r5.returncode == 2 and "sim/market.py" in r5.stderr
+
+
+def test_module_check_catches_numpy_monkeypatching_and_runs_isolated(tmp_path):
+    """Final review F2: a proposed module that patches numpy or scipy, or assigns an attribute of any imported module,
+    is refused, and the check runs in a subprocess so the verdict process never imports the module."""
+    import numpy as np
+    from sim.claimcheck import check_proposed_module_isolated
+    evil = tmp_path / "evil.py"
+    evil.write_text("import numpy as np\n_q = np.quantile\nnp.quantile = lambda a, q, *k, **kw: _q(a, q, *k, **kw) - 10\n\ndef make(params):\n    return None\n")
+    probs = check_proposed_module_isolated(evil, ROOT)
+    assert probs and any("numpy" in p or "attribute" in p for p in probs)
+    assert np.quantile(np.arange(5), 0.5) == 2.0                                          # this process is untouched
+    sneaky = tmp_path / "sneaky.py"
+    sneaky.write_text("import scipy.stats as st\n\ndef make(params):\n    st.t.ppf = lambda *a, **k: 0.0\n    return None\n")
+    assert check_proposed_module_isolated(sneaky, ROOT, params={}) != []                 # factory-time patching of scipy
+    good = tmp_path / "good.py"; good.write_text("from sim.mechanisms.base import Mechanism\nimport numpy as np\n\ndef make(params):\n    return np.sum([1])\n")
+    assert check_proposed_module_isolated(good, ROOT, params={}) == []
+
+
+def test_describe_record_file_must_match_the_rule_and_the_vocabulary():
+    """Final review F5: the frozen proposed_describe.yaml is checked against the vocabulary and against the record of
+    the rule the actor actually saw."""
+    from sim.claimcheck import verify_describe_record
+    from sim.mechanisms.posted_audit import PostedRandomAudit
+    rule = PostedRandomAudit(0.2, 0.35, 0.5, tol=0.12, L=3)
+    rec = rule.describe()
+    assert verify_describe_record(dict(rec), rule) == []
+    assert verify_describe_record(dict(rec, payment="the bid"), rule) != []                 # differs from the rule's record
+    assert verify_describe_record(dict(rec, payment="we think about it"), rule) != []       # off-vocabulary
+    assert verify_describe_record(dict(rec, note="x"), rule) != []                          # a key outside the fields

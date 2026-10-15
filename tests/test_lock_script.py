@@ -41,13 +41,16 @@ def setup(tmp_path):
     rep["fixture_and_power"]["admissible_n"] = {"10": True, "20": True, "40": True}            # gates computed for every n; thresholds and cells only for the measured 10 and 20
     import hashlib, sys as _sys
     _sys.path.insert(0, str(ROOT)); from scripts.coverage_study import provenance_hash
-    rep["provenance"] = {"settings_hash": settings_hash(lk), "salt_hash": "cd" * 32, "calibration_sha256": hashlib.sha256((tmp_path / "cal.json").read_bytes()).hexdigest(),
+    from sim.rng import load_identity_salt
+    rep["provenance"] = {"settings_hash": settings_hash(lk), "salt_hash": hashlib.sha256(load_identity_salt()).hexdigest(),     # the study ran with this environment's salt
+                         "calibration_sha256": hashlib.sha256((tmp_path / "cal.json").read_bytes()).hexdigest(),
                          "tuned_sha256": {r: hashlib.sha256((tuned / f"tuned_{r}.json").read_bytes()).hexdigest() for r in ("B1", "B2", "B3")}, "reference_records_sha256": {}, "sweep_out": "x"}
     rep["provenance_hash"] = provenance_hash(rep["provenance"])
     for i, c in enumerate(rep["cells"].values()):
         c["input_hash"] = f"{i:02d}" * 32; c["provenance_hash"] = rep["provenance_hash"]
     adm = admission({k: v["measured"] for k, v in rep["cells"].items()}, thr, lk, rep["fixture_and_power"]["admissible_n"]); rep.update(adm)
-    (tmp_path / "cov.json").write_text(json.dumps(rep)); (tmp_path / "pilot.json").write_text(json.dumps({"projected_cost_usd": 118.4, "complete": True, "calls": 200, "backend": "anthropic"}))
+    (tmp_path / "cov.json").write_text(json.dumps(rep))
+    (tmp_path / "pilot.json").write_text(json.dumps({"projected_cost_usd": 118.4, "complete": True, "calls": 200, "backend": "anthropic", "fallback_rate": 0.0, "fallback_rounds": 0}))
     return exp, tuned
 
 
@@ -148,3 +151,37 @@ def test_lock_script_refuses_bad_inputs(tmp_path):
     (tmp_path / "cov_chk.json").write_text(json.dumps(short))
     bad_k = [a if a != str(tmp_path / "cov.json") else str(tmp_path / "cov_chk.json") for a in base]
     r = subprocess.run(bad_k, capture_output=True, text=True, cwd=ROOT); assert r.returncode != 0 and "threshold check" in (r.stderr + r.stdout)   # a failed check with pass_ still True contradicts its values
+
+
+def test_lock_accepts_a_report_made_with_the_development_salt_and_refuses_a_bad_pilot(tmp_path):
+    """Final review F1: the coverage study can only record the development salt's hash; --salt-hash is the sealed
+    commitment and must not be compared with it. F4: a pilot whose fallback rate exceeds h1.fallback_limit is refused."""
+    import hashlib
+    from sim.rng import load_identity_salt
+    exp, tuned = setup(tmp_path)
+    rep = json.loads((tmp_path / "cov.json").read_text())
+    rep["provenance"]["salt_hash"] = hashlib.sha256(load_identity_salt()).hexdigest()          # the salt of the pre-lock environment
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT)); from scripts.coverage_study import provenance_hash
+    rep["provenance_hash"] = provenance_hash(rep["provenance"])
+    for c in rep["cells"].values():
+        c["provenance_hash"] = rep["provenance_hash"]
+    (tmp_path / "cov.json").write_text(json.dumps(rep))
+    (tmp_path / "pilot.json").write_text(json.dumps({"projected_cost_usd": 118.4, "complete": True, "calls": 200, "backend": "anthropic", "fallback_rate": 0.0, "fallback_rounds": 0}))
+    r = subprocess.run(cmd(tmp_path, exp, tuned, "--bundle-hash", "ab" * 32, "--salt-hash", "cd" * 32, "--pilot", str(tmp_path / "pilot.json")), capture_output=True, text=True, cwd=ROOT)
+    assert r.returncode == 0, r.stderr + r.stdout                                              # a different sealed commitment is fine
+    lk = yaml.safe_load((exp / "locked.yaml").read_text()); assert lk["identity_salt_sha256"] == "cd" * 32
+    (tmp_path / "two").mkdir(); exp2, tuned2 = setup(tmp_path / "two")
+    rep2 = json.loads((tmp_path / "two" / "cov.json").read_text()); rep2["provenance"]["salt_hash"] = "ee" * 32; rep2["provenance_hash"] = provenance_hash(rep2["provenance"])
+    for c in rep2["cells"].values():
+        c["provenance_hash"] = rep2["provenance_hash"]
+    (tmp_path / "two" / "cov.json").write_text(json.dumps(rep2))
+    (tmp_path / "two" / "pilot.json").write_text(json.dumps({"projected_cost_usd": 118.4, "complete": True, "calls": 200, "backend": "anthropic", "fallback_rate": 0.0, "fallback_rounds": 0}))
+    r = subprocess.run(cmd(tmp_path / "two", exp2, tuned2, "--bundle-hash", "ab" * 32, "--salt-hash", "cd" * 32, "--pilot", str(tmp_path / "two" / "pilot.json")), capture_output=True, text=True, cwd=ROOT)
+    assert r.returncode != 0 and "salt_hash" in (r.stderr + r.stdout)                           # a report from another environment's salt is refused
+    (tmp_path / "pilot_bad.json").write_text(json.dumps({"projected_cost_usd": 118.4, "complete": True, "calls": 200, "backend": "anthropic", "fallback_rate": 0.2, "fallback_rounds": 40}))
+    r = subprocess.run(cmd(tmp_path, exp, tuned, "--bundle-hash", "ab" * 32, "--salt-hash", "cd" * 32, "--pilot", str(tmp_path / "pilot_bad.json")), capture_output=True, text=True, cwd=ROOT)
+    assert r.returncode != 0 and "fallback" in (r.stderr + r.stdout)
+    (tmp_path / "pilot_old.json").write_text(json.dumps({"projected_cost_usd": 118.4, "complete": True, "calls": 200, "backend": "anthropic"}))
+    r = subprocess.run(cmd(tmp_path, exp, tuned, "--bundle-hash", "ab" * 32, "--salt-hash", "cd" * 32, "--pilot", str(tmp_path / "pilot_old.json")), capture_output=True, text=True, cwd=ROOT)
+    assert r.returncode != 0 and "fallback" in (r.stderr + r.stdout)                            # a pilot without fallback figures is incomplete

@@ -8,7 +8,8 @@ You are the separate AI session of spec section 6.1. You write the sealed held-o
 
 The bundle is a directory, `sealed/`, with exactly the files that `sim/sealed.py::BUNDLE_FILES` expects:
 
-- `sealed/README.md`: what the bundle contains, and the access log (who opened or changed what, and when).
+- `sealed/README.md`: what the bundle contains. It is part of the commitment: once you compute the hash, the README is frozen.
+- `sealed/access_log.md`: the access log (who opened or changed what, and when). This file is outside the hash by design (`sim/sealed.py::ACCESS_LOG`), so you keep writing to it after the commitment. Only the seven bundle files are hashed; any other file in `sealed/` (a stray download, a Finder file) makes every check refuse the bundle, so keep the directory clean.
 - `sealed/h1_prompt.txt`: the H1 system prompt. It replaces the development `ACTOR_INSTRUCTIONS` in `sim/llm_actor.py` through `scripts/h1.py --prompt`. The prompt is part of every cache key, so H1 runs with it never replay a development response; the H1 cache lives under `experiments/cache/h1/<backend>/`, never under `sealed/`. The prompt must describe the provider role, the answer schema, and the goal, and must not name any rule.
 - `sealed/h2/family.py`: a module that defines `H2`, an instance of `sim.policies.families.Family` (constructor `Family(name, knobs, bounds, factory)`) with knob domains, a claim map that permits claims below effort, and the binary `clip` knob last, so that H2 contains its twin by construction; the registered starts, the exact key, and the knob key follow `experiments/families.md`. The module also defines `CONTAINMENT`, a string. Use absolute imports only (`from sim.policies.families import Family`), never relative ones.
 - `sealed/h2/containment.md`: whether H2 contains D2, is contained by it, or is non-nested, and which observation or memory it uses that D2 cannot. If H2 contains D2, `family.py` also defines `embed_d2(knobs) -> knobs`.
@@ -26,7 +27,7 @@ On the finished bundle, run:
 uv run python -c "from sim.sealed import bundle_hash; print(bundle_hash('sealed'))"
 ```
 
-Send that hash (`sealed_bundle_sha256`) and the salt hash (`identity_salt_sha256`, the SHA-256 of the 32 bytes) to the author for `experiments/locked.yaml`. Keep the bundle outside the repository until the unseal, and keep the access log in `sealed/README.md`.
+Send that hash (`sealed_bundle_sha256`) and the salt hash (`identity_salt_sha256`, the SHA-256 of the 32 bytes) to the author for `experiments/locked.yaml`. Keep the bundle outside the repository until the unseal, and keep the access log in `sealed/access_log.md`.
 
 ## 4. Checks you run before the lock (B1 only)
 

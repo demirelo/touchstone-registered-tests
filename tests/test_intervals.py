@@ -48,3 +48,12 @@ def test_dispatch_reads_settings():
     assert bound("t", x, "upper", 0.95, settings).method == "t"
     with pytest.raises(ValueError):
         bound("other", x, "upper", 0.95, settings)
+
+
+def test_constant_inputs_with_inexact_means_are_degenerate():
+    """Final review F9: ten copies of 1/3 have a floating-point std above zero; the degenerate test is x == x[0]."""
+    import numpy as np
+    from sim.intervals import studentized_bootstrap, t_bound
+    x = np.full(10, 1 / 3)
+    assert studentized_bootstrap(x, "upper", 0.95, 200, 1).degenerate and t_bound(x, "upper", 0.95).degenerate
+    assert studentized_bootstrap(x, "upper", 0.95, 200, 1).value == 1 / 3

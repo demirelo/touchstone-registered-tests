@@ -36,6 +36,7 @@ EFFORT_LEVELS = (0.0, 0.25, 0.5, 0.75, 1.0)          # fractions of q_max (Jev m
 CLAIM_OFFSETS = (-0.10, 0.0, 0.10, 0.20, 0.40)       # claim = clip(effort + offset, 0, 1)
 MARKUPS = (0.0, 0.25, 0.5, 1.0)                      # bid = (1 + markup) * (a + b * effort)
 REFERENCE_ORDER = ("abstain", "honest_max", "twin")
+ANTHROPIC_MAX_TOKENS = 4096                          # thinking and the answer share this budget on claude-opus-5-5; 512 truncated
 
 ACTOR_INSTRUCTIONS = (
     "You are a provider in a repeated market for unit jobs. Each round you choose a private effort q in [0, q_max] "
@@ -70,7 +71,7 @@ def parse_action(data, params: ProviderParams) -> Action | None:
 def build_payload(backend, kind: str, rendered_rule: str, state: dict | None = None, questions: list | None = None) -> dict:
     """Every request carries the backend's instructions, so the prompt is in every cache key (attribute access: a wrapper
     that forgets to forward `instructions` fails loudly)."""
-    payload = {"instructions": backend.instructions, "rule": rendered_rule}
+    payload = {"instructions": backend.instructions, "rule": rendered_rule, "settings": dict(backend.settings)}   # request parameters are part of the key
     if kind == "action":
         payload["state"] = state
     else:
@@ -115,6 +116,7 @@ class FakeBackend:
 
     def __init__(self, fn, model: str = "fake-1", instructions: str = ACTOR_INSTRUCTIONS) -> None:
         self.fn, self.model, self.instructions = fn, model, instructions
+        self.settings: dict = {}
 
     def complete(self, kind: str, payload: dict) -> dict:
         data = self.fn(kind, payload)
@@ -125,9 +127,14 @@ class FakeBackend:
 class AnthropicBackend:
     name = "anthropic"
 
+    @staticmethod
+    def default_settings() -> dict:
+        return {"max_tokens": ANTHROPIC_MAX_TOKENS, "effort": "low", "schema": "v1"}
+
     def __init__(self, model: str, instructions: str = ACTOR_INSTRUCTIONS) -> None:
         import anthropic
         self.model, self.instructions = model, instructions
+        self.settings = self.default_settings()
         self.client = anthropic.Anthropic()
 
     def complete(self, kind: str, payload: dict) -> dict:
@@ -143,17 +150,17 @@ class AnthropicBackend:
             user = "Answer each question about the rule above with the letter of the correct option.\n" + json.dumps(
                 [{"id": q["id"], "question": q["question"], "options": [f"{o['label']}: {o['value']}" for o in q["options"]]} for q in qs])
         response = self.client.messages.create(
-            model=self.model, max_tokens=512,
+            model=self.model, max_tokens=int(self.settings["max_tokens"]),
             system=[{"type": "text", "text": self.instructions + "\n\n" + payload["rule"], "cache_control": {"type": "ephemeral"}}],
             messages=[{"role": "user", "content": user}],
-            output_config={"effort": "low", "format": {"type": "json_schema", "schema": schema}},
+            output_config={"effort": self.settings["effort"], "format": {"type": "json_schema", "schema": schema}},
         )
         text = next((b.text for b in response.content if b.type == "text"), "")
         try:
             data = json.loads(text)
         except json.JSONDecodeError:
             data = None
-        if response.stop_reason == "refusal":
+        if response.stop_reason in ("refusal", "max_tokens"):     # a truncated answer is malformed: it falls back and is counted
             data = None
         u = response.usage
         return {"data": data, "raw": response.to_dict(),
@@ -168,6 +175,7 @@ class JevBackend:
     def __init__(self, model: str, instructions: str = ACTOR_INSTRUCTIONS) -> None:
         from typesafe_sdk import TypeSafeClient
         self.model, self.instructions = model, instructions
+        self.settings = {"menu": "v1"}
         self.client = TypeSafeClient(model=model)
 
     def _choice(self, instructions: str, criteria: dict):
@@ -194,15 +202,21 @@ class JevBackend:
         confidence = {k: v["confidence"] for k, v in answers.items()}
         if kind == "comprehension":
             return {"data": {"answers": {k: v["choice"] for k, v in answers.items()}, "confidence": confidence}, "raw": answers, "usage": usage}
-        p = payload["state"]["provider"]
-        effort = float(answers["effort"]["choice"]) * p["q_max"]
+        data = jev_action(answers, payload["state"]["provider"])
+        return {"data": {**data, "confidence": confidence} if data is not None else None, "raw": {**answers, "stop_reason": "end_turn"}, "usage": usage}
+
+
+def jev_action(answers: dict, p: dict) -> dict | None:
+    """The action behind a Jev answer set; None (a counted fallback) when any choice is missing or malformed."""
+    try:
+        effort = float(answers["effort"]["choice"]) * float(p["q_max"])
         if answers["serve"]["choice"] == "abstain":
-            data = {"effort": effort, "offer": None}
-        else:
-            claim = min(1.0, max(0.0, effort + float(answers["claim_offset"]["choice"])))
-            bid = (1.0 + float(answers["markup"]["choice"])) * (p["a"] + p["b"] * effort)
-            data = {"effort": effort, "offer": {"claim": claim, "bid": bid}}
-        return {"data": {**data, "confidence": confidence}, "raw": answers, "usage": usage}
+            return {"effort": effort, "offer": None}
+        claim = min(1.0, max(0.0, effort + float(answers["claim_offset"]["choice"])))
+        bid = (1.0 + float(answers["markup"]["choice"])) * (float(p["a"]) + float(p["b"]) * effort)
+        return {"effort": effort, "offer": {"claim": claim, "bid": bid}}
+    except (KeyError, TypeError, ValueError):
+        return None
 
 
 class CapExceeded(Exception):
@@ -221,9 +235,10 @@ class BudgetedBackend:
     latencies, and cost. Forwards name, model, and instructions so cache keys are unchanged."""
 
     def __init__(self, inner, max_calls: int | None = None, max_cost_usd: float | None = None, prices: dict | None = None, stop_at: int | None = None,
-                 ledger=None, max_request_tokens=(8000, 512)) -> None:
+                 ledger=None, max_request_tokens=(8000, ANTHROPIC_MAX_TOKENS)) -> None:
         self.inner, self.max_calls, self.max_cost_usd, self.prices, self.stop_at = inner, max_calls, max_cost_usd, prices or {}, stop_at
-        self.name, self.model, self.instructions = inner.name, inner.model, inner.instructions
+        self.name, self.model, self.instructions, self.settings = inner.name, inner.model, inner.instructions, inner.settings
+        self.stop_reasons: dict = {}; self.malformed = 0
         self.ledger = Path(ledger) if ledger else None; self.max_request_tokens = tuple(int(x) for x in max_request_tokens)
         self.calls = 0; self.usage = {"input_tokens": 0, "output_tokens": 0}; self.cost_usd = 0.0; self.overrun: str | None = None
         if self.ledger is not None and self.ledger.exists():
@@ -258,6 +273,11 @@ class BudgetedBackend:
             raise CapExceeded(f"cost cap {self.max_cost_usd} USD would be crossed ({self.cost_usd:.4f} USD spent after {self.calls} calls, next request up to {reserve:.4f} USD)")
         t0 = time.perf_counter(); out = self.inner.complete(kind, payload); self.latencies.append(time.perf_counter() - t0)
         self.calls += 1; self.calls_this_run += 1
+        sr = (out.get("raw") or {}).get("stop_reason") if isinstance(out.get("raw"), dict) else None
+        if sr is not None:
+            self.stop_reasons[str(sr)] = self.stop_reasons.get(str(sr), 0) + 1
+        if out.get("data") is None:
+            self.malformed += 1                                   # a response that will fall back (truncated, refused, or malformed)
         for k in ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"):
             self.usage[k] = self.usage.get(k, 0) + int(out.get("usage", {}).get(k) or 0)
         self.cost_usd = self._price(self.usage["input_tokens"], self.usage["output_tokens"], self.usage.get("cache_creation_input_tokens", 0), self.usage.get("cache_read_input_tokens", 0))

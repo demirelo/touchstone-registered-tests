@@ -14,6 +14,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from sim.locked import settings_hash  # noqa: E402
+from sim.rng import load_identity_salt  # noqa: E402
 
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 
@@ -117,7 +118,7 @@ def validate(a, lk: dict, cal: dict, cal100: dict, cov: dict) -> list:
     if any(not v.get("input_hash") for v in cells.values()) or {v.get("provenance_hash") for v in cells.values()} != {cov.get("provenance_hash")} or not cov.get("provenance_hash"):
         problems.append("coverage report: every cell must carry its input hash and the report's provenance hash")
     prov = cov.get("provenance") or {}
-    want_prov = {"settings_hash": settings_hash(lk), "salt_hash": a.salt_hash, "calibration_sha256": sha(a.calibration),
+    want_prov = {"settings_hash": settings_hash(lk), "salt_hash": hashlib.sha256(load_identity_salt()).hexdigest(), "calibration_sha256": sha(a.calibration),   # the pre-lock runs used this environment's salt; --salt-hash is the sealed commitment
                  "tuned_sha256": {r: sha(Path(a.tuned_dir) / f"tuned_{r}.json") for r in ("B1", "B2", "B3")}}
     for k, v in want_prov.items():
         if prov.get(k) != v:
@@ -137,6 +138,11 @@ def validate(a, lk: dict, cal: dict, cal100: dict, cov: dict) -> list:
             problems.append("--pilot must be a complete Anthropic pilot of at least 200 calls")
         if not (isinstance(pilot.get("projected_cost_usd"), (int, float)) and math.isfinite(pilot["projected_cost_usd"]) and pilot["projected_cost_usd"] > 0):
             problems.append("--pilot has no finite positive projected cost")
+        rate = pilot.get("fallback_rate")
+        if not isinstance(rate, (int, float)) or "fallback_rounds" not in pilot:
+            problems.append("--pilot carries no fallback figures (fallback_rounds, fallback_rate): rerun the pilot with the current scripts/h1.py")
+        elif float(rate) > float(lk["h1"]["fallback_limit"]):
+            problems.append(f"--pilot fallback rate {rate} exceeds h1.fallback_limit {lk['h1']['fallback_limit']}: the actor truncates or refuses too often to lock")
     return problems
 
 

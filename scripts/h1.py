@@ -131,7 +131,9 @@ def run_h1(o: dict) -> tuple[dict, int]:
     if o["pilot"]:
         n = max(backend.calls_this_run, 1); target = int(o["pilot_calls"])
         pilot = {"backend": backend.name, "model": backend.model, "calls": backend.calls_this_run, "target": target, "complete": backend.calls_this_run >= target,
+                 "fallback_rounds": backend.malformed, "fallback_rate": backend.malformed / n, "stop_reasons": backend.stop_reasons,
                  "mean_input_tokens": backend.usage["input_tokens"] / n, "mean_output_tokens": backend.usage["output_tokens"] / n,
+                 "mean_cache_creation_input_tokens": backend.usage.get("cache_creation_input_tokens", 0) / n, "mean_cache_read_input_tokens": backend.usage.get("cache_read_input_tokens", 0) / n,
                  "mean_latency_s": (sum(backend.latencies) / len(backend.latencies)) if backend.latencies else 0.0,
                  "cost_per_call_usd": backend.cost_usd / n, "projected_cost_usd": backend.cost_usd / n * int(h["calls_cap"])}
         (out / f"pilot_{backend.name}.json").write_text(json.dumps(pilot, indent=1)); print(json.dumps(pilot))

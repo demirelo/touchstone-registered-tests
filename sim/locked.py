@@ -46,7 +46,7 @@ def settings_hash(locked: dict) -> str:
             "comprehension_fixture_sha256", "coverage_consequences")
     bound = {k: v for k, v in locked.items() if k not in skip}
     if isinstance(bound.get("h1"), dict):
-        bound["h1"] = {k: v for k, v in bound["h1"].items() if k != "cost_cap_usd"}
+        bound["h1"] = {k: v for k, v in bound["h1"].items() if k not in ("cost_cap_usd", "prices")}   # measured figures, never results
     return hashlib.sha256(json.dumps(bound, sort_keys=True).encode()).hexdigest()
 
 
