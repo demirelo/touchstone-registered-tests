@@ -38,6 +38,9 @@ The tuned files, the calibrations, and the sweep outputs are untracked, so every
 ```bash
 # on each fresh pod: clone the branch being run (HTTPS, no key needed for a public or token-authorized repo), install, and set the thread variable
 curl -fsSL https://raw.githubusercontent.com/demirelo/touchstone/plan-2b/scripts/pod_setup.sh | bash -s -- https://github.com/demirelo/touchstone.git plan-2b
+# fresh runpod/base CPU images have no uv: install it and put ~/.local/bin on PATH before uv sync; pass --workers as a number
+# (nproc honours OMP_NUM_THREADS=1 and returns 1; getconf reports the host's cores, not the pod's share); mkdir -p the target
+# directories before rsync (rsync does not create missing parents) and count the copied files before a launch
 # from the author's machine: the tuned files and calibrations to every pod
 rsync -a experiments/tuned experiments/calibration.json experiments/calibration_T100.json <pod>:touchstone/experiments/
 # search shards (N pods), then collect the shards' search/ directories into one results/sweep on the author's machine

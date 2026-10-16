@@ -1,0 +1,62 @@
+[
+ {
+  "name": "B2_D2_beta0.05_rho0.2_low_development",
+  "rule": "B2",
+  "family": "D2",
+  "position": "low",
+  "runs_per_seed": 5,
+  "skew_gain": 1.3454630882276792,
+  "sarle_bans": NaN,
+  "n_train": 5
+ },
+ {
+  "name": "B2_D1_beta0.05_rho0.2_low_development",
+  "rule": "B2",
+  "family": "D1",
+  "position": "low",
+  "runs_per_seed": 5,
+  "skew_gain": 1.345463088227633,
+  "sarle_bans": NaN,
+  "n_train": 5
+ },
+ {
+  "name": "B1_D1_beta0.05_rho0.2_median_development",
+  "rule": "B1",
+  "family": "D1",
+  "position": "median",
+  "runs_per_seed": 7,
+  "skew_gain": 1.0304735911533989,
+  "sarle_bans": NaN,
+  "n_train": 5
+ },
+ {
+  "name": "B2_D1_beta0.05_rho0.2_high_development",
+  "rule": "B2",
+  "family": "D1",
+  "position": "high",
+  "runs_per_seed": 5,
+  "skew_gain": NaN,
+  "sarle_bans": 0.2936507936507936,
+  "n_train": 5
+ },
+ {
+  "name": "B2_D2_beta0.05_rho0.2_high_development",
+  "rule": "B2",
+  "family": "D2",
+  "position": "high",
+  "runs_per_seed": 5,
+  "skew_gain": -0.5290346054587213,
+  "sarle_bans": 0.2936507936507936,
+  "n_train": 5
+ },
+ {
+  "name": "B3_D1_beta0.05_rho0.2_median_development",
+  "rule": "B3",
+  "family": "D1",
+  "position": "median",
+  "runs_per_seed": 5,
+  "skew_gain": 0.06820874659003645,
+  "sarle_bans": 0.2,
+  "n_train": 5
+ }
+]
