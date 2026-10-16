@@ -1,0 +1,19 @@
+{
+ "backend": "jev",
+ "model": "jev-1.14.0",
+ "calls": 200,
+ "target": 200,
+ "complete": true,
+ "fallback_rounds": 0,
+ "fallback_rate": 0.0,
+ "stop_reasons": {
+  "end_turn": 199
+ },
+ "mean_input_tokens": 2245.62,
+ "mean_output_tokens": 215.43,
+ "mean_cache_creation_input_tokens": 0.0,
+ "mean_cache_read_input_tokens": 0.0,
+ "mean_latency_s": 0.2422243006348981,
+ "cost_per_call_usd": 9.431604000000001e-05,
+ "projected_cost_usd": 18.10867968
+}
