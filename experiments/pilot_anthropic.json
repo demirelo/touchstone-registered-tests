@@ -1,0 +1,19 @@
+{
+ "backend": "anthropic",
+ "model": "claude-opus-5-5",
+ "calls": 200,
+ "target": 200,
+ "complete": true,
+ "fallback_rounds": 0,
+ "fallback_rate": 0.0,
+ "stop_reasons": {
+  "end_turn": 200
+ },
+ "mean_input_tokens": 1278.155,
+ "mean_output_tokens": 205.395,
+ "mean_cache_creation_input_tokens": 3.67,
+ "mean_cache_read_input_tokens": 730.33,
+ "mean_latency_s": 5.123419096630023,
+ "cost_per_call_usd": 0.009531002,
+ "projected_cost_usd": 1829.952384
+}
