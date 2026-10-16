@@ -64,10 +64,10 @@ def test_lock_script_writes_lock_time_blocks_validates_inputs_and_check_passes(t
     r = subprocess.run(cmd(tmp_path, exp, tuned, "--bundle-hash", "ab" * 32, "--salt-hash", "cd" * 32, "--pilot", str(tmp_path / "pilot.json")), capture_output=True, text=True, cwd=ROOT)
     assert r.returncode == 0, r.stderr
     lk = yaml.safe_load((exp / "locked.yaml").read_text())
-    assert lk["version"] == "locked-2026-10-28" and set(lk["tuned"]) == {"B1", "B2", "B3"} and lk["calibration"]["T100"]["T"] == lk["h1"]["T"]
+    assert lk["version"] == "locked-2026-10-17" and set(lk["tuned"]) == {"B1", "B2", "B3"} and lk["calibration"]["T100"]["T"] == lk["h1"]["T"]
     assert lk["sealed_bundle_sha256"] == "ab" * 32 and lk["identity_salt_sha256"] == "cd" * 32 and lk["h1"]["cost_cap_usd"] == 119 and lk["coverage_consequences"]["final_eval_n"] == 20
     assert len(lk["coverage_report_sha256"]) == 64 and len(lk["comprehension_fixture_sha256"]) == 64
-    assert settings_hash(lk) == before and "git tag -s lock-2026-10-28" in r.stdout
+    assert settings_hash(lk) == before and "git tag -s lock-2026-10-17" in r.stdout
     chk = subprocess.run(cmd(tmp_path, exp, tuned, "--check", "--pilot", str(tmp_path / "pilot.json")), capture_output=True, text=True, cwd=ROOT)
     assert chk.returncode == 0, chk.stderr
     (tuned / "tuned_B2.json").write_text("{}")

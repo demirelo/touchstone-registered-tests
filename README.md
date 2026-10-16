@@ -14,7 +14,7 @@ outcomes are verified, and how participants can manipulate the rules.
 
 ## The falsifiable claim
 
-Provisional numbers, locked on 2026-10-28 from the tuned-baseline runs. The
+Provisional numbers, locked on 2026-10-17 from the tuned-baseline runs. The
 formal predicate lives in the design spec, section 8, and in
 `scripts/check_claim.py`. This paragraph restates it and nothing more.
 
@@ -103,13 +103,13 @@ identity.
 
 Two freezes.
 
-1. Lock, **2026-10-28**: locked evaluation config, the admissible rule class,
+1. Lock, **2026-10-17**: locked evaluation config, the admissible rule class,
    tuned baselines, executable family definitions, hashes of the measurement
    pipeline, the claim predicate script, the coverage study, the sealed
    held-out bundle hash, and a statement that exactly one proposed rule will
    be evaluated. Signed tag, public timestamp. Only then is the proposed rule
    designed.
-2. Evaluation freeze, **2026-11-11**: the proposed rule, its parameters, and
+2. Evaluation freeze, **when the proposed rule is final** (planned 2026-11-11): the proposed rule, its parameters, and
    its rule description are frozen in a second signed tag. Everything else
    was already fixed by the lock tag, except a named allow-list (the
    proposed-rule module, its config and description, the plot script, and

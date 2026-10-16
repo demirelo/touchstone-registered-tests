@@ -90,13 +90,14 @@ def main() -> None:
     ap.add_argument("--repo", default=str(Path(__file__).resolve().parents[1]))
     ap.add_argument("--sweep-out", dest="sweep_out", default=None); ap.add_argument("--h2-rows", dest="h2_rows", default=None)
     ap.add_argument("--h1-dir", dest="h1_dir", default=None); ap.add_argument("--h1-rows", dest="h1_rows", default=None); ap.add_argument("--h1-summary", dest="h1_summary", default=None)
-    ap.add_argument("--coverage-report", dest="coverage_report", default="experiments/coverage_report.json")
+    ap.add_argument("--coverage-report", dest="coverage_report", default=None, help="default: experiments/coverage_report.json under --repo")
     ap.add_argument("--proposed", required=True); ap.add_argument("--proposed-describe", dest="proposed_describe", default=None)
     ap.add_argument("--verify-lock", dest="verify_lock", default=None); ap.add_argument("--verify-freeze", dest="verify_freeze", default=None)
     ap.add_argument("--tuned-dir", dest="tuned_dir", default=None); ap.add_argument("--calibration", default=None)
     ap.add_argument("--out", default="results/verdict.json")
     a = ap.parse_args()
     lk = load_locked(); repo = Path(a.repo); problems = []
+    a.coverage_report = a.coverage_report or str(repo / "experiments" / "coverage_report.json")   # resolved under --repo, never the caller's cwd
     if not a.synthetic:
         if not a.verify_lock or (not a.verify_only and not a.verify_freeze):
             refuse(["confirmatory mode needs --verify-lock TAG and --verify-freeze TAG (or --verify-only with --verify-lock); pass --synthetic for CSV inputs"])

@@ -62,7 +62,7 @@ Record pass or fail and the commands in `sealed/b1_check.json`. B1 reveals nothi
 The bundle enters the repository under `sealed/`. The author runs:
 
 ```bash
-uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-28 --verify-freeze freeze-2026-11-11 --proposed proposed
+uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17 --verify-freeze freeze-2026-11-11 --proposed proposed
 ```
 
 That checks the tree and the bundle hash. No registration step exists: the frozen registry (`sim/registry.py`) finds `sealed/h2/family.py`, the final-eval seeds, and the prompt by itself. The author then runs the comprehension fixture, H1, H2, and the twins on the frozen rule and the baselines on the final-eval namespace (the run book lists the commands), then `scripts/check_claim.py`.
@@ -79,4 +79,4 @@ You write it, it is limited to interface errors, and it is logged and reported. 
 
 ## 7. Timeline
 
-Bundle complete by 2026-10-27. Commitment hashes to the author by 2026-10-27, so the lock commit on 2026-10-28 carries them. Unseal on 2026-11-12.
+Bundle complete on the lock day, 2026-10-17, before the lock commit, which carries the commitment hashes. Unseal on 2026-11-12.

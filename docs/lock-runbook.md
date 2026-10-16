@@ -4,7 +4,7 @@
 
 The simulator is branchy single-thread Python: a GPU does not help, core count does. Set `OMP_NUM_THREADS=1` before any multi-worker run. The search manifest splits across machines with `scripts/sweep.py --stage search --shard K/N` (copy the shards' `search/` directories together before the later stages). The coverage study splits with `scripts/coverage_study.py --cell i --workers 16` (six machines, one cell each; one cell's chunks spread over the pod's cores; measure the per-cell time on the smoke run before estimating), followed by `--merge` on one machine. `scripts/pod_setup.sh` prepares a fresh CPU pod.
 
-## Lock day (2026-10-28), in order
+## Lock day (2026-10-17), in order
 
 ```bash
 export OMP_NUM_THREADS=1
@@ -24,9 +24,9 @@ cp results/pilot_anthropic/pilot_anthropic.json experiments/pilot_anthropic.json
 uv run python scripts/lock.py --tuned-dir experiments/tuned --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --coverage-report experiments/coverage_report.json --bundle-hash <from the custodian> --salt-hash <from the custodian> --pilot experiments/pilot_anthropic.json
 uv run python scripts/lock.py --tuned-dir experiments/tuned --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --coverage-report experiments/coverage_report.json --pilot experiments/pilot_anthropic.json --check
 git add experiments/locked.yaml experiments/tuned experiments/calibration.json experiments/calibration_T100.json experiments/coverage_report.json experiments/coverage_cells.json experiments/pilot_anthropic.json
-git commit -S -m "lock: 2026-10-28"
+git commit -S -m "lock: 2026-10-17"
 uv run python scripts/check_claim.py --verify-only --verify-lock HEAD --coverage-report experiments/coverage_report.json --proposed none
-git tag -s lock-2026-10-28 -m "Touchstone lock 2026-10-28" && git push origin main lock-2026-10-28
+git tag -s lock-2026-10-17 -m "Touchstone lock 2026-10-17" && git push origin main lock-2026-10-17
 ```
 
 The lock commit carries `locked.yaml`, the tuned files, both calibrations, the coverage report and selection, and the pilot (spec 6 lists the coverage report as lock-commit content); the verify-only check runs against the committed tree (`HEAD`), after the commit and before the signed tag, so a lightweight tag is never needed (this machine signs every tag). Then post the tag hash to the public timestamp (OSF or AsPredicted) the same day. The coverage study's base entry is about 2.85 million episodes (about a day on 8 cores, or under an hour on six 16-vCPU pods with `--cell`); the conditional n = 40 run starts by itself only when the remedy order reaches it.
@@ -58,23 +58,23 @@ rsync -a <pod>:touchstone/results/coverage/cell_i.json results/coverage/
 uv run python scripts/coverage_study.py --sweep-out results/sweep --calibration experiments/calibration.json --tuned-dir experiments/tuned --out results/coverage --merge --register
 ```
 
-## Freeze day (2026-11-11)
+## Freeze day (the day the proposed rule is final; the commands show 2026-11-11 as the example date)
 
 Rules for the proposed rule's module `sim/mechanisms/proposed.py`, enforced by `scripts/check_claim.py` (`check_proposed_module`): imports only `sim.mechanisms.base`, `numpy`, `scipy`, `math`, `dataclasses`, `typing`, `__future__`, `itertools`, `functools`, in absolute form; no `__import__`, `exec`, `eval`, `compile`, `globals`, `vars`; no `importlib`, `builtins`, or `sys` calls; no `getattr`, `setattr`, or `delattr` with a dunder or computed name; no `__builtins__`; no access to `__subclasses__`, `__globals__`, `__dict__`, `__base__`, `__bases__`, `__mro__`, `__class__`, `__code__`, `__closure__`, `__loader__`, or `__spec__`. Importing the module, and calling `make(params)`, must change no attribute of any `sim.*` module. Before the freeze tag:
 
 ```bash
-uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-28 --proposed proposed
+uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17 --proposed proposed
 git tag -s freeze-2026-11-11 -m "Touchstone evaluation freeze"
-uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-28 --verify-freeze freeze-2026-11-11 --proposed proposed
+uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17 --verify-freeze freeze-2026-11-11 --proposed proposed
 ```
 
-## Evaluation (after the unseal, 2026-11-12)
+## Evaluation (after the unseal, the day after the freeze; 2026-11-12 in the example)
 
 ```bash
 export TOUCHSTONE_IDENTITY_SALT=$(cat sealed/identity_salt.hex)
 uv run python scripts/sweep.py --stage all --sections heldout --rules B1,B2,B3,proposed --calibration experiments/calibration.json --tuned-dir experiments/tuned --eval-namespace final_eval --workers 8 --out results/final
 uv run python scripts/h1.py --backend anthropic --rules B1,B2,B3,proposed --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --tuned-dir experiments/tuned --eval-namespace final_eval --prompt sealed/h1_prompt.txt --out results/h1_final
-uv run python scripts/check_claim.py --verify-lock lock-2026-10-28 --verify-freeze freeze-2026-11-11 --sweep-out results/final --h1-dir results/h1_final --calibration experiments/calibration.json --tuned-dir experiments/tuned --coverage-report results/coverage/coverage_report.json --proposed proposed --proposed-describe experiments/proposed_describe.yaml
+uv run python scripts/check_claim.py --verify-lock lock-2026-10-17 --verify-freeze freeze-2026-11-11 --sweep-out results/final --h1-dir results/h1_final --calibration experiments/calibration.json --tuned-dir experiments/tuned --coverage-report results/coverage/coverage_report.json --proposed proposed --proposed-describe experiments/proposed_describe.yaml
 uv run python scripts/plot.py --sweep-out results/final --out results/figures --coverage-report results/coverage/coverage_report.json --h1-dir results/h1_final
 ```
 

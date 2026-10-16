@@ -153,7 +153,7 @@ def main() -> None:
     ap.add_argument("--coverage-report", dest="coverage_report", required=True); ap.add_argument("--fixture", default="experiments/comprehension_fixture.yaml")
     ap.add_argument("--bundle-hash", dest="bundle_hash", default=None); ap.add_argument("--salt-hash", dest="salt_hash", default=None)
     ap.add_argument("--pilot", default=None); ap.add_argument("--cost-cap-usd", dest="cost_cap_usd", type=float, default=None)
-    ap.add_argument("--date", default="2026-10-28"); ap.add_argument("--check", action="store_true")
+    ap.add_argument("--date", default="2026-10-17"); ap.add_argument("--check", action="store_true")
     a = ap.parse_args()
     path = Path(a.locked); lk = yaml.safe_load(path.read_text()); before = settings_hash(lk)
     tuned = {r: sha(Path(a.tuned_dir) / f"tuned_{r}.json") for r in ("B1", "B2", "B3")}

@@ -1,4 +1,4 @@
-# Draft until the lock on 2026-10-28. At the lock this file is frozen by the
+# Draft until the lock on 2026-10-17. At the lock this file is frozen by the
 # lock tag and check_claim.py refuses any run whose config hash differs.
 version: draft
 seeds:
