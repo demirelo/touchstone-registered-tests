@@ -213,7 +213,8 @@ def admission_ext(measured: dict, thr_by_n: dict, locked: dict, admissible_n: di
             for stat, side, lv in AMEND_ENDPOINTS:
                 v = cov.get(f"{endpoint_key(stat, side, lv, n)}|{proc}")
                 t = (thr.get(f"{n}|{lv}") or {}).get("threshold")
-                if not isinstance(v, (int, float)) or isinstance(v, bool) or not math.isfinite(v) or not (0.0 <= v <= 1.0) or t is None or v < t:
+                t_ok = isinstance(t, (int, float)) and not isinstance(t, bool) and math.isfinite(t) and 0.0 <= t <= 1.0
+                if not isinstance(v, (int, float)) or isinstance(v, bool) or not math.isfinite(v) or not (0.0 <= v <= 1.0) or not t_ok or v < t:
                     ok = False
     procedure_admitted = {f"{p}|{n}": bool(ok) for p in AMEND_PROCEDURES}
     method = AMEND_PROCEDURES[0] if ok else None

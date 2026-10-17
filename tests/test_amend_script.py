@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def cmd(inp, report=None, amendment=None, base=None, selection=None, locked=None, *extra):
     return [sys.executable, str(ROOT / "scripts" / "amend.py"), "--amendment", str(amendment or inp["amendment"]), "--report", str(report or inp["report"]),
             "--base-report", str(base or inp["base_report"]), "--selection", str(selection or inp["selection"]), "--calibration", str(inp["calibration"]),
-            "--tuned-dir", str(inp["tuned"]), "--locked", str(locked or inp["locked"]), *extra]
+            "--calibration-t100", str(inp["dir"] / "cal100.json"), "--tuned-dir", str(inp["tuned"]), "--locked", str(locked or inp["locked"]), *extra]
 
 
 def run(c):
@@ -63,3 +63,28 @@ def test_amend_script_records_fields_and_refuses_inconsistent_or_retuned_inputs(
     r = run(cmd(inp, retuned, fresh)); assert r.returncode == 2 and "REFUSED" in r.stderr and "tuned" in r.stderr
     wrong_base = inp["dir"] / "wrong_base.json"; wrong_base.write_text("{}")
     r = run(cmd(inp, None, fresh, wrong_base)); assert r.returncode == 2 and "base report" in r.stderr
+
+
+def test_amend_script_checks_gate_parameters_thresholds_and_the_t100_calibration(registered_inputs):
+    import math
+    inp = registered_inputs
+    def one_pool(d): d["fixture_and_power"]["threshold_check"]["35000"]["40|0.9875"].update(pools=1, reps=1)
+    def wrong_deficit(d): d["fixture_and_power"]["per_n"]["40"][0]["power"]["40|0.9875"]["deficit"] = 90.0
+    def power_fifty(d): d["fixture_and_power"]["per_n"]["40"][0]["power"]["40|0.9875"].update(power_200=50.0, power_400=50.0)
+    def gap_lie(d): d["fixture_and_power"]["threshold_check"]["35000"]["40|0.9875"].update(simulated=0.0, gap=0.0)
+    def nan_threshold(d):
+        d["thresholds"]["40"]["40|0.9875"]["threshold"] = float("nan")
+        for c in d["cells"].values():
+            for k in c["measured"]:
+                c["measured"][k] = 0.0
+    for i, mutate in enumerate((one_pool, wrong_deficit, power_fifty, gap_lie, nan_threshold)):
+        bad = inp["dir"] / f"gate{i}.json"; bad.write_text(Path(inp["report"]).read_text()); rewrite(bad, mutate)
+        fresh = inp["dir"] / f"amg{i}.yaml"; fresh.write_text(yaml.safe_dump({**yaml.safe_load(Path(inp["amendment"]).read_text()), "coverage_report_amendment_sha256": None, "coverage_consequences": None}))
+        r = run(cmd(inp, bad, fresh)); assert r.returncode == 2 and "REFUSED" in r.stderr, (mutate.__name__, r.stderr[-500:])
+    # the T = 100 calibration is a registered artifact: a changed file is refused when the lock names its hash
+    lk = yaml.safe_load(Path(inp["locked"]).read_text()); lk["calibration"]["T100"] = {"sha256": "ab" * 32}
+    locked2 = inp["dir"] / "locked_t100.yaml"; locked2.write_text(yaml.safe_dump(lk, sort_keys=False))
+    fresh = inp["dir"] / "am_t100.yaml"; fresh.write_text(yaml.safe_dump({**yaml.safe_load(Path(inp["amendment"]).read_text()), "coverage_report_amendment_sha256": None, "coverage_consequences": None}))
+    r = run(cmd(inp, None, fresh, None, None, locked2))
+    assert r.returncode == 2 and "T100" in r.stderr
+    assert run([*cmd(inp, None, fresh), "--repo", str(inp["dir"])]).returncode == 0                                       # --repo is accepted

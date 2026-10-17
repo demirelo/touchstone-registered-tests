@@ -107,12 +107,13 @@ def main() -> None:
     ap.add_argument("--sweep-out", dest="sweep_out", required=True); ap.add_argument("--calibration", required=True)
     ap.add_argument("--tuned-dir", dest="tuned_dir", default=None); ap.add_argument("--amendment", required=True)
     ap.add_argument("--base-report", dest="base_report", required=True); ap.add_argument("--selection", required=True)
-    ap.add_argument("--locked", default=str(REPO / "experiments" / "locked.yaml")); ap.add_argument("--out", required=True)
+    ap.add_argument("--repo", default=str(REPO)); ap.add_argument("--locked", default=None, help="default: experiments/locked.yaml under --repo"); ap.add_argument("--out", required=True)
     ap.add_argument("--cell", type=int, default=None); ap.add_argument("--merge", action="store_true")
     ap.add_argument("--workers", type=int, default=1); ap.add_argument("--smoke", action="store_true")
     a = ap.parse_args()
     if a.cell is not None and not 0 <= a.cell <= 5:
         refuse(f"--cell {a.cell} is outside 0..5")
+    a.locked = a.locked or str(Path(a.repo) / "experiments" / "locked.yaml")
     lk = load_locked(a.locked); out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
     amend = load_amendment(a.amendment, lk); cal = load_calibration(a.calibration); tuned = Path(a.tuned_dir) if a.tuned_dir else None
     base = json.loads(Path(a.base_report).read_text()); base["_sha256"] = sha(a.base_report)

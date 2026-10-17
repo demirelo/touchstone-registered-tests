@@ -70,14 +70,15 @@ uv run pytest tests/test_coverage_ext_script.py -q --runslow
 ssh <pod> 'cd touchstone && OMP_NUM_THREADS=1 uv run python scripts/coverage_ext.py --sweep-out results/sweep --calibration experiments/calibration.json --tuned-dir experiments/tuned --amendment experiments/amendment-2026-10-17.yaml --base-report experiments/coverage_report.json --selection experiments/coverage_cells.json --out results/coverage_ext --cell i --workers 16'
 rsync -a <pod>:touchstone/results/coverage_ext/ results/coverage_ext/
 uv run python scripts/coverage_ext.py --sweep-out results/sweep --calibration experiments/calibration.json --tuned-dir experiments/tuned --amendment experiments/amendment-2026-10-17.yaml --base-report experiments/coverage_report.json --selection experiments/coverage_cells.json --out results/coverage_ext --merge
-uv run python scripts/amend.py --amendment experiments/amendment-2026-10-17.yaml --report results/coverage_ext/coverage_report_amendment.json --base-report experiments/coverage_report.json --selection experiments/coverage_cells.json --calibration experiments/calibration.json --tuned-dir experiments/tuned
+uv run python scripts/amend.py --amendment experiments/amendment-2026-10-17.yaml --report results/coverage_ext/coverage_report_amendment.json --base-report experiments/coverage_report.json --selection experiments/coverage_cells.json --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --tuned-dir experiments/tuned
 cp results/coverage_ext/coverage_report_amendment.json experiments/coverage_report_amendment.json
-uv run python scripts/amend.py --amendment experiments/amendment-2026-10-17.yaml --report experiments/coverage_report_amendment.json --base-report experiments/coverage_report.json --selection experiments/coverage_cells.json --calibration experiments/calibration.json --tuned-dir experiments/tuned --check
+uv run python scripts/amend.py --amendment experiments/amendment-2026-10-17.yaml --report experiments/coverage_report_amendment.json --base-report experiments/coverage_report.json --selection experiments/coverage_cells.json --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --tuned-dir experiments/tuned --check
 # the expected delta against the original lock: exactly the amendment's files; record the list in the amendment note, never call it clean
 uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17 --proposed none
 git add experiments/amendment-2026-10-17.yaml experiments/coverage_report_amendment.json docs/amendments
 git commit -S -m "amendment 1: registered"
 git tag -s lock-2026-10-17-amendment-1 -m "Touchstone amendment 1" && git push origin main lock-2026-10-17-amendment-1
+printf 'Touchstone amendment 1\n\ntag: lock-2026-10-17-amendment-1\ncommit: %s\ntag object: %s\namendment_sha256: %s\ncoverage_report_amendment_sha256: %s\n' "$(git rev-parse lock-2026-10-17-amendment-1^{commit})" "$(git rev-parse lock-2026-10-17-amendment-1)" "$(uv run python -c 'import yaml; from sim.amendment import amendment_hash; print(amendment_hash(yaml.safe_load(open("experiments/amendment-2026-10-17.yaml"))))')" "$(shasum -a 256 experiments/coverage_report_amendment.json | cut -d" " -f1)" > docs/lock-2026-10-17-amendment-1.txt
 uvx --from opentimestamps-client ots stamp docs/lock-2026-10-17-amendment-1.txt
 uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17-amendment-1 --proposed none
 ```

@@ -92,3 +92,11 @@ def test_fixture_and_power_ext_smoke_shape():
     assert set(fp["per_n"]) == {"40"} and fp["per_n"]["40"][0]["fixture"]["endpoints_per_cell"] == 2 and set(fp["admissible_n"]) == {"40"}
     assert set(fp["per_n"]["40"][0]["power"]) == {"40|0.9875"} and fp["base_M"] == 200 and fp["base_R"] == {"40": 20}
     assert "proxy" in LIMITATION.lower()
+
+
+def test_admission_refuses_a_non_finite_threshold():
+    names = [f"c{i}" for i in range(6)]; lk = load_locked()
+    keys = ("gain_diff|lower|0.9875|40|studentized", "gain_diff|upper|0.9875|40|studentized")
+    zero = {c: {k: 0.0 for k in keys} for c in names}
+    assert admission_ext(zero, {40: {"40|0.9875": {"threshold": float("nan")}}}, lk, {"40": True}, names)["consequences"]["h3_comparative"] == "exploratory"
+    assert admission_ext(zero, {40: {"40|0.9875": {"threshold": 1.5}}}, lk, {"40": True}, names)["consequences"]["h3_comparative"] == "exploratory"

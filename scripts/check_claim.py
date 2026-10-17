@@ -163,6 +163,8 @@ def main() -> None:
         demoted = demoted_cells(SEALED_DIR)
         if a.proposed_describe and Path(a.proposed_describe).resolve() != (repo / "experiments" / "proposed_describe.yaml").resolve():
             refuse(["--proposed-describe must be the frozen experiments/proposed_describe.yaml (checked against the freeze tag)"])
+        if amend is not None and Path(a.amendment).resolve() != (repo / "experiments" / "amendment-2026-10-17.yaml").resolve():
+            refuse(["--amendment must be the repository's experiments/amendment-2026-10-17.yaml (checked against the amendment tag)"])
     elif a.h2_rows:
         h2 = pd.read_csv(a.h2_rows)
     if a.synthetic and a.h3_rows:
@@ -200,8 +202,10 @@ def main() -> None:
         print(f"amended claim: {am['amended']}   (H3: public identity-replacement stress test on fresh final-evaluation seeds)")
         print(f"  H2 rule clause gate: {am['h2_rule_status']}   gain_diff sides admitted: {am['admitted']}")
         ab = am.get("absolute") or {}
-        if ab:
+        if "eff" in ab:
             print(f"  H3 absolute: {ab['status']}  eff {ab['eff'].status} ({ab['eff'].bound})  gain {ab['gain'].status} ({ab['gain'].bound})  audit {ab['audit']}")
+        else:
+            print(f"  H3 absolute: {ab.get('status', INCONCLUSIVE)}")
         cp = am.get("comparative") or {}
         for B in amend["clause"]["baselines"]:
             if B in cp:

@@ -121,6 +121,7 @@ def registered_inputs(tmp_path):
     lk = yaml.safe_load((exp / "locked.yaml").read_text()); lk["coverage_report_sha256"] = hashlib.sha256((tmp_path / "cov.json").read_bytes()).hexdigest()
     lk["calibration"] = {**(lk.get("calibration") or {}), "sha256": hashlib.sha256((tmp_path / "cal.json").read_bytes()).hexdigest()}     # the lock copy binds the fabricated inputs
     lk["tuned"] = {r: hashlib.sha256((tuned / f"tuned_{r}.json").read_bytes()).hexdigest() for r in ("B1", "B2", "B3")}
+    lk["calibration"]["T100"] = {"sha256": hashlib.sha256((tmp_path / "cal100.json").read_bytes()).hexdigest()}
     locked = tmp_path / "locked_reg.yaml"; locked.write_text(yaml.safe_dump(lk, sort_keys=False))
     doc = amendment_doc(); amend = tmp_path / "amendment.yaml"; amend.write_text(yaml.safe_dump(doc, sort_keys=False))
     base = json.loads((tmp_path / "cov.json").read_text()); sel = tmp_path / "selection.json"; sel.write_text(json.dumps(base["selection"]))

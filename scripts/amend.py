@@ -59,6 +59,12 @@ def validate_ext(a, lk: dict, amend: dict, rep: dict, base: dict, selection: lis
             p.append(f"provenance {k}: the extension differs from this environment's inputs")
     if (lk.get("calibration") or {}).get("sha256") not in (None, want["calibration_sha256"]):
         p.append("calibration: hash differs from the lock")
+    t100 = ((lk.get("calibration") or {}).get("T100") or {}).get("sha256")
+    if t100:
+        if not a.calibration_t100:
+            p.append("--calibration-t100 is required: the lock names the T100 calibration hash")
+        elif sha(a.calibration_t100) != t100:
+            p.append("calibration T100: hash differs from the lock")
     for r, h in (lk.get("tuned") or {}).items():
         if want["tuned_sha256"].get(r) != h:
             p.append(f"tuned file for {r}: hash differs from the lock")
@@ -79,9 +85,17 @@ def validate_ext(a, lk: dict, amend: dict, rep: dict, base: dict, selection: lis
             p.append(f"attempt {i}: M or R is not the seeds_ext size times the factor")
         fx_ll = clopper_pearson_lower(int(fx.get("admitted", 0)), trials, conf) if trials else 0.0
         fx_ok = abs(float(fx.get("lower_limit", -1)) - fx_ll) < 1e-9 and bool(fx.get("pass_")) == (fx_ll >= 0.9)
-        pw_ok = set(pw) == {key} and all(_num(v.get("power_200")) and _num(v.get("power_400")) and bool(v.get("converged")) == (abs(v["power_200"] - v["power_400"]) <= 0.001)
+        iv = lk["intervals"]; want_deficit = float(iv["deficits"][str(AMEND_LEVEL)]); exact = thresholds(lk, M).get(key, {}).get("exact") if M else None
+        pw_ok = set(pw) == {key} and all(_num(v.get("power_200")) and _num(v.get("power_400")) and 0.0 <= v["power_200"] <= 1.0 and 0.0 <= v["power_400"] <= 1.0
+                                      and _num(v.get("deficit")) and abs(float(v["deficit"]) - want_deficit) < 1e-12
+                                      and bool(v.get("converged")) == (abs(v["power_200"] - v["power_400"]) <= 0.001)
                                       and bool(v.get("pass_")) == (bool(v.get("converged")) and v["power_200"] >= 0.8) for v in pw.values())
-        ck_ok = key in chk and _num(chk[key].get("gap")) and _num(chk[key].get("se")) and bool(chk[key].get("pass_")) == (abs(chk[key]["gap"]) <= 3 * chk[key]["se"] + 1e-4)
+        c0 = chk.get(key) or {}
+        ck_ok = (key in chk and _num(c0.get("gap")) and _num(c0.get("se")) and _num(c0.get("analytic")) and _num(c0.get("simulated"))
+                 and 0.0 <= c0["simulated"] <= 1.0 and exact is not None and abs(float(c0["analytic"]) - float(exact)) < 1e-12
+                 and abs(float(c0["gap"]) - (float(c0["analytic"]) - float(c0["simulated"]))) < 1e-12
+                 and int(c0.get("pools", 0)) == int(iv.get("threshold_check_pools", 200)) and int(c0.get("reps", 0)) == int(iv.get("threshold_check_reps", 20000))
+                 and bool(c0.get("pass_")) == (abs(c0["gap"]) <= 3 * c0["se"] + 1e-4))
         if not (fx_ok and pw_ok and ck_ok):
             p.append(f"attempt {i}: incomplete evidence or pass flags that contradict their values")
         passed = bool(fx.get("pass_")) and all(v.get("pass_") for v in pw.values()) and bool(pw) and ck_ok and bool(chk[key].get("pass_")) if key in chk else False
@@ -94,8 +108,9 @@ def validate_ext(a, lk: dict, amend: dict, rep: dict, base: dict, selection: lis
     sel_att = attempts[-1] if attempts else {}
     thr_rep = rep.get("thresholds") or {}
     want_thr = thresholds(lk, int(sel_att.get("M", 0))) if sel_att else {}
-    if set(thr_rep) != {str(n)} or abs(float((thr_rep.get(str(n)) or {}).get(key, {}).get("threshold", -1)) - float(want_thr.get(key, {}).get("threshold", -2))) > 1e-12:
-        p.append(f"thresholds at n = {n} are not thresholds(locked, M) of the selected attempt")
+    got_thr = (thr_rep.get(str(n)) or {}).get(key, {}).get("threshold")
+    if set(thr_rep) != {str(n)} or not _num(got_thr) or not (0.0 <= got_thr <= 1.0) or abs(float(got_thr) - float(want_thr.get(key, {}).get("threshold", -2))) > 1e-12:
+        p.append(f"thresholds at n = {n} are not finite thresholds(locked, M) of the selected attempt")
     cells = rep.get("cells") or {}
     if set(cells) != set(names):
         p.append("cells: not exactly the six selected cells")
@@ -129,8 +144,10 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--amendment", required=True); ap.add_argument("--report", required=True); ap.add_argument("--base-report", dest="base_report", required=True)
     ap.add_argument("--selection", required=True); ap.add_argument("--calibration", required=True); ap.add_argument("--tuned-dir", dest="tuned_dir", required=True)
-    ap.add_argument("--locked", default=str(REPO / "experiments" / "locked.yaml")); ap.add_argument("--check", action="store_true")
+    ap.add_argument("--calibration-t100", dest="calibration_t100", default=None, help="the T = 100 calibration; required when the lock names its hash")
+    ap.add_argument("--repo", default=str(REPO)); ap.add_argument("--locked", default=None, help="default: experiments/locked.yaml under --repo"); ap.add_argument("--check", action="store_true")
     a = ap.parse_args()
+    a.locked = a.locked or str(Path(a.repo) / "experiments" / "locked.yaml")
     lk = load_locked(a.locked)
     try:
         amend = load_amendment(a.amendment, lk)

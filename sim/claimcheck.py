@@ -183,38 +183,50 @@ def evaluate_amendment(h3: pd.DataFrame | None, cov_base: dict, cov_ext: dict | 
     from .amendment import LIMITATION
     c = amend["clause"]; n = int(c["n"]); beta = float(c["beta"]); fam = c.get("family", "D2+H3"); pos = c.get("position", "median")
     settings = locked["intervals"]; rl, bl = float(c["level_rule"]), float(c["level_comparative"])
-    out = {"amended": INCONCLUSIVE, "h2_rule_status": h2_rule_status, "absolute": {}, "comparative": {}, "admitted": False, "n": n, "note": LIMITATION, "reason": ""}
+    out = {"amended": INCONCLUSIVE, "h2_rule_status": h2_rule_status, "absolute": {"status": INCONCLUSIVE}, "comparative": {"status": INCONCLUSIVE},
+           "admitted": False, "n": n, "note": LIMITATION, "reason": ""}
+    reasons = []
     admitted = cov_ext is not None and (cov_ext.get("consequences") or {}).get("h3_comparative") == "confirmatory" \
         and all(cov_ext.get("admitted_sides", {}).get(endpoint_key("gain_diff", side, bl, n)) for side in ("lower", "upper"))
     out["admitted"] = bool(admitted)
     if not admitted:
-        out["reason"] = "gain_diff sides not admitted by the extension report"; return out
+        reasons.append("gain_diff sides not admitted by the extension report")
+    rows: dict = {}
     if h3 is None or len(h3) == 0:
-        out["reason"] = "no H3 rows"; return out
-    rows = {}
-    for rule in [proposed] + list(c["baselines"]):
-        if f"{rule}|{fam}" in demoted:
-            out["reason"] = f"{rule}|{fam} demoted by a logged repair"; return out
-        d = _rows(h3[h3["family"] == fam] if "family" in h3 else h3, rule, beta, pos)
-        if len(d) != n or d["seed"].nunique() != n:
-            out["reason"] = f"{rule}: rows {len(d)} with {d['seed'].nunique() if len(d) else 0} unique seeds, expected {n}"; return out
-        rows[rule] = d
-    dR = rows[proposed]
-    eff = decide(dR["eff_attack"], "eff", "lower", rl, float(c["eff_min"]), cov_base, settings, n)
-    gain = decide(dR["gain"], "gain", "upper", rl, float(c["gain_max"]), cov_base, settings, n)
-    audit = PASS if bool((dR["audit_cost_attack"] <= dR["budget"] + 1e-9).all()) else FAIL
-    out["absolute"] = {"eff": eff, "gain": gain, "audit": audit, "status": combine_all([eff.status, gain.status, audit]),
-                       "audit_over_sstar_mean": float((dR["audit_cost_attack"] / dR["sstar"]).mean())}
-    comp = {}
-    for B in c["baselines"]:
-        m = rows[B].merge(dR, on="seed", suffixes=("_B", "_R"))
-        if len(m) != n:
-            out["reason"] = f"{B}: pairing with {proposed} on seed gives {len(m)} rows, expected {n}"; return out
-        comp[B] = decide(m["gain_B"] - m["gain_R"], "gain_diff", "lower", bl, float(c["gain_reduction_min"]), cov_ext, settings, n)
+        reasons.append("no H3 rows")
+    else:
+        for rule in [proposed] + list(c["baselines"]):
+            if f"{rule}|{fam}" in demoted:
+                reasons.append(f"{rule}|{fam} demoted by a logged repair"); continue
+            d = _rows(h3[h3["family"] == fam] if "family" in h3 else h3, rule, beta, pos)
+            if len(d) != n or d["seed"].nunique() != n:
+                reasons.append(f"{rule}: rows {len(d)} with {d['seed'].nunique() if len(d) else 0} unique seeds, expected {n}"); continue
+            rows[rule] = d
+    # absolute part: decided whenever R*'s rows are complete, whatever the extension's admission (its bounds come from the base study)
+    if proposed in rows:
+        dR = rows[proposed]
+        eff = decide(dR["eff_attack"], "eff", "lower", rl, float(c["eff_min"]), cov_base, settings, n)
+        gain = decide(dR["gain"], "gain", "upper", rl, float(c["gain_max"]), cov_base, settings, n)
+        audit = PASS if bool((dR["audit_cost_attack"] <= dR["budget"] + 1e-9).all()) else FAIL
+        out["absolute"] = {"eff": eff, "gain": gain, "audit": audit, "status": combine_all([eff.status, gain.status, audit]),
+                           "audit_over_sstar_mean": float((dR["audit_cost_attack"] / dR["sstar"]).mean())}
+    # comparative part: only with admitted sides and complete pairs; a missing piece is INCONCLUSIVE, never a hidden FAIL elsewhere
+    comp: dict = {}
+    if admitted and proposed in rows:
+        for B in c["baselines"]:
+            if B not in rows:
+                continue
+            m = rows[B].merge(rows[proposed], on="seed", suffixes=("_B", "_R"))
+            if len(m) != n:
+                reasons.append(f"{B}: pairing with {proposed} on seed gives {len(m)} rows, expected {n}"); continue
+            comp[B] = decide(m["gain_B"] - m["gain_R"], "gain_diff", "lower", bl, float(c["gain_reduction_min"]), cov_ext, settings, n)
     statuses = [v.status for v in comp.values()]
-    comp["status"] = PASS if all(x == PASS for x in statuses) else FAIL if any(x == FAIL for x in statuses) else INCONCLUSIVE
+    complete = admitted and all(B in comp for B in c["baselines"])
+    comp["status"] = (PASS if all(x == PASS for x in statuses) else FAIL if any(x == FAIL for x in statuses) else INCONCLUSIVE) if complete \
+        else (FAIL if any(x == FAIL for x in statuses) else INCONCLUSIVE)
     out["comparative"] = comp
-    out["amended"] = combine_all([h2_rule_status, out["absolute"]["status"], comp["status"]])
+    out["reason"] = "; ".join(reasons)
+    out["amended"] = combine_all([h2_rule_status, out["absolute"]["status"], comp["status"]])     # FAIL dominates; anything unavailable is INCONCLUSIVE
     return out
 
 
@@ -251,6 +263,9 @@ def verify_amendment_report(path, amend: dict) -> list:
         problems.append("amendment report: consequences differ from the amendment")
     if rep.get("limitation") != LIMITATION:
         problems.append("amendment report: the limitation sentence is missing or altered")
+    from .amendment import amendment_hash
+    if rep.get("amendment_sha256") != amendment_hash(amend):
+        problems.append("amendment report: amendment_sha256 differs from the supplied amendment file (its binding content was changed)")
     return problems
 
 

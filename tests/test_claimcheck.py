@@ -381,9 +381,12 @@ def test_verify_h3_records_and_amendment_report(tmp_path):
     assert any("duplicate seed" in p for p in verify_h3_records([rec("B2", (7, 7, 9)), rec("B3"), rec("R")], lk, jobs, seeds, "R"))
     assert any("missing rule" in p for p in verify_h3_records(recs[:2], lk, jobs, seeds, "R"))
     assert any("namespace" in p for p in verify_h3_records([dict(rec("B2"), eval_namespace="dev_val"), rec("B3"), rec("R")], lk, jobs, seeds, "R"))
-    rep = {"admission_basis": "registered", "smoke": False, "selection": [{"name": n} for n in REGISTERED_NAMES], "consequences": {"h3_comparative": "confirmatory"}, "limitation": LIMITATION}
+    from sim.amendment import amendment_hash
+    am = {"clause": {"n": 40}, "coverage_report_amendment_sha256": None, "coverage_consequences": {"h3_comparative": "confirmatory"}}
+    rep = {"admission_basis": "registered", "smoke": False, "selection": [{"name": n} for n in REGISTERED_NAMES], "consequences": {"h3_comparative": "confirmatory"}, "limitation": LIMITATION,
+           "amendment_sha256": amendment_hash(am)}
     p = tmp_path / "r.json"; p.write_text(json.dumps(rep)); h = hashlib.sha256(p.read_bytes()).hexdigest()
-    am = {"coverage_report_amendment_sha256": h, "coverage_consequences": {"h3_comparative": "confirmatory"}}
+    am = {**am, "coverage_report_amendment_sha256": h}
     assert verify_amendment_report(p, am) == []
     assert verify_amendment_report(p, dict(am, coverage_report_amendment_sha256="0" * 32 + "1" * 32))
     assert verify_amendment_report(p, dict(am, coverage_consequences={"h3_comparative": "exploratory"}))
@@ -426,7 +429,11 @@ def test_check_claim_refuses_a_draft_or_bad_amendment_before_reading_any_sweep(t
     conf = cmd + ["--verify-freeze", "freeze-test", "--sweep-out", str(tmp_path), "--calibration", str(tmp_path / "cal.json"), "--tuned-dir", str(tmp_path), "--proposed-describe", str(tmp_path / "d.yaml")]
     r = subprocess.run(conf + ["--amendment", str(draft)], capture_output=True, text=True, cwd=ROOT)
     assert r.returncode == 2 and "not registered" in r.stderr
-    rep = {"admission_basis": "registered", "smoke": False, "selection": [{"name": n} for n in REGISTERED_NAMES], "consequences": {"h3_comparative": "confirmatory"}, "limitation": LIMITATION}
+    import yaml
+    from sim.amendment import amendment_hash
+    base_doc = yaml.safe_load(write_amendment(tmp_path / "probe.yaml", registered=False).read_text())
+    rep = {"admission_basis": "registered", "smoke": False, "selection": [{"name": n} for n in REGISTERED_NAMES], "consequences": {"h3_comparative": "confirmatory"}, "limitation": LIMITATION,
+           "amendment_sha256": amendment_hash(base_doc)}
     ext = tmp_path / "ext.json"; ext.write_text(json.dumps(rep)); h = hashlib.sha256(ext.read_bytes()).hexdigest()
     ok = write_amendment(tmp_path / "ok.yaml", registered=True, report_hash=h, consequences={"h3_comparative": "confirmatory"})
     r = subprocess.run(cmd + ["--verify-only", "--amendment", str(ok), "--coverage-ext", str(ext)], capture_output=True, text=True, cwd=ROOT)
@@ -445,3 +452,22 @@ def test_check_claim_refuses_the_locked_file_override(tmp_path):
     r = subprocess.run([sys.executable, str(ROOT / "scripts" / "check_claim.py"), "--verify-only", "--verify-lock", "lock-test", "--repo", str(repo), "--proposed", "R"],
                        capture_output=True, text=True, cwd=ROOT, env={**os.environ, "TOUCHSTONE_LOCKED": str(tmp_path / "other.yaml")})
     assert r.returncode == 2 and "TOUCHSTONE_LOCKED" in r.stderr
+
+
+def test_amendment_keeps_known_failures_and_binds_the_amendment_hash(tmp_path):
+    cov = coverage(method20=None, par="studentized_n40", n_final=40, method40="studentized"); am = AMEND_FIXTURE
+    r = evaluate_amendment(good_h3(), cov, ext_cov(admitted=False), LK, am, "R", FAIL)
+    assert r["amended"] == FAIL and r["comparative"]["status"] == INCONCLUSIVE and r["absolute"]["status"] == PASS      # an H2 FAIL survives an unadmitted extension
+    r = evaluate_amendment(good_h3(eff_r=0.80), cov, ext_cov(admitted=False), LK, am, "R", PASS)
+    assert r["amended"] == FAIL and r["absolute"]["eff"].status == FAIL                                                   # an admitted absolute FAIL survives too
+    assert evaluate_amendment(None, cov, None, LK, am, "R", FAIL)["amended"] == FAIL                                      # no rows at all: the H2 FAIL still decides
+    assert evaluate_amendment(good_h3().query("rule != 'R'"), cov, ext_cov(), LK, am, "R", FAIL)["amended"] == FAIL
+    from sim.amendment import amendment_hash
+    doc = {"clause": dict(am["clause"]), "coverage_report_amendment_sha256": None, "coverage_consequences": None}
+    rep = {"admission_basis": "registered", "smoke": False, "selection": [{"name": n} for n in REGISTERED_NAMES], "consequences": {"h3_comparative": "confirmatory"},
+           "limitation": LIMITATION, "amendment_sha256": amendment_hash(doc)}
+    p = tmp_path / "r.json"; p.write_text(json.dumps(rep)); h = hashlib.sha256(p.read_bytes()).hexdigest()
+    reg = {**doc, "coverage_report_amendment_sha256": h, "coverage_consequences": rep["consequences"]}
+    assert verify_amendment_report(p, reg) == []
+    edited = {**reg, "clause": {**reg["clause"], "gain_reduction_min": 0.0}}
+    assert any("amendment_sha256" in q for q in verify_amendment_report(p, edited))                                      # an edited amendment copy no longer matches the report
