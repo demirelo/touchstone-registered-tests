@@ -12,7 +12,13 @@ from sim.policies.twin import Twin
 from sim.rng import make_draws
 
 RULES = [PostedPrices(0.25, 0.40, 0.55), PostedRandomAudit(0.25, 0.40, 0.55, tol=0.12, L=10), SecondScore(tol=0.12, L=10)]
-IDS = [r.name for r in RULES]
+try:                                                                   # amendment 2: the proposed rule's two allocations join the harness once the module exists
+    from sim.mechanisms import proposed as _proposed
+    RULES += [_proposed.make({"allocation": "A", "targeting": "T1", "tol": 0.12, "L": 10}),
+              _proposed.make({"allocation": "B", "targeting": "T2", "tol": 0.12, "L": 10, "P1": 0.25, "P2": 0.40, "P3": 0.55})]
+except ImportError:
+    pass
+IDS = [r.name + (f"_{r.allocation}_{r.targeting}" if r.name == "proposed" else "") for r in RULES]
 
 
 def tiny(budget=0.5):
