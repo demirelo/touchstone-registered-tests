@@ -250,18 +250,19 @@ def clopper_pearson_lower(k: int, n: int, conf: float) -> float:
     return 0.0 if k == 0 else float(stats.beta.ppf(1.0 - conf, k, n - k + 1))
 
 
-def joint_fixture(locked: dict, n: int, M: int, R: int, thr: dict, trials: int, rng, cells: int = 6) -> dict:
+def joint_fixture(locked: dict, n: int, M: int, R: int, thr: dict, trials: int, rng, cells: int = 6, statistics=STATISTICS, endpoints=ENDPOINTS) -> dict:
     """One trial: for each cell and each statistic an independent normal pool and (R, n) sample; the sides and levels of
-    one statistic share its sample; admitted when all 6 x 8 endpoints are at or above threshold."""
+    one statistic share its sample; admitted when all cells x endpoints are at or above threshold (6 x 8 for the base
+    study; an extension passes its own statistics and endpoints)."""
     iv = locked["intervals"]; conf = 1.0 - 0.05 / 3.0; admitted = 0
     crit = {lv: float(stats.t.ppf(lv, n - 1)) for lv in LEVELS}
     for _ in range(trials):
         ok = True
         for _c in range(cells):
-            for stat in STATISTICS:
+            for stat in statistics:
                 pool = rng.normal(size=M); lo, hi = t_interval(pool, float(iv["reference_level"]))
                 X = rng.normal(size=(R, n)); m = X.mean(axis=1); se = X.std(axis=1, ddof=1) / math.sqrt(n)
-                for s, side, lv in ENDPOINTS:
+                for s, side, lv in endpoints:
                     if s != stat:
                         continue
                     cov = float(((m + crit[lv] * se) >= hi).mean()) if side == "upper" else float(((m - crit[lv] * se) <= lo).mean())
@@ -273,7 +274,7 @@ def joint_fixture(locked: dict, n: int, M: int, R: int, thr: dict, trials: int, 
                 break
         admitted += int(ok)
     ll = clopper_pearson_lower(admitted, trials, conf)
-    return {"n": n, "M": M, "R": R, "trials": trials, "cells": cells, "endpoints_per_cell": len(ENDPOINTS), "admitted": admitted, "conf": conf,
+    return {"n": n, "M": M, "R": R, "trials": trials, "cells": cells, "endpoints_per_cell": len(endpoints), "admitted": admitted, "conf": conf,
             "lower_limit": ll, "pass_": bool(ll >= 0.9)}
 
 
