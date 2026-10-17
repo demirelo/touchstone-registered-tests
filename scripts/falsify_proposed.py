@@ -127,15 +127,85 @@ def _read(path: Path) -> dict:
     return json.loads(path.read_text())
 
 
-def _required_records(lk, budget) -> dict:
-    """The sweep records F4 and F5 read, by stage, from the amended manifest."""
-    from sim.manifest import enumerate_manifest
-    cells = enumerate_manifest(lk, ["B1", "B2", "B3", "proposed"], budget=budget)
-    bh, rho0 = float(lk["beta_headline"]), float(lk["rho"]["default"])
-    dev = [c for c in cells if c.section == "development" and c.beta == bh and c.rho == rho0 and c.rule in ("proposed", "B3") and c.family in ("D1", "D2")]
-    h3 = [c for c in cells if c.section == "h3" and c.rule in ("proposed", "B2", "B3")]
-    ctrl = [c for c in cells if c.section == "controls" and c.rule == "proposed" and c.family == "D2+H3"]
-    return {"evaluate": dev + h3, "checks": ctrl}
+RULES = ("B1", "B2", "B3", "proposed")
+SECTIONS = ("development", "rho_sweep", "h3", "ablation")            # the full cells of the documented sweep; all_deviators is a stage with one aggregate file
+
+
+def required_inventory(lk, budget) -> dict:
+    """The complete output of the documented sweep (`--sections development,rho_sweep,h3,all_deviators,ablation --rules B1,B2,B3,proposed`,
+    every stage): a search, reference, and evaluate record per full cell, a bank record per bank-family cell, a checks
+    record per control (under its shared name), the bank document, and the all-deviators aggregate."""
+    from sim.manifest import checks_record_name, enumerate_manifest
+    cells = enumerate_manifest(lk, list(RULES), budget=budget)
+    full = [c for c in cells if c.kind == "full_cell" and c.section in SECTIONS and c.rule in RULES]
+    names = [c.name for c in full]
+    return {"search": names, "reference": list(names), "evaluate": list(names), "bank": [c.name for c in full if c.family in ("D1", "D2", "D2+H3")],
+            "checks": [checks_record_name(c) for c in cells if c.section == "controls" and c.rule in RULES], "files": ["bank.json", "all_deviators.json"]}
+
+
+def validate_sweep(sweep: Path, lk: dict, cal_path, params: dict, quick: bool) -> dict:
+    """Nothing is read for a verdict before the whole inventory exists and every record is bound: each record is checked
+    by the sweep's own check_record against the job rebuilt from the lock (parameters, configuration, settings hash, budget,
+    smoke flag, salt, namespace, enforcer), the bank document is loaded with its sources verified, every bank-family
+    reference, evaluate, and checks record carries that bank's hash, every evaluate record holds exactly the dev-val seeds,
+    and the all-deviators aggregate covers the four rules."""
+    from scripts.sweep import SMOKE_BUDGET, check_record, job_for, load_bank_doc, train_val
+    from sim.calibrate import load_calibration
+    from sim.locked import market_config_from_locked
+    from sim.manifest import checks_record_name, enumerate_manifest
+    from sim.schedule import budget_from_locked
+    sweep = Path(sweep); budget = SMOKE_BUDGET if quick else budget_from_locked(lk)
+    cal = load_calibration(cal_path); base = market_config_from_locked(lk)
+    inv = required_inventory(lk, budget); problems = []
+    for stage, names in inv.items():
+        for n in names:
+            if not (sweep / (n if stage == "files" else f"{stage}/{n}.json")).exists():
+                problems.append(f"missing {n if stage == 'files' else f'{stage}/{n}.json'}")
+    if problems:
+        return {"problems": problems, "bank": None, "evaluate": {}, "checks": {}}
+    try:
+        doc = load_bank_doc(sweep)
+    except SystemExit as e:
+        return {"problems": [f"bank.json: {e}"], "bank": None, "evaluate": {}, "checks": {}}
+    cells = {c.name: c for c in enumerate_manifest(lk, list(RULES), budget=budget)}
+
+    def job(c):
+        enf = {"rule": "B2", "params": dict(params["B2"])} if c.section == "ablation" else None
+        return job_for(c, lk, cal, base, dict(params[c.rule]), budget, quick, enforcer=enf)
+
+    def checked(stage, name, j):
+        rec = _read(sweep / stage / f"{name}.json")
+        try:
+            check_record(j, rec)
+        except SystemExit as e:
+            problems.append(f"{stage}/{name}: {e}"); return None
+        if stage != "search" and j["spec"]["family"] in ("D1", "D2", "D2+H3") and rec.get("bank_hash") != doc["bank_hash"]:   # search precedes the bank
+            problems.append(f"{stage}/{name}: record belongs to another bank than bank.json (bank_hash {rec.get('bank_hash')!r})"); return None
+        return rec
+    evaluate, checks = {}, {}
+    for name in inv["evaluate"]:
+        c = cells[name]; j = job(c)
+        checked("search", name, j); checked("reference", name, j)
+        rec = checked("evaluate", name, j)
+        if rec is not None:
+            want = [int(s) for s in train_val(j)[1]]
+            if [int(r["seed"]) for r in rec.get("rows", [])] != want:
+                problems.append(f"evaluate/{name}: rows do not hold exactly the dev-val seeds {want}")
+            elif not all(math.isfinite(float(r["gain"])) and math.isfinite(float(r["eff_attack"])) for r in rec["rows"]):
+                problems.append(f"evaluate/{name}: a row is not finite")
+            else:
+                evaluate[name] = rec
+    for name in inv["checks"]:
+        rec = checked("checks", name, job(cells[name]))
+        if rec is not None:
+            if not isinstance(rec.get("doubling"), dict) or "delta_gain" not in rec["doubling"]:
+                problems.append(f"checks/{name}: no doubling result")
+            else:
+                checks[name] = rec
+    ad = _read(sweep / "all_deviators.json")
+    if {r.get("spec", {}).get("rule") for r in ad} < set(RULES):
+        problems.append(f"all_deviators.json: rules {sorted(r.get('spec', {}).get('rule') for r in ad)} do not cover {list(RULES)}")
+    return {"problems": problems, "bank": doc, "evaluate": evaluate, "checks": checks}
 
 
 def main() -> None:
@@ -147,6 +217,7 @@ def main() -> None:
     a = ap.parse_args()
     os.environ["TOUCHSTONE_PROPOSED_PARAMS"] = str(Path(a.params).resolve())
     from scripts.sweep import SMOKE_BUDGET, load_params
+    from sim.manifest import checks_record_name, enumerate_manifest
     from sim.calibrate import cell_config, load_calibration
     from sim.claimcheck import check_proposed_module_isolated
     from sim.locked import load_locked, market_config_from_locked, seeds, settings_hash
@@ -159,19 +230,14 @@ def main() -> None:
     from sim.schedule import budget_from_locked
     lk = load_locked(); cal = load_calibration(a.calibration); base = market_config_from_locked(lk)
     budget = SMOKE_BUDGET if a.quick else budget_from_locked(lk)
-    if a.quick:
-        doc = proposed_params(); params = dict(doc["best_params"])
-    else:
-        params = load_params("proposed", Path(a.tuned_dir), False, cal.market_key, settings_hash(lk), cal.seeds)
+    tuned = None if a.quick else Path(a.tuned_dir)
+    params_by_rule = {r: load_params(r, tuned, a.quick, cal.market_key, settings_hash(lk), cal.seeds) for r in RULES}   # quick: the smoke defaults the smoke sweep used
+    params = dict(params_by_rule["proposed"])
     sweep = Path(a.sweep_out); out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
-    # the complete inventory first: nothing is read before every required record exists
-    need = _required_records(lk, budget); missing = []
-    for stage, cells in need.items():
-        for c in cells:
-            if not (sweep / stage / f"{c.name}.json").exists():
-                missing.append(f"{stage}/{c.name}.json")
-    if missing:
-        raise SystemExit("the sweep directory lacks records the falsification tests read:\n  " + "\n  ".join(missing))
+    # the complete inventory and every record's binding first: nothing is read for a verdict before that
+    v = validate_sweep(sweep, lk, a.calibration, params_by_rule, a.quick)
+    if v["problems"]:
+        raise SystemExit("the sweep directory is not the complete, bound output of the documented run:\n  " + "\n  ".join(v["problems"]))
     report: dict = {}
     bh, rho0 = float(lk["beta_headline"]), float(lk["rho"]["default"])
     cfg = cell_config(base, cal, rho=rho0, beta=bh); focal = positions(cfg)["median"]
@@ -222,26 +288,25 @@ def main() -> None:
     # F4: the proposed rule's post-lock D2 cells at the three positions, against B3's paired rows; D1 reported
     f4 = {"D2": {}, "D1": {}}
     for pos in lk["positions"]:
-        rp = _read(sweep / "evaluate" / f"proposed_D2_beta{bh}_rho{rho0}_{pos}_development.json")["rows"]
-        rb = _read(sweep / "evaluate" / f"B3_D2_beta{bh}_rho{rho0}_{pos}_development.json")["rows"]
+        rp = v["evaluate"][f"proposed_D2_beta{bh}_rho{rho0}_{pos}_development"]["rows"]
+        rb = v["evaluate"][f"B3_D2_beta{bh}_rho{rho0}_{pos}_development"]["rows"]
         f4["D2"][pos] = f4_cell_gate(rp, rb)
-        r1 = _read(sweep / "evaluate" / f"proposed_D1_beta{bh}_rho{rho0}_{pos}_development.json")["rows"]
+        r1 = v["evaluate"][f"proposed_D1_beta{bh}_rho{rho0}_{pos}_development"]["rows"]
         f4["D1"][pos] = {"n": len(r1), "mean_gain": float(np.mean([r["gain"] for r in r1])), "mean_eff": float(np.mean([r["eff_attack"] for r in r1]))}
     kill4 = any(v["kill"] for v in f4["D2"].values()); comp = any(v["comparative_fails"] for v in f4["D2"].values())
     report["F4"] = {"pass": not kill4 and not comp, "kill": kill4, "comparative_claim_fails": comp, "figures": f4}
 
     # F5: the H3 cell against B2 and B3, the doubling check, and the bank identity
-    rows_h3 = {r: _read(sweep / "evaluate" / f"{r}_D2+H3_beta{bh}_rho{rho0}_median_h3.json")["rows"] for r in ("proposed", "B2", "B3")}
-    checks = _read(sweep / "checks" / f"proposed_D2+H3_beta{bh}_rho{rho0}_median_controls.json")
+    rows_h3 = {r: v["evaluate"][f"{r}_D2+H3_beta{bh}_rho{rho0}_median_h3"]["rows"] for r in ("proposed", "B2", "B3")}
+    h3_control = next(c for c in enumerate_manifest(lk, list(RULES), budget=budget) if c.section == "controls" and c.rule == "proposed" and c.family == "D2+H3")
+    checks = v["checks"][checks_record_name(h3_control)]
     f5 = f5_gain_reduction(rows_h3, checks, dict(lk["intervals"]))
-    bank_doc = _read(sweep / "bank.json") if (sweep / "bank.json").exists() else None
-    f5_bank = None
-    if bank_doc is not None:
-        f5_bank = {"bank_hash": bank_doc["bank_hash"], "sources_sha256": hashlib.sha256(json.dumps(bank_doc["sources"], sort_keys=True).encode()).hexdigest(),
-                   "embeddings": bank_doc["embeddings"]}
+    bank_doc = v["bank"]                                                   # loaded with its sources verified; every H3 record above carries its hash
+    f5_bank = {"bank_hash": bank_doc["bank_hash"], "sources_sha256": hashlib.sha256(json.dumps(bank_doc["sources"], sort_keys=True).encode()).hexdigest(),
+               "embeddings": bank_doc["embeddings"]}
     f5["f5_bank"] = f5_bank
-    report["F5"] = {"pass": f5["pass"] and f5_bank is not None, "kill": f5["kill"] or f5_bank is None, "figures": f5}
-    if not a.quick and f5_bank is not None:                       # the bank F5 used, recorded into the allow-listed file the freeze tag commits
+    report["F5"] = {"pass": f5["pass"], "kill": f5["kill"], "figures": f5}
+    if not a.quick:                       # the bank F5 used, recorded into the allow-listed file the freeze tag commits
         pdoc = yaml.safe_load(Path(a.params).read_text()); pdoc["f5_bank"] = f5_bank
         Path(a.params).write_text(yaml.safe_dump(pdoc, sort_keys=False))
 

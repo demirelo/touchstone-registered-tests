@@ -75,6 +75,9 @@ def test_t2_recomputes_the_ratio_after_every_selection_and_breaks_zero_history_t
     assert proposed.select_audits(jobs, key, {0: 0, 1: 0}, audits, served, "T2", 2, 1) == [0, 1, 2]
     assert audits == {0: 0, 1: 0}                                                       # pure: the caller's counts are untouched
     assert proposed.select_audits(jobs, key, {0: 0, 1: 0}, {0: 0, 1: 0}, {0: 0, 1: 2}, "T2", 1, 0) == [0]   # served 0 gives ratio 0; ties by key
+    key2 = np.array([0.1, 0.3, 0.2, 0.4])                                                   # identity 0 owns the two smallest keys: a static order would pick [0, 2]
+    assert proposed.select_audits(jobs, key2, {0: 0, 1: 0}, audits, served, "T2", 2, 0) == [0, 1]
+    assert proposed.select_audits({0: [0, 1, 2], 1: [3]}, np.array([0.1, 0.2, 0.3, 0.9]), {0: 0, 1: 0}, {0: 0, 1: 0}, {0: 3, 1: 1}, "T2", 3, 0) == [0, 3, 1]
 
 
 def test_select_audits_never_returns_more_than_the_served_jobs():

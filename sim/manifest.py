@@ -26,6 +26,14 @@ def cell_name(section: str, rule: str, family: str, beta: float, rho: float, pos
     return f"{rule}_{family}_beta{beta}_rho{rho}_{position}_{section}"
 
 
+def checks_record_name(control: "CellSpec") -> str:
+    """Amendment 2: the one name under which the checks stage stores a control's record: the name of the source cell
+    the doubling check re-runs (D1 and D2 controls from `development`, H3 controls from `h3`). The sweep writes it and
+    the falsification harness reads it."""
+    src_section = "h3" if control.family == "D2+H3" else "development"
+    return cell_name(src_section, control.rule, control.family, control.beta, control.rho, control.position)
+
+
 def _full_cells(locked: dict, rules: list[str], b: Budget, post_lock: bool, families: tuple = ("D1", "D2"), section: str = "development",
                 positions: tuple | None = None, betas: tuple | None = None) -> list[CellSpec]:
     """Full cells per rule and family: every budget at the median plus the headline budget at every position, unless

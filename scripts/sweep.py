@@ -11,7 +11,8 @@ from sim.bank import Bank
 from sim.calibrate import cell_config, load_calibration
 from sim.cell import Cell, SeedCache
 from sim.locked import load_locked, market_config_from_locked, seeds as locked_seeds, settings_hash
-from sim.manifest import CellSpec, cell_name, enumerate_manifest
+from sim.manifest import CellSpec, cell_name, checks_record_name, enumerate_manifest
+from sim.mechanisms.ablation import EnforcementAblation
 from sim.rng import load_identity_salt
 from sim.policies.families import D2, FAMILIES, exact_key
 from sim.registry import SEALED_DIR, available_families, make_rule, proposed_params
@@ -69,29 +70,44 @@ def settings_for(locked: dict, budget: Budget) -> SearchSettings:
                           reeval_every=s.reeval_every, near_corner=s.near_corner, sobol_seed=s.sobol_seed)
 
 
-def job_for(spec: CellSpec, locked: dict, cal, base, params: dict, budget: Budget, smoke: bool, eval_namespace: str = "dev_val") -> dict:
+def job_for(spec: CellSpec, locked: dict, cal, base, params: dict, budget: Budget, smoke: bool, eval_namespace: str = "dev_val",
+            enforcer: dict | None = None) -> dict:
+    """`enforcer` (spec 8 ablation cells, amendment 2): {"rule": "B2", "params": <the locked B2 parameters>}; the cell then runs the
+    rule's allocation, pricing, audit selection, and tolerance with B2's enforcement, and every record of the cell carries it."""
     cfg = cell_config(base, cal, rho=spec.rho, beta=spec.beta)
     p = dict(params); p.update(spec.params_override or {})
+    if (spec.section == "ablation") != (enforcer is not None):
+        raise SystemExit(f"{spec.name}: an ablation cell needs its enforcer and no other cell takes one")
     return {"spec": {"name": spec.name, "section": spec.section, "rule": spec.rule, "family": spec.family, "beta": spec.beta,
                      "rho": spec.rho, "position": spec.position}, "cfg": cfg_to_dict(cfg), "params": p, "locked": locked,
             "budget": [budget.restarts, budget.evals, budget.n_train, budget.n_val], "smoke": smoke, "settings_hash": settings_hash(locked),
-            "salt_hash": hashlib.sha256(load_identity_salt()).hexdigest(), "eval_namespace": eval_namespace}
+            "salt_hash": hashlib.sha256(load_identity_salt()).hexdigest(), "eval_namespace": eval_namespace, "enforcer": enforcer}
+
+
+def enforcer_for(spec: CellSpec, params_by_rule: dict, tuned: Path | None, smoke: bool, market_key: str, shash: str, cal_seeds) -> dict | None:
+    if spec.section != "ablation":
+        return None
+    b2 = params_by_rule.get("B2") or load_params("B2", tuned, smoke, market_key, shash, cal_seeds)
+    return {"rule": "B2", "params": dict(b2)}
 
 
 def check_record(job: dict, rec: dict) -> None:
     """A later stage refuses a record from another configuration or mode (stale tuned parameters, calibration,
-    settings, budget, or a smoke record under a real run)."""
-    for key in ("params", "cfg", "settings_hash", "budget", "smoke", "salt_hash", "eval_namespace"):
-        if rec.get(key) != job[key]:
+    settings, budget, a smoke record under a real run, or an ablation record under another enforcer)."""
+    for key in ("params", "cfg", "settings_hash", "budget", "smoke", "salt_hash", "eval_namespace", "enforcer"):
+        if rec.get(key) != job.get(key):
             raise SystemExit(f"{job['spec']['name']}: stored {key} differs from the current run; rerun from the search stage")
     if rec.get("spec", {}).get("name") != job["spec"]["name"]:
         raise SystemExit(f"{job['spec']['name']}: record belongs to another cell")
 
 
 def make_cell(job: dict, seeds: tuple[int, ...], suffix: str = "") -> Cell:
-    cfg = cfg_from_dict(job["cfg"]); params = job["params"]; rule = job["spec"]["rule"]
-    return Cell(cfg=cfg, rule_factory=lambda: make_rule(rule, params), focal=positions(cfg)[job["spec"]["position"]],
-                seeds=seeds, name=job["spec"]["name"] + suffix)
+    cfg = cfg_from_dict(job["cfg"]); params = job["params"]; rule = job["spec"]["rule"]; enf = job.get("enforcer")
+    if enf is not None:                                                  # spec 8: the ablation cell runs the rule with B2's enforcement
+        factory = lambda: EnforcementAblation(make_rule(rule, params), make_rule(enf["rule"], enf["params"]))
+    else:
+        factory = lambda: make_rule(rule, params)
+    return Cell(cfg=cfg, rule_factory=factory, focal=positions(cfg)[job["spec"]["position"]], seeds=seeds, name=job["spec"]["name"] + suffix)
 
 
 def train_val(job: dict) -> tuple[tuple[int, ...], tuple[int, ...], Budget]:
@@ -110,8 +126,8 @@ def base_record(job: dict, cache: SeedCache, scheduled: int, exact: bool) -> dic
     if not exact and cache.runs > scheduled:
         raise AssertionError(f"{job['spec']['name']}: ran {cache.runs} episodes, schedule bound is {scheduled}")
     return {"spec": job["spec"], "cfg": job["cfg"], "params": job["params"], "settings_hash": job["settings_hash"], "smoke": job["smoke"],
-            "budget": job["budget"], "salt_hash": job["salt_hash"], "eval_namespace": job["eval_namespace"], "runs": cache.runs, "scheduled": scheduled,
-            "bundle_hash": bundle_hash(SEALED_DIR) if job["spec"]["family"] == "H2" else None}
+            "budget": job["budget"], "salt_hash": job["salt_hash"], "eval_namespace": job["eval_namespace"], "enforcer": job.get("enforcer"),
+            "runs": cache.runs, "scheduled": scheduled, "bundle_hash": bundle_hash(SEALED_DIR) if job["spec"]["family"] == "H2" else None}
 
 
 def stage_search(job: dict) -> dict:
@@ -263,6 +279,7 @@ def stage_evaluate(job: dict, ref_rec: dict) -> dict:
     g = evaluate_gain(cell, fam, ref_rec["attack_knobs"], cand, cache)
     out = base_record(job, cache, stage_runs(job["spec"]["family"], "evaluate", b), exact=True)
     out["rows"] = seed_rows(cell, g, meta_of(job, ref_rec["candidate"]["name"]))
+    out.update({"bank_hash": ref_rec.get("bank_hash"), "reference_candidate": ref_rec["candidate"]["name"]})     # amendment 2: the rows are bound to their reference and bank
     return out
 
 
@@ -280,7 +297,8 @@ def stage_checks(job: dict, rec: dict, bank_rec: dict | None, ref_rec: dict) -> 
     if abs(dc.gain_base - ref_rec["gain_train"]) > 1e-9 or dc.ref_base_name != ref_rec["candidate"]["name"]:
         raise AssertionError(f"{cell.name}: the doubling check's base does not reproduce the reference-stage record")
     out = base_record(job, cache, doubling_bound(len(members), b), exact=False)
-    out.update({"doubling": dc.__dict__, "restart_spread": rec["restart_spread"], "twin_vs_honest": rec["twin_vs_honest"]})
+    out.update({"doubling": dc.__dict__, "restart_spread": rec["restart_spread"], "twin_vs_honest": rec["twin_vs_honest"],
+                "bank_hash": bank_rec["bank_hash"] if bank_rec else None})
     return out
 
 
@@ -321,6 +339,9 @@ def run_stages(o: dict) -> dict:
         raise SystemExit(f"evaluation namespace {ns} is not available: {e}")
     tuned = Path(o["tuned_dir"]) if o.get("tuned_dir") else None
     params = {r: load_params(r, tuned, o["smoke"], cal.market_key, settings_hash(lk), cal.seeds) for r in rules}
+
+    def jf(c: CellSpec, eval_ns: str = ns) -> dict:
+        return job_for(c, lk, cal, base, params[c.rule], budget, o["smoke"], eval_ns, enforcer=enforcer_for(c, params, tuned, o["smoke"], cal.market_key, settings_hash(lk), cal.seeds))
     if not o["smoke"] and list(cal.seeds) != locked_seeds(lk, "calibration"):
         raise SystemExit("calibration must use the full calibration namespace for a real run (pass --smoke for a smoke run)")
     out = Path(o["out"]); out.mkdir(parents=True, exist_ok=True)
@@ -345,15 +366,14 @@ def run_stages(o: dict) -> dict:
                 if o.get("shard"):
                     k, n = (int(x) for x in o["shard"].split("/"))    # --shard K/N: cells sorted by name, cell i runs when i % N == K; shards share --out
                     specs = [c for i, c in enumerate(sorted(specs, key=lambda c: c.name)) if i % n == k]
-                jobs += [job_for(c, lk, cal, base, params[c.rule], budget, o["smoke"], ns) for c in specs]
+                jobs += [jf(c) for c in specs]
             for rec in pool.map(stage_search, jobs):
                 record("search", rec)
         search = read_dir(out / "search")
         for name, rec in search.items():
             if rec["spec"]["rule"] not in rules:
                 raise SystemExit(f"record {name} belongs to rule {rec['spec']['rule']}, which is not in --rules; pass it or use another output directory")
-        jobs = {name: job_for(next(c for c in manifest if c.name == name), lk, cal, base, params[rec["spec"]["rule"]], budget, o["smoke"], ns)
-                for name, rec in search.items()}
+        jobs = {name: jf(next(c for c in manifest if c.name == name)) for name, rec in search.items()}
         if stage == "bank":
             if o.get("bank_from"):
                 for name, rec in search.items():
@@ -404,12 +424,10 @@ def run_stages(o: dict) -> dict:
             names = []
             for c in [c for c in manifest if c.section == "controls" and c.rule in rules]:
                 src_section = "h3" if c.family == "D2+H3" else "development"           # amendment 2: a control is in scope when its source section is selected
-                src_name = cell_name(src_section, c.rule, c.family, c.beta, c.rho, c.position)
+                src_name = checks_record_name(c)                                       # the record is stored under this name; the harness reads the same
                 if src_section not in sections or (o.get("select") and o["select"] not in src_name):
                     continue
-                n = next((n for n, r in search.items() if r["spec"]["section"] == src_section and r["spec"]["rule"] == c.rule
-                          and r["spec"]["family"] == c.family and r["spec"]["position"] == c.position
-                          and float(r["spec"]["beta"]) == c.beta and float(r["spec"]["rho"]) == c.rho), None)
+                n = src_name if src_name in search else None
                 if n is None or n not in refs or ((c.family in FAMILIES or c.family == "D2+H3") and n not in bank_recs):
                     raise SystemExit(f"{c.name}: control in scope but its search record, bank record, or checked reference is missing; rerun the earlier stages")
                 names.append(n)
@@ -420,7 +438,7 @@ def run_stages(o: dict) -> dict:
             write_json(out / "checks.json", results)
         if stage == "all_deviators" and (o["stage"] == "all_deviators" or "all_deviators" in sections):
             specs = [c for c in manifest if c.section in ("all_deviators", "all_deviators_post_lock") and c.rule in rules]   # amendment 2: the proposed rule's post-lock entry
-            adj = [job_for(c, lk, cal, base, params[c.rule], budget, o["smoke"]) for c in specs]
+            adj = [jf(c, "dev_val") for c in specs]
             results = list(pool.map(stage_all_deviators, adj))
             for rec in results:
                 counted["all_deviators"] = counted.get("all_deviators", 0) + int(rec["runs"])

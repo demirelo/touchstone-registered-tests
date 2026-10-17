@@ -111,3 +111,81 @@ def test_harness_refuses_a_sweep_directory_without_the_proposed_rules_records(tm
     r = subprocess.run(cmd, capture_output=True, text=True, cwd=ROOT, env={**__import__("os").environ, "OMP_NUM_THREADS": "1"})
     assert r.returncode != 0 and "proposed_D2_beta0.05_rho0.2_median_development" in (r.stderr + r.stdout)
     assert not (tmp_path / "fals" / "report.json").exists()
+
+
+def fabricate_sweep(sweep: Path, cal_path: Path, lk: dict, sections=("development", "rho_sweep", "h3", "ablation")) -> dict:
+    """A complete smoke-shaped sweep layout: every record the harness reads, built from job_for, bound to one bank."""
+    import hashlib
+    from scripts.sweep import DEFAULT_PARAMS, SMOKE_BUDGET, job_for, train_val
+    from sim.calibrate import load_calibration
+    from sim.locked import market_config_from_locked
+    from sim.manifest import checks_record_name, enumerate_manifest
+    from sim.policies.families import H3_EMBEDDINGS
+    cal = load_calibration(cal_path); base = market_config_from_locked(lk)
+    emb = {"D2+H3": list(H3_EMBEDDINGS)}; doc = {"members": {"D1": [], "D2": []}, "sources": {}, "embeddings": emb}
+    doc["bank_hash"] = hashlib.sha256(json.dumps(doc, sort_keys=True).encode()).hexdigest()
+    for d in ("search", "bank", "reference", "evaluate", "checks"):
+        (sweep / d).mkdir(parents=True, exist_ok=True)
+    (sweep / "bank.json").write_text(json.dumps(doc))
+    cells = enumerate_manifest(lk, ["B1", "B2", "B3", "proposed"], budget=SMOKE_BUDGET)
+    def job(c):
+        enf = {"rule": "B2", "params": dict(DEFAULT_PARAMS["B2"])} if c.section == "ablation" else None
+        return job_for(c, lk, cal, base, dict(DEFAULT_PARAMS[c.rule]), SMOKE_BUDGET, True, enforcer=enf)
+    keys = ("spec", "params", "cfg", "settings_hash", "budget", "smoke", "salt_hash", "eval_namespace", "enforcer")
+    for c in cells:
+        if c.kind == "full_cell" and c.section in sections:
+            j = job(c); base_rec = {k: j[k] for k in keys}; val = train_val(j)[1]
+            (sweep / "search" / f"{c.name}.json").write_text(json.dumps(base_rec))
+            if c.family in ("D1", "D2", "D2+H3"):
+                (sweep / "bank" / f"{c.name}.json").write_text(json.dumps(dict(base_rec, bank_hash=doc["bank_hash"])))
+            (sweep / "reference" / f"{c.name}.json").write_text(json.dumps(dict(base_rec, bank_hash=doc["bank_hash"], candidate={"name": "honest_max", "knobs": None}, gain_train=0.1)))
+            g = {"B1": 0.4, "B2": 0.58 if c.family == "D2+H3" else 0.05, "B3": 0.36 if c.family == "D2+H3" else 0.1, "proposed": 0.05}[c.rule]
+            rows = [{"seed": int(s), "gain": g + 0.001 * i, "eff_attack": 0.95} for i, s in enumerate(val)]
+            (sweep / "evaluate" / f"{c.name}.json").write_text(json.dumps(dict(base_rec, bank_hash=doc["bank_hash"], reference_candidate="honest_max", rows=rows)))
+        if c.section == "controls":
+            src = next(x for x in cells if x.name == checks_record_name(c)); j = job(src)
+            (sweep / "checks" / f"{checks_record_name(c)}.json").write_text(json.dumps(dict({k: j[k] for k in keys}, bank_hash=doc["bank_hash"], doubling={"delta_gain": 0.001})))
+    (sweep / "all_deviators.json").write_text(json.dumps([{"spec": {"rule": r}} for r in ("B1", "B2", "B3", "proposed")]))
+    return doc
+
+
+def test_required_inventory_covers_every_registered_workload_of_all_four_rules():
+    from scripts.falsify_proposed import required_inventory
+    from scripts.sweep import SMOKE_BUDGET
+    from sim.locked import load_locked
+    inv = required_inventory(load_locked(), SMOKE_BUDGET)
+    names = set(inv["evaluate"])
+    assert {"B1_D1_beta0.0_rho0.2_median_development", "proposed_D2_beta0.05_rho1.0_median_rho_sweep", "B3_D2+H3_beta0.05_rho0.2_median_h3",
+            "proposed_D1_beta0.05_rho0.2_low_ablation", "proposed_D2_beta0.05_rho0.2_high_development"} <= names
+    assert inv["search"] == inv["evaluate"] == inv["reference"] and len(names) == 4 * (16 + 2 + 1) + 6
+    assert set(inv["bank"]) == {n for n in names if "_D1_" in n or "_D2_" in n or "_D2+H3_" in n} == names
+    assert set(inv["checks"]) >= {"proposed_D2+H3_beta0.05_rho0.2_median_h3", "B2_D2_beta0.05_rho0.2_median_development", "proposed_D1_beta0.05_rho0.2_median_development"}
+    assert len(inv["checks"]) == 3 * 2 + 2 + 4 and inv["files"] == ["bank.json", "all_deviators.json"]
+
+
+def test_validate_sweep_accepts_a_complete_bound_layout_and_refuses_stale_or_foreign_records(tmp_path, cal_path_session, monkeypatch):
+    import importlib
+    from scripts.falsify_proposed import validate_sweep
+    from scripts.sweep import DEFAULT_PARAMS
+    from sim.locked import load_locked
+    mod = tmp_path / "proposed.py"; mod.write_text(SYNTH); monkeypatch.setenv("TOUCHSTONE_PROPOSED_MODULE", str(mod))
+    import sim.registry as reg; importlib.reload(reg)
+    lk = load_locked(); sweep = tmp_path / "sweep"; doc = fabricate_sweep(sweep, cal_path_session, lk)
+    params = {r: dict(DEFAULT_PARAMS[r]) for r in ("B1", "B2", "B3", "proposed")}
+    v = validate_sweep(sweep, lk, cal_path_session, params, quick=True)
+    assert v["bank"]["bank_hash"] == doc["bank_hash"] and v["problems"] == [] and len(v["evaluate"]) == 4 * 19 + 6 and len(v["checks"]) == 12
+    name = "proposed_D2_beta0.05_rho0.2_median_development"; path = sweep / "evaluate" / f"{name}.json"; good = path.read_text()
+    stale = json.loads(good); stale["params"] = dict(stale["params"], L=99); path.write_text(json.dumps(stale))
+    assert any(name in p and "params" in p for p in validate_sweep(sweep, lk, cal_path_session, params, quick=True)["problems"])      # stale parameters
+    bad = json.loads(good); bad["rows"][0]["seed"] = 1; path.write_text(json.dumps(bad))
+    assert any(name in p and "seed" in p for p in validate_sweep(sweep, lk, cal_path_session, params, quick=True)["problems"])        # not the exact dev-val seeds
+    other = json.loads(good); other["bank_hash"] = "00" * 32; path.write_text(json.dumps(other))
+    assert any(name in p and "bank" in p for p in validate_sweep(sweep, lk, cal_path_session, params, quick=True)["problems"])        # another bank
+    path.write_text(good); path.unlink()
+    assert any(name in p for p in validate_sweep(sweep, lk, cal_path_session, params, quick=True)["problems"])                        # missing
+    path.write_text(good)
+    (sweep / "all_deviators.json").write_text(json.dumps([{"spec": {"rule": "B1"}}]))
+    assert any("all_deviators" in p for p in validate_sweep(sweep, lk, cal_path_session, params, quick=True)["problems"])
+    (sweep / "all_deviators.json").write_text(json.dumps([{"spec": {"rule": r}} for r in ("B1", "B2", "B3", "proposed")]))
+    d2 = json.loads((sweep / "bank.json").read_text()); d2["members"]["D2"] = [{"knobs": {"u0": 1.0}, "origin": "x"}]; (sweep / "bank.json").write_text(json.dumps(d2))
+    assert any("bank.json" in p for p in validate_sweep(sweep, lk, cal_path_session, params, quick=True)["problems"])                 # a bank document whose hash does not cover it

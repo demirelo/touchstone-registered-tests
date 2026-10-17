@@ -54,6 +54,12 @@ def test_smoke_sweep_runs_every_stage_with_counted_runs(cal_path, tmp_path):
     checks = json.loads((out / "checks.json").read_text())
     assert len(checks) == 3 and {c["spec"]["family"] for c in checks} == {"D1", "D2", "D2+H3"}      # D1, D2, and (amendment 2) the H3 doubling control at beta_headline, median
     h3c = next(c for c in checks if c["spec"]["family"] == "D2+H3"); assert "delta_gain" in json.dumps(h3c) and h3c["runs"] <= h3c["scheduled"]
+    from sim.manifest import checks_record_name, enumerate_manifest
+    from sim.schedule import SMOKE_BUDGET
+    controls = [c for c in enumerate_manifest(load_locked(), ["B1"], budget=SMOKE_BUDGET) if c.section == "controls" and c.rule == "B1" and c.beta == 0.05]
+    assert len(controls) == 3 and all((out / "checks" / f"{checks_record_name(c)}.json").exists() for c in controls)      # the producer and the harness share one name
+    assert all(json.loads((out / "checks" / f"{checks_record_name(c)}.json").read_text()).get("bank_hash") for c in controls)
+    assert all(json.loads(p.read_text()).get("bank_hash") for p in (out / "evaluate").glob("*.json"))                   # evaluate records are bound to the bank
     headline = json.loads((out / "headline.json").read_text())
     assert set(headline) == {"B1/D1", "B1/D2"} and all(h["headline"] == "median" for h in headline.values())
     rows = (out / "development.csv").read_text().splitlines()
@@ -175,3 +181,34 @@ def test_final_heldout_path_takes_the_development_bank_from_another_directory(tm
     src = next((dev / "search").glob("*.json")); d = json.loads(src.read_text()); d["runs"] = d["runs"] + 1; src.write_text(json.dumps(d))
     r = sweep(final, "--stage", "evaluate", "--sections", "heldout", "--bank-from", str(dev))
     assert r.returncode != 0 and "changed" in (r.stderr + r.stdout)                                                                       # a changed source record
+
+
+
+def test_ablation_cells_wrap_the_proposed_rule_with_the_locked_b2_enforcement(tmp_path, monkeypatch):
+    """Spec 8: an ablation cell runs the proposed rule's allocation, pricing, audit selection, and tolerance with B2's
+    enforcement; the enforcer is part of the job and of every record of the cell."""
+    import importlib
+    from tests.test_registry import synthetic_env
+    from scripts.sweep import DEFAULT_PARAMS, check_record, job_for, make_cell
+    from sim.calibrate import calibrate
+    from sim.locked import market_config_from_locked
+    from sim.manifest import enumerate_manifest
+    from sim.mechanisms.ablation import EnforcementAblation
+    from sim.schedule import SMOKE_BUDGET
+    synthetic_env(tmp_path, monkeypatch, with_sealed=False); import sim.registry as reg; importlib.reload(reg)
+    lk = load_locked(); base = market_config_from_locked(lk); cal = calibrate(base, [4000])
+    cells = enumerate_manifest(lk, ["B1", "B2", "B3", "proposed"], budget=SMOKE_BUDGET)
+    abl = next(c for c in cells if c.section == "ablation" and c.family == "D2" and c.position == "median")
+    dev = next(c for c in cells if c.section == "development" and c.rule == "proposed" and c.family == "D2" and c.position == "median" and c.beta == 0.05)
+    p = dict(DEFAULT_PARAMS["proposed"], L=3); b2 = dict(DEFAULT_PARAMS["B2"], L=10)
+    job = job_for(abl, lk, cal, base, p, SMOKE_BUDGET, True, enforcer={"rule": "B2", "params": b2})
+    rule = make_cell(job, (1000,)).rule_factory()
+    assert isinstance(rule, EnforcementAblation) and rule.rule.L == 3 and rule.enforcer.L == 10 and rule.enforcer.name.startswith("B2")
+    plain = make_cell(job_for(dev, lk, cal, base, p, SMOKE_BUDGET, True), (1000,)).rule_factory()
+    assert not isinstance(plain, EnforcementAblation) and plain.L == 3
+    rec = {k: job[k] for k in ("spec", "params", "cfg", "settings_hash", "budget", "smoke", "salt_hash", "eval_namespace", "enforcer")}
+    check_record(job, rec)
+    with pytest.raises(SystemExit, match="enforcer"):
+        check_record(job, dict(rec, enforcer={"rule": "B2", "params": dict(b2, L=20)}))                 # a record under another enforcer is refused
+    with pytest.raises(SystemExit, match="enforcer"):
+        check_record(job, {k: v for k, v in rec.items() if k != "enforcer"})                            # an ablation record without its enforcer is refused

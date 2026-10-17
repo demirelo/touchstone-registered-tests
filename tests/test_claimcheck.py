@@ -475,7 +475,7 @@ def test_amendment_keeps_known_failures_and_binds_the_amendment_hash(tmp_path):
 
 def _bank_doc(members=None, sources=None):
     from sim.policies.families import H3_EMBEDDINGS
-    members = members or {"D1": [], "D2": [{"knobs": {"u0": 1.0}, "origin": "x"}]}; sources = sources or {"x": "ab" * 32}
+    members = members or {"D1": [], "D2": [{"knobs": {"u0": 1.0}, "origin": "x"}]}; sources = {} if sources is None else sources   # no source files in these fixtures
     emb = {"D2+H3": list(H3_EMBEDDINGS)}
     h = hashlib.sha256(json.dumps({"members": members, "sources": sources, "embeddings": emb}, sort_keys=True).encode()).hexdigest()
     return {"members": members, "sources": sources, "embeddings": emb, "bank_hash": h}
@@ -489,17 +489,35 @@ def test_verify_bank_commitment_binds_the_final_bank_to_the_frozen_f5_bank(tmp_p
     assert any("f5_bank" in p for p in verify_bank_commitment(dev, {"rule": "proposed"}))                                   # nothing recorded at the freeze
     assert any("bank_hash" in p for p in verify_bank_commitment(dev, {"f5_bank": dict(f5, bank_hash="00" * 32)}))
     assert any("embeddings" in p for p in verify_bank_commitment(dev, {"f5_bank": dict(f5, embeddings={"D2+H3": ["embed_d2_in_h3"]})}))
-    other = tmp_path / "other"; other.mkdir(); (other / "bank.json").write_text(json.dumps(_bank_doc(sources={"y": "cd" * 32})))
+    other = tmp_path / "other"; other.mkdir(); (other / "bank.json").write_text(json.dumps(_bank_doc(members={"D1": [], "D2": []})))
     assert any("bank_hash" in p for p in verify_bank_commitment(other, {"f5_bank": f5}))                                     # a different, internally valid bank
     assert any("bank.json" in p for p in verify_bank_commitment(tmp_path / "none", {"f5_bank": f5}))
-    final = tmp_path / "final"; (final / "reference").mkdir(parents=True); (final / "bank").mkdir()
+    final = tmp_path / "final"; (final / "reference").mkdir(parents=True); (final / "bank").mkdir(); (final / "evaluate").mkdir()
     rec = {"spec": {"name": "B2_D2+H3_beta0.05_rho0.2_median_heldout", "section": "heldout", "family": "D2+H3", "rule": "B2"}, "bank_hash": doc["bank_hash"]}
-    (final / "reference" / "B2_D2+H3_beta0.05_rho0.2_median_heldout.json").write_text(json.dumps(rec)); (final / "bank" / "B2_D2+H3_beta0.05_rho0.2_median_heldout.json").write_text(json.dumps(rec))
+    for d in ("reference", "bank", "evaluate"):
+        (final / d / "B2_D2+H3_beta0.05_rho0.2_median_heldout.json").write_text(json.dumps(rec))
     assert verify_bank_commitment(dev, {"f5_bank": f5}, final) == []
     (final / "reference" / "B2_D2+H3_beta0.05_rho0.2_median_heldout.json").write_text(json.dumps(dict(rec, bank_hash="11" * 32)))
     assert any("another bank" in p for p in verify_bank_commitment(dev, {"f5_bank": f5}, final))
     (final / "bank" / "B2_D2+H3_beta0.05_rho0.2_median_heldout.json").unlink()
     assert any("no bank record" in p for p in verify_bank_commitment(dev, {"f5_bank": f5}, final))
+    # the checklist comes from the expected cells, never from the records that happen to exist; evaluate records are bound too
+    name = "B2_D2+H3_beta0.05_rho0.2_median_heldout"
+    for d in ("bank", "reference"):
+        (final / d / f"{name}.json").write_text(json.dumps(rec))
+    (final / "evaluate" / f"{name}.json").unlink()
+    assert any("no evaluate record" in p for p in verify_bank_commitment(dev, {"f5_bank": f5}, final, expected=[name]))
+    (final / "evaluate" / f"{name}.json").write_text(json.dumps(dict(rec, bank_hash="22" * 32)))
+    assert any("evaluate record belongs to another bank" in p for p in verify_bank_commitment(dev, {"f5_bank": f5}, final, expected=[name]))
+    (final / "evaluate" / f"{name}.json").write_text(json.dumps(rec))
+    assert verify_bank_commitment(dev, {"f5_bank": f5}, final, expected=[name]) == []
+    for d in ("bank", "reference"):
+        (final / d / f"{name}.json").unlink()
+    probs = verify_bank_commitment(dev, {"f5_bank": f5}, final, expected=[name, "proposed_D2+H3_beta0.05_rho0.2_median_heldout"])
+    assert any("no bank record" in p for p in probs) and any("no reference record" in p for p in probs) and any("proposed_" in p for p in probs)
+    (dev / "search").mkdir(); doc2 = _bank_doc(sources={"src": "ab" * 32}); (dev / "bank.json").write_text(json.dumps(doc2))
+    f5b = dict(f5, bank_hash=doc2["bank_hash"], sources_sha256=hashlib.sha256(json.dumps(doc2["sources"], sort_keys=True).encode()).hexdigest())
+    assert any("src" in p and ("changed" in p or "disappeared" in p) for p in verify_bank_commitment(dev, {"f5_bank": f5b}))           # the sources are verified here too
 
 
 def test_check_claim_cli_bank_from_is_checked_against_the_frozen_parameter_file(tmp_path):

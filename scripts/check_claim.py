@@ -132,7 +132,7 @@ def main() -> None:
         if a.bank_from:
             pdoc_path = repo / "experiments" / "proposed.yaml"
             pdoc = yaml.safe_load(pdoc_path.read_text()) if pdoc_path.exists() else {}
-            problems += verify_bank_commitment(Path(a.bank_from), pdoc if isinstance(pdoc, dict) else {}, Path(a.sweep_out) if a.sweep_out else None)
+            problems += verify_bank_commitment(Path(a.bank_from), pdoc if isinstance(pdoc, dict) else {})
         elif amend is not None and registered and not a.verify_only:
             problems.append("the amended H3 comparison needs --bank-from DIR: the development bank F5 tested (recorded as f5_bank in the frozen experiments/proposed.yaml)")
         if Path(a.coverage_report).exists():
@@ -167,6 +167,10 @@ def main() -> None:
         if amend is not None:
             h3, h3_records, hp3 = h3_from_sweep(Path(a.sweep_out), lk, jobs); problems += hp3
             problems += verify_h3_records(h3_records, lk, jobs, expected, a.proposed)
+            if a.bank_from:                                                      # amendment 2: every final H3 cell of the manifest, bound to the frozen bank
+                pdoc_path = repo / "experiments" / "proposed.yaml"; pdoc = yaml.safe_load(pdoc_path.read_text()) if pdoc_path.exists() else {}
+                problems += verify_bank_commitment(Path(a.bank_from), pdoc if isinstance(pdoc, dict) else {}, Path(a.sweep_out),
+                                                   expected=[n for n, j in jobs.items() if j["spec"]["family"] == "D2+H3"])
         demoted = demoted_cells(SEALED_DIR)
         if a.proposed_describe and Path(a.proposed_describe).resolve() != (repo / "experiments" / "proposed_describe.yaml").resolve():
             refuse(["--proposed-describe must be the frozen experiments/proposed_describe.yaml (checked against the freeze tag)"])
