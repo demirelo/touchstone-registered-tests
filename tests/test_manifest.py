@@ -20,7 +20,8 @@ def test_schedule_arithmetic_is_explicit():
     assert tuning_recheck_runs(b) == 2 * 7500 + 5 + 10 + 5 + 5 + 4 * 20
     assert all_deviators_runs(lk, 10, b) == 2 * (3 * 10 * (100 + 2) * 3) + 2 * 20
     m = bank_members(24)
-    assert m == {"D1": {"n_unknown": 24, "n_projected": 24 + 16}, "D2": {"n_unknown": 48, "n_projected": 48 + 64}}
+    assert m == {"D1": {"n_unknown": 24, "n_projected": 24 + 16}, "D2": {"n_unknown": 48, "n_projected": 48 + 64},
+                 "D2+H3": {"n_unknown": 2 * (24 + 48), "n_projected": 2 * (24 + 48) + 128}}     # amendment 2: both embeddings of every D2-compatible member
     assert all_deviators_runs(lk, 10, SMOKE_BUDGET) == 2 * (3 * 10 * (16 + 2) * 1) + 2 * 2     # the smoke budget caps evaluations and seeds
 
 
@@ -39,7 +40,9 @@ def test_manifest_totals_follow_the_schedule():
     # bank: every pre-lock D1 and D2 full cell is a target (24 D1; 24 + 6 + 2 = 32 D2); bank stage plus the extra reference candidates
     per_d1 = bank_stage_bound(m["D1"]["n_unknown"], b) + m["D1"]["n_projected"] * 5
     per_d2 = bank_stage_bound(m["D2"]["n_unknown"], b) + m["D2"]["n_projected"] * 5
-    assert t["bank"] == 24 * per_d1 + 32 * per_d2 == 24 * 330 + 32 * 810
+    per_h3 = bank_stage_bound(m["D2+H3"]["n_unknown"], b) + m["D2+H3"]["n_projected"] * 5          # amendment 2: the three pre-lock H3 cells take the bank
+    assert per_d1 == 330 and per_d2 == 810 and per_h3 == 2090
+    assert t["bank"] == 24 * per_d1 + 32 * per_d2 + 3 * per_h3
     assert t_all["ablation"] == 3 * c1 + 3 * c2 and t_all["all_deviators_post_lock"] == all_deviators_runs(lk, 10, b)
     assert t_all["bank_post_lock"] > 0 and t_all["pre_lock"] == t["pre_lock"]
     assert t["pre_lock"] == sum(t[k] for k in ("development", "rho_sweep", "no_ban", "h3", "controls", "all_deviators", "tuning", "bank"))

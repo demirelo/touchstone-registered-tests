@@ -84,3 +84,44 @@ def test_record_keys_outside_the_fields_are_refused():
         validate_record(dict(rec, note="x"), voc)
     with pytest.raises(ValueError, match="parameters"):
         validate_record(dict(rec, parameters=dict(rec["parameters"], payment=3)), voc)
+
+
+NOT_EXPRESSIBLE_MODULE = '''
+from sim.mechanisms.base import Mechanism, Consequences
+
+class Proposed(Mechanism):
+    name = "proposed"
+    def __init__(self, tol, L): self.tol, self.L = float(tol), int(L)
+    def allocate(self, values_t, offers, view): return {}
+    def price(self, assignment, values_t, offers, view): return {}
+    def audit(self, assignment, view): return []
+    def enforce(self, records, view): return Consequences()
+    def describe(self):
+        return {"allocation_order": "jobs in descending value; each job goes to the offer with capacity and the highest score, score = job value times claim minus bid, offers with a negative score are not eligible, at random among equal scores",
+                "eligibility": "active offers with capacity", "payment": "second score: job value times claim minus the highest score among the other eligible offers for that job, zero when there is none",
+                "audit_selection": "not expressible", "audit_tolerance": "number", "failed_audit": "full refund of the audited job", "ban_length": "number", "holdback": "none",
+                "parameters": {"audit_tolerance": self.tol, "ban_length": self.L}}
+
+def make(params):
+    return Proposed(params["tol"], params["L"])
+'''
+
+
+def test_describe_proposed_writer_accepts_only_the_registered_not_expressible_record(tmp_path, monkeypatch):
+    import subprocess, sys, yaml
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    params = tmp_path / "proposed.yaml"; params.write_text(yaml.safe_dump({"rule": "proposed", "best_params": {"allocation": "A", "targeting": "T1", "tol": 0.12, "L": 10}}))
+    out = tmp_path / "describe.yaml"
+    cmd = [sys.executable, str(root / "scripts" / "describe_proposed.py"), "--params", str(params), "--out", str(out)]
+    expressible = tmp_path / "expressible.py"
+    expressible.write_text((root / "tests" / "test_tune_proposed_script.py").read_text().split("SYNTH = '''")[1].split("'''")[0])
+    env = {**__import__("os").environ, "TOUCHSTONE_PROPOSED_MODULE": str(expressible)}
+    r = subprocess.run(cmd, capture_output=True, text=True, cwd=root, env=env)
+    assert r.returncode != 0 and "not expressible" in (r.stderr + r.stdout) and not out.exists()
+    ne = tmp_path / "ne.py"; ne.write_text(NOT_EXPRESSIBLE_MODULE)
+    r = subprocess.run(cmd, capture_output=True, text=True, cwd=root, env={**env, "TOUCHSTONE_PROPOSED_MODULE": str(ne)})
+    assert r.returncode == 0, r.stderr[-1500:]
+    rec = yaml.safe_load(out.read_text())
+    assert rec["audit_selection"] == NOT_EXPRESSIBLE and rec["parameters"] == {"audit_tolerance": 0.12, "ban_length": 10}
+    assert r.stdout.startswith("Market rule.") and "audit selection of this rule is not expressible" in r.stdout
