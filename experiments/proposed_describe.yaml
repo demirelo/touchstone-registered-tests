@@ -1,0 +1,14 @@
+allocation_order: jobs in descending value; each job goes to the offer with capacity
+  and the highest score, score = job value times claim minus bid, offers with a negative
+  score are not eligible, at random among equal scores
+eligibility: active offers with capacity
+payment: 'second score: job value times claim minus the highest score among the other
+  eligible offers for that job, zero when there is none'
+audit_selection: not expressible
+audit_tolerance: number
+failed_audit: full refund of the audited job
+ban_length: number
+holdback: none
+parameters:
+  audit_tolerance: 0.16
+  ban_length: 10

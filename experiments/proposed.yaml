@@ -1,0 +1,626 @@
+rule: proposed
+market_key: f39c53a3df6f5794
+calibration_seeds:
+- 4000
+- 4001
+- 4002
+- 4003
+- 4004
+- 4005
+- 4006
+- 4007
+- 4008
+- 4009
+- 4010
+- 4011
+- 4012
+- 4013
+- 4014
+- 4015
+- 4016
+- 4017
+- 4018
+- 4019
+settings_hash: 953a3f43e0ade36691d6ffdbe012e1b7af1adfc75ed5a9533500bdf9ff351dc5
+quick: false
+best_params: &id001
+  allocation: A
+  targeting: T1
+  tol: 0.16
+  L: 10
+rechecked:
+- params: *id001
+  tag: A|T1|0.16|10
+  eff_d2: 0.9948328118013425
+  gain_d2: 0.038784992446242075
+  m_d2: 0.10536979089038057
+  eff_h3: 0.9965201437894733
+  gain_h3: 0.05740622141675965
+  objective: 0.10536979089038057
+  namespace: dev_val
+- params: &id002
+    allocation: A
+    targeting: T1
+    tol: 0.16
+    L: 20
+  tag: A|T1|0.16|20
+  eff_d2: 0.9933952285909259
+  gain_d2: 0.03156708191738892
+  m_d2: 0.10377247621213984
+  eff_h3: 0.9970101281045938
+  gain_h3: 0.07532396785290817
+  objective: 0.10377247621213984
+  namespace: dev_val
+- params: &id003
+    allocation: A
+    targeting: T2
+    tol: 0.16
+    L: 3
+  tag: A|T2|0.16|3
+  eff_d2: 0.9877979282530402
+  gain_d2: 0.05589353669818705
+  m_d2: 0.09755325361448913
+  eff_h3: 0.9771890713785671
+  gain_h3: 0.25017414604908395
+  objective: 0.08576563486507457
+  namespace: dev_val
+scores:
+- params:
+    allocation: A
+    targeting: T1
+    tol: 0.12
+    L: 3
+  tag: A|T1|0.12|3
+  eff_d2: 0.9664715656662658
+  gain_d2: 0.05774085313810542
+  m_d2: 0.07385729518473975
+  eff_h3: 0.9852710331900707
+  gain_h3: 0.0
+  objective: 0.07385729518473975
+  namespace: dev_train
+- params:
+    allocation: A
+    targeting: T1
+    tol: 0.12
+    L: 10
+  tag: A|T1|0.12|10
+  eff_d2: 0.9471149956129596
+  gain_d2: 0.0
+  m_d2: 0.05234999512551069
+  eff_h3: 0.9474167486839519
+  gain_h3: 0.0
+  objective: 0.05234999512551069
+  namespace: dev_train
+- params:
+    allocation: A
+    targeting: T1
+    tol: 0.12
+    L: 20
+  tag: A|T1|0.12|20
+  eff_d2: 0.9108017404483042
+  gain_d2: 0.0
+  m_d2: 0.012001933831449084
+  eff_h3: 0.9144230502999161
+  gain_h3: 0.0
+  objective: 0.012001933831449084
+  namespace: dev_train
+- params:
+    allocation: A
+    targeting: T1
+    tol: 0.14
+    L: 3
+  tag: A|T1|0.14|3
+  eff_d2: 0.9866025812123818
+  gain_d2: 0.006321814493306287
+  m_d2: 0.09622509023597971
+  eff_h3: 0.9970957528743057
+  gain_h3: 0.0
+  objective: 0.09622509023597971
+  namespace: dev_train
+- params:
+    allocation: A
+    targeting: T1
+    tol: 0.14
+    L: 10
+  tag: A|T1|0.14|10
+  eff_d2: 0.9883645092405405
+  gain_d2: 0.0
+  m_d2: 0.09818278804504502
+  eff_h3: 0.9905924681285913
+  gain_h3: 0.0
+  objective: 0.09818278804504502
+  namespace: dev_train
+- params:
+    allocation: A
+    targeting: T1
+    tol: 0.14
+    L: 20
+  tag: A|T1|0.14|20
+  eff_d2: 0.974315914874789
+  gain_d2: 0.0
+  m_d2: 0.08257323874976549
+  eff_h3: 0.9804111023640857
+  gain_h3: 0.0
+  objective: 0.08257323874976549
+  namespace: dev_train
+- params:
+    allocation: A
+    targeting: T1
+    tol: 0.16
+    L: 3
+  tag: A|T1|0.16|3
+  eff_d2: 0.9878485765775699
+  gain_d2: 0.05620310182317795
+  m_d2: 0.09760952953063315
+  eff_h3: 0.9995550331273207
+  gain_h3: 0.0
+  objective: 0.09760952953063315
+  namespace: dev_train
+- params: *id001
+  tag: A|T1|0.16|10
+  eff_d2: 0.9986489772806338
+  gain_d2: 0.0
+  m_d2: 0.1096099747562598
+  eff_h3: 0.9986489772806338
+  gain_h3: 0.0
+  objective: 0.1096099747562598
+  namespace: dev_train
+- params: *id002
+  tag: A|T1|0.16|20
+  eff_d2: 0.9989737646165073
+  gain_d2: 0.0
+  m_d2: 0.10997084957389701
+  eff_h3: 0.9989737646165073
+  gain_h3: 0.0
+  objective: 0.10997084957389701
+  namespace: dev_train
+- params:
+    allocation: A
+    targeting: T2
+    tol: 0.12
+    L: 3
+  tag: A|T2|0.12|3
+  eff_d2: 0.9714990533892666
+  gain_d2: 0.012596568408390773
+  m_d2: 0.0794433926547406
+  eff_h3: 0.9676526422179621
+  gain_h3: 0.013290621329702351
+  objective: 0.07516960246440231
+  namespace: dev_train
+- params:
+    allocation: A
+    targeting: T2
+    tol: 0.12
+    L: 10
+  tag: A|T2|0.12|10
+  eff_d2: 0.9460208995421366
+  gain_d2: 0.0
+  m_d2: 0.05113433282459624
+  eff_h3: 0.9460554560435273
+  gain_h3: 0.0
+  objective: 0.05113433282459624
+  namespace: dev_train
+- params:
+    allocation: A
+    targeting: T2
+    tol: 0.12
+    L: 20
+  tag: A|T2|0.12|20
+  eff_d2: 0.9128995863490488
+  gain_d2: 0.0
+  m_d2: 0.01433287372116528
+  eff_h3: 0.912934784397371
+  gain_h3: 0.0
+  objective: 0.01433287372116528
+  namespace: dev_train
+- params:
+    allocation: A
+    targeting: T2
+    tol: 0.14
+    L: 3
+  tag: A|T2|0.14|3
+  eff_d2: 0.9862841861216634
+  gain_d2: 0.005719067859832653
+  m_d2: 0.09587131791295925
+  eff_h3: 0.9807762096889979
+  gain_h3: 0.008699066555767658
+  objective: 0.08975134409888656
+  namespace: dev_train
+- params:
+    allocation: A
+    targeting: T2
+    tol: 0.14
+    L: 10
+  tag: A|T2|0.14|10
+  eff_d2: 0.9884588562010633
+  gain_d2: 0.0
+  m_d2: 0.09828761800118145
+  eff_h3: 0.9884588562010633
+  gain_h3: 0.0
+  objective: 0.09828761800118145
+  namespace: dev_train
+- params:
+    allocation: A
+    targeting: T2
+    tol: 0.14
+    L: 20
+  tag: A|T2|0.14|20
+  eff_d2: 0.9697125804874928
+  gain_d2: 0.0
+  m_d2: 0.07745842276388082
+  eff_h3: 0.9744379387907381
+  gain_h3: 0.0
+  objective: 0.07745842276388082
+  namespace: dev_train
+- params: *id003
+  tag: A|T2|0.16|3
+  eff_d2: 0.9905025717339083
+  gain_d2: 0.00824035393569958
+  m_d2: 0.10055841303767589
+  eff_h3: 0.9998644785871748
+  gain_h3: 0.0
+  objective: 0.10055841303767589
+  namespace: dev_train
+- params:
+    allocation: A
+    targeting: T2
+    tol: 0.16
+    L: 10
+  tag: A|T2|0.16|10
+  eff_d2: 0.9995740731623849
+  gain_d2: 0.0
+  m_d2: 0.11063785906931652
+  eff_h3: 0.9792729599045872
+  gain_h3: 0.03365748997516431
+  objective: 0.0880810665606524
+  namespace: dev_train
+- params:
+    allocation: A
+    targeting: T2
+    tol: 0.16
+    L: 20
+  tag: A|T2|0.16|20
+  eff_d2: 0.9982252567442105
+  gain_d2: 0.0
+  m_d2: 0.10913917416023383
+  eff_h3: 0.9791901990953598
+  gain_h3: 0.005616586477049675
+  objective: 0.08798911010595527
+  namespace: dev_train
+- params:
+    allocation: B
+    targeting: T1
+    tol: 0.12
+    L: 3
+    P1: 0.18688820187481067
+    P2: 0.37377640374962134
+    P3: 0.5339662910708877
+  tag: B|T1|0.12|3
+  eff_d2: 0.9633654179405576
+  gain_d2: 0.0
+  m_d2: 0.0704060199339529
+  eff_h3: 0.9633458032466916
+  gain_h3: 0.0
+  objective: 0.07038422582965732
+  namespace: dev_train
+- params:
+    allocation: B
+    targeting: T1
+    tol: 0.12
+    L: 10
+    P1: 0.18688820187481067
+    P2: 0.37377640374962134
+    P3: 0.5339662910708877
+  tag: B|T1|0.12|10
+  eff_d2: 0.9418387478064961
+  gain_d2: 0.0
+  m_d2: 0.04648749756277345
+  eff_h3: 0.941664809541575
+  gain_h3: 0.0
+  objective: 0.046294232823972256
+  namespace: dev_train
+- params:
+    allocation: B
+    targeting: T1
+    tol: 0.12
+    L: 20
+    P1: 0.18688820187481067
+    P2: 0.37377640374962134
+    P3: 0.5339662910708877
+  tag: B|T1|0.12|20
+  eff_d2: 0.9096987451975812
+  gain_d2: 0.0
+  m_d2: 0.01077638355286798
+  eff_h3: 0.9170183618435489
+  gain_h3: 0.0
+  objective: 0.01077638355286798
+  namespace: dev_train
+- params:
+    allocation: B
+    targeting: T1
+    tol: 0.14
+    L: 3
+    P1: 0.18688820187481067
+    P2: 0.37377640374962134
+    P3: 0.5339662910708877
+  tag: B|T1|0.14|3
+  eff_d2: 0.9695310209129122
+  gain_d2: 0.0
+  m_d2: 0.07725668990323577
+  eff_h3: 0.9695201067561818
+  gain_h3: 0.0
+  objective: 0.07724456306242423
+  namespace: dev_train
+- params:
+    allocation: B
+    targeting: T1
+    tol: 0.14
+    L: 10
+    P1: 0.18688820187481067
+    P2: 0.37377640374962134
+    P3: 0.5339662910708877
+  tag: B|T1|0.14|10
+  eff_d2: 0.9654180482472418
+  gain_d2: 0.0
+  m_d2: 0.07268672027471304
+  eff_h3: 0.9656407101910619
+  gain_h3: 0.0
+  objective: 0.07268672027471304
+  namespace: dev_train
+- params:
+    allocation: B
+    targeting: T1
+    tol: 0.14
+    L: 20
+    P1: 0.18688820187481067
+    P2: 0.37377640374962134
+    P3: 0.5339662910708877
+  tag: B|T1|0.14|20
+  eff_d2: 0.9558158618540219
+  gain_d2: 0.0
+  m_d2: 0.062017624282246525
+  eff_h3: 0.9557575174176293
+  gain_h3: 0.0
+  objective: 0.06195279713069916
+  namespace: dev_train
+- params:
+    allocation: B
+    targeting: T1
+    tol: 0.16
+    L: 3
+    P1: 0.18688820187481067
+    P2: 0.37377640374962134
+    P3: 0.5339662910708877
+  tag: B|T1|0.16|3
+  eff_d2: 0.9706687647883759
+  gain_d2: 0.0
+  m_d2: 0.07852084976486212
+  eff_h3: 0.9707630657244802
+  gain_h3: 0.0
+  objective: 0.07852084976486212
+  namespace: dev_train
+- params:
+    allocation: B
+    targeting: T1
+    tol: 0.16
+    L: 10
+    P1: 0.18688820187481067
+    P2: 0.37377640374962134
+    P3: 0.5339662910708877
+  tag: B|T1|0.16|10
+  eff_d2: 0.9696326887247123
+  gain_d2: 0.0
+  m_d2: 0.07736965413856921
+  eff_h3: 0.9697267239632564
+  gain_h3: 0.0
+  objective: 0.07736965413856921
+  namespace: dev_train
+- params:
+    allocation: B
+    targeting: T1
+    tol: 0.16
+    L: 20
+    P1: 0.18688820187481067
+    P2: 0.37377640374962134
+    P3: 0.5339662910708877
+  tag: B|T1|0.16|20
+  eff_d2: 0.9701302852461455
+  gain_d2: 0.0
+  m_d2: 0.0779225391623839
+  eff_h3: 0.970063829869466
+  gain_h3: 0.0
+  objective: 0.07784869985496225
+  namespace: dev_train
+- params:
+    allocation: B
+    targeting: T2
+    tol: 0.12
+    L: 3
+    P1: 0.18688820187481067
+    P2: 0.37377640374962134
+    P3: 0.5339662910708877
+  tag: B|T2|0.12|3
+  eff_d2: 0.9627046164942819
+  gain_d2: 0.0
+  m_d2: 0.06967179610475759
+  eff_h3: 0.9626958816725174
+  gain_h3: 0.0
+  objective: 0.06966209074724154
+  namespace: dev_train
+- params:
+    allocation: B
+    targeting: T2
+    tol: 0.12
+    L: 10
+    P1: 0.18688820187481067
+    P2: 0.37377640374962134
+    P3: 0.5339662910708877
+  tag: B|T2|0.12|10
+  eff_d2: 0.9330589758443408
+  gain_d2: 0.0
+  m_d2: 0.0367321953826009
+  eff_h3: 0.9333011763499774
+  gain_h3: 0.0
+  objective: 0.0367321953826009
+  namespace: dev_train
+- params:
+    allocation: B
+    targeting: T2
+    tol: 0.12
+    L: 20
+    P1: 0.18688820187481067
+    P2: 0.37377640374962134
+    P3: 0.5339662910708877
+  tag: B|T2|0.12|20
+  eff_d2: 0.9053456483221924
+  gain_d2: 0.0
+  m_d2: 0.005939609246880467
+  eff_h3: 0.9053164787819746
+  gain_h3: 0.0
+  objective: 0.005907198646638455
+  namespace: dev_train
+- params:
+    allocation: B
+    targeting: T2
+    tol: 0.14
+    L: 3
+    P1: 0.18688820187481067
+    P2: 0.37377640374962134
+    P3: 0.5339662910708877
+  tag: B|T2|0.14|3
+  eff_d2: 0.9694239558671865
+  gain_d2: 0.0
+  m_d2: 0.07713772874131836
+  eff_h3: 0.9691869250909889
+  gain_h3: 0.0
+  objective: 0.07687436121220988
+  namespace: dev_train
+- params:
+    allocation: B
+    targeting: T2
+    tol: 0.14
+    L: 10
+    P1: 0.18688820187481067
+    P2: 0.37377640374962134
+    P3: 0.5339662910708877
+  tag: B|T2|0.14|10
+  eff_d2: 0.9632281728471814
+  gain_d2: 0.0
+  m_d2: 0.07025352538575712
+  eff_h3: 0.9629596393052658
+  gain_h3: 0.0
+  objective: 0.0699551547836287
+  namespace: dev_train
+- params:
+    allocation: B
+    targeting: T2
+    tol: 0.14
+    L: 20
+    P1: 0.18688820187481067
+    P2: 0.37377640374962134
+    P3: 0.5339662910708877
+  tag: B|T2|0.14|20
+  eff_d2: 0.9491162679544876
+  gain_d2: 0.0
+  m_d2: 0.05457363106054171
+  eff_h3: 0.946343024277008
+  gain_h3: 0.0
+  objective: 0.051492249196675534
+  namespace: dev_train
+- params:
+    allocation: B
+    targeting: T2
+    tol: 0.16
+    L: 3
+    P1: 0.18688820187481067
+    P2: 0.37377640374962134
+    P3: 0.5339662910708877
+  tag: B|T2|0.16|3
+  eff_d2: 0.970978464478938
+  gain_d2: 0.0
+  m_d2: 0.07886496053215329
+  eff_h3: 0.9710388907038312
+  gain_h3: 0.0
+  objective: 0.07886496053215329
+  namespace: dev_train
+- params:
+    allocation: B
+    targeting: T2
+    tol: 0.16
+    L: 10
+    P1: 0.18688820187481067
+    P2: 0.37377640374962134
+    P3: 0.5339662910708877
+  tag: B|T2|0.16|10
+  eff_d2: 0.9694401906088282
+  gain_d2: 0.0
+  m_d2: 0.07715576734314247
+  eff_h3: 0.9694628704755598
+  gain_h3: 0.0
+  objective: 0.07715576734314247
+  namespace: dev_train
+- params:
+    allocation: B
+    targeting: T2
+    tol: 0.16
+    L: 20
+    P1: 0.18688820187481067
+    P2: 0.37377640374962134
+    P3: 0.5339662910708877
+  tag: B|T2|0.16|20
+  eff_d2: 0.9656986818707356
+  gain_d2: 0.0
+  m_d2: 0.07299853541192841
+  eff_h3: 0.9658219954973788
+  gain_h3: 0.0
+  objective: 0.07299853541192841
+  namespace: dev_train
+objective: amendment-1
+h3_baseline_gains:
+  B2: 0.5816643695111353
+  B3: 0.3594083693165508
+h3_reference_sha256:
+  B2: 8ef82800668a81e67fb1281fc37a3b0572f883e627059d500f19ea6b417b877f
+  B3: 88b05900a622e0a747c3fc760f6d8d8fa105ffcc4311b7058e9d7a145e18fa8c
+amendment_sha256: 3f5521ec57bab5a5b1c4d6060dbf2615751d6b11c8c9a3a8dd1af7ce8645bd90
+grid_order:
+- A|T1|0.12|3
+- A|T1|0.12|10
+- A|T1|0.12|20
+- A|T1|0.14|3
+- A|T1|0.14|10
+- A|T1|0.14|20
+- A|T1|0.16|3
+- A|T1|0.16|10
+- A|T1|0.16|20
+- A|T2|0.12|3
+- A|T2|0.12|10
+- A|T2|0.12|20
+- A|T2|0.14|3
+- A|T2|0.14|10
+- A|T2|0.14|20
+- A|T2|0.16|3
+- A|T2|0.16|10
+- A|T2|0.16|20
+- B|T1|0.12|3
+- B|T1|0.12|10
+- B|T1|0.12|20
+- B|T1|0.14|3
+- B|T1|0.14|10
+- B|T1|0.14|20
+- B|T1|0.16|3
+- B|T1|0.16|10
+- B|T1|0.16|20
+- B|T2|0.12|3
+- B|T2|0.12|10
+- B|T2|0.12|20
+- B|T2|0.14|3
+- B|T2|0.14|10
+- B|T2|0.14|20
+- B|T2|0.16|3
+- B|T2|0.16|10
+- B|T2|0.16|20
+b2_prices:
+- 0.18688820187481067
+- 0.37377640374962134
+- 0.5339662910708877
