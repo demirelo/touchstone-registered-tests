@@ -122,8 +122,8 @@ normalized-gain search: its gain is the procedure's output against a
 reference selected on dev-train seeds, and the paper calls it best-found
 gain.
 
-Lock commit: _not yet locked_. Freeze commit: _not yet frozen_.
-Sealed bundle SHA-256: (written at the lock).
+Lock commit: a5ae297, tag `lock-2026-10-17` (amendment 1: tag `lock-2026-10-17-amendment-1`, see `docs/amendments/`). Freeze commit: _not yet frozen_.
+Sealed bundle SHA-256: a97e621b2902c17b99f61af4b119484f79928d282c4c75025fd0ab528b88bd43.
 
 ## Plan
 
@@ -207,5 +207,9 @@ wrapper, the describe() vocabulary and frozen renderer, the comprehension
 fixture, the H1 runner with the token pilot, `check_claim.py` (predicate,
 lock, freeze, record, and module checks), `lock.py`, figures 1 and 2, and
 the custodian instructions. The registered tuning, sweep, and coverage
-runs come next (Runpod CPU pods), then the lock.
+runs are done (Runpod CPU pods) and the lock is signed (tag `lock-2026-10-17`).
+Amendment 1 (`docs/amendments/2026-10-17-amendment-1.md`) adds an H3
+comparative clause with its own admitted bound and a binding design and
+tuning registration for the proposed rule; its coverage extension runs next,
+then the proposed rule.
 

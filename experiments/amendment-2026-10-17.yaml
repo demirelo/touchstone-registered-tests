@@ -1,0 +1,103 @@
+# Amendment 1 to the Touchstone lock of 2026-10-17 (signed tag lock-2026-10-17). This file lives outside the settings hash;
+# experiments/locked.yaml and every registered artifact are untouched. Registered before any proposed-rule code or tuning exists.
+# Binding: the clause, the extension study, the seed block, the design and tuning registration, and the falsification gate.
+# scripts/amend.py writes the two registration fields at the end; scripts/check_claim.py reports the amended verdict beside the original.
+amendment:
+  id: 1
+  date: 2026-10-17
+  lock_tag: lock-2026-10-17
+  tag: lock-2026-10-17-amendment-1
+  reason: >-
+    At the locked claim budget (beta 0.05, 25 percent of served jobs audited) the registered sweep shows B2 and B3 with gain at most 0.04
+    and inflation loss at most 0.00 against the development attackers, so the locked baseline clause can pass only if the sealed family
+    extracts five more points of efficiency loss from both baselines than from R*, or a gain of 1.0 that exceeds the largest mean ever
+    observed (0.85, with no audits). Two independent reviews (Sol high, Astra high) judged that prospect poor and recommended this
+    disclosed amendment. The original predicate stays as locked and its verdict is reported in full beside the amended one.
+clause:
+  family: D2+H3
+  label: public identity-replacement stress test on fresh final-evaluation seeds
+  position: median
+  beta: 0.05
+  eff_min: 0.90
+  gain_max: 0.30
+  gain_reduction_min: 0.10
+  level_rule: 0.95
+  level_comparative: 0.9875
+  baselines: [B2, B3]
+  n: 40
+  requires_h2_rule_clause: true
+  decision: >-
+    Absolute part on R* at the clause's family, position, budget, and seeds: lower 95 percent bound of gross efficiency at least eff_min,
+    upper 95 percent bound of gain at most gain_max, audit cost at most B in every seed (bounds from the base coverage report's admitted
+    sides at n). Comparative part per baseline B: the paired per-seed statistic gain(B) - gain(R*); PASS requires both lower 98.75 percent
+    bounds at least gain_reduction_min; FAIL if either upper 98.75 percent bound is below it; otherwise INCONCLUSIVE. The amended claim is
+    PASS only if the original H2 rule clause is PASS, the absolute part is PASS, the comparative part is PASS, and both gain_diff sides are
+    admitted by the extension report; FAIL if any of these is FAIL; otherwise INCONCLUSIVE.
+extension:
+  statistic: gain_diff
+  definition: "X_s = [(pi_B2,attack - pi_B2,ref) - (pi_B3,attack - pi_B3,ref)] / (S*_s / N), each rule with its own frozen attack knobs and its own selected reference candidate at the cell's family and position; an abstain reference counts as profit 0"
+  stand_in: {r_star: B3, baseline: B2}
+  cells: experiments/coverage_cells.json
+  procedures: [studentized]
+  sides: [lower, upper]
+  n: 40
+  pool: 35000
+  replications: {"40": 4000}
+  remedies: [[1, 1], [2, 1], [2, 2]]
+  gate: 6 cells x 2 endpoints, the registered threshold check at every M used, the joint fixture (lower confidence limit of the admitted count at least 0.9 at level 1 - 0.05 / 3), and the control power (at least 0.8) at 40|0.9875
+  seed_layout: positions 0 to 69999 of each cell's block are reserved for the pool (base 35000, doubled 70000); positions 70000 to 389999 for the n = 40 replications (base 160000 seeds, doubled 320000); six blocks end at 9000000, disjoint from every registered range
+  limitation: "Proxy admission on development distributions with B3 standing in for R*; this is not nominal coverage for comparisons involving the selected R*."
+seeds_ext:
+  start: 6600000
+  block: 400000
+  pool: 35000
+  replications: {"40": 4000}
+design:
+  allocation:
+    A: B3's descending-value sequential second-score allocation and payment, reimplemented inside sim/mechanisms/proposed.py
+    B: B2's tier allocation at the locked B2 prices, bids ignored, reimplemented inside sim/mechanisms/proposed.py
+  audit_count:
+    total_allowance: A_tot = floor(B / alpha), the harness's audits_left at round 0
+    terminal_reserve: R_L = min(J * L, A_tot) with J the jobs per round of the market config
+    early_allowance: E = A_tot - R_L over rounds t = 0 .. T - L - 1
+    cumulative_quota: C(t) = floor(E * (t + 1) / (T - L)); round t may audit C(t) - C(t - 1) + carry, where carry is the unspent early quota of earlier rounds; capped by the served jobs of the round
+    terminal_rounds: rounds T - L .. T - 1 audit every served job while audits_left > 0 (the reserve plus any carry); unused reserve is simply unspent
+    caps: no per-round cap beyond these; audits never exceed audits_left
+    figures: at the locked market (A_tot 2500, J 50, T 200) the reserve is 150, 500, and 1000 audits for L = 3, 10, 20, and earlier coverage 23.86, 21.05, and 16.67 percent of served jobs
+  audit_selection:
+    split: with k audits in the round, k_t = ceil(k / 2) are targeted and k - k_t uniform without replacement among the remaining served jobs by ascending audit_key
+    T1: targeted order by descending first_round (newest identity first), ties by ascending audit_key
+    T2: targeted order by ascending audits_i / served_i, where served_i counts the identity's served jobs through the current round's allocation and audits_i its audits before this round plus those selected so far in this round (updated after each selection); served_i = 0 gives ratio 0; ties by ascending audit_key
+    first_round: set when an identity first offers, never changed for that identity (a return from a ban keeps it); a replacement identity gets a new one (no entity linkage)
+  enforce:
+    refund: the full escrow of each failed audited job
+    ban: L rounds
+    holdback: none (a bond cannot bind a fresh identity before it has receipts; deferred with this reason stated)
+  tol: [0.12, 0.14, 0.16]
+  L: [3, 10, 20]
+  memory: per opaque identity first_round, audits, served (served updated at allocation, audits after each selected audit); second scores or tier quotes; schedule constants; no global random state
+tuning:
+  grid: "{A, B} x {T1, T2} x tol {0.12, 0.14, 0.16} x L {3, 10, 20}"
+  grid_size: 36
+  inner_search: the registered reduced search of spec 4.2 (D2 at the median position, 1 restart x 100 evaluations x 3 dev-train seeds, with its truthful twin at the same budget and the reference selected last), run separately on D2 and on D2+H3 at beta 0.05
+  objective: "min{ m_D2, m_H3, min_B (g_B,H3 - g_R*,H3 - 0.10) / 0.10 } with m_F = min{ (eff_F - 0.90) / 0.90, (0.30 - g_F) / 0.30 } and g_B,H3 the registered dev-train H3 gains of the baselines"
+  recheck: the top 3 configurations at the full search budget of spec 5.3 on both families
+  tie_break: lexicographic, A before B, T1 before T2, lower tol, lower L
+  logging: every evaluation under results/tuning_proposed/
+  disclosure: the baselines were tuned under the original objective of spec 4.2 (D2 only); the proposed rule's objective includes H3
+falsification:
+  gate: all five recorded with their results before the freeze tag; a kill result stops the rule and is reported
+  tests:
+    - interface, relabeling, budget, refund, terminal-settlement, module-rule, and describe-record fixtures; any violation kills the implementation
+    - H3 full-cheat corner at the median, beta 0.05; a sole six-job entrant must be fully audited when the allowance permits, and sustained full cheating after replacement must be unprofitable
+    - all-honest run on 20 dev seeds; efficiency forecast at least 0.97, false bans and lost capacity against the Gaussian failure probabilities; below 0.90 kills the configuration
+    - D2 at all three positions with bank attacks and projections; gain above 0.30 or efficiency below 0.90 kills; a cell where B3 is better beyond seed noise kills the comparative advantage claim
+    - full H3 search with bank transfer and the doubling check; both paired gain reductions must support 0.10 on dev-val
+disclosures:
+  - the custodian session's final report to the author included the containment class of H2 (H2 contains D2) at the author's request; no other sealed content was disclosed
+  - the design reasoning in docs/amendments/roster/ preceded this amendment; the paper never claims that the amendment preceded all rule design
+  - the lock of 2026-10-17 carried the draft claim thresholds although spec section 8 said they would be set from the baseline runs at the lock; reported as is
+  - the final H3 cells run in the manifest section named heldout for tooling reasons; H3 is a public family, never a sealed one
+roster: docs/amendments/roster/
+coverage_report_amendment_sha256: null
+coverage_consequences: null

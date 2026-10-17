@@ -58,14 +58,40 @@ rsync -a <pod>:touchstone/results/coverage/cell_i.json results/coverage/
 uv run python scripts/coverage_study.py --sweep-out results/sweep --calibration experiments/calibration.json --tuned-dir experiments/tuned --out results/coverage --merge --register
 ```
 
+## Amendment 1 (2026-10-17), after the lock and before any proposed-rule code
+
+The amendment file `experiments/amendment-2026-10-17.yaml` is binding (clause, extension study, seed block, design and tuning registration, falsification gate); `docs/amendments/2026-10-17-amendment-1.md` explains it. H3 is the public identity-replacement stress test on fresh final-evaluation seeds, never a held-out family. `experiments/locked.yaml` is never edited.
+
+```bash
+export OMP_NUM_THREADS=1
+# the one end-to-end smoke path (about half an hour); also the throughput measurement for the calendar estimate
+uv run pytest tests/test_coverage_ext_script.py -q --runslow
+# six pods, one cell each (results/pods helpers; explicit --workers from the API's vCPU count; mkdir -p the targets before rsync; verify 59 reference records, the base report hash, and the selection before launch)
+ssh <pod> 'cd touchstone && OMP_NUM_THREADS=1 uv run python scripts/coverage_ext.py --sweep-out results/sweep --calibration experiments/calibration.json --tuned-dir experiments/tuned --amendment experiments/amendment-2026-10-17.yaml --base-report experiments/coverage_report.json --selection experiments/coverage_cells.json --out results/coverage_ext --cell i --workers 16'
+rsync -a <pod>:touchstone/results/coverage_ext/ results/coverage_ext/
+uv run python scripts/coverage_ext.py --sweep-out results/sweep --calibration experiments/calibration.json --tuned-dir experiments/tuned --amendment experiments/amendment-2026-10-17.yaml --base-report experiments/coverage_report.json --selection experiments/coverage_cells.json --out results/coverage_ext --merge
+uv run python scripts/amend.py --amendment experiments/amendment-2026-10-17.yaml --report results/coverage_ext/coverage_report_amendment.json --base-report experiments/coverage_report.json --selection experiments/coverage_cells.json --calibration experiments/calibration.json --tuned-dir experiments/tuned
+cp results/coverage_ext/coverage_report_amendment.json experiments/coverage_report_amendment.json
+uv run python scripts/amend.py --amendment experiments/amendment-2026-10-17.yaml --report experiments/coverage_report_amendment.json --base-report experiments/coverage_report.json --selection experiments/coverage_cells.json --calibration experiments/calibration.json --tuned-dir experiments/tuned --check
+# the expected delta against the original lock: exactly the amendment's files; record the list in the amendment note, never call it clean
+uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17 --proposed none
+git add experiments/amendment-2026-10-17.yaml experiments/coverage_report_amendment.json docs/amendments
+git commit -S -m "amendment 1: registered"
+git tag -s lock-2026-10-17-amendment-1 -m "Touchstone amendment 1" && git push origin main lock-2026-10-17-amendment-1
+uvx --from opentimestamps-client ots stamp docs/lock-2026-10-17-amendment-1.txt
+uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17-amendment-1 --proposed none
+```
+
+A draft amendment (registration fields null) refuses every confirmatory `check_claim.py` run; `--verify-only` reports it as unregistered. The proposed rule is designed only after this tag, inside the registered `design` block, and tuned by the registered `tuning` block; the five falsification tests of the `falsification` block are recorded before the freeze tag.
+
 ## Freeze day (the day the proposed rule is final; the commands show 2026-11-11 as the example date)
 
 Rules for the proposed rule's module `sim/mechanisms/proposed.py`, enforced by `scripts/check_claim.py` (`check_proposed_module`): imports only `sim.mechanisms.base`, `numpy`, `scipy`, `math`, `dataclasses`, `typing`, `__future__`, `itertools`, `functools`, in absolute form; no `__import__`, `exec`, `eval`, `compile`, `globals`, `vars`; no `importlib`, `builtins`, or `sys` calls; no `getattr`, `setattr`, or `delattr` with a dunder or computed name; no `__builtins__`; no access to `__subclasses__`, `__globals__`, `__dict__`, `__base__`, `__bases__`, `__mro__`, `__class__`, `__code__`, `__closure__`, `__loader__`, or `__spec__`. Importing the module, and calling `make(params)`, must change no attribute of any `sim.*` module. Before the freeze tag:
 
 ```bash
-uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17 --proposed proposed
+uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17-amendment-1 --proposed proposed
 git tag -s freeze-2026-11-11 -m "Touchstone evaluation freeze"
-uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17 --verify-freeze freeze-2026-11-11 --proposed proposed
+uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17-amendment-1 --verify-freeze freeze-2026-11-11 --proposed proposed
 ```
 
 ## Evaluation (after the unseal, the day after the freeze; 2026-11-12 in the example)
@@ -74,7 +100,7 @@ uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17
 export TOUCHSTONE_IDENTITY_SALT=$(cat sealed/identity_salt.hex)
 uv run python scripts/sweep.py --stage all --sections heldout --rules B1,B2,B3,proposed --calibration experiments/calibration.json --tuned-dir experiments/tuned --eval-namespace final_eval --workers 8 --out results/final
 uv run python scripts/h1.py --backend anthropic --rules B1,B2,B3,proposed --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --tuned-dir experiments/tuned --eval-namespace final_eval --prompt sealed/h1_prompt.txt --out results/h1_final
-uv run python scripts/check_claim.py --verify-lock lock-2026-10-17 --verify-freeze freeze-2026-11-11 --sweep-out results/final --h1-dir results/h1_final --calibration experiments/calibration.json --tuned-dir experiments/tuned --coverage-report results/coverage/coverage_report.json --proposed proposed --proposed-describe experiments/proposed_describe.yaml
+uv run python scripts/check_claim.py --verify-lock lock-2026-10-17-amendment-1 --verify-freeze freeze-2026-11-11 --sweep-out results/final --h1-dir results/h1_final --calibration experiments/calibration.json --tuned-dir experiments/tuned --coverage-report experiments/coverage_report.json --coverage-ext experiments/coverage_report_amendment.json --amendment experiments/amendment-2026-10-17.yaml --proposed proposed --proposed-describe experiments/proposed_describe.yaml   # prints the original and the amended verdict; the final sweep's heldout section also holds the H3 stress-test cells
 uv run python scripts/plot.py --sweep-out results/final --out results/figures --coverage-report results/coverage/coverage_report.json --h1-dir results/h1_final
 ```
 
