@@ -83,3 +83,19 @@ def test_manifest_lists_the_coverage_study_outside_the_search_gate_and_the_weigh
     assert t["coverage_base"] > 0 and t["coverage_conditional"] > 0
     assert t["pre_lock"] == totals(no_cov)["pre_lock"] and t["pre_lock_exact"] == totals(no_cov)["pre_lock_exact"]
     assert manifest_weights(cells) == manifest_weights(no_cov)
+
+
+def test_final_h3_cells_are_beta_headline_median_only(monkeypatch):
+    import sim.manifest as m
+    from sim.locked import load_locked
+    from sim.schedule import Budget, budget_from_locked, cell_runs
+    import sim.registry as reg
+    real = reg.available_families(); fams = {**real, "H2": real["D2"]}                      # a stand-in sealed family with D2's corner count
+    monkeypatch.setattr(reg, "available_families", lambda locked=None: fams)
+    lk = load_locked(); b = budget_from_locked(lk); cells = m.enumerate_manifest(lk, ["B1", "B2", "B3"], budget=b)
+    h3 = [c for c in cells if c.section == "heldout" and c.family == "D2+H3"]
+    assert len(h3) == 3 and {c.position for c in h3} == {"median"} and {float(c.beta) for c in h3} == {0.05} and all(c.post_lock for c in h3)
+    n_final = int(lk["coverage_consequences"]["final_eval_n"])
+    assert all(c.runs == sum(cell_runs("D2+H3", Budget(b.restarts, b.evals, b.n_train, n_final)).values()) for c in h3)
+    h2 = [c for c in cells if c.section == "heldout" and c.family == "H2"]
+    assert len(h2) == 3 * (len(lk["beta_grid"]) - 1 + len(lk["positions"]))        # unchanged: every budget at the median plus the headline budget at every position, per rule

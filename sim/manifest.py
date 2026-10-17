@@ -26,13 +26,17 @@ def cell_name(section: str, rule: str, family: str, beta: float, rho: float, pos
     return f"{rule}_{family}_beta{beta}_rho{rho}_{position}_{section}"
 
 
-def _full_cells(locked: dict, rules: list[str], b: Budget, post_lock: bool, families: tuple = ("D1", "D2"), section: str = "development") -> list[CellSpec]:
-    betas = [float(x) for x in locked["beta_grid"]]; bh = float(locked["beta_headline"]); rho0 = float(locked["rho"]["default"])
+def _full_cells(locked: dict, rules: list[str], b: Budget, post_lock: bool, families: tuple = ("D1", "D2"), section: str = "development",
+                positions: tuple | None = None, betas: tuple | None = None) -> list[CellSpec]:
+    """Full cells per rule and family: every budget at the median plus the headline budget at every position, unless
+    `betas` or `positions` restrict them (the final H3 stress-test cells use the headline budget and the median only)."""
+    all_betas = [float(x) for x in locked["beta_grid"]]; bh = float(locked["beta_headline"]); rho0 = float(locked["rho"]["default"])
+    use_betas = [float(x) for x in betas] if betas is not None else all_betas
     cells: list[CellSpec] = []
     for rule in rules:
         for fam in families:
-            for beta in betas:
-                for pos in (locked["positions"] if beta == bh else ["median"]):
+            for beta in use_betas:
+                for pos in (list(positions) if positions is not None else (locked["positions"] if beta == bh else ["median"])):
                     cells.append(CellSpec(section, rule, fam, beta, rho0, pos, "full_cell", sum(cell_runs(fam, b).values()), True, post_lock,
                                           cell_name(section, rule, fam, beta, rho0, pos)))
         if section != "development":
@@ -118,7 +122,11 @@ def enumerate_manifest(locked: dict, rules: list[str], budget: Budget | None = N
     if "H2" in available_families():                                   # the held-out family, once the sealed bundle is present (post-lock)
         n_final = int((locked.get("coverage_consequences") or {}).get("final_eval_n") or b.n_val)
         b_eval = Budget(b.restarts, b.evals, b.n_train, n_final)
-        cells += _full_cells(locked, baselines + (["proposed"] if proposed_available() else []), b_eval, post_lock=True, families=("H2",), section="heldout")
+        final_rules = baselines + (["proposed"] if proposed_available() else [])
+        cells += _full_cells(locked, final_rules, b_eval, post_lock=True, families=("H2",), section="heldout")
+        # amendment 1: the final H3 stress-test cells (public identity-replacement family on fresh final-eval seeds; never held out),
+        # headline budget and median position only, n_final seeds, in the same section so the final sweep and the claim checker find them
+        cells += _full_cells(locked, final_rules, b_eval, post_lock=True, families=("D2+H3",), section="heldout", positions=("median",), betas=(bh,))
     cells += coverage_cells(locked, _load_selection())
     return cells
 
