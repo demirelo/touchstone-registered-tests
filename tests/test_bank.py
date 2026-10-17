@@ -49,3 +49,38 @@ def test_bank_pass_replaces_incumbent_when_a_member_or_corner_scores_higher():
     assert bp2.improved is False
     row = Bank.transfer_rows("c", ranked[-1][1], bp)
     assert row["improved"] is True and row["best_origin"] == "corner"
+
+
+def test_h3_transfer_through_both_embeddings_with_registered_order_origins_and_projections():
+    from sim.policies.families import embed_d2_in_h3, embed_d2_in_h3_exit
+    from sim.registry import available_families
+    from sim.schedule import N_CORNERS, bank_members
+    b = Bank()
+    d1 = {"u": 0.5, "m": 0.5, "s": 0.0, "w": 0.0, "clip": 0}; d2 = {"u0": 0.1, "m0": 0.2, "s": 0.0, "d": 0.5, "r": 0.1, "w": 0.0, "clip": 1}
+    b.add("D1", d1, origin="B1/D1"); b.add("D2", d2, origin="B2/D2")
+    assert embed_d2_in_h3(d2) == {**d2, "x": 0} and embed_d2_in_h3_exit(d2) == {**d2, "x": 1}
+    comp = b._compatible("D2+H3")
+    members = [m for m, _ in comp]; origins = [o for _, o in comp]
+    assert members[0] == {**embed_d1_in_d2_(d1), "x": 0} and origins[0] == "B1/D1|x=0"            # entry order: the embedded D1 member first, x = 0 before x = 1
+    assert members[1] == {**embed_d1_in_d2_(d1), "x": 1} and origins[1] == "B1/D1|x=1"
+    assert members[2] == {**d2, "x": 0} and origins[2] == "B2/D2|x=0" and members[3] == {**d2, "x": 1} and origins[3] == "B2/D2|x=1"
+    corner_keys = {exact_key(c) for c in available_families()["D2+H3"].corners()}
+    assert len(members) == 4 + len(corner_keys) - sum(1 for m in members[:4] if exact_key(m) in corner_keys)      # the H3 corners follow, de-duplicated
+    assert len({exact_key(m) for m in members}) == len(members)
+    proj = b.projected_members_for("D2+H3")
+    assert all(m["clip"] == 1 for m in proj) and len({exact_key(m) for m in proj}) == len(proj)
+    from sim.schedule import N_PROJECTED_CORNERS
+    assert bank_members(24)["D2+H3"] == {"n_unknown": 2 * (24 + 2 * 24), "n_projected": 2 * (24 + 2 * 24) + N_PROJECTED_CORNERS["D2+H3"]}   # both embeddings of the D2-compatible set (D1 embedded + D2) plus H3's projected corners
+    # x = 0 is the behaviour-preserving containment: the embedded member reproduces the D2 member's focal trajectory on a seed
+    from sim.cell import run_focal
+    fam2 = available_families()["D2"]; fam3 = available_families()["D2+H3"]
+    cell = Cell(cfg=fixture_cfg(), rule_factory=lambda: PostedPrices(0.20, 0.35, 0.50), focal=3, seeds=(1,), name="c")
+    r2 = run_focal(cell, lambda: fam2.make(d2), SeedCache()).results[0]; r3 = run_focal(cell, lambda: fam3.make({**d2, "x": 0}), SeedCache()).results[0]
+    assert r2.profit[3] == r3.profit[3] and r2.sstar == r3.sstar
+    ranked = b.evaluate(cell, fam3, SeedCache())
+    assert len(ranked) == len(members) and ranked[0][1] >= ranked[-1][1]
+
+
+def embed_d1_in_d2_(k):
+    from sim.policies.families import embed_d1_in_d2
+    return embed_d1_in_d2(k)

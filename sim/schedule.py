@@ -6,7 +6,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 N_CORNERS = {"D1": 32, "D2": 128, "D2+H3": 256}
-N_PROJECTED_CORNERS = {"D1": 16, "D2": 64}
+N_PROJECTED_CORNERS = {"D1": 16, "D2": 64, "D2+H3": 128}      # clip = 1 halves the corners; D2+H3 has the x knob on top of D2
 
 
 @dataclass(frozen=True)
@@ -103,4 +103,5 @@ def bank_members(n_dev_cells_per_family: int) -> dict:
     D1 members enter D2 through the embedding."""
     m = n_dev_cells_per_family
     return {"D1": {"n_unknown": m, "n_projected": m + N_PROJECTED_CORNERS["D1"]},
-            "D2": {"n_unknown": 2 * m, "n_projected": 2 * m + N_PROJECTED_CORNERS["D2"]}}
+            "D2": {"n_unknown": 2 * m, "n_projected": 2 * m + N_PROJECTED_CORNERS["D2"]},
+            "D2+H3": {"n_unknown": 2 * (m + 2 * m), "n_projected": 2 * (m + 2 * m) + N_PROJECTED_CORNERS["D2+H3"]}}   # amendment 2: both embeddings of the D2-compatible set

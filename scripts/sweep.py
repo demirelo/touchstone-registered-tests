@@ -11,7 +11,7 @@ from sim.bank import Bank
 from sim.calibrate import cell_config, load_calibration
 from sim.cell import Cell, SeedCache
 from sim.locked import load_locked, market_config_from_locked, seeds as locked_seeds, settings_hash
-from sim.manifest import CellSpec, enumerate_manifest
+from sim.manifest import CellSpec, cell_name, enumerate_manifest
 from sim.rng import load_identity_salt
 from sim.policies.families import D2, FAMILIES, exact_key
 from sim.registry import SEALED_DIR, available_families, make_rule, proposed_params
@@ -151,28 +151,34 @@ def build_bank(out: Path, search: dict, jobs: dict) -> dict:
             bank.add(rec["spec"]["family"], rec["attack"]["best_knobs"], origin=name)
             sources[name] = record_hash(out / "search" / f"{name}.json")
     members = json.loads(bank.to_json())
-    bank_hash = hashlib.sha256(json.dumps({"members": members, "sources": sources}, sort_keys=True).encode()).hexdigest()
-    return {"members": members, "sources": sources, "bank_hash": bank_hash}
+    from sim.policies.families import H3_EMBEDDINGS
+    embeddings = {"D2+H3": list(H3_EMBEDDINGS)}                                   # amendment 2: the registered transfer into the H3 cells, inside the hash
+    bank_hash = hashlib.sha256(json.dumps({"members": members, "sources": sources, "embeddings": embeddings}, sort_keys=True).encode()).hexdigest()
+    return {"members": members, "sources": sources, "embeddings": embeddings, "bank_hash": bank_hash}
 
 
 def load_bank_doc(out: Path) -> dict:
-    """The current bank document, refused when a source record changed or disappeared since the bank was built."""
+    """The current bank document, refused when a source record changed or disappeared since the bank was built, or when
+    its embeddings entry is not the registered one (amendment 2)."""
     doc = json.loads((out / "bank.json").read_text())
+    from sim.policies.families import H3_EMBEDDINGS
+    if doc.get("embeddings") != {"D2+H3": list(H3_EMBEDDINGS)}:
+        raise SystemExit("bank.json: the embeddings entry is not the registered D2-to-H3 transfer; rebuild the bank")
+    want = hashlib.sha256(json.dumps({"members": doc["members"], "sources": doc["sources"], "embeddings": doc["embeddings"]}, sort_keys=True).encode()).hexdigest()
+    if doc.get("bank_hash") != want:
+        raise SystemExit("bank.json: bank_hash does not cover its members, sources, and embeddings; rebuild the bank")
     for name, h in doc["sources"].items():
         path = out / "search" / f"{name}.json"
         if not path.exists() or record_hash(path) != h:
             raise SystemExit(f"bank source {name} changed or disappeared since the bank was built; rerun the bank stage")
-    expect = hashlib.sha256(json.dumps({"members": doc["members"], "sources": doc["sources"]}, sort_keys=True).encode()).hexdigest()
-    if doc["bank_hash"] != expect:
-        raise SystemExit("bank.json does not match its hash; rerun the bank stage")
     return doc
 
 
 def check_bank_record(rec: dict | None, doc: dict | None, stage: str) -> None:
-    """A bank or reference record of a D1 or D2 cell must come from the current bank (its hash); H3 records carry no bank."""
+    """A bank or reference record of a D1, D2, or (amendment 2) D2+H3 cell must come from the current bank (its hash)."""
     if rec is None:
         return
-    needs_bank = rec["spec"]["family"] in FAMILIES
+    needs_bank = rec["spec"]["family"] in FAMILIES or rec["spec"]["family"] == "D2+H3"
     if rec.get("bank_hash") is None:
         if needs_bank:
             raise SystemExit(f"{rec['spec']['name']}: record carries no bank hash; rerun the bank and reference stages before {stage}")
@@ -335,7 +341,7 @@ def run_stages(o: dict) -> dict:
         if stage == "bank":
             doc = build_bank(out, search, jobs)
             write_json(out / "bank.json", doc)
-            targets = [n for n, r in search.items() if r["spec"]["family"] in FAMILIES]
+            targets = [n for n, r in search.items() if r["spec"]["family"] in FAMILIES or r["spec"]["family"] == "D2+H3"]   # amendment 2: H3 cells take the bank through the embeddings
             for rec in pool.map(stage_bank, [jobs[n] for n in targets], [search[n] for n in targets], [doc] * len(targets)):
                 record("bank", rec)
             trows = [json.loads((out / "bank" / f"{n}.json").read_text())["transfer"] for n in targets]
@@ -346,7 +352,7 @@ def run_stages(o: dict) -> dict:
         if stage in ("reference", "evaluate", "checks"):
             bank_doc = load_bank_doc(out) if (out / "bank.json").exists() else None
             for n, r in search.items():
-                if r["spec"]["family"] in FAMILIES and n not in bank_recs:
+                if (r["spec"]["family"] in FAMILIES or r["spec"]["family"] == "D2+H3") and n not in bank_recs:
                     raise SystemExit(f"{n}: no bank record; run the bank stage before {stage}")
                 check_bank_record(bank_recs.get(n), bank_doc, stage)
         refs = read_dir(out / "reference")
@@ -376,18 +382,23 @@ def run_stages(o: dict) -> dict:
         if stage == "checks":
             names = []
             for c in [c for c in manifest if c.section == "controls" and c.rule in rules]:
-                n = next((n for n, r in search.items() if r["spec"]["section"] == "development" and r["spec"]["rule"] == c.rule
+                src_section = "h3" if c.family == "D2+H3" else "development"           # amendment 2: a control is in scope when its source section is selected
+                src_name = cell_name(src_section, c.rule, c.family, c.beta, c.rho, c.position)
+                if src_section not in sections or (o.get("select") and o["select"] not in src_name):
+                    continue
+                n = next((n for n, r in search.items() if r["spec"]["section"] == src_section and r["spec"]["rule"] == c.rule
                           and r["spec"]["family"] == c.family and r["spec"]["position"] == c.position
-                          and float(r["spec"]["beta"]) == c.beta and float(r["spec"]["rho"]) == c.rho and n in refs), None)
-                if n is not None:
-                    names.append(n)
+                          and float(r["spec"]["beta"]) == c.beta and float(r["spec"]["rho"]) == c.rho), None)
+                if n is None or n not in refs or ((c.family in FAMILIES or c.family == "D2+H3") and n not in bank_recs):
+                    raise SystemExit(f"{c.name}: control in scope but its search record, bank record, or checked reference is missing; rerun the earlier stages")
+                names.append(n)
             results = list(pool.map(stage_checks, [jobs[n] for n in names], [search[n] for n in names], [bank_recs.get(n) for n in names], [refs[n] for n in names]))
             for rec in results:
                 counted["checks"] = counted.get("checks", 0) + int(rec["runs"])
                 write_json(out / "checks" / f"{rec['spec']['name']}.json", rec)
             write_json(out / "checks.json", results)
         if stage == "all_deviators" and (o["stage"] == "all_deviators" or "all_deviators" in sections):
-            specs = [c for c in manifest if c.section == "all_deviators" and c.rule in rules]
+            specs = [c for c in manifest if c.section in ("all_deviators", "all_deviators_post_lock") and c.rule in rules]   # amendment 2: the proposed rule's post-lock entry
             adj = [job_for(c, lk, cal, base, params[c.rule], budget, o["smoke"]) for c in specs]
             results = list(pool.map(stage_all_deviators, adj))
             for rec in results:

@@ -51,7 +51,9 @@ def test_smoke_sweep_runs_every_stage_with_counted_runs(cal_path, tmp_path):
         for p in (out / stage).glob("*.json"):
             rec = json.loads(p.read_text())
             assert rec["runs"] == rec["scheduled"] if stage in ("search", "evaluate") else rec["runs"] <= rec["scheduled"]
-    assert len(json.loads((out / "checks.json").read_text())) == 2        # D1 and D2 doubling cells at beta_headline, median
+    checks = json.loads((out / "checks.json").read_text())
+    assert len(checks) == 3 and {c["spec"]["family"] for c in checks} == {"D1", "D2", "D2+H3"}      # D1, D2, and (amendment 2) the H3 doubling control at beta_headline, median
+    h3c = next(c for c in checks if c["spec"]["family"] == "D2+H3"); assert "delta_gain" in json.dumps(h3c) and h3c["runs"] <= h3c["scheduled"]
     headline = json.loads((out / "headline.json").read_text())
     assert set(headline) == {"B1/D1", "B1/D2"} and all(h["headline"] == "median" for h in headline.values())
     rows = (out / "development.csv").read_text().splitlines()
@@ -111,3 +113,29 @@ def test_limit_without_shard_keeps_the_manifest_order(cal_path, tmp_path):
     r = run_sweep(cal_path, out, "--stage", "search", "--sections", "development", "--rules", "B1", "--select", "beta0.05", "--smoke", "--workers", "1", "--limit", "1")
     assert r.returncode == 0, r.stderr
     assert [p.stem for p in (out / "search").glob("*.json")] == [first]
+
+
+def test_checks_scope_follows_the_selected_sections_and_refuses_a_missing_in_scope_record(cal_path, tmp_path):
+    out = tmp_path / "res"
+    r = run_sweep(cal_path, out, "--stage", "all", "--sections", "development,h3", "--rules", "B1", "--select", "beta0.05_rho0.2_median", "--smoke", "--workers", "1")
+    assert r.returncode == 0, r.stderr
+    assert {c["spec"]["family"] for c in json.loads((out / "checks.json").read_text())} == {"D1", "D2", "D2+H3"}
+    r2 = run_sweep(cal_path, out, "--stage", "checks", "--sections", "development", "--rules", "B1", "--smoke", "--workers", "1")
+    assert r2.returncode == 0 and {c["spec"]["family"] for c in json.loads((out / "checks.json").read_text())} == {"D1", "D2"}      # H3 control out of scope: not visited
+    next((out / "search").glob("*D2+H3*.json")).unlink()
+    r3 = run_sweep(cal_path, out, "--stage", "checks", "--sections", "h3", "--rules", "B1", "--smoke", "--workers", "1")
+    assert r3.returncode != 0 and "control" in (r3.stderr + r3.stdout)                                                                 # in scope and missing: refused
+
+
+def test_h3_cells_take_the_bank_and_a_tampered_embeddings_entry_is_refused(cal_path, tmp_path):
+    out = tmp_path / "res"
+    r = run_sweep(cal_path, out, "--stage", "all", "--sections", "development,h3", "--rules", "B1", "--select", "beta0.05_rho0.2_median", "--smoke", "--workers", "1")
+    assert r.returncode == 0, r.stderr
+    bank_doc = json.loads((out / "bank.json").read_text())
+    assert bank_doc["embeddings"] == {"D2+H3": ["embed_d2_in_h3", "embed_d2_in_h3_exit"]}
+    h3 = json.loads(next((out / "bank").glob("*D2+H3*.json")).read_text())
+    assert h3["bank_hash"] == bank_doc["bank_hash"] and any(o.endswith("|x=1") for o in [t[2] for t in h3["ranked_top"]] + [h3["transfer"].get("best_origin") or ""])
+    ref = json.loads(next((out / "reference").glob("*D2+H3*.json")).read_text()); assert ref["bank_hash"] == bank_doc["bank_hash"]
+    bank_doc["embeddings"] = {"D2+H3": ["embed_d2_in_h3"]}; (out / "bank.json").write_text(json.dumps(bank_doc))
+    r2 = run_sweep(cal_path, out, "--stage", "reference", "--rules", "B1", "--smoke", "--workers", "1")
+    assert r2.returncode != 0 and "embeddings" in (r2.stderr + r2.stdout)

@@ -4,7 +4,13 @@ import json
 from dataclasses import dataclass, field
 
 from .cell import Cell, SeedCache, run_focal
-from .policies.families import FAMILIES, Family, embed_d1_in_d2, exact_key
+from .policies.families import FAMILIES, Family, embed_d1_in_d2, embed_d2_in_h3, embed_d2_in_h3_exit, exact_key
+
+
+def bank_families() -> dict:
+    """Amendment 2: the families a bank may target, from the registry (D1, D2, D2+H3, and H2 once the bundle is present)."""
+    from .registry import available_families
+    return available_families()
 
 
 @dataclass
@@ -21,34 +27,39 @@ class Bank:
     entries: list = field(default_factory=list)   # (family_name, knobs, origin)
 
     def add(self, family_name: str, knobs: dict, origin: str) -> None:
-        if family_name not in FAMILIES:
+        if family_name not in bank_families():
             raise ValueError(f"unknown family {family_name}")
         if not any(f == family_name and exact_key(k) == exact_key(knobs) for f, k, _ in self.entries):
             self.entries.append((family_name, dict(knobs), origin))
 
     def _compatible(self, target: str) -> list[tuple[dict, str]]:
+        """The typed compatibility filter: a member enters its own family as is, D1 enters D2 through the embedding, and
+        (amendment 2) the complete D2-compatible set enters D2+H3 through both embeddings, x = 0 before x = 1, in entry
+        order with the origin suffixed; the target's exact corners follow, de-duplicated by exact key."""
         out, seen = [], set()
-        for f, k, origin in self.entries:
-            if f == target:
-                m = dict(k)
-            elif f == "D1" and target == "D2":
-                m = embed_d1_in_d2(k)
-            else:
-                continue
+
+        def take(m: dict, origin: str) -> None:
             key = exact_key(m)
             if key not in seen:
                 seen.add(key); out.append((m, origin))
-        for c in FAMILIES[target].corners():      # the target family's exact-corner controls are members too (spec 8)
-            key = exact_key(c)
-            if key not in seen:
-                seen.add(key); out.append((c, "corner"))
+
+        for f, k, origin in self.entries:
+            if f == target:
+                take(dict(k), origin)
+            elif f == "D1" and target == "D2":
+                take(embed_d1_in_d2(k), origin)
+            elif target == "D2+H3" and f in ("D1", "D2"):
+                d2 = embed_d1_in_d2(k) if f == "D1" else dict(k)
+                take(embed_d2_in_h3(d2), origin + "|x=0"); take(embed_d2_in_h3_exit(d2), origin + "|x=1")
+        for c in bank_families()[target].corners():      # the target family's exact-corner controls are members too (spec 8)
+            take(c, "corner")
         return out
 
     def members_for(self, family_name: str) -> list[dict]:
         return [m for m, _ in self._compatible(family_name)]
 
     def projected_members_for(self, family_name: str) -> list[dict]:
-        fam = FAMILIES[family_name]
+        fam = bank_families()[family_name]
         out, seen = [], set()
         for m, _ in self._compatible(family_name):
             p = fam.project(m); key = exact_key(p)

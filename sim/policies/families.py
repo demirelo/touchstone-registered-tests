@@ -110,3 +110,16 @@ FAMILIES = {"D1": D1, "D2": D2}
 
 def embed_d1_in_d2(k: dict) -> dict:
     return {"u0": k["u"], "m0": k["m"], "s": k["s"], "d": 0.0, "r": 0.0, "w": k["w"], "clip": k["clip"]}
+
+
+def embed_d2_in_h3(k: dict) -> dict:
+    """Amendment 2: the behaviour-preserving containment of D2 in D2+H3 (x = 0 never exits)."""
+    return {**k, "x": 0}
+
+
+def embed_d2_in_h3_exit(k: dict) -> dict:
+    """Amendment 2: the additional replacement-policy transformation (x = 1 exits after a failed audit)."""
+    return {**k, "x": 1}
+
+
+H3_EMBEDDINGS = ("embed_d2_in_h3", "embed_d2_in_h3_exit")
