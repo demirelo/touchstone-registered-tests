@@ -119,7 +119,7 @@ def main() -> None:
     base = json.loads(Path(a.base_report).read_text()); base["_sha256"] = sha(a.base_report)
     if bool(base.get("smoke")) != bool(a.smoke):
         refuse("smoke flags differ: a smoke base report needs --smoke and a registered base report refuses it")
-    if not a.smoke and base["_sha256"] != lk.get("coverage_report_sha256"):
+    if base["_sha256"] != lk.get("coverage_report_sha256"):                       # in smoke mode the synthetic lock copy binds the smoke base report
         refuse(f"base report {a.base_report}: hash differs from the lock's coverage_report_sha256")
     if a.smoke and base.get("admission_basis") == "registered":
         refuse("smoke run on a registered base report")
