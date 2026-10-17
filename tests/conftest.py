@@ -69,6 +69,11 @@ def _run(args, cwd=ROOT):
 def smoke_inputs(tmp_path_factory, cal_path_session):
     """A smoke sweep over the 18 development cells at the headline budget (search, bank, reference), the smoke base
     coverage report on it, a synthetic lock bound to that report, its selection file, and a draft amendment file."""
+    import os
+    cached = os.environ.get("TOUCHSTONE_SMOKE_INPUTS")                                                # reuse a previous run's inputs (about 20 minutes to build)
+    if cached and (Path(cached) / "cov" / "coverage_report.json").exists():
+        d = Path(cached); return {"dir": d, "sweep": d / "sweep", "cal": cal_path_session if not (d / "cal.json").exists() else d / "cal.json", "base_report": d / "cov" / "coverage_report.json",
+                                  "selection": d / "cov" / "coverage_cells.json", "locked": d / "locked.yaml", "amendment": d / "amendment.yaml"}
     d = tmp_path_factory.mktemp("smoke_inputs"); sweep = d / "sweep"; cov = d / "cov"
     common = ["--calibration", str(cal_path_session), "--out", str(sweep), "--rules", "B1,B2,B3", "--smoke", "--workers", "2"]
     _run(["scripts/sweep.py", "--stage", "search", "--sections", "development", "--select", "beta0.05_rho0.2", *common])
@@ -79,7 +84,7 @@ def smoke_inputs(tmp_path_factory, cal_path_session):
     lk = yaml.safe_load((ROOT / "experiments" / "locked.yaml").read_text())
     lk["coverage_report_sha256"] = hashlib.sha256(report.read_bytes()).hexdigest()
     locked = d / "locked.yaml"; locked.write_text(yaml.safe_dump(lk, sort_keys=False))
-    amend = d / "amendment.yaml"; amend.write_text(yaml.safe_dump(amendment_doc(), sort_keys=False))
+    amend = d / "amendment.yaml"; amend.write_text(yaml.safe_dump(amendment_doc(), sort_keys=False)); shutil.copy(cal_path_session, d / "cal.json")
     return {"dir": d, "sweep": sweep, "cal": cal_path_session, "base_report": report, "selection": cov / "coverage_cells.json", "locked": locked, "amendment": amend}
 
 

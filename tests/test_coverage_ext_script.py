@@ -52,7 +52,9 @@ def test_coverage_ext_smoke_end_to_end_and_refusals(tmp_path, smoke_inputs):
     rep = json.loads((out / "coverage_report_amendment.json").read_text())
     assert rep["smoke"] is True and rep["admission_basis"].startswith("smoke") and set(rep["cells"]) == {c["name"] for c in rep["selection"]} and rep["limitation"] == LIMITATION
     assert set(rep["admitted_sides"]) == {"gain_diff|lower|0.9875|40", "gain_diff|upper|0.9875|40"} and rep["consequences"]["h3_comparative"] in ("confirmatory", "exploratory")
-    assert set(rep["thresholds"]) == {"40"} and rep["base_report_sha256"] and rep["amendment_sha256"] and all(c["pool_factor"] == 1 for c in rep["cells"].values())
+    rem = rep["fixture_and_power"]["remedies"]["40"]                                                   # the smoke gate may select a remedy; the cells must follow it
+    assert set(rep["thresholds"]) == {"40"} and rep["base_report_sha256"] and rep["amendment_sha256"]
+    assert all((c["pool_factor"], c["rep_factor"]) == (rem["pool_factor"], rem["rep_factor"]) for c in rep["cells"].values())
     r2 = run(ext_cmd(smoke_inputs, out) + ["--cell", "0", "--smoke"]); assert r2.returncode == 0 and "0 new pool seeds" in r2.stdout      # rerun reuses the pool
     r3 = run(ext_cmd(smoke_inputs, out) + ["--cell", "7", "--smoke"]); assert r3.returncode == 2 and "--cell" in r3.stderr
     sel = json.loads(Path(smoke_inputs["selection"]).read_text()); sel[0], sel[1] = sel[1], sel[0]
