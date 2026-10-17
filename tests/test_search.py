@@ -119,3 +119,20 @@ def test_corner_controls_use_exact_knobs_at_tier_boundaries():
     via_inverse = obj(D1.inverse(honest, near=1e-9))
     assert exact > via_inverse            # claim 0.8 is tier 3 at P3; one ulp below is tier 2 at P2
     assert len(ctrl) == 32 and all(np.isfinite(f) for f in ctrl.values())
+
+
+def test_objective_log_records_every_evaluation_including_repeats_and_survives_the_record_roundtrip():
+    from sim.records import search_from_json, search_to_json
+    cell = Cell(cfg=fixture_cfg(), rule_factory=lambda: PostedPrices(0.20, 0.35, 0.50), focal=3, seeds=(1,), name="c")
+    obj = Objective(cell, D1, SeedCache())
+    k = {"u": 0.5, "m": 0.5, "s": 0.0, "w": 0.0, "clip": 0}
+    obj.eval_knobs(k, source="a"); obj.eval_knobs(k, source="b"); obj.eval_knobs({**k, "u": 0.6}, source="c")
+    assert len(obj.archive) == 2 and len(obj.log) == 3 and [e["source"] for e in obj.log] == ["a", "b", "c"]       # the archive de-duplicates, the log does not
+    assert all({"knobs", "f", "source", "per_seed_normalized"} <= set(e) for e in obj.log)
+    res = cma_search(Objective(cell, D1, SeedCache()), D1, SMALL, seed=1)
+    assert len(res.evaluations) == res.evals + 1 and len(res.trace) > 0                                             # every budgeted evaluation plus the projection
+    back = search_from_json(search_to_json(res))
+    assert back.trace == [list(t) if isinstance(t, tuple) else t for t in res.trace] or len(back.trace) == len(res.trace)
+    assert len(back.evaluations) == len(res.evaluations) and back.evaluations[0]["source"] == res.evaluations[0]["source"]
+    old = search_to_json(res); old.pop("trace"); old.pop("evaluations")
+    assert search_from_json(old).evaluations == [] and search_from_json(old).trace == []                              # older records still load

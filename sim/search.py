@@ -52,6 +52,7 @@ class Objective:
         self.cell, self.family, self.cache, self.force_clip = cell, family, cache, force_clip
         self.archive: dict[tuple, ArchiveEntry] = {}
         self.evals = 0
+        self.log: list = []                     # amendment 2: every evaluation in order, repeats included
 
     def knobs_of(self, x: np.ndarray) -> dict:
         k = self.family.transform(x)
@@ -65,6 +66,7 @@ class Objective:
         if key not in self.archive:
             self.archive[key] = ArchiveEntry(knobs=dict(knobs), f=f, per_seed_profit=fr.profit, per_seed_normalized=fr.normalized,
                                              inflated=fr.inflated, source=source)
+        self.log.append({"knobs": dict(knobs), "f": f, "source": source, "per_seed_normalized": [float(v) for v in fr.normalized]})
         self.evals += 1
         return f
 
@@ -95,6 +97,7 @@ class SearchResult:
     projection_f: float
     replaced_by_projection: bool
     archive: dict = field(default_factory=dict)
+    evaluations: list = field(default_factory=list)      # amendment 2: the objective's ordered evaluation log
 
 
 def cma_search(objective, family: Family, settings: SearchSettings, seed: int,
@@ -146,7 +149,7 @@ def cma_search(objective, family: Family, settings: SearchSettings, seed: int,
         best_x, best_knobs, best_f, best_source = family.inverse(proj, settings.near_corner), proj, projection_f, "projection"
     return SearchResult(best_x=best_x, best_knobs=best_knobs, best_f=float(best_f), best_source=best_source,
                         restart_bests=restart_bests, evals=evals, trace=trace, incumbent_scores=incumbent_scores,
-                        projection_f=projection_f, replaced_by_projection=replaced, archive=objective.archive)
+                        projection_f=projection_f, replaced_by_projection=replaced, archive=objective.archive, evaluations=list(getattr(objective, "log", [])))
 
 
 def corner_controls(objective, family: Family) -> list[tuple[dict, float]]:

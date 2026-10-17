@@ -59,3 +59,15 @@ def test_tune_script_quick(tmp_path):
     r = subprocess.run([sys.executable, "scripts/tune_baselines.py", "--calibration", str(calp), "--rule", "B3",
                         "--out", str(tmp_path / "t.json"), "--quick"], capture_output=True, text=True)
     assert r.returncode != 0 and "calibration" in (r.stderr + r.stdout)
+
+
+def test_proposed_grid_order_prices_and_objective():
+    from sim.tuning import objective_proposed
+    lk = load_locked(); cfg = MarketConfig.default(); prices = (0.186888, 0.373776, 0.533966)
+    g = tuning_grid("proposed", cfg, lk, prices)
+    assert len(g) == 36 and [c["allocation"] for c in g[:18]] == ["A"] * 18 and [c["targeting"] for c in g[:9]] == ["T1"] * 9
+    assert [c["tol"] for c in g[:3]] == [0.12, 0.12, 0.12] and [c["L"] for c in g[:3]] == [3, 10, 20] and g[3]["tol"] == 0.14
+    assert all(("P1" in c) == (c["allocation"] == "B") for c in g) and g[18]["P3"] == 0.533966
+    assert objective_proposed(0.05, 0.97, 0.10, 0.58, 0.36) == pytest.approx(min(0.05, min((0.97 - 0.90) / 0.90, (0.30 - 0.10) / 0.30), min((0.58 - 0.10 - 0.10) / 0.10, (0.36 - 0.10 - 0.10) / 0.10)))
+    assert objective_proposed(0.5, 0.99, 0.0, 0.58, 0.05) < 0                                               # the B3 reduction term binds and is negative
+    assert objective_proposed(-0.2, 0.99, 0.0, 0.58, 0.36) == pytest.approx(-0.2)                            # m_D2 binds

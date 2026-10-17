@@ -26,6 +26,7 @@ def search_to_json(res: SearchResult) -> dict:
     return {"best_x": [float(v) for v in np.asarray(res.best_x)], "best_knobs": res.best_knobs, "best_f": res.best_f, "best_source": res.best_source,
             "restart_bests": [float(v) for v in res.restart_bests], "evals": res.evals, "incumbent_scores": res.incumbent_scores,
             "projection_f": res.projection_f, "replaced_by_projection": res.replaced_by_projection,
+            "trace": [[int(e), float(f)] for e, f in res.trace], "evaluations": list(res.evaluations),            # amendment 2
             "archive": [{"knobs": e.knobs, "f": e.f, "per_seed_profit": [float(v) for v in e.per_seed_profit],
                          "per_seed_normalized": [float(v) for v in e.per_seed_normalized], "inflated": bool(e.inflated), "source": e.source}
                         for e in res.archive.values()]}
@@ -36,8 +37,9 @@ def search_from_json(d: dict) -> SearchResult:
                                                    per_seed_normalized=np.array(e["per_seed_normalized"]), inflated=bool(e["inflated"]), source=e["source"])
                for e in d["archive"]}
     return SearchResult(best_x=np.array(d["best_x"]), best_knobs=d["best_knobs"], best_f=float(d["best_f"]), best_source=d["best_source"],
-                        restart_bests=list(d["restart_bests"]), evals=int(d["evals"]), trace=[], incumbent_scores=dict(d["incumbent_scores"]),
-                        projection_f=float(d["projection_f"]), replaced_by_projection=bool(d["replaced_by_projection"]), archive=archive)
+                        restart_bests=list(d["restart_bests"]), evals=int(d["evals"]), trace=[(int(e), float(f)) for e, f in d.get("trace", [])],
+                        incumbent_scores=dict(d["incumbent_scores"]), projection_f=float(d["projection_f"]), replaced_by_projection=bool(d["replaced_by_projection"]),
+                        archive=archive, evaluations=list(d.get("evaluations", [])))
 
 
 def candidate_to_json(c: Candidate) -> dict:
