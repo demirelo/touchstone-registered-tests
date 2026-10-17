@@ -139,3 +139,39 @@ def test_h3_cells_take_the_bank_and_a_tampered_embeddings_entry_is_refused(cal_p
     bank_doc["embeddings"] = {"D2+H3": ["embed_d2_in_h3"]}; (out / "bank.json").write_text(json.dumps(bank_doc))
     r2 = run_sweep(cal_path, out, "--stage", "reference", "--rules", "B1", "--smoke", "--workers", "1")
     assert r2.returncode != 0 and "embeddings" in (r2.stderr + r2.stdout)
+
+
+def test_final_heldout_path_takes_the_development_bank_from_another_directory(tmp_path, monkeypatch):
+    """Amendment 2: the exact final path, --stage all --sections heldout --bank-from <development dir>, in a separate
+    directory through checks (no controls visited), a resumed evaluate stage, and the refusals: a resumed stage without
+    --bank-from, a different internally valid bank, and a changed source record."""
+    import os
+    from tests.test_registry import synthetic_env
+    from sim.calibrate import calibrate, save_calibration
+    from sim.locked import market_config_from_locked
+    synthetic_env(tmp_path, monkeypatch)
+    save_calibration(calibrate(market_config_from_locked(load_locked()), [4000, 4001]), tmp_path / "cal.json")
+    env = dict(os.environ, OMP_NUM_THREADS="1")
+
+    def sweep(out, *extra):
+        return subprocess.run([sys.executable, str(Path("scripts/sweep.py")), "--calibration", str(tmp_path / "cal.json"), "--rules", "B2", "--smoke", "--out", str(out), *extra],
+                              capture_output=True, text=True, env=env)
+    dev, dev2, final = tmp_path / "dev", tmp_path / "dev2", tmp_path / "final"
+    for d, pos in ((dev, "median"), (dev2, "low")):
+        r = sweep(d, "--stage", "search", "--sections", "development", "--select", f"beta0.05_rho0.2_{pos}"); assert r.returncode == 0, r.stderr
+        r = sweep(d, "--stage", "bank"); assert r.returncode == 0, r.stderr
+    dev_hash = json.loads((dev / "bank.json").read_text())["bank_hash"]; assert dev_hash != json.loads((dev2 / "bank.json").read_text())["bank_hash"]
+    r = sweep(final, "--stage", "all", "--sections", "heldout", "--select", "D2+H3", "--bank-from", str(dev))
+    assert r.returncode == 0, r.stderr
+    name = "B2_D2+H3_beta0.05_rho0.2_median_heldout"
+    bank_rec = json.loads((final / "bank" / f"{name}.json").read_text())
+    assert bank_rec["bank_hash"] == dev_hash and bank_rec["bank_source"] == str(dev.resolve()) and not (final / "bank.json").exists()
+    assert json.loads((final / "reference" / f"{name}.json").read_text())["bank_hash"] == dev_hash
+    assert (final / "evaluate" / f"{name}.json").exists() and json.loads((final / "checks.json").read_text()) == []       # no controls in the heldout scope
+    r = sweep(final, "--stage", "evaluate", "--sections", "heldout", "--bank-from", str(dev)); assert r.returncode == 0, r.stderr        # a resumed stage
+    r = sweep(final, "--stage", "evaluate", "--sections", "heldout"); assert r.returncode != 0 and "bank" in (r.stderr + r.stdout)        # without the resolver: refused
+    r = sweep(final, "--stage", "reference", "--sections", "heldout", "--bank-from", str(dev2))
+    assert r.returncode != 0 and "another bank" in (r.stderr + r.stdout)                                                                  # a different, internally valid bank
+    src = next((dev / "search").glob("*.json")); d = json.loads(src.read_text()); d["runs"] = d["runs"] + 1; src.write_text(json.dumps(d))
+    r = sweep(final, "--stage", "evaluate", "--sections", "heldout", "--bank-from", str(dev))
+    assert r.returncode != 0 and "changed" in (r.stderr + r.stdout)                                                                       # a changed source record

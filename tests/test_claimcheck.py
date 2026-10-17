@@ -471,3 +471,41 @@ def test_amendment_keeps_known_failures_and_binds_the_amendment_hash(tmp_path):
     assert verify_amendment_report(p, reg) == []
     edited = {**reg, "clause": {**reg["clause"], "gain_reduction_min": 0.0}}
     assert any("amendment_sha256" in q for q in verify_amendment_report(p, edited))                                      # an edited amendment copy no longer matches the report
+
+
+def _bank_doc(members=None, sources=None):
+    from sim.policies.families import H3_EMBEDDINGS
+    members = members or {"D1": [], "D2": [{"knobs": {"u0": 1.0}, "origin": "x"}]}; sources = sources or {"x": "ab" * 32}
+    emb = {"D2+H3": list(H3_EMBEDDINGS)}
+    h = hashlib.sha256(json.dumps({"members": members, "sources": sources, "embeddings": emb}, sort_keys=True).encode()).hexdigest()
+    return {"members": members, "sources": sources, "embeddings": emb, "bank_hash": h}
+
+
+def test_verify_bank_commitment_binds_the_final_bank_to_the_frozen_f5_bank(tmp_path):
+    from sim.claimcheck import verify_bank_commitment
+    dev = tmp_path / "dev"; dev.mkdir(); doc = _bank_doc(); (dev / "bank.json").write_text(json.dumps(doc))
+    f5 = {"bank_hash": doc["bank_hash"], "sources_sha256": hashlib.sha256(json.dumps(doc["sources"], sort_keys=True).encode()).hexdigest(), "embeddings": doc["embeddings"]}
+    assert verify_bank_commitment(dev, {"f5_bank": f5}) == []
+    assert any("f5_bank" in p for p in verify_bank_commitment(dev, {"rule": "proposed"}))                                   # nothing recorded at the freeze
+    assert any("bank_hash" in p for p in verify_bank_commitment(dev, {"f5_bank": dict(f5, bank_hash="00" * 32)}))
+    assert any("embeddings" in p for p in verify_bank_commitment(dev, {"f5_bank": dict(f5, embeddings={"D2+H3": ["embed_d2_in_h3"]})}))
+    other = tmp_path / "other"; other.mkdir(); (other / "bank.json").write_text(json.dumps(_bank_doc(sources={"y": "cd" * 32})))
+    assert any("bank_hash" in p for p in verify_bank_commitment(other, {"f5_bank": f5}))                                     # a different, internally valid bank
+    assert any("bank.json" in p for p in verify_bank_commitment(tmp_path / "none", {"f5_bank": f5}))
+    final = tmp_path / "final"; (final / "reference").mkdir(parents=True); (final / "bank").mkdir()
+    rec = {"spec": {"name": "B2_D2+H3_beta0.05_rho0.2_median_heldout", "section": "heldout", "family": "D2+H3", "rule": "B2"}, "bank_hash": doc["bank_hash"]}
+    (final / "reference" / "B2_D2+H3_beta0.05_rho0.2_median_heldout.json").write_text(json.dumps(rec)); (final / "bank" / "B2_D2+H3_beta0.05_rho0.2_median_heldout.json").write_text(json.dumps(rec))
+    assert verify_bank_commitment(dev, {"f5_bank": f5}, final) == []
+    (final / "reference" / "B2_D2+H3_beta0.05_rho0.2_median_heldout.json").write_text(json.dumps(dict(rec, bank_hash="11" * 32)))
+    assert any("another bank" in p for p in verify_bank_commitment(dev, {"f5_bank": f5}, final))
+    (final / "bank" / "B2_D2+H3_beta0.05_rho0.2_median_heldout.json").unlink()
+    assert any("no bank record" in p for p in verify_bank_commitment(dev, {"f5_bank": f5}, final))
+
+
+def test_check_claim_cli_bank_from_is_checked_against_the_frozen_parameter_file(tmp_path):
+    repo = make_repo(tmp_path); dev = tmp_path / "dev"; dev.mkdir(); (dev / "bank.json").write_text(json.dumps(_bank_doc()))
+    cmd = [sys.executable, str(ROOT / "scripts" / "check_claim.py"), "--verify-only", "--verify-lock", "lock-test", "--repo", str(repo), "--proposed", "R"]
+    r = subprocess.run(cmd + ["--bank-from", str(dev)], capture_output=True, text=True, cwd=ROOT)
+    assert r.returncode == 2 and "f5_bank" in r.stderr                                                                       # the fake repo's proposed.yaml records none
+    r = subprocess.run(cmd + ["--bank-from", str(tmp_path / "missing")], capture_output=True, text=True, cwd=ROOT)
+    assert r.returncode == 2 and "bank.json" in r.stderr

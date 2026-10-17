@@ -1,0 +1,3 @@
+# Plan review, round 5: docs/superpowers/plans/2026-10-17-proposed-rule.md (v5, in this worktree)
+
+v5 changes only the round-4 point: the checks dispatcher scopes controls by the selected --sections (D1/D2 controls with `development`, H3 controls with `h3`; a control outside the selected scope is not visited, so `--sections heldout` runs no controls as today; an in-scope control with a missing record, bank record, or reference refuses), and the tests include a smoke run of the exact final path `--stage all --sections heldout --bank-from <development dir>` in a separate directory through `checks`. Read-only; under 250 words. RESOLVED or OPEN with one line; NEW objections if any; VERDICT: accept | accept-with-caveat | reject; CONFIDENCE 0-1.

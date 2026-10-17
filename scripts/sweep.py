@@ -174,6 +174,22 @@ def load_bank_doc(out: Path) -> dict:
     return doc
 
 
+def bank_source(out: Path, bank_from: str | None) -> tuple[Path, dict | None]:
+    """Amendment 2: one resolver for every bank-consuming stage. Without --bank-from the bank lives in `out`; with it, the
+    document comes from the development directory (every source record verified against that directory's search/),
+    the bank stage applies it to this directory's records, and later stages read bank records from out/bank and the
+    document from the development directory. A resumed stage resolves the same way, so --bank-from is passed again."""
+    if bank_from is None:
+        return out, (load_bank_doc(out) if (out / "bank.json").exists() else None)
+    bank_dir = Path(bank_from)
+    if not (bank_dir / "bank.json").exists():
+        raise SystemExit(f"--bank-from {bank_dir}: no bank.json there (run the bank stage in that directory first)")
+    if bank_dir.resolve() == out.resolve():
+        raise SystemExit("--bank-from must name another directory than --out")
+    doc = load_bank_doc(bank_dir); doc["bank_source"] = str(bank_dir.resolve())
+    return bank_dir, doc
+
+
 def check_bank_record(rec: dict | None, doc: dict | None, stage: str) -> None:
     """A bank or reference record of a D1, D2, or (amendment 2) D2+H3 cell must come from the current bank (its hash)."""
     if rec is None:
@@ -206,7 +222,7 @@ def stage_bank(job: dict, rec: dict, bank_doc: dict) -> dict:
         attack.projection_f, attack.replaced_by_projection = pf, pf > f
         attack.best_x = fam.inverse(best, settings_for(job["locked"], b).near_corner)
     out = base_record(job, cache, bank_stage_bound(n_unknown, b), exact=False)
-    out.update({"bank_hash": bank_doc["bank_hash"], "transfer": Bank.transfer_rows(cell.name, float(rec["attack"]["best_f"]), bp),
+    out.update({"bank_hash": bank_doc["bank_hash"], "bank_source": bank_doc.get("bank_source"), "transfer": Bank.transfer_rows(cell.name, float(rec["attack"]["best_f"]), bp),
                 "ranked_top": bp.ranked[:10], "attack": search_to_json(attack), "projected_members": bank.projected_members_for(fam.name)})
     return out
 
@@ -339,8 +355,13 @@ def run_stages(o: dict) -> dict:
         jobs = {name: job_for(next(c for c in manifest if c.name == name), lk, cal, base, params[rec["spec"]["rule"]], budget, o["smoke"], ns)
                 for name, rec in search.items()}
         if stage == "bank":
-            doc = build_bank(out, search, jobs)
-            write_json(out / "bank.json", doc)
+            if o.get("bank_from"):
+                for name, rec in search.items():
+                    check_record(jobs[name], rec)
+                _, doc = bank_source(out, o["bank_from"])          # the development bank, verified; never rebuilt or copied as this directory's own
+            else:
+                doc = build_bank(out, search, jobs)
+                write_json(out / "bank.json", doc)
             targets = [n for n, r in search.items() if r["spec"]["family"] in FAMILIES or r["spec"]["family"] == "D2+H3"]   # amendment 2: H3 cells take the bank through the embeddings
             for rec in pool.map(stage_bank, [jobs[n] for n in targets], [search[n] for n in targets], [doc] * len(targets)):
                 record("bank", rec)
@@ -350,7 +371,7 @@ def run_stages(o: dict) -> dict:
         bank_recs = read_dir(out / "bank")
         bank_doc = None
         if stage in ("reference", "evaluate", "checks"):
-            bank_doc = load_bank_doc(out) if (out / "bank.json").exists() else None
+            _, bank_doc = bank_source(out, o.get("bank_from"))
             for n, r in search.items():
                 if (r["spec"]["family"] in FAMILIES or r["spec"]["family"] == "D2+H3") and n not in bank_recs:
                     raise SystemExit(f"{n}: no bank record; run the bank stage before {stage}")
@@ -422,6 +443,8 @@ def main() -> None:
     ap.add_argument("--limit", type=int, default=None, help="at most this many cells per section (search stage)")
     ap.add_argument("--shard", default=None, help="K/N (search stage): run the cells whose sorted index i has i %% N == K; shards share --out")
     ap.add_argument("--eval-namespace", dest="eval_namespace", default="dev_val", choices=["dev_val", "final_eval"])
+    ap.add_argument("--bank-from", dest="bank_from", default=None,
+                    help="amendment 2: take the bank document from this development directory (its sources verified there); the bank stage applies it to --out's records and the later stages read it from there; pass it again on a resumed stage")
     ap.add_argument("--out", required=True)
     counted = run_stages(vars(ap.parse_args()))
     print("done: " + ", ".join(f"{k} {v} runs" for k, v in counted.items()))

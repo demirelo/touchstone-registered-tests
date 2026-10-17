@@ -33,3 +33,25 @@ def test_amendment_file_is_binding_and_its_paths_exist():
     rb = (ROOT / "docs" / "lock-runbook.md").read_text()
     for s in ("scripts/coverage_ext.py", "scripts/amend.py", "--check", "lock-2026-10-17-amendment-1", "--coverage-ext", "--proposed none", "stress test"):
         assert s in rb, s
+
+
+def test_amendment_2_note_records_the_orchestration_and_the_runbook_carries_the_complete_commands():
+    import hashlib
+    note = (ROOT / "docs" / "amendments" / "2026-10-17-amendment-2.md").read_text()
+    for s in ("lock-2026-10-17-amendment-2", "not expressible", "k_t = 5", "orchestration", "f5_bank", "--bank-from", "stress test", "Expected delta"):
+        assert s in note, s
+    for rel in ("experiments/tuned/tuned_B1.json", "experiments/tuned/tuned_B2.json", "experiments/tuned/tuned_B3.json", "experiments/calibration.json",
+                "experiments/calibration_T100.json", "experiments/coverage_report.json", "experiments/coverage_report_amendment.json", "experiments/coverage_cells.json",
+                "experiments/pilot_anthropic.json", "experiments/pilot_jev.json", "experiments/amendment-2026-10-17.yaml"):
+        assert hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() in note, rel            # every registered artifact's hash, as the note records it
+    assert "held out" not in note.lower().replace("never called held out", "").replace("never held out", "")
+    for f in ("sol-rule-plan-r5.md", "astra-rule-plan-r5.md", "brief-rule-plan-review-r5.md"):
+        assert (ROOT / "docs" / "amendments" / "roster" / f).exists(), f
+    rb = (ROOT / "docs" / "lock-runbook.md").read_text()
+    for s in ("scripts/tune_proposed.py --calibration experiments/calibration.json --sweep-out results/sweep --tuned-dir experiments/tuned --out experiments/proposed.yaml --log results/tuning_proposed",
+              "scripts/describe_proposed.py --params experiments/proposed.yaml --out experiments/proposed_describe.yaml",
+              "--sections development,rho_sweep,h3,all_deviators,ablation --rules B1,B2,B3,proposed --calibration experiments/calibration.json --tuned-dir experiments/tuned",
+              "scripts/falsify_proposed.py --calibration experiments/calibration.json --tuned-dir experiments/tuned --sweep-out results/sweep_proposed --out results/falsification",
+              "--verify-lock lock-2026-10-17-amendment-2 --proposed proposed", "--bank-from results/sweep_proposed", "--proposed none",
+              "scripts/amend.py --amendment experiments/amendment-2026-10-17.yaml --report experiments/coverage_report_amendment.json --base-report experiments/coverage_report.json --selection experiments/coverage_cells.json --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --tuned-dir experiments/tuned --check"):
+        assert s in rb, s

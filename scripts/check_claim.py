@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts.sweep import read_dir  # noqa: E402
 from sim.amendment import LIMITATION, REGISTRATION_FIELDS, load_amendment  # noqa: E402
 from sim.claimcheck import (INCONCLUSIVE, check_proposed_module_isolated, evaluate_amendment, evaluate_claim, verdict_json, verify_amendment_report, verify_coverage_report,  # noqa: E402
-                            verify_describe_record, verify_freeze, verify_h3_records,
+                            verify_bank_commitment, verify_describe_record, verify_freeze, verify_h3_records,
                             verify_h1_summary, verify_lock, verify_records)
 from sim.coverage import load_report  # noqa: E402
 from sim.locked import load_locked, settings_hash  # noqa: E402
@@ -111,6 +111,7 @@ def main() -> None:
     ap.add_argument("--proposed", required=True); ap.add_argument("--proposed-describe", dest="proposed_describe", default=None)
     ap.add_argument("--verify-lock", dest="verify_lock", default=None); ap.add_argument("--verify-freeze", dest="verify_freeze", default=None)
     ap.add_argument("--tuned-dir", dest="tuned_dir", default=None); ap.add_argument("--calibration", default=None)
+    ap.add_argument("--bank-from", dest="bank_from", default=None, help="amendment 2: the development bank the final sweep took (checked against f5_bank in the frozen experiments/proposed.yaml)")
     ap.add_argument("--out", default="results/verdict.json")
     a = ap.parse_args()
     if os.environ.get("TOUCHSTONE_LOCKED"):
@@ -128,6 +129,12 @@ def main() -> None:
             problems += verify_freeze(repo, a.verify_freeze, lk, lk["allow_list"])
         if PROPOSED_MODULE.exists():
             problems += check_proposed_module_isolated(PROPOSED_MODULE, repo, params=proposed_params().get("best_params") if a.verify_freeze else None)
+        if a.bank_from:
+            pdoc_path = repo / "experiments" / "proposed.yaml"
+            pdoc = yaml.safe_load(pdoc_path.read_text()) if pdoc_path.exists() else {}
+            problems += verify_bank_commitment(Path(a.bank_from), pdoc if isinstance(pdoc, dict) else {}, Path(a.sweep_out) if a.sweep_out else None)
+        elif amend is not None and registered and not a.verify_only:
+            problems.append("the amended H3 comparison needs --bank-from DIR: the development bank F5 tested (recorded as f5_bank in the frozen experiments/proposed.yaml)")
         if Path(a.coverage_report).exists():
             problems += verify_coverage_report(a.coverage_report, lk)
         elif not a.verify_only:

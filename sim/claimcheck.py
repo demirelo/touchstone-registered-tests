@@ -324,6 +324,40 @@ def verify_freeze(repo, freeze_tag: str, locked: dict, allow_list) -> list:
     return problems
 
 
+def verify_bank_commitment(bank_dir, proposed_doc: dict, sweep_out=None) -> list:
+    """Amendment 2: the final H3 comparison uses exactly the development bank F5 tested. The document at bank_dir must
+    match `f5_bank` (bank hash, source-map hash, embeddings) recorded in the frozen experiments/proposed.yaml by
+    scripts/falsify_proposed.py, and every final H3 bank and reference record must carry that bank's hash."""
+    problems = []; bank_dir = Path(bank_dir); path = bank_dir / "bank.json"
+    if not path.exists():
+        return [f"--bank-from {bank_dir}: no bank.json there"]
+    doc = json.loads(path.read_text())
+    want = hashlib.sha256(json.dumps({"members": doc.get("members"), "sources": doc.get("sources"), "embeddings": doc.get("embeddings")}, sort_keys=True).encode()).hexdigest()
+    if doc.get("bank_hash") != want:
+        problems.append(f"{path}: bank_hash does not cover its members, sources, and embeddings")
+    f5 = (proposed_doc or {}).get("f5_bank")
+    if not f5:
+        return problems + ["experiments/proposed.yaml records no f5_bank: the freeze did not commit to the bank F5 tested (run scripts/falsify_proposed.py before the freeze tag)"]
+    got = {"bank_hash": doc.get("bank_hash"), "sources_sha256": hashlib.sha256(json.dumps(doc.get("sources"), sort_keys=True).encode()).hexdigest(), "embeddings": doc.get("embeddings")}
+    for k in ("bank_hash", "sources_sha256", "embeddings"):
+        if got[k] != f5.get(k):
+            problems.append(f"--bank-from {bank_dir}: {k} {got[k]!r} differs from the frozen f5_bank {f5.get(k)!r}")
+    if sweep_out is not None:
+        sweep_out = Path(sweep_out)
+        for stage in ("bank", "reference"):
+            recs = {p.stem: json.loads(p.read_text()) for p in sorted((sweep_out / stage).glob("*.json"))} if (sweep_out / stage).exists() else {}
+            refs = {p.stem: json.loads(p.read_text()) for p in sorted((sweep_out / "reference").glob("*.json"))} if (sweep_out / "reference").exists() else {}
+            for name, ref in refs.items():
+                s = ref.get("spec", {})
+                if s.get("section") == "heldout" and s.get("family") == "D2+H3":
+                    rec = recs.get(name)
+                    if rec is None:
+                        problems.append(f"{name}: no {stage} record" if stage == "bank" else f"{name}: no reference record")
+                    elif rec.get("bank_hash") != doc.get("bank_hash"):
+                        problems.append(f"{name}: {stage} record belongs to another bank than --bank-from")
+    return problems
+
+
 def verify_records(records, locked: dict, jobs: dict, expected_seeds) -> list:
     """Every held-out record is checked by the sweep's own check_record against the job rebuilt from the lock (params,
     cfg, settings hash, budget, smoke, salt), then for the namespace, the bundle hash, and the exact seed sequence."""

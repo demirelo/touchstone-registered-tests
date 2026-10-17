@@ -85,23 +85,52 @@ uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17
 
 A draft amendment (registration fields null) refuses every confirmatory `check_claim.py` run; `--verify-only` reports it as unregistered. The proposed rule is designed only after this tag, inside the registered `design` block, and tuned by the registered `tuning` block; the five falsification tests of the `falsification` block are recorded before the freeze tag.
 
-## Freeze day (the day the proposed rule is final; the commands show 2026-11-11 as the example date)
+## Amendment 2 (2026-10-17), the post-lock orchestration, before any proposed-rule code
 
-Rules for the proposed rule's module `sim/mechanisms/proposed.py`, enforced by `scripts/check_claim.py` (`check_proposed_module`): imports only `sim.mechanisms.base`, `numpy`, `scipy`, `math`, `dataclasses`, `typing`, `__future__`, `itertools`, `functools`, in absolute form; no `__import__`, `exec`, `eval`, `compile`, `globals`, `vars`; no `importlib`, `builtins`, or `sys` calls; no `getattr`, `setattr`, or `delattr` with a dunder or computed name; no `__builtins__`; no access to `__subclasses__`, `__globals__`, `__dict__`, `__base__`, `__bases__`, `__mro__`, `__class__`, `__code__`, `__closure__`, `__loader__`, or `__spec__`. Importing the module, and calling `make(params)`, must change no attribute of any `sim.*` module. Before the freeze tag:
+Orchestration only (`docs/amendments/2026-10-17-amendment-2.md`): the proposed rule's post-lock cells and the H3 doubling controls in the manifest, the H3 bank transfer through the registered embeddings, the registered tuning driver, the describe writer, the falsification harness, the rule's contract tests, and the `--bank-from` resolver. No claim, threshold, or registered artifact changes. The expected delta against `lock-2026-10-17-amendment-1` is recorded in the note.
 
 ```bash
-uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17-amendment-1 --proposed proposed
+export OMP_NUM_THREADS=1
+uv run pytest -q && uv run pytest tests/test_tune_proposed_script.py tests/test_falsify_proposed.py -q --runslow
+uv run python scripts/amend.py --amendment experiments/amendment-2026-10-17.yaml --report experiments/coverage_report_amendment.json --base-report experiments/coverage_report.json --selection experiments/coverage_cells.json --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --tuned-dir experiments/tuned --check
+# the expected delta against the amendment-1 tag: exactly Phase A's files; recorded in the note, never called clean
+uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17-amendment-1 --proposed none
+git tag -s lock-2026-10-17-amendment-2 -m "Touchstone amendment 2 (post-lock orchestration)" && git push origin main lock-2026-10-17-amendment-2
+printf 'Touchstone amendment 2\n\ntag: lock-2026-10-17-amendment-2\ncommit: %s\ntag object: %s\namendment_sha256: %s\n' "$(git rev-parse lock-2026-10-17-amendment-2^{commit})" "$(git rev-parse lock-2026-10-17-amendment-2)" "$(uv run python -c 'import yaml; from sim.amendment import amendment_hash; print(amendment_hash(yaml.safe_load(open("experiments/amendment-2026-10-17.yaml"))))')" > docs/lock-2026-10-17-amendment-2.txt
+uvx --from opentimestamps-client ots stamp docs/lock-2026-10-17-amendment-2.txt
+uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17-amendment-2 --proposed none
+```
+
+## Freeze day (the day the proposed rule is final; the commands show 2026-11-11 as the example date)
+
+Rules for the proposed rule's module `sim/mechanisms/proposed.py`, enforced by `scripts/check_claim.py` (`check_proposed_module`): imports only `sim.mechanisms.base`, `numpy`, `scipy`, `math`, `dataclasses`, `typing`, `__future__`, `itertools`, `functools`, in absolute form; no `__import__`, `exec`, `eval`, `compile`, `globals`, `vars`; no `importlib`, `builtins`, or `sys` calls; no `getattr`, `setattr`, or `delattr` with a dunder or computed name; no `__builtins__`; no access to `__subclasses__`, `__globals__`, `__dict__`, `__base__`, `__bases__`, `__mro__`, `__class__`, `__code__`, `__closure__`, `__loader__`, or `__spec__`. Importing the module, and calling `make(params)`, must change no attribute of any `sim.*` module. Before the freeze tag, the registered sequence of amendments 1 and 2 (`docs/amendments/2026-10-17-amendment-2.md`), in order; a kill in `scripts/falsify_proposed.py` stops here and is reported with its figures:
+
+```bash
+export OMP_NUM_THREADS=1
+# 1. the registered tuning (36 configurations x 2 families, top 3 rechecked; one 16-vCPU pod or the laptop overnight); writes experiments/proposed.yaml and the logs
+uv run python scripts/tune_proposed.py --calibration experiments/calibration.json --sweep-out results/sweep --tuned-dir experiments/tuned --out experiments/proposed.yaml --log results/tuning_proposed
+# 2. the describe record (refuses anything but the registered not-expressible audit selection)
+uv run python scripts/describe_proposed.py --params experiments/proposed.yaml --out experiments/proposed_describe.yaml
+# 3. the proposed rule's sweep: all four rules in one directory (every bank source; the baselines' post-lock re-runs are part of the registered design), every stage
+uv run python scripts/sweep.py --stage all --sections development,rho_sweep,h3,all_deviators,ablation --rules B1,B2,B3,proposed --calibration experiments/calibration.json --tuned-dir experiments/tuned --workers 16 --out results/sweep_proposed
+# 4. the five falsification tests; records f5_bank (the bank F5 used) into experiments/proposed.yaml and writes docs/amendments/falsification-<date>.md
+uv run python scripts/falsify_proposed.py --calibration experiments/calibration.json --tuned-dir experiments/tuned --sweep-out results/sweep_proposed --out results/falsification
+# 5. verify, commit the three allow-listed files and the falsification record, tag
+uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17-amendment-2 --proposed proposed
+git add sim/mechanisms/proposed.py experiments/proposed.yaml experiments/proposed_describe.yaml docs/amendments
+git commit -S -m "freeze: the proposed rule, its parameters, its description, and the falsification record"
 git tag -s freeze-2026-11-11 -m "Touchstone evaluation freeze"
-uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17-amendment-1 --verify-freeze freeze-2026-11-11 --proposed proposed
+uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17-amendment-2 --verify-freeze freeze-2026-11-11 --proposed proposed
 ```
 
 ## Evaluation (after the unseal, the day after the freeze; 2026-11-12 in the example)
 
 ```bash
 export TOUCHSTONE_IDENTITY_SALT=$(cat sealed/identity_salt.hex)
-uv run python scripts/sweep.py --stage all --sections heldout --rules B1,B2,B3,proposed --calibration experiments/calibration.json --tuned-dir experiments/tuned --eval-namespace final_eval --workers 8 --out results/final
+# the final sweep takes the development bank of the proposed rule's sweep (verified there; the final H3 cells use exactly the bank F5 tested); pass --bank-from again on any resumed stage
+uv run python scripts/sweep.py --stage all --sections heldout --rules B1,B2,B3,proposed --calibration experiments/calibration.json --tuned-dir experiments/tuned --eval-namespace final_eval --workers 8 --bank-from results/sweep_proposed --out results/final
 uv run python scripts/h1.py --backend anthropic --rules B1,B2,B3,proposed --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --tuned-dir experiments/tuned --eval-namespace final_eval --prompt sealed/h1_prompt.txt --out results/h1_final
-uv run python scripts/check_claim.py --verify-lock lock-2026-10-17-amendment-1 --verify-freeze freeze-2026-11-11 --sweep-out results/final --h1-dir results/h1_final --calibration experiments/calibration.json --tuned-dir experiments/tuned --coverage-report experiments/coverage_report.json --coverage-ext experiments/coverage_report_amendment.json --amendment experiments/amendment-2026-10-17.yaml --proposed proposed --proposed-describe experiments/proposed_describe.yaml   # prints the original and the amended verdict; the final sweep's heldout section also holds the H3 stress-test cells
+uv run python scripts/check_claim.py --verify-lock lock-2026-10-17-amendment-2 --verify-freeze freeze-2026-11-11 --sweep-out results/final --bank-from results/sweep_proposed --h1-dir results/h1_final --calibration experiments/calibration.json --tuned-dir experiments/tuned --coverage-report experiments/coverage_report.json --coverage-ext experiments/coverage_report_amendment.json --amendment experiments/amendment-2026-10-17.yaml --proposed proposed --proposed-describe experiments/proposed_describe.yaml   # prints the original and the amended verdict; the final sweep's heldout section also holds the H3 stress-test cells; --bank-from is checked against the frozen f5_bank
 uv run python scripts/plot.py --sweep-out results/final --out results/figures --coverage-report results/coverage/coverage_report.json --h1-dir results/h1_final
 ```
 
