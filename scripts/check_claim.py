@@ -4,6 +4,7 @@ tree, module, and report checks. Synthetic mode (--synthetic, CSV inputs) runs t
 from __future__ import annotations
 
 import argparse
+import os
 import hashlib
 import json
 import sys
@@ -112,6 +113,8 @@ def main() -> None:
     ap.add_argument("--tuned-dir", dest="tuned_dir", default=None); ap.add_argument("--calibration", default=None)
     ap.add_argument("--out", default="results/verdict.json")
     a = ap.parse_args()
+    if os.environ.get("TOUCHSTONE_LOCKED"):
+        refuse(["TOUCHSTONE_LOCKED is set; the claim check reads only experiments/locked.yaml"])
     lk = load_locked(); repo = Path(a.repo); problems = []
     a.coverage_report = a.coverage_report or str(repo / "experiments" / "coverage_report.json")   # resolved under --repo, never the caller's cwd
     a.amendment = a.amendment or str(repo / "experiments" / "amendment-2026-10-17.yaml"); a.coverage_ext = a.coverage_ext or str(repo / "experiments" / "coverage_report_amendment.json")

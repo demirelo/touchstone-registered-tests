@@ -437,3 +437,11 @@ def test_check_claim_refuses_a_draft_or_bad_amendment_before_reading_any_sweep(t
         for mode in (["--verify-only"], ["--verify-freeze", "freeze-test", "--sweep-out", str(tmp_path), "--calibration", str(tmp_path / "cal.json"), "--tuned-dir", str(tmp_path), "--proposed-describe", str(tmp_path / "d.yaml")]):
             r = subprocess.run(cmd + mode + ["--amendment", str(bad_am), "--coverage-ext", str(bad)], capture_output=True, text=True, cwd=ROOT)
             assert r.returncode == 2 and "amendment report" in r.stderr
+
+
+def test_check_claim_refuses_the_locked_file_override(tmp_path):
+    import os
+    repo = make_repo(tmp_path)
+    r = subprocess.run([sys.executable, str(ROOT / "scripts" / "check_claim.py"), "--verify-only", "--verify-lock", "lock-test", "--repo", str(repo), "--proposed", "R"],
+                       capture_output=True, text=True, cwd=ROOT, env={**os.environ, "TOUCHSTONE_LOCKED": str(tmp_path / "other.yaml")})
+    assert r.returncode == 2 and "TOUCHSTONE_LOCKED" in r.stderr

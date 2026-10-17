@@ -35,6 +35,10 @@ def synthetic_env(tmp_path, monkeypatch, with_sealed=True):
     if with_sealed:
         s = tmp_path / "sealed"; (s / "h2").mkdir(parents=True); (s / "h2" / "family.py").write_text(H2_SRC)
         monkeypatch.setenv("TOUCHSTONE_SEALED_DIR", str(s))
+        if lk.get("sealed_bundle_sha256"):                                                      # after the lock: a lock copy that commits to the synthetic bundle
+            from sim.sealed import bundle_hash
+            lk2 = dict(lk, sealed_bundle_sha256=bundle_hash(s)); (tmp_path / "locked.yaml").write_text(yaml.safe_dump(lk2, sort_keys=False))
+            monkeypatch.setenv("TOUCHSTONE_LOCKED", str(tmp_path / "locked.yaml"))
     return tmp_path
 
 
@@ -84,14 +88,19 @@ def test_manifest_lists_heldout_cells_only_when_h2_is_registered(tmp_path, monke
     cells = enumerate_manifest(lk, ["B1", "B2", "B3", "proposed"])            # proposed in --rules never reaches the tuning grids or the bank
     held = [c for c in cells if c.section == "heldout"]
     n_betas = len(lk["beta_grid"]); n_pos = len(lk["positions"])
-    assert len(held) == 4 * (n_betas - 1 + n_pos) and all(c.post_lock and c.family == "H2" for c in held) and {c.rule for c in held} == {"B1", "B2", "B3", "proposed"}
+    h2 = [c for c in held if c.family == "H2"]; h3 = [c for c in held if c.family == "D2+H3"]
+    assert len(h2) == 4 * (n_betas - 1 + n_pos) and all(c.post_lock for c in held) and {c.rule for c in held} == {"B1", "B2", "B3", "proposed"}
+    assert len(h3) == 4 and all(c.position == "median" and float(c.beta) == float(lk["beta_headline"]) for c in h3)     # amendment 1: the final H3 stress-test cells
+    held = h2
     assert len({c.name for c in held}) == len(held) and not any(c.rule == "proposed" and c.section != "heldout" for c in cells if not c.post_lock)
     t = totals(cells)
     assert t["heldout"] > 0 and t["pre_lock"] == totals([c for c in cells if c.section != "heldout"])["pre_lock"]
     from sim.schedule import budget_from_locked
+    lk20 = dict(lk, coverage_consequences={"final_eval_n": 20, "h1": "confirmatory", "parametrized": "percentile_n20"})
     lk40 = dict(lk, coverage_consequences={"final_eval_n": 40, "h1": "confirmatory", "parametrized": "studentized_n40"})
-    held40 = [c for c in enumerate_manifest(lk40, ["B2"]) if c.section == "heldout"]
-    assert held40[0].runs - held[0].runs == 4 * (40 - budget_from_locked(lk).n_val)
+    held20 = [c for c in enumerate_manifest(lk20, ["B2"]) if c.section == "heldout" and c.family == "H2"]
+    held40 = [c for c in enumerate_manifest(lk40, ["B2"]) if c.section == "heldout" and c.family == "H2"]
+    assert held40[0].runs - held20[0].runs == 4 * (40 - 20)                                   # the final-eval sample size enters only the evaluation runs
 
 
 def test_sweep_smoke_runs_the_proposed_rule_and_h2_through_every_stage(tmp_path, monkeypatch):
@@ -107,6 +116,9 @@ def test_sweep_smoke_runs_the_proposed_rule_and_h2_through_every_stage(tmp_path,
                        capture_output=True, text=True, cwd=ROOT, env=dict(os.environ))
     assert r.returncode == 0, r.stderr
     evals = {p.stem: json.loads(p.read_text()) for p in (tmp_path / "out" / "evaluate").glob("*.json")}
-    assert {v["spec"]["rule"] for v in evals.values()} == {"B2", "proposed"} and all(v["spec"]["family"] == "H2" and v.get("bundle_hash") for v in evals.values())
+    assert {v["spec"]["rule"] for v in evals.values()} == {"B2", "proposed"} and {v["spec"]["family"] for v in evals.values()} == {"H2", "D2+H3"}
+    assert all(v.get("bundle_hash") for v in evals.values() if v["spec"]["family"] == "H2")
+    h3 = [v for v in evals.values() if v["spec"]["family"] == "D2+H3"]                                  # amendment 1: the final H3 stress-test cells, one per rule at the median
+    assert {v["spec"]["rule"] for v in h3} == {"B2", "proposed"} and all(v["spec"]["position"] == "median" for v in h3)
     head = json.loads((tmp_path / "out" / "headline.json").read_text())
     assert "B2/H2" in head and "proposed/H2" in head and head["B2/H2"]["headline"] in ("low", "median", "high")

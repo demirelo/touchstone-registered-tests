@@ -57,7 +57,8 @@ def test_locked_has_plan_2b_blocks_and_coverage_range_is_disjoint():
     assert lk["h1"]["model"] == "claude-opus-5-5" and lk["h1"]["jev_model"] == "jev-1.14.0" and lk["h1"]["T"] == 100
     assert lk["claim"]["eff_min"] == 0.90 and lk["claim"]["gain_max"] == 0.30 and lk["claim"]["baseline_level"] == 0.9875
     assert "sim/mechanisms/proposed.py" in lk["allow_list"] and "sealed/" in lk["allow_list"]
-    assert lk["calibration"] is None and lk["sealed_bundle_sha256"] is None
+    locked_state = str(lk["version"]).startswith("locked")                                     # the file is a draft until the lock day, then carries the lock-time blocks
+    assert (lk["calibration"] is not None) == locked_state and (lk["sealed_bundle_sha256"] is not None) == locked_state
     h = settings_hash(lk)
     filled = dict(lk); filled["calibration"] = {"S_hat": 1.0}; filled["sealed_bundle_sha256"] = "ab" * 32
     filled["coverage_report_sha256"] = "cd" * 32; filled["comprehension_fixture_sha256"] = "ef" * 32; filled["coverage_consequences"] = {"final_eval_n": 20}

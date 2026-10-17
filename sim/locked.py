@@ -8,10 +8,15 @@ import yaml
 
 from .config import MarketConfig, ProviderParams
 
+import os
+
 DEFAULT_PATH = Path(__file__).resolve().parents[1] / "experiments" / "locked.yaml"
 
 
-def load_locked(path: str | Path = DEFAULT_PATH) -> dict:
+def load_locked(path: str | Path | None = None) -> dict:
+    """The locked file; TOUCHSTONE_LOCKED (read at call time) exists for synthetic tests only, and scripts/check_claim.py
+    refuses to run with it set."""
+    path = Path(path) if path is not None else Path(os.environ.get("TOUCHSTONE_LOCKED") or DEFAULT_PATH)
     with open(path) as f:
         return yaml.safe_load(f)
 
