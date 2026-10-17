@@ -1,0 +1,9 @@
+Touchstone lock commitment
+
+tag: lock-2026-10-17
+commit: a5ae297ed55396a76c11e2d0d12f9a1f5a7c72a2
+tag object: 9874e6fc11f26a04f13e10e73b7a78b13a31075a
+sealed_bundle_sha256: a97e621b2902c17b99f61af4b119484f79928d282c4c75025fd0ab528b88bd43
+identity_salt_sha256: 1fb872e4bb9b052583e4cfc20fc32e0ed0a036c04ebed169c14f620ffce486b3
+date: 2026-10-17
+repository: https://github.com/demirelo/touchstone
