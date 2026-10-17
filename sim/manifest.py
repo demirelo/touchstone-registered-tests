@@ -119,6 +119,16 @@ def enumerate_manifest(locked: dict, rules: list[str], budget: Budget | None = N
         for pos in locked["positions"]:
             cells.append(CellSpec("ablation", "proposed", fam, bh, rho0, pos, "full_cell", sum(cell_runs(fam, b).values()), True, True,
                                   cell_name("ablation", "proposed", fam, bh, rho0, pos)))
+    # amendment 2: the proposed rule's post-lock development, rho-sweep, and h3 cells (the no-ban diagnostic stays registered for B2 and B3 only),
+    # its doubling controls, and one H3 doubling control per rule; all post-lock estimates like the entries above, outside the registered pre-lock accounting
+    cells += [c for c in with_proposed if c.rule == "proposed" and c.section in ("development", "rho_sweep", "h3")]
+    for fam, pos in locked["doubling_cells"]:
+        cells.append(CellSpec("controls", "proposed", fam, bh, rho0, pos, "doubling_check", doubling_bound(m[fam]["n_projected"], b), False, True,
+                              cell_name("controls", "proposed", fam, bh, rho0, pos)))
+    for rule in rules + ["proposed"]:
+        n_proj = m.get("D2+H3", m["D2"])["n_projected"]
+        cells.append(CellSpec("controls", rule, "D2+H3", bh, rho0, "median", "doubling_check", doubling_bound(n_proj, b), False, True,
+                              cell_name("controls", rule, "D2+H3", bh, rho0, "median")))
     if "H2" in available_families():                                   # the held-out family, once the sealed bundle is present (post-lock)
         n_final = int((locked.get("coverage_consequences") or {}).get("final_eval_n") or b.n_val)
         b_eval = Budget(b.restarts, b.evals, b.n_train, n_final)

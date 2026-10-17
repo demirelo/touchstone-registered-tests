@@ -27,7 +27,7 @@ def test_schedule_arithmetic_is_explicit():
 def test_manifest_totals_follow_the_schedule():
     lk = load_locked()
     cells = enumerate_manifest(lk, ["B1", "B2", "B3"])
-    t = totals(cells)
+    t_all = totals(cells); t = totals([c for c in cells if not c.post_lock])          # the section sums below are the registered pre-lock entries
     b = budget_from_locked(lk)
     c1, c2, c3 = (sum(cell_runs(f, b).values()) for f in ("D1", "D2", "D2+H3"))
     assert t["development"] == 24 * c1 + 24 * c2                   # 3 rules x 2 families x (5 + 3) cells
@@ -40,12 +40,13 @@ def test_manifest_totals_follow_the_schedule():
     per_d1 = bank_stage_bound(m["D1"]["n_unknown"], b) + m["D1"]["n_projected"] * 5
     per_d2 = bank_stage_bound(m["D2"]["n_unknown"], b) + m["D2"]["n_projected"] * 5
     assert t["bank"] == 24 * per_d1 + 32 * per_d2 == 24 * 330 + 32 * 810
-    assert t["ablation"] == 3 * c1 + 3 * c2 and t["all_deviators_post_lock"] == all_deviators_runs(lk, 10, b)
-    assert t["bank_post_lock"] > 0
+    assert t_all["ablation"] == 3 * c1 + 3 * c2 and t_all["all_deviators_post_lock"] == all_deviators_runs(lk, 10, b)
+    assert t_all["bank_post_lock"] > 0 and t_all["pre_lock"] == t["pre_lock"]
     assert t["pre_lock"] == sum(t[k] for k in ("development", "rho_sweep", "no_ban", "h3", "controls", "all_deviators", "tuning", "bank"))
     assert t["pre_lock"] * 45.0 / 3.6e6 < 20.0                     # the gate at 45 ms per run
     assert t["pre_lock_exact"] + t["pre_lock_upper_bound"] == t["pre_lock"]
-    assert {c.section for c in cells if c.post_lock} == {"bank_post_lock", "all_deviators_post_lock", "ablation"}
+    t = t_all
+    assert {c.section for c in cells if c.post_lock} == {"bank_post_lock", "all_deviators_post_lock", "ablation", "development", "rho_sweep", "h3", "controls"}   # amendment 2: the proposed rule's post-lock cells and the H3 controls
     assert all(not c.exact for c in cells if c.section in ("bank", "bank_post_lock", "controls"))
     names = [c.name for c in cells]
     assert len(names) == len(set(names))
@@ -99,3 +100,23 @@ def test_final_h3_cells_are_beta_headline_median_only(monkeypatch):
     assert all(c.runs == sum(cell_runs("D2+H3", Budget(b.restarts, b.evals, b.n_train, n_final)).values()) for c in h3)
     h2 = [c for c in cells if c.section == "heldout" and c.family == "H2"]
     assert len(h2) == 3 * (len(lk["beta_grid"]) - 1 + len(lk["positions"]))        # unchanged: every budget at the median plus the headline budget at every position, per rule
+
+
+def test_amendment_2_lists_the_proposed_rules_post_lock_cells_and_the_h3_controls():
+    lk = load_locked(); b = budget_from_locked(lk); cells = enumerate_manifest(lk, ["B1", "B2", "B3"])
+    pre = [c for c in cells if not c.post_lock]
+    assert totals(pre)["pre_lock"] == totals(cells)["pre_lock"]                                           # the registered pre-lock accounting is untouched
+    prop = [c for c in cells if c.rule == "proposed" and c.post_lock]
+    by = {}
+    for c in prop:
+        by.setdefault(c.section, []).append(c)
+    assert len(by["development"]) == 16 and {c.family for c in by["development"]} == {"D1", "D2"}
+    assert len(by["rho_sweep"]) == 2 and len(by["h3"]) == 1 and by["h3"][0].position == "median" and float(by["h3"][0].beta) == float(lk["beta_headline"])
+    assert sorted((c.family, c.position) for c in by["controls"]) == [("D1", "median"), ("D2", "median"), ("D2+H3", "median")]
+    assert len(by["all_deviators_post_lock"]) == 1 and len(by["ablation"]) == 6 and len(by["bank_post_lock"]) == 1
+    assert "no_ban" not in by                                                                              # the no-ban diagnostic stays registered for B2 and B3 only
+    h3_controls = [c for c in cells if c.section == "controls" and c.family == "D2+H3"]
+    assert {c.rule for c in h3_controls} == {"B1", "B2", "B3", "proposed"} and all(c.post_lock and c.position == "median" for c in h3_controls)
+    assert all(c.runs == sum(cell_runs(c.family, b).values()) for c in by["development"] + by["rho_sweep"] + by["h3"])
+    names = [c.name for c in cells]; assert len(names) == len(set(names))
+    assert totals(cells)["post_lock"] >= sum(c.runs for c in prop)
