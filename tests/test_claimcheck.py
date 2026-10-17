@@ -17,8 +17,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SETTINGS = {"bootstrap_resamples": 500, "bootstrap_seed": 1}
 
 
-def coverage(method20="percentile", method10="t", h1="confirmatory", par="percentile_n20", n_final=20, drop=()):
-    sides = {endpoint_key(s, side, lv, n): m for n, m in ((10, method10), (20, method20), (40, None)) for s, side, lv in ENDPOINTS}
+def coverage(method20="percentile", method10="t", h1="confirmatory", par="percentile_n20", n_final=20, drop=(), method40=None):
+    sides = {endpoint_key(s, side, lv, n): m for n, m in ((10, method10), (20, method20), (40, method40)) for s, side, lv in ENDPOINTS}
     for k in drop:
         sides[k] = None
     return {"admitted_sides": sides, "consequences": {"h1": h1, "parametrized": par, "final_eval_n": n_final}}
@@ -325,3 +325,115 @@ def test_describe_record_file_must_match_the_rule_and_the_vocabulary():
     assert verify_describe_record(dict(rec, payment="the bid"), rule) != []                 # differs from the rule's record
     assert verify_describe_record(dict(rec, payment="we think about it"), rule) != []       # off-vocabulary
     assert verify_describe_record(dict(rec, note="x"), rule) != []                          # a key outside the fields
+
+
+# ---- amendment 1: the H3 comparative clause -----------------------------------------------------------------------------
+
+from sim.amendment import LIMITATION  # noqa: E402
+from sim.claimcheck import evaluate_amendment, verify_amendment_report, verify_h3_records  # noqa: E402
+
+LK = load_locked()
+AMEND_FIXTURE = {"clause": {"family": "D2+H3", "position": "median", "beta": 0.05, "eff_min": 0.90, "gain_max": 0.30, "gain_reduction_min": 0.10,
+                            "level_rule": 0.95, "level_comparative": 0.9875, "baselines": ["B2", "B3"], "n": 40, "requires_h2_rule_clause": True}}
+REGISTERED_NAMES = [c["name"] for c in json.loads((ROOT / "experiments" / "coverage_cells.json").read_text())]
+
+
+def ext_cov(admitted=True):
+    m = "studentized" if admitted else None
+    return {"admitted_sides": {"gain_diff|lower|0.9875|40": m, "gain_diff|upper|0.9875|40": m}, "consequences": {"h3_comparative": "confirmatory" if admitted else "exploratory"}}
+
+
+def good_h3(gain_r=0.05, gain_b2=0.6, gain_b3=0.4, n=40, eff_r=0.97):
+    return pd.concat([frame("R", "D2+H3", gain_r, eff_r, 0.98, 1.0, budget=2.0, n=n), frame("B2", "D2+H3", gain_b2, 0.87, 0.97, 1.0, budget=2.0, n=n),
+                      frame("B3", "D2+H3", gain_b3, 0.97, 0.99, 1.0, budget=2.0, n=n)], ignore_index=True)
+
+
+def test_amendment_decision_rule_and_h2_gate():
+    cov = coverage(method20=None, par="studentized_n40", n_final=40, method40="studentized"); am = AMEND_FIXTURE
+    r = evaluate_amendment(good_h3(), cov, ext_cov(), LK, am, "R", PASS)
+    assert r["amended"] == PASS and r["comparative"]["status"] == PASS and r["absolute"]["status"] == PASS and r["note"] == LIMITATION and r["admitted"] is True
+    assert r["comparative"]["B2"].status == PASS and r["comparative"]["B3"].status == PASS and r["absolute"]["audit"] == PASS and r["n"] == 40
+    assert evaluate_amendment(good_h3(), cov, ext_cov(), LK, am, "R", FAIL)["amended"] == FAIL                      # the H2 clause failed: no amended PASS
+    assert evaluate_amendment(good_h3(), cov, ext_cov(), LK, am, "R", INCONCLUSIVE)["amended"] == INCONCLUSIVE
+    assert evaluate_amendment(good_h3(gain_r=0.55), cov, ext_cov(), LK, am, "R", PASS)["comparative"]["B2"].status == FAIL     # 0.6 - 0.55: the upper bound misses 0.10
+    assert evaluate_amendment(good_h3(gain_r=0.45), cov, ext_cov(), LK, am, "R", PASS)["comparative"]["status"] == FAIL      # B2 - R = 0.15 passes, B3 - R = -0.05 fails
+    assert evaluate_amendment(good_h3(eff_r=0.80), cov, ext_cov(), LK, am, "R", PASS)["absolute"]["eff"].status == FAIL
+    r = evaluate_amendment(good_h3(), cov, ext_cov(admitted=False), LK, am, "R", PASS); assert r["amended"] == INCONCLUSIVE and "not admitted" in r["reason"] and r["admitted"] is False
+    dup = pd.concat([good_h3(), good_h3().query("rule == 'R' and seed == 0")], ignore_index=True)
+    assert "rows" in evaluate_amendment(dup, cov, ext_cov(), LK, am, "R", PASS)["reason"]
+    assert "rows" in evaluate_amendment(good_h3().query("rule != 'R'"), cov, ext_cov(), LK, am, "R", PASS)["reason"]
+    short = good_h3(); short.loc[(short.rule == "B3") & (short.seed == 39), "seed"] = 99
+    assert "pairing" in evaluate_amendment(short, cov, ext_cov(), LK, am, "R", PASS)["reason"]
+    assert evaluate_amendment(None, cov, None, LK, am, "R", PASS)["amended"] == INCONCLUSIVE
+    assert evaluate_amendment(good_h3(), cov, ext_cov(), LK, am, "R", PASS, demoted=frozenset({"R|D2+H3"}))["amended"] == INCONCLUSIVE
+
+
+def test_verify_h3_records_and_amendment_report(tmp_path):
+    lk = dict(LK, identity_salt_sha256="ab" * 32, coverage_consequences={"final_eval_n": 3, "h1": "exploratory", "parametrized": "studentized_n40"})
+    def job(rule):
+        return {"spec": {"name": f"c_{rule}", "rule": rule, "family": "D2+H3", "beta": 0.05, "position": "median"}, "params": {"tol": 0.1}, "cfg": {"T": 200, "budget": 0.5},
+                "settings_hash": settings_hash(lk), "budget": [1, 2, 3, 4], "smoke": False, "salt_hash": "ab" * 32, "eval_namespace": "final_eval"}
+    def rec(rule, seeds=(7, 8, 9)):
+        j = job(rule); meta = {"rule": rule, "family": "D2+H3", "beta": 0.05, "position": "median", "budget": 0.5}
+        return {**{k: j[k] for k in ("spec", "params", "cfg", "settings_hash", "budget", "smoke", "salt_hash")}, "eval_namespace": "final_eval", "rows": [dict(meta, seed=s) for s in seeds]}
+    jobs = {f"c_{r}": job(r) for r in ("B2", "B3", "R")}; recs = [rec("B2"), rec("B3"), rec("R")]; seeds = [7, 8, 9, 10]
+    assert verify_h3_records(recs, lk, jobs, seeds, "R") == []
+    assert any("duplicate seed" in p for p in verify_h3_records([rec("B2", (7, 7, 9)), rec("B3"), rec("R")], lk, jobs, seeds, "R"))
+    assert any("missing rule" in p for p in verify_h3_records(recs[:2], lk, jobs, seeds, "R"))
+    assert any("namespace" in p for p in verify_h3_records([dict(rec("B2"), eval_namespace="dev_val"), rec("B3"), rec("R")], lk, jobs, seeds, "R"))
+    rep = {"admission_basis": "registered", "smoke": False, "selection": [{"name": n} for n in REGISTERED_NAMES], "consequences": {"h3_comparative": "confirmatory"}, "limitation": LIMITATION}
+    p = tmp_path / "r.json"; p.write_text(json.dumps(rep)); h = hashlib.sha256(p.read_bytes()).hexdigest()
+    am = {"coverage_report_amendment_sha256": h, "coverage_consequences": {"h3_comparative": "confirmatory"}}
+    assert verify_amendment_report(p, am) == []
+    assert verify_amendment_report(p, dict(am, coverage_report_amendment_sha256="0" * 32 + "1" * 32))
+    assert verify_amendment_report(p, dict(am, coverage_consequences={"h3_comparative": "exploratory"}))
+    for bad in (dict(rep, smoke=True), dict(rep, admission_basis="smoke (not an admission)"), dict(rep, selection=rep["selection"][:5]), dict(rep, limitation="x"),
+                dict(rep, selection=[{"name": "zz"}] + rep["selection"][1:])):
+        q = tmp_path / "bad.json"; q.write_text(json.dumps(bad))
+        assert verify_amendment_report(q, dict(am, coverage_report_amendment_sha256=hashlib.sha256(q.read_bytes()).hexdigest()))
+
+
+def write_amendment(path, registered: bool, report_hash=None, consequences=None):
+    import yaml
+    doc = {"amendment": {"id": 1}, **AMEND_FIXTURE, "seeds_ext": {"start": 6_600_000, "block": 400_000, "pool": 35_000, "replications": {"40": 4000}},
+           "coverage_report_amendment_sha256": report_hash if registered else None, "coverage_consequences": consequences if registered else None}
+    Path(path).write_text(yaml.safe_dump(doc)); return path
+
+
+def test_check_claim_cli_reports_the_amendment_and_stays_silent_without_it(tmp_path):
+    h2_40 = pd.concat([frame("R", "H2", 0.05, 0.97, 0.98, 0.5, n=40), frame("B2", "H2", 1.5, 0.80, 0.95, 0.5, n=40), frame("B3", "H2", 0.2, 0.85, 0.97, 0.5, n=40)], ignore_index=True)
+    h2_40.to_csv(tmp_path / "h2.csv", index=False); good_h1().to_csv(tmp_path / "h1.csv", index=False); good_h3().to_csv(tmp_path / "h3.csv", index=False)
+    (tmp_path / "cov.json").write_text(json.dumps(coverage(method20=None, par="studentized_n40", n_final=40, method40="studentized", h1="exploratory")))
+    (tmp_path / "ext.json").write_text(json.dumps(ext_cov())); (tmp_path / "s.json").write_text(json.dumps(summary()))
+    am = write_amendment(tmp_path / "am.yaml", registered=True, report_hash="ab" * 32, consequences={"h3_comparative": "confirmatory"})
+    cmd = [sys.executable, str(ROOT / "scripts" / "check_claim.py"), "--synthetic", "--h2-rows", str(tmp_path / "h2.csv"), "--h1-rows", str(tmp_path / "h1.csv"),
+           "--h1-summary", str(tmp_path / "s.json"), "--coverage-report", str(tmp_path / "cov.json"), "--proposed", "R"]
+    r = subprocess.run(cmd + ["--h3-rows", str(tmp_path / "h3.csv"), "--coverage-ext", str(tmp_path / "ext.json"), "--amendment", str(am), "--out", str(tmp_path / "v.json")],
+                       capture_output=True, text=True, cwd=ROOT)
+    assert r.returncode == 0, r.stderr
+    v = json.loads((tmp_path / "v.json").read_text()); assert v["amendment"]["amended"] == PASS and v["claim"] == PASS
+    assert "amended claim: PASS" in r.stdout and LIMITATION in r.stdout and "stress test" in r.stdout and "held out" not in r.stdout.lower()
+    r2 = subprocess.run(cmd + ["--out", str(tmp_path / "v2.json"), "--amendment", str(tmp_path / "absent.yaml")], capture_output=True, text=True, cwd=ROOT)
+    assert r2.returncode == 0 and "amendment" not in json.loads((tmp_path / "v2.json").read_text()) and "amended" not in r2.stdout
+
+
+def test_check_claim_refuses_a_draft_or_bad_amendment_before_reading_any_sweep(tmp_path):
+    repo = make_repo(tmp_path); git(repo, "tag", "freeze-test")
+    cmd = [sys.executable, str(ROOT / "scripts" / "check_claim.py"), "--repo", str(repo), "--proposed", "R", "--verify-lock", "lock-test"]
+    draft = write_amendment(tmp_path / "draft.yaml", registered=False)
+    r = subprocess.run(cmd + ["--verify-only", "--amendment", str(draft)], capture_output=True, text=True, cwd=ROOT)
+    assert r.returncode == 0 and "unregistered (draft)" in r.stdout
+    conf = cmd + ["--verify-freeze", "freeze-test", "--sweep-out", str(tmp_path), "--calibration", str(tmp_path / "cal.json"), "--tuned-dir", str(tmp_path), "--proposed-describe", str(tmp_path / "d.yaml")]
+    r = subprocess.run(conf + ["--amendment", str(draft)], capture_output=True, text=True, cwd=ROOT)
+    assert r.returncode == 2 and "not registered" in r.stderr
+    rep = {"admission_basis": "registered", "smoke": False, "selection": [{"name": n} for n in REGISTERED_NAMES], "consequences": {"h3_comparative": "confirmatory"}, "limitation": LIMITATION}
+    ext = tmp_path / "ext.json"; ext.write_text(json.dumps(rep)); h = hashlib.sha256(ext.read_bytes()).hexdigest()
+    ok = write_amendment(tmp_path / "ok.yaml", registered=True, report_hash=h, consequences={"h3_comparative": "confirmatory"})
+    r = subprocess.run(cmd + ["--verify-only", "--amendment", str(ok), "--coverage-ext", str(ext)], capture_output=True, text=True, cwd=ROOT)
+    assert r.returncode == 0 and "amendment report verified" in r.stdout
+    for bad_am, bad_rep in ((write_amendment(tmp_path / "b1.yaml", True, "00" * 32, rep["consequences"]), rep),
+                            (ok, dict(rep, smoke=True)), (ok, dict(rep, consequences={"h3_comparative": "exploratory"})), (ok, dict(rep, selection=rep["selection"][::-1]))):
+        bad = tmp_path / "bad_ext.json"; bad.write_text(json.dumps(bad_rep))
+        for mode in (["--verify-only"], ["--verify-freeze", "freeze-test", "--sweep-out", str(tmp_path), "--calibration", str(tmp_path / "cal.json"), "--tuned-dir", str(tmp_path), "--proposed-describe", str(tmp_path / "d.yaml")]):
+            r = subprocess.run(cmd + mode + ["--amendment", str(bad_am), "--coverage-ext", str(bad)], capture_output=True, text=True, cwd=ROOT)
+            assert r.returncode == 2 and "amendment report" in r.stderr

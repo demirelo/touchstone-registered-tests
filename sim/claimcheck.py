@@ -173,6 +173,87 @@ def evaluate_claim(h2: pd.DataFrame | None, h1: pd.DataFrame | None, coverage: d
             "n": {k: v for k, v in n_of.items() if k in confirmatory}, "demoted": sorted(demoted), "proposed": proposed, "beta": beta}
 
 
+def evaluate_amendment(h3: pd.DataFrame | None, cov_base: dict, cov_ext: dict | None, locked: dict, amend: dict, proposed: str, h2_rule_status: str,
+                       demoted=frozenset()) -> dict:
+    """Amendment 1: the H3 comparative clause (public identity-replacement stress test on fresh final-evaluation seeds).
+    Absolute part on R*: eff lower 95% >= eff_min, gain upper 95% <= gain_max, audit <= B every seed (bounds from the base
+    study's admitted sides at n). Comparative part per baseline: paired gain(B) - gain(R*) lower 98.75% >= gain_reduction_min
+    PASS, upper 98.75% < it FAIL, else INCONCLUSIVE; PASS needs both baselines, FAIL any. Amended PASS also needs the
+    original H2 rule clause PASS and the gain_diff sides admitted by the extension report."""
+    from .amendment import LIMITATION
+    c = amend["clause"]; n = int(c["n"]); beta = float(c["beta"]); fam = c.get("family", "D2+H3"); pos = c.get("position", "median")
+    settings = locked["intervals"]; rl, bl = float(c["level_rule"]), float(c["level_comparative"])
+    out = {"amended": INCONCLUSIVE, "h2_rule_status": h2_rule_status, "absolute": {}, "comparative": {}, "admitted": False, "n": n, "note": LIMITATION, "reason": ""}
+    admitted = cov_ext is not None and (cov_ext.get("consequences") or {}).get("h3_comparative") == "confirmatory" \
+        and all(cov_ext.get("admitted_sides", {}).get(endpoint_key("gain_diff", side, bl, n)) for side in ("lower", "upper"))
+    out["admitted"] = bool(admitted)
+    if not admitted:
+        out["reason"] = "gain_diff sides not admitted by the extension report"; return out
+    if h3 is None or len(h3) == 0:
+        out["reason"] = "no H3 rows"; return out
+    rows = {}
+    for rule in [proposed] + list(c["baselines"]):
+        if f"{rule}|{fam}" in demoted:
+            out["reason"] = f"{rule}|{fam} demoted by a logged repair"; return out
+        d = _rows(h3[h3["family"] == fam] if "family" in h3 else h3, rule, beta, pos)
+        if len(d) != n or d["seed"].nunique() != n:
+            out["reason"] = f"{rule}: rows {len(d)} with {d['seed'].nunique() if len(d) else 0} unique seeds, expected {n}"; return out
+        rows[rule] = d
+    dR = rows[proposed]
+    eff = decide(dR["eff_attack"], "eff", "lower", rl, float(c["eff_min"]), cov_base, settings, n)
+    gain = decide(dR["gain"], "gain", "upper", rl, float(c["gain_max"]), cov_base, settings, n)
+    audit = PASS if bool((dR["audit_cost_attack"] <= dR["budget"] + 1e-9).all()) else FAIL
+    out["absolute"] = {"eff": eff, "gain": gain, "audit": audit, "status": combine_all([eff.status, gain.status, audit]),
+                       "audit_over_sstar_mean": float((dR["audit_cost_attack"] / dR["sstar"]).mean())}
+    comp = {}
+    for B in c["baselines"]:
+        m = rows[B].merge(dR, on="seed", suffixes=("_B", "_R"))
+        if len(m) != n:
+            out["reason"] = f"{B}: pairing with {proposed} on seed gives {len(m)} rows, expected {n}"; return out
+        comp[B] = decide(m["gain_B"] - m["gain_R"], "gain_diff", "lower", bl, float(c["gain_reduction_min"]), cov_ext, settings, n)
+    statuses = [v.status for v in comp.values()]
+    comp["status"] = PASS if all(x == PASS for x in statuses) else FAIL if any(x == FAIL for x in statuses) else INCONCLUSIVE
+    out["comparative"] = comp
+    out["amended"] = combine_all([h2_rule_status, out["absolute"]["status"], comp["status"]])
+    return out
+
+
+def verify_h3_records(records, locked: dict, jobs: dict, expected_seeds, proposed: str) -> list:
+    """The final H3 records: the common record check, no duplicate seed inside a record, every required rule present."""
+    problems = verify_records(records, locked, jobs, expected_seeds)
+    for rec in records:
+        name = rec.get("spec", {}).get("name", "?"); seeds = [int(r.get("seed")) for r in rec.get("rows", [])]
+        if len(set(seeds)) != len(seeds):
+            problems.append(f"{name}: duplicate seed in the rows")
+    have = {rec.get("spec", {}).get("rule") for rec in records}
+    for rule in list(BASELINES) + [proposed]:
+        if rule not in have:
+            problems.append(f"missing rule {rule}: no H3 record")
+    return problems
+
+
+def verify_amendment_report(path, amend: dict) -> list:
+    """The extension report named by the amendment: its hash, a registered (non-smoke) admission, the six registered cells, the
+    consequences recorded in the amendment, and the limitation sentence."""
+    from .amendment import LIMITATION
+    data = Path(path).read_bytes(); problems = []
+    if hashlib.sha256(data).hexdigest() != amend.get("coverage_report_amendment_sha256"):
+        problems.append("amendment report: hash differs from the amendment's coverage_report_amendment_sha256")
+    rep = json.loads(data)
+    if rep.get("admission_basis") != "registered" or rep.get("smoke"):
+        problems.append("amendment report: not a registered admission")
+    names = [c.get("name") for c in rep.get("selection", [])]
+    reg_path = Path(__file__).resolve().parents[1] / "experiments" / "coverage_cells.json"
+    registered = [c.get("name") for c in json.loads(reg_path.read_text())] if reg_path.exists() else []
+    if len(names) != 6 or len(set(names)) != 6 or not all(names) or (registered and names != registered):
+        problems.append("amendment report: selection is not the six registered cells")
+    if rep.get("consequences") != amend.get("coverage_consequences"):
+        problems.append("amendment report: consequences differ from the amendment")
+    if rep.get("limitation") != LIMITATION:
+        problems.append("amendment report: the limitation sentence is missing or altered")
+    return problems
+
+
 def verdict_json(result: dict) -> dict:
     def conv(v):
         if isinstance(v, Verdict):
