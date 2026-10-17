@@ -1,0 +1,6 @@
+Touchstone amendment 2
+
+tag: lock-2026-10-17-amendment-2
+commit: 970160533a6d131cf4a3c21255a259d7212416c5
+tag object: 81c12dc7a567e976a68f6ce4a14bee447577eba9
+amendment_sha256: 3f5521ec57bab5a5b1c4d6060dbf2615751d6b11c8c9a3a8dd1af7ce8645bd90
