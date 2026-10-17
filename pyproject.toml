@@ -18,3 +18,4 @@ packages = ["sim"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 filterwarnings = ["ignore:Could not import matplotlib.pyplot:UserWarning"]   # cma plotting is not used
+markers = ["slow: end-to-end smoke paths that take more than ten minutes; selected with --runslow"]
