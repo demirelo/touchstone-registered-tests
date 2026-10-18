@@ -101,6 +101,30 @@ uvx --from opentimestamps-client ots stamp docs/lock-2026-10-17-amendment-2.txt
 uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17-amendment-2 --proposed none
 ```
 
+## Amendment 3 (2026-10-18), one successor after the F2 kill
+
+`docs/amendments/2026-10-18-amendment-3.md` is binding: the amendment-2 rule stays KILL; one successor R3 with the fresh-identity priority phase; F2 to F5 unchanged; any registered kill ends proposed-rule development. Registration commits the revised `tests/test_proposed.py` (13 tests fail against the old module by design) and the note; the user signs and tags; then the cycle:
+
+```bash
+export OMP_NUM_THREADS=1
+uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17-amendment-2 --proposed proposed   # expected delta: tests/test_proposed.py
+git tag -s lock-2026-10-17-amendment-3 -m "Touchstone amendment 3 (one successor rule after the F2 kill)" && git push origin main lock-2026-10-17-amendment-3
+printf 'Touchstone amendment 3\n\ntag: lock-2026-10-17-amendment-3\ncommit: %s\ntag object: %s\namendment_sha256: %s\n' "$(git rev-parse lock-2026-10-17-amendment-3^{commit})" "$(git rev-parse lock-2026-10-17-amendment-3)" "$(uv run python -c 'import yaml; from sim.amendment import amendment_hash; print(amendment_hash(yaml.safe_load(open("experiments/amendment-2026-10-17.yaml"))))')" > docs/lock-2026-10-17-amendment-3.txt
+uvx --from opentimestamps-client ots stamp docs/lock-2026-10-17-amendment-3.txt
+# the cycle (allow-listed files only): implement R3, then
+uv run pytest tests/test_proposed.py tests/test_harness_all_rules.py -q                                            # F1 before anything expensive
+uv run python scripts/falsify_proposed.py ... is not run yet: the F2 diagnostic at the prior parameters is the F2 helper on the five dev-train seeds (a kill ends the cycle; recorded in docs/)
+uv run python scripts/tune_proposed.py --calibration experiments/calibration.json --sweep-out results/sweep --tuned-dir experiments/tuned --out experiments/proposed.yaml --log results/tuning_proposed_a3
+uv run python scripts/describe_proposed.py --params experiments/proposed.yaml --out experiments/proposed_describe.yaml
+# fresh results/sweep_proposed: the baselines' 57 search records reused after their hashes verify; the proposed rule's 25 cells, then every later stage for all four rules
+uv run python scripts/sweep.py --stage search --sections development,rho_sweep,h3,ablation --rules proposed --calibration experiments/calibration.json --tuned-dir experiments/tuned --workers 16 --out results/sweep_proposed
+for st in bank reference evaluate checks all_deviators; do uv run python scripts/sweep.py --stage $st --sections development,rho_sweep,h3,all_deviators,ablation --rules B1,B2,B3,proposed --calibration experiments/calibration.json --tuned-dir experiments/tuned --workers 16 --out results/sweep_proposed; done
+uv run python scripts/falsify_proposed.py --calibration experiments/calibration.json --tuned-dir experiments/tuned --sweep-out results/sweep_proposed --out results/falsification_a3
+uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17-amendment-3 --proposed proposed
+```
+
+Then the freeze-day sequence below with `lock-2026-10-17-amendment-3` in place of `lock-2026-10-17-amendment-2`, and the evaluation with the same substitution.
+
 ## Freeze day (the day the proposed rule is final; the commands show 2026-11-11 as the example date)
 
 Rules for the proposed rule's module `sim/mechanisms/proposed.py`, enforced by `scripts/check_claim.py` (`check_proposed_module`): imports only `sim.mechanisms.base`, `numpy`, `scipy`, `math`, `dataclasses`, `typing`, `__future__`, `itertools`, `functools`, in absolute form; no `__import__`, `exec`, `eval`, `compile`, `globals`, `vars`; no `importlib`, `builtins`, or `sys` calls; no `getattr`, `setattr`, or `delattr` with a dunder or computed name; no `__builtins__`; no access to `__subclasses__`, `__globals__`, `__dict__`, `__base__`, `__bases__`, `__mro__`, `__class__`, `__code__`, `__closure__`, `__loader__`, or `__spec__`. Importing the module, and calling `make(params)`, must change no attribute of any `sim.*` module. Before the freeze tag, the registered sequence of amendments 1 and 2 (`docs/amendments/2026-10-17-amendment-2.md`), in order; a kill in `scripts/falsify_proposed.py` stops here and is reported with its figures:
