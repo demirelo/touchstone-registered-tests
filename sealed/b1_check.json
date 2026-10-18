@@ -1,0 +1,47 @@
+{
+ "date": "2026-10-17",
+ "custodian_clone": "/Users/oemer.demirel/touchstone-custodian",
+ "commit": "d6ee8b6",
+ "working_directory": "the custodian clone",
+ "environment": "export TOUCHSTONE_SEALED_DIR=/Users/oemer.demirel/touchstone-sealed/sealed; export OMP_NUM_THREADS=1; export PYTHONDONTWRITEBYTECODE=1",
+ "backends": "fake only (fake-honest); no paid API was called; ANTHROPIC_API_KEY and TYPESAFE_API_KEY were unset",
+ "rules": [
+  "B1"
+ ],
+ "all_passed": true,
+ "checks": [
+  {
+   "id": "registry_loads_H2",
+   "command": "uv run python -c \"from sim.registry import available_families; f = available_families()['H2']; print(f.name, len(f.corners()))\"",
+   "result": "pass",
+   "exit_code": 0,
+   "stdout": "H2 512"
+  },
+  {
+   "id": "h1_smoke_B1_sealed_prompt",
+   "command": "uv run python scripts/h1.py --backend fake-honest --rules B1 --smoke --out /tmp/b1 --prompt $TOUCHSTONE_SEALED_DIR/h1_prompt.txt",
+   "result": "pass",
+   "exit_code": 0,
+   "stdout": "{\"calls\": 31, \"cost_usd\": 0.0, \"cells\": {\"B1|0.05\": false}, \"partial\": []}"
+  },
+  {
+   "id": "calibrate_locked_market",
+   "command": "uv run python scripts/calibrate.py --seeds 2 --out /tmp/cal_locked.json",
+   "result": "pass",
+   "exit_code": 0,
+   "stdout_market_key": "f39c53a3df6f5794"
+  },
+  {
+   "id": "sweep_heldout_B1_H2_smoke",
+   "command": "uv run python scripts/sweep.py --stage all --sections heldout --rules B1 --select B1_H2 --calibration /tmp/cal_locked.json --smoke --out /tmp/b1_sweep",
+   "result": "pass",
+   "exit_code": 0,
+   "stdout": "done: search 4384 runs, reference 8 runs, evaluate 64 runs",
+   "note": "--select B1_H2 matches every held-out B1/H2 cell of the manifest (8 cells, 548 search-stage runs each with 512 corners), not one cell; every stage ran with the exact schedule counts and no error"
+  }
+ ],
+ "containment_self_check": {
+  "result": "pass",
+  "what": "outside the bundle: embed_d2 reproduces D2 actions exactly on 300 random D2 points and random 12-round histories; the honest point gives honest-max; the clip = 1 projection never claims above effort; clip = 0 with s > 0 claims below effort"
+ }
+}

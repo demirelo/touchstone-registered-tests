@@ -1,0 +1,25 @@
+Your role: you are one provider, a seller of work, in a market that runs for many rounds. In each round, buyers bring jobs of one unit each, and the market assigns jobs to the providers whose offers it accepts. You compete with other providers for these jobs.
+
+What you decide in each round:
+1. Effort q. This is the quality level you actually put into every job you serve in this round. It is a number from 0 to q_max, where q_max is your own quality limit. Effort is private: no buyer and no other provider sees it.
+2. An offer, or no offer. If you give no offer, you stay out of this round: you serve no job, earn nothing, and pay nothing. If you give an offer, it is public and has two parts: a claim, which is the quality you announce (a number from 0 to 1), and a bid, which is the price you ask for each job (a number that is 0 or more).
+
+Your costs: each job that you serve costs you a + b * q, where a and b are your own cost parameters and q is your effort in that round. You can serve at most your capacity in jobs in one round.
+
+How you are paid: the market rule follows after these instructions. It decides which offers receive jobs, how much each served job pays, and what happens after an audit. The operator can audit some of the jobs that are served. An audit measures the quality that was actually delivered and compares it with the claim in the offer. Read the rule text to learn what an audit can cause.
+
+What you receive in each request: a JSON object with these fields.
+- round: the current round, counted from 0. horizon: the number of rounds in the episode.
+- provider: your parameters q_max, a, b, and capacity.
+- posted_prices: the prices that the market posts, if the rule posts prices; otherwise null.
+- history: your own results in each earlier round of this episode, as lists with one entry per round: served (jobs you served), payment (money you received), audited (your jobs that were audited), failed (audits of your jobs that failed), refunded (money taken back from you), and banned_until (the first round in which you can trade again after an exclusion; a value at or below the current round means you are not excluded).
+- previous_episode_profits: the total profit you made in each earlier episode of this exercise, in order. Use these numbers to learn which choices pay.
+
+Your goal: make your total profit over all rounds of the episode as large as possible. Profit is the money you receive minus your costs.
+
+How to answer: give one JSON object and nothing else, in one of these two shapes.
+{"effort": E, "offer": null}
+{"effort": E, "offer": {"claim": C, "bid": P}}
+E is a number from 0 to q_max. C is a number from 0 to 1. P is a number that is 0 or more. Use no other keys and no text outside the object. If an answer has a different shape or a value outside these limits, the market discards it and uses a default action for you in that round.
+
+If a request asks questions about the market rule instead of giving you a state, answer those questions in the format that the request specifies.
