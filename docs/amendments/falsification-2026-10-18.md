@@ -1,4 +1,6 @@
-# Falsification record of the proposed rule (2026-10-18)
+# Falsification record of the proposed rule R3 (amendment 3; 2026-10-18, 21:55)
+
+The amendment-2 rule's record (F2 kill) is `falsification-2026-10-18-amendment-2-kill.md`. This run: the sweep `results/sweep_proposed` rebuilt from the bank stage on for all four rules after the re-tune (baseline search records reused, hashes verified by the harness), pods 17:25 to 21:54, all deleted.
 
 Parameters: `{"L": 10, "allocation": "A", "targeting": "T1", "tol": 0.16}`. Sweep records: `/Users/oemer.demirel/Projects/touchstone/results/sweep_proposed`. Quick mode: False.
 
@@ -6,15 +8,15 @@ Parameters: `{"L": 10, "allocation": "A", "targeting": "T1", "tol": 0.16}`. Swee
 
 ```json
 {
- "pytest": "26 passed in 2.87s",
+ "pytest": "36 passed in 2.61s",
  "module_check": []
 }
 ```
 
-## F2: KILL
+## F2: PASS
 
-- T1: fail; per seed (profit, applicable rounds, covered): 1000: (-1.4400, 199, False), 1001: (-1.4400, 199, False), 1002: (-1.4400, 199, False), 1003: (-1.4400, 199, False), 1004: (-1.4400, 199, False)
-- T2: fail; per seed (profit, applicable rounds, covered): 1000: (156.9600, 199, False), 1001: (157.6800, 199, False), 1002: (155.2800, 199, False), 1003: (156.2400, 199, False), 1004: (154.4000, 199, False)
+- T1: pass; per seed (profit, applicable rounds, covered): 1000: (-22.8000, 199, True), 1001: (-22.8000, 199, True), 1002: (-22.8000, 199, True), 1003: (-22.8000, 199, True), 1004: (-22.8000, 199, True)
+- T2: pass; per seed (profit, applicable rounds, covered): 1000: (-22.8000, 199, True), 1001: (-22.8000, 199, True), 1002: (-22.8000, 199, True), 1003: (-22.8000, 199, True), 1004: (-22.8000, 199, True)
 
 ## F3: PASS
 
@@ -46,7 +48,7 @@ Parameters: `{"L": 10, "allocation": "A", "targeting": "T1", "tol": 0.16}`. Swee
 
 ## F5: PASS
 
-- reduction against B2: mean 0.5079, lower 0.9875 studentized bound 0.4970 (needs 0.1): pass
-- reduction against B3: mean 0.2839, lower 0.9875 studentized bound 0.2793 (needs 0.1): pass
+- reduction against B2: mean 0.5108, lower 0.9875 studentized bound 0.5006 (needs 0.1): pass
+- reduction against B3: mean 0.2869, lower 0.9875 studentized bound 0.2828 (needs 0.1): pass
 - H3 doubling delta_gain +0.00000 (needs |delta| < 0.005): pass
 - f5_bank: `{"bank_hash": "91bae8312bb5841095b2f6d0b4ae43ddc3ad0c528e8d19da6ba8313142bcbc5e", "sources_sha256": "5132e4db6d1544339c22426a87e827b7620ce292ccebfa382572a6cc5052b514", "embeddings": {"D2+H3": ["embed_d2_in_h3", "embed_d2_in_h3_exit"]}}`

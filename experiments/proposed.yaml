@@ -624,3 +624,10 @@ b2_prices:
 - 0.18688820187481067
 - 0.37377640374962134
 - 0.5339662910708877
+f5_bank:
+  bank_hash: 91bae8312bb5841095b2f6d0b4ae43ddc3ad0c528e8d19da6ba8313142bcbc5e
+  sources_sha256: 5132e4db6d1544339c22426a87e827b7620ce292ccebfa382572a6cc5052b514
+  embeddings:
+    D2+H3:
+    - embed_d2_in_h3
+    - embed_d2_in_h3_exit
