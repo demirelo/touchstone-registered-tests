@@ -150,7 +150,7 @@ uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17
 ## Evaluation (after the unseal, the day after the freeze; 2026-11-12 in the example)
 
 ```bash
-export TOUCHSTONE_IDENTITY_SALT=$(cat sealed/identity_salt.hex)
+export TOUCHSTONE_IDENTITY_SALT=sealed/identity_salt.hex   # the variable names the salt file, not its content
 # the final sweep takes the development bank of the proposed rule's sweep (verified there; the final H3 cells use exactly the bank F5 tested); pass --bank-from again on any resumed stage
 uv run python scripts/sweep.py --stage all --sections heldout --rules B1,B2,B3,proposed --calibration experiments/calibration.json --tuned-dir experiments/tuned --eval-namespace final_eval --workers 8 --bank-from results/sweep_proposed --out results/final
 uv run python scripts/h1.py --backend anthropic --rules B1,B2,B3,proposed --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --tuned-dir experiments/tuned --eval-namespace final_eval --prompt sealed/h1_prompt.txt --out results/h1_final
