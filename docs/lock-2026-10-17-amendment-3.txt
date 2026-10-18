@@ -1,0 +1,6 @@
+Touchstone amendment 3
+
+tag: lock-2026-10-17-amendment-3
+commit: 95dc8074b07d3c22d0b7d8b5f852b0bf112df961
+tag object: 872dde776e3d5879004593b4bfd38af9f9277090
+amendment_sha256: 3f5521ec57bab5a5b1c4d6060dbf2615751d6b11c8c9a3a8dd1af7ce8645bd90
