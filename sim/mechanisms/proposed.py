@@ -5,8 +5,10 @@ sequential second-score allocation and payment; allocation B reimplements B1's t
 early quota with carry); the audit selection is half targeted (T1: newest identity first; T2: lowest audits per served
 job, recomputed after every selection), half uniform by audit key; enforcement is a full refund of the failed job's
 escrow and a ban of L rounds; no hold-back. The rule reads only offers, job values, purchased audit results, its own
-memory, and the constants of bind(cfg). Its audit selection is not expressible in the locked vocabulary (the ruling of
-both review seats), so the describe record says so."""
+memory, and the constants of bind(cfg). Amendment 3 (after the F2 kill of the amendment-2 selection) adds the priority
+phase: the served jobs of identities younger than L rounds are audited first, newest identity first, before the registered
+split of what remains. Its audit selection is not expressible in the locked vocabulary (the ruling of both review seats),
+so the describe record says so."""
 from __future__ import annotations
 
 import math
@@ -56,24 +58,40 @@ def split_counts(k: int) -> tuple[int, int]:
     return k_t, int(k) - k_t
 
 
-def select_audits(jobs_by_identity: dict, audit_key, first_round: dict, audits: dict, served: dict, targeting: str, k_t: int, k_u: int) -> list:
-    """Pure job-level selection in order: k_t targeted picks, one job at a time (T1 by descending first_round of the
-    job's identity then ascending audit_key; T2 by ascending audits_i / served_i recomputed after every pick, served_i = 0
-    giving 0, then ascending audit_key), then k_u uniform picks among the remaining jobs by ascending audit_key. The
-    caller's counts are not changed."""
+def select_audits(jobs_by_identity: dict, audit_key, first_round: dict, audits: dict, served: dict, targeting: str, k: int, t: int, L: int) -> list:
+    """Amendment 3: pure job-level selection of k audits in order. Priority phase: every served job of a fresh identity
+    (0 <= t - first_round < L), newest identity first, then ascending audit_key, then job index, up to k; these count in
+    their identities' audit totals before anything else. Residual phase on r = k - q: ceil(r / 2) targeted picks one
+    job at a time (T1 by descending first_round then ascending audit_key; T2 by ascending audits_i / served_i recomputed
+    after every pick, served_i = 0 giving 0, then ascending audit_key), then floor(r / 2) uniform picks among the remaining
+    jobs by ascending audit_key. No job twice, never more than the served jobs. The caller's counts are not changed."""
     remaining = {int(j): int(i) for i, jobs in jobs_by_identity.items() for j in jobs}
     counts = {int(i): int(a) for i, a in audits.items()}
+    k = max(0, min(int(k), len(remaining)))
     chosen: list = []
+
+    def born(i: int) -> int:
+        return int(first_round.get(i, t))
+
+    def fresh(i: int) -> bool:
+        return 0 <= int(t) - born(i) < int(L)
+
+    priority = sorted((j for j, i in remaining.items() if fresh(i)), key=lambda j: (-born(remaining[j]), float(audit_key[j]), j))
+    for j in priority[:k]:
+        i = remaining.pop(j)
+        counts[i] = counts.get(i, 0) + 1
+        chosen.append(j)
 
     def ratio(i: int) -> float:
         s = int(served.get(i, 0))
         return (counts.get(i, 0) / s) if s > 0 else 0.0
 
-    for _ in range(int(k_t)):
+    k_t, k_u = split_counts(k - len(chosen))
+    for _ in range(k_t):
         if not remaining:
             break
         if targeting == "T1":
-            pick = min(remaining, key=lambda j: (-int(first_round.get(remaining[j], 0)), float(audit_key[j]), j))
+            pick = min(remaining, key=lambda j: (-born(remaining[j]), float(audit_key[j]), j))
         else:
             pick = min(remaining, key=lambda j: (ratio(remaining[j]), float(audit_key[j]), j))
         i = remaining.pop(pick)
@@ -195,11 +213,10 @@ class Proposed(Mechanism):
         is_terminal = terminal(t, self.T, self.L)
         k_avail = int(min(n_served, self.A_tot)) if is_terminal else audit_quota(t, self.T, self.L, self.J, self.A_tot, carry)
         k = max(0, min(k_avail, n_served, int(view.audits_left)))
-        k_t, k_u = split_counts(k)
         by_identity: dict[int, list[int]] = {}
         for j, i in assignment.items():
             by_identity.setdefault(int(i), []).append(int(j))
-        chosen = select_audits(by_identity, view.audit_key, first_round, audits, served, self.targeting, k_t, k_u) if k > 0 else []
+        chosen = select_audits(by_identity, view.audit_key, first_round, audits, served, self.targeting, k, t, self.L) if k > 0 else []
         for j in chosen:
             i = int(assignment[j]); audits[i] = audits.get(i, 0) + 1
         view.memory["quota_carry"] = 0 if is_terminal else int(k_avail - len(chosen))
