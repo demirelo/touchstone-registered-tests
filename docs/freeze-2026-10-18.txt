@@ -1,0 +1,9 @@
+Touchstone evaluation freeze
+
+tag: freeze-2026-10-18
+commit: 231c284b4c11cbd3951ff994101685dff7ab6dc4
+tag object: ddf7951fb1a89246bdf056d06ce4d0fd7f2d0efd
+registration: lock-2026-10-17-amendment-3 (95dc8074b07d3c22d0b7d8b5f852b0bf112df961)
+proposed.py sha256: 623a652405d8bcaf5449793344d9fe8d062f3ae1f96770f425f8c568d1334176
+proposed.yaml sha256: 944ff3263a089ce9bc3c3a4a08d331ab3bb186fb83c29182dbe86b0ec15157fb
+proposed_describe.yaml sha256: fec523b2a95630acabad1d9f1f1f1e6605a5e0daf74115f8d3a2880f10dd7c14
