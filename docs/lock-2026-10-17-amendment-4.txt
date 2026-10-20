@@ -1,0 +1,6 @@
+Touchstone amendment 4
+
+tag: lock-2026-10-17-amendment-4
+commit: 36e66c718e0ba5d45ba260be293884177dc6f0ab
+tag object: 80263c175b86879b191bec697720a4e6326b08a7
+amendment_sha256: 3f5521ec57bab5a5b1c4d6060dbf2615751d6b11c8c9a3a8dd1af7ce8645bd90
