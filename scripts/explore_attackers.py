@@ -732,7 +732,10 @@ def run(o: dict) -> dict:
     out = Path(o["out"]); out.mkdir(parents=True, exist_ok=True)
     rules = o["rules"].split(","); fams = o["families"].split(","); sizes = [int(c) for c in str(o.get("sizes", "1,2,5")).split(",")]
     smoke = bool(o.get("smoke")); jobs = all_jobs(rules, fams, sizes, smoke)
-    stages = [s for s in STAGES if o["stage"] in ("all", s)]
+    wanted = set(STAGES) if o["stage"] == "all" else set(str(o["stage"]).split(","))
+    if not wanted <= set(STAGES):
+        raise SystemExit(f"unknown stages {sorted(wanted - set(STAGES))}")
+    stages = [s for s in STAGES if s in wanted]
     counted = {s: 0 for s in stages}
     pool = ProcessPoolExecutor(max_workers=int(o.get("workers", 1))) if int(o.get("workers", 1)) > 1 else None
     timings = {}
@@ -782,7 +785,7 @@ def run(o: dict) -> dict:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--stage", default="all", choices=("all",) + STAGES); ap.add_argument("--rules", default=",".join(RULES))
+    ap.add_argument("--stage", default="all", help="all, or a comma-separated list of " + ",".join(STAGES)); ap.add_argument("--rules", default=",".join(RULES))
     ap.add_argument("--families", default=",".join(EXPLORATORY_FAMILIES)); ap.add_argument("--sizes", default="1,2,5")
     ap.add_argument("--workers", type=int, default=1); ap.add_argument("--out", default="results/exploratory")
     ap.add_argument("--smoke", action="store_true"); ap.add_argument("--pilot", action="store_true")

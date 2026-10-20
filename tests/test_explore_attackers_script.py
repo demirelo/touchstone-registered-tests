@@ -381,3 +381,9 @@ def test_x6_controls_have_full_metrics_and_per_member_resets(x6c2):
             assert f in v
         assert len(v["resets_by_member"]) == 2
     assert ctr["x1_staggered"]["partially_staggered"] is False and ctr["x1_staggered"]["overlap"] == 0
+
+
+def test_stage_list_runs_only_the_listed_stages(tmp_path):
+    o = {"stage": "search,bank", "rules": "B3", "families": "X5-AG", "sizes": "1", "workers": 1, "out": str(tmp_path), "smoke": True}
+    t = X.run(o)
+    assert set(t) == {"search", "bank"} and (tmp_path / "bank").exists() and not (tmp_path / "reference").exists()
