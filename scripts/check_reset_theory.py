@@ -170,7 +170,8 @@ def apply_renewal(rows: list, h: float, cfg: dict) -> dict:
     """Separate gates for the recovery formula (3), the renewal identity (4), and the surplus bound (5); estimates from
     complete cycles only. Testable assumptions are checked on every round of their phase; untestable ones are listed as
     assumed. A gate that fails returns applicable_k: false with the failed assumptions named."""
-    est = [r for r in rows if r["phase"] == "established"]; fresh = [r for r in rows if r["phase"] == "fresh"]
+    est = [r for r in rows if r["phase"] == "established"]
+    fresh = [r for r in rows if r["phase"] == "fresh" and r.get("generation", 1) > 0]     # the initial window is censored: every original identity is fresh there
     cyc = extract_cycles(rows); comp = cyc["complete"]
     f3, f4, f5 = [], [], []
     if not cfg["reset"]:

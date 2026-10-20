@@ -252,3 +252,14 @@ def test_separate_gates_and_benchmark_check():
     assert off["applicable_4"] and off["applicable_5"] is False and "common truthful benchmark" in " ".join(off["failed_5"])
     mixed = [dict(r, delta=0.24 if r["t"] % 2 else 0.1) if r["phase"] == "established" else r for r in cyc]
     assert apply_renewal(mixed, h=0.5, cfg=cfgd)["applicable_5"] is False
+
+
+def test_initial_window_does_not_fail_fresh_coverage_or_service_checks():
+    from scripts.check_reset_theory import apply_renewal
+    rows = [_row(t, "fresh", K=1, S=6 if t % 2 else 5, gen=0, profit=0.5) for t in range(10)]          # initial window: censored, under-covered
+    t = 10
+    for k in range(4):
+        rows += [_row(t + i, "established", failures=int(i == 3), delta=0.24, profit=2.0) for i in range(4)]; t += 4
+        rows += [_row(t + i, "fresh", profit=0.5) for i in range(10)]; t += 10
+    out = apply_renewal(rows, h=0.5, cfg={"reset": True, "delta": 0.24, "L": 10, "tol": 0.16, "sigma": 0.05})
+    assert out["applicable_3"] and out["applicable_4"], out["failed_assumptions"]
