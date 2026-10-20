@@ -65,3 +65,7 @@ H1 is exploratory under the registered coverage consequences (proxy bound not ad
 ## Figures
 
 `figures/figure1_gain_vs_audit.png` (gain against audit budget, H2 and H1), `figures/figure2_efficiency_quadruple.png` (honest, reference, clipped, and attack efficiency), produced by the frozen `scripts/plot.py`.
+
+## H1 prompt cache (not committed)
+
+The H1 prompt cache (`experiments/cache/h1/`, 39,100 files, about 330 MB) replays the whole H1 run without paid calls. It stays outside git because of its size; `h1/cache_manifest.sha256` lists the SHA-256 of every file (manifest hash 4ae1a7303724317f0d7054eeb5f7c53c92f39176b5ff5d26f11c4cac03681a60), so an archived copy can be checked file by file.
