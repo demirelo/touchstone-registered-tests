@@ -1,0 +1,9 @@
+# Consensus record: amendment 4 (2026-10-20)
+
+Roster: Sol high (gpt-6.1-sol) and Astra high (gpt-6-astra), Codex CLI, read-only, reasoning effort high, no paid APIs, `experiments/cache/` and `results/h1_final/h1_rows.csv` excluded from reading. Rule: qualified consensus (every seat accept or accept-with-caveat; no unresolved material objection).
+
+Round 1 (`brief-decision-a4.md`): both seats REJECT on one checkable fact: the draft said the 300 USD cap came from the token pilot's projection; the pilot stored at `lock-2026-10-17` projects 1829.95 USD at the calls cap. Both otherwise accepted the lift with conditions (ledger wording, verification steps the verifier does not perform, the R3 INCONCLUSIVE limitation, the unknown twelfth cell, the allowance arithmetic, the disclosure, the permitted files, a preserved pre-resume copy). All repairs were merged into the revised note; the cap's origin now reads: the author's explicit `--cost-cap-usd 300` at the lock from a unique-call estimate of about 14,000 calls (the run made 35,727).
+
+Vote (`brief-decision-a4-vote.md`): Sol accept-with-caveat (0.94), Astra accept-with-caveat (0.95). Caveats, identical in substance: signing and timestamping must precede any further paid call; the registration and completion checks of reporting rule 4 must supply their evidence; the 14,000-call estimate and the statement that the partial cell's responses were unread are author-supplied. Disposition: the run book section "Amendment 4" carries the checks in order; the author-supplied statements stay marked as such in the note.
+
+Verification before the tag: `check_claim.py --verify-only --verify-lock lock-2026-10-17-amendment-3 --proposed proposed` passed ("verified: tree, proposed module, coverage report; amendment report verified"); the registration commit touches `docs/` only.

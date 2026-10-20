@@ -159,3 +159,19 @@ uv run python scripts/plot.py --sweep-out results/final --out results/figures --
 ```
 
 The test that `proposed.py` imports only the base module and mutates nothing runs inside `scripts/check_claim.py`, so no new test file is needed after the lock.
+
+## Amendment 4 (2026-10-20), a one-time lift of the H1 cost cap for the last cell
+
+The H1 final run stopped at the locked cumulative cap (300 USD) with 11 of 12 cells complete (`results/h1_final/h1_summary.json`: `stopped_by` "cost cap 300.0 USD would be crossed", partial cell `proposed|0.1`). Two restarts preceded it: a credit outage at 205.33 USD and one accidental duplicate launch (about two minutes, about 1 USD). `docs/amendments/2026-10-20-amendment-4.md` is binding: the cap becomes 330 USD for this run only, applied with `--max-cost-usd 330` on the same command; no second lift; the twelfth cell is reported whatever it is. Registration commits the note and the roster memos (`docs/` only); the user signs and tags; then the resume:
+
+```bash
+uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17-amendment-3 --proposed proposed   # before the tag; expected delta: none (docs/ only); also git show --stat of the registration commit: docs/ paths only
+git tag -s lock-2026-10-17-amendment-4 -m "Touchstone amendment 4 (one-time lift of the H1 cost cap to 330 USD for the last cell)" && git push origin main lock-2026-10-17-amendment-4
+printf 'Touchstone amendment 4\n\ntag: lock-2026-10-17-amendment-4\ncommit: %s\ntag object: %s\namendment_sha256: %s\n' "$(git rev-parse lock-2026-10-17-amendment-4^{commit})" "$(git rev-parse lock-2026-10-17-amendment-4)" "$(uv run python -c 'import yaml; from sim.amendment import amendment_hash; print(amendment_hash(yaml.safe_load(open("experiments/amendment-2026-10-17.yaml"))))')" > docs/lock-2026-10-17-amendment-4.txt
+uvx --from opentimestamps-client ots stamp docs/lock-2026-10-17-amendment-4.txt
+# the resume (from a terminal with a 1Password session; the cumulative ledger replays every cached call first)
+export TOUCHSTONE_IDENTITY_SALT=sealed/identity_salt.hex
+ANTHROPIC_API_KEY="$(op item get r6fm3jl34rgvycqjtng3mshupa --fields label=credential --reveal)" nohup uv run python scripts/h1.py --backend anthropic --rules B1,B2,B3,proposed --calibration experiments/calibration.json --calibration-t100 experiments/calibration_T100.json --tuned-dir experiments/tuned --eval-namespace final_eval --prompt sealed/h1_prompt.txt --out results/h1_final --max-cost-usd 330 > results/h1_final/h1_resume6.log 2>&1 &
+uv run python scripts/check_claim.py --verify-only --verify-lock lock-2026-10-17-amendment-4 --proposed proposed   # after the tag
+# after completion: the full evaluation claim-check command above with --verify-lock lock-2026-10-17-amendment-4 --verify-freeze freeze-2026-10-18 --h1-dir results/h1_final (all other arguments as listed), then plot.py with --h1-dir; separately confirm 12 cells x 10 repetitions, partial [], cost_cap_usd 330.0 in h1_summary.json
+```
