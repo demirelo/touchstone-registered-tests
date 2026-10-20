@@ -205,3 +205,50 @@ def test_renewal_inapplicable_without_stationarity_or_with_mixed_generations():
     one = [{**r, "failures": int(r["t"] == 39)} for r in early]
     out3 = apply_renewal(one, h=0.5, cfg=cfgd)
     assert out3["applicable"] is False and "at least two complete cycles" in " ".join(out3["failed_assumptions"])
+
+
+# ---- final-review fixes ------------------------------------------------------------------------------------------------
+
+def _row(t, phase, S=6, K=None, profit=1.0, failures=0, delta=0.0, gen=1):
+    return {"t": t, "phase": phase, "S": S, "K": S if K is None else K, "profit": profit, "failures": failures, "delta": delta,
+            "refunds": 0.0, "generation": gen}
+
+
+def test_no_recovery_fixture_is_inapplicable():
+    from scripts.check_reset_theory import apply_renewal
+    rows = [_row(t, "established", failures=int(t % 3 == 2), delta=0.24) for t in range(30)]
+    out = apply_renewal(rows, h=0.5, cfg={"reset": True, "delta": 0.24, "L": 10, "tol": 0.16, "sigma": 0.05})
+    assert out["applicable_4"] is False and out["applicable_5"] is False and out["complete_cycles"] == 0
+
+
+def test_cycles_extracted_with_censoring_and_restarts():
+    from scripts.check_reset_theory import extract_cycles
+    rows = ([_row(t, "fresh", gen=0) for t in range(10)] +                                    # initial window: censored
+            [_row(10 + t, "established", failures=int(t == 2), delta=0.24) for t in range(3)] +   # spell 1 ends at a failure
+            [_row(13 + t, "fresh") for t in range(4)] + [_row(17, "fresh", failures=1)] +        # recovery with a false-failure restart
+            [_row(18 + t, "fresh") for t in range(10)] +
+            [_row(28 + t, "established", failures=int(t == 1), delta=0.24) for t in range(2)] +   # spell 2
+            [_row(30 + t, "fresh") for t in range(10)] + [_row(40, "established", delta=0.24)] +  # recovery 2, then an open spell: censored
+            [_row(41 + t, "terminal") for t in range(10)])
+    c = extract_cycles(rows)
+    assert len(c["complete"]) == 2
+    assert c["complete"][0]["spell"] == 3 and c["complete"][0]["recovery"] == 15 and c["complete"][0]["restarts"] == 1
+    assert c["complete"][1]["spell"] == 2 and c["complete"][1]["recovery"] == 10
+    assert c["censored_rounds"] == 10 + 1 + 10
+
+
+def test_separate_gates_and_benchmark_check():
+    from scripts.check_reset_theory import apply_renewal
+    base = [_row(t, "established", failures=int(t % 4 == 3), delta=0.24) for t in range(4)]
+    cyc = []
+    t = 0
+    for k in range(4):
+        cyc += [_row(t + i, "established", failures=int(i == 3), delta=0.24, profit=2.0) for i in range(4)]; t += 4
+        cyc += [_row(t + i, "fresh", profit=0.5) for i in range(10)]; t += 10
+    cfgd = {"reset": True, "delta": 0.24, "L": 10, "tol": 0.16, "sigma": 0.05}
+    ok = apply_renewal(cyc, h=0.5, cfg=cfgd)
+    assert ok["applicable_3"] and ok["applicable_4"] and ok["applicable_5"] and "independent cycles" in " ".join(ok["assumed"])
+    off = apply_renewal(cyc, h=0.9, cfg=cfgd)                       # fresh honest play does not earn the benchmark
+    assert off["applicable_4"] and off["applicable_5"] is False and "common truthful benchmark" in " ".join(off["failed_5"])
+    mixed = [dict(r, delta=0.24 if r["t"] % 2 else 0.1) if r["phase"] == "established" else r for r in cyc]
+    assert apply_renewal(mixed, h=0.5, cfg=cfgd)["applicable_5"] is False

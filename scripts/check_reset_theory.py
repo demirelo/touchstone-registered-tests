@@ -136,53 +136,101 @@ def finite_horizon(rows: list, L: int) -> dict:
     return {"initial": ini, "middle": mid, "terminal": ter, "per_round": (ini + mid + ter) / T}
 
 
+def extract_cycles(rows: list) -> dict:
+    """Complete cycles: an established spell ending in a round with a failure, then the recovery (every later round up to,
+    not including, the next established round). Rounds before the first spell, an open final spell, and an unfinished
+    recovery are censored. Restarts count failures inside the recovery."""
+    rows = sorted(rows, key=lambda r: r["t"]); complete = []; i = 0; n = len(rows); used = set()
+    while i < n:
+        if rows[i]["phase"] != "established":
+            i += 1; continue
+        j = i
+        while j < n and rows[j]["phase"] == "established" and rows[j]["failures"] == 0:
+            j += 1
+        if j >= n or rows[j]["phase"] != "established":
+            i = j; continue                                     # the spell ended without a failure: open, censored
+        k = j + 1
+        while k < n and rows[k]["phase"] in ("fresh", "banned"):
+            k += 1
+        if k >= n or rows[k]["phase"] != "established" or k == j + 1:
+            i = k; continue                                     # no recovery, or one cut off by the terminal rounds: censored
+        spell, rec = rows[i:j + 1], rows[j + 1:k]
+        complete.append({"spell": len(spell), "recovery": len(rec), "restarts": sum(1 for r in rec if r["failures"] > 0),
+                         "spell_rows": spell, "recovery_rows": rec, "reward": sum(r["profit"] for r in spell + rec)})
+        used.update(r["t"] for r in spell + rec); i = k
+    return {"complete": complete, "censored_rounds": sum(1 for r in rows if r["t"] not in used)}
+
+
+def _se(v) -> float:
+    v = np.asarray(v, dtype=float)
+    return float(v.std(ddof=1) / math.sqrt(len(v))) if len(v) > 1 else float("inf")
+
+
 def apply_renewal(rows: list, h: float, cfg: dict) -> dict:
-    """The renewal prediction (4) and the bound (5) on the middle rounds, only when the checked assumptions hold."""
+    """Separate gates for the recovery formula (3), the renewal identity (4), and the surplus bound (5); estimates from
+    complete cycles only. Testable assumptions are checked on every round of their phase; untestable ones are listed as
+    assumed. A gate that fails returns applicable_k: false with the failed assumptions named."""
     est = [r for r in rows if r["phase"] == "established"]; fresh = [r for r in rows if r["phase"] == "fresh"]
-    failed = []
+    cyc = extract_cycles(rows); comp = cyc["complete"]
+    f3, f4, f5 = [], [], []
     if not cfg["reset"]:
-        failed.append("replacement after every failure (a waiting plan needs its own recovery accounting)")
+        f3.append("replacement after every failure (a waiting plan needs its own recovery accounting)"); f4.append(f3[-1])
+    if len(comp) < 2:
+        f3.append("at least two complete cycles (finite, estimable cycle rewards and durations)"); f4.append(f3[-1])
     s_vals = [r["S"] for r in est]
     s_mode = max(set(s_vals), key=s_vals.count) if s_vals else 0
     if not s_vals or sum(1 for v in s_vals if v == s_mode) < 0.95 * len(s_vals):
-        failed.append("constant service in established rounds")
+        f4.append("constant service in established rounds")
+    fs = [r["S"] for r in fresh]
+    if fs and sum(1 for v in fs if v == max(set(fs), key=fs.count)) < 0.95 * len(fs):
+        f3.append("constant service in fresh rounds")
     if any(r["K"] != r["S"] for r in fresh):
-        failed.append("full fresh auditing")
-    n_fail = sum(1 for r in est if r["failures"] > 0)
-    if n_fail == 0:
-        failed.append("q_E > 0")
-    elif n_fail < 2:
-        failed.append("at least two complete cycles (finite, estimable cycle rewards and durations)")
+        f3.append("full fresh auditing"); f4.append("full fresh auditing")
+    if not any(r["failures"] > 0 for r in est):
+        f4.append("q_E > 0")
+    if est and max(r["delta"] for r in est) - min(r["delta"] for r in est) > 1e-9:
+        f4.append("a fixed established action")
     gens = {}
     for r in est:
-        g = "initial" if r.get("generation", 1) == 0 else "replacement"
-        gens.setdefault(g, []).append(r)
+        gens.setdefault("initial" if r.get("generation", 1) == 0 else "replacement", []).append(r)
     if len(gens) == 2 and all(len(v) >= 3 for v in gens.values()):
         rate = {g: sum(x["K"] for x in v) / max(1, sum(x["S"] for x in v)) for g, v in gens.items()}
         if abs(rate["initial"] - rate["replacement"]) > 0.1:
-            failed.append("single identity-generation class in established rounds (Lemma 2b: different audit rates)")
+            f4.append("single identity-generation class in established rounds (Lemma 2b: different audit rates)")
     if len(est) >= 8:
         half = len(est) // 2; a, b = est[:half], est[half:]
-        def stats(v):
-            q = np.array([float(x["failures"] > 0) for x in v]); r = np.array([x["profit"] for x in v])
-            return q.mean(), q.std(ddof=1) / math.sqrt(len(v)), r.mean(), r.std(ddof=1) / math.sqrt(len(v))
-        qa, sqa, ra, sra = stats(a); qb, sqb, rb, srb = stats(b)
-        if abs(qa - qb) > 2 * math.hypot(sqa, sqb) + 1e-12 or abs(ra - rb) > 2 * math.hypot(sra, srb) + 1e-12:
-            failed.append("constant conditional established reward and hazard (the two halves of the established rounds differ)")
-    out = {"n_established": len(est), "n_fresh": len(fresh), "spells_ended": n_fail}
-    if failed:
-        return {**out, "applicable": False, "failed_assumptions": failed}
-    d = detect(cfg["delta"], cfg["tol"], cfg["sigma"]); d0 = detect(0.0, cfg["tol"], cfg["sigma"])
-    q_K = hazard_from_K(est, d); q_emp = n_fail / len(est)
-    r_E = float(np.mean([r["profit"] for r in est])); f_mean = float(np.mean([r["profit"] for r in fresh])) if fresh else h
-    eps = max(0.0, f_mean - h)
-    ED = expected_recovery((1 - d0) ** s_mode, cfg["L"])
-    pred = renewal_profit(r_E, q_K, f_mean * ED, ED, 0.0, 1.0)
-    measured = float(np.mean([r["profit"] for r in rows]))
-    bound = surplus_bound(r_E - h, q_K, eps, cfg["L"])
-    return {**out, "applicable": True, "r_E": r_E, "q_E_from_K": q_K, "q_E_empirical": q_emp, "ED_formula": ED, "fresh_mean": f_mean,
-            "eps": eps, "prediction_4": pred, "measured_per_round": measured, "bound_5": bound, "surplus_measured": measured - h,
-            "bound_holds": bool(measured - h <= bound + 1e-9)}
+        qa = [float(x["failures"] > 0) for x in a]; qb = [float(x["failures"] > 0) for x in b]
+        ra = [x["profit"] for x in a]; rb = [x["profit"] for x in b]
+        if abs(np.mean(qa) - np.mean(qb)) > 2 * math.hypot(_se(qa), _se(qb)) + 1e-12 or abs(np.mean(ra) - np.mean(rb)) > 2 * math.hypot(_se(ra), _se(rb)) + 1e-12:
+            f4.append("constant conditional established reward and hazard (the two halves of the established rounds differ)")
+    f5 = list(f4)
+    rec_rows = [r for c in comp for r in c["recovery_rows"]]
+    if any(r["delta"] != 0 for r in rec_rows):
+        f5.append("fresh-surplus bound (fresh play is not the honest action, so the in-band optimisation would be needed)")
+    if rec_rows:
+        fm = float(np.mean([r["profit"] for r in rec_rows]))
+        if abs(fm - h) > 2 * _se([r["profit"] for r in rec_rows]) + 1e-12:
+            f5.append("common truthful benchmark (honest fresh play does not earn the benchmark rate)")
+    out = {"complete_cycles": len(comp), "censored_rounds": cyc["censored_rounds"], "n_established": len(est), "n_fresh": len(fresh),
+           "assumed": ["independent cycles", "stationary conditional reward and hazard beyond the two-half diagnostic"],
+           "failed_3": f3, "failed_4": f4, "failed_5": f5, "applicable_3": not f3, "applicable_4": not f4, "applicable_5": not f5}
+    out["applicable"] = out["applicable_4"]; out["failed_assumptions"] = list(dict.fromkeys(f4 + f3 + f5))
+    if comp:
+        d = detect(cfg["delta"], cfg["tol"], cfg["sigma"]); d0 = detect(0.0, cfg["tol"], cfg["sigma"])
+        est_c = [r for c in comp for r in c["spell_rows"]]
+        r_E = float(np.mean([r["profit"] for r in est_c])); q_K = hazard_from_K(est_c, d)
+        ED_m = float(np.mean([c["recovery"] for c in comp])); ER_F = float(np.mean([sum(r["profit"] for r in c["recovery_rows"]) for c in comp]))
+        per_cycle = [c["reward"] / (c["spell"] + c["recovery"]) for c in comp]
+        measured = sum(c["reward"] for c in comp) / sum(c["spell"] + c["recovery"] for c in comp)
+        out.update({"r_E": r_E, "q_E_from_K": q_K, "q_E_empirical": len(comp) / len(est_c), "ED_measured": ED_m, "ER_F": ER_F,
+                    "ED_formula": expected_recovery((1 - d0) ** s_mode, cfg["L"]) if s_mode else None,
+                    "measured_per_round": measured, "measured_se": _se(per_cycle)})
+        if out["applicable_4"]:
+            out["prediction_4"] = renewal_profit(r_E, q_K, ER_F, ED_m, 0.0, 1.0)
+        if out["applicable_5"]:
+            out["bound_5"] = surplus_bound(r_E - h, q_K, 0.0, cfg["L"]); out["surplus_measured"] = measured - h
+            out["bound_holds"] = bool(measured - h <= out["bound_5"] + 1e-9)
+    return out
 
 
 # ---- the 72 configurations ----------------------------------------------------------------------------------------------
@@ -220,13 +268,14 @@ def run_all(out: Path) -> dict:
         cfg_d = {"reset": r["reset"], "delta": r["delta"], "L": 10, "tol": 0.16, "sigma": 0.05}
         app = []
         for rows, brows in zip(per_seed, bench):
-            mid = [x for x in rows if x["t"] >= W and 200 - x["t"] > 10]; bmid = [x for x in brows if x["t"] >= W and 200 - x["t"] > 10]
+            bmid = [x for x in brows if x["t"] >= W and 200 - x["t"] > 10]
             h = float(np.mean([x["profit"] for x in bmid]))
-            app.append(apply_renewal(mid, h, cfg_d))
+            a = apply_renewal(rows, h, cfg_d); a["benchmark_h"] = h; app.append(a)
         fh = [finite_horizon(rows, 10) for rows in per_seed]
+        r["finite_horizon"] = fh
         r["finite_horizon_per_round"] = [x["per_round"] for x in fh]
         r["renewal"] = app
-        r["applicable_seeds"] = sum(1 for a in app if a["applicable"])
+        r["applicable_seeds"] = sum(1 for a in app if a["applicable_5"])
         r["bound_holds_seeds"] = sum(1 for a in app if a.get("bound_holds"))
         r["established_rates"] = established_rates([x for rows in per_seed for x in rows])
     doc = {"status": "exploratory theorem checks; dev-val seeds 2000 to 2019", "configurations": results}

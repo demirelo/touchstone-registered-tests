@@ -167,3 +167,49 @@ def test_smoke_end_to_end_changed_market(tmp_path):
     assert t["search"] > 0 and (tmp_path / "evaluate").exists()
     rep = json.loads((tmp_path / "report.json").read_text())
     assert {c["family"] for c in rep["cells"]} == {"D2", "D2+H3"} and all(c["variant"] == "N5J25" for c in rep["cells"])
+
+
+# ---- final-review fixes ------------------------------------------------------------------------------------------------
+
+def _staged(tmp_path, fams, stage):
+    return {"stage": stage, "variants": "headline", "rules": "B3", "families": fams, "workers": 1, "out": str(tmp_path), "smoke": True}
+
+
+def test_family_filtered_bank_uses_manifest_dependency_jobs_and_report_needs_doubling(tmp_path):
+    R.run(_staged(tmp_path, "D2", "search"))
+    R.run(_staged(tmp_path, "D2+H3", "search,bank"))                # D2 sources outside the family selection are found and valid
+    bank = json.loads((tmp_path / "bank_headline_D2+H3_median.json").read_text())
+    assert bank["embed_sources"] and bank["embedding_sha256"]
+
+
+def test_changed_group_member_invalidates_bank_consumers(tmp_path):
+    o = {"stage": "search,bank,reference", "variants": "headline", "rules": "B3", "families": "D2,D2+H3", "workers": 1, "out": str(tmp_path), "smoke": True}
+    R.run(o)
+    p = tmp_path / "search" / "headline_B3_D2_median.json"; d = json.loads(p.read_text())
+    d["attack"]["best_f"] += 1.0; p.write_text(json.dumps(d))       # a D2 source of the D2+H3 bank changes; the D2+H3 search does not
+    jobs = R.jobs_for([s for s in R.manifest_specs() if s["id"] == "headline_B3_D2+H3_median"], True)
+    R.assign_banks(jobs, R.manifest_specs(), True, selected=jobs)
+    with pytest.raises(SystemExit):
+        X.verify_bank_group(tmp_path, jobs[0])
+
+
+def test_report_requires_validated_doubling_records(tmp_path):
+    specs = [s for s in R.manifest_specs() if s["id"] == "beta0.02_B3_D2+H3_median"]
+    assert specs[0]["doubling"]
+    o = {"stage": "search,bank,reference,evaluate", "variants": "beta0.02", "rules": "B3", "families": "D2,D2+H3", "workers": 1, "out": str(tmp_path), "smoke": True}
+    R.run(o)
+    with pytest.raises(SystemExit):
+        R.run({**o, "stage": "report"})                              # the manifest-selected doubling record is missing
+    R.run({**o, "stage": "doubling,report"})
+    rep = json.loads((tmp_path / "report.json").read_text())
+    assert any(c["doubling_delta"] is not None for c in rep["cells"] if c["cell"] == "beta0.02_B3_D2+H3_median")
+
+
+def test_robust_x6_cells_keep_matched_timing_controls():
+    job = X.job_for_x("B3", "X6-SE", c=2, smoke=True, schedule="synchronised", variant=R.variant("headline", position="median"))
+    rec = X.x_search(job); ref = X.x_reference(job, rec, None); ev = X.x_evaluate(job, ref)
+    k = ref["attack_knobs"]
+    if k.get("y"):
+        assert {"x1_synchronised", "x1_staggered", "x0_synchronised", "x0_staggered"} & set(ev["controls"])
+    else:
+        assert "note" in ev["controls"]

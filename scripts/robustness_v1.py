@@ -110,21 +110,32 @@ def jobs_for(specs: list[dict], smoke: bool) -> list[dict]:
     return jobs
 
 
-def assign_banks(jobs: list[dict], all_specs: list[dict], smoke: bool) -> None:
+def assign_banks(jobs: list[dict], all_specs: list[dict], smoke: bool, selected: list | None = None) -> None:
     """Bank sources: every cell of the job's group (variant, family, position) across the four rules (X6: its five profiles)
-    in a real run, the selected ones in a smoke run; a D2+H3 group embeds the same variant and position's D2 cells."""
-    pool = jobs if smoke else [{"name": s["id"], "bank_group": f"{s['variant']}_{s['family']}_{s['position']}", "family": s["family"],
-                                "variant_name": s["variant"], "position": s["position"]} for s in all_specs]
+    in a real run; in a smoke run, the manifest cells of the selected variants and rules (any family). A D2+H3 group embeds
+    the same variant and position's D2 cells."""
+    sel = selected if selected is not None else jobs
+    vs = {j["variant_name"] for j in sel}; rs = {j["rule"] for j in sel}
+    pool_specs = [s for s in all_specs if (not smoke) or (s["variant"] in vs and s["rule"] in rs)]
+    pool = [{"name": s["id"], "bank_group": f"{s['variant']}_{s['family']}_{s['position']}", "family": s["family"],
+             "variant_name": s["variant"], "position": s["position"]} for s in pool_specs]
     for j in jobs:
         g = j["bank_group"]
         j["bank_sources"] = [p["name"] for p in pool if p["bank_group"] == g]
         if j["family"] == "D2+H3":
-            j["bank_embed"] = [p["name"] for p in pool if p["family"] == "D2" and p.get("variant_name", j["variant_name"]) == j["variant_name"]
-                               and p.get("position", j["position"]) == j["position"]]
+            j["bank_embed"] = [p["name"] for p in pool if p["family"] == "D2" and p["variant_name"] == j["variant_name"] and p["position"] == j["position"]]
+
+
+def dependency_jobs(jobs: list[dict], all_specs: list[dict], smoke: bool) -> dict:
+    """Jobs for every bank source and embedding source the selected jobs depend on, built from the complete manifest so
+    each keeps its own family, variant, position, and schedule."""
+    need = {n for j in jobs for n in (j.get("bank_sources") or []) + (j.get("bank_embed") or [])} - {j["name"] for j in jobs}
+    specs = [s for s in all_specs if s["id"] in need]
+    return {j["name"]: j for j in jobs_for(specs, smoke)}
 
 
 def report_all(out: Path, jobs: list[dict]) -> dict:
-    from scripts.explore_attackers import read_record, upper_bound, validate_record, write_record, _sha_json, git_commit, X6
+    from scripts.explore_attackers import read_record, upper_bound, validate_record, verify_bank_group, write_record, _sha_json, git_commit, X6
     cells, sources = [], {}
     for job in jobs:
         n = job["name"]
@@ -136,6 +147,10 @@ def report_all(out: Path, jobs: list[dict]) -> dict:
             validate_record(job, "bank", bk, {"search": se})
         validate_record(job, "reference", ref, {"search": se, **({"bank": bk} if bk is not None else {})})
         validate_record(job, "evaluate", ev, {"reference": ref})
+        if bk is not None:
+            verify_bank_group(out, job)
+        if job.get("doubling"):
+            validate_record(job, "doubling", dbl, {"search": se, **({"bank": bk} if bk is not None else {})})
         rows = ev["rows"]
         if [int(r["seed"]) for r in rows] != list(job["seeds_val"]):
             raise SystemExit(f"{n}: the evaluation rows do not carry exactly the job's evaluation seeds")
@@ -168,8 +183,9 @@ def run(o: dict) -> dict:
     if not smoke and o.get("rules") not in (None, "all") and set(str(o["rules"]).split(",")) != set(RULES):
         raise SystemExit("a real robustness run takes all four rules (bank sources span them)")
     jobs = jobs_for(chosen, smoke); assign_banks(jobs, specs, smoke)
+    lookup = dependency_jobs(jobs, specs, smoke)
     oo = {**o, "rules": ",".join(sorted({j["rule"] for j in jobs})), "families": ",".join(sorted({j["family"] for j in jobs}))}
-    return xrun(oo, jobs=jobs, report_fn=report_all)
+    return xrun(oo, jobs=jobs, report_fn=report_all, lookup=lookup)
 
 
 def main() -> None:

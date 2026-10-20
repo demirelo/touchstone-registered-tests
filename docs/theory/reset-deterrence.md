@@ -51,7 +51,7 @@ $$\bar\Pi - h \;\le\; \epsilon + \frac{(G_E - \epsilon)_+}{1 + q_E L}. \qquad (5
 
 Under Corollary 1 the same calculation gives a cycle with no recovery (or one that earns the established rate), so the uniform rule's long-run surplus is the one-round surplus $G_U = s[\,g - p(d - d_0)\bar M\,]$: the factor $1/(1 + q_E L)$ is what newcomer-first auditing adds, and Lemma 2b says that under T1 the established hazard $q_E$ of a replacement identity is itself high.
 
-Equality in (5) needs $D = L$, zero fresh surplus, and the common benchmark. Payments that are only roughly constant across states need a measured error bound; they are not an assumption of the theorem.
+Equality in (5) holds when the recovery lasts exactly $L$ rounds ($D = L$), every fresh round earns exactly $h + \epsilon$, and the established action attains $G_E$ with hazard $q_E$; fresh surplus need not be zero (for example $G_E = 2$, $\epsilon = 1$, $q_E = 1$, $D = L = 10$ gives $12/11$ on both sides). In the special case $\epsilon = 0$ the bound reads $(G_E)_+/(1 + q_E L)$ and equality needs honest fresh play at the benchmark rate. Payments that are only roughly constant across states need a measured error bound; they are not an assumption of the theorem.
 
 ## 6. Proposition: terminal shading is always profitable at the locked parameters
 

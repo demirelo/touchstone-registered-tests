@@ -8,7 +8,7 @@ knobs; the twin clips every member); its references are re-scored with honest op
 rank a unilateral reference); its gain is focal profit in the coalition minus the best unilateral reference."""
 from __future__ import annotations
 
-import argparse, csv, hashlib, json, os, subprocess, sys, time
+import argparse, csv, hashlib, inspect, json, os, subprocess, sys, time
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import replace
 from pathlib import Path
@@ -383,10 +383,28 @@ def build_bank_doc(family: str, search: dict, rules, sizes, sources: dict | None
             take(embed_d2_in_h3(k), f"{n}:{part}|x=0"); take(embed_d2_in_h3_exit(k), f"{n}:{part}|x=1")
     for k in family_of(family).corners():
         take(k, "corner")
+    emb_sha = _sha((inspect.getsource(embed_d2_in_h3) + inspect.getsource(embed_d2_in_h3_exit)).encode()) if embed else None
     doc = {"family": family, "group": group, "sources": {n: (sources or {}).get(n) or _sha_json(search[n]) for n in names},
            "embed_sources": {n: _sha_json(r) for n, r in embed.items()}, "embedding": ["embed_d2_in_h3", "embed_d2_in_h3_exit"] if embed else [],
-           "members": members}
-    doc["bank_hash"] = _sha_json({k: doc[k] for k in ("sources", "embed_sources", "embedding", "members")})
+           "embedding_sha256": emb_sha, "members": members}
+    doc["bank_hash"] = _sha_json({k: doc[k] for k in ("sources", "embed_sources", "embedding", "embedding_sha256", "members")})
+    return doc
+
+
+def verify_bank_group(out: Path, job: dict) -> dict:
+    """The job's bank group document must equal the one rebuilt from the current records of every source and embedding
+    source (another rule's search changing invalidates the bank and everything downstream)."""
+    g = job.get("bank_group", job["family"]); doc = read_record(Path(out) / f"bank_{g}.json")
+    if doc is None:
+        raise SystemExit(f"{job['name']}: no bank document for group {g}")
+    names = list(doc["sources"]); emb = list(doc.get("embed_sources") or {})
+    recs = {n: read_record(Path(out) / "search" / f"{n}.json") for n in names + emb}
+    if any(v is None for v in recs.values()):
+        raise SystemExit(f"bank {g}: a source search record is missing")
+    again = build_bank_doc(job["family"], {n: recs[n] for n in names}, list(RULES), None, names=names, embed={n: recs[n] for n in emb},
+                           group=doc.get("group"))
+    if again["bank_hash"] != doc["bank_hash"]:
+        raise SystemExit(f"bank {g}: the bank no longer matches its current sources; rebuild the bank and its downstream records")
     return doc
 
 
@@ -589,7 +607,7 @@ def x_evaluate(job: dict, ref_rec: dict) -> dict:
         if job["family"] == X6:          # the frozen others_* diagnostics treat partners as outsiders; the local fields replace them
             for f in ("others_bans_attack", "others_lost_capacity_attack", "others_audited_attack", "harm_accounting", "harm_direct"):
                 row[f] = None
-    controls = x6_controls(job, k, ref, honest, cache) if job["family"] == X6 and int(job["c"]) > 1 and job.get("schedule") is None else {}
+    controls = x6_controls(job, k, ref, honest, cache) if job["family"] == X6 and int(job["c"]) > 1 else {}     # matched timing controls at the selected point
     out = _base(job, cache, "evaluate", inputs={"reference": _sha_json(ref_rec)})
     out.update({"rows": rows, "controls": controls, "reference_candidate": ref_rec["candidate"]["name"], "bank_hash": ref_rec.get("bank_hash")})
     return out
@@ -774,6 +792,8 @@ def _stage_job(stage, job, out_s):
     if stage == "bank":
         return x_bank(job, src, read_record(out / f"bank_{job.get('bank_group', job['family'])}.json"))
     bk = read_record(out / "bank" / f"{name}.json")
+    if bk is not None and stage in ("reference", "doubling"):
+        verify_bank_group(out, job)
     if stage == "reference":
         return x_reference(job, src, bk)
     if stage == "evaluate":
@@ -783,7 +803,7 @@ def _stage_job(stage, job, out_s):
     raise ValueError(stage)
 
 
-def run(o: dict, jobs: list | None = None, report_fn=None) -> dict:
+def run(o: dict, jobs: list | None = None, report_fn=None, lookup: dict | None = None) -> dict:
     out = Path(o["out"]); out.mkdir(parents=True, exist_ok=True)
     rules = o["rules"].split(","); fams = o["families"].split(","); sizes = [int(c) for c in str(o.get("sizes", "1,2,5")).split(",")]
     smoke = bool(o.get("smoke")); jobs = jobs if jobs is not None else all_jobs(rules, fams, sizes, smoke)
@@ -813,7 +833,11 @@ def run(o: dict, jobs: list | None = None, report_fn=None) -> dict:
                     v = read_record(out / "search" / f"{n}.json")
                     if v is None:
                         continue
-                    jb = by_name.get(n) or job_for_x(v["rule"], f, v.get("c"), smoke)
+                    jb = by_name.get(n) or (lookup or {}).get(n)
+                    if jb is None:
+                        if lookup is not None:
+                            raise SystemExit(f"bank {g}: no manifest job for source {n}")
+                        jb = job_for_x(v["rule"], f, v.get("c"), smoke)
                     validate_record(jb, "search", v, {}); recs[n] = v
                 missing_embed = [n for n in embed_names if n not in recs]
                 if missing_embed:
@@ -838,7 +862,10 @@ def run(o: dict, jobs: list | None = None, report_fn=None) -> dict:
         for j in todo:
             p = out / stage / f"{j['name']}.json"; existing = read_record(p)
             if existing is not None:
-                validate_record(j, stage, existing, upstream_of(out, j, stage)); continue      # resume: a complete, current stage is skipped
+                validate_record(j, stage, existing, upstream_of(out, j, stage))
+                if stage in ("bank", "reference", "doubling") and read_record(out / "bank" / f"{j['name']}.json") is not None:
+                    verify_bank_group(out, j)
+                continue                                                    # resume: a complete, current stage is skipped
             pending.append(j)
         res = pool.map(_stage_job, [stage] * len(pending), pending, [str(out)] * len(pending)) if pool else map(lambda j: _stage_job(stage, j, str(out)), pending)
         for j, rec in zip(pending, res):
