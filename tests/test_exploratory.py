@@ -440,3 +440,11 @@ def test_gates_read_only_provider_view(name):
         a = p.act(_Guard(view_at(t, params, h, identity=ident)))
         ident += int(a.exit)
         h.append(6, 3.0, int(t % 7 == 0), int(t % 21 == 0), 0.0, t + 11 if t % 21 == 0 else 0)
+
+
+def test_x3_diagnostic_windows_are_exact_knob_points():
+    f = fam("X3-HS")
+    a = drive(f.make({**BASE, "t0": 0.05, "span": 0.9, "z": 0}), [{}] * 200)
+    assert [t for t, x in enumerate(a) if cheats(x)] == list(range(10, 190))
+    b = drive(f.make({**BASE, "t0": 0.95, "span": 0.05, "z": 0}), [{}] * 200)
+    assert [t for t, x in enumerate(b) if cheats(x)] == list(range(190, 200))

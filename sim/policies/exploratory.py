@@ -206,16 +206,6 @@ class X3Policy(_Gated):
         return self.in_window(view.t)
 
 
-class X3Window(X3Policy):
-    """An exact window [lo, hi) with z = 0, for the two diagnostic incumbents ([10, 190) and [190, 200))."""
-
-    def __init__(self, u, m, s, w, lo, hi, clip):
-        super().__init__(u, m, s, w, 0.0, 0.0, 0, clip); self.lo, self.hi = int(lo), int(hi)
-
-    def in_window(self, t):
-        return self.lo <= t < self.hi
-
-
 class X4Policy(_Gated):
     """Reset option: honest while younger than n_age, cheat afterwards; after a failed audit that bans until B, exit
     if x and (lambda = 0, or a proxy value is undefined, or (min(B, T) - t) V_e > lambda W (V_e - V_f))."""
