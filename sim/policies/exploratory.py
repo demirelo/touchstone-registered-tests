@@ -286,14 +286,13 @@ class X6Policy(_Gated):
             raise ValueError("P outside [1, 50]")
         self.P, self.x, self.y = float(P), int(x), int(y)
         self.sched = set(scheduled_resets(P, c, T_PUBLIC, staggered)[member]) if self.y else set()
-        self.resets_scheduled = self.resets_failure = 0
+        self.resets_scheduled = self.resets_failure = self.resets_coincident = 0
 
     def want_exit(self, view):
-        if view.t in self.sched:
-            self.resets_scheduled += 1; return True
-        if self.x and _failed_last(view):
-            self.resets_failure += 1; return True
-        return False
+        sched = view.t in self.sched
+        fail = bool(self.x) and _failed_last(view)
+        self.resets_scheduled += int(sched); self.resets_failure += int(fail); self.resets_coincident += int(sched and fail)
+        return sched or fail                      # both triggers recorded, one exit
 
 
 def coalition_members(cfg, focal: int, c: int) -> tuple[int, ...]:

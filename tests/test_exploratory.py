@@ -448,3 +448,12 @@ def test_x3_diagnostic_windows_are_exact_knob_points():
     assert [t for t, x in enumerate(a) if cheats(x)] == list(range(10, 190))
     b = drive(f.make({**BASE, "t0": 0.95, "span": 0.05, "z": 0}), [{}] * 200)
     assert [t for t, x in enumerate(b) if cheats(x)] == list(range(190, 200))
+
+
+def test_x6_coincident_scheduled_and_failure_reset_counts_both_triggers_one_exit():
+    from sim.policies.exploratory import X6Policy
+    p = X6Policy(**{**BASE, "P": 20.0, "x": 1, "y": 1})
+    out = [{}] * 30; out[19] = {"failed": 1, "audited": 1}
+    acts = drive(p, out)
+    assert [t for t, a in enumerate(acts) if a.exit] == [20]
+    assert (p.resets_scheduled, p.resets_failure, p.resets_coincident) == (1, 1, 1)

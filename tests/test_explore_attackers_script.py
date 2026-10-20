@@ -240,3 +240,144 @@ def test_report_has_every_cell_prediction_and_control(tmp_path):
               "audit_spend", "focal_failures", "focal_bans", "focal_identities", "knobs", "source", "reference", "restart_gain_spread",
               "twin_vs_honest_passed", "bank_improved"):
         assert k in c
+
+
+# ---- final-review fix pass ---------------------------------------------------------------------------------------------
+
+def test_harm_outsiders_equals_registered_direct_harm_for_a_single_member():
+    from sim.metrics import harm
+    job = X.job_for_x("B3", "X5-AG", smoke=True); fam = EXPLORATORY_FAMILIES["X5-AG"]
+    cell = X.make_unilateral_cell(job, tuple(job["seeds_val"])); c = SeedCache()
+    k = {"u": 0.4, "m": 0.3, "s": 0.0, "w": 0.1, "n_age": 5.0, "x": 1, "clip": 0}
+    a = run_focal(cell, lambda: fam.make(k), c); r = run_focal(cell, HonestMax, c)
+    for ra, rr in zip(a.results, r.results):
+        d = X.local_diagnostics(ra, cell.cfg, cell.focal, [cell.focal], rr, rr)
+        assert d["harm_outsiders"] == pytest.approx(harm(ra, rr, cell.focal)[1])
+
+
+def test_provenance_binds_search_settings_reference_order_and_intervals():
+    job = X.job_for_x("B3", "X5-AG", smoke=True)
+    for k in ("search", "reference_order", "intervals"):
+        assert job["provenance"][k] == job[k]
+
+
+def test_partial_record_refused(x1):
+    job, rec = x1
+    with pytest.raises(SystemExit):
+        X.validate_record(job, "search", {"name": job["name"], "provenance": job["provenance"], "stage": "search"}, {})
+
+
+def test_changed_upstream_refused(x1):
+    job, rec = x1
+    doc = X.build_bank_doc("X1-AH", {job["name"]: rec}, rules=["B3"], sizes=None)
+    brec = X.x_bank(job, rec, doc)
+    changed = json.loads(json.dumps(rec)); changed["attack"]["best_f"] += 1.0
+    with pytest.raises(SystemExit):
+        X.x_reference(job, changed, brec)                      # the bank record was built from the original search record
+
+
+def test_real_run_requires_a_bank_record_and_all_bank_sources():
+    job = X.job_for_x("proposed", "X5-AG", smoke=False)
+    fake = {"name": job["name"], "provenance": job["provenance"], "stage": "search"}
+    with pytest.raises(SystemExit):
+        X.x_reference(job, fake, None)
+    assert X.bank_source_cells("X5-AG", smoke=False, rules=["proposed"], sizes=[1]) == [f"{r}_X5-AG" for r in X.RULES]
+    assert X.bank_source_cells("X6-SE", smoke=False, rules=["proposed"], sizes=[2]) == [f"{r}_X6-SE_c{c}" for r in X.RULES for c in X.X6_SIZES]
+
+
+def test_report_refuses_missing_stale_or_wrong_seed_evaluations(tmp_path):
+    o = {"stage": "all", "rules": "B3", "families": "X5-AG", "sizes": "1", "workers": 1, "out": str(tmp_path), "smoke": True}
+    X.run(o)
+    jobs = X.all_jobs(["B3"], ["X5-AG"], [1], True)
+    ev = tmp_path / "evaluate" / "B3_X5-AG.json"; good = ev.read_text()
+    d = json.loads(good); d["rows"] = d["rows"][:1]; ev.write_text(json.dumps(d))
+    with pytest.raises(SystemExit):
+        X.report(tmp_path, jobs)
+    d = json.loads(good); d["provenance"]["policy_sha256"] = "0" * 64; ev.write_text(json.dumps(d))
+    with pytest.raises(SystemExit):
+        X.report(tmp_path, jobs)
+    ev.unlink()
+    with pytest.raises(SystemExit):
+        X.report(tmp_path, jobs)
+
+
+def test_report_binds_sources_and_carries_prediction_text(tmp_path):
+    o = {"stage": "all", "rules": "B3", "families": "X5-AG", "sizes": "1", "workers": 1, "out": str(tmp_path), "smoke": True}
+    X.run(o)
+    rep = json.loads((tmp_path / "report.json").read_text())
+    assert rep["sources"]["B3_X5-AG"] and "X5" in rep["cells"][0]["prediction"] and rep["smoke"] is True
+
+
+def test_degenerate_bound_uses_the_frozen_bound():
+    lk_int = X.job_for_x("B3", "X5-AG", smoke=True)["intervals"]
+    v, deg = X.upper_bound([1 / 3] * 20, lk_int)
+    assert deg and v == pytest.approx(1 / 3)
+    v0, deg0 = X.upper_bound([0.0] * 20, lk_int)
+    assert deg0 and v0 == 0.0
+
+
+def _knob_tuple(p):
+    return (p.u, p.m, p.s, p.w, p.clip, getattr(p, "P", None), getattr(p, "x", None), getattr(p, "y", None))
+
+
+@pytest.mark.parametrize("c", [2, 5])
+def test_coalition_partners_follow_every_evaluated_candidate(c, monkeypatch):
+    """Every run on the coalition path (search, evaluate, doubling) installs partners whose knobs equal the focal's,
+    clipped together; reference and honest runs install no partners."""
+    job = X.job_for_x("B3", "X6-SE", c=c, smoke=True)
+    seen = {"coalition": 0, "unilateral": 0}
+    orig = X.run_focal
+    def spy(cell, factory, cache):
+        if cell.others:
+            focal = factory(); assert len(cell.others) == c - 1
+            for _, f in cell.others:
+                assert _knob_tuple(f()) == _knob_tuple(focal)
+            seen["coalition"] += 1
+        else:
+            seen["unilateral"] += 1
+        return orig(cell, factory, cache)
+    monkeypatch.setattr(X, "run_focal", spy)
+    rec = X.x_search(job)
+    ref = X.x_reference(job, rec, None); X.x_evaluate(job, ref); X.x_doubling(job, rec, None)
+    assert seen["coalition"] > 0 and seen["unilateral"] > 0
+
+
+def test_x6_reference_reversed_rankings_choose_the_unilateral_best(x6c2):
+    job, rec = x6c2
+    rev = json.loads(json.dumps(rec))
+    for e in rev["attack"]["archive"]:
+        e["f"] = -e["f"]; e["per_seed_normalized"] = [-v for v in e["per_seed_normalized"]]   # coalition ranking reversed
+    ref = X.x_reference(job, rev, None)
+    cell = X.make_unilateral_cell(job, tuple(job["seeds_train"])); fam = EXPLORATORY_FAMILIES["X6-SE"]
+    want = {}
+    for cand in ref["candidates"]:
+        if cand["knobs"] is None:
+            continue
+        k = dict(cand["knobs"]); want[cand["name"]] = float(run_focal(cell, lambda: fam.make(k), SeedCache()).normalized.mean())
+    for name, v in want.items():
+        assert ref["scores"][name] == pytest.approx(v)
+    best = max(ref["scores"].items(), key=lambda kv: kv[1])[0]
+    assert ref["candidate"]["name"] == best
+
+
+def test_bank_projected_members_match_frozen():
+    from sim.bank import Bank
+    from sim.policies.families import D2
+    bank = Bank(); bank.add("D2", {"u0": 0.3, "m0": 0.2, "s": 0.0, "d": 0.1, "r": 0.05, "w": 0.1, "clip": 0}, "a")
+    assert X.project_members(D2, bank._compatible("D2")) == bank.projected_members_for("D2")
+
+
+def test_x6_controls_have_full_metrics_and_per_member_resets(x6c2):
+    job, rec = x6c2
+    k = dict(rec["attack"]["best_knobs"]); k.update({"y": 1, "x": 1, "P": 3.0})
+    from sim.reference import Candidate
+    cell = X.make_unilateral_cell(job, tuple(job["seeds_val"])); c = SeedCache()
+    ref = run_focal(cell, HonestMax, c); honest = run_focal(cell, HonestMax, c)
+    ctr = X.x6_controls(job, k, ref, honest, c)
+    assert set(ctr) == {"x1_synchronised", "x1_staggered", "x0_synchronised", "x0_staggered"}
+    for v in ctr.values():
+        for f in ("gain_mean", "gain_upper95", "inflation_term", "selection_term", "eff_attack", "eff_clip", "eff_ref", "eff_honest",
+                  "harm_outsiders", "audit_spend", "member_bans", "outsider_bans", "focal_identities", "resets_by_member", "overlap", "partially_staggered"):
+            assert f in v
+        assert len(v["resets_by_member"]) == 2
+    assert ctr["x1_staggered"]["partially_staggered"] is False and ctr["x1_staggered"]["overlap"] == 0

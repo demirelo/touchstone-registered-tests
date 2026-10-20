@@ -104,7 +104,8 @@ def job_for_x(rule: str, family: str, c: int | None = None, smoke: bool = False)
                          "policy_sha256": _sha((ROOT / "sim/policies/exploratory.py").read_bytes()), "params_sha256": _sha_json(params),
                          "cfg_sha256": _sha_json(job["cfg"]), "calibration_sha256": _sha((ROOT / "experiments/calibration.json").read_bytes()),
                          "salt_sha256": salt, "seeds_train": job["seeds_train"], "seeds_val": job["seeds_val"], "members": members,
-                         "smoke": bool(smoke), "budget": job["budget"]}
+                         "smoke": bool(smoke), "budget": job["budget"], "search": job["search"], "reference_order": job["reference_order"],
+                         "intervals": job["intervals"]}
     check_job_seeds(job)
     return job
 
@@ -125,6 +126,41 @@ def check_inputs(job: dict, *recs) -> None:
             raise SystemExit(f"{job['name']}: a stored record differs from this run in {diff}; rerun from the search stage")
         if rec.get("name") != job["name"]:
             raise SystemExit(f"{job['name']}: record belongs to another cell")
+
+
+REQUIRED = {"search": ("twin", "attack", "corners", "restart_spread", "twin_vs_honest", "runs", "scheduled_runs"),
+            "bank": ("attack", "bank_hash", "projected_members", "transfer", "inputs", "runs"),
+            "reference": ("candidate", "candidates", "scores", "attack_knobs", "attack_f", "gain_train", "inputs", "runs"),
+            "evaluate": ("rows", "controls", "reference_candidate", "inputs", "runs"),
+            "doubling": ("doubling", "inputs", "runs")}
+
+
+def validate_record(job: dict, stage: str, rec: dict | None, upstream: dict) -> None:
+    """A stored record is consumed or skipped only if it is complete for its stage, belongs to this run (provenance,
+    name), and was built from exactly the current upstream records (their hashes in its `inputs`)."""
+    if rec is None:
+        raise SystemExit(f"{job['name']}: no {stage} record; run the {stage} stage first")
+    check_inputs(job, rec)
+    missing = [k for k in REQUIRED[stage] if k not in rec]
+    if rec.get("stage") != stage or missing:
+        raise SystemExit(f"{job['name']}: the {stage} record is incomplete (missing {missing}); remove it and rerun")
+    for key, up in upstream.items():
+        want = _sha_json(up) if isinstance(up, dict) else up
+        if rec["inputs"].get(key) != want:
+            raise SystemExit(f"{job['name']}: the {stage} record was built from another {key} record; remove it and its downstream records")
+
+
+def bank_source_cells(family: str, smoke: bool, rules, sizes) -> list[str]:
+    """A real bank always draws on all four rules (and every X6 size), whatever cells are targeted; a smoke bank on the
+    selected ones."""
+    if smoke:
+        return expected_cells(family, [r for r in RULES if r in rules], sorted(sizes) if family == X6 else None)
+    return expected_cells(family, list(RULES), list(X6_SIZES) if family == X6 else None)
+
+
+def upper_bound(gains, intervals: dict) -> tuple[float, bool]:
+    b = bound("studentized", np.asarray(gains, dtype=float), "upper", 0.95, intervals)
+    return float(b.value), bool(b.degenerate)
 
 
 def settings_of(job: dict) -> SearchSettings:
@@ -275,12 +311,12 @@ def expected_cells(family: str, rules, sizes) -> list[str]:
     return [cell_name(r, family) for r in rules]
 
 
-def build_bank_doc(family: str, search: dict, rules, sizes, sources: dict | None = None) -> dict:
+def build_bank_doc(family: str, search: dict, rules, sizes, sources: dict | None = None, names: list | None = None) -> dict:
     """Members from a complete, immutable source manifest: per source cell in canonical order (rules B1, B2, B3, proposed;
     coalition sizes ascending) the attack best then the twin best, then the family's exact corners; exact-key
     de-duplication keeps the first occurrence."""
     rules = [r for r in RULES if r in rules]; sizes = sorted(sizes) if sizes else None
-    names = expected_cells(family, rules, sizes)
+    names = names or expected_cells(family, rules, sizes)
     missing = [n for n in names if n not in search]
     if missing:
         raise SystemExit(f"bank for {family}: missing source search records {missing}; run the search stage for every cell first")
@@ -315,8 +351,17 @@ def bank_pass_local(members: list, evaluate, incumbent_f: float, known: dict) ->
             "best_origin": origin if improved else None, "improved": improved}
 
 
+def project_members(fam, members: list) -> list[dict]:
+    projected, seen = [], set()
+    for m, _ in members:
+        p = fam.project(m); key = exact_key(p)
+        if key not in seen:
+            seen.add(key); projected.append(p)
+    return projected
+
+
 def x_bank(job: dict, rec: dict, doc: dict) -> dict:
-    check_inputs(job, rec)
+    validate_record(job, "search", rec, {})
     if doc["family"] != job["family"] or job["name"] not in doc["sources"]:
         raise SystemExit(f"{job['name']}: the bank document does not list this cell as a source")
     fam = EXPLORATORY_FAMILIES[job["family"]]; cache = SeedCache(); seeds = tuple(job["seeds_train"])
@@ -332,11 +377,7 @@ def x_bank(job: dict, rec: dict, doc: dict) -> dict:
         attack.best_knobs, attack.best_f, attack.best_source, attack.archive = best, best_f, src, obj.archive
         attack.projection_f, attack.replaced_by_projection = pf, pf > f
         attack.best_x = fam.inverse(best, settings_of(job).near_corner)
-    projected, seen = [], set()
-    for m, _ in members:
-        p = fam.project(m); key = exact_key(p)
-        if key not in seen:
-            seen.add(key); projected.append(p)
+    projected = project_members(fam, members)
     out = _base(job, cache, "bank", inputs={"search": _sha_json(rec), "bank_hash": doc["bank_hash"]})
     out.update({"attack": search_to_json(attack), "bank_hash": doc["bank_hash"], "projected_members": projected,
                 "transfer": {"cell": job["name"], "incumbent": float(rec["attack"]["best_f"]), "best_bank": float(bp["ranked"][0][1]) if bp["ranked"] else None,
@@ -361,26 +402,36 @@ def _rescore_unilateral(job: dict, cell: Cell, attack, cache: SeedCache):
     return replace(attack, archive=new)
 
 
-def x6_select_reference(job: dict, cell: Cell, attack, twin, members: list, cache: SeedCache):
+def x6_select_reference(job: dict, cell: Cell, attack, twin, members: list, cache: SeedCache, with_candidates: bool = False):
     att = _rescore_unilateral(job, cell, attack, cache)
     tw = replace(twin, archive={})                                   # the twin best is run with honest opponents
     cands = reference_candidates(cell, EXPLORATORY_FAMILIES[job["family"]], att, tw, members, tuple(job["reference_order"]))
     cands = [replace(c, known_profit=None, known_normalized=None) if c.name not in ("abstain",) and c.knobs is not None and exact_key(c.knobs) not in att.archive else c
              for c in cands]
-    return select_reference(cell, cands, cache)
+    ref = select_reference(cell, cands, cache)
+    return (ref, cands) if with_candidates else ref
+
+
+def _require_bank(job: dict, bank_rec) -> None:
+    if bank_rec is None and not job["smoke"]:
+        raise SystemExit(f"{job['name']}: a real run needs the cell's bank record; run the bank stage first")
 
 
 def x_reference(job: dict, rec: dict, bank_rec: dict | None) -> dict:
-    check_inputs(job, rec, bank_rec)
+    _require_bank(job, bank_rec)
+    validate_record(job, "search", rec, {})
+    if bank_rec is not None:
+        validate_record(job, "bank", bank_rec, {"search": rec})
     fam = EXPLORATORY_FAMILIES[job["family"]]; cache = SeedCache(); cell = make_unilateral_cell(job, tuple(job["seeds_train"]))
     attack = search_from_json(bank_rec["attack"] if bank_rec else rec["attack"]); twin = search_from_json(rec["twin"])
     members = bank_rec["projected_members"] if bank_rec else []
     if job["family"] == X6:
-        ref = x6_select_reference(job, cell, attack, twin, members, cache)
+        ref, cands = x6_select_reference(job, cell, attack, twin, members, cache, with_candidates=True)
     else:
-        ref = select_reference(cell, reference_candidates(cell, fam, attack, twin, members, tuple(job["reference_order"])), cache)
+        cands = reference_candidates(cell, fam, attack, twin, members, tuple(job["reference_order"]))
+        ref = select_reference(cell, cands, cache)
     out = _base(job, cache, "reference", inputs={"search": _sha_json(rec), "bank": _sha_json(bank_rec) if bank_rec else None})
-    out.update({"candidate": candidate_to_json(ref.candidate), "scores": ref.scores, "attack_knobs": attack.best_knobs, "attack_f": attack.best_f,
+    out.update({"candidate": candidate_to_json(ref.candidate), "candidates": [candidate_to_json(c) for c in cands], "scores": ref.scores, "attack_knobs": attack.best_knobs, "attack_f": attack.best_f,
                 "attack_source": attack.best_source, "gain_train": attack.best_f - ref.scores[ref.candidate.name],
                 "bank_hash": bank_rec["bank_hash"] if bank_rec else None})
     return out
@@ -417,13 +468,24 @@ def assemble_gain(cell: Cell, attack, clipped, ref, honest) -> GainResult:
         seeds=tuple(cell.seeds))
 
 
+def _others_outside(res, members: set) -> float:
+    return res.buyer_surplus + float(sum(res.profit[e] for e in range(len(res.profit)) if e not in members)) - res.audit_cost
+
+
 def local_diagnostics(res, cfg, focal: int, members: list, ref_res, honest_res) -> dict:
     """Focal identities; fresh (younger than W) served jobs and their audits for the focal entity and the market; rounds
-    after the initial window whose fresh served jobs exceed the round's audits; bans on members and on outsiders; outsiders'
-    lost capacity; outsider harm against the reference profile; members' mean profit change against all-honest-max."""
-    mem = set(members); ent = res.entity_of; born = res.identity_round
+    after the initial window whose fresh served jobs exceed the round's audits; bans on members' and outsiders' identities;
+    capacity lost while an entity's active identity is banned, for members and outsiders separately (a ban on a retired
+    identity excludes nothing); outsider harm as the registered direct harm with every member's profit removed from the
+    others' welfare (equal to the registered harm_direct for a single member); members' mean profit change against
+    all-honest-max. Outsiders play honest-max, so their bans are false bans."""
+    mem = set(members); ent = res.entity_of; born = res.identity_round; gen = res.identity_generation
     out = {"focal_identities": sum(1 for e in ent if e == focal), "fresh_served_focal": 0, "fresh_audited_focal": 0, "fresh_served_market": 0,
-           "rounds_fresh_exceeds_audits": 0, "member_bans": 0, "outsider_bans": 0, "outsider_lost_capacity": 0}
+           "rounds_fresh_exceeds_audits": 0, "member_bans": 0, "outsider_bans": 0, "outsider_false_bans": 0,
+           "member_lost_capacity": 0, "outsider_lost_capacity": 0}
+    by_entity: dict[int, list] = {}
+    for i, e in enumerate(ent):
+        by_entity.setdefault(e, []).append(i)
     banned_until: dict[int, int] = {}
     for rec in res.history:
         t = rec.t; audited = {a.job for a in rec.audits}; fresh_round = 0
@@ -435,21 +497,24 @@ def local_diagnostics(res, cfg, focal: int, members: list, ref_res, honest_res) 
         out["fresh_served_market"] += fresh_round
         if t >= W_PUBLIC and fresh_round > len(rec.audits):
             out["rounds_fresh_exceeds_audits"] += 1
-        for i, until in banned_until.items():
-            if t < until and ent[i] not in mem:
-                out["outsider_lost_capacity"] += cfg.providers[ent[i]].k
+        for e, ids in by_entity.items():
+            active = max((i for i in ids if born[i] <= t), key=lambda i: (born[i], gen[i]))
+            if t < banned_until.get(active, 0):
+                out["member_lost_capacity" if e in mem else "outsider_lost_capacity"] += cfg.providers[e].k
         for i, rounds in rec.consequences.bans.items():
-            out["member_bans" if ent[i] in mem else "outsider_bans"] += 1
+            if ent[i] in mem:
+                out["member_bans"] += 1
+            else:
+                out["outsider_bans"] += 1; out["outsider_false_bans"] += 1
             banned_until[i] = max(banned_until.get(i, 0), t + int(rounds) + 1)
+    out["harm_outsiders"] = float((_others_outside(ref_res, mem) - _others_outside(res, mem)) / res.sstar)
     scale = res.sstar / cfg.N
-    outs = [e for e in range(cfg.N) if e not in mem]
-    out["harm_outsiders"] = float(sum(ref_res.profit[e] - res.profit[e] for e in outs) / scale)
     out["member_gain_vs_honest"] = float(np.mean([(res.profit[e] - honest_res.profit[e]) / scale for e in members]))
     return out
 
 
 def x_evaluate(job: dict, ref_rec: dict) -> dict:
-    check_inputs(job, ref_rec)
+    validate_record(job, "reference", ref_rec, {})
     fam = EXPLORATORY_FAMILIES[job["family"]]; cache = SeedCache(); val = tuple(job["seeds_val"])
     uni = make_unilateral_cell(job, val)
     k = dict(ref_rec["attack_knobs"]); kp = fam.project(k)
@@ -466,37 +531,54 @@ def x_evaluate(job: dict, ref_rec: dict) -> dict:
     rows = seed_rows(uni, g, meta)
     for n, row in enumerate(rows):
         row.update(local_diagnostics(attack.results[n], uni.cfg, int(job["focal"]), job["members"], ref.results[n], honest.results[n]))
-    controls = x6_controls(job, k, ref, cache) if job["family"] == X6 and int(job["c"]) > 1 else {}
+        if job["family"] == X6:          # the frozen others_* diagnostics treat partners as outsiders; the local fields replace them
+            for f in ("others_bans_attack", "others_lost_capacity_attack", "others_audited_attack", "harm_accounting", "harm_direct"):
+                row[f] = None
+    controls = x6_controls(job, k, ref, honest, cache) if job["family"] == X6 and int(job["c"]) > 1 else {}
     out = _base(job, cache, "evaluate", inputs={"reference": _sha_json(ref_rec)})
     out.update({"rows": rows, "controls": controls, "reference_candidate": ref_rec["candidate"]["name"], "bank_hash": ref_rec.get("bank_hash")})
     return out
 
 
-def x6_controls(job: dict, k: dict, ref, cache: SeedCache) -> dict:
+def x6_controls(job: dict, k: dict, ref, honest, cache: SeedCache) -> dict:
     """At the selected point: synchronised and staggered scheduled resets with x as selected, and the same pair with x = 0.
-    Gain per seed against the same unilateral reference; scheduled and failure-triggered resets of the focal counted
-    separately; the staggered schedule's overlap reported."""
-    val = tuple(job["seeds_val"]); c = int(job["c"]); out = {}
+    Each control runs the coalition attack and its all-member projection with that schedule against the same unilateral
+    reference and honest-max runs; scheduled, failure-triggered, and coincident resets are counted per member; a staggered
+    schedule with P' < c is labelled partially staggered and its overlap reported."""
     if not k.get("y"):
         return {"note": "y = 0: no scheduled resets, no timing control"}
+    val = tuple(job["seeds_val"]); c = int(job["c"]); uni = make_unilateral_cell(job, val); fam = EXPLORATORY_FAMILIES[X6]
+    Pp = max(1, int(round(float(k["P"])))); out = {}
     for xv in sorted({int(k["x"]), 0}, reverse=True):
         for stag in (False, True):
             kk = {**k, "x": xv}; sink = []
-            cell, focal = coalition_cell(job, val, kk, staggered=stag, sink=sink)
-            fr = run_focal(cell, focal, cache)
-            scale = np.array([r.sstar for r in fr.results]) / cell.cfg.N
-            focal_pols = [p for j, p in sink if j == 0]
+            ca, fa = coalition_cell(job, val, kk, staggered=stag, sink=sink); cc, fc = coalition_cell(job, val, fam.project(kk), staggered=stag)
+            att, clp = run_focal(ca, fa, cache), run_focal(cc, fc, cache)
+            g = assemble_gain(uni, att, clp, ref, honest)
+            diag = [local_diagnostics(att.results[n], uni.cfg, int(job["focal"]), job["members"], ref.results[n], honest.results[n]) for n in range(len(val))]
+            resets = [{"scheduled": 0, "failure": 0, "coincident": 0} for _ in range(c)]
+            for j, pol in sink:
+                resets[j]["scheduled"] += pol.resets_scheduled; resets[j]["failure"] += pol.resets_failure; resets[j]["coincident"] += pol.resets_coincident
+            ub, deg = upper_bound(g.gain, job["intervals"])
             out[f"x{xv}_{'staggered' if stag else 'synchronised'}"] = {
-                "gain": [float(v) for v in (fr.profit - ref.profit) / scale],
-                "resets_scheduled": [p.resets_scheduled for p in focal_pols], "resets_failure": [p.resets_failure for p in focal_pols],
-                "overlap": reset_overlap(scheduled_resets(k["P"], c, T_PUBLIC, staggered=stag))}
+                "gain": [float(v) for v in g.gain], "gain_mean": float(np.mean(g.gain)), "gain_upper95": ub, "degenerate_bound": deg,
+                "inflation_term": float(np.mean(g.inflation_term)), "selection_term": float(np.mean(g.selection_term)),
+                "eff_attack": float(np.mean(g.eff_attack)), "eff_clip": float(np.mean(g.eff_clip)), "eff_ref": float(np.mean(g.eff_ref)),
+                "eff_honest": float(np.mean(g.eff_honest)), "audit_spend": float(np.mean(g.audit_spend_attack)),
+                "harm_outsiders": float(np.mean([d["harm_outsiders"] for d in diag])), "member_bans": float(np.mean([d["member_bans"] for d in diag])),
+                "outsider_bans": float(np.mean([d["outsider_bans"] for d in diag])), "focal_identities": float(np.mean([d["focal_identities"] for d in diag])),
+                "resets_by_member": resets, "overlap": reset_overlap(scheduled_resets(k["P"], c, T_PUBLIC, staggered=stag)),
+                "partially_staggered": bool(stag and Pp < c)}
     return out
 
 
 # ---- doubling ---------------------------------------------------------------------------------------------------------------
 
 def x_doubling(job: dict, rec: dict, bank_rec: dict | None) -> dict:
-    check_inputs(job, rec, bank_rec)
+    _require_bank(job, bank_rec)
+    validate_record(job, "search", rec, {})
+    if bank_rec is not None:
+        validate_record(job, "bank", bank_rec, {"search": rec})
     fam = EXPLORATORY_FAMILIES[job["family"]]; cache = SeedCache(); seeds = tuple(job["seeds_train"]); st = settings_of(job)
     base_attack = search_from_json(bank_rec["attack"] if bank_rec else rec["attack"]); base_twin = search_from_json(rec["twin"])
     members = bank_rec["projected_members"] if bank_rec else []; order = tuple(job["reference_order"])
@@ -548,48 +630,85 @@ def _mean(rows, k):
     return float(np.mean([r[k] for r in rows]))
 
 
+def prediction_text(item: int) -> str:
+    text = (ROOT / "docs/exploratory/2026-10-20-predictions.md").read_text()
+    sec = text.split("## Predictions", 1)[1].split("\n## ", 1)[0]
+    for line in sec.splitlines():
+        if line.strip().startswith(f"{item}. "):
+            return " ".join(line.split())
+    raise SystemExit(f"prediction item {item} not found")
+
+
 def report(out: Path, jobs: list[dict], registered_sweep: Path | None = None) -> dict:
-    cells = []
+    """Every expected cell's evaluation must exist, belong to this run, rest on its current reference record, and carry
+    exactly the job's evaluation seeds; a real report needs the matched registered D2+H3 dev-val control for every rule."""
     final_rows = {}
     fd = ROOT / "docs/final-evaluation-2026-10-20/figures/figure_data.csv"
-    if fd.exists():
-        for r in csv.DictReader(open(fd)):
-            if r["family"] == "D2+H3":
-                final_rows[r["rule"]] = float(r["gain_mean"])
+    for r in csv.DictReader(open(fd)):
+        if r["family"] == "D2+H3":
+            final_rows[r["rule"]] = float(r["gain_mean"])
+    smoke = {j["smoke"] for j in jobs}
+    if len(smoke) != 1:
+        raise SystemExit("a report mixes smoke and real cells")
+    smoke = smoke.pop(); cells, sources = [], {}
     for job in jobs:
-        ev = read_record(out / "evaluate" / f"{job['name']}.json"); ref = read_record(out / "reference" / f"{job['name']}.json")
-        se = read_record(out / "search" / f"{job['name']}.json"); bk = read_record(out / "bank" / f"{job['name']}.json")
-        dbl = read_record(out / "doubling" / f"{job['name']}.json")
-        if ev is None:
-            continue
-        rows = ev["rows"]; gains = [r["gain"] for r in rows]
-        degenerate = float(np.std(gains)) == 0.0
-        ub = None if degenerate else float(bound("studentized", np.array(gains), "upper", 0.95, job["intervals"]).value)
+        name = job["name"]
+        se = read_record(out / "search" / f"{name}.json"); bk = read_record(out / "bank" / f"{name}.json")
+        ref = read_record(out / "reference" / f"{name}.json"); ev = read_record(out / "evaluate" / f"{name}.json")
+        dbl = read_record(out / "doubling" / f"{name}.json")
+        validate_record(job, "search", se, {})
+        if bk is not None or not smoke:
+            validate_record(job, "bank", bk, {"search": se})
+        validate_record(job, "reference", ref, {"search": se, **({"bank": bk} if bk is not None else {})})
+        validate_record(job, "evaluate", ev, {"reference": ref})
+        rows = ev["rows"]
+        if [int(r["seed"]) for r in rows] != list(job["seeds_val"]):
+            raise SystemExit(f"{name}: the evaluation rows do not carry exactly the job's evaluation seeds")
+        sources[name] = _sha_json(ev)
+        gains = [r["gain"] for r in rows]; ub, deg = upper_bound(gains, job["intervals"])
         ctrl = None
-        if registered_sweep is not None:
-            p = registered_sweep / "evaluate" / f"{job['rule']}_D2+H3_beta0.05_rho0.2_median_h3.json"
-            if p.exists():
-                ctrl = float(np.mean([x["gain"] for x in json.loads(p.read_text())["rows"]]))
-        cells.append({"cell": job["name"], "rule": job["rule"], "family": job["family"], "c": job["c"], "n": len(rows),
-                      "gain_mean": float(np.mean(gains)), "gain_upper95_studentized": ub, "degenerate_bound": degenerate,
+        p = (registered_sweep / "evaluate" / f"{job['rule']}_D2+H3_beta0.05_rho0.2_median_h3.json") if registered_sweep else None
+        if p is not None and p.exists():
+            ctrl = float(np.mean([x["gain"] for x in json.loads(p.read_text())["rows"]]))
+        elif not smoke:
+            raise SystemExit(f"{name}: the matched registered D2+H3 dev-val control is missing (pass --registered-sweep)")
+        item = 1 if job["rule"] == "B1" else PREDICTION_ITEM[job["family"]]
+        x6 = job["family"] == X6
+        cells.append({"cell": name, "rule": job["rule"], "family": job["family"], "c": job["c"], "n": len(rows),
+                      "gain_mean": float(np.mean(gains)), "gain_upper95_studentized": ub, "degenerate_bound": deg,
                       "inflation_term": _mean(rows, "inflation_term"), "selection_term": _mean(rows, "selection_term"),
                       "eff_attack": _mean(rows, "eff_attack"), "eff_clip": _mean(rows, "eff_clip"), "eff_ref": _mean(rows, "eff_ref"),
                       "eff_honest": _mean(rows, "eff_honest"), "net_eff_attack": _mean(rows, "net_eff_attack"),
-                      "harm": _mean(rows, "harm_outsiders" if job["family"] == X6 else "harm_direct"), "audit_spend": _mean(rows, "audit_spend_attack"),
-                      "focal_failures": _mean(rows, "failures_focal_attack"), "focal_bans": _mean(rows, "focal_bans_attack"),
-                      "focal_identities": _mean(rows, "focal_identities"), "fresh_audit_coverage_focal":
-                          (sum(r["fresh_audited_focal"] for r in rows) / max(1, sum(r["fresh_served_focal"] for r in rows))),
+                      "harm": _mean(rows, "harm_outsiders" if x6 else "harm_direct"), "harm_definition": "outsiders, direct" if x6 else "registered harm_direct",
+                      "audit_spend": _mean(rows, "audit_spend_attack"), "focal_failures": _mean(rows, "failures_focal_attack"),
+                      "focal_bans": _mean(rows, "focal_bans_attack"), "focal_identities": _mean(rows, "focal_identities"),
+                      "member_bans": _mean(rows, "member_bans"), "outsider_false_bans": _mean(rows, "outsider_false_bans"),
+                      "outsider_lost_capacity": _mean(rows, "outsider_lost_capacity"), "member_gain_vs_honest": _mean(rows, "member_gain_vs_honest"),
+                      "fresh_audit_coverage_focal": sum(r["fresh_audited_focal"] for r in rows) / max(1, sum(r["fresh_served_focal"] for r in rows)),
                       "rounds_fresh_exceeds_audits": _mean(rows, "rounds_fresh_exceeds_audits"),
-                      "knobs": ref["attack_knobs"] if ref else None, "source": ref["attack_source"] if ref else None,
-                      "reference": ev["reference_candidate"], "restart_gain_spread": se["restart_spread"]["gain_spread"] if se else None,
-                      "twin_vs_honest_passed": se["twin_vs_honest"]["passed"] if se else None, "bank_improved": bk["transfer"]["improved"] if bk else None,
-                      "doubling_delta": dbl["doubling"]["delta_gain"] if dbl else None, "controls": ev.get("controls") or None,
-                      "control_d2h3_devval_gain": ctrl, "final40_d2h3_gain": final_rows.get(job["rule"]),
-                      "prediction_item": 1 if job["rule"] == "B1" else PREDICTION_ITEM[job["family"]]})
+                      "knobs": ref["attack_knobs"], "source": ref["attack_source"], "reference": ev["reference_candidate"],
+                      "restart_gain_spread": se["restart_spread"]["gain_spread"], "twin_vs_honest_passed": se["twin_vs_honest"]["passed"],
+                      "bank_improved": bk["transfer"]["improved"] if bk else None, "doubling_delta": dbl["doubling"]["delta_gain"] if dbl else None,
+                      "controls": ev.get("controls") or None, "control_d2h3_devval_gain": ctrl, "final40_d2h3_gain": final_rows.get(job["rule"]),
+                      "prediction_item": item, "prediction": prediction_text(item)})
     doc = {"status": "exploratory; descriptive bounds at n = 20 (no coverage admission); dev-val informed earlier development",
-           "cells": cells}
+           "smoke": smoke, "git_commit": git_commit(), "sources": sources, "cells": cells}
     write_record(out / "report.json", doc)
     return doc
+
+
+def upstream_of(out: Path, job: dict, stage: str) -> dict:
+    name = job["name"]; se = read_record(out / "search" / f"{name}.json"); bk = read_record(out / "bank" / f"{name}.json")
+    if stage == "search":
+        return {}
+    if stage == "bank":
+        doc = read_record(out / f"bank_{job['family']}.json")
+        return {"search": se, "bank_hash": doc["bank_hash"] if doc else None}
+    if stage in ("reference", "doubling"):
+        return {"search": se, **({"bank": bk} if bk is not None else {})}
+    if stage == "evaluate":
+        return {"reference": read_record(out / "reference" / f"{name}.json")}
+    raise ValueError(stage)
 
 
 def _stage_job(stage, job, out_s):
@@ -625,12 +744,13 @@ def run(o: dict) -> dict:
         if stage == "bank":
             for f in fams:
                 fj = [j for j in jobs if j["family"] == f]
-                search = {j["name"]: read_record(out / "search" / f"{j['name']}.json") for j in fj}
+                src_names = bank_source_cells(f, smoke, rules, sizes)
+                search = {n: read_record(out / "search" / f"{n}.json") for n in src_names}
                 search = {k: v for k, v in search.items() if v is not None}
-                for j in fj:
-                    if j["name"] in search:
-                        check_inputs(j, search[j["name"]])
-                doc = build_bank_doc(f, search, rules, sizes if f == X6 else None)
+                for n, v in search.items():
+                    jb = next((j for j in jobs if j["name"] == n), None) or job_for_x(v["rule"], f, v.get("c"), smoke)
+                    validate_record(jb, "search", v, {})
+                doc = build_bank_doc(f, search, rules, sizes if f == X6 else None, names=bank_source_cells(f, smoke, rules, sizes))
                 old = read_record(out / f"bank_{f}.json")
                 if old is not None and old["bank_hash"] != doc["bank_hash"]:
                     raise SystemExit(f"bank_{f}.json was built from other sources; remove the stale bank and its downstream records")
@@ -647,7 +767,7 @@ def run(o: dict) -> dict:
         for j in todo:
             p = out / stage / f"{j['name']}.json"; existing = read_record(p)
             if existing is not None:
-                check_inputs(j, existing); continue                         # resume: a completed stage is skipped
+                validate_record(j, stage, existing, upstream_of(out, j, stage)); continue      # resume: a complete, current stage is skipped
             pending.append(j)
         res = pool.map(_stage_job, [stage] * len(pending), pending, [str(out)] * len(pending)) if pool else map(lambda j: _stage_job(stage, j, str(out)), pending)
         for j, rec in zip(pending, res):
