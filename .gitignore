@@ -11,3 +11,4 @@ docs/superpowers/reviews/final-read-bundle.md
 .gstack/
 results/
 .worktrees/
+*.ots.bak
