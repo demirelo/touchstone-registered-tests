@@ -1,0 +1,16 @@
+# Plan review brief: the six exploratory attackers (read-only; no paid APIs; reasoning effort high; under 1,200 words)
+
+## Context
+Touchstone's registered study is complete: final verdict recorded (`docs/final-evaluation-2026-10-20/README.md`: original claim FAIL, amended claim PASS; H1 complete under amendment 4). On 2026-10-18, before the final evaluation, the authors pre-stated six exploratory stress tests to run only after the verdict (`docs/research/2026-10-18-positioning-and-post-evaluation-plan.md`, section 4, binding for this work). The plan under review is `docs/superpowers/plans/2026-10-20-exploratory-attackers.md` (this worktree). It must implement those six tests faithfully, with the registered pipeline's twin, search budget, and reference procedure, without changing any frozen file, and report every result.
+
+Read: the plan; the positioning note section 4 (and sections 2 and 5 for the deterrence and coverage arithmetic); `sim/market.py` (what a provider observes and controls: one effort per entity per round, `ProviderView`); `sim/policies/{base,families,identity,twin,adaptive,fixed_cheat,honest}.py`; `sim/search.py`; `sim/reference.py`; `sim/cell.py`; `scripts/sweep.py` (`stage_search`, `stage_bank`, `stage_reference`, `stage_evaluate`); `sim/bank.py`; `sim/mechanisms/proposed.py` (R3, frozen) and `experiments/proposed.yaml`; `experiments/locked.yaml` (`search`, seeds); the spec `docs/superpowers/specs/2026-10-14-touchstone-simulator-design.md` sections 4 to 8.
+
+## Questions
+1. Fidelity: does each of the six families test what section 4 states? Where a test cannot be expressed in the harness (X2's per-job effort; the provider cannot see the audit stock or other identities), is the plan's transposition the strongest honest one, or is there a better one within the same interface? Name concrete changes to the gates or knobs.
+2. Strength: is any family weaker than a simple combination the search could have found (for example, should X1 also be able to reset identity; should X3 include the terminal window by default; should X5 and X4 be merged)? Each family must have dimension at most 8 including clip. Propose exact knob sets if you would change them.
+3. Correctness risks: honest points, identity-age bookkeeping across bans and replacements, information leaks, the coalition's reference semantics (X6), and the bank reimplementation. Name anything the plan's tests miss.
+4. Methodology: are the predictions-before-runs step, the descriptive n = 20 bounds, the cross-rule bank, and the choice of cells (beta 0.05, rho 0.2, median, all four rules; X6 at c in {2, 5}) right? Is anything missing that a referee would ask for (for example, a second position, a control family, or reporting the D2+H3 registered numbers beside each row)?
+5. Engineering: is reusing the frozen functions without editing them, plus a local coalition objective and local bank, sound? Any frozen file the plan would in fact have to change? Is the pod plan and cost estimate plausible?
+
+## Output
+VERDICT: accept | accept-with-caveat | reject (a reject must name a material factual, logical, safety, or verification failure with a checkable repair). REPAIRS: numbered, exact edits to the plan. ANSWERS: one short paragraph per question 1 to 5. CONFIDENCE: 0 to 1.

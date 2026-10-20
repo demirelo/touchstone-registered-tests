@@ -1,0 +1,15 @@
+VERDICT: reject
+
+REPAIRS:
+
+1. **Task 4, X6 budget doubling:** Replace “frozen `doubling_check`” with: “Use frozen `doubling_check` for unilateral families. For X6, implement a local equivalent that uses `CoalitionObjective` for both additional searches, updates every member’s knobs for each candidate, clips every member for projected runs, and selects references against honest opponents after clearing and recomputing cached scores.” In `sim/search_checks.py:71–76`, the frozen function constructs ordinary `Objective` instances and calls ordinary reference selection. Add tests for changing partner policies, misleading coalition scores, and c=1 parity.
+
+2. **Task 2, X6 staggered control:** Replace the unconditional “same reset count, no simultaneity” claim with an explicit finite-horizon schedule and feasibility rule. When `round(P) < c`, all specified offsets are zero; for P=1, c=5, every member still resets together. With modular offsets, P=10, c=2 gives 19 scheduled resets at offset zero and 20 at offset five over rounds 1–199. Specify equal per-member scheduled counts and distinct reset rounds where feasible; report infeasible cases explicitly and add a predeclared feasible comparison. Distinguish scheduled resets from failure-triggered resets: retaining x=1 cannot guarantee equal total counts or prevent simultaneous exits. Test P<c, horizon boundaries, y=0, and failure-trigger collisions.
+
+3. **Tasks 1–2, X4 estimator eligibility:** Add: “Record phase, effort, and service eligibility before enforcement for each action round. Include a served round in its phase estimate even when its audit causes a ban. Apply its refund and cost before updating the estimate.” The current phrase “established non-banned rounds” does not specify when ban status is measured. `market.py` appends `history.banned_until` after enforcement, so filtering with that value can remove failed service rounds and bias the value estimate. Add a fixture where an established identity serves, fails an audit, and receives a ban; require its negative profit observation to update `V_e` exactly once.
+
+4. **Task 5, pilot dependencies:** Replace the one-cell full-stage pilot with a dependency-complete pilot: obtain all four X1 search records before timing the R3 bank, reference, and evaluation stages. Retain the complete-manifest requirement. State the pilot spending cap before launching it, then use its measurements and the episode manifest to set the full-run cap. Add a schedule test that rejects a full-stage pilot with missing bank sources.
+
+REASON: The main round-1 repairs are present, including honest reset switches, replacement timing, profit arithmetic, reference rescoring, bank parity, provenance, seed restrictions, and exploratory disclosure. The revised X1 domain and empty-bucket rule are adequate replacements for the earlier proposal. However, the specified staggered control does not satisfy its stated properties, and the frozen doubling function does not preserve X6 coalition semantics. X4 eligibility and pilot dependencies also need explicit repairs before implementation.
+
+CONFIDENCE: 0.97

@@ -1,0 +1,13 @@
+VERDICT: reject
+
+REPAIRS:
+
+1. **Task 4, X6 budget doubling:** replace “frozen `doubling_check`” with “frozen `doubling_check` for X1–X5; a local coalition implementation for X6.” The frozen function constructs unilateral `Objective` instances and calls reference selection without the X6 score corrections (`sim/search_checks.py:71–76`). The X6 implementation must vary all members with each candidate, project every member in clipped runs, and reselect references against honest opponents after clearing coalition scores. Keep the registered budget split and tolerance. Add tests with reversed coalition/unilateral rankings and assertions that all members use each tested candidate.
+
+2. **Task 2, X6 staggered control:** replace the offset formula and “same reset count, no simultaneity” assertion with deterministic finite-horizon schedules that preserve each member’s scheduled-reset count and minimise overlap. Require zero overlap only when feasible; otherwise report the remaining overlap and label the control partially staggered. With `P=3,c=5`, the current formula gives every member offset zero; with `P=5,c=2`, modulo offsets produce 39 and 40 resets over rounds 1–199. Count failure-triggered resets separately, since changed audit histories can change their number. Add a synchronized/staggered pair with `x=0` to isolate scheduled timing, and mark `y=0` as having no scheduled-timing intervention. Test these cases and finite-horizon reset counts.
+
+3. **Tasks 1–2, X4 estimator eligibility:** add: “Save each action round’s phase and ban eligibility before enforcement. Include every serviced round in its applicable value estimate, including failed-audit rounds that subsequently cause a ban; skip rounds without service.” Add a fixture where an established identity serves, fails, and is banned, and require its refunded, effort-adjusted profit to update `V_e` exactly once. The current phrase “established non-banned rounds” can exclude these observations because the harness appends `banned_until` after enforcement (`sim/market.py:178–193`).
+
+REASON: V2 incorporates the main round-1 repairs for honest points, identity timing, profit accounting, reference scores, bank parity, provenance, seeds, disclosure, and pod cleanup. The selected X1, X4, and X6 parameter sets are acceptable replacements for the alternative proposals. However, the frozen doubling check does not preserve the defined X6 experiment, and the staggered control makes false claims about reset counts and simultaneity. X4 also needs the explicit observation-eligibility rule requested in round 1 to prevent biased value estimates. These repairs require only new exploratory files and tests.
+
+CONFIDENCE: 0.97
