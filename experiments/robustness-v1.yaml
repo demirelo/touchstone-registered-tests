@@ -1,0 +1,60 @@
+# Robustness v1: pre-stated design (Astra high round 2, docs/theory/roster/astra-r2.md; plan docs/superpowers/plans/2026-10-21-theorem-and-robustness.md).
+# Exploratory and descriptive. Frozen rules and parameters; off the headline market the parameters are transferred (param_transfer: true).
+# Seeds: dev-train 1000-1004 (search), dev-val 2000-2019 (evaluation), calibration 4000-4019. Never the final-evaluation seeds.
+status: pre-registered before any robustness outcome; see disclosures
+defaults: {beta: 0.05, rho: 0.2, N: 10, J: 50, sigma: 0.05, T: 200, eta: 0.0}
+rules: [B1, B2, B3, proposed]
+core_families: [D2, D2+H3, X4-RO]
+variants:
+  headline: {}
+  beta0.02: {beta: 0.02}
+  beta0.10: {beta: 0.10}
+  rho0.05: {rho: 0.05}
+  rho1: {rho: 1.0}
+  N5J25: {N: 5, J: 25}
+  N20J100: {N: 20, J: 100}
+  J25: {J: 25}
+  J60: {J: 60}
+  sigma0.025: {sigma: 0.025}
+  sigma0.10: {sigma: 0.10}
+  eta0.1: {eta: 0.1}
+  eta1: {eta: 1.0}
+  eta10: {eta: 10.0}
+  T100: {T: 100}
+  T400: {T: 400}
+axes:
+  budget: {variants: [beta0.02, headline, beta0.10], positions: [low, median, high], families: core}
+  audit_cost: {variants: [rho0.05, rho1], positions: [median], families: core}
+  scale: {variants: [N5J25, N20J100], positions: [median], families: core}
+  load: {variants: [J25, J60], positions: [median], families: core}
+  noise: {variants: [sigma0.025, sigma0.10], positions: [median], families: core}
+  entry_cost: {variants: [eta0.1, eta1, eta10], positions: [median], families: core}
+  horizon: {variants: [T100, T400], positions: [median], families: [D2, D2+H3]}
+  timing_aging: {variants: [headline], positions: [median], families: [X1-AH, X2-TD, X3-HS, X5-AG]}
+  fresh_congestion: {variants: [headline], positions: [median], families: [X6-SE], x6_profiles: [[1, synchronised], [2, synchronised], [2, staggered], [5, synchronised], [5, staggered]]}
+expected_counts: {budget: 108, audit_cost: 24, scale: 24, load: 24, noise: 24, entry_cost: 36, horizon: 16, timing_aging: 16, fresh_congestion: 20, total: 292}
+# Provider arrays for changed N: linear interpolation of the ordered headline lists at evenly spaced points; a = 0.02, k = 6.
+provider_arrays:
+  5: {q_max: [0.6, 0.7125, 0.825, 0.9375, 1.0], b: [0.4, 0.355, 0.31, 0.265, 0.22]}
+  20: {q_max: [0.6, 0.6236842105, 0.6473684211, 0.6710526316, 0.6947368421, 0.7184210526, 0.7421052632, 0.7657894737, 0.7894736842, 0.8131578947, 0.8368421053, 0.8605263158, 0.8842105263, 0.9078947368, 0.9315789474, 0.9552631579, 0.9789473684, 1.0, 1.0, 1.0],
+       b: [0.4, 0.3905263158, 0.3810526316, 0.3715789474, 0.3621052632, 0.3526315789, 0.3431578947, 0.3336842105, 0.3242105263, 0.3147368421, 0.3052631579, 0.2957894737, 0.2863157895, 0.2768421053, 0.2673684211, 0.2578947368, 0.2484210526, 0.2389473684, 0.2294736842, 0.22]}
+# Doubling checks on fixed cells (never selected by outcomes): R3 and B3 under D2+H3 at the median position of every non-headline variant.
+doubling: {rules: [proposed, B3], family: D2+H3, position: median, variants: [beta0.02, beta0.10, rho0.05, rho1, N5J25, N20J100, J25, J60, sigma0.025, sigma0.10, eta0.1, eta1, eta10, T100, T400]}
+diagnostics: {betas: [0.02, 0.05, 0.10], rules: [B2, B3, proposed], deltas: [0.0, 0.08, 0.16, 0.24], plans: [reset, wait], seeds: dev_val_20, total: 72}
+predictions:
+  budget: "B2 and B3 keep large D2+H3 gains at every budget (the ban is bypassable; Corollary 1). R3's D2+H3 gain falls as beta rises; at beta 0.02 the early quota (2 or 3 audits) is below one entrant's six jobs, the priority phase overloads (Lemma 2), and R3's gain moves toward B3's. D2 gains fall with beta for every audited rule. The R3 advantage over B2 and B3 persists at the low and high positions with different magnitudes."
+  audit_cost: "rho 1 cuts the allowance fivefold (quota about 2): like beta 0.02, R3's H3 protection weakens. rho 0.05 quadruples the quota: R3's H3 gain near zero."
+  scale: "The quota scales with J (the allowance is proportional to n_FB) while an entrant's demand stays 6 jobs: N5J25 (quota about 5) overloads with one entrant and weakens R3; N20J100 (quota about 20) strengthens it. Type composition also changes."
+  load: "J25 at N 10: quota about 5 < 6, R3 weaker; J60: stronger. Payments and service counts change; results are read through the measured coverage."
+  noise: "sigma 0.10 raises honest false failures (d0 = Phi(-1.6) = 0.055): efficiency falls for every audited rule, most for R3 whose fresh identities are audited in full; sigma 0.025 sharpens detection and lowers D2 gains."
+  entry_cost: "A positive entry charge makes every reset costly: B2 and B3 D2+H3 gains fall toward their D2 gains as eta rises, and R3's advantage shrinks; at eta 10 the rules differ little under D2+H3. Optimisation and waiting prevent a monotonicity theorem; this is a hypothesis."
+  horizon: "T 100: the terminal reserve takes a larger share of the allowance and the early quota is smaller: R3 weaker. T 400: stronger. Boundary effects matter more at T 100."
+  timing_aging: "As in docs/exploratory/2026-10-20-predictions.md items 2 to 4: X1 and X2 about the D2+H3 level against B2 and B3, about 0.04 to 0.07 against R3; X3 avoids R3's terminal window; X5 near 0.05 to 0.10 against R3, since a replacement stays first in the newest-first targeting (Lemma 2b)."
+  fresh_congestion: "Synchronised entrants at c 2 and 5 overload R3's priority quota and raise the focal gain above c 1 (c 2: 0.10 to 0.20; c 5: 0.20 to 0.35); staggered schedules with the same reset count give lower gains than synchronised ones; B2 and B3 do not depend on c."
+  diagnostics: "Under R3 at beta 0.05 and 0.10, replacement identities past the fresh window face an audit rate of at least 5/6 (Lemma 2b) and initial identities far less; the renewal bound (5) holds wherever its gate admits it; many R3 configurations are inadmissible (mixed generation classes), which is itself the finding that the stationary renewal model does not describe R3."
+disclosures:
+  - "Before this file was committed, the theorem-check tests ran FixedShade(0.24, reset) against R3 on dev-val seeds 2000 to 2002 and printed the established audit rates (replacement 0.92 to 0.94 of jobs, initial 0.03 to 0.17). No other diagnostic or robustness outcome had been produced."
+  - "A pilot pod is running the four headline X1 cells with the earlier exploratory runner to measure cost; its outcomes are not read before this file is committed and are reported as a separate record."
+  - "The 32-cell headline exploratory run is folded into this design (the timing, aging, X4, and X6 cells are here, X6 with searched staggered profiles); the exploratory predictions file applies to these cells."
+  - "The robustness tests ran smoke-budget cells (1 restart x 16 evaluations, 1 training seed, 2 evaluation seeds) on the headline, beta0.02, sigma0.10, eta1, and N5J25 variants for B3 to exercise the code; their numbers were not read and are not results."
+  - "Pilot timing read before commit: about 25 minutes per headline search cell on one core (two of the four X1 search records existed; their contents were not read)."

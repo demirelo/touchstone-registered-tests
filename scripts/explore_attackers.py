@@ -24,7 +24,8 @@ from sim.locked import load_locked, market_config_from_locked, seeds as locked_s
 from sim.metrics import harm
 from sim.policies.exploratory import (EXPLORATORY_FAMILIES, T_PUBLIC, W_PUBLIC, X6Policy, coalition_members, reset_overlap,
                                       scheduled_resets)
-from sim.policies.families import exact_key
+from sim.policies.families import D2, embed_d2_in_h3, embed_d2_in_h3_exit, exact_key
+from sim.policies.identity import h3_family
 from sim.policies.honest import HonestMax
 from sim.positions import positions
 from sim.records import candidate_from_record, candidate_to_json, cfg_from_dict, cfg_to_dict, search_from_json, search_to_json
@@ -45,6 +46,17 @@ DEV_SALT_PREFIX = "3b0350f7"           # the development salt of the registered 
 X3_DIAGNOSTICS = (("diag_10_190", {"t0": 0.05, "span": 0.9, "z": 0}, [10, 190]), ("diag_190_200", {"t0": 0.95, "span": 0.05, "z": 0}, [190, 200]))
 PREDICTION_ITEM = {"X1-AH": 2, "X2-TD": 2, "X3-HS": 3, "X4-RO": 4, "X5-AG": 4, "X6-SE": 5}
 STAGES = ("search", "bank", "reference", "evaluate", "doubling", "report")
+
+
+FAMILY_TABLE = {"D2": D2, "D2+H3": h3_family(D2), **EXPLORATORY_FAMILIES}
+
+
+def family_of(name: str):
+    """The explicit local family table (registered D2 and D2+H3 built locally, and the exploratory families); it never
+    calls the registry, so no sealed family is discovered."""
+    if name not in FAMILY_TABLE:
+        raise SystemExit(f"unknown family {name}")
+    return FAMILY_TABLE[name]
 
 
 # ---- jobs and provenance ----------------------------------------------------------------------------------------------
@@ -80,32 +92,51 @@ def cell_name(rule: str, family: str, c: int | None = None) -> str:
     return f"{rule}_{family}" + (f"_c{c}" if c is not None else "")
 
 
-def job_for_x(rule: str, family: str, c: int | None = None, smoke: bool = False) -> dict:
+def job_for_x(rule: str, family: str, c: int | None = None, smoke: bool = False, variant: dict | None = None, schedule: str | None = None) -> dict:
+    """A cell job. Without `variant`: the headline exploratory cell (beta 0.05, rho 0.2, median; names rule_family[_c]).
+    With `variant` (scripts/robustness_v1.py): that market variant, position, and for X6 the searched schedule; off the
+    headline market the frozen parameters are transferred and labelled."""
     if (family == X6) != (c is not None):
         raise SystemExit(f"{family}: the coalition size c is required for X6 and only for X6")
-    lk = load_locked(); cal = load_calibration(ROOT / "experiments/calibration.json")
-    cfg = cell_config(market_config_from_locked(lk), cal, rho=RHO, beta=BETA)
-    if cfg.T != T_PUBLIC:
-        raise SystemExit(f"the gates assume T = {T_PUBLIC}; this market has T = {cfg.T}")
+    lk = load_locked()
+    if variant is None:
+        cal_path = ROOT / "experiments/calibration.json"; cal = load_calibration(cal_path)
+        cfg = cell_config(market_config_from_locked(lk), cal, rho=RHO, beta=BETA)
+        beta, rho, position, vname, name = BETA, RHO, POSITION, None, cell_name(rule, family, c)
+        params = rule_params(rule); src_sha = None; transfer = False
+    else:
+        from scripts import robustness_v1 as RV
+        cal_path = ROOT / RV.calibration_path(variant); cal = load_calibration(cal_path)
+        beta, rho, position, vname = float(variant["beta"]), float(variant["rho"]), variant["position"], variant["name"]
+        cfg = cell_config(RV.build_market(variant), cal, rho=rho, beta=beta)
+        if family == X6 and schedule not in ("synchronised", "staggered"):
+            raise SystemExit("a robustness X6 cell needs schedule synchronised or staggered")
+        name = RV.cell_id(vname, rule, family, c, schedule, position)
+        params, src_sha = RV.load_transfer_params(rule); transfer = vname != "headline"
+    if family in EXPLORATORY_FAMILIES and cfg.T != T_PUBLIC:
+        raise SystemExit(f"{family}: the exploratory gates assume T = {T_PUBLIC}; this market has T = {cfg.T}")
     b = SMOKE_BUDGET if smoke else budget_from_locked(lk)
-    params = rule_params(rule)
-    focal = positions(cfg)[POSITION]
+    focal = positions(cfg)[position]
     members = list(coalition_members(cfg, focal, c)) if family == X6 else [focal]
     salt = _sha(load_identity_salt())
     if not salt.startswith(DEV_SALT_PREFIX):
         raise SystemExit("the exploratory runs use the development salt of the registered dev-val records (unset TOUCHSTONE_IDENTITY_SALT)")
     s = settings_from_locked(lk)
-    job = {"name": cell_name(rule, family, c), "rule": rule, "family": family, "c": c, "cfg": cfg_to_dict(cfg), "params": params,
+    job = {"name": name, "rule": rule, "family": family, "c": c, "schedule": schedule, "cfg": cfg_to_dict(cfg), "params": params,
            "budget": [b.restarts, b.evals, b.n_train, b.n_val], "smoke": bool(smoke), "focal": focal, "members": members,
+           "beta": beta, "rho": rho, "position": position, "variant": variant, "variant_name": vname,
+           "bank_group": f"{vname}_{family}_{position}" if vname else family,
            "seeds_train": [int(x) for x in locked_seeds(lk, "dev_train")[: b.n_train]], "seeds_val": [int(x) for x in locked_seeds(lk, "dev_val")[: b.n_val]],
            "search": {"popsize": s.popsize, "sigma0": s.sigma0, "reeval_every": s.reeval_every, "near_corner": s.near_corner, "sobol_seed": s.sobol_seed},
            "reference_order": list(lk["reference_order"]), "intervals": dict(lk["intervals"])}
     job["provenance"] = {"git_commit": git_commit(), "runner_sha256": _sha(Path(__file__).read_bytes()),
                          "policy_sha256": _sha((ROOT / "sim/policies/exploratory.py").read_bytes()), "params_sha256": _sha_json(params),
-                         "cfg_sha256": _sha_json(job["cfg"]), "calibration_sha256": _sha((ROOT / "experiments/calibration.json").read_bytes()),
+                         "cfg_sha256": _sha_json(job["cfg"]), "calibration_sha256": _sha(Path(cal_path).read_bytes()),
                          "salt_sha256": salt, "seeds_train": job["seeds_train"], "seeds_val": job["seeds_val"], "members": members,
                          "smoke": bool(smoke), "budget": job["budget"], "search": job["search"], "reference_order": job["reference_order"],
                          "intervals": job["intervals"]}
+    if variant is not None:
+        job["provenance"].update({"variant": variant, "schedule": schedule, "param_transfer": transfer, "param_source_sha256": src_sha})
     check_job_seeds(job)
     return job
 
@@ -187,8 +218,11 @@ def _member_factory(knobs: dict, j: int, c: int, staggered: bool, sink: list | N
     return f
 
 
-def coalition_cell(job: dict, seeds: tuple, knobs: dict, staggered: bool = False, sink: list | None = None) -> tuple[Cell, object]:
-    """The cell with the c - 1 partners playing `knobs` (each its own instance) and the focal member's factory."""
+def coalition_cell(job: dict, seeds: tuple, knobs: dict, staggered: bool | None = None, sink: list | None = None) -> tuple[Cell, object]:
+    """The cell with the c - 1 partners playing `knobs` (each its own instance) and the focal member's factory; the
+    schedule is the job's (a robustness X6 cell searches it) unless given."""
+    if staggered is None:
+        staggered = job.get("schedule") == "staggered"
     c = int(job["c"]); mem = job["members"]
     others = tuple((int(e), _member_factory(knobs, j, c, staggered, sink)) for j, e in enumerate(mem) if j > 0)
     cell = Cell(cfg=cfg_from_dict(job["cfg"]), rule_factory=_rule_factory(job), focal=int(job["focal"]), seeds=tuple(seeds), name=job["name"], others=others)
@@ -204,12 +238,13 @@ class CoalitionObjective(Objective):
     every member when force_clip)."""
 
     def __init__(self, job: dict, seeds: tuple, cache: SeedCache, force_clip: bool = False) -> None:
-        super().__init__(make_unilateral_cell(job, seeds), EXPLORATORY_FAMILIES[X6], cache, force_clip)
+        super().__init__(make_unilateral_cell(job, seeds), family_of(X6), cache, force_clip)
         self.job, self.seeds = job, tuple(seeds)
 
     def member_policies(self, knobs: dict) -> list:
         c = int(self.job["c"])
-        return [X6Policy(**knobs, member=j, c=c, staggered=False) for j in range(c)]
+        stag = self.job.get("schedule") == "staggered"
+        return [X6Policy(**knobs, member=j, c=c, staggered=stag) for j in range(c)]
 
     def eval_knobs(self, knobs: dict, source: str = "search") -> float:
         knobs = self.family.project(knobs) if self.force_clip else dict(knobs)
@@ -227,7 +262,7 @@ class CoalitionObjective(Objective):
 def _objective(job: dict, seeds: tuple, cache: SeedCache, force_clip: bool = False):
     if job["family"] == X6:
         return CoalitionObjective(job, seeds, cache, force_clip)
-    return Objective(make_unilateral_cell(job, seeds), EXPLORATORY_FAMILIES[job["family"]], cache, force_clip)
+    return Objective(make_unilateral_cell(job, seeds), family_of(job["family"]), cache, force_clip)
 
 
 # ---- records ------------------------------------------------------------------------------------------------------------
@@ -251,13 +286,13 @@ def _base(job: dict, cache: SeedCache, stage: str, scheduled: int | None = None,
 # ---- search ---------------------------------------------------------------------------------------------------------------
 
 def search_schedule(job: dict) -> int:
-    r, e, n_train, _ = job["budget"]; dim = EXPLORATORY_FAMILIES[job["family"]].dim
+    r, e, n_train, _ = job["budget"]; dim = family_of(job["family"]).dim
     per_seed = (r * e + 1) + (r * e + 2 + 1) + 2 ** dim + (len(X3_DIAGNOSTICS) if job["family"] == "X3-HS" else 0)
     return per_seed * n_train
 
 
 def x_search(job: dict) -> dict:
-    fam = EXPLORATORY_FAMILIES[job["family"]]; cache = SeedCache(); seeds = tuple(job["seeds_train"]); st = settings_of(job)
+    fam = family_of(job["family"]); cache = SeedCache(); seeds = tuple(job["seeds_train"]); st = settings_of(job)
     if job["family"] == X6:
         starts = fam.registered_starts({"near_corner": st.near_corner, "sobol_seed": st.sobol_seed}, twin=True)
         tw = cma_search(CoalitionObjective(job, seeds, cache, force_clip=True), fam, st, 0, starts=starts)
@@ -311,15 +346,29 @@ def expected_cells(family: str, rules, sizes) -> list[str]:
     return [cell_name(r, family) for r in rules]
 
 
-def build_bank_doc(family: str, search: dict, rules, sizes, sources: dict | None = None, names: list | None = None) -> dict:
+def _group_parts(group: str) -> tuple[str, str]:
+    return group.split("_", 1)[0], group.rsplit("_", 1)[1]
+
+
+def build_bank_doc(family: str, search: dict, rules, sizes, sources: dict | None = None, names: list | None = None,
+                   embed: dict | None = None, group: str | None = None) -> dict:
     """Members from a complete, immutable source manifest: per source cell in canonical order (rules B1, B2, B3, proposed;
-    coalition sizes ascending) the attack best then the twin best, then the family's exact corners; exact-key
-    de-duplication keeps the first occurrence."""
+    coalition profiles in manifest order) the attack best then the twin best; for a D2+H3 group, the registered embeddings
+    of the group's D2 sources (x = 0 then x = 1); then the family's exact corners; exact-key de-duplication keeps the first
+    occurrence. Sources from another variant or position than the group's are refused."""
     rules = [r for r in RULES if r in rules]; sizes = sorted(sizes) if sizes else None
     names = names or expected_cells(family, rules, sizes)
     missing = [n for n in names if n not in search]
     if missing:
         raise SystemExit(f"bank for {family}: missing source search records {missing}; run the search stage for every cell first")
+    embed = embed or {}
+    if group is not None and "_" in group:
+        v, pos = _group_parts(group)
+        for n in list(names) + list(embed):
+            if not (n.startswith(v + "_") and n.endswith("_" + pos)):
+                raise SystemExit(f"bank group {group}: source {n} belongs to another variant or position")
+    if embed and family != "D2+H3":
+        raise SystemExit("only a D2+H3 bank embeds D2 sources")
     members, seen = [], set()
 
     def take(k, origin):
@@ -328,10 +377,16 @@ def build_bank_doc(family: str, search: dict, rules, sizes, sources: dict | None
             seen.add(key); members.append({"knobs": dict(k), "origin": origin})
     for n in names:
         take(search[n]["attack"]["best_knobs"], f"{n}:attack"); take(search[n]["twin"]["best_knobs"], f"{n}:twin")
-    for k in EXPLORATORY_FAMILIES[family].corners():
+    for n in sorted(embed, key=lambda n: (RULES.index(embed[n]["rule"]) if embed[n].get("rule") in RULES else 9, n)):
+        for part in ("attack", "twin"):
+            k = embed[n][part]["best_knobs"]
+            take(embed_d2_in_h3(k), f"{n}:{part}|x=0"); take(embed_d2_in_h3_exit(k), f"{n}:{part}|x=1")
+    for k in family_of(family).corners():
         take(k, "corner")
-    doc = {"family": family, "sources": {n: (sources or {}).get(n) or _sha_json(search[n]) for n in names}, "members": members}
-    doc["bank_hash"] = _sha_json({"sources": doc["sources"], "members": members})
+    doc = {"family": family, "group": group, "sources": {n: (sources or {}).get(n) or _sha_json(search[n]) for n in names},
+           "embed_sources": {n: _sha_json(r) for n, r in embed.items()}, "embedding": ["embed_d2_in_h3", "embed_d2_in_h3_exit"] if embed else [],
+           "members": members}
+    doc["bank_hash"] = _sha_json({k: doc[k] for k in ("sources", "embed_sources", "embedding", "members")})
     return doc
 
 
@@ -364,7 +419,7 @@ def x_bank(job: dict, rec: dict, doc: dict) -> dict:
     validate_record(job, "search", rec, {})
     if doc["family"] != job["family"] or job["name"] not in doc["sources"]:
         raise SystemExit(f"{job['name']}: the bank document does not list this cell as a source")
-    fam = EXPLORATORY_FAMILIES[job["family"]]; cache = SeedCache(); seeds = tuple(job["seeds_train"])
+    fam = family_of(job["family"]); cache = SeedCache(); seeds = tuple(job["seeds_train"])
     attack = search_from_json(rec["attack"])
     obj = _objective(job, seeds, cache); obj.archive.update(attack.archive)
     known = {k: e.f for k, e in attack.archive.items()}
@@ -390,7 +445,7 @@ def x_bank(job: dict, rec: dict, doc: dict) -> dict:
 def _rescore_unilateral(job: dict, cell: Cell, attack, cache: SeedCache):
     """X6: every eligible truthful archive entry (clip 1, or clip 0 never inflated in the coalition) re-scored with honest
     opponents; entries inflated unilaterally drop out of the truthful clip-0 group. Archive order is kept."""
-    fam = EXPLORATORY_FAMILIES[job["family"]]; uo = UnilateralObjective(cell, fam, cache)
+    fam = family_of(job["family"]); uo = UnilateralObjective(cell, fam, cache)
     new = {}
     for key, e in attack.archive.items():
         if e.knobs["clip"] == 1 or not e.inflated:
@@ -405,7 +460,7 @@ def _rescore_unilateral(job: dict, cell: Cell, attack, cache: SeedCache):
 def x6_select_reference(job: dict, cell: Cell, attack, twin, members: list, cache: SeedCache, with_candidates: bool = False):
     att = _rescore_unilateral(job, cell, attack, cache)
     tw = replace(twin, archive={})                                   # the twin best is run with honest opponents
-    cands = reference_candidates(cell, EXPLORATORY_FAMILIES[job["family"]], att, tw, members, tuple(job["reference_order"]))
+    cands = reference_candidates(cell, family_of(job["family"]), att, tw, members, tuple(job["reference_order"]))
     cands = [replace(c, known_profit=None, known_normalized=None) if c.name not in ("abstain",) and c.knobs is not None and exact_key(c.knobs) not in att.archive else c
              for c in cands]
     ref = select_reference(cell, cands, cache)
@@ -422,7 +477,7 @@ def x_reference(job: dict, rec: dict, bank_rec: dict | None) -> dict:
     validate_record(job, "search", rec, {})
     if bank_rec is not None:
         validate_record(job, "bank", bank_rec, {"search": rec})
-    fam = EXPLORATORY_FAMILIES[job["family"]]; cache = SeedCache(); cell = make_unilateral_cell(job, tuple(job["seeds_train"]))
+    fam = family_of(job["family"]); cache = SeedCache(); cell = make_unilateral_cell(job, tuple(job["seeds_train"]))
     attack = search_from_json(bank_rec["attack"] if bank_rec else rec["attack"]); twin = search_from_json(rec["twin"])
     members = bank_rec["projected_members"] if bank_rec else []
     if job["family"] == X6:
@@ -515,7 +570,7 @@ def local_diagnostics(res, cfg, focal: int, members: list, ref_res, honest_res) 
 
 def x_evaluate(job: dict, ref_rec: dict) -> dict:
     validate_record(job, "reference", ref_rec, {})
-    fam = EXPLORATORY_FAMILIES[job["family"]]; cache = SeedCache(); val = tuple(job["seeds_val"])
+    fam = family_of(job["family"]); cache = SeedCache(); val = tuple(job["seeds_val"])
     uni = make_unilateral_cell(job, val)
     k = dict(ref_rec["attack_knobs"]); kp = fam.project(k)
     cand = candidate_from_record(fam, ref_rec["candidate"])
@@ -526,7 +581,7 @@ def x_evaluate(job: dict, ref_rec: dict) -> dict:
         attack, clipped = run_focal(uni, lambda: fam.make(k), cache), run_focal(uni, lambda: fam.make(kp), cache)
     ref = run_focal(uni, cand.policy_factory, cache); honest = run_focal(uni, HonestMax, cache)
     g = assemble_gain(uni, attack, clipped, ref, honest)
-    meta = {"cell": job["name"], "rule": job["rule"], "family": job["family"], "c": job["c"], "beta": BETA, "rho": RHO, "position": POSITION,
+    meta = {"cell": job["name"], "rule": job["rule"], "family": job["family"], "c": job["c"], "schedule": job.get("schedule"), "variant": job.get("variant_name"), "beta": job.get("beta", BETA), "rho": job.get("rho", RHO), "position": job.get("position", POSITION),
             "smoke": job["smoke"], "reference": ref_rec["candidate"]["name"], "budget": float(job["cfg"]["budget"])}
     rows = seed_rows(uni, g, meta)
     for n, row in enumerate(rows):
@@ -534,7 +589,7 @@ def x_evaluate(job: dict, ref_rec: dict) -> dict:
         if job["family"] == X6:          # the frozen others_* diagnostics treat partners as outsiders; the local fields replace them
             for f in ("others_bans_attack", "others_lost_capacity_attack", "others_audited_attack", "harm_accounting", "harm_direct"):
                 row[f] = None
-    controls = x6_controls(job, k, ref, honest, cache) if job["family"] == X6 and int(job["c"]) > 1 else {}
+    controls = x6_controls(job, k, ref, honest, cache) if job["family"] == X6 and int(job["c"]) > 1 and job.get("schedule") is None else {}
     out = _base(job, cache, "evaluate", inputs={"reference": _sha_json(ref_rec)})
     out.update({"rows": rows, "controls": controls, "reference_candidate": ref_rec["candidate"]["name"], "bank_hash": ref_rec.get("bank_hash")})
     return out
@@ -547,7 +602,7 @@ def x6_controls(job: dict, k: dict, ref, honest, cache: SeedCache) -> dict:
     schedule with P' < c is labelled partially staggered and its overlap reported."""
     if not k.get("y"):
         return {"note": "y = 0: no scheduled resets, no timing control"}
-    val = tuple(job["seeds_val"]); c = int(job["c"]); uni = make_unilateral_cell(job, val); fam = EXPLORATORY_FAMILIES[X6]
+    val = tuple(job["seeds_val"]); c = int(job["c"]); uni = make_unilateral_cell(job, val); fam = family_of(X6)
     Pp = max(1, int(round(float(k["P"])))); out = {}
     for xv in sorted({int(k["x"]), 0}, reverse=True):
         for stag in (False, True):
@@ -579,7 +634,7 @@ def x_doubling(job: dict, rec: dict, bank_rec: dict | None) -> dict:
     validate_record(job, "search", rec, {})
     if bank_rec is not None:
         validate_record(job, "bank", bank_rec, {"search": rec})
-    fam = EXPLORATORY_FAMILIES[job["family"]]; cache = SeedCache(); seeds = tuple(job["seeds_train"]); st = settings_of(job)
+    fam = family_of(job["family"]); cache = SeedCache(); seeds = tuple(job["seeds_train"]); st = settings_of(job)
     base_attack = search_from_json(bank_rec["attack"] if bank_rec else rec["attack"]); base_twin = search_from_json(rec["twin"])
     members = bank_rec["projected_members"] if bank_rec else []; order = tuple(job["reference_order"])
     cell = make_unilateral_cell(job, seeds)
@@ -621,7 +676,7 @@ def episode_manifest(smoke: bool, rules, families, sizes) -> dict:
     for f in families:
         for _ in rules:
             for _c in (sizes if f == X6 else [None]):
-                dim = EXPLORATORY_FAMILIES[f].dim
+                dim = family_of(f).dim
                 eps += ((b.restarts * b.evals + 1) + (b.restarts * b.evals + 3) + 2 ** dim + (2 if f == "X3-HS" else 0)) * b.n_train; n += 1
     return {"cells": n, "search_episodes": eps, "budget": [b.restarts, b.evals, b.n_train, b.n_val]}
 
@@ -702,7 +757,7 @@ def upstream_of(out: Path, job: dict, stage: str) -> dict:
     if stage == "search":
         return {}
     if stage == "bank":
-        doc = read_record(out / f"bank_{job['family']}.json")
+        doc = read_record(out / f"bank_{job.get('bank_group', job['family'])}.json")
         return {"search": se, "bank_hash": doc["bank_hash"] if doc else None}
     if stage in ("reference", "doubling"):
         return {"search": se, **({"bank": bk} if bk is not None else {})}
@@ -717,7 +772,7 @@ def _stage_job(stage, job, out_s):
     if stage == "search":
         return x_search(job)
     if stage == "bank":
-        return x_bank(job, src, read_record(out / f"bank_{job['family']}.json"))
+        return x_bank(job, src, read_record(out / f"bank_{job.get('bank_group', job['family'])}.json"))
     bk = read_record(out / "bank" / f"{name}.json")
     if stage == "reference":
         return x_reference(job, src, bk)
@@ -728,10 +783,10 @@ def _stage_job(stage, job, out_s):
     raise ValueError(stage)
 
 
-def run(o: dict) -> dict:
+def run(o: dict, jobs: list | None = None, report_fn=None) -> dict:
     out = Path(o["out"]); out.mkdir(parents=True, exist_ok=True)
     rules = o["rules"].split(","); fams = o["families"].split(","); sizes = [int(c) for c in str(o.get("sizes", "1,2,5")).split(",")]
-    smoke = bool(o.get("smoke")); jobs = all_jobs(rules, fams, sizes, smoke)
+    smoke = bool(o.get("smoke")); jobs = jobs if jobs is not None else all_jobs(rules, fams, sizes, smoke)
     wanted = set(STAGES) if o["stage"] == "all" else set(str(o["stage"]).split(","))
     if not wanted <= set(STAGES):
         raise SystemExit(f"unknown stages {sorted(wanted - set(STAGES))}")
@@ -742,24 +797,37 @@ def run(o: dict) -> dict:
     for stage in stages:
         t0 = time.time()
         if stage == "report":
-            report(out, jobs, Path(o["registered_sweep"]) if o.get("registered_sweep") else None); timings[stage] = time.time() - t0
+            (report_fn(out, jobs) if report_fn else report(out, jobs, Path(o["registered_sweep"]) if o.get("registered_sweep") else None)); timings[stage] = time.time() - t0
             continue
         if stage == "bank":
-            for f in fams:
-                fj = [j for j in jobs if j["family"] == f]
-                src_names = bank_source_cells(f, smoke, rules, sizes)
-                search = {n: read_record(out / "search" / f"{n}.json") for n in src_names}
-                search = {k: v for k, v in search.items() if v is not None}
-                for n, v in search.items():
-                    jb = next((j for j in jobs if j["name"] == n), None) or job_for_x(v["rule"], f, v.get("c"), smoke)
-                    validate_record(jb, "search", v, {})
-                doc = build_bank_doc(f, search, rules, sizes if f == X6 else None, names=bank_source_cells(f, smoke, rules, sizes))
-                old = read_record(out / f"bank_{f}.json")
+            by_name = {j["name"]: j for j in jobs}
+            groups: dict = {}
+            for j in jobs:
+                groups.setdefault(j.get("bank_group", j["family"]), []).append(j)
+            for g, gj in groups.items():
+                f = gj[0]["family"]
+                src_names = gj[0].get("bank_sources") or bank_source_cells(f, smoke, rules, sizes)
+                embed_names = gj[0].get("bank_embed") or []
+                recs = {}
+                for n in list(src_names) + list(embed_names):
+                    v = read_record(out / "search" / f"{n}.json")
+                    if v is None:
+                        continue
+                    jb = by_name.get(n) or job_for_x(v["rule"], f, v.get("c"), smoke)
+                    validate_record(jb, "search", v, {}); recs[n] = v
+                missing_embed = [n for n in embed_names if n not in recs]
+                if missing_embed:
+                    raise SystemExit(f"bank {g}: missing D2 sources for the embeddings {missing_embed}")
+                doc = build_bank_doc(f, {n: recs[n] for n in src_names if n in recs}, rules, sizes if f == X6 else None, names=list(src_names),
+                                     embed={n: recs[n] for n in embed_names}, group=g if "_" in g else None)
+                old = read_record(out / f"bank_{g}.json")
                 if old is not None and old["bank_hash"] != doc["bank_hash"]:
-                    raise SystemExit(f"bank_{f}.json was built from other sources; remove the stale bank and its downstream records")
-                write_record(out / f"bank_{f}.json", doc)
+                    raise SystemExit(f"bank_{g}.json was built from other sources; remove the stale bank and its downstream records")
+                write_record(out / f"bank_{g}.json", doc)
         todo = jobs
-        if stage == "doubling":
+        if stage == "doubling" and any("doubling" in j for j in jobs):
+            todo = [j for j in jobs if j.get("doubling")]                 # fixed by the manifest, never by outcomes
+        elif stage == "doubling":
             todo = []
             for r in rules:
                 evs = [(j, read_record(out / "evaluate" / f"{j['name']}.json")) for j in jobs if j["rule"] == r]
