@@ -1,0 +1,139 @@
+{
+ "claim": "FAIL",
+ "confirmatory": [
+  "H2"
+ ],
+ "rule_clause": {
+  "H2": {
+   "eff": {
+    "status": "PASS",
+    "bound": 0.994201494179188,
+    "side": "lower",
+    "method": "studentized",
+    "threshold": 0.9,
+    "n": 40,
+    "note": ""
+   },
+   "gain": {
+    "status": "PASS",
+    "bound": 0.043645118400437145,
+    "side": "upper",
+    "method": "studentized",
+    "threshold": 0.3,
+    "n": 40,
+    "note": ""
+   },
+   "audit": "PASS",
+   "status": "PASS",
+   "audit_over_sstar_mean": 0.04987896057093889
+  }
+ },
+ "baseline_clause": {
+  "B2": {
+   "pairs": {
+    "H2|loss_diff": {
+     "status": "FAIL",
+     "bound": -0.0015111303921634127,
+     "side": "upper",
+     "method": "studentized",
+     "threshold": 0.05,
+     "n": 40,
+     "note": ""
+    },
+    "H2|gain": {
+     "status": "FAIL",
+     "bound": 0.007801735620670857,
+     "side": "upper",
+     "method": "studentized",
+     "threshold": 1.0,
+     "n": 40,
+     "note": ""
+    }
+   },
+   "status": "FAIL"
+  },
+  "B3": {
+   "pairs": {
+    "H2|loss_diff": {
+     "status": "FAIL",
+     "bound": -0.0036912244471501415,
+     "side": "upper",
+     "method": "studentized",
+     "threshold": 0.05,
+     "n": 40,
+     "note": ""
+    },
+    "H2|gain": {
+     "status": "FAIL",
+     "bound": 0.046687612206154076,
+     "side": "upper",
+     "method": "studentized",
+     "threshold": 1.0,
+     "n": 40,
+     "note": ""
+    }
+   },
+   "status": "FAIL"
+  }
+ },
+ "h1_note": "exploratory (proxy bound not admitted)",
+ "n": {
+  "H2": 40
+ },
+ "demoted": [],
+ "proposed": "proposed",
+ "beta": 0.05,
+ "synthetic": false,
+ "amendment": {
+  "amended": "PASS",
+  "h2_rule_status": "PASS",
+  "absolute": {
+   "eff": {
+    "status": "PASS",
+    "bound": 0.9980357617218951,
+    "side": "lower",
+    "method": "studentized",
+    "threshold": 0.9,
+    "n": 40,
+    "note": ""
+   },
+   "gain": {
+    "status": "PASS",
+    "bound": 0.07194926235771425,
+    "side": "upper",
+    "method": "studentized",
+    "threshold": 0.3,
+    "n": 40,
+    "note": ""
+   },
+   "audit": "PASS",
+   "status": "PASS",
+   "audit_over_sstar_mean": 0.049949005173769025
+  },
+  "comparative": {
+   "B2": {
+    "status": "PASS",
+    "bound": 0.48694862692597674,
+    "side": "lower",
+    "method": "studentized",
+    "threshold": 0.1,
+    "n": 40,
+    "note": ""
+   },
+   "B3": {
+    "status": "PASS",
+    "bound": 0.2763426966374936,
+    "side": "lower",
+    "method": "studentized",
+    "threshold": 0.1,
+    "n": 40,
+    "note": ""
+   },
+   "status": "PASS"
+  },
+  "admitted": true,
+  "n": 40,
+  "note": "Proxy admission on development distributions with B3 standing in for R*; this is not nominal coverage for comparisons involving the selected R*.",
+  "reason": ""
+ }
+}

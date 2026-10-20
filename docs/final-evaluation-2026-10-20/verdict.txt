@@ -1,0 +1,11 @@
+claim: FAIL   confirmatory families: ['H2']
+  rule clause H2: PASS  eff PASS (0.994201494179188)  gain PASS (0.043645118400437145)  audit PASS
+  baseline clause B2: FAIL  H2|loss_diff FAIL (-0.0015111303921634127)  H2|gain FAIL (0.007801735620670857)
+  baseline clause B3: FAIL  H2|loss_diff FAIL (-0.0036912244471501415)  H2|gain FAIL (0.046687612206154076)
+  H1 note: exploratory (proxy bound not admitted)
+amended claim: PASS   (H3: public identity-replacement stress test on fresh final-evaluation seeds)
+  H2 rule clause gate: PASS   gain_diff sides admitted: True
+  H3 absolute: PASS  eff PASS (0.9980357617218951)  gain PASS (0.07194926235771425)  audit PASS
+  gain reduction vs B2: PASS (0.48694862692597674)
+  gain reduction vs B3: PASS (0.2763426966374936)
+  Proxy admission on development distributions with B3 standing in for R*; this is not nominal coverage for comparisons involving the selected R*.
