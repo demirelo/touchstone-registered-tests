@@ -1,0 +1,23 @@
+# Round 2 for Astra high (read-only; no paid APIs; reasoning effort high; under 2,000 words)
+
+Your round 1 (`docs/theory/roster/astra-r1.md`) is accepted as the base: the exact local identity (1), Lemma 1 (uniform auditing plus free replacement makes the continuation loss vanish), Lemma 2 (coverage and the per-age-group hypergeometric under overload), the conditional Lemma 3, and the terminal impossibility (shading inside the tolerance band is almost undetectable, so exact truthfulness is impossible; only a bounded-gain claim is possible).
+
+## Proposal to verify or repair: a renewal-reward bound that the simulation can check
+
+Restrict to the cheat-and-reset class the registered families search (a stationary per-round shading Delta and claim, a reset rule after a failed audit), against honest opponents, with adequate fresh coverage (k_t >= F_t) and T large relative to L (terminal rounds handled separately). Define, per round of service with s jobs, mean escrow per job M, per-job cost saving g = b Delta, detection d, false-failure d_0:
+- the established surplus G_E = s (g - p_E (d - d_0) M), with p_E the per-job audit rate an established identity faces (R3's residual half-newest-first, half-uniform rate; under T1 a replacement remains newest among established identities, so p_E is the rate of the newest established identity);
+- the fresh surplus G_F = s (g - (d - d_0) M) <= 0 whenever g <= (d - d_0) M (every fresh job is audited), so the best fresh-state play is honest (or shading only inside the tolerance band);
+- q_E = 1 - (1 - p_E d)^s, the per-round probability that an established cheating identity fails.
+
+Claim A (uniform rule, free reset): the cheat-and-reset plan earns G_U = s (g - p (d - d_0) M) in every served round; the ban is never served; the ban length L does not enter.
+Claim B (newcomer-first, adequate coverage): after each failure the entity is in the fresh state for L rounds, in which shading beyond the tolerance band is unprofitable; the long-run mean surplus per round of the best plan in the class is at most max(0, G_E) / (1 + q_E L) plus the in-band term common to both rules (renewal-reward theorem, cycle = one established spell of mean length 1 / q_E plus L fresh rounds). Waiting out the ban instead of resetting is weakly worse because the fresh state still earns the honest margin.
+Claim C (overload): with n simultaneous six-job fresh identities and quota k < n s, the fresh audit rate drops to the Lemma 2 distribution and G_F becomes s (g - p_F (d - d_0) M) with p_F the per-job fresh coverage; Claim B's bound degrades accordingly and fails when p_F (d - d_0) M < g.
+Prediction to check: gain_R3 / gain_uniform ≈ (G_E / G_U) / (1 + q_E L). At the headline cell with p_E ≈ p ≈ 0.21, d ≈ 1, s = 6, L = 10: q_E ≈ 0.76, factor ≈ 1 / 8.6 ≈ 0.12. Measured (40 fresh seeds, D2+H3): B2 0.570 → R3 0.071 (ratio 0.12); B3 0.353 → R3 0.071 (ratio 0.20).
+
+Please: (1) verify or repair Claims A to C with complete proofs and every assumption (stationarity, payments roughly constant across states, allocation unaffected by identity age under R3's allocation A, the terminal rounds, the in-band term, the effect of the second-score payment), and say what the bound does not cover; (2) state precisely what the simulator must measure to test the prediction (p_E, p_F, q_E, s, M, the in-band shading level, cycle lengths), and whether the ratio test is legitimate given that D2+H3 attack knobs differ by rule; (3) decide the final theorem layout for the paper (main theorem, lemmas, proposition on impossibility).
+
+## Robustness: decide the final design
+Adopt your 276-cell cut as the base unless you find a better one, with these constraints: the registered families D2 and D2+H3 work at any T; the exploratory families hard-code T = 200 and W = 10, so at T != 200 use D2 and D2+H3 only (no new horizon-aware policies). Keep entry cost e/m in {0, 0.1, 1, 10}; the theorem predicts the R3 advantage shrinks with e because a reset is no longer free under any rule. Add any cell the theorem's checks need (for example a cell that measures p_E, p_F, q_E directly). Give the final manifest (axis, values, positions, families, rules), the predictions, the count and the episode estimate. A measured pilot (four headline X1 cells) is running now and will set the real cost.
+
+## Output
+THEOREM (final): statement, assumptions, proofs, what it does not cover. CHECKS: the measurements and the tests. ROBUSTNESS (final): the manifest table, predictions, counts. VERDICT on the round-1 plus round-2 package: accept | accept-with-caveat | reject, with reasons. CONFIDENCE: 0 to 1.

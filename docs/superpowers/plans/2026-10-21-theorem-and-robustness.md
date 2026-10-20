@@ -1,0 +1,62 @@
+# Theorem and Robustness Implementation Plan (post-verdict, exploratory) — v2 after Astra's plan review (`docs/theory/roster/astra-plan-r1.md`)
+
+> **For agentic workers:** REQUIRED SUB-SKILL: superpowers:executing-plans (native). Review seat: Astra high only (the user's choice for this work).
+
+**Goal:** Write the reset-deterrence theorem package as a paper-grade document, check it numerically with fixed diagnostic configurations, and run the pre-stated 292-cell robustness design, reporting every result.
+
+**Status:** v2 accepted with caveats by Astra high (`docs/theory/roster/astra-plan-r2.md`, 0.94); the three clarifications are applied.
+
+**Architecture:** The theorem lives in `docs/theory/reset-deterrence.md` (Astra high rounds 1 and 2, `docs/theory/roster/`). The checks run fixed policies through the frozen harness and compute every theorem quantity from `EpisodeResult.history` (`scripts/check_reset_theory.py`, `sim/policies/theory_diag.py`). The robustness runs generalise `scripts/explore_attackers.py` from the headline cell to a market variant (beta, rho, position, N, J, sigma, T, e) and to the registered families D2 and D2+H3, with per-variant calibration and labelled parameter transfer (`scripts/robustness_v1.py`, `experiments/robustness-v1.yaml`). No frozen file changes.
+
+**Spec:** `docs/theory/roster/astra-r1.md` and `astra-r2.md` (the accepted design; round 2's manifest table and diagnostic configurations are binding), `docs/research/2026-10-18-positioning-and-post-evaluation-plan.md` section 5.
+
+## Global Constraints
+
+- Frozen: every registered file, F1 to F5, the rules and their parameters. New files, and edits to the exploratory runner only where this plan says so (with tests).
+- Seeds: dev-train 1000 to 1004, dev-val 2000 to 2019, calibration 4000 to 4019; never the final-evaluation seeds; development salt.
+- Search budget as registered (5 x 300, popsize 8, 5 train seeds), corners, banks across the four rules, references in registered order, preselected doubling checks.
+- Parameter transfer: in a changed market the baselines' tuned parameters and R3's frozen parameters are used unchanged; every record of such a cell carries `param_transfer: true` and the source hashes; the tuned files' market-key check is not bypassed silently (the transfer path reads `best_params` and records why).
+- Exploratory families only at T = 200 (they hard-code T and W = 10).
+- The manifest, predictions, provider arrays for N = 5 and 20, and reporting rules are committed in `experiments/robustness-v1.yaml` before any robustness outcome is produced.
+- Everything is exploratory and descriptive; no claim is confirmatory.
+
+## Review Focus
+
+1. A changed market whose calibration or provider arrays differ from the manifest (hash-bound in every record).
+2. Parameter transfer that silently uses headline-tuned parameters as if tuned for the new market (label and report).
+3. Theorem checks that compute rates from pooled counts where the theorem needs the conditional distribution of K (Astra round 2: compute hazards from K's distribution).
+4. Bank groups that mix variants or positions (a bank is per variant, family, and position, across the four rules; X6 across sizes).
+5. Cost: N = 20, J = 100 cells cost more per episode; the pod plan uses measured per-cell times from the pilot and a stated cap.
+
+---
+
+## Task 1: The theorem document (`docs/theory/reset-deterrence.md`)
+
+Sections: setting and notation in the simulator's primitives; Lemma 1 (local identity, uniform replacement); Lemma 2 (coverage and per-age-group hypergeometric under overload); the recovery-duration calculation with false-failure restarts; the conditional renewal theorem (4) and the surplus corollary (5); the terminal impossibility proposition with the locked numbers; what is not covered (claim and bid changes, D2's adaptive claim, waiting versus resetting, coalitions, equilibrium, search completeness); the check list. Proofs complete. Citations only from report A's verified list. No test; reviewed by Astra.
+
+## Task 2: Theorem checks (`sim/policies/theory_diag.py`, `scripts/check_reset_theory.py`)
+
+**Produces:** `FixedShade(delta, reset: bool)` as before (claim q_max, bid a + b q_max, honest while younger than W = 10 including the replacement round, established effort q_max - delta, replace after a failed audit if `reset`, else wait out the ban). `round_table(res, cfg, rule_name, rule_params, focal) -> list[dict]`: effort and identity mapping from `EpisodeResult` (`efforts`, `entity_of`, `identity_round`, `identity_generation`), money flows per identity and round from its ledger (funding, refunds, released, cost, entry), first-offer rounds from the offers in `history`, and, for R3, the available quota, carry, and remaining allowance reconstructed from the configuration and the audit history with the frozen schedule functions (`audit_quota`, `terminal`, `_reserve` imported read-only from `sim/mechanisms/proposed.py`), never audits performed as a stand-in; per round also claims, bids, the waiting state, and the focal age group's H, n, s, k'. `spells(table)` (established spells, recoveries, waiting periods, censored cycles at both ends). `apply_renewal(table, benchmark) -> dict` returns, per configuration, the finite-horizon profit per calendar round with initial, incomplete-cycle, and terminal parts reported separately; the renewal prediction (4) and the bound (5) only when their assumptions are checked and hold (stationary established action; constant conditional established reward and hazard, checked by comparing the two halves of the established rounds and by a single identity-generation class, since Lemma 2b gives initial and replacement identities different rates; at least two complete cycles, so that cycle rewards and durations are finite and estimable; independence across cycles is an assumption stated, not tested; constant service; full fresh auditing; replacement after every failure for the recovery formula; a common truthful benchmark; a fresh-surplus bound from the in-band optimisation and the beyond-band condition; q_E > 0), otherwise the field `applicable: false` with the failed assumptions named; waiting configurations use their own recovery accounting. Hazards come from the empirical distribution of K per state.
+
+Configurations: beta in {0.02, 0.05, 0.10} x rules {B2, B3, R3} x delta in {0, 0.08, 0.16, 0.24} x {reset, wait}; T = 200, median provider, 20 dev-val seeds: 72 configurations, 1,440 episodes, enumerated exactly in the manifest.
+
+- [ ] Tests: `test_fixed_shade_honest_while_fresh_and_resets_or_waits` (including the replacement round); `test_round_table_matches_episode_ledger` (per round and per identity, not only totals); `test_round_table_quota_reconstruction` (unused quota and carry, a delayed first offer, two fresh age groups with H, n, k' against `select_audits`); `test_hypergeometric_against_age_group_selection` (enumerated K distribution equals the frozen selection's empirical distribution on audit-key draws); `test_payment_audit_correlation_fixture` (payment-weighted surplus differs from the unweighted one); `test_hazard_from_K_distribution_not_pooled_rate`; `test_recovery_duration_formula`; `test_renewal_identity_on_synthetic_cycles`; `test_renewal_inapplicable_when_assumptions_fail` (waiting, varying service, zero hazard, overload: each yields `applicable: false` with the reason); `test_finite_reward_reconciliation_with_censoring`; `test_terminal_impossibility_from_loaded_parameters` (the inequality computed from the loaded config, not constants); `test_initial_versus_replacement_established_rates`.
+
+## Task 3: Robustness runner (`scripts/robustness_v1.py`, `scripts/calibrate_robustness.py`, `experiments/robustness-v1.yaml`; edits to `scripts/explore_attackers.py`)
+
+**Edits to the exploratory runner (tested):** an explicit local family lookup `family_of(name)` for D2, D2+H3 (`h3_family(D2)` built locally) and the exploratory families; it never calls `available_families()` or any path that discovers sealed families. Jobs carry `variant` (beta, rho, position, N, J, sigma, T, e, eta), `variant_name`, and for X6 `schedule` in {synchronised, staggered}; X6 searches, twins, banks, references, evaluation, and doubling all use the job's schedule (staggered: `X6Policy(..., staggered=True)` for every member in every evaluation). X6 profiles per rule: c = 1, and c in {2, 5} under each schedule (five profiles). Cell names: `{variant_name}_{rule}_{family}[_c{c}_{schedule}]_{position}`; every record, metadata row, and report row carries variant, position, schedule, and parameter-transfer provenance from the job (no headline constants in `x_evaluate`). Bank groups are (variant, family, position) across the four rules (X6: across its five profiles); bank files and upstream validation are scoped by the complete group. Banks for D2+H3 cells include the registered embeddings of the group's D2 sources (`embed_d2_in_h3` then `embed_d2_in_h3_exit`, origins suffixed), and the embedding definitions and sources enter the bank hash; sources from another variant or position are refused. Doubling checks run on cell IDs frozen in the manifest. The runner edit changes its hash, so pilot and headline exploratory records made with the earlier runner stay valid only under that commit: the exploratory full run and its report use the commit they were made with (`git worktree` at that commit); robustness records live in `results/robustness/`; same-name records with other provenance are refused (tested).
+
+**New:** `build_market(variant) -> MarketConfig` (N = 5 and 20 by linear interpolation of the ordered q_max and b lists at evenly spaced points, a = 0.02, k = 6, arrays frozen in the manifest; J, sigma, T as given; e = eta m with the headline calibration's m); `calibrate_market(variant) -> path` (frozen `calibrate` on seeds 4000 to 4019 for the variant's own config, `market_key` includes e; hash recorded); `load_transfer_params(rule) -> dict` (calls the frozen `load_params` with the original market key, settings hash, and calibration seeds, so source validation runs, then records source identity, destination variant, and `param_transfer: true` off the headline market; a field name distinct from the bank's `transfer`); `build_manifest() -> list[job]` from the YAML with exact membership of the 292 cells (budget 108, audit cost 24, scale 24, load 24, noise 24, entry cost 36, horizon 16, timing and aging 16, fresh congestion 20); `report_all()`.
+
+- [ ] Tests: `test_manifest_exact_membership_292` (the set of cell IDs equals the YAML's list; per-axis counts); `test_diagnostics_exact_membership_72`; `test_x6_five_profiles_and_schedule_propagation` (the staggered profile's search, twin, bank, evaluation runs install staggered members); `test_interpolated_provider_arrays_valid_and_frozen`; `test_calibration_bound_to_variant_hash` (including e variants and the realised e/m); `test_transfer_params_validated_and_labelled` (wrong source metadata or changed contents refused); `test_d2_candidate_wins_only_after_embedding` (bank; both embeddings enter the compatible bank, their projections reach reference selection in the registered order, and their source and definition hashes enter the bank hash) and `test_foreign_variant_or_position_source_refused`; `test_same_name_record_with_other_provenance_refused`; `test_doubling_cells_fixed_by_manifest` (changed validation gains do not change them); `test_exploratory_family_refused_at_T_not_200`; `test_entry_cost_charged_on_replacement`; `test_frozen_files_unchanged` (hashes of the registered files equal those at tag final-eval-2026-10-20); a smoke end-to-end on one changed-market cell.
+
+## Task 4: Predictions and pre-registration
+
+`experiments/robustness-v1.yaml` carries Astra round 2's predictions per axis plus the theorem checks' predictions, committed before any robustness or diagnostic outcome is produced (the 72 diagnostic configurations included).
+
+## Task 5: Review, runs, report
+
+- [ ] Astra high whole-branch review; Critical and Important fixed RED to GREEN in one pass; minors ledgered.
+- [ ] Unsigned commits for the user's signature; merge to main.
+- [ ] Diagnostics (72 configurations) on the laptop. Robustness on pods: per-cell times from the pilot; a stated cap before launch; pods deleted on any exit.
+- [ ] Results document with predictions beside outcomes; the theorem document gains a section comparing the checks with the bounds.
