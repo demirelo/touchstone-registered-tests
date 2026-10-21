@@ -1,0 +1,3 @@
+# Vote on the corrected results document (read-only; no paid APIs; under 300 words)
+Your review (`docs/robustness/astra-results-review.md`) listed nine corrections to `docs/robustness/2026-10-22-results.md`; they are applied, and the matched X6 controls are now cited from `docs/robustness/2026-10-22-evaluate-headline_proposed_X6-SE_c5_synchronised_median.json` (field `controls`). Check each correction against the data (`docs/robustness/2026-10-22-report.json`) and that nothing new is wrong.
+Return exactly: VERDICT: accept | accept-with-caveat | reject; REASON in at most five sentences; CONFIDENCE 0 to 1.
