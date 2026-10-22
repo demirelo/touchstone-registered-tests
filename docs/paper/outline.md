@@ -1,8 +1,8 @@
 # Paper outline (draft 1, 2026-10-22)
 
-Working title: **Audit Dues: Pre-registered Falsification of a Newcomer-First Audit Rule for Compute Markets with Free Identity Replacement**
+Working title: **Audit Dues: Newcomer-Priority Verification under Free Identity Replacement** (both referees, round 1)
 
-Target: AAMAS main track (methods-and-mechanism paper), with an EC-style theory appendix. Length: 8 pages plus appendices.
+Target: to be chosen. The AAMAS 2027 main-track deadline (8 October 2026) has passed. Candidates: EC 2027 (needs a stronger general theorem), NeurIPS 2027 (May), AAMAS 2028, or a workshop first. Length for an AAMAS-style venue: 8 main pages containing the essential evidence; extended proofs and records in supplementary material.
 
 ## Contribution (one paragraph, from the positioning note section 1, phrased as "we are not aware of", never "first")
 Existing costly-verification mechanisms assume persistent identities; inspection games optimise a scarce inspection stock; cheap-pseudonym models charge newcomers with fees or worse terms. We study the intersection: a repeated procurement market where verification is costly and noisy, punishment is capped at the job's escrow, exclusion is finite, and a punished provider can re-enter at once. With fees and collateral excluded, we test whether spending scarce verification on new identities makes replacement costly, and we evaluate the rule with a prospectively registered falsification protocol against searched, sealed, and LLM attackers.
@@ -10,13 +10,13 @@ Existing costly-verification mechanisms assume persistent identities; inspection
 ## Sections, claims, evidence
 
 1. **Introduction.** Problem; why bans fail under free replacement; audit dues; the protocol; results in one paragraph (original claim FAIL, amended claim PASS, theory, robustness with two delimiting failures). Evidence: final-evaluation README; robustness results.
-2. **Related work.** Costly verification; inspection and audit games; cheap pseudonyms; noisy triggers; procurement with hidden effort; outsourced computation; evaluation methodology; mechanisms with verification (positioning note section 6; every citation verified against its primary source before it enters; report B entries only after verification).
+2. **Related work.** Distinguish Sarmenta 2001 explicitly (spot-checking with newcomer credibility and identity replacement in volunteer computing). Describe static verification models as omitting identity replacement, not as assuming persistent identities. Costly verification; inspection and audit games; cheap pseudonyms; noisy triggers; procurement with hidden effort; outsourced computation; evaluation methodology; mechanisms with verification (positioning note section 6; every citation verified against its primary source before it enters; report B entries only after verification).
 3. **Model.** Market (N, J, T, values, providers, capacity), claims and effort, noisy audits with tolerance, escrow, refunds, bans, identity replacement, admissible rule class (no fees or bonds before receipts), metrics (gain decomposition into inflation and selection, gross and net efficiency, harm). Source: spec sections 3 to 7.
 4. **Rules.** B1, B2, B3 (tuned before the lock); R3 (allocation, priority phase, residual split, schedule with terminal reserve and carry, enforcement). Source: `sim/mechanisms/`, amendments 2 and 3.
 5. **Theory.** Lemma 1 and Corollary 1 (uniform auditing plus free replacement: the ban is costless); Lemma 2 (coverage, overload hypergeometric); Lemma 2b (replacement targeting); recovery formula; Theorem (conditional renewal bound); Proposition (terminal impossibility). Checks summary (72 configurations). Source: `docs/theory/reset-deterrence.md`, `checks-2026-10-21.md`. Proofs in Appendix A.
 6. **Evaluation protocol.** Lock, amendments 1 to 4 with reasons, falsification tests F1 to F5 (including the amendment-2 kill), freeze, custodian-sealed H2, fresh final seeds, coverage-validated intervals, OpenTimestamps, review roster. Table: timeline with tags and hashes. Source: lock run book, amendment notes, final-evaluation README.
-7. **Results.** 7.1 Registered verdict (table: rule clause, baseline clause, amended clause with bounds). 7.2 H1 (exploratory). 7.3 Exploratory and robustness (table by axis; the two failures; predictions against outcomes; search quality). Figures: gain against audit budget (H2), efficiency quadruple, robustness panel. Source: final-evaluation figures; robustness report.
-8. **Discussion and limitations.** Amendments as forking paths and how the protocol bounds them; proxy admission of the amended clause; dev-val reuse in robustness; parameter transfer; unilateral benchmark, not equilibrium; terminal-reserve defect and a proposed cap (untested); coalitions; tolerance band.
+7. **Results.** 7.1 Registered verdict (table: rule clause, baseline clause, amended clause with bounds; enforcement-matched ablations; gain decomposition; gross versus net efficiency; harm and false-ban costs). 7.2 H1 (exploratory; R3 INCONCLUSIVE because its audit rule is not expressible in the description vocabulary; the final cell completed after an outcome-informed cap amendment). 7.3 Exploratory and robustness (table by axis; the two failures; predictions against outcomes; search quality). Figures: gain against audit budget (H2), efficiency quadruple, robustness panel. Source: final-evaluation figures; robustness report.
+8. **Discussion and limitations.** Search failures and twin-reference failures (nine failed twin checks; three incomplete doubling checks); initial overload in the first L rounds; finite-horizon limits; Amendments as forking paths and how the protocol bounds them; proxy admission of the amended clause; dev-val reuse in robustness; parameter transfer; unilateral benchmark, not equilibrium; terminal-reserve defect and a proposed cap (untested); coalitions; tolerance band.
 9. **Conclusion.**
 
 Appendices: A proofs; B amendment log with hashes and timestamps; C attacker families and search budgets; D robustness tables; E reproducibility (commands, commits, tags, seeds, salts).
@@ -32,3 +32,6 @@ Appendices: A proofs; B amendment log with hashes and timestamps; C attacker fam
 1. Verify every citation against its primary source (venue, year, pages, DOI); drop or mark any that fail.
 2. Generate Fig. 3 and Fig. 4 from the committed JSON.
 3. Draft sections 2 to 9; hostile referee reviews (Sol high and Astra high) before submission.
+
+## Round-1 referee reviews (2026-10-22)
+Sol high and Astra high both rejected draft 1 (0.94 each): overstated newcomer coverage, registration chronology, theory scope, and robustness; the amended result misstated as a share of a provider's profit; Sarmenta 2001 not distinguished; title too long; AAMAS 2027 deadline passed. Draft 2 applies every correction (`docs/paper/roster/`).

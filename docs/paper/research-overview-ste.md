@@ -33,7 +33,7 @@ We built a simulator of this market. It runs in rounds.
 
 We measure two things:
 
-- **Gain.** The extra profit that a cheating provider gets, compared with its best honest behavior. We express gain as a share of the fair profit of one provider.
+- **Gain.** The extra profit that a cheating provider gets, compared with its best honest behavior. We divide this extra profit by one provider's share of the best possible total value (the "fair share").
 - **Efficiency.** The total value that the market creates, compared with the best possible value.
 
 ## 3. The market rules
@@ -44,7 +44,7 @@ We compare four rules.
 - **B2.** Fixed prices by quality tier. Random audits.
 - **B3.** An auction (the job goes to the best score, the payment is set by the second-best score). Random audits.
 - **R3.** Our proposed rule. It uses the B3 auction, and it audits in a different way:
-  - It audits **all jobs of new providers first**. A provider is "new" during its first 10 rounds.
+  - It audits **the jobs of new providers first**. A provider is "new" during its first 10 rounds. It audits all of these jobs when it has enough audits in that round.
   - It spends the remaining audits half on the newest providers and half at random.
   - It keeps a reserve of audits for the last 10 rounds and audits every job then.
 
@@ -63,7 +63,7 @@ For each attacker, we also built an honest "twin". The twin uses the same strate
 
 ## 5. The research process: decide first, test later
 
-We fixed the rules of the study before we saw the results. This prevents us from changing the test to get a good result.
+We fixed the rules of the study before we built our rule. This makes it harder to change the test to get a good result. It does not make it impossible: we made four changes later, and we report each one.
 
 1. **Lock (17 October 2026).** We wrote down the claim, the thresholds, the attackers, the seeds, and the statistics. We signed this state and time-stamped it on the Bitcoin blockchain (OpenTimestamps).
 2. **Amendments.** When we had to change something, we wrote an amendment, signed it, and time-stamped it before the change. There were four amendments:
@@ -80,7 +80,7 @@ Independent AI reviewers (Sol and Astra, two other models) checked every plan, e
 ## 6. The registered results
 
 - **The original claim failed.** Against the sealed attacker, R3 was safe: its efficiency was at least 0.994 and the attacker's gain at most 0.044. But the claim also required R3 to beat B2 and B3 by a margin. It did not. Against this attacker, B2 and B3 were already safe. We had predicted this failure in Amendment 1.
-- **The amended claim passed.** Against the reset attack, cheaters kept 0.57 of the fair profit under B2 and 0.35 under B3, but only 0.07 under R3. R3 kept an efficiency of 0.998.
+- **The amended claim passed.** Against the reset attack, the cheater's gain was 0.57 of a fair share under B2, 0.35 under B3, and 0.07 under R3. R3's efficiency was at least 0.998. One limit: the statistical method for this claim was checked on development data with B3 in place of R3, so its error rate for R3 is not proven.
 - **The language-model attacker** made money only against B1 (no audits). Against R3, the result is "inconclusive" by our own rules. This test was exploratory.
 
 ## 7. The theory
@@ -93,21 +93,23 @@ We proved why the result happens. The main parts:
 - **A bound on profit.** We proved an upper limit for the long-run profit of a "cheat and reset" plan. The limit shrinks with the ban length and with the chance of detection.
 - **Small cheating is always possible.** The tolerance lets a provider cheat a little with almost no risk. No rule in our class can stop this. So we claim "small gain", not "no gain".
 
-We checked the theory in 72 fixed test cases. The theory agreed with the simulator.
+We checked the theory in 72 fixed test cases. Where the conditions of the theory held, it agreed with the simulator. The theory does not cover the adaptive reset attacker or groups of providers.
 
 ## 8. The robustness tests
 
 We wrote 292 test cases and our predictions before we ran them. We changed one thing at a time: the audit budget, the audit cost, the market size, the number of jobs, the noise, an entry fee, the length of an episode, and the position of the provider.
 
-- In most cases, R3 kept its advantage against the reset attack.
+- In many cases, R3 kept its advantage against the reset attack. These tests reused development seeds, so they are exploratory.
 - **Failure 1: expensive audits.** When an audit costs as much as the profit of one job, the reserve for the last rounds uses the full budget. R3 then audits nothing before the last 10 rounds, and cheating becomes easy. This is a design defect. A limit on the reserve can probably fix it (we did not test this).
-- **Failure 2: groups of new providers.** When five cheaters reset at the same time, they exceed the audits for new providers. The cheater's gain under R3 rose to 0.31.
+- **Failure 2: groups of new providers.** When five cheaters work together, their new names exceed the audits for new providers. The cheater's gain under R3 rose to 0.31. The data do not show that the same reset time is the cause.
+- **Failure 3: high noise.** With very noisy audits, honest providers fail checks too, and the efficiency of every audited rule drops.
 - Some predictions were wrong. We report all of them.
 
 ## 9. What we can claim
 
 - Under free resets, uniform random audits fail, and auditing new names first works much better. This holds in many market settings.
-- The method is a contribution of its own: we locked the protocol before we designed our rule, sealed an attacker, time-stamped every step, and reported our failures.
+- The method is a contribution of its own: we locked the protocol before we built our rule, sealed an attacker, time-stamped every step, and reported our failures and changes.
+- A related older study (Sarmenta, 2001) also checked new volunteers more and considered name changes. Our work differs in its market, its payments, its audit budget, its searched attackers, and its locked evaluation.
 - We do not claim exact protection, an equilibrium, or protection against groups of providers.
 
 ## 10. What is next
