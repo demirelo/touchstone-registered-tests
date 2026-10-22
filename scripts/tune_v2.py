@@ -47,8 +47,9 @@ def comparator_grid() -> list[dict]:
 
 
 def rank(scores: list[dict]) -> list[dict]:
+    """Highest objective first; ties by the original grid index (kept in "grid"), else by list order."""
     order = {id(s): i for i, s in enumerate(scores)}
-    return sorted(scores, key=lambda s: (-s["objective"], order[id(s)]))
+    return sorted(scores, key=lambda s: (-s["objective"], s.get("grid", order[id(s)])))
 
 
 def _market(label: str, smoke: bool) -> dict:
@@ -107,11 +108,11 @@ def _budgets(smoke: bool) -> tuple[tuple, tuple]:
 def _tune(rule: str, specs: list[dict], markets: list[str], out: Path, smoke: bool) -> tuple[list, list]:
     inner, full = _budgets(smoke); log = Path(out) / "log"
     scores = []
-    for spec in specs:
-        r = score_config(rule, spec, markets, inner, False, log); scores.append({"spec": spec, **r})
+    for i, spec in enumerate(specs):
+        r = score_config(rule, spec, markets, inner, False, log); scores.append({"spec": spec, "grid": i, **r})
     rechecked = []
     for s in rank(scores)[:TOP]:
-        r = score_config(rule, s["spec"], markets, full, True, log); rechecked.append({"spec": s["spec"], **r})
+        r = score_config(rule, s["spec"], markets, full, True, log); rechecked.append({"spec": s["spec"], "grid": s["grid"], **r})
     return scores, rank(rechecked)
 
 

@@ -82,3 +82,14 @@ def test_cli_accepts_pod_arguments(tmp_path, monkeypatch):
     monkeypatch.setattr(TV, "score_config", _fake_score([]))
     assert TV.main(["--select", "comparator", "--markets", "dev0", "--smoke", "--workers", "2", "--out", str(tmp_path)]) == 0
     assert (tmp_path / "comparator.json").exists()
+
+
+def test_recheck_ties_keep_grid_order(monkeypatch, tmp_path):
+    import scripts.tune_v2 as TV
+    def f(rule, spec, markets, budget, recheck, log):
+        if not recheck:                                       # inner prefers L = 10 over L = 3
+            return {"objective": {3: 0.1, 10: 0.2}.get(spec["L"], -1.0), "margins": {}, "episodes": 1}
+        return {"objective": 0.5 if spec["L"] in (3, 10) else -1.0, "margins": {}, "episodes": 1}
+    monkeypatch.setattr(TV, "score_config", f)
+    monkeypatch.setattr(TV, "COMMON_GRID", [(0.08, 3), (0.08, 10), (0.08, 20)])
+    assert TV.tune_system("B3-t", ["headline"], tmp_path, smoke=True)["best_params"] == {"tol": 0.08, "L": 3}
