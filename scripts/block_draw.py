@@ -15,6 +15,7 @@ from pathlib import Path
 
 SOURCES = ("blockstream", "mempool")
 BASES = {"blockstream": "https://blockstream.info/api/", "mempool": "https://mempool.space/api/"}
+DIGEST = re.compile(r"^File sha256 hash: ([0-9a-f]{64})", re.M)
 ATTESTATION = re.compile(r"BitcoinBlockHeaderAttestation\((\d+)\)\s*\n\s*# Bitcoin block merkle root ([0-9a-f]{64})")
 
 
@@ -49,6 +50,21 @@ def verify_chain(headers: list[bytes], first_hash: str) -> list[str]:
             raise ValueError(f"header {n}: insufficient proof of work")
         out.append(h)
     return out
+
+
+def file_digest(ots_info: str) -> str:
+    m = DIGEST.search(ots_info)
+    if not m:
+        raise ValueError("the proof listing has no file digest")
+    return m.group(1)
+
+
+def check_protocol(ots_info: str, protocol: bytes) -> str:
+    """The proof must commit to exactly these protocol bytes."""
+    d = hashlib.sha256(protocol).hexdigest()
+    if file_digest(ots_info) != d:
+        raise ValueError("the proof does not commit to this protocol file")
+    return d
 
 
 def attestations(ots_info: str) -> list[tuple[int, str]]:
@@ -112,15 +128,17 @@ def http_fetch(source: str, path: str) -> str:
 
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--ots", required=True); ap.add_argument("--out", required=True)
+    ap.add_argument("--ots", required=True); ap.add_argument("--protocol", required=True); ap.add_argument("--out", required=True)
     ap.add_argument("--poll", type=int, default=3600)
     a = ap.parse_args(argv)
     info = subprocess.run(["uvx", "--from", "opentimestamps-client", "ots", "info", a.ots], capture_output=True, text=True, check=True).stdout
+    digest = check_protocol(info, Path(a.protocol).read_bytes())
     while True:
         anc = anchor(info, http_fetch)
         if anc["status"] == "verified":
             r = read_final(anc, http_fetch)
             if r["status"] == "final":
+                r["protocol_sha256"] = digest
                 Path(a.out).write_text(json.dumps(r, indent=1)); print(r["height"], r["hash"]); return
         print(json.dumps(anc if anc["status"] != "verified" else r), file=sys.stderr)
         time.sleep(a.poll)

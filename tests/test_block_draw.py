@@ -134,3 +134,14 @@ def test_read_final_rejects_h_position_mismatch():
     both = {s: {A + 4: H[5]["hash"]} for s in ("blockstream", "mempool")}
     with pytest.raises(ValueError):
         read_final(anchor_rec(), fake_fetch(at=both), offset=4)
+
+
+def test_file_digest_and_protocol_binding():
+    from scripts.block_draw import check_protocol, file_digest
+    proto = (FIX / "lock-2026-10-17.txt").read_bytes()
+    assert file_digest(INFO) == __import__("hashlib").sha256(proto).hexdigest()
+    check_protocol(INFO, proto)
+    with pytest.raises(ValueError):
+        check_protocol(INFO, proto + b"changed")
+    with pytest.raises(ValueError):
+        file_digest("no digest line\n")
