@@ -1,0 +1,51 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,booktabs,graphicx,hyperref}
+\newtheorem{theorem}{Theorem}\newtheorem{lemma}{Lemma}\newtheorem{corollary}{Corollary}\newtheorem{proposition}{Proposition}
+\title{Audit Dues: Pre-registered Falsification of a Newcomer-First Audit Rule\\for Compute Markets with Free Identity Replacement}
+\author{Ömer Demirel}
+\date{Draft, October 2026}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+In markets for computation, buyers often cannot observe the quality of delivered work and can afford to verify only a small sample of it. Sanctions are capped: an operator can refund the escrow of a failed job and exclude the provider for a while, but it cannot take collateral before the provider has earned anything, and a punished provider can re-enter at once under a fresh identity. We show that under these conditions uniform random auditing cannot use exclusion at all, because replacement makes any ban costless, and we study a rule that charges new identities with verification instead of money: it audits every job of an identity in its first rounds, then targets the newest established identities. We evaluate the rule with a prospectively registered falsification protocol: the claim, the attacker families, the seeds, and the statistics were locked and publicly timestamped before the rule was designed; an independently written attacker family stayed sealed until the final test; and every later change was a signed, timestamped amendment. The registered claim that the rule beats the audited baselines against the sealed adaptive attackers fails, as amendment~1 predicted. The amended claim passes: under identity replacement, cheaters keep 0.57 and 0.35 of a fair provider's surplus under the two audited baselines and 0.07 under the new rule, at a gross efficiency of 0.998 on fresh seeds. A renewal-reward analysis explains the gap and is confirmed by 72 pre-stated diagnostic configurations, and 292 pre-stated robustness cells show the advantage across budgets, market sizes, loads, horizons, and noise, with two failures that delimit the claim: a terminal audit reserve that consumes the whole allowance when audits are expensive, and coalitions of simultaneous entrants that exhaust the newcomer quota.
+\end{abstract}
+
+\section{Introduction}
+% Draft 1. Every citation below is pending verification against its primary source (docs/paper/outline.md, open task 1).
+A buyer of computation pays for work whose quality it cannot see. It can check a few jobs, at a cost, and punish a provider whose check fails; but the punishments available in an open market are weak. The operator can return the failed job's escrow to the buyer and exclude the provider for some rounds. It cannot demand a bond from a newcomer that has not yet earned anything, and it cannot stop a punished provider from returning under a new name. The literature on cheap pseudonyms shows that under free identity replacement reputation and exclusion lose their force unless newcomers pay some due~\cite{friedman2001social,feldman2006free}; the literature on costly verification shows how to allocate scarce inspections when identities persist~\cite{benporath2014optimal,mylovanov2017optimal,li2020mechanism}; inspection games show how to spend a finite stock of inspections over time~\cite{vonstengel2016recursive}. Our setting combines all three constraints.
+
+\paragraph{The idea.} If the operator cannot charge a newcomer with money, it can charge it with verification. A rule that audits every job of an identity during its first rounds, and keeps targeting the newest established identities afterwards, turns a fresh identity from a clean slate into a period of full inspection. We call this \emph{audit dues}.
+
+\paragraph{The protocol.} Mechanism claims evaluated against attacks the authors chose are easy to overfit. We therefore registered the claim, its thresholds, the attacker families and their search budgets, the seed namespaces, and the interval procedures before the proposed rule existed; signed and timestamped the registration; had an independent session write an attacker family that stayed sealed until the final test; required every later change to be a signed, timestamped amendment with its reason; and ran pre-stated falsification tests before freezing the rule. One of those tests killed the first version of the rule; its successor was registered before it was implemented.
+
+\paragraph{Results.} (i) The original registered claim fails: against the sealed adaptive family the proposed rule is safe (gross efficiency at least 0.994, gain at most 0.044) but does not beat the audited baselines by the registered margin, as we predicted when amending. (ii) The amended claim passes: under identity replacement the audited baselines leave cheaters 0.57 and 0.35 of a fair provider's surplus, the new rule 0.07. (iii) A renewal-reward analysis shows why uniform auditing cannot use exclusion under free replacement, bounds the long-run profit of cheat-and-reset plans under newcomer-first auditing, and proves that small shading inside the audit tolerance is profitable under every rule in the class, so only bounded-gain claims are possible. (iv) Exploratory robustness tests, stated before they ran, show the advantage across thirteen market variants and delimit it by two failures.
+
+\paragraph{Contributions.} We are not aware of a prior mechanism in which the scarce resource spent on fresh pseudonyms is verification itself. We contribute the rule, its analysis, and an evaluation protocol for mechanisms against adaptive agents that the authors did not design, together with a complete public record of the study, its amendments, and its failures.
+
+\section{Related work}\label{sec:related}
+% Draft from docs/research/2026-10-18-positioning-and-post-evaluation-plan.md section 6, after citation verification.
+
+\section{Model}\label{sec:model}
+% Spec sections 3 to 7.
+
+\section{Market rules}\label{sec:rules}
+% B1, B2, B3; R3 (amendments 2 and 3).
+
+\section{Theory}\label{sec:theory}
+% docs/theory/reset-deterrence.md; proofs in Appendix A.
+
+\section{Evaluation protocol}\label{sec:protocol}
+% Lock, amendments 1 to 4, F1 to F5, freeze, sealed H2, fresh seeds, timestamps, review roster.
+
+\section{Results}\label{sec:results}
+% 7.1 registered verdict; 7.2 H1; 7.3 exploratory and robustness.
+
+\section{Discussion and limitations}\label{sec:discussion}
+
+\section{Conclusion}
+
+\bibliographystyle{plain}
+\bibliography{refs}
+\end{document}

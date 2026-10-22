@@ -12,3 +12,9 @@ docs/superpowers/reviews/final-read-bundle.md
 results/
 .worktrees/
 *.ots.bak
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.bbl
+paper/*.blg
+paper/*.pdf
