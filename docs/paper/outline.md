@@ -39,3 +39,5 @@ Sol high and Astra high both rejected draft 1 (0.94 each): overstated newcomer c
 Round 3 (draft 3): Sol accept (0.95); Astra accept with a caveat (0.95), caveat applied (explicit names, consistency). The acceptance covers the abstract, introduction, and outline.
 
 Full draft: draft 4 rejected by both (26 corrections); draft 5 Astra accept with caveat, Sol reject (2 points); draft 6 accepted by both (0.95 each). Two consistency edits after the vote (the corollary title and two summaries now use the corollary condition).
+
+Draft 7 (after the GPT Pro review): Sol accept with caveat, Astra reject; draft 8: Sol accept (0.95), Astra accept with caveat (0.94), caveat applied (section 6.1 source footnote).
