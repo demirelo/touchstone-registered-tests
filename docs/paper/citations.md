@@ -13,3 +13,27 @@
 | tramer2020adaptive | verified: NeurIPS 33, 2020 | papers.nips.cc record; arXiv 2002.08347 |
 | carlini2019evaluating | verified: arXiv 1902.06705, 2019 | arXiv listing |
 | vlasiou2014renewal | verified: arXiv 1404.5601, 2014 ("Renewal Processes with Costs and Rewards") | arXiv listing; University of Twente record |
+
+## Added after the GPT Pro review (2026-10-22); each checked by us against publisher, proceedings, or bibliographic records
+| Key | Status |
+|---|---|
+| sarmenta2001ccgrid | CCGrid'01, Brisbane, May 2001 (project page); DOI not confirmed, author manuscript URL given |
+| anderson2009diversity | HICSS 2009, pp. 1-8 (dblp listing); DOI not confirmed, BOINC PDF URL given |
+| watanabe2010generalized | IEICE Trans. Inf. Syst. E93-D(12):3164-3172, 2010 (dblp, IEICE index) |
+| qiu2018crowdeval | AAMAS 2018, pp. 1486-1494 (ACM DL, AAMAS index) |
+| walsh2003postrelease | Chapter 5 in Keen (ed.), Changing Customs, IMF 2003 (IMF listing); page-80 quotation not checked by us, so not quoted |
+| gangl2014supervision | Economics Letters 123(3):378-382, 2014, DOI 10.1016/j.econlet.2014.03.027 |
+| bhaskar2025screening | AEJ: Micro 17(4):352-398, 2025, DOI 10.1257/mic.20230049 (AEA) |
+| douceur2002sybil | IPTPS 2002, LNCS 2429:251-260, DOI 10.1007/3-540-45748-8_24 |
+| townsend1979optimal | JET 21(2):265-293, 1979, DOI 10.1016/0022-0531(79)90031-0 |
+| li2021financially | Theoretical Economics 16(3):1139-1194, 2021, DOI 10.3982/TE3907 |
+| liu2013enforcement | SBE 3(4):305-328, 2013, DOI 10.1561/102.00000034 |
+| solan2021dynamic | GEB 129:476-491, 2021, DOI 10.1016/j.geb.2021.06.009 |
+| fernandezanta2015algorithmic | PLOS ONE 10(3):e0116520, 2015, DOI 10.1371/journal.pone.0116520 |
+| wellman2006methods | AAAI 2006; page range unresolved (sources give 1552-1555 and 1552-1556), official PDF URL given |
+| nosek2018preregistration | PNAS 115(11):2600-2606, 2018, DOI 10.1073/pnas.1708274114 |
+| tramer2020adaptive (fixed) | pages 1633-1645 from the official NeurIPS BibTeX |
+| vlasiou2014renewal (fixed) | original: Wiley Encyclopedia of OR/MS, 2011 (University of Twente record); DOI not confirmed; arXiv 1404.5601 |
+| Not added | Auletta et al. ICALP 2004 (venue and pages not confirmed by us); Simmons et al. 2011 and Teutsch and Reitwiessner 2019 (not needed for a claim in the text) |
+
+The "verified" note fields were removed from the bibliography (they printed in the reference list).

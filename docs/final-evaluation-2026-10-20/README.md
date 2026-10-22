@@ -69,3 +69,7 @@ H1 is exploratory under the registered coverage consequences (proxy bound not ad
 ## H1 prompt cache (not committed)
 
 The H1 prompt cache (`experiments/cache/h1/`, 39,100 files, about 330 MB) replays the whole H1 run without paid calls. It stays outside git because of its size; `h1/cache_manifest.sha256` lists the SHA-256 of every file (manifest hash 4ae1a7303724317f0d7054eeb5f7c53c92f39176b5ff5d26f11c4cac03681a60), so an archived copy can be checked file by file.
+
+## Erratum (2026-10-22, after an external review)
+
+The "Reading" sentence under the per-cell table contains two errors. (1) "R3 matches B3 and B2 within noise" is unsupported: no equivalence test was run, and B2 has a lower selected gain (0.006) and a lower gross efficiency (0.969) than B3 and R3 (0.043 and 0.041; 0.995 and 0.995). (2) The H3 figures 0.570, 0.353, and 0.071 are normalised excess focal profits (excess profit over the selected truthful reference divided by S*/N), not losses of honest surplus; the gross welfare losses are about 0.130, 0.026, and 0.001 and the net welfare losses about 0.180, 0.075, and 0.051. Corrected reading: H2 yields low selected gains for all audited rules; R3 and B3 have similar point estimates, while B2 has a lower selected gain and a lower gross efficiency. Under H3, normalised excess focal profits are 0.570, 0.353, and 0.071 for B2, B3, and R3; these are not welfare losses, and the tables do not establish statistical equivalence. The original sentence is kept above for the record.
