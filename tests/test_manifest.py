@@ -49,7 +49,8 @@ def test_manifest_totals_follow_the_schedule():
     assert t["pre_lock"] * 45.0 / 3.6e6 < 20.0                     # the gate at 45 ms per run
     assert t["pre_lock_exact"] + t["pre_lock_upper_bound"] == t["pre_lock"]
     t = t_all
-    assert {c.section for c in cells if c.post_lock} == {"bank_post_lock", "all_deviators_post_lock", "ablation", "development", "rho_sweep", "h3", "controls"}   # amendment 2: the proposed rule's post-lock cells and the H3 controls
+    assert {c.section for c in cells if c.post_lock} == {"bank_post_lock", "all_deviators_post_lock", "ablation", "development", "rho_sweep", "h3", "controls",   # amendment 2: the proposed rule's post-lock cells and the H3 controls
+                                                         "heldout"}                                                                                           # the final cells: the bundle is in the repository since the unseal
     assert all(not c.exact for c in cells if c.section in ("bank", "bank_post_lock", "controls"))
     names = [c.name for c in cells]
     assert len(names) == len(set(names))
@@ -97,12 +98,14 @@ def test_final_h3_cells_are_beta_headline_median_only(monkeypatch):
     real = reg.available_families(); fams = {**real, "H2": real["D2"]}                      # a stand-in sealed family with D2's corner count
     monkeypatch.setattr(reg, "available_families", lambda locked=None: fams)
     lk = load_locked(); b = budget_from_locked(lk); cells = m.enumerate_manifest(lk, ["B1", "B2", "B3"], budget=b)
+    final_rules = {"B1", "B2", "B3"} | ({"proposed"} if reg.proposed_available() else set())          # the proposed rule joins the final cells once its module exists
     h3 = [c for c in cells if c.section == "heldout" and c.family == "D2+H3"]
-    assert len(h3) == 3 and {c.position for c in h3} == {"median"} and {float(c.beta) for c in h3} == {0.05} and all(c.post_lock for c in h3)
+    assert len(h3) == len(final_rules) and {c.rule for c in h3} == final_rules
+    assert {c.position for c in h3} == {"median"} and {float(c.beta) for c in h3} == {0.05} and all(c.post_lock for c in h3)
     n_final = int(lk["coverage_consequences"]["final_eval_n"])
     assert all(c.runs == sum(cell_runs("D2+H3", Budget(b.restarts, b.evals, b.n_train, n_final)).values()) for c in h3)
     h2 = [c for c in cells if c.section == "heldout" and c.family == "H2"]
-    assert len(h2) == 3 * (len(lk["beta_grid"]) - 1 + len(lk["positions"]))        # unchanged: every budget at the median plus the headline budget at every position, per rule
+    assert len(h2) == len(final_rules) * (len(lk["beta_grid"]) - 1 + len(lk["positions"]))        # unchanged: every budget at the median plus the headline budget at every position, per rule
 
 
 def test_amendment_2_lists_the_proposed_rules_post_lock_cells_and_the_h3_controls():

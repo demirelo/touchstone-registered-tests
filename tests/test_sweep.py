@@ -1,4 +1,4 @@
-import json, subprocess, sys
+import json, os, subprocess, sys
 from pathlib import Path
 import pytest
 from sim.calibrate import calibrate, save_calibration
@@ -13,9 +13,9 @@ def cal_path(tmp_path_factory):
     return p
 
 
-def run_sweep(cal_path, out, *extra):
+def run_sweep(cal_path, out, *extra, env=None):
     return subprocess.run([sys.executable, "scripts/sweep.py", "--calibration", str(cal_path), "--out", str(out), *extra],
-                          capture_output=True, text=True)
+                          capture_output=True, text=True, env=None if env is None else {**os.environ, **env})
 
 
 def test_sweep_refuses_untuned_run_without_smoke_flag(cal_path, tmp_path):
@@ -89,7 +89,9 @@ def test_reference_records_carry_per_seed_values_and_foreign_rules_are_refused(c
     assert rec["gain_train"] == pytest.approx(rec["attack_per_seed_normalized"][0] - rec["reference_per_seed_normalized"][0])
     r = run_sweep(cal_path, out, "--stage", "reference", "--rules", "B2", "--smoke", "--workers", "1")
     assert r.returncode != 0 and "B1" in (r.stderr + r.stdout)
-    r = run_sweep(cal_path, out, "--stage", "evaluate", "--rules", "B1", "--smoke", "--workers", "1", "--eval-namespace", "final_eval")
+    sealed = tmp_path / "sealed"; sealed.mkdir()                     # the repository holds the unsealed bundle since 2026-10-18; an empty one checks the pre-unseal refusal
+    r = run_sweep(cal_path, out, "--stage", "evaluate", "--rules", "B1", "--smoke", "--workers", "1", "--eval-namespace", "final_eval",
+                  env={"TOUCHSTONE_SEALED_DIR": str(sealed)})
     from scripts.sweep import train_val
     from sim.schedule import Budget, stage_runs
     lk = load_locked()

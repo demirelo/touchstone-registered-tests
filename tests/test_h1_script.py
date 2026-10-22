@@ -1,5 +1,6 @@
 import csv
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -20,8 +21,9 @@ def smoke_cal(tmp_path):
     return p
 
 
-def run(*args):
-    return subprocess.run([sys.executable, str(ROOT / "scripts" / "h1.py"), *args], capture_output=True, text=True, cwd=ROOT)
+def run(*args, env=None):
+    return subprocess.run([sys.executable, str(ROOT / "scripts" / "h1.py"), *args], capture_output=True, text=True, cwd=ROOT,
+                          env=None if env is None else {**os.environ, **env})
 
 
 def base_args(cal, out):
@@ -77,7 +79,8 @@ def test_h1_prompt_goes_through_the_repair_overlay(tmp_path, monkeypatch):
 
 def test_h1_final_eval_namespace_refused_before_the_unseal(tmp_path):
     cal = smoke_cal(tmp_path); out = tmp_path / "out"
-    r = run("--backend", "fake-honest", "--rules", "B1", *base_args(cal, out), "--eval-namespace", "final_eval")
+    sealed = tmp_path / "sealed"; sealed.mkdir()                     # the repository holds the unsealed bundle since 2026-10-18; an empty one checks the pre-unseal refusal
+    r = run("--backend", "fake-honest", "--rules", "B1", *base_args(cal, out), "--eval-namespace", "final_eval", env={"TOUCHSTONE_SEALED_DIR": str(sealed)})
     assert r.returncode != 0 and "final_eval" in (r.stderr + r.stdout)
 
 

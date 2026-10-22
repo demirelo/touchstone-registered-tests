@@ -3,7 +3,8 @@ from sim.locked import load_locked, seeds, sha256_file, settings_hash, market_co
 from sim.mechanisms.base import L_MAX, H_MAX
 
 
-def test_locked_loads_and_namespaces_are_disjoint():
+def test_locked_loads_and_namespaces_are_disjoint(tmp_path, monkeypatch):
+    monkeypatch.setattr("sim.registry.SEALED_DIR", tmp_path)       # the repository holds the unsealed bundle since 2026-10-18; an empty one checks the pre-unseal refusal
     lk = load_locked()
     tr, va, ca = seeds(lk, "dev_train"), seeds(lk, "dev_val"), seeds(lk, "calibration")
     assert len(tr) == 5 and len(va) == 20 and len(ca) == 20
