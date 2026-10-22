@@ -27,7 +27,16 @@ Three literatures meet here. Work on cheap pseudonyms shows that free identity r
 \paragraph{Contributions.} We study newcomer-priority auditing in a repeated procurement model with noisy verification, escrow-capped sanctions, and free identity replacement; we give an analysis of when identity-neutral auditing loses the ban and when newcomer priority restores a continuation cost; and we report a prospectively registered evaluation with disclosed amendments, together with a documented study record of its failures.
 
 \section{Related work}\label{sec:related}
-% Draft from docs/research/2026-10-18-positioning-and-post-evaluation-plan.md section 6, after citation verification.
+% Draft 1 of this section. Entries marked \cite are in refs.bib; any not yet verified are listed as pending in docs/paper/citations.md.
+\paragraph{Costly verification.} In costly-verification mechanisms a principal allocates a good among agents with private information and can verify reports at a cost~\cite{benporath2014optimal}; with limited penalties the optimal mechanisms bunch and shortlist~\cite{mylovanov2017optimal,li2020mechanism}. These models are static or have persistent identities; they omit identity replacement, which is the source of our difficulty.
+
+\paragraph{Inspection and audit games.} A finite stock of inspections spent over time against a strategic inspectee is the subject of recursive inspection games~\cite{vonstengel2016recursive}; audit games mix targeted and randomised inspection against adaptive attackers~\cite{blocki2013audit}. Our schedule (linear early pacing with carry and a terminal reserve) and our half-targeted, half-uniform split are registered and tuned design choices, not optima derived from these models.
+
+\paragraph{Cheap pseudonyms.} Free identity replacement destroys the force of reputation and exclusion unless newcomers pay a due~\cite{friedman2001social}; in peer-to-peer systems whitewashing degrades cooperation when turnover is high~\cite{feldman2006free}. The dues proposed there are monetary or a worse treatment of newcomers; ours are paid in verification, within a class that excludes fees and collateral before receipts.
+
+\paragraph{Spot-checking with credibility.} In volunteer computing, spot-checking combined with credibility scores treats newcomers with suspicion and anticipates identity changes~\cite{sarmenta2001sabotage}. Our rule shares the intuition. It differs in the setting (a procurement market with second-score payments and escrow-capped sanctions), in its resource constraint (a hard audit budget with pacing and a terminal reserve), in the attackers (adaptive families found by search, a sealed family, and a language-model actor), and in the evaluation (a prospectively registered protocol with falsification tests).
+
+\paragraph{Evaluation methodology.} Adversarial-robustness research warns that attacks chosen by the authors overstate robustness and that adaptive evaluations must be tailored to each defence~\cite{carlini2019evaluating,tramer2020adaptive}; pre-registration and sealed test sets are established tools in empirical research. We apply them to mechanism evaluation: the claim, the attacker families, and the statistics were locked before the rule existed, one attacker family was sealed, and amendments were signed and timestamped.
 
 \section{Model}\label{sec:model}
 % Draft 1 of this section, from docs/superpowers/specs/2026-10-14-touchstone-simulator-design.md sections 3 to 7.
@@ -48,20 +57,134 @@ Three literatures meet here. Work on cheap pseudonyms shows that free identity r
 \paragraph{Metrics.} For a seed with first-best surplus $S^*$, the focal provider's \emph{gain} is its profit under the attack minus its profit under the selected reference, divided by $S^*/N$; it decomposes into an inflation term (attack against its clipped projection) and a selection term (clipped projection against the reference). \emph{Gross efficiency} is $(W + \text{audit cost})/S^*$, where $W$ is the realised social surplus net of audit cost; net efficiency is $W/S^*$; harm is the loss of the other participants' welfare against the reference profile. Evaluation uses seeds never seen by the search: 20 development-validation seeds for development and exploratory work, and 40 fresh final-evaluation seeds for the registered claims.
 
 \section{Market rules}\label{sec:rules}
-% B1, B2, B3; R3 (amendments 2 and 3).
+\paragraph{Baselines.} B1 posts three prices for three claim tiers and allocates jobs to the highest tier whose price a job's value covers; it does not audit. B2 uses B1's posted prices and audits uniformly at random among served jobs, spread evenly over rounds; a failed audit refunds the job's escrow and bans the identity for $L$ rounds. B3 allocates each job, in descending order of value, to the offer with the highest score $v_j c_i - \text{bid}_i$, pays the second score ($v_j c_i - s_{2,j}$), and audits and enforces as B2. All three were tuned before the lock against the registered adaptive family D2 on a registered grid; the tuned values are $\tau = 0.16$ and $L = 10$ for B2 and B3.
+
+\paragraph{The proposed rule R3.} R3 keeps B3's allocation and payment, its tolerance $\tau = 0.16$, and its enforcement (refund and a ban of $L = 10$ rounds, no hold-back); it differs only in which jobs it audits and when. \emph{Schedule:} with the allowance $A = \lfloor B/\alpha \rfloor$, R3 reserves $R = \min(JL, A)$ audits for the last $L$ rounds, in which it audits every served job while audits remain, and spends the rest $E = A - R$ linearly over the earlier rounds, carrying unspent quota forward. \emph{Selection:} in a round with $k$ audits, it first audits the served jobs of identities younger than $L$ rounds (counted from their first offer), newest first, up to $k$; it then spends half of the remaining audits, rounded up, on the newest established identities and the rest uniformly at random. R3's parameters (allocation, targeting variant, tolerance, ban length) were selected by a registered 36-point tuning grid after the third amendment; the selection repeated that of the killed predecessor.
+
+Because R3 and B3 share allocation, payment, tolerance, and enforcement, every difference between them in Section~\ref{sec:results} is caused by audit selection and pacing. The registered enforcement-matched ablation (R3's allocation and audit selection with B2's enforcement) coincides with R3, since R3's enforcement is B2's.
 
 \section{Theory}\label{sec:theory}
-% docs/theory/reset-deterrence.md; proofs in Appendix A.
+We fix a provider facing honest opponents and compare truthful effort with shading by $\Delta$ at an unchanged offer, so that allocation and payments in the round are unchanged. Shading saves $g = b\Delta$ per served job and raises the per-audit failure probability from $d_0 = \Phi(-\tau/\sigma)$ to $d = \Phi((\Delta - \tau)/\sigma)$. Let $s$ be the provider's served jobs in the round, $U$ the audited subset with $K = |U|$ and escrows $M_j$, and $C_U$ the difference between the best continuation values after no focal failure and after at least one.
+
+\begin{lemma}[local identity]\label{lem:local}
+The expected profit of shading by $\Delta$ relative to truthful effort is
+\[ A(\Delta) = s g - \mathbb{E}\Big[(d - d_0)\textstyle\sum_{j \in U} M_j + \big((1-d_0)^K - (1-d)^K\big) C_U\Big]. \]
+\end{lemma}
+
+\begin{corollary}[identity-neutral auditing]\label{cor:uniform}
+If allocation, prices, and audit selection do not depend on identity age, replacement is immediate, and $e = 0$, then $C_U = 0$: the best continuation after a failure replaces the identity, and the ban has no effect on future play. Shading pays whenever $g$ exceeds the expected refund term, whatever the ban length.
+\end{corollary}
+
+\begin{lemma}[coverage]\label{lem:coverage}
+R3 audits every served job of identities younger than $L$ rounds whenever the round's audit count covers them. Under overload, age groups are served newest first; within the focal identity's group of $n$ jobs, of which $s$ are its own, the number audited is hypergeometric with $k' = \min\{n, \max(0, k - H)\}$ draws, $H$ being the fresh jobs of strictly newer identities.
+\end{lemma}
+
+After its fresh window, a replacement identity is newer than every initial identity; while it is the newest established identity and residual audits are available, it receives at least $\min(s, \lceil r/2 \rceil)$ of the $r$ residual audits (at least five of six jobs at the headline market).
+
+\begin{theorem}[conditional renewal bound]\label{thm:renewal}
+Consider immediate-replacement plans whose play decomposes into stationary, independent cycles of an established spell (per-round expected profit $r_E$, failure hazard $q_E > 0$) followed by a recovery of duration $D \ge L$, profit $R_F$, and $N_R$ replacements. The long-run profit per round is $\bar\Pi = (r_E/q_E + \mathbb{E}R_F - e\,\mathbb{E}N_R)/(1/q_E + \mathbb{E}D)$. If, in addition, truthful play earns a common rate $h$ in both states and every permitted fresh action earns at most $h + \epsilon$, then with $e = 0$
+\[ \bar\Pi - h \le \epsilon + \frac{(r_E - h - \epsilon)_+}{1 + q_E L}. \]
+\end{theorem}
+
+Under identity-neutral auditing a reset plan earns its one-round surplus in every round (Corollary~\ref{cor:uniform}); the factor $1/(1 + q_E L)$ is what newcomer priority adds, and the targeting of replacements makes $q_E$ large. The theorem covers stationary same-offer plans; it does not cover the adaptive family D2+H3, claim or bid changes, waiting out a ban, or coalitions.
+
+\begin{proposition}[terminal shading]\label{prop:terminal}
+In a round with zero continuation loss, a served provider gains from small same-offer shading whenever $b > v_{\max}\,\phi(\tau/\sigma)/\sigma$. At the locked parameters the right-hand side is below $0.067$ and every provider has $b \ge 0.22$, so under each studied rule small shading in the final round is profitable.
+\end{proposition}
+
+Hence no rule in our studied set eliminates gain; the claims are bounded-gain claims. Extended proofs are in Appendix~\ref{app:proofs}.
+
+\paragraph{Checks.} Seventy-two pre-stated exploratory configurations (three budgets, three audited rules, four shading levels, replacing or waiting; dev-val seeds) agree with the analysis. Under B2 and B3 a replacing shader's profit is nearly flat in the shading level while a waiting shader loses (Corollary~\ref{cor:uniform}); under R3 at $\beta \in \{0.05, 0.10\}$, shading beyond the tolerance band is unprofitable even with replacement, replacement identities are audited on 0.92 and 1.00 of their jobs, and at $\beta = 0.02$ the newcomer quota overloads and shading pays (Lemma~\ref{lem:coverage}). Where the theorem's checked assumptions hold, the surplus bound holds in 63 of 64 seed cases (the exception lies within half a standard error); the renewal identity, evaluated with measured cycle components, checks the accounting rather than forecasting it. Three diagnostic outcomes were seen during testing before registration.
 
 \section{Evaluation protocol}\label{sec:protocol}
-% Lock, amendments 1 to 4, F1 to F5, freeze, sealed H2, fresh seeds, timestamps, review roster.
+\paragraph{The claim.} At $\beta = 0.05$ on the final-evaluation seeds, the \emph{rule clause} requires, for each confirmatory family, a lower 95\% bound of R3's gross efficiency of at least 0.90, an upper 95\% bound of its gain of at most 0.30, and audit cost within budget in every seed. The \emph{baseline clause} requires, for each of B2 and B3, a confirmatory family in which either the paired inflation-caused efficiency-loss difference exceeds 0.05 or the baseline's gain exceeds 1.0, at the 98.75\% level. Interval procedures (percentile or studentized bootstrap on per-seed statistics) were admitted by a pre-lock coverage study on development distributions; the confirmatory sample size is 40 fresh seeds.
+
+\paragraph{Lock and amendments.} The claim, thresholds, families, search budgets, seed namespaces, interval procedures, and tuned baselines were locked on 17 October 2026 (signed tag, OpenTimestamps proof), before the proposed rule was implemented. The sealed family H2 was written by a separate session from a pinned copy of the repository; only its hash was committed, and its containment of D2 was disclosed before unsealing. Four amendments followed, each signed and timestamped before the change it registered (Table~\ref{tab:timeline}).
+
+\begin{table}[t]\centering\small
+\begin{tabular}{@{}lp{0.72\linewidth}@{}}\toprule
+Date & Event \\\midrule
+17 Oct & Lock. Amendment 1: a second, amended predicate on the public identity-replacement family D2+H3 (absolute part and paired gain reductions of at least 0.10 against B2 and B3), registered after the baselines' development results showed that the original baseline clause was unlikely to pass. Amendment 2: the design space and tuning grid of the proposed rule, and five falsification tests F1--F5. \\
+18 Oct & F2 kills the first rule (a sole six-job entrant was not fully covered). Amendment 3: one successor (R3, adding the newcomer priority phase), registered before implementation; any further kill would end proposed-rule development. R3 passes F1--F5. Freeze. Unseal. \\
+19--20 Oct & Final evaluation on 40 fresh seeds; H1 completed under Amendment 4 (cost cap raised once from 300 to 330 USD after 11 of 12 cells had been seen; H1 is exploratory). \\\bottomrule
+\end{tabular}
+\caption{Protocol timeline (2026). Hashes, tags, and review records are in the supplementary material.}\label{tab:timeline}
+\end{table}
+
+\paragraph{Falsification tests.} F1 checks contract fixtures of the rule; F2 checks full coverage of a sole entrant and the unprofitability of sustained full cheating with replacement; F3 checks all-honest efficiency and false-ban rates against their Gaussian predictions; F4 checks the D2 cells at three positions; F5 checks the identity-replacement gain reductions against B2 and B3 with a doubling check. A kill in any test stops the rule.
+
+\paragraph{Review.} Two independent model reviewers checked every plan, amendment, and result before it was registered or reported, and their objections and our dispositions are part of the record. Signatures and timestamps record changes; they do not remove adaptation to what had been observed, which is why the amended claim is reported beside the original one.
 
 \section{Results}\label{sec:results}
-% 7.1 registered verdict; 7.2 H1; 7.3 exploratory and robustness.
+\subsection{Registered verdict}
+\begin{table}[t]\centering\small
+\begin{tabular}{@{}llr@{}}\toprule
+Clause & Result & Bound \\\midrule
+Rule clause, H2: gross efficiency & PASS & lower 0.9942 \\
+Rule clause, H2: gain & PASS & upper 0.0436 \\
+Baseline clause, B2 & FAIL & loss diff.\ $-0.0015$, gain 0.0078 \\
+Baseline clause, B3 & FAIL & loss diff.\ $-0.0037$, gain 0.0467 \\
+\textbf{Original claim} & \textbf{FAIL} & \\\midrule
+Amended, D2+H3 absolute: gross efficiency & PASS & lower 0.9980 \\
+Amended, D2+H3 absolute: gain & PASS & upper 0.0719 \\
+Amended, gain reduction vs B2 & PASS & lower 0.487 \\
+Amended, gain reduction vs B3 & PASS & lower 0.276 \\
+\textbf{Amended claim} & \textbf{PASS} & \\\bottomrule
+\end{tabular}
+\caption{Registered verdict on 40 fresh seeds ($\beta = 0.05$, median position). Bounds are one-sided (95\% for the rule clause and the absolute part, 98.75\% for the comparisons). The amended comparisons use interval procedures admitted on development distributions with B3 as proxy; nominal coverage for the selected R3 is not established.}\label{tab:verdict}
+\end{table}
+
+Against the sealed family H2, R3 is hard to exploit (mean gain 0.041, gross efficiency 0.995), but so are B2 (0.006) and B3 (0.043); the original claim fails because it required R3 to beat them by a margin (Table~\ref{tab:verdict}). Under identity replacement (D2+H3) the audited baselines leave mean gains of 0.570 (B2) and 0.353 (B3), R3 0.071, at gross efficiencies of 0.870, 0.974, and 0.999 (Figures~\ref{fig:gain} and~\ref{fig:eff}). Since R3 and B3 share allocation, payment, tolerance, and enforcement, the reduction from 0.353 to 0.071 is attributable to audit selection and pacing.
+
+\begin{figure}[t]\centering\includegraphics[width=\linewidth]{figures/figure1_gain_vs_audit.png}
+\caption{Gain against audit budget, one line per rule (final-evaluation seeds; H2 and D2+H3 panels).}\label{fig:gain}\end{figure}
+\begin{figure}[t]\centering\includegraphics[width=\linewidth]{figures/figure2_efficiency_quadruple.png}
+\caption{Gross efficiency of the honest, reference, clipped, and attack runs against audit budget.}\label{fig:eff}\end{figure}
+
+\subsection{Language-model attacker (exploratory)}
+A language model played the focal provider in 12 cells (four rules, three budgets, ten repetitions each, the sealed prompt). It extracted a median gain of about 0.43 against B1 and near zero or negative gains against the audited rules (R3: $+0.004$, $-0.051$, $-0.060$ at $\beta = 0.02, 0.05, 0.10$). H1 is exploratory under the registered coverage consequences, and R3's H1 result is inconclusive by the registered rule because its audit selection cannot be expressed in the description vocabulary given to the actor; the last cell was completed under Amendment 4.
+
+\subsection{Exploratory robustness}
+Two hundred ninety-two search cells, stated with their predictions before they ran, vary one factor at a time (budget and position; audit cost; market size and load; noise; entry cost; horizon) and add six post-verdict attacker families. They reuse the development-validation seeds, transfer the frozen parameters to changed markets, and carry no admitted coverage guarantee.
+
+\begin{table}[t]\centering\small
+\begin{tabular}{@{}lrrr@{}}\toprule
+Variant (D2+H3, median) & B2 & B3 & R3 \\\midrule
+headline & 0.581 & 0.358 & 0.070 \\
+$\beta = 0.02$ / $0.10$ & 0.741 / 0.324 & 0.495 / 0.136 & 0.155 / 0.065 \\
+$N, J = 5, 25$ / $20, 100$ & 0.151 / 0.173 & 0.101 / 0.104 & 0.080 / 0.023 \\
+$J = 25$ / $60$ & 0.787 / 0.429 & 0.544 / 0.167 & 0.061 / 0.000$^\dagger$ \\
+$\sigma = 0.025$ & 0.584 & 0.355 & 0.067$^\dagger$ \\
+$T = 100$ / $400$ & 0.580 / 0.581 & 0.358 / 0.355 & 0.057 / 0.055 \\
+$e/m = 0.1$ / $1$ / $10$ & 0.564 / 0.410 / 0.001 & 0.338 / 0.182 / 0.044 & 0.067 / 0.046 / 0.046 \\
+$\rho = 1$ & 0.792 & 0.551 & 0.563 \\\bottomrule
+\end{tabular}
+\caption{Exploratory robustness: mean gain under identity replacement (20 dev-val seeds). $^\dagger$Search incomplete (the doubling check improved the attack on dev-train).}\label{tab:robust}
+\end{table}
+
+Selected attacks show lower R3 gains in many variants (Table~\ref{tab:robust}), with three failure modes. \emph{Reserve collapse:} at $\rho = 1$ the allowance equals the terminal reserve $JL$, the early quota is zero, and R3 audits nothing before the last $L$ rounds; its gain is 0.563 even under the plain adaptive family, where B2 and B3 leave 0.087 and 0.099. \emph{High noise:} at $\sigma = 0.10$ honest audits fail with probability 0.055 and every audited rule loses efficiency (D2: 0.635, 0.609, 0.677 for B2, B3, R3). \emph{Coalition overload:} when $c$ entities enter together (family X6), R3's focal gain rises from 0.068 ($c = 1$) to 0.118 ($c = 2$) and 0.310 ($c = 5$); fresh demand then exceeds the round's audits in most rounds, though these data do not isolate simultaneous timing as the cause. Entry costs protect every rule: at $e = 10m$ no selected attack replaces its identity. Three doubling checks show incomplete searches and nine twin-versus-honest controls fail (B2 at the high position); the predictions and outcomes are listed in full in the supplementary material, including misses on the horizon direction, the noise efficiency ordering, and the staggered-schedule effect.
 
 \section{Discussion and limitations}\label{sec:discussion}
+\paragraph{What the evidence supports.} Under immediate free replacement and identity-neutral auditing, a ban adds no continuation cost (Corollary~\ref{cor:uniform}); auditing newcomers first restores one, and in our market it reduces the gain of identity-replacing attackers from 0.35 to 0.07 against a rule that differs only in audit selection. The reduction persists in many exploratory variants.
+
+\paragraph{What it does not.} The amended claim was registered after development results were seen, and its interval procedures were admitted with a baseline as proxy. The benchmark is a unilateral deviation against honest opponents; we claim neither equilibrium nor incentive compatibility, and small shading inside the tolerance is profitable under every studied rule (Proposition~\ref{prop:terminal}). The search bounds exposure to the searched families and optimiser; it does not certify robustness. The robustness cells reuse development seeds and transfer parameters.
+
+\paragraph{Design defects.} The terminal reserve $\min(JL, A)$ can consume the whole allowance; a reserve capped at a fraction of the allowance would avoid the collapse at high audit cost, but we have not tested it. The newcomer quota has a capacity; coalitions of entrants exceed it, and any deployment needs a quota that scales with fresh demand or a limit on simultaneous entry.
 
 \section{Conclusion}
+When identities are free and collateral is excluded, verification is the only due a market can charge a newcomer. A rule that spends its scarce audits on new identities first makes identity replacement costly where uniform auditing cannot, within limits we have measured: the audit budget must exceed the terminal reserve, and simultaneous entrants must not exceed the newcomer quota. The prospectively registered protocol that produced these findings, including its amendments and its failures, is part of the contribution.
+
+\appendix
+\section{Extended proofs}\label{app:proofs}
+\paragraph{Lemma~\ref{lem:local}.} Shading saves $sg$. Each audited escrow is refunded with probability $d$ instead of $d_0$. Given $K$, independence of delivery noise gives the probabilities $1 - (1-d)^K$ and $1 - (1-d_0)^K$ of at least one failure; the continuation loss is incurred once, however many jobs fail. Taking expectations over $U$ gives the identity.
+
+\paragraph{Corollary~\ref{cor:uniform}.} Under identity-neutral allocation, prices, and audit selection, a fresh identity faces the same distribution of future play as the old one without its ban; immediate free replacement after any failure attains it, so $V^- = V^+$ and $C_U = 0$.
+
+\paragraph{Lemma~\ref{lem:coverage}.} R3's priority list is ordered by age group, newest first. Within a group, independent continuous audit keys make the selected subset uniform among the group's jobs; delivery noise is independent of selection. Older groups can receive no audits, so groups cannot be pooled.
+
+\paragraph{Theorem~\ref{thm:renewal}.} The spell length $N$ is geometric with mean $1/q_E$. Since survival to round $t$ is determined by earlier rounds, $\mathbb{E}\sum_{t \le N} R_t = \sum_t \Pr(N \ge t)\,\mathbb{E}[R_t \mid N \ge t] = r_E/q_E$. Adding the recovery's rewards and entry charges and dividing by the expected cycle length gives $\bar\Pi$ by the renewal-reward theorem. A cycle's surplus is at most $(r_E - h)/q_E + \epsilon\,\mathbb{E}D$; dividing by $1/q_E + \mathbb{E}D$ and using $\mathbb{E}D \ge L$ gives the bound. With false failures during recovery, $\mathbb{E}D = (1 - r^L)/((1 - r) r^L)$ for $r = (1 - d_0)^s$, which tends to $L$ as $r \to 1$.
+
+\paragraph{Proposition~\ref{prop:terminal}.} With $C_U = 0$, $A'(0) = s b - \phi(\tau/\sigma)\,\sigma^{-1}\,\mathbb{E}\sum_{j \in U} M_j \ge s\,(b - v_{\max}\phi(\tau/\sigma)/\sigma)$, since $M_j \le v_j c \le v_{\max}$ and $K \le s$. At $v_{\max} = 1.4$, $\tau/\sigma = 3.2$, the subtracted term is $1.4 \times 0.0477 < 0.067$.
 
 \bibliographystyle{plain}
 \bibliography{refs}
