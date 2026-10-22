@@ -11,7 +11,7 @@ import numpy as np
 
 from .cell import Cell, SeedCache, run_focal
 from .families_v2 import cand_from_json, family_for
-from .intervals import clopper_pearson_upper
+from .intervals import V2_RESAMPLE_SEED, _bound_from, clopper_pearson_upper, stratified_at, stratified_tstats, studentized_tstats
 from .objectives_v2 import gross_efficiency
 from .rules_v2 import make_rule, public_constants
 
@@ -75,16 +75,24 @@ def denominator(family: str) -> int:
     return {"Q1": 32, "Q4": 36}[family]
 
 
-def _tstats(samples: np.ndarray, bidx: np.ndarray) -> tuple[float, float, np.ndarray]:
-    n = samples.size; mean = samples.mean(); se = samples.std(ddof=1) / np.sqrt(n)
-    r = samples[bidx]; m = r.mean(axis=1); s = r.std(axis=1, ddof=1) / np.sqrt(n); s = np.where(s > 0, s, se)
-    return mean, se, (m - mean) / s
+def bound_single(x, side: str, tail: float, resamples: int = 9999) -> float:
+    """The production bound (fixed bootstrap seed) for one sample."""
+    return studentized_at_any(x, side, tail, resamples)
+
+
+def bound_pooled(strata, side: str, tail: float, resamples: int = 9999) -> float:
+    return stratified_at(strata, side, tail, resamples, V2_RESAMPLE_SEED)
+
+
+def studentized_at_any(x, side, tail, resamples):
+    m, se, t = studentized_tstats(np.asarray(x, dtype=float), resamples, V2_RESAMPLE_SEED)
+    return _bound_from(m, se, t, side, tail)
 
 
 def miss_counts(rows, kind: str, tails, kappas, replications: int, resamples: int, seed: int, n: int = 200) -> dict:
     """Misses per (stat, side, tail, kappa): `rows` maps stat to a per-seed pool ("single") or is a list of stratum dicts
-    ("pooled", equal weights); each replication draws n seeds with replacement per pool or stratum and shares the resample
-    indices across statistics."""
+    ("pooled", equal weights). Replication r draws n seeds with replacement per pool or stratum from SeedSequence([seed, r]);
+    the bounds are the production bounds (the fixed bootstrap streams of design 9.2). Nonfinite bounds are an error."""
     out = {}
     if kind == "single":
         stats = list(rows); truth = {s: float(np.mean(rows[s])) for s in stats}; M = len(next(iter(rows.values())))
@@ -98,21 +106,17 @@ def miss_counts(rows, kind: str, tails, kappas, replications: int, resamples: in
     for r in range(int(replications)):
         rng = np.random.default_rng(np.random.SeedSequence([int(seed), r]))
         if kind == "single":
-            idx = rng.integers(0, M, n); bidx = rng.integers(0, n, (int(resamples), n))
-            per = {s: _tstats(np.asarray(rows[s])[idx], bidx) for s in stats}
+            idx = rng.integers(0, M, n)
+            per = {s: studentized_tstats(np.asarray(rows[s])[idx], resamples, V2_RESAMPLE_SEED) for s in stats}
         else:
-            draws = [(rng.integers(0, len(next(iter(st.values()))), n), rng.integers(0, n, (int(resamples), n))) for st in rows]
-            per = {}
-            for s in stats:
-                K = len(rows); xs = [np.asarray(st[s])[i] for st, (i, _) in zip(rows, draws)]
-                mean = float(np.mean([x.mean() for x in xs])); se = float(np.sqrt(sum(x.var(ddof=1) / n for x in xs)) / K)
-                rs = [x[b] for x, (_, b) in zip(xs, draws)]
-                mb = np.mean([q.mean(axis=1) for q in rs], axis=0); sb = np.sqrt(np.sum([q.var(axis=1, ddof=1) / n for q in rs], axis=0)) / K
-                per[s] = (mean, se, (mb - mean) / np.where(sb > 0, sb, se))
+            draws = [rng.integers(0, len(next(iter(st.values()))), n) for st in rows]
+            per = {s: stratified_tstats([np.asarray(st[s])[i] for st, i in zip(rows, draws)], resamples, V2_RESAMPLE_SEED) for s in stats}
         for s, (mean, se, t) in per.items():
             for tail in tails:
                 for kp in kappas:
-                    lo = mean - np.quantile(t, 1.0 - tail * kp) * se; hi = mean - np.quantile(t, tail * kp) * se
+                    lo, hi = _bound_from(mean, se, t, "lower", tail * kp), _bound_from(mean, se, t, "upper", tail * kp)
+                    if not (np.isfinite(lo) and np.isfinite(hi)):
+                        raise ValueError(f"nonfinite bound for {s}")
                     out[(s, "lower", tail, kp)] += int(lo > truth[s]); out[(s, "upper", tail, kp)] += int(hi < truth[s])
     return out
 

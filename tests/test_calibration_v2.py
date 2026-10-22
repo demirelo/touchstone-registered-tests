@@ -128,3 +128,19 @@ def test_cli_select_and_validate_on_synthetic_pools(tmp_path):
 
 def key(p):
     return "|".join(p)
+
+
+def test_calibration_counts_misses_on_near_constant_pool():
+    from sim.calibration_v2 import miss_counts
+    pool = np.zeros(20000); pool[0] = -1.0
+    c = miss_counts({"x": pool}, "single", [0.05], [1.0], replications=100, resamples=99, seed=2)
+    assert c[("x", "lower", 0.05, 1.0)] >= 90
+
+
+def test_calibration_uses_production_bounds():
+    from sim import intervals as I
+    from sim.calibration_v2 import bound_single, bound_pooled
+    rng = np.random.default_rng(9); x = rng.normal(0, 1, 200); st = [rng.normal(0, 1, 200) for _ in range(6)]
+    for side in ("lower", "upper"):
+        assert bound_single(x, side, 0.0125, 999) == pytest.approx(I.studentized_at(x, side, 0.0125, 999))
+        assert bound_pooled(st, side, 0.0125, 999) == pytest.approx(I.stratified_at(st, side, 0.0125, 999))

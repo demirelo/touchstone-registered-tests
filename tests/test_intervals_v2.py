@@ -81,3 +81,18 @@ def test_clopper_pearson_known_values():
     assert I.clopper_pearson_upper(88, 20000, conf) == pytest.approx(0.006238, abs=2e-6)
     assert I.clopper_pearson_upper(89, 20000, conf) > 0.00625
     assert I.clopper_pearson_upper(5, 5, 0.99) == 1.0
+
+
+def test_stratified_constant_samples():
+    st = [np.zeros(50) for _ in range(6)]
+    assert I.stratified_at(st, "lower", 0.01, 99, 1) == 0.0 and I.stratified_at(st, "upper", 0.01, 99, 1) == 0.0
+    assert I.stratified_two_sided(st, 0.0, 99, 1) == 1.0
+    assert I.stratified_pvalue(st, -0.1, "lower", 99, 1) == 0.0 and I.stratified_pvalue(st, 0.1, "lower", 99, 1) == 1.0
+    mixed = [np.full(50, float(k)) for k in range(6)]          # constant within strata, different across: se 0
+    assert I.stratified_at(mixed, "lower", 0.01, 99, 1) == pytest.approx(2.5)
+
+
+def test_q1_constant_differences_do_not_crash():
+    from sim.decisions_v2 import q1_family
+    out = q1_family({"a": [np.zeros(200) for _ in range(6)]}, 1.0)
+    assert out["a"]["category"] == "equivalent"

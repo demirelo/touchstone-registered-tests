@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 
 import numpy as np
 from scipy import stats
@@ -98,19 +99,37 @@ def bound(method: str, x, side: str, level: float, settings: dict) -> Bound:
 V2_RESAMPLE_SEED = 20261022
 
 
+@lru_cache(maxsize=16)
+def _boot_idx(n: int, resamples: int, seed: int) -> np.ndarray:
+    """The resample index matrix of a fixed seed (the same matrix studentized_bootstrap draws); cached for calibration."""
+    idx = np.random.default_rng(int(seed)).integers(0, int(n), size=(int(resamples), int(n)))
+    idx.setflags(write=False)
+    return idx
+
+
+@lru_cache(maxsize=16)
+def _strat_idx(sizes: tuple, resamples: int, seed: int) -> tuple:
+    out = []
+    for n, kid in zip(sizes, np.random.SeedSequence(int(seed)).spawn(len(sizes))):
+        idx = np.random.default_rng(kid).integers(0, int(n), size=(int(resamples), int(n))); idx.setflags(write=False); out.append(idx)
+    return tuple(out)
+
+
 def studentized_tstats(x, resamples: int, seed: int) -> tuple[float, float, np.ndarray]:
     """Mean, standard error, and bootstrap-t statistics with studentized_bootstrap's resampling and zero-se rule."""
     x = np.asarray(x, dtype=float).ravel(); n = x.size
     mean = float(x.mean()); se = float(x.std(ddof=1) / np.sqrt(n))
-    rng = np.random.default_rng(int(seed))
-    idx = rng.integers(0, n, size=(int(resamples), n))
-    samples = x[idx]
+    samples = x[_boot_idx(n, int(resamples), int(seed))]
     m = samples.mean(axis=1); s = samples.std(axis=1, ddof=1) / np.sqrt(n)
     s = np.where(s > 0, s, se)
-    return mean, se, (m - mean) / s
+    return mean, se, ((m - mean) / s if se > 0 else np.zeros_like(m))
 
 
 def _bound_from(mean: float, se: float, t: np.ndarray, side: str, tail: float) -> float:
+    if se == 0:                                  # constant sample (or constant strata): the bound is the mean
+        if side not in ("lower", "upper"):
+            raise ValueError("side must be 'upper' or 'lower'")
+        return float(mean)
     if side == "lower":
         return float(mean - np.quantile(t, 1.0 - tail) * se)
     if side == "upper":
@@ -127,6 +146,9 @@ def studentized_at(x, side: str, tail: float, resamples: int = 9999, seed: int =
 
 def _pvalue_from(mean: float, se: float, t: np.ndarray, null: float, side: str) -> float:
     """Smallest tail at which the one-sided bound crosses `null`, at resolution 1 / (B + 1)."""
+    if se == 0:
+        above = mean > null if side == "lower" else mean < null
+        return 0.0 if above else 1.0
     t_obs = (mean - float(null)) / se
     B = t.size
     count = int(np.sum(t >= t_obs)) if side == "lower" else int(np.sum(t <= t_obs))
@@ -162,14 +184,16 @@ def holm(pvalues, alpha: float = 0.05) -> list[bool]:
 
 def stratified_tstats(strata, resamples: int, seed: int) -> tuple[float, float, np.ndarray]:
     """Equal-weight mean of stratum means; stratum k resampled with its own child stream of SeedSequence(seed);
-    se^2 = sum_k s_k^2 / n_k / K^2; bootstrap-t statistics with the zero-se rule."""
+    se^2 = sum_k s_k^2 / n_k / K^2; bootstrap-t statistics with the zero-se rule (all-zero t when se is zero)."""
     st = [np.asarray(s, dtype=float).ravel() for s in strata]; K = len(st)
     mean = float(np.mean([s.mean() for s in st]))
     se = float(np.sqrt(sum(s.var(ddof=1) / s.size for s in st)) / K)
     ms, vs = [], []
-    for s, kid in zip(st, np.random.SeedSequence(int(seed)).spawn(K)):
-        r = s[np.random.default_rng(kid).integers(0, s.size, size=(int(resamples), s.size))]
+    for s, idx in zip(st, _strat_idx(tuple(s.size for s in st), int(resamples), int(seed))):
+        r = s[idx]
         ms.append(r.mean(axis=1)); vs.append(r.var(axis=1, ddof=1) / s.size)
+    if se == 0:
+        return mean, se, np.zeros(int(resamples))
     se_b = np.sqrt(np.sum(vs, axis=0)) / K
     se_b = np.where(se_b > 0, se_b, se)
     return mean, se, (np.mean(ms, axis=0) - mean) / se_b
