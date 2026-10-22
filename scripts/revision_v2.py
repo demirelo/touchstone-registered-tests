@@ -308,15 +308,22 @@ def menu(job: dict, out: Path, cuts: int = 0, h4_excluded: bool = False) -> tupl
         for c in cands:
             cat = "bank" if c.name.startswith("bank_") else c.name
             groups.setdefault((cat, fname), []).append(c)
+    out_c, fams = merge_menu(groups, MENU)
+    return out_c, fams, upstream
+
+
+def merge_menu(groups: dict, family_order) -> tuple[list, list]:
+    """Candidates in the registered category order, families in the given order within a category, de-duplicated by
+    (family, exact key); abstain and honest-max once."""
     out_c, fams, seen = [], [], set()
     for cat in CATEGORIES:
-        for fname in MENU:
+        for fname in family_order:
             for c in groups.get((cat, fname), []):
                 key = ("name", c.name) if c.knobs is None else (fname, exact_key(c.knobs))
                 if key in seen:
                     continue
                 seen.add(key); out_c.append(c); fams.append(None if c.knobs is None else fname)
-    return out_c, fams, upstream
+    return out_c, fams
 
 
 def stage_reference(job: dict, out: Path, cuts: int = 0, h4_excluded: bool = False) -> dict:
