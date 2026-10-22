@@ -1,0 +1,67 @@
+# SDD ledger — plan: docs/superpowers/plans/2026-10-22-revision-build.md
+Spec: docs/superpowers/specs/2026-10-22-revision-program-design.md (draft 6, accepted). Branch revision-v2 from c2f2a08; frozen-file base 2a288f5.
+
+## Pre-flight (shared interfaces)
+- T1 -> T2: pacing.spread_count / ReservePacing(reserve, L) consumed by Credibility pacing S0/S1/S2: consistent.
+- T1,T2 -> T3: make_factorial / Credibility consumed by make_rule; describe() must carry ban_length and audit_tolerance: T1 and T2 must emit these in describe (ruling R0).
+- T3 -> T4,T5,T11,T12: make_rule, public_constants(rule, cfg): consistent.
+- T4 -> T11,T12: x7_family(T, L), embed_h3, corner_vectors: consistent.
+- T5 -> T9,T11: x6v2_family, x6v2_members: consistent.
+- T6 -> T11,T12,T13: markets, dev_markets, calibrated, eval_seeds, identity_salt_hex, coverage_pool: consistent.
+- T8 -> T11,T13: intervals and decisions functions: consistent.
+- T9 -> T11: WelfareObjective, select_w1, CoalitionObjective, joint_reference: consistent.
+- T10 -> T11: effective, required, bank_rules: consistent (task order fixed in plan round 2).
+- T11 -> T12: search_family, controls: consistent.
+- T12 -> T13: promoted copies under experiments/v2/: consistent (promotion happens in operations; T13 tests use smoke outputs).
+- Ruling R0: T1 and T2 describe() records include parameters.ban_length and parameters.audit_tolerance (needed by T3's public_constants) — design 5.1 reads L from describe — cost if wrong: none.
+- Task 2: Ruling: the residual's 'picks of i in this round' include the priority-phase picks — design 3.3 counts all picks of the round — cost if wrong: a different residual order for identities with unproven and residual jobs in one round.
+Task 2: complete (commits 149cc8d..a4a56a2, tests: uv run pytest tests/test_credibility.py -q → 27 passed in 4.24s)
+Task 3: complete (commits a4a56a2..19eca0f, tests: uv run pytest tests/test_rules_v2.py -q → 7 passed in 11.74s)
+- Baseline (c2f2a08, before any task): tests/test_h1_script.py::test_h1_final_eval_namespace_refused_before_the_unseal fails (the sealed bundle was opened on 2026-10-20; the test expects the pre-unseal refusal). Pre-existing, unrelated to this plan; the base run stopped there (-x), so the full-suite baseline is rerun at the end.
+- Task 5: Ruling: test_members_order uses the headline and a reversed-provider market instead of dev0 — dev0 does not exist until Task 6 (generator); coalition_members is a pure function of the providers — cost if wrong: none (Task 11 runs members on dev0).
+Task 5: complete (commits 3a7eab5..152f64c, tests: uv run pytest tests/test_policies_v2.py -q → 8 passed in 3.70s)
+Task 6: complete (commits 152f64c..35c4f1d, tests: uv run pytest tests/test_instances.py -q → 12 passed in 2.65s)
+- Task 7: Ruling: `ots verify` needs a local Bitcoin node (none here), so the verified attestation is established by the reader itself: the lowest attestation whose header, with both explorers agreeing on its hash, carries the proof's Merkle root; `verified_height` and `lock_ots_verify.txt` are dropped; disagreement at an attestation returns wait; sources serving a different block at A raise — this keeps the round-3 requirement (skip a failed lower attestation; bind A to the commitment) without a node — cost if wrong: trust in two explorers' headers instead of a node, which the design already states as an assumption (7.3).
+Task 7: complete (commits 35c4f1d..bbf3934, tests: uv run pytest tests/test_block_draw.py -q → 14 passed in 0.94s)
+Task 1: complete (commits c2f2a08..bbf3934, tests: uv run pytest tests/test_factorial.py tests/test_frozen_files.py -q → 341 passed, 1152 skipped in 124.88s (0:02:04))
+- Task 1: slow matrices: uv run pytest tests/test_factorial.py -q --runslow -m slow → 1152 passed (475.94s), output in t1-slow.txt
+- Note: Task 1's ledger line shows c2f2a08..bbf3934 because task-done ran after Tasks 2-7; Task 1's own commit is 149cc8d.
+Task 8: complete (commits bbf3934..9aae6b3, tests: uv run pytest tests/test_intervals_v2.py tests/test_decisions_v2.py tests/test_intervals.py -q → 22 passed in 1.51s)
+Task 9: complete (commits 9aae6b3..40e3534, tests: uv run pytest tests/test_objectives_v2.py -q → 8 passed in 3.38s)
+- Task 10: Ruling: cell ids use '|' separators (<context>|<rule>|<family>|<objective>[|c<c>_<schedule>]) because rule and family names contain '/' (C*/S2, X6-SE/v2) — record paths sanitise ids in Task 11 — cost if wrong: none (ids are internal). The fixed-attack bank record is 'bank/<context>/<family>'; the reference-menu bank candidates are part of 'reference/<context>/<rule>'.
+Task 10: complete (commits 40e3534..f94b358, tests: uv run pytest tests/test_manifest_v2.py -q → 7 passed in 0.99s)
+- Task 11: Ruling: the H4 contract adds a module-level BINARY tuple (binary knob names, clip included) so the loader can check 'bounds for every non-binary knob' (a Family treats any knob without bounds as binary, so the check is otherwise vacuous) — the sealed-session brief states BINARY with make_family — cost if wrong: a bundle without BINARY is excluded. Records tests in tests/test_records_v2.py (a file the plan did not list).
+- Task 4: slow matrices: uv run pytest tests/test_x7.py -q --runslow -m slow → 790 passed (308.55s), output in t4-slow.txt
+- Task 11: Deviation: scripts/revision_v2.py was written before its tests; it was moved aside, the tests written and run RED against the missing module, then restored and debugged against them.
+- Task 11: Ruling: rule parameters for comparator and tuned rules come from a --params JSON ({"cred": {...}, "tuned": {"B3-t": {"tol", "L"}, ...}}); development markets run the fresh0 template of the manifest (manifest_ctx) — the plan names no source for these parameters and the manifest lists no dev markets — cost if wrong: a different file layout in operations.
+- Task 11: Ruling: test_cross_evaluation_matrix_shape checks an n x n matrix on a one-rule context instead of 8 x 8 (a full factorial context needs 16 smoke searches); the code iterates the factorial rules present — cost if wrong: an 8-rule bug not caught until operations' dev run.
+- Task 11: Ruling: the runner tests narrow the template context's freeze requirements (monkeypatched manifest_v2.required) to one rule's two menu searches and its reference, and slice X7 controls to 8 except in the 769-count test — keeps a complete context cheap — cost if wrong: integration of envelope and bank records into a freeze is exercised only in operations' dev run.
+Task 11: complete (commits f94b358..37d8e5d, tests: uv run pytest tests/test_revision_v2.py tests/test_h4_loader.py tests/test_records_v2.py -q → 33 passed in 168.31s (0:02:48))
+- Task 12: Ruling: no corner controls inside tuning, as in the registered tuning (sim/tuning.score_point) and as design 8.2 prices inner searches — cost if wrong: tuned configurations chosen without corner checks (the evaluation still runs them).
+- Task 12: Ruling: test_smoke_run_writes_logs is marked slow and uses grid_limit=1 (a full 16-point smoke takes minutes); the shared merge_menu helper was extracted from revision_v2.menu (behaviour unchanged; runner tests green) — cost if wrong: none.
+Task 12: complete (commits 37d8e5d..c1ad484, tests: uv run pytest tests/test_tune_v2.py -q → 8 passed, 1 skipped in 1.50s)
+- Task 13: Ruling: family lookup and candidate reconstruction moved to sim/families_v2.py (the runner keeps thin wrappers) so sim/calibration_v2.py does not import scripts/ — cost if wrong: none (runner and tuning tests green).
+- Task 13: Ruling: replication r of a fixture uses numpy SeedSequence([seed, r]) for both the seed draw and the bootstrap indices (fresh bootstrap randomness per replication approximates the procedure's coverage); validation uses seed + 1,000,003; the fixture inputs come from the tuning logs at the fixed pair (B3-t, R3-t, R4-t inner searches stand for F000, F111, R4, which are the same rules at tol 0.16, L 10), the comparator log, and the C*/S2 fixture file; strata take an optional pool size (tests use 400) — cost if wrong: a different fixture source layout in operations.
+Task 13: complete (commits c1ad484..dd33990, tests: uv run pytest tests/test_calibration_v2.py -q → 11 passed in 6.45s)
+- Task 14: Ruling: w1, coalition_total, and cross_row stay in the job plan but are priced inside the 'cells' and 'cross' rows (W1 and coalition cells as one unit each; cross from the measured per-episode time), so measure() times the headline D2+H3 and X7-SC cells, the inner search, one episode, and one bootstrap batch — cost if wrong: welfare and coalition cells costlier than one unit would be underpriced (the evaluation cap and stop rule still apply).
+## Final review (Sol high, Astra high; both request-changes; files sol-final.md, astra-final.md)
+Re-graded by effect: 12 Important (both seats concur on 1-11, Astra alone on 12) enter the fix pass:
+F1 block reader file digest; F2 auxiliary record provenance and dependency sets; F3 H4 hash in provenance; F4 resume validation and evaluation bound to the freeze; F5 --select before acceptance; F6 coalition prerequisite race and shared tmp names; F7 welfare doubling loses extras; F8 constant samples (NaN, zero division) in inference and calibration; F9 calibration must use the production bootstrap streams; F10 tuning tie order; F11 benchmark scope and reserved seeds; F12 welfare searches skip the embedded incumbent and controls.
+Rejected rulings (by the reviewers): Task 7 (incomplete without the file digest: F1), Task 11 narrowed-freeze tests (F2, F6), Task 13 RNG (F9), Task 14 pricing (F11). Each is superseded by its fix.
+- Final: minor (deferred): tests/test_credibility.py residual-picks case does not distinguish dynamic from static ordering (Sol 12; add p = {1: 3, 2: 3} expecting [0, 3, 1, 2]).
+- Final: fixed F1 block reader file digest — test_file_digest_and_protocol_binding RED→GREEN
+- Final: fixed F8 constant samples — test_stratified_constant_samples, test_q1_constant_differences_do_not_crash, test_calibration_counts_misses_on_near_constant_pool RED→GREEN
+- Final: fixed F9 production bootstrap streams in calibration (cached index matrices identical to the production draws) — test_calibration_uses_production_bounds RED→GREEN
+- Final: fixed F10 tuning tie order — test_recheck_ties_keep_grid_order RED→GREEN
+- Final: fixed F2 auxiliary provenance and dependency sets — test_f2_foreign_auxiliary_record_refused, test_f2_missing_dependency_refused RED→GREEN
+- Final: fixed F3 H4 hash in provenance — test_f3_h4_hash_in_provenance RED→GREEN
+- Final: fixed F4 validated resume and evaluation bound to the freeze — test_f4_stale_or_wrong_stage_record_is_rerun, test_f4_evaluation_bound_to_freeze RED→GREEN
+- Final: fixed F5 full catalog for acceptance — test_f5_selected_evaluation_uses_full_catalog RED→GREEN
+- Final: fixed F6 coalition prerequisites before the pool, unique temporary files — test_f6_unique_tmp_and_prereqs_before_pool RED→GREEN
+- Final: fixed F7 welfare doubling metadata — test_f7_w1_and_w0_doubling_keep_metadata RED→GREEN
+- Final: fixed F12 welfare embedding and controls — test_f12_welfare_x7_uses_embedding_and_controls RED→GREEN
+- Final: test fix: test_fresh_root_installs_salt_in_process leaked the installed salt path through monkeypatch's undo of a second delenv (found by the F4 test's order dependence); it now pops the variable directly.
+- Final: fixed F11 benchmark scope and development seeds — test_measure_covers_every_kind_on_development_seeds, test_cost_table_uses_measured_welfare_and_coalition RED→GREEN
+- Final: Ruling: the default benchmark workloads (_default_fns) run at the registered budgets and are exercised only on the pod (the operations plan's first paid step); tests cover measure() with stub workloads and the cost table — cost if wrong: a failing benchmark run costs one pod start, before any tuning.
+Task 14: complete (commits dd33990..1374c75, tests: uv run pytest tests/test_benchmark_v2.py -q → 6 passed in 0.95s)
+- Whole suite after the fix pass: 976 passed, 1946 skipped, 5 failed; all 5 also fail on main (c2f2a08), stale since the 2026-10-20 unseal: test_h1_final_eval_namespace_refused_before_the_unseal, test_locked_loads_and_namespaces_are_disjoint, test_manifest_totals_follow_the_schedule, test_final_h3_cells_are_beta_headline_median_only, test_reference_records_carry_per_seed_values_and_foreign_rules_are_refused. No failure introduced by this plan.
