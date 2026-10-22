@@ -24,6 +24,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from sim import instances as INST  # noqa: E402
+from sim import families_v2 as FV2  # noqa: E402
 from sim import manifest_v2 as MAN  # noqa: E402
 from sim.calibrate import cell_config, load_calibration  # noqa: E402
 from sim.cell import Abstain, Cell, SeedCache, run_focal  # noqa: E402
@@ -145,22 +146,12 @@ def _h4(path: str, sha: str):
 
 
 def family_for(name: str, T: int, L: int, h4: dict | None = None) -> Family:
-    if name == "D2":
-        return D2
-    if name == "D2+H3":
-        return h3_family(D2)
-    if name == "X7-SC":
-        return x7_family(T, L)
-    if name == "X5-AG/v2":
-        return x5v2_family(T, L)
-    if name == "X6-SE/v2":
-        return x6v2_family(T, L)
     if name == "H4":
         src = _h4(h4["dir"], h4["sha"]) if h4 else Excluded("no bundle")
         if isinstance(src, Excluded):
             raise SystemExit(f"H4 excluded: {src.reason}")
-        return src.family(T, L)
-    raise ValueError(f"unknown family {name!r}")
+        return FV2.family_for(name, T, L, src)
+    return FV2.family_for(name, T, L)
 
 
 def cell_id(ctx: str, rule: str, family: str, objective: str, c=None, schedule=None) -> str:
@@ -278,10 +269,9 @@ def cand_to_json(c: Candidate, family: str | None, T: int, L: int) -> dict:
 
 
 def cand_from_json(d: dict, h4: dict | None = None) -> Candidate:
-    if d["knobs"] is None:
-        return Candidate(d["name"], Abstain if d["name"] == "abstain" else HonestMax, None)
-    fam = family_for(d["family"], int(d["T"]), int(d["L"]), h4); k = dict(d["knobs"])
-    return Candidate(d["name"], lambda: fam.make(k), k)
+    if d.get("family") == "H4":
+        return FV2.cand_from_json(d, _h4(h4["dir"], h4["sha"]))
+    return FV2.cand_from_json(d)
 
 
 def menu(job: dict, out: Path, cuts: int = 0, h4_excluded: bool = False) -> tuple[list, list, dict]:
