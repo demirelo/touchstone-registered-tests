@@ -5,12 +5,13 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import secrets
 from pathlib import Path
 
 
 def write(path, rec: dict) -> None:
     p = Path(path); p.parent.mkdir(parents=True, exist_ok=True)
-    tmp = p.with_name(p.name + ".tmp")
+    tmp = p.with_name(f".{p.name}.{os.getpid()}.{secrets.token_hex(4)}.tmp")       # unique per writer
     with open(tmp, "w") as f:
         json.dump(rec, f, default=float); f.flush(); os.fsync(f.fileno())
     os.replace(tmp, p)

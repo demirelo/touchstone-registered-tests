@@ -268,8 +268,104 @@ def test_fresh_root_installs_salt_in_process(tmp_path, monkeypatch, patched):
         b = run_full(CFG, make_rule("F111"), "replacement", 2000)
         assert fingerprint(a) != fingerprint(b)
     finally:
-        monkeypatch.delenv("TOUCHSTONE_IDENTITY_SALT", raising=False)
+        os.environ.pop("TOUCHSTONE_IDENTITY_SALT", None)       # not monkeypatch.delenv: its undo would restore the installed path
 
 
 def test_cli_accepts_pod_arguments(tmp_path, patched):
     assert patched.main(["--stage", "search", "--select", "x", "--workers", "2", "--out", str(tmp_path), "--dev", "--smoke"]) == 0
+
+
+# ---- final-review fixes ------------------------------------------------------------------------------------------------
+
+def test_f2_foreign_auxiliary_record_refused(ctx_dir, patched, tmp_path):
+    import shutil
+    from sim.records_v2 import write
+    RV = patched; out, jobs = ctx_dir
+    d = tmp_path / "copy"; shutil.copytree(out, d)
+    p = RV.path_of(d, f"reference/{CTX}/F111"); rec = json.loads(p.read_text())
+    rec["provenance"] = {**rec["provenance"], "context": "dev1@rho0.2"}; write(p, rec)      # a dev1 reference copied into dev0
+    assert any("reference" in x for x in RV.check_complete(CTX, jobs, d))
+
+
+def test_f2_missing_dependency_refused(ctx_dir, patched, tmp_path):
+    import shutil
+    from sim.records_v2 import write
+    RV = patched; out, jobs = ctx_dir
+    d = tmp_path / "copy"; shutil.copytree(out, d)
+    p = RV.path_of(d, f"reference/{CTX}/F111"); rec = json.loads(p.read_text()); rec["upstream"] = {}; write(p, rec)
+    assert any("reference" in x for x in RV.check_complete(CTX, jobs, d))
+
+
+def test_f3_h4_hash_in_provenance(patched):
+    RV = patched
+    mkt = RV.market("dev0", RV.DEV_ROOT, 0.2, dev=True, smoke=True)
+    a = RV.job(mkt, "F111", "H4", smoke=True, h4={"dir": "x", "sha": "a" * 64})
+    b = RV.job(mkt, "F111", "H4", smoke=True, h4={"dir": "x", "sha": "b" * 64})
+    assert a["provenance"]["h4_sha256"] == "a" * 64 and a["provenance"] != b["provenance"]
+
+
+def test_f4_stale_or_wrong_stage_record_is_rerun(ctx_dir, patched, tmp_path):
+    import shutil
+    from sim.records_v2 import write
+    RV = patched; out, jobs = ctx_dir
+    d = tmp_path / "copy"; shutil.copytree(out, d)
+    p = RV.path_of(d, jobs[1]["id"]); rec = json.loads(p.read_text()); rec["stage"] = "dependent"; write(p, rec)
+    assert RV.run("search", [jobs[1]], d)[jobs[1]["id"]] == "done"
+
+
+def test_f4_evaluation_bound_to_freeze(ctx_dir, patched, tmp_path):
+    import shutil
+    RV = patched; out, jobs = ctx_dir
+    d = tmp_path / "copy"; shutil.copytree(out, d)
+    RV.run("evaluate", jobs[:1], d, catalog=jobs)
+    rec = json.loads(RV.eval_path(d, jobs[0]["id"]).read_text())
+    assert f"freeze/{CTX}" in rec["upstream"] and jobs[0]["id"] in rec["upstream"] and f"reference/{CTX}/F111" in rec["upstream"]
+    fr = RV.path_of(d, f"freeze/{CTX}"); f = json.loads(fr.read_text()); f["note"] = "refrozen"; fr.write_text(json.dumps(f))
+    assert RV.run("evaluate", jobs[:1], d, catalog=jobs)[jobs[0]["id"]] == "done"         # not skipped after a new freeze
+
+
+def test_f5_selected_evaluation_uses_full_catalog(ctx_dir, patched, tmp_path):
+    import shutil
+    RV = patched; out, jobs = ctx_dir
+    d = tmp_path / "copy"; shutil.copytree(out, d)
+    assert RV.run("evaluate", jobs[1:], d, catalog=jobs)[jobs[1]["id"]] in ("done", "skipped")
+
+
+def test_f6_unique_tmp_and_prereqs_before_pool(patched, monkeypatch, tmp_path):
+    import inspect
+    from sim import records_v2
+    RV = patched
+    assert "getpid" in inspect.getsource(records_v2.write)
+    order = []
+    monkeypatch.setattr(RV, "coalition_prereqs", lambda job, out: order.append(("prereq", RV._coalition_tag(job))))
+    monkeypatch.setattr(RV, "_pool", lambda stage, jobs, out, w, c, h, *rest: order.append(("pool", len(jobs))) or ["done"] * len(jobs))
+    mkt = RV.market("dev0", RV.DEV_ROOT, 0.2, dev=True, smoke=True)
+    js = [RV.job(mkt, "F111", "X6-SE/v2", o, 2, "synchronised", smoke=True) for o in ("total", "min")]
+    RV.run("dependent", js, tmp_path)
+    assert order[0] == ("prereq", "F111_c2_synchronised") and order.count(("prereq", "F111_c2_synchronised")) == 1 and order[-1][0] == "pool"
+
+
+def test_f7_w1_and_w0_doubling_keep_metadata(ctx_dir, patched, tmp_path):
+    import shutil
+    RV = patched; out, jobs = ctx_dir
+    d = tmp_path / "copy"; shutil.copytree(out, d)
+    mkt = jobs[0]["mkt"]
+    w1 = RV.job(mkt, "F111", "D2+H3", "W1", smoke=True); w0 = RV.job(mkt, "F111", "D2+H3", "W0", smoke=True)
+    RV._run_one("dependent", w1, str(d), 0, False); RV._run_one("search", w0, str(d), 0, False)
+    r1 = RV.stage_doubling(w1, d); r0 = RV.stage_doubling(w0, d)
+    assert r1["kind"] == "w1" and "efficiency_change" in r1 and r0["kind"] == "welfare"
+
+
+def test_f12_welfare_x7_uses_embedding_and_controls(patched, monkeypatch, tmp_path):
+    from sim.records_v2 import write
+    RV = patched
+    mkt = RV.market("dev0", RV.DEV_ROOT, 0.2, dev=True, smoke=True)
+    j0 = RV.job(mkt, "F111", "D2+H3", "W0", smoke=True); jx = RV.job(mkt, "F111", "X7-SC", "W0", smoke=True)
+    k = {"u0": 0.5, "m0": 0.5, "s": 0.0, "d": 0.0, "r": 0.0, "w": 0.0, "x": 1, "clip": 0}
+    write(RV.path_of(tmp_path, j0["id"]), {"stage": "search", "provenance": j0["provenance"], "upstream": {}, "selected": k, "welfare": {}, "extras": []})
+    seen = {}
+    real = RV.cma_search
+    monkeypatch.setattr(RV, "cma_search", lambda obj, fam, st, seed, incumbents=None, starts=None: seen.setdefault("inc", incumbents) and real(obj, fam, st, seed, incumbents=incumbents, starts=starts))
+    monkeypatch.setattr(RV, "controls", lambda obj, fam: seen.setdefault("controls", type(obj).__name__) and [])
+    rec = RV.stage_search(jx, tmp_path)
+    assert "embedded_h3" in seen["inc"] and seen["controls"] == "WelfareObjective" and j0["id"] in rec["upstream"]
