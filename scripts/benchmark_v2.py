@@ -14,10 +14,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 KINDS = ("d2h3_cell", "x7_cell", "w1", "coalition_total", "inner", "inner_x7", "coverage_batch", "cross_row", "doubling")
+WORKLOADS = KINDS + ("doubling_x7", "episode", "reference_eval")
 CAPS = {"development": 12.0, "evaluation": 40.0, "approval": 40.0}
 EPISODES = {"coverage": 14 * 20_000 * 3, "cross": 14 * 56 * 200}
 COUNTS = {"comparator_inner": (72, 36), "comparator_recheck": (12, 6), "tuning_inner": (384, 192), "tuning_recheck": (48, 24), "fixtures_inner": (6, 3),
-          "cells": (374 - 126, 126), "doublings": (82, 50)}
+          "doublings": (82, 50)}
+CELLS = {"plain": 208, "x7": 118, "welfare_h3": 8, "welfare_x7": 8, "coalition": 32}       # 374 cells, 126 on the X7-SC knob space
+EPISODE_SEEDS = tuple(range(2000, 2020))                                                  # dev-val: timing never touches reserved ranges
 
 
 def cost_table(timings: dict, usd_per_core_hour: float) -> dict:
@@ -30,7 +33,8 @@ def cost_table(timings: dict, usd_per_core_hour: float) -> dict:
             "tuning": mix(COUNTS["tuning_inner"], inner, inner_x7) + mix(COUNTS["tuning_recheck"], 1.0, x7),
             "fixtures": mix(COUNTS["fixtures_inner"], inner, inner_x7),
             "coverage": EPISODES["coverage"] * ep + timings["bootstrap_batch"] / u}
-    cells = mix(COUNTS["cells"], 1.0, x7)
+    w, co = timings.get("w1", u) / u, timings.get("coalition_total", u) / u
+    cells = CELLS["plain"] + CELLS["x7"] * x7 + CELLS["welfare_h3"] * w + CELLS["welfare_x7"] * w * x7 + CELLS["coalition"] * co
     rows.update({"cells": cells, "eval200_extra": float(timings["eval200_extra_fraction"]) * cells, "cross": EPISODES["cross"] * ep,
                  "doublings": mix(COUNTS["doublings"], dbl, dbl_x7)})
     dev = rows["comparator_selection"] + rows["tuning"] + rows["fixtures"] + rows["coverage"]
@@ -51,30 +55,93 @@ def _timed(f) -> float:
     t0 = time.perf_counter(); f(); return time.perf_counter() - t0
 
 
-def measure(out: Path, workers: int) -> dict:
-    """One job of each kind at the registered budgets (paid pod time; never in tests)."""
+def _default_fns(out: Path) -> dict:
+    """The workloads of design 8.2 on development seeds at the registered budgets (paid pod time; never in tests)."""
+    import numpy as np
     from scripts import revision_v2 as RV
     from scripts import tune_v2 as TV
     from sim import calibration_v2 as C
-    from sim.cell import SeedCache
-    tmp = Path(tempfile.mkdtemp(dir=out)); cred = {"variant": "thr", "K": 6, "M": None}
-    mkt = RV.market("headline", RV.DEV_ROOT, 0.2, dev=True); params = {"cred": cred}
-    j_h3, j_x7 = RV.job(mkt, "F111", "D2+H3", params=params), RV.job(mkt, "F111", "X7-SC", params=params)
-    t = {}
-    t["d2h3_cell"] = _timed(lambda: RV._run_one("search", j_h3, str(tmp), 0, True))
-    t["x7_cell"] = _timed(lambda: RV._run_one("search", j_x7, str(tmp), 0, True))
-    dev0 = TV._market("dev0", False); inner, _ = TV._budgets(False)
-    t["inner"] = _timed(lambda: TV.market_searches("F111", {"tol": 0.16, "L": 10}, dev0, inner, SeedCache())) / 3.0
-    t["inner_x7"] = 2.5 * t["inner"]
-    t["doubling"], t["doubling_x7"] = t["d2h3_cell"], t["x7_cell"]
-    from sim.cell import Cell, run_focal
+    from sim.cell import Cell, SeedCache, run_focal
     from sim.policies.honest import HonestMax
-    cell = Cell(cfg=mkt["cfg"], rule_factory=RV.rule_factory(j_h3), focal=mkt["focal"], seeds=tuple(range(30_000_000, 30_000_100)), name="ep")
-    t["episode"] = _timed(lambda: run_focal(cell, HonestMax, SeedCache())) / 100.0
-    import numpy as np
-    rng = np.random.default_rng(0); strata = [{s: rng.normal(0, 1, 10_000) for s in C.Q1_STATS} for _ in range(6)]
-    t["bootstrap_batch"] = _timed(lambda: C.miss_counts(strata, "pooled", C.Q1_TAILS, [1.0], 100, 9999, 1)) * (30_000 / 100) * 2
-    t["eval200_extra_fraction"] = 4 * 160 * t["episode"] / t["d2h3_cell"]
+    from sim.reference import evaluate_gain, select_reference
+    tmp = Path(tempfile.mkdtemp(dir=out)); params = {"cred": {"variant": "thr", "K": 6, "M": None}}
+    mkt = RV.market("headline", RV.DEV_ROOT, 0.2, dev=True)
+    jobs = {f: RV.job(mkt, "F111", f, params=params) for f in ("D2+H3", "X7-SC")}
+    w1 = RV.job(mkt, "F111", "D2+H3", "W1", params=params); co = RV.job(mkt, "F111", "X6-SE/v2", "total", 2, "synchronised", params=params)
+    dev0 = TV._market("dev0", False); inner = TV.INNER; state = {}
+
+    def cell_unit(f):
+        return lambda: RV._run_one("search", jobs[f], str(tmp), 0, True)
+
+    def inner_family(f):
+        def run():
+            from dataclasses import replace as rep
+            from sim.reference import twin_search
+            j = RV.job(dev0, "F111", f, params=params); T, L = RV.constants(j); fam = RV.family_for(f, T, L); cache = SeedCache()
+            st = rep(RV.settings(j), restarts=inner[0], evals_per_restart=inner[1] * (2 if f == "X7-SC" else 1))
+            cell = rep(RV.train_cell(j), seeds=tuple(dev0["seeds_train"][: inner[2]]))
+            RV.search_family(cell, fam, cache, st, twin_search(cell, fam, cache, st, seed=0), {})
+        return run
+
+    def reference_and_eval():
+        import scripts.revision_v2 as R
+        recs = {f: R.read(R.path_of(tmp, jobs[f]["id"])) for f in jobs}
+        from sim.records import search_from_json
+        from sim.reference import reference_candidates
+        from sim.locked import load_locked
+        cell = R.train_cell(jobs["D2+H3"]); groups = {}
+        for f, rec in recs.items():
+            T, L = R.constants(jobs[f]); fam = R.family_for(f, T, L)
+            for c in reference_candidates(cell, fam, search_from_json(rec["attack"]), search_from_json(rec["twin"]), [], tuple(load_locked()["reference_order"])):
+                groups.setdefault(("bank" if c.name.startswith("bank_") else c.name, f), []).append(c)
+        cands, _ = R.merge_menu(groups, R.MENU); ref = select_reference(cell, cands, SeedCache())
+        ev = Cell(cfg=mkt["cfg"], rule_factory=R.rule_factory(jobs["D2+H3"]), focal=mkt["focal"], seeds=EPISODE_SEEDS, name="ev")
+        evaluate_gain(ev, R.family_for("D2+H3", 200, 10), recs["D2+H3"]["attack"]["best_knobs"], ref.candidate, SeedCache())
+        state["ref"] = ref
+
+    def w1_run():
+        R = RV
+        T, L = R.constants(jobs["D2+H3"])
+        R.write(R.path_of(tmp, f"reference/{mkt['context']}/F111"), {"candidates": [R.cand_to_json(state["ref"].candidate, None, T, L)] if state["ref"].candidate.knobs is None
+                                                                    else [R.cand_to_json(state["ref"].candidate, "D2+H3", T, L)], "choice": 0,
+                                                                    "per_seed_normalized": [float(v) for v in state["ref"].per_seed_normalized]})
+        R._run_one("dependent", w1, str(tmp), 0, True)
+
+    def coalition_run():
+        RV.coalition_prereqs(co, tmp); RV._run_one("dependent", co, str(tmp), 0, True)
+
+    def doubling(f):
+        def run():
+            from sim.records import search_from_json
+            from sim.search import Objective
+            j = jobs[f]; T, L = RV.constants(j); fam = RV.family_for(f, T, L); rec = RV.read(RV.path_of(tmp, j["id"]))
+            RV.continue_search(Objective(RV.train_cell(j), fam, SeedCache()), fam, RV.settings(j), search_from_json(rec["attack"]))
+        return run
+
+    rng = np.random.default_rng(0); strata = [{s_: rng.normal(0, 1, 10_000) for s_ in C.Q1_STATS} for _ in range(6)]
+    ep_cell = Cell(cfg=mkt["cfg"], rule_factory=RV.rule_factory(jobs["D2+H3"]), focal=mkt["focal"], seeds=EPISODE_SEEDS, name="ep")
+    return {"d2h3_cell": cell_unit("D2+H3"), "x7_cell": cell_unit("X7-SC"), "reference_eval": reference_and_eval, "w1": w1_run,
+            "coalition_total": coalition_run,
+            "inner": inner_family("D2+H3"), "inner_x7": inner_family("X7-SC"),
+            "coverage_batch": lambda: C.miss_counts(strata, "pooled", C.Q1_TAILS, [1.0], 100, 9999, 1),
+            "cross_row": lambda: [run_focal(ep_cell, HonestMax, SeedCache()) for _ in range(8)],
+            "doubling": doubling("D2+H3"), "doubling_x7": doubling("X7-SC"),
+            "episode": lambda: run_focal(ep_cell, HonestMax, SeedCache())}
+
+
+def measure(out: Path, workers: int, fns: dict | None = None) -> dict:
+    """Seconds per workload (every one in WORKLOADS is measured): full searches with controls, the reference and a
+    20-seed dev-val evaluation (scaled to the unit's 40 seeds), W1 and coalition cells, the inner searches of a D2+H3 and
+    an X7-SC tuning family, continued searches for doubling, one bootstrap batch, and episodes on dev-val seeds."""
+    f = fns if fns is not None else _default_fns(Path(out))
+    missing = [k for k in WORKLOADS if k not in f]
+    if missing:
+        raise SystemExit(f"benchmark workloads missing: {missing}")
+    t = {k: _timed(f[k]) for k in WORKLOADS if k not in ("episode", "reference_eval")}
+    rx = _timed(f["reference_eval"]); t["d2h3_cell"] += 2 * rx; t["x7_cell"] += 2 * rx
+    t["episode"] = _timed(f["episode"]) / len(EPISODE_SEEDS)
+    t["bootstrap_batch"] = t.pop("coverage_batch") * (30_000 / 100) * 2
+    t["eval200_extra_fraction"] = 4 * 160 * t["episode"] / max(t["d2h3_cell"], 1e-9)
     return t
 
 

@@ -39,3 +39,22 @@ def test_cli_table(tmp_path, capsys):
     p = tmp_path / "timings.json"; p.write_text(json.dumps({"timings": DESIGN, "usd_per_core_hour": 0.108}))
     assert main(["--table", str(p)]) == 0
     assert json.loads(capsys.readouterr().out)["flags"]["approval_required"] is True
+
+
+def test_measure_covers_every_kind_on_development_seeds(tmp_path):
+    from scripts.benchmark_v2 import EPISODE_SEEDS, KINDS, WORKLOADS, measure
+    calls = []
+    stubs = {k: (lambda k=k: calls.append(k)) for k in WORKLOADS}
+    t = measure(tmp_path, 1, fns=stubs)
+    assert set(calls) >= set(KINDS) and set(t) >= {"d2h3_cell", "x7_cell", "w1", "coalition_total", "inner", "inner_x7", "doubling", "doubling_x7",
+                                                    "episode", "bootstrap_batch", "cross_row", "eval200_extra_fraction"}
+    assert all(s < 30_000_000 for s in EPISODE_SEEDS) and set(calls) == set(WORKLOADS)
+    with pytest.raises(SystemExit):
+        measure(tmp_path, 1, fns={k: v for k, v in stubs.items() if k != "w1"})
+
+
+def test_cost_table_uses_measured_welfare_and_coalition():
+    from scripts.benchmark_v2 import cost_table
+    base = cost_table(DESIGN, 0.108)["rows"]["cells"]
+    more = cost_table({**DESIGN, "w1": 2 * UNIT, "coalition_total": 3 * UNIT}, 0.108)["rows"]["cells"]
+    assert more == pytest.approx(base + 8 * 1 + 8 * 2.5 + 32 * 2)
