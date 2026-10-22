@@ -91,3 +91,109 @@ def bound(method: str, x, side: str, level: float, settings: dict) -> Bound:
     if method == "t":
         return t_bound(x, side, level)
     raise ValueError(f"unknown interval method {method!r}")
+
+
+# ---- protocol v2 (design 9.2): arbitrary tails, bootstrap p-values, Holm, calibration, stratified and member bounds ----
+
+V2_RESAMPLE_SEED = 20261022
+
+
+def studentized_tstats(x, resamples: int, seed: int) -> tuple[float, float, np.ndarray]:
+    """Mean, standard error, and bootstrap-t statistics with studentized_bootstrap's resampling and zero-se rule."""
+    x = np.asarray(x, dtype=float).ravel(); n = x.size
+    mean = float(x.mean()); se = float(x.std(ddof=1) / np.sqrt(n))
+    rng = np.random.default_rng(int(seed))
+    idx = rng.integers(0, n, size=(int(resamples), n))
+    samples = x[idx]
+    m = samples.mean(axis=1); s = samples.std(axis=1, ddof=1) / np.sqrt(n)
+    s = np.where(s > 0, s, se)
+    return mean, se, (m - mean) / s
+
+
+def _bound_from(mean: float, se: float, t: np.ndarray, side: str, tail: float) -> float:
+    if side == "lower":
+        return float(mean - np.quantile(t, 1.0 - tail) * se)
+    if side == "upper":
+        return float(mean - np.quantile(t, tail) * se)
+    raise ValueError("side must be 'upper' or 'lower'")
+
+
+def studentized_at(x, side: str, tail: float, resamples: int = 9999, seed: int = V2_RESAMPLE_SEED) -> float:
+    x = np.asarray(x, dtype=float).ravel()
+    if np.all(x == x[0]):
+        return float(x[0])
+    return _bound_from(*studentized_tstats(x, resamples, seed), side, tail)
+
+
+def _pvalue_from(mean: float, se: float, t: np.ndarray, null: float, side: str) -> float:
+    """Smallest tail at which the one-sided bound crosses `null`, at resolution 1 / (B + 1)."""
+    t_obs = (mean - float(null)) / se
+    B = t.size
+    count = int(np.sum(t >= t_obs)) if side == "lower" else int(np.sum(t <= t_obs))
+    return min(1.0, (count + 1) / (B + 1)) if count < B else 1.0
+
+
+def bootstrap_pvalue(x, null: float, side: str, resamples: int = 9999, seed: int = V2_RESAMPLE_SEED) -> float:
+    """side 'lower': H0 mean <= null (rejected when the lower bound exceeds null); 'upper': H0 mean >= null."""
+    x = np.asarray(x, dtype=float).ravel()
+    if np.all(x == x[0]):
+        above = x[0] > null if side == "lower" else x[0] < null
+        return 0.0 if above else 1.0
+    return _pvalue_from(*studentized_tstats(x, resamples, seed), null, side)
+
+
+def two_sided_pvalue(x, null: float, resamples: int = 9999, seed: int = V2_RESAMPLE_SEED) -> float:
+    return min(1.0, 2.0 * min(bootstrap_pvalue(x, null, "lower", resamples, seed), bootstrap_pvalue(x, null, "upper", resamples, seed)))
+
+
+def calibrated(p: float, kappa: float) -> float:
+    return min(1.0, float(p) / float(kappa))
+
+
+def holm(pvalues, alpha: float = 0.05) -> list[bool]:
+    m = len(pvalues); order = sorted(range(m), key=lambda i: pvalues[i]); out = [False] * m
+    for rank, i in enumerate(order):
+        if pvalues[i] <= alpha / (m - rank):
+            out[i] = True
+        else:
+            break
+    return out
+
+
+def stratified_tstats(strata, resamples: int, seed: int) -> tuple[float, float, np.ndarray]:
+    """Equal-weight mean of stratum means; stratum k resampled with its own child stream of SeedSequence(seed);
+    se^2 = sum_k s_k^2 / n_k / K^2; bootstrap-t statistics with the zero-se rule."""
+    st = [np.asarray(s, dtype=float).ravel() for s in strata]; K = len(st)
+    mean = float(np.mean([s.mean() for s in st]))
+    se = float(np.sqrt(sum(s.var(ddof=1) / s.size for s in st)) / K)
+    ms, vs = [], []
+    for s, kid in zip(st, np.random.SeedSequence(int(seed)).spawn(K)):
+        r = s[np.random.default_rng(kid).integers(0, s.size, size=(int(resamples), s.size))]
+        ms.append(r.mean(axis=1)); vs.append(r.var(axis=1, ddof=1) / s.size)
+    se_b = np.sqrt(np.sum(vs, axis=0)) / K
+    se_b = np.where(se_b > 0, se_b, se)
+    return mean, se, (np.mean(ms, axis=0) - mean) / se_b
+
+
+def stratified_at(strata, side: str, tail: float, resamples: int = 9999, seed: int = V2_RESAMPLE_SEED) -> float:
+    return _bound_from(*stratified_tstats(strata, resamples, seed), side, tail)
+
+
+def stratified_pvalue(strata, null: float, side: str, resamples: int = 9999, seed: int = V2_RESAMPLE_SEED) -> float:
+    return _pvalue_from(*stratified_tstats(strata, resamples, seed), null, side)
+
+
+def stratified_two_sided(strata, null: float, resamples: int = 9999, seed: int = V2_RESAMPLE_SEED) -> float:
+    m, se, t = stratified_tstats(strata, resamples, seed)
+    return min(1.0, 2.0 * min(_pvalue_from(m, se, t, null, "lower"), _pvalue_from(m, se, t, null, "upper")))
+
+
+def gmin_bounds(member_rows, tail: float, resamples: int = 9999, seed: int = V2_RESAMPLE_SEED) -> tuple[float, float]:
+    """Bounds of min_j E[g_j]: the minimum over members of the members' bounds at tail / c (simultaneous)."""
+    c = len(member_rows)
+    return (min(studentized_at(r, "lower", tail / c, resamples, seed) for r in member_rows),
+            min(studentized_at(r, "upper", tail / c, resamples, seed) for r in member_rows))
+
+
+def clopper_pearson_upper(x: int, n: int, confidence: float) -> float:
+    return 1.0 if int(x) >= int(n) else float(stats.beta.ppf(float(confidence), int(x) + 1, int(n) - int(x)))
