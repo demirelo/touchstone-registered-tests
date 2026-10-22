@@ -37,3 +37,5 @@ Appendices: A proofs; B amendment log with hashes and timestamps; C attacker fam
 Sol high and Astra high both rejected draft 1 (0.94 each): overstated newcomer coverage, registration chronology, theory scope, and robustness; the amended result misstated as a share of a provider's profit; Sarmenta 2001 not distinguished; title too long; AAMAS 2027 deadline passed. Draft 2 applied many round-1 corrections; the round-2 vote (both reject, 0.95 and 0.96) listed the remainder, applied in draft 3.
 
 Round 3 (draft 3): Sol accept (0.95); Astra accept with a caveat (0.95), caveat applied (explicit names, consistency). The acceptance covers the abstract, introduction, and outline.
+
+Full draft: draft 4 rejected by both (26 corrections); draft 5 Astra accept with caveat, Sol reject (2 points); draft 6 accepted by both (0.95 each). Two consistency edits after the vote (the corollary title and two summaries now use the corollary condition).
