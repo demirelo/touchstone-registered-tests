@@ -2,9 +2,9 @@
 order: search (profit and W0 searches; X7-SC after the same rule's D2+H3 search, with its embedding as an incumbent),
 reference (one menu per rule and context from its D2+H3 and X7-SC searches), dependent (W1 after the reference; the
 coalition joint twin, joint reference, then the total and minimum searches), freeze (envelope choices and the fixed-attack
-bank, then a complete freeze of the context), evaluate and cross (only after the freeze is accepted again), doubling
-(continued searches, diagnostic only). Every record carries provenance and upstream hashes; outputs stay under --out.
-Development markets (dev0, dev1) run the fresh0 template of the manifest."""
+bank, then a complete freeze of the context), then evaluate, cross, and doubling (continued searches, diagnostic only),
+each only after the freeze is accepted again. Every record carries provenance and upstream hashes; outputs stay under
+--out. Development markets (dev0, dev1) run the fresh0 template of the manifest."""
 from __future__ import annotations
 
 import argparse
@@ -249,6 +249,21 @@ def group_provenance(job: dict) -> dict:
     return {**job["provenance"], "id": f"coalition/{job['context']}/{_coalition_tag(job)}"}
 
 
+def reusable(p: Path, rec: dict | None, prov: dict, check) -> bool:
+    """The resume rule for every record (plan Review Focus 5): a missing, damaged, or stale record under the current
+    provenance is recomputed (False); one that passes `check` is reused (True); a record with another provenance is
+    refused, never overwritten."""
+    if rec is None:
+        return False
+    if rec.get("provenance") != prov:
+        raise SystemExit(f"{p}: a record with another provenance exists; refusing to overwrite")
+    try:
+        check()
+        return True
+    except (ValueError, KeyError, StopIteration, TypeError):
+        return False
+
+
 def _welfare_extra(job: dict, out: Path, T: int) -> tuple[dict, dict]:
     """X7-SC welfare searches start from the embedding of the same rule's D2+H3 welfare selection (design 5.2)."""
     if job["family"] != "X7-SC":
@@ -369,20 +384,20 @@ def _coalition_tag(job):
     return f"{job['rule']}_c{job['c']}_{job['schedule']}"
 
 
-def coalition_prereqs(job: dict, out: Path) -> None:
+def coalition_prereqs(job: dict, out: Path, catalog: list | None = None) -> None:
     """The coalition group's joint twin and joint reference (design 6.3), created once per group before the objective
-    searches run, with the group's provenance."""
-    T, L = constants(job); cache = SeedCache(); st = settings(job); m = job["mkt"]; prov = group_provenance(job)
+    searches run, with the group's provenance; existing records are reused only if they pass the full record check."""
+    T, L = constants(job); cache = SeedCache(); st = settings(job); m = job["mkt"]; prov = group_provenance(job); catalog = catalog or [job]
     fam = x6v2_family(T, L); members = x6v2_members(m["cfg"], m["focal"], int(job["c"])); stag = job["schedule"] == "staggered"
     tag = _coalition_tag(job); tid, rid = f"joint_twin/{job['context']}/{tag}", f"joint_reference/{job['context']}/{tag}"
     trec = read(path_of(out, tid))
-    if trec is None or trec.get("provenance") != prov:
+    if not reusable(path_of(out, tid), trec, prov, lambda: check_record(tid, trec, catalog, out)):
         tobj = CoalitionObjective(m["cfg"], rule_factory(job), members, fam, m["seeds_train"], cache, "joint_twin", staggered=stag, T=T, L=L)
         tw = cma_search(tobj, fam, st, 0, starts=fam.registered_starts({"near_corner": st.near_corner, "sobol_seed": st.sobol_seed}, twin=True))
         write(path_of(out, tid), {"stage": "joint_twin", "provenance": prov, "twin": search_to_json(tw), "upstream": {}})
         trec = read(path_of(out, tid))
     jrec = read(path_of(out, rid))
-    if jrec is None or jrec.get("provenance") != prov or jrec.get("upstream") != {tid: sha_file(path_of(out, tid))}:
+    if not reusable(path_of(out, rid), jrec, prov, lambda: check_record(rid, jrec, catalog, out)):
         jr = joint_reference(m["cfg"], rule_factory(job), members, m["seeds_train"], cache, trec["twin"]["best_knobs"], stag, T, L)
         write(path_of(out, rid), {"stage": "joint_reference", "provenance": prov, "name": jr["name"], "scores": jr["scores"],
                                   "member_normalized": jr["member_normalized"].tolist(), "twin_knobs": jr["twin_knobs"],
@@ -499,6 +514,7 @@ def derived_records(ctx: str, catalog: list[dict], out: Path, cuts: int, h4_excl
                 up[u] = sha_file(path_of(out, u))
                 if "|" in u:
                     gains[u.split("|")[2]] = float(read(path_of(out, u))["attack"]["best_f"]) - ref_score
+            reusable(path_of(out, r), read(path_of(out, r)), aux_provenance(any_job["mkt"], rule=rule), lambda: None)      # refuses a foreign record
             write(path_of(out, r), {"stage": "envelope", "provenance": aux_provenance(any_job["mkt"], rule=rule),
                                    "choice": max(gains, key=gains.get) if gains else None, "training_gains": gains, "upstream": up})
         elif kind == "bank":
@@ -507,6 +523,7 @@ def derived_records(ctx: str, catalog: list[dict], out: Path, cuts: int, h4_excl
                 rec = read(path_of(out, u))
                 if rec is not None:
                     attacks[u.split("|")[1]] = rec["attack"]["best_knobs"]; up[u] = sha_file(path_of(out, u))
+            reusable(path_of(out, r), read(path_of(out, r)), aux_provenance(any_job["mkt"], family=fname), lambda: None)
             write(path_of(out, r), {"stage": "bank", "provenance": aux_provenance(any_job["mkt"], family=fname), "attacks": attacks, "upstream": up})
 
 
@@ -579,23 +596,35 @@ def stage_evaluate(job: dict, out: Path) -> dict:
     return {"seeds": list(cell.seeds), "member_gain": g.tolist(), "total": float(g.mean(axis=1).sum()), "min": float(g.mean(axis=1).min())}
 
 
-def stage_cross(ctx: str, family: str, catalog: list[dict], out: Path) -> dict:
-    bank = read(path_of(out, f"bank/{ctx}/{family}"))
+def _cross_rules(ctx: str, family: str, catalog: list[dict], bank: dict) -> tuple[dict, list]:
     by_rule = {j["rule"]: j for j in catalog if j["context"] == ctx and j["family"] == family and j["objective"] == "profit" and j["rule"] in MAN.FACTORIAL}
-    rules = [r for r in MAN.FACTORIAL if r in by_rule and r in bank["attacks"]]; cache = SeedCache(); mat, rows = [], {}
-    up = {f"freeze/{ctx}": sha_file(path_of(out, f"freeze/{ctx}")) if path_of(out, f"freeze/{ctx}").exists() else None,
-          f"bank/{ctx}/{family}": sha_file(path_of(out, f"bank/{ctx}/{family}"))}
+    return by_rule, [r for r in MAN.FACTORIAL if r in by_rule and r in bank["attacks"]]
+
+
+def cross_expected(ctx: str, family: str, catalog: list[dict], out: Path) -> tuple[dict, set]:
+    """The provenance and dependency ids of a cross record, derived independently of any stored record."""
+    bank = read(path_of(out, f"bank/{ctx}/{family}"))
+    if bank is None:
+        raise SystemExit(f"cross {ctx}/{family}: no fixed-attack bank")
+    _, rules = _cross_rules(ctx, family, catalog, bank)
+    ids = {f"freeze/{ctx}", f"bank/{ctx}/{family}"} | {f"reference/{ctx}/{r}" for r in rules}
+    return aux_provenance(_first(catalog, context=ctx)["mkt"], family=family), ids
+
+
+def stage_cross(ctx: str, family: str, catalog: list[dict], out: Path) -> dict:
+    bank = read(path_of(out, f"bank/{ctx}/{family}")); by_rule, rules = _cross_rules(ctx, family, catalog, bank); cache = SeedCache(); mat, rows = [], {}
+    prov, ids = cross_expected(ctx, family, catalog, out)
+    up = {u: sha_file(path_of(out, u)) for u in sorted(ids)}
     for a in rules:
         row = []
         for r in rules:
             j = by_rule[r]; T, L = constants(j); fam = family_for(family, T, L); cell = eval_cell(j)
-            cand, _, rp = reference_of(j, out); up[f"reference/{ctx}/{r}"] = sha_file(rp)
+            cand, _, _ = reference_of(j, out)
             att = run_focal(cell, lambda: fam.make(dict(bank["attacks"][a])), cache); ref = run_focal(cell, cand.policy_factory, cache)
             gain = (att.profit - ref.profit) / (np.array([x.sstar for x in att.results]) / cell.cfg.N)
             rows[f"{a}>{r}"] = gain.tolist(); row.append(float(gain.mean()))
         mat.append(row)
-    any_job = next(iter(by_rule.values())) if by_rule else None
-    return {"stage": "cross", "provenance": aux_provenance(any_job["mkt"], family=family) if any_job else None, "upstream": up,
+    return {"stage": "cross", "provenance": prov, "upstream": up,
             "context": ctx, "family": family, "attacks": rules, "rules": rules, "matrix": mat, "per_seed": rows}
 
 
@@ -675,24 +704,21 @@ def _inputs(job: dict) -> set:
 def stage_upstream(stage: str, job: dict, catalog: list[dict], cuts: int, h4_excluded: bool) -> set:
     if stage in ("search", "dependent"):
         return expected_upstream(job["id"], catalog, cuts, h4_excluded)
-    if stage == "evaluate":
-        return _inputs(job) | {f"freeze/{job['context']}"}
-    return _inputs(job)
+    ids = _inputs(job) | {f"freeze/{job['context']}"}
+    if stage == "doubling" and job["objective"] == "profit":                  # the profit check reselects from the rule's menu
+        ids |= expected_upstream(f"reference/{job['context']}/{job['rule']}", catalog, cuts, h4_excluded)
+    return ids
 
 
 def _run_one(stage: str, job: dict, out: str, cuts: int, h4_excluded: bool, catalog: list | None = None) -> str:
     out = Path(out); p = _stage_record_path(stage, job, out); rec = read(p); catalog = catalog or [job]
     want = stage_upstream(stage, job, catalog, cuts, h4_excluded)
-    if rec is not None:
-        if rec.get("provenance") != job["provenance"]:
-            raise SystemExit(f"{p}: a record with another provenance exists; refusing to overwrite")
-        try:
-            if rec.get("stage") != stage or set(rec.get("upstream") or {}) != want:
-                raise ValueError("stage or dependency set")
-            validate(job, stage, rec, {u: path_of(out, u) for u in want})
-            return "skipped"
-        except ValueError:
-            pass                                          # stale or inconsistent: recompute
+    def check():
+        if set(rec.get("upstream") or {}) != want:
+            raise ValueError("dependency set")
+        validate(job, stage, rec, {u: path_of(out, u) for u in want})
+    if reusable(p, rec, job["provenance"], check):
+        return "skipped"
     body = {"search": stage_search, "dependent": stage_dependent, "evaluate": stage_evaluate}.get(stage)
     rec = body(job, out) if body else stage_doubling(job, out, cuts, h4_excluded)
     upstream = rec.pop("upstream", None)
@@ -726,11 +752,9 @@ def run(stage: str, jobs: list[dict], out: Path, workers: int = 1, cuts: int = 0
         for j in jobs:
             key = (j["context"], j["rule"])
             if j["objective"] == "profit" and j["family"] in MENU and key not in seen:
-                seen.add(key); rid = f"reference/{key[0]}/{key[1]}"; p = path_of(out, rid)
-                try:
-                    check_record(rid, read(p), catalog, out, cuts, h4_excluded); res[rid] = "skipped"; continue
-                except (ValueError, KeyError, StopIteration, TypeError):
-                    pass
+                seen.add(key); rid = f"reference/{key[0]}/{key[1]}"; p = path_of(out, rid); old = read(p)
+                if reusable(p, old, reference_provenance(j), lambda: check_record(rid, old, catalog, out, cuts, h4_excluded)):
+                    res[rid] = "skipped"; continue
                 rec = stage_reference(j, out, cuts, h4_excluded); up = rec.pop("upstream")
                 write(p, {"stage": "reference", "provenance": reference_provenance(j), "upstream": up, **rec})
                 res[rid] = "done"
@@ -744,7 +768,7 @@ def run(stage: str, jobs: list[dict], out: Path, workers: int = 1, cuts: int = 0
         for j in coal:
             g = (j["context"], _coalition_tag(j))
             if g not in done:
-                done.add(g); coalition_prereqs(j, out)
+                done.add(g); coalition_prereqs(j, out, catalog)
         for j, r in zip(coal, pool(stage, coal)):
             res[j["id"]] = r
     elif stage == "freeze":
@@ -762,15 +786,20 @@ def run(stage: str, jobs: list[dict], out: Path, workers: int = 1, cuts: int = 0
                 continue
             accept(ctx, catalog, out, cuts, h4_excluded)
             for fam in MENU:
-                p = Path(out) / "cross" / ctx / (_safe(fam) + ".json"); old = read(p)
-                fresh = stage_cross(ctx, fam, catalog, out) if old is None or any(
-                    path_of(out, u).exists() is False or (sha and sha_file(path_of(out, u)) != sha) for u, sha in (old.get("upstream") or {}).items()) else None
-                if fresh is not None:
-                    write(p, fresh)
-                res[f"cross/{ctx}/{fam}"] = "done" if fresh is not None else "skipped"
+                p = Path(out) / "cross" / ctx / (_safe(fam) + ".json"); old = read(p); prov, ids = cross_expected(ctx, fam, catalog, out)
+
+                def check(old=old, ids=ids, prov=prov):
+                    if set(old.get("upstream") or {}) != ids:
+                        raise ValueError("dependency set")
+                    validate({"provenance": prov}, "cross", old, {u: path_of(out, u) for u in ids})
+                if reusable(p, old, prov, check):
+                    res[f"cross/{ctx}/{fam}"] = "skipped"; continue
+                write(p, stage_cross(ctx, fam, catalog, out)); res[f"cross/{ctx}/{fam}"] = "done"
     elif stage == "doubling":
         dbl = set(MAN.doublings())
         sel = [j for j in jobs if j["id"].replace(j["context"], manifest_ctx(j["context"]), 1) in dbl]
+        for ctx in sorted({j["context"] for j in sel}):
+            accept(ctx, catalog, out, cuts, h4_excluded)                      # a diagnostic of the accepted freeze only
         for j, r in zip(sel, pool(stage, sel)):
             res[j["id"]] = r
     else:

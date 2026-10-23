@@ -233,7 +233,7 @@ def test_doubling_reference_only_change(patched):
 def test_doubling_does_not_touch_frozen_records(ctx_dir, patched):
     RV = patched; out, jobs = ctx_dir
     before = _hashes(out)
-    res = RV.run("doubling", jobs[:1], out)
+    res = RV.run("doubling", jobs[:1], out, catalog=jobs)
     assert res[jobs[0]["id"]] in ("done", "skipped") and _hashes(out) == before
     rec = json.loads((Path(out) / "doubling" / (RV._safe(jobs[0]["id"]) + ".json")).read_text())
     assert {"attack_change", "reference_change", "incomplete"} <= set(rec)
@@ -337,7 +337,7 @@ def test_f6_unique_tmp_and_prereqs_before_pool(patched, monkeypatch, tmp_path):
     RV = patched
     assert "getpid" in inspect.getsource(records_v2.write)
     order = []
-    monkeypatch.setattr(RV, "coalition_prereqs", lambda job, out: order.append(("prereq", RV._coalition_tag(job))))
+    monkeypatch.setattr(RV, "coalition_prereqs", lambda job, out, *rest: order.append(("prereq", RV._coalition_tag(job))))
     monkeypatch.setattr(RV, "_pool", lambda stage, jobs, out, w, c, h, *rest: order.append(("pool", len(jobs))) or ["done"] * len(jobs))
     mkt = RV.market("dev0", RV.DEV_ROOT, 0.2, dev=True, smoke=True)
     js = [RV.job(mkt, "F111", "X6-SE/v2", o, 2, "synchronised", smoke=True) for o in ("total", "min")]
@@ -369,3 +369,74 @@ def test_f12_welfare_x7_uses_embedding_and_controls(patched, monkeypatch, tmp_pa
     monkeypatch.setattr(RV, "controls", lambda obj, fam: seen.setdefault("controls", type(obj).__name__) and [])
     rec = RV.stage_search(jx, tmp_path)
     assert "embedded_h3" in seen["inc"] and seen["controls"] == "WelfareObjective" and j0["id"] in rec["upstream"]
+
+
+# ---- fix-pass re-review (round 1) --------------------------------------------------------------------------------------
+
+def _copy(out, tmp_path):
+    import shutil
+    d = tmp_path / "copy"; shutil.copytree(out, d)
+    return d
+
+
+def _banks(RV, out, jobs):
+    from sim.records_v2 import write
+    for j in jobs:
+        write(RV.path_of(out, f"bank/{CTX}/{j['family']}"), {"stage": "bank", "attacks": {"F111": json.loads(RV.path_of(out, j["id"]).read_text())["attack"]["best_knobs"]}})
+
+
+def test_g1_cross_resume_validates_the_expected_record(ctx_dir, patched, tmp_path):
+    from sim.records_v2 import write
+    RV = patched; out, jobs = ctx_dir; d = _copy(out, tmp_path); _banks(RV, d, jobs)
+    assert set(RV.run("cross", jobs, d, catalog=jobs).values()) == {"done"}
+    assert set(RV.run("cross", jobs, d, catalog=jobs).values()) == {"skipped"}
+    p = d / "cross" / CTX / (RV._safe("D2+H3") + ".json"); rec = json.loads(p.read_text())
+    assert set(rec["upstream"]) == {f"freeze/{CTX}", f"bank/{CTX}/D2+H3", f"reference/{CTX}/F111"}
+    for bad in ({**rec, "stage": "search"}, {**rec, "upstream": {}}, {**rec, "upstream": {**rec["upstream"], f"reference/{CTX}/F111": "0" * 64}}):
+        write(p, bad)
+        assert RV.run("cross", jobs, d, catalog=jobs)[f"cross/{CTX}/D2+H3"] == "done"          # stale under the same provenance: recomputed
+    write(p, {k: v for k, v in rec.items() if k not in ("provenance", "upstream")})          # an old record without provenance or dependencies
+    with pytest.raises(SystemExit):
+        RV.run("cross", jobs, d, catalog=jobs)
+    write(p, {**rec, "provenance": {**rec["provenance"], "context": "dev1@rho0.2"}})
+    with pytest.raises(SystemExit):
+        RV.run("cross", jobs, d, catalog=jobs)
+
+
+def test_g2_doubling_needs_an_accepted_freeze_and_binds_it(ctx_dir, patched, tmp_path):
+    RV = patched; out, jobs = ctx_dir; d = _copy(out, tmp_path)
+    RV.path_of(d, f"freeze/{CTX}").unlink()
+    with pytest.raises(SystemExit):
+        RV.run("doubling", jobs[:1], d, catalog=jobs)
+    d2 = tmp_path / "copy2"; import shutil; shutil.copytree(out, d2)
+    assert RV.run("doubling", jobs[:1], d2, catalog=jobs)[jobs[0]["id"]] in ("done", "skipped")
+    rec = json.loads((Path(d2) / "doubling" / (RV._safe(jobs[0]["id"]) + ".json")).read_text())
+    assert {f"freeze/{CTX}", f"reference/{CTX}/F111", jobs[0]["id"], jobs[1]["id"]} <= set(rec["upstream"])     # the freeze and every menu input
+    fr = RV.path_of(d2, f"freeze/{CTX}"); f = json.loads(fr.read_text()); f["note"] = "refrozen"; fr.write_text(json.dumps(f))
+    assert RV.run("doubling", jobs[:1], d2, catalog=jobs)[jobs[0]["id"]] == "done"          # a replacement freeze reruns the diagnostic
+
+
+def test_g3_reference_resume_refuses_foreign_and_recomputes_stale(ctx_dir, patched, tmp_path):
+    from sim.records_v2 import write
+    RV = patched; out, jobs = ctx_dir; d = _copy(out, tmp_path)
+    p = RV.path_of(d, f"reference/{CTX}/F111"); rec = json.loads(p.read_text())
+    write(p, {**rec, "upstream": {}})
+    assert RV.run("reference", jobs, d, catalog=jobs)[f"reference/{CTX}/F111"] == "done"
+    write(p, {**rec, "provenance": {**rec["provenance"], "context": "dev1@rho0.2"}})
+    with pytest.raises(SystemExit):
+        RV.run("reference", jobs, d, catalog=jobs)
+
+
+def test_g3_coalition_prereqs_validate_before_reuse(patched, tmp_path):
+    from sim.records_v2 import write
+    RV = patched
+    mkt = RV.market("dev0", RV.DEV_ROOT, 0.2, dev=True, smoke=True)
+    j = RV.job(mkt, "F111", "X6-SE/v2", "total", 2, "synchronised", smoke=True)
+    tag = RV._coalition_tag(j); tp, jp = RV.path_of(tmp_path, f"joint_twin/dev0@rho0.2/{tag}"), RV.path_of(tmp_path, f"joint_reference/dev0@rho0.2/{tag}")
+    RV.coalition_prereqs(j, tmp_path)
+    t0 = json.loads(tp.read_text()); write(tp, {**t0, "stage": "search"})                     # same provenance, wrong stage
+    RV.coalition_prereqs(j, tmp_path)
+    assert json.loads(tp.read_text())["stage"] == "joint_twin" and json.loads(jp.read_text())["upstream"] == {f"joint_twin/dev0@rho0.2/{tag}": RV.sha_file(tp)}
+    write(jp, {**json.loads(jp.read_text()), "provenance": {**t0["provenance"], "context": "dev1@rho0.2"}})
+    with pytest.raises(SystemExit):
+        RV.coalition_prereqs(j, tmp_path)
