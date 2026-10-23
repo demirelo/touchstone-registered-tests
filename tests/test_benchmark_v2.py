@@ -47,7 +47,7 @@ def test_measure_covers_every_kind_on_development_seeds(tmp_path):
     calls = []
     stubs = {k: (lambda k=k: calls.append(k)) for k in WORKLOADS}
     t = measure(tmp_path, 1, fns=stubs)
-    assert set(calls) == set(WORKLOADS) and set(t) >= set(KINDS) - {"coverage_batch"} | {"doubling_x7", "episode", "bootstrap_batch", "eval200_extra_fraction", "inner_d2"}
+    assert set(calls) == set(WORKLOADS) and set(t) >= set(KINDS) - {"coverage_batch"} | {"doubling_x7", "episode", "bootstrap_batch", "eval160", "reference", "inner_d2"}
     assert all(s < 30_000_000 for s in EPISODE_SEEDS)
     with pytest.raises(SystemExit):
         measure(tmp_path, 1, fns={k: v for k, v in stubs.items() if k != "w1_search"})
@@ -78,11 +78,10 @@ def test_g7_cells_are_composed_from_their_components(tmp_path, monkeypatch):
     monkeypatch.setattr(B, "_timed", lambda f: secs[f()])
     fns = {k: (lambda k=k: k) for k in B.WORKLOADS}; fns["_meta"] = {"eval_seeds": 20, "episodes": 20, "coverage_replications": 100}
     t = B.measure(tmp_path, 1, fns=fns); r = secs
-    assert t["d2h3_cell"] == r["search_d2h3"] + r["reference"] / 2 + 2 * r["eval_d2h3"]
-    assert t["x7_cell"] == r["search_x7"] + r["reference"] / 2 + 2 * r["eval_x7"]
-    assert t["w1"] == r["w1_search"] + 2 * r["w1_eval"]
+    assert t["d2h3_cell"] == r["search_d2h3"] + 2 * r["eval_d2h3"] and t["x7_cell"] == r["search_x7"] + 2 * r["eval_x7"]          # references apart
+    assert t["reference"] == r["reference"] and t["w1"] == r["w1_search"] + 2 * r["w1_eval"]
     assert t["coalition_total"] == r["coalition_prereqs"] / 2 + r["coalition_search"] + 2 * r["coalition_eval"]
-    assert t["eval200_extra_fraction"] == pytest.approx(8 * r["eval_d2h3"] / t["d2h3_cell"])
+    assert t["eval160"] == {"profit": 8 * r["eval_d2h3"], "x7": 8 * r["eval_x7"], "welfare": 8 * r["w1_eval"], "coalition": 8 * r["coalition_eval"]}
     assert t["cross_row"] == r["cross_row"] and t["episode"] == r["episode"] / 20 and t["inner_d2"] == r["inner_d2"]
 
 
@@ -101,10 +100,41 @@ def test_g6_default_workloads_run_at_smoke_budget_on_development_seeds(tmp_path,
     import math
     import scripts.benchmark_v2 as B
     import scripts.revision_v2 as RV
+    import sim.manifest_v2 as MAN
     from sim.policies.x7 import corner_vectors as cv
     monkeypatch.setattr(RV, "corner_vectors", lambda fam: cv(fam)[:8])
     monkeypatch.setattr(RV.INST, "eval_seeds", lambda *a, **k: (_ for _ in ()).throw(AssertionError("reserved evaluation seeds")))
     t = B.measure(tmp_path, 1, smoke=True)
     assert set(t["components"]) == set(B.WORKLOADS) and all(v > 0 for v in t["components"].values())
+    want = len([o for o in MAN.bank_rules("headline@rho0.2", "D2+H3") if o != "F111"])
+    assert want == 11 and t["bank_sizes"] == {"D2+H3": want, "X7-SC": want}          # the matched rule's menu holds the 11 other matched rules' attacks
     table = B.cost_table(t, 0.108)
     assert all(math.isfinite(v) for v in table["rows"].values()) and table["total_usd"] > 0
+
+
+def _composed(B, monkeypatch, tmp_path, **override):
+    secs = {k: 10.0 for k in B.WORKLOADS} | override
+    monkeypatch.setattr(B, "_timed", lambda f: secs[f()])
+    fns = {k: (lambda k=k: k) for k in B.WORKLOADS}; fns["_meta"] = {"eval_seeds": 20, "episodes": 20, "coverage_replications": 100}
+    return B.measure(tmp_path, 1, fns=fns)
+
+
+def test_h2_extra_evaluation_follows_evaluation_components_only(tmp_path, monkeypatch):
+    import scripts.benchmark_v2 as B
+    base = B.cost_table(_composed(B, monkeypatch, tmp_path), 0.108); u = base["unit_core_hours"] * 3600
+    slow = B.cost_table(_composed(B, monkeypatch, tmp_path, coalition_search=20.0, search_d2h3=30.0, w1_search=40.0), 0.108)
+    extra_s = lambda tb: tb["rows"]["eval200_extra"] * tb["unit_core_hours"] * 3600
+    assert extra_s(slow) == pytest.approx(extra_s(base))                                # slower searches, same evaluations: same extra
+    assert extra_s(base) == pytest.approx(8 * 10.0 * (208 + 118 + 8 + 8 + 32))
+    more = B.cost_table(_composed(B, monkeypatch, tmp_path, coalition_eval=20.0), 0.108)
+    assert extra_s(more) - extra_s(base) == pytest.approx(32 * 8 * 10.0)
+
+
+def test_h3_references_priced_once_per_menu(tmp_path, monkeypatch):
+    import scripts.benchmark_v2 as B
+    import sim.manifest_v2 as MAN
+    menus = {(c["context"], c["rule"]) for c in MAN.effective(0, False) if c["objective"] == "profit" and c["family"] in ("D2+H3", "X7-SC")}
+    assert B.REFERENCE_MENUS == len(menus) == 118
+    a = B.cost_table(_composed(B, monkeypatch, tmp_path), 0.108); b = B.cost_table(_composed(B, monkeypatch, tmp_path, reference=11.0), 0.108)
+    sec = lambda tb, row: tb["rows"][row] * tb["unit_core_hours"] * 3600
+    assert sec(b, "references") - sec(a, "references") == pytest.approx(118.0) and sec(b, "cells") == pytest.approx(sec(a, "cells"))

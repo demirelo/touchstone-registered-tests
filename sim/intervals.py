@@ -136,12 +136,17 @@ def sample_mean(x) -> float:
     return _mean_var(sample(x))[0]
 
 
+def _combine(means: list) -> float:
+    """The equal-weight mean of stratum means, exact when they are all equal (the constant rule across strata)."""
+    return float(means[0]) if all(m == means[0] for m in means) else float(np.mean(means))
+
+
 def stratified_mean(strata) -> float:
     """The equal-weight mean of the stratum means (design 9.2)."""
     st = [sample(s, f"stratum {k}") for k, s in enumerate(strata)]
     if not st:
         raise ValueError("no strata")
-    return float(np.mean([_mean_var(s)[0] for s in st]))
+    return _combine([_mean_var(s)[0] for s in st])
 
 
 def studentized_tstats(x, resamples: int, seed: int) -> tuple[float, float, np.ndarray]:
@@ -225,7 +230,7 @@ def stratified_tstats(strata, resamples: int, seed: int) -> tuple[float, float, 
     if not K:
         raise ValueError("no strata")
     mv = [_mean_var(s) for s in st]
-    mean = float(np.mean([m for m, _ in mv]))
+    mean = _combine([m for m, _ in mv])
     se = float(np.sqrt(sum(v / s.size for (_, v), s in zip(mv, st))) / K)
     if se == 0:
         return mean, se, np.zeros(int(resamples))

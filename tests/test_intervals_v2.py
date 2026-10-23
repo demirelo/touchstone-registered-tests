@@ -128,3 +128,15 @@ def test_g5_exact_constant_samples_in_every_path():
     st = [np.full(50, 0.3) for _ in range(6)]
     m, se, t = I.stratified_tstats(st, 99, 1)
     assert se == 0.0 and m == I.stratified_mean(st) and I.stratified_at(st, "lower", 0.01, 99, 1) == m
+
+
+def test_h5_pooled_exact_constants_and_decision_inputs():
+    from sim import decisions_v2 as D
+    st = [np.full(200, 1.1) for _ in range(6)]
+    assert I.stratified_mean(st) == 1.1 and I.stratified_at(st, "lower", 0.01, 99) == 1.1 and I.stratified_at(st, "upper", 0.01, 99) == 1.1
+    assert I.stratified_pvalue(st, 1.1, "upper", 99) == 1.0 and I.stratified_pvalue(st, 1.1, "lower", 99) == 1.0      # a true null is never rejected
+    assert I.stratified_pvalue(st, 1.0, "lower", 99) == 0.0 and I.stratified_pvalue(st, 1.2, "upper", 99) == 0.0
+    with pytest.raises(ValueError):
+        I.holm([0.01, np.nan])
+    with pytest.raises(ValueError):
+        D.q4_markets([np.nan] * 6, [0.01] * 6, 1.0)

@@ -440,3 +440,26 @@ def test_g3_coalition_prereqs_validate_before_reuse(patched, tmp_path):
     write(jp, {**json.loads(jp.read_text()), "provenance": {**t0["provenance"], "context": "dev1@rho0.2"}})
     with pytest.raises(SystemExit):
         RV.coalition_prereqs(j, tmp_path)
+
+
+def test_h4_valid_derived_records_are_reused(ctx_dir, patched, monkeypatch, tmp_path):
+    from sim.records_v2 import write
+    import shutil
+    RV = patched; out, jobs = ctx_dir; d = _copy(out, tmp_path)
+    for k in ("bank", "envelope"):                                                        # other tests leave provenance-less banks in the shared fixture
+        shutil.rmtree(d / k, ignore_errors=True)
+    extra = [f"bank/{TEMPLATE}/D2+H3", f"envelope/{TEMPLATE}/F111"]
+    monkeypatch.setattr(MAN, "required", lambda ctx, cuts=0, h4_excluded=False: _required(ctx, cuts, h4_excluded) + (extra if ctx == TEMPLATE else []))
+    RV.derived_records(CTX, jobs, d, 0, False)
+    ids = [f"bank/{CTX}/D2+H3", f"envelope/{CTX}/F111"]
+    assert all(not RV.check_complete(CTX, jobs, d) or all(i not in x for x in RV.check_complete(CTX, jobs, d)) for i in ids)
+    writes = []; real = RV.write
+    monkeypatch.setattr(RV, "write", lambda p, rec: writes.append(str(p)) or real(p, rec))
+    RV.derived_records(CTX, jobs, d, 0, False)
+    assert writes == []                                                                   # valid records are reused, not rewritten
+    bp = RV.path_of(d, ids[0]); b = json.loads(bp.read_text()); real(bp, {**b, "upstream": {}})
+    RV.derived_records(CTX, jobs, d, 0, False)
+    assert writes == [str(bp)]                                                            # stale under the same provenance: recomputed
+    real(bp, {**b, "provenance": {**b["provenance"], "context": "dev1@rho0.2"}})
+    with pytest.raises(SystemExit):
+        RV.derived_records(CTX, jobs, d, 0, False)

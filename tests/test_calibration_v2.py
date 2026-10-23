@@ -186,3 +186,20 @@ def test_g4_nonfinite_pools_are_refused():
         miss_counts({"x": pool}, "single", [0.05], [1.0], replications=2, resamples=99, seed=1)
     with pytest.raises(ValueError):
         miss_counts([{"x": pool[:300]}, {"x": np.zeros(300)}], "pooled", [0.05], [1.0], replications=2, resamples=99, seed=1)
+
+
+def test_h5_every_replication_bound_equals_production():
+    from sim import intervals as I
+    from sim.calibration_v2 import miss_counts
+    rng = np.random.default_rng(8); pool = rng.normal(0, 1, 1000); strata = [{"d": rng.normal(0, 1, 200)} for _ in range(3)]
+    tr = []
+    miss_counts({"x": pool}, "single", [0.1], [0.5], replications=5, resamples=99, seed=3, n=30, trace=tr)
+    assert len(tr) == 5 * 2
+    for r, s, side, tail, kp, b in tr:
+        idx = np.random.default_rng(np.random.SeedSequence([3, r])).integers(0, pool.size, 30)
+        assert b == I.studentized_at(pool[idx], side, tail * kp, 99)
+    tr = []
+    miss_counts(strata, "pooled", [0.1], [1.0], replications=4, resamples=99, seed=4, n=20, trace=tr)
+    for r, s, side, tail, kp, b in tr:
+        g = np.random.default_rng(np.random.SeedSequence([4, r])); draws = [g.integers(0, 200, 20) for _ in strata]
+        assert b == I.stratified_at([st["d"][i] for st, i in zip(strata, draws)], side, tail * kp, 99)

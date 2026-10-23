@@ -85,12 +85,12 @@ def bound_pooled(strata, side: str, tail: float, resamples: int = 9999) -> float
     return stratified_at(strata, side, tail, resamples, V2_RESAMPLE_SEED)
 
 
-def miss_counts(rows, kind: str, tails, kappas, replications: int, resamples: int, seed: int, n: int = 200) -> dict:
+def miss_counts(rows, kind: str, tails, kappas, replications: int, resamples: int, seed: int, n: int = 200, trace: list | None = None) -> dict:
     """Misses per (stat, side, tail, kappa): `rows` maps stat to a per-seed pool ("single") or is a list of stratum dicts
     ("pooled", equal weights). Replication r draws n seeds with replacement per pool or stratum from SeedSequence([seed, r]);
     the bounds are the production bounds (the fixed bootstrap streams of design 9.2, the same tstats and bound functions,
     so constant data give the same exact bound). The truth is the pool's mean by the production mean rule. Nonfinite
-    pools or bounds are an error."""
+    pools or bounds are an error. `trace`, if given, receives (r, stat, side, tail, kappa, bound) for every bound."""
     out = {}
     if kind == "single":
         rows = {s: sample(v, f"pool {s}") for s, v in rows.items()}
@@ -117,6 +117,8 @@ def miss_counts(rows, kind: str, tails, kappas, replications: int, resamples: in
                     lo, hi = _bound_from(mean, se, t, "lower", tail * kp), _bound_from(mean, se, t, "upper", tail * kp)
                     if not (np.isfinite(lo) and np.isfinite(hi)):
                         raise ValueError(f"nonfinite bound for {s}")
+                    if trace is not None:
+                        trace += [(r, s, "lower", tail, kp, lo), (r, s, "upper", tail, kp, hi)]
                     out[(s, "lower", tail, kp)] += int(lo > truth[s]); out[(s, "upper", tail, kp)] += int(hi < truth[s])
     return out
 

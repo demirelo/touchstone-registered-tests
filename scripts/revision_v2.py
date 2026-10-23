@@ -500,11 +500,16 @@ def check_record(rid: str, rec: dict | None, catalog: list[dict], out: Path, cut
 
 
 def derived_records(ctx: str, catalog: list[dict], out: Path, cuts: int, h4_excluded: bool) -> None:
-    """Envelope family choices (design 9.3 Q3, on training gains) and the fixed-attack bank (design 6.6)."""
+    """Envelope family choices (design 9.3 Q3, on training gains) and the fixed-attack bank (design 6.6); a valid record
+    is reused, a stale one recomputed, a foreign one refused (the resume rule)."""
     req = [r.replace(manifest_ctx(ctx), ctx, 1) for r in MAN.required(manifest_ctx(ctx), cuts, h4_excluded)]
     any_job = _first(catalog, context=ctx)
     for r in req:
         kind = r.split("/", 1)[0]
+        if kind in ("envelope", "bank"):
+            p = path_of(out, r); old = read(p); prov = aux_provenance(any_job["mkt"], **{"rule" if kind == "envelope" else "family": r.split("/", 2)[2]})
+            if reusable(p, old, prov, lambda: check_record(r, old, catalog, out, cuts, h4_excluded)):
+                continue
         if kind == "envelope":
             rule = r.split("/", 2)[2]; _, rrec, _ = reference_of({"context": ctx, "rule": rule, "id": r}, out)
             ref_score = float(np.mean(rrec["per_seed_normalized"])); gains, up = {}, {}
@@ -514,7 +519,6 @@ def derived_records(ctx: str, catalog: list[dict], out: Path, cuts: int, h4_excl
                 up[u] = sha_file(path_of(out, u))
                 if "|" in u:
                     gains[u.split("|")[2]] = float(read(path_of(out, u))["attack"]["best_f"]) - ref_score
-            reusable(path_of(out, r), read(path_of(out, r)), aux_provenance(any_job["mkt"], rule=rule), lambda: None)      # refuses a foreign record
             write(path_of(out, r), {"stage": "envelope", "provenance": aux_provenance(any_job["mkt"], rule=rule),
                                    "choice": max(gains, key=gains.get) if gains else None, "training_gains": gains, "upstream": up})
         elif kind == "bank":
@@ -523,7 +527,6 @@ def derived_records(ctx: str, catalog: list[dict], out: Path, cuts: int, h4_excl
                 rec = read(path_of(out, u))
                 if rec is not None:
                     attacks[u.split("|")[1]] = rec["attack"]["best_knobs"]; up[u] = sha_file(path_of(out, u))
-            reusable(path_of(out, r), read(path_of(out, r)), aux_provenance(any_job["mkt"], family=fname), lambda: None)
             write(path_of(out, r), {"stage": "bank", "provenance": aux_provenance(any_job["mkt"], family=fname), "attacks": attacks, "upstream": up})
 
 
