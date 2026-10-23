@@ -47,7 +47,7 @@ def test_measure_covers_every_kind_on_development_seeds(tmp_path):
     calls = []
     stubs = {k: (lambda k=k: calls.append(k)) for k in WORKLOADS}
     t = measure(tmp_path, 1, fns=stubs)
-    assert set(calls) == set(WORKLOADS) and set(t) >= set(KINDS) - {"coverage_batch"} | {"doubling_x7", "episode", "bootstrap_batch", "eval160", "reference", "inner_d2"}
+    assert set(calls) == set(WORKLOADS) and set(t) >= set(KINDS) - {"coverage_batch", "inner", "inner_x7"} | {"doubling_x7", "episode", "bootstrap_batch", "eval160", "reference", "dev_inner_config", "dev_recheck_config"}
     assert all(s < 30_000_000 for s in EPISODE_SEEDS)
     with pytest.raises(SystemExit):
         measure(tmp_path, 1, fns={k: v for k, v in stubs.items() if k != "w1_search"})
@@ -82,7 +82,8 @@ def test_g7_cells_are_composed_from_their_components(tmp_path, monkeypatch):
     assert t["reference"] == r["reference"] and t["w1"] == r["w1_search"] + 2 * r["w1_eval"]
     assert t["coalition_total"] == r["coalition_prereqs"] / 2 + r["coalition_search"] + 2 * r["coalition_eval"]
     assert t["eval160"] == {"profit": 8 * r["eval_d2h3"], "x7": 8 * r["eval_x7"], "welfare": 8 * r["w1_eval"], "coalition": 8 * r["coalition_eval"]}
-    assert t["cross_row"] == r["cross_row"] and t["episode"] == r["episode"] / 20 and t["inner_d2"] == r["inner_d2"]
+    assert t["cross_row"] == r["cross_row"] and t["episode"] == r["episode"] / 20 and t["dev_inner_config"] == r["dev_inner_config"]
+    assert t["dev_recheck_config"] == 2 * r["search_d2h3"] + r["search_x7"] + r["reference"] + 3 * r["eval_d2h3"]
 
 
 def test_g7_cost_table_prices_the_measured_cross_row_and_inner_d2():
@@ -126,8 +127,9 @@ def test_h2_extra_evaluation_follows_evaluation_components_only(tmp_path, monkey
     extra_s = lambda tb: tb["rows"]["eval200_extra"] * tb["unit_core_hours"] * 3600
     assert extra_s(slow) == pytest.approx(extra_s(base))                                # slower searches, same evaluations: same extra
     assert extra_s(base) == pytest.approx(8 * 10.0 * (208 + 118 + 8 + 8 + 32))
-    more = B.cost_table(_composed(B, monkeypatch, tmp_path, coalition_eval=20.0), 0.108)
-    assert extra_s(more) - extra_s(base) == pytest.approx(32 * 8 * 10.0)
+    for comp, cells in (("eval_d2h3", 208), ("eval_x7", 118), ("w1_eval", 16), ("coalition_eval", 32)):     # each kind from its own evaluation
+        more = B.cost_table(_composed(B, monkeypatch, tmp_path, **{comp: 20.0}), 0.108)
+        assert extra_s(more) - extra_s(base) == pytest.approx(cells * 8 * 10.0), comp
 
 
 def test_h3_references_priced_once_per_menu(tmp_path, monkeypatch):
@@ -138,3 +140,19 @@ def test_h3_references_priced_once_per_menu(tmp_path, monkeypatch):
     a = B.cost_table(_composed(B, monkeypatch, tmp_path), 0.108); b = B.cost_table(_composed(B, monkeypatch, tmp_path, reference=11.0), 0.108)
     sec = lambda tb, row: tb["rows"][row] * tb["unit_core_hours"] * 3600
     assert sec(b, "references") - sec(a, "references") == pytest.approx(118.0) and sec(b, "cells") == pytest.approx(sec(a, "cells"))
+    usd = 0.108 / 3600
+    assert b["evaluation_usd"] - a["evaluation_usd"] == pytest.approx(118.0 * usd) and b["total_usd"] - a["total_usd"] == pytest.approx((118.0 + 30.0) * usd)
+
+
+def test_i1_development_prices_its_reference_menus(tmp_path, monkeypatch):
+    """231 inner configuration-markets measured whole (three searches, the development reference, three evaluations);
+    30 rechecks composed of full-budget searches, a reference, and three 20-seed evaluations."""
+    import scripts.benchmark_v2 as B
+    assert B.CONFIG_MARKETS == {"comparator_inner": 36, "comparator_recheck": 6, "tuning_inner": 192, "tuning_recheck": 24, "fixtures_inner": 3}
+    dev_s = lambda tb: tb["development_usd"] / 0.108 * 3600
+    a = B.cost_table(_composed(B, monkeypatch, tmp_path), 0.108)
+    assert dev_s(B.cost_table(_composed(B, monkeypatch, tmp_path, reference=11.0), 0.108)) - dev_s(a) == pytest.approx(30.0)
+    assert dev_s(B.cost_table(_composed(B, monkeypatch, tmp_path, dev_inner_config=11.0), 0.108)) - dev_s(a) == pytest.approx(231.0)
+    assert dev_s(B.cost_table(_composed(B, monkeypatch, tmp_path, eval_d2h3=11.0), 0.108)) - dev_s(a) == pytest.approx(30 * 3.0)
+    assert dev_s(B.cost_table(_composed(B, monkeypatch, tmp_path, search_x7=11.0), 0.108)) - dev_s(a) == pytest.approx(30.0)
+    assert dev_s(B.cost_table(_composed(B, monkeypatch, tmp_path, search_d2h3=11.0), 0.108)) - dev_s(a) == pytest.approx(60.0)

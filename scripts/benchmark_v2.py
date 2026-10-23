@@ -17,11 +17,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KINDS = ("d2h3_cell", "x7_cell", "w1", "coalition_total", "inner", "inner_x7", "coverage_batch", "cross_row", "doubling")
 # measured components, in dependency order (a component may read the records of the ones before it)
 WORKLOADS = ("search_d2h3", "search_x7", "reference", "eval_d2h3", "eval_x7", "w1_search", "w1_eval", "coalition_prereqs", "coalition_search",
-             "coalition_eval", "inner_d2", "inner", "inner_x7", "coverage_batch", "cross_row", "doubling", "doubling_x7", "episode")
+             "coalition_eval", "dev_inner_config", "coverage_batch", "cross_row", "doubling", "doubling_x7", "episode")
 CAPS = {"development": 12.0, "evaluation": 40.0, "approval": 40.0}
 EPISODES = {"coverage": 14 * 20_000 * 3}
 CROSS_ROWS = 14 * 8                                                                       # 14 cross-evaluations, 8 attack rows each
 REFERENCE_MENUS = 118                                                                     # (context, rule) pairs with a D2+H3 and X7-SC menu
+CONFIG_MARKETS = {"comparator_inner": 36, "comparator_recheck": 6, "tuning_inner": 192, "tuning_recheck": 24, "fixtures_inner": 3}   # design 8.2's searches / 3
 COUNTS = {"comparator_inner": (72, 36), "comparator_recheck": (12, 6), "tuning_inner": (384, 192), "tuning_recheck": (48, 24), "fixtures_inner": (6, 3),
           "doublings": (82, 50)}
 CELLS = {"plain": 208, "x7": 118, "welfare_h3": 8, "welfare_x7": 8, "coalition": 32}       # 374 cells, 126 on the X7-SC knob space
@@ -32,19 +33,25 @@ EVAL_SEEDS, FINAL_SEEDS = 20, 200
 def cost_table(timings: dict, usd_per_core_hour: float) -> dict:
     """Design 8.2's rows in units of the measured headline D2+H3 cell, then core-hours and USD. Measured timings price a
     cell as its search and 40-seed evaluation, the reference menus once per (context, rule) (`reference`), and the 160
-    further evaluation seeds from each kind's own evaluation (`eval160`); design-unit timings (no `reference`, an
-    `eval200_extra_fraction`) reproduce the design's table. The non-X7 inner share (D2 and D2+H3, equal counts) is priced
-    at the mean of the two measured inner searches; the cross-evaluation at the measured row (one attack against the 8
-    factorial rules and their references) scaled from 20 to 200 seeds."""
+    further evaluation seeds from each kind's own evaluation (`eval160`), and development per configuration and market
+    (`dev_inner_config`, `dev_recheck_config`: three searches, the development reference, three evaluations); design-unit
+    timings (no `reference`, an `eval200_extra_fraction`, inner searches) reproduce the design's table, where the non-X7
+    inner share (D2 and D2+H3, equal counts) is the mean of the two inner searches. The cross-evaluation is priced at the
+    measured row (one attack against the 8 factorial rules and their references) scaled from 20 to 200 seeds."""
     u = float(timings["d2h3_cell"])
-    x7, inner_x7 = timings["x7_cell"] / u, timings["inner_x7"] / u
-    inner = (timings["inner"] + timings.get("inner_d2", timings["inner"])) / 2 / u
+    x7 = timings["x7_cell"] / u
     dbl, dbl_x7 = timings["doubling"] / u, timings["doubling_x7"] / u
     mix = lambda pair, a, b: pair[0] * a + pair[1] * b
-    rows = {"comparator_selection": mix(COUNTS["comparator_inner"], inner, inner_x7) + mix(COUNTS["comparator_recheck"], 1.0, x7),
-            "tuning": mix(COUNTS["tuning_inner"], inner, inner_x7) + mix(COUNTS["tuning_recheck"], 1.0, x7),
-            "fixtures": mix(COUNTS["fixtures_inner"], inner, inner_x7),
-            "coverage": EPISODES["coverage"] * timings["episode"] / u + timings["bootstrap_batch"] / u}
+    if "dev_inner_config" in timings:
+        ic, rc, n = timings["dev_inner_config"] / u, timings["dev_recheck_config"] / u, CONFIG_MARKETS
+        rows = {"comparator_selection": n["comparator_inner"] * ic + n["comparator_recheck"] * rc, "tuning": n["tuning_inner"] * ic + n["tuning_recheck"] * rc,
+                "fixtures": n["fixtures_inner"] * ic}
+    else:
+        inner, inner_x7 = (timings["inner"] + timings.get("inner_d2", timings["inner"])) / 2 / u, timings["inner_x7"] / u
+        rows = {"comparator_selection": mix(COUNTS["comparator_inner"], inner, inner_x7) + mix(COUNTS["comparator_recheck"], 1.0, x7),
+                "tuning": mix(COUNTS["tuning_inner"], inner, inner_x7) + mix(COUNTS["tuning_recheck"], 1.0, x7),
+                "fixtures": mix(COUNTS["fixtures_inner"], inner, inner_x7)}
+    rows["coverage"] = EPISODES["coverage"] * timings["episode"] / u + timings["bootstrap_batch"] / u
     w, co = timings.get("w1", u) / u, timings.get("coalition_total", u) / u
     cells = CELLS["plain"] + CELLS["x7"] * x7 + CELLS["welfare_h3"] * w + CELLS["welfare_x7"] * w * x7 + CELLS["coalition"] * co
     e = timings.get("eval160")
@@ -87,14 +94,14 @@ def _default_fns(out: Path, smoke: bool = False) -> dict:
     from sim.policies.families import exact_key
     from sim.policies.honest import HonestMax
     from sim.records import search_from_json
-    from sim.reference import reference_candidates, select_reference, twin_search
+    from sim.reference import reference_candidates, select_reference
     from sim.search import Objective
     tmp = Path(tempfile.mkdtemp(dir=out)); params = {"cred": {"variant": "thr", "K": 6, "M": None}}; order = tuple(load_locked()["reference_order"])
     mkt = RV.market("headline", RV.DEV_ROOT, 0.2, dev=True, smoke=smoke); ctx = mkt["context"]
     jobs = {f: RV.job(mkt, "F111", f, smoke=smoke, params=params) for f in RV.MENU}
     w1 = RV.job(mkt, "F111", "D2+H3", "W1", smoke=smoke, params=params)
     co = RV.job(mkt, "F111", "X6-SE/v2", "total", 2, "synchronised", smoke=smoke, params=params)
-    dev0 = RV.market("dev0", RV.DEV_ROOT, 0.2, dev=True); inner = TV.SMOKE_INNER if smoke else TV.INNER
+    inner = TV.SMOKE_INNER if smoke else TV.INNER
     seeds = EPISODE_SEEDS[:2] if smoke else EPISODE_SEEDS; state = {"bank_sizes": {}}
     n_bank = {f: len([o for o in MAN.bank_rules(RV.manifest_ctx(ctx), f, 0, False) if o != "F111"]) for f in RV.MENU}
 
@@ -128,13 +135,10 @@ def _default_fns(out: Path, smoke: bool = False) -> dict:
                                                            "candidates": [RV.cand_to_json(c, f, T, L) for c, f in zip(cands, fams)], "choice": idx,
                                                            "per_seed_normalized": [float(v) for v in ch.per_seed_normalized]})
 
-    def inner_family(f):
-        def run():
-            j = RV.job(dev0, "F111", f, params=params); T, L = RV.constants(j); fam = RV.family_for(f, T, L); cache = SeedCache()
-            st = rep(RV.settings(j), restarts=inner[0], evals_per_restart=inner[1] * (2 if f == "X7-SC" else 1))
-            cell = rep(RV.train_cell(j), seeds=tuple(dev0["seeds_train"][: inner[2]]))
-            RV.search_family(cell, fam, cache, st, twin_search(cell, fam, cache, st, seed=0), {})
-        return run
+    def dev_inner_config():
+        """One inner configuration on one tuning market through the production scorer: D2, D2+H3, and X7-SC searches,
+        the development reference from their menu, and the three evaluations."""
+        TV.score_config("C*", {**TV.FIXED, "cred": params["cred"]}, ["dev0"], (*inner, 2 if smoke else 20), False, tmp / "tune_log")
 
     def cross_row():
         """One attack row (stage_cross): the D2+H3 attack and a reference against each factorial rule on dev-val seeds."""
@@ -162,7 +166,7 @@ def _default_fns(out: Path, smoke: bool = False) -> dict:
             "w1_search": lambda: RV._run_one("dependent", w1, str(tmp), 0, True), "w1_eval": lambda: RV.stage_evaluate(w1, tmp),
             "coalition_prereqs": lambda: RV.coalition_prereqs(co, tmp), "coalition_search": lambda: RV._run_one("dependent", co, str(tmp), 0, True),
             "coalition_eval": lambda: RV.stage_evaluate(co, tmp),
-            "inner_d2": inner_family("D2"), "inner": inner_family("D2+H3"), "inner_x7": inner_family("X7-SC"),
+            "dev_inner_config": dev_inner_config,
             "coverage_batch": lambda: C.miss_counts(strata, "pooled", C.Q1_TAILS, [1.0], B[0], B[1], 1),
             "cross_row": cross_row, "doubling": doubling("D2+H3"), "doubling_x7": doubling("X7-SC"),
             "episode": lambda: run_focal(ep_cell, HonestMax, SeedCache()), "_meta": {"eval_seeds": len(mkt["seeds_eval"]), "episodes": len(seeds),
@@ -174,7 +178,10 @@ def measure(out: Path, workers: int, fns: dict | None = None, smoke: bool = Fals
     evaluation scaled from the measured dev-val seeds to 40; the reference menu (with its bank) is a kind of its own,
     priced once per (context, rule); W1 is its search and evaluation; a coalition objective half the group's joint twin
     and joint reference (shared by total and min), its search, and its evaluation; `eval160` holds each kind's 160
-    further evaluation seeds; inner searches, the cross row, and doublings as measured."""
+    further evaluation seeds; an inner development configuration-market as measured, a recheck composed of two D2+H3-cost
+    searches (D2 and D2+H3), an X7-SC search, a reference menu, and three 20-seed evaluations (an upper bound: the
+    evaluation searches run corner controls and the evaluation menu carries the bank, the development ones do not);
+    the cross row and doublings as measured."""
     f = fns if fns is not None else _default_fns(Path(out), smoke)
     missing = [k for k in WORKLOADS if k not in f]
     if missing:
@@ -184,7 +191,9 @@ def measure(out: Path, workers: int, fns: dict | None = None, smoke: bool = Fals
     to40 = 40 / n_eval
     t = {"d2h3_cell": r["search_d2h3"] + to40 * r["eval_d2h3"], "x7_cell": r["search_x7"] + to40 * r["eval_x7"], "reference": r["reference"],
          "w1": r["w1_search"] + to40 * r["w1_eval"], "coalition_total": r["coalition_prereqs"] / 2 + r["coalition_search"] + to40 * r["coalition_eval"],
-         "inner_d2": r["inner_d2"], "inner": r["inner"], "inner_x7": r["inner_x7"], "cross_row": r["cross_row"] * EVAL_SEEDS / n_ep,
+         "dev_inner_config": r["dev_inner_config"],
+         "dev_recheck_config": 2 * r["search_d2h3"] + r["search_x7"] + r["reference"] + 3 * r["eval_d2h3"] * 20 / n_eval,
+         "cross_row": r["cross_row"] * EVAL_SEEDS / n_ep,
          "doubling": r["doubling"], "doubling_x7": r["doubling_x7"], "episode": r["episode"] / n_ep,
          "bootstrap_batch": r["coverage_batch"] * (30_000 / int(meta.get("coverage_replications", 100))) * 2}
     to160 = (FINAL_SEEDS - 40) / n_eval

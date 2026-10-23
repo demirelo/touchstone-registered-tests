@@ -457,9 +457,11 @@ def test_h4_valid_derived_records_are_reused(ctx_dir, patched, monkeypatch, tmp_
     monkeypatch.setattr(RV, "write", lambda p, rec: writes.append(str(p)) or real(p, rec))
     RV.derived_records(CTX, jobs, d, 0, False)
     assert writes == []                                                                   # valid records are reused, not rewritten
-    bp = RV.path_of(d, ids[0]); b = json.loads(bp.read_text()); real(bp, {**b, "upstream": {}})
-    RV.derived_records(CTX, jobs, d, 0, False)
-    assert writes == [str(bp)]                                                            # stale under the same provenance: recomputed
-    real(bp, {**b, "provenance": {**b["provenance"], "context": "dev1@rho0.2"}})
-    with pytest.raises(SystemExit):
+    for rid in ids:                                                                       # both record kinds
+        bp = RV.path_of(d, rid); b = json.loads(bp.read_text()); real(bp, {**b, "upstream": {}}); writes.clear()
         RV.derived_records(CTX, jobs, d, 0, False)
+        assert writes == [str(bp)]                                                        # stale under the same provenance: recomputed
+        real(bp, {**b, "provenance": {**b["provenance"], "context": "dev1@rho0.2"}})
+        with pytest.raises(SystemExit):
+            RV.derived_records(CTX, jobs, d, 0, False)
+        real(bp, b)

@@ -140,3 +140,14 @@ def test_h5_pooled_exact_constants_and_decision_inputs():
         I.holm([0.01, np.nan])
     with pytest.raises(ValueError):
         D.q4_markets([np.nan] * 6, [0.01] * 6, 1.0)
+
+
+
+@pytest.mark.parametrize("v", [1.1, 0.3, -2.7, 1e-9, 0.1 + 0.2])
+@pytest.mark.parametrize("sizes", [(200,) * 6, (50, 80, 200, 200, 30, 7), (2, 2, 2)])
+def test_i2_constants_exact_for_values_and_stratum_sizes(v, sizes):
+    st = [np.full(n, v) for n in sizes]
+    assert I.stratified_mean(st) == v and I.stratified_at(st, "lower", 0.01, 99) == v and I.stratified_at(st, "upper", 0.01, 99) == v
+    assert I.stratified_pvalue(st, v, "upper", 99) == 1.0 and I.stratified_pvalue(st, v, "lower", 99) == 1.0
+    x = np.full(sizes[0], v)
+    assert I.studentized_at(x, "lower", 0.01, 99) == v and I.bootstrap_pvalue(x, v, "lower", 99) == 1.0 and I.bootstrap_pvalue(x, v, "upper", 99) == 1.0

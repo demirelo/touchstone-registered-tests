@@ -194,12 +194,13 @@ def test_h5_every_replication_bound_equals_production():
     rng = np.random.default_rng(8); pool = rng.normal(0, 1, 1000); strata = [{"d": rng.normal(0, 1, 200)} for _ in range(3)]
     tr = []
     miss_counts({"x": pool}, "single", [0.1], [0.5], replications=5, resamples=99, seed=3, n=30, trace=tr)
-    assert len(tr) == 5 * 2
+    assert sorted((r, side) for r, _, side, *_ in tr) == sorted((r, side) for r in range(5) for side in ("lower", "upper"))
     for r, s, side, tail, kp, b in tr:
         idx = np.random.default_rng(np.random.SeedSequence([3, r])).integers(0, pool.size, 30)
         assert b == I.studentized_at(pool[idx], side, tail * kp, 99)
     tr = []
     miss_counts(strata, "pooled", [0.1], [1.0], replications=4, resamples=99, seed=4, n=20, trace=tr)
+    assert sorted((r, s, side) for r, s, side, *_ in tr) == sorted((r, "d", side) for r in range(4) for side in ("lower", "upper"))
     for r, s, side, tail, kp, b in tr:
         g = np.random.default_rng(np.random.SeedSequence([4, r])); draws = [g.integers(0, 200, 20) for _ in strata]
         assert b == I.stratified_at([st["d"][i] for st, i in zip(strata, draws)], side, tail * kp, 99)
