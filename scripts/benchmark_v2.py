@@ -77,6 +77,20 @@ def _timed(f) -> float:
     t0 = time.perf_counter(); f(); return time.perf_counter() - t0
 
 
+def stand_in_bank(entries, best_knobs: dict, fam, n: int) -> list[dict]:
+    """The n best distinct projected archive points other than the projected best, standing in for the other matched
+    rules' attacks in a matched rule's menu; fewer than n is an error."""
+    from sim.policies.families import exact_key
+    best, seen, out = exact_key(fam.project(best_knobs)), set(), []
+    for e in sorted(entries, key=lambda e: -e.f):
+        k = fam.project(e.knobs); key = exact_key(k)
+        if key != best and key not in seen:
+            seen.add(key); out.append(k)
+        if len(out) == n:
+            return out
+    raise SystemExit(f"benchmark: only {len(out)} distinct archive points for a bank of {n}")
+
+
 def _default_fns(out: Path, smoke: bool = False) -> dict:
     """The workloads of design 8.2 on development seeds (headline market with dev-train and dev-val seeds; dev0 for the
     inner searches) at the registered budgets: paid pod time. `smoke` runs the same wiring at the smoke budget (tests).
@@ -91,7 +105,6 @@ def _default_fns(out: Path, smoke: bool = False) -> dict:
     from sim import manifest_v2 as MAN
     from sim.cell import Cell, SeedCache, run_focal
     from sim.locked import load_locked
-    from sim.policies.families import exact_key
     from sim.policies.honest import HonestMax
     from sim.records import search_from_json
     from sim.reference import reference_candidates, select_reference
@@ -108,24 +121,11 @@ def _default_fns(out: Path, smoke: bool = False) -> dict:
     def search(f):
         return lambda: RV._run_one("search", jobs[f], str(tmp), 0, True)
 
-    def bank(rec, fam, n):
-        """Distinct projected archive points after the best, standing in for the other matched rules' attacks."""
-        best, seen, out_ = exact_key(fam.project(rec["attack"]["best_knobs"])), set(), []
-        for e in sorted(search_from_json(rec["attack"]).archive.values(), key=lambda e: -e.f):
-            k = fam.project(e.knobs); key = exact_key(k)
-            if key != best and key not in seen:
-                seen.add(key); out_.append(k)
-            if len(out_) == n:
-                break
-        if len(out_) < n:
-            raise SystemExit(f"benchmark: only {len(out_)} distinct archive points for a bank of {n}")
-        return out_
-
     def reference():
         cell = RV.train_cell(jobs["D2+H3"]); groups = {}
         for f, j in jobs.items():
             rec = RV.read(RV.path_of(tmp, j["id"])); T, L = RV.constants(j); fam = RV.family_for(f, T, L)
-            b = bank(rec, fam, n_bank[f]); state["bank_sizes"][f] = len(b)
+            b = stand_in_bank(search_from_json(rec["attack"]).archive.values(), rec["attack"]["best_knobs"], fam, n_bank[f]); state["bank_sizes"][f] = len(b)
             for c in reference_candidates(cell, fam, search_from_json(rec["attack"]), search_from_json(rec["twin"]), b, order):
                 groups.setdefault(("bank" if c.name.startswith("bank_") else c.name, f), []).append(c)
         cands, fams = RV.merge_menu(groups, RV.MENU); ch = select_reference(cell, cands, SeedCache())
@@ -170,7 +170,7 @@ def _default_fns(out: Path, smoke: bool = False) -> dict:
             "coverage_batch": lambda: C.miss_counts(strata, "pooled", C.Q1_TAILS, [1.0], B[0], B[1], 1),
             "cross_row": cross_row, "doubling": doubling("D2+H3"), "doubling_x7": doubling("X7-SC"),
             "episode": lambda: run_focal(ep_cell, HonestMax, SeedCache()), "_meta": {"eval_seeds": len(mkt["seeds_eval"]), "episodes": len(seeds),
-                                                                                  "coverage_replications": B[0], "state": state}}
+                                                                                  "coverage_replications": B[0], "state": state, "n_bank": n_bank}}
 
 
 def measure(out: Path, workers: int, fns: dict | None = None, smoke: bool = False) -> dict:

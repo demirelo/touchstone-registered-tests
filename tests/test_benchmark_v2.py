@@ -156,3 +156,24 @@ def test_i1_development_prices_its_reference_menus(tmp_path, monkeypatch):
     assert dev_s(B.cost_table(_composed(B, monkeypatch, tmp_path, eval_d2h3=11.0), 0.108)) - dev_s(a) == pytest.approx(30 * 3.0)
     assert dev_s(B.cost_table(_composed(B, monkeypatch, tmp_path, search_x7=11.0), 0.108)) - dev_s(a) == pytest.approx(30.0)
     assert dev_s(B.cost_table(_composed(B, monkeypatch, tmp_path, search_d2h3=11.0), 0.108)) - dev_s(a) == pytest.approx(60.0)
+
+
+def test_caveat_stand_in_bank_is_distinct_excludes_the_best_and_refuses_shortage(tmp_path, monkeypatch):
+    from types import SimpleNamespace as E
+    import scripts.benchmark_v2 as B
+    import scripts.revision_v2 as RV
+    from sim.policies.families import exact_key
+    fam = RV.family_for("D2+H3", 200, 10); h = fam.honest_point()
+    pts = [dict(h, u0=i / 20, clip=c) for i in range(8) for c in (0, 1)]            # 16 entries, 8 distinct after projection
+    entries = [E(knobs=k, f=float(n)) for n, k in enumerate(pts)]; best = pts[-1]
+    b = B.stand_in_bank(entries, best, fam, 5)
+    keys = [exact_key(k) for k in b]
+    assert len(b) == 5 and len(set(keys)) == 5 and exact_key(fam.project(best)) not in keys
+    assert [k["u0"] for k in b] == [6 / 20, 5 / 20, 4 / 20, 3 / 20, 2 / 20]              # by training value, best excluded
+    assert len(B.stand_in_bank(entries, best, fam, 7)) == 7
+    with pytest.raises(SystemExit):
+        B.stand_in_bank(entries, best, fam, 8)
+    assert B._default_fns(tmp_path, smoke=True)["_meta"]["n_bank"] == {"D2+H3": 11, "X7-SC": 11}
+    import sim.manifest_v2 as MAN
+    monkeypatch.setattr(MAN, "bank_rules", lambda ctx, f, cuts=0, h4_excluded=False: ["F000", "F111", "R4", "C*", "F010"])       # the size follows the manifest
+    assert B._default_fns(tmp_path, smoke=True)["_meta"]["n_bank"] == {"D2+H3": 4, "X7-SC": 4}
