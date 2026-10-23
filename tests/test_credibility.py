@@ -71,6 +71,9 @@ def test_residual_counts_picks_this_round():
     # r = 4: two targeted picks: (3 + 0) -> job 0; then identity 1 has 3 + 1 = 4 = identity 2's 4 + 0: tie broken by key -> job 1 (.2)
     # then two uniform: 2 (.3), 3 (.4)
     assert select_credibility("thr", by, keys, p, k=4, K=2) == [0, 1, 2, 3]
+    # equal counts tell dynamic from static order: (3 + 0) vs (3 + 0) -> job 0 (.1); then identity 1 has 4 > 3 -> job 3 (.4);
+    # then two uniform: 1 (.2), 2 (.3). An order that ignores this round's picks gives [0, 1, 2, 3]
+    assert select_credibility("thr", by, keys, {1: 3, 2: 3}, k=4, K=2) == [0, 3, 1, 2]
 
 
 def test_mem_window_boundary():
