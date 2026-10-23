@@ -115,10 +115,43 @@ def _strat_idx(sizes: tuple, resamples: int, seed: int) -> tuple:
     return tuple(out)
 
 
+def sample(x, what: str = "sample") -> np.ndarray:
+    """A finite sample of at least two values; anything else is an error, never a decision."""
+    x = np.asarray(x, dtype=float).ravel()
+    if x.size < 2:
+        raise ValueError(f"{what} has {x.size} value(s); at least two are needed")
+    if not np.all(np.isfinite(x)):
+        raise ValueError(f"{what} has nonfinite values")
+    return x
+
+
+def _mean_var(x: np.ndarray) -> tuple[float, float]:
+    """Exact for a constant sample (its value, variance 0), so every path treats constant data alike."""
+    if np.all(x == x[0]):
+        return float(x[0]), 0.0
+    return float(x.mean()), float(x.var(ddof=1))
+
+
+def sample_mean(x) -> float:
+    return _mean_var(sample(x))[0]
+
+
+def stratified_mean(strata) -> float:
+    """The equal-weight mean of the stratum means (design 9.2)."""
+    st = [sample(s, f"stratum {k}") for k, s in enumerate(strata)]
+    if not st:
+        raise ValueError("no strata")
+    return float(np.mean([_mean_var(s)[0] for s in st]))
+
+
 def studentized_tstats(x, resamples: int, seed: int) -> tuple[float, float, np.ndarray]:
-    """Mean, standard error, and bootstrap-t statistics with studentized_bootstrap's resampling and zero-se rule."""
-    x = np.asarray(x, dtype=float).ravel(); n = x.size
-    mean = float(x.mean()); se = float(x.std(ddof=1) / np.sqrt(n))
+    """Mean, standard error, and bootstrap-t statistics with studentized_bootstrap's resampling and zero-se rule; a
+    constant sample returns its value, se 0, and all-zero statistics."""
+    x = sample(x); n = x.size
+    mean, var = _mean_var(x)
+    if var == 0:
+        return mean, 0.0, np.zeros(int(resamples))
+    se = float(np.sqrt(var) / np.sqrt(n))
     samples = x[_boot_idx(n, int(resamples), int(seed))]
     m = samples.mean(axis=1); s = samples.std(axis=1, ddof=1) / np.sqrt(n)
     s = np.where(s > 0, s, se)
@@ -138,9 +171,6 @@ def _bound_from(mean: float, se: float, t: np.ndarray, side: str, tail: float) -
 
 
 def studentized_at(x, side: str, tail: float, resamples: int = 9999, seed: int = V2_RESAMPLE_SEED) -> float:
-    x = np.asarray(x, dtype=float).ravel()
-    if np.all(x == x[0]):
-        return float(x[0])
     return _bound_from(*studentized_tstats(x, resamples, seed), side, tail)
 
 
@@ -157,10 +187,6 @@ def _pvalue_from(mean: float, se: float, t: np.ndarray, null: float, side: str) 
 
 def bootstrap_pvalue(x, null: float, side: str, resamples: int = 9999, seed: int = V2_RESAMPLE_SEED) -> float:
     """side 'lower': H0 mean <= null (rejected when the lower bound exceeds null); 'upper': H0 mean >= null."""
-    x = np.asarray(x, dtype=float).ravel()
-    if np.all(x == x[0]):
-        above = x[0] > null if side == "lower" else x[0] < null
-        return 0.0 if above else 1.0
     return _pvalue_from(*studentized_tstats(x, resamples, seed), null, side)
 
 
@@ -168,12 +194,21 @@ def two_sided_pvalue(x, null: float, resamples: int = 9999, seed: int = V2_RESAM
     return min(1.0, 2.0 * min(bootstrap_pvalue(x, null, "lower", resamples, seed), bootstrap_pvalue(x, null, "upper", resamples, seed)))
 
 
+def _p(p) -> float:
+    p = float(p)
+    if not (np.isfinite(p) and 0.0 <= p <= 1.0):
+        raise ValueError(f"p-value {p} is not in [0, 1]")
+    return p
+
+
 def calibrated(p: float, kappa: float) -> float:
-    return min(1.0, float(p) / float(kappa))
+    if not (np.isfinite(float(kappa)) and 0.0 < float(kappa) <= 1.0):
+        raise ValueError(f"kappa {kappa} is not in (0, 1]")
+    return min(1.0, _p(p) / float(kappa))
 
 
 def holm(pvalues, alpha: float = 0.05) -> list[bool]:
-    m = len(pvalues); order = sorted(range(m), key=lambda i: pvalues[i]); out = [False] * m
+    pvalues = [_p(p) for p in pvalues]; m = len(pvalues); order = sorted(range(m), key=lambda i: pvalues[i]); out = [False] * m
     for rank, i in enumerate(order):
         if pvalues[i] <= alpha / (m - rank):
             out[i] = True
@@ -184,16 +219,20 @@ def holm(pvalues, alpha: float = 0.05) -> list[bool]:
 
 def stratified_tstats(strata, resamples: int, seed: int) -> tuple[float, float, np.ndarray]:
     """Equal-weight mean of stratum means; stratum k resampled with its own child stream of SeedSequence(seed);
-    se^2 = sum_k s_k^2 / n_k / K^2; bootstrap-t statistics with the zero-se rule (all-zero t when se is zero)."""
-    st = [np.asarray(s, dtype=float).ravel() for s in strata]; K = len(st)
-    mean = float(np.mean([s.mean() for s in st]))
-    se = float(np.sqrt(sum(s.var(ddof=1) / s.size for s in st)) / K)
+    se^2 = sum_k s_k^2 / n_k / K^2; bootstrap-t statistics with the zero-se rule (all-zero t when se is zero). Strata
+    must be finite with at least two values each."""
+    st = [sample(s, f"stratum {k}") for k, s in enumerate(strata)]; K = len(st)
+    if not K:
+        raise ValueError("no strata")
+    mv = [_mean_var(s) for s in st]
+    mean = float(np.mean([m for m, _ in mv]))
+    se = float(np.sqrt(sum(v / s.size for (_, v), s in zip(mv, st))) / K)
+    if se == 0:
+        return mean, se, np.zeros(int(resamples))
     ms, vs = [], []
     for s, idx in zip(st, _strat_idx(tuple(s.size for s in st), int(resamples), int(seed))):
         r = s[idx]
         ms.append(r.mean(axis=1)); vs.append(r.var(axis=1, ddof=1) / s.size)
-    if se == 0:
-        return mean, se, np.zeros(int(resamples))
     se_b = np.sqrt(np.sum(vs, axis=0)) / K
     se_b = np.where(se_b > 0, se_b, se)
     return mean, se, (np.mean(ms, axis=0) - mean) / se_b

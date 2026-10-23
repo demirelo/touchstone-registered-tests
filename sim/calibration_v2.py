@@ -11,7 +11,8 @@ import numpy as np
 
 from .cell import Cell, SeedCache, run_focal
 from .families_v2 import cand_from_json, family_for
-from .intervals import V2_RESAMPLE_SEED, _bound_from, clopper_pearson_upper, stratified_at, stratified_tstats, studentized_tstats
+from .intervals import (V2_RESAMPLE_SEED, _bound_from, clopper_pearson_upper, sample, sample_mean, stratified_at, stratified_mean,
+                        stratified_tstats, studentized_at, studentized_tstats)
 from .objectives_v2 import gross_efficiency
 from .rules_v2 import make_rule, public_constants
 
@@ -77,27 +78,26 @@ def denominator(family: str) -> int:
 
 def bound_single(x, side: str, tail: float, resamples: int = 9999) -> float:
     """The production bound (fixed bootstrap seed) for one sample."""
-    return studentized_at_any(x, side, tail, resamples)
+    return studentized_at(x, side, tail, resamples, V2_RESAMPLE_SEED)
 
 
 def bound_pooled(strata, side: str, tail: float, resamples: int = 9999) -> float:
     return stratified_at(strata, side, tail, resamples, V2_RESAMPLE_SEED)
 
 
-def studentized_at_any(x, side, tail, resamples):
-    m, se, t = studentized_tstats(np.asarray(x, dtype=float), resamples, V2_RESAMPLE_SEED)
-    return _bound_from(m, se, t, side, tail)
-
-
 def miss_counts(rows, kind: str, tails, kappas, replications: int, resamples: int, seed: int, n: int = 200) -> dict:
     """Misses per (stat, side, tail, kappa): `rows` maps stat to a per-seed pool ("single") or is a list of stratum dicts
     ("pooled", equal weights). Replication r draws n seeds with replacement per pool or stratum from SeedSequence([seed, r]);
-    the bounds are the production bounds (the fixed bootstrap streams of design 9.2). Nonfinite bounds are an error."""
+    the bounds are the production bounds (the fixed bootstrap streams of design 9.2, the same tstats and bound functions,
+    so constant data give the same exact bound). The truth is the pool's mean by the production mean rule. Nonfinite
+    pools or bounds are an error."""
     out = {}
     if kind == "single":
-        stats = list(rows); truth = {s: float(np.mean(rows[s])) for s in stats}; M = len(next(iter(rows.values())))
+        rows = {s: sample(v, f"pool {s}") for s, v in rows.items()}
+        stats = list(rows); truth = {s: sample_mean(rows[s]) for s in stats}; M = len(next(iter(rows.values())))
     else:
-        stats = list(rows[0]); truth = {s: float(np.mean([np.mean(st[s]) for st in rows])) for s in stats}
+        rows = [{s: sample(v, f"stratum {k} pool {s}") for s, v in st.items()} for k, st in enumerate(rows)]
+        stats = list(rows[0]); truth = {s: stratified_mean([st[s] for st in rows]) for s in stats}
     for s in stats:
         for side in ("lower", "upper"):
             for t in tails:
@@ -107,10 +107,10 @@ def miss_counts(rows, kind: str, tails, kappas, replications: int, resamples: in
         rng = np.random.default_rng(np.random.SeedSequence([int(seed), r]))
         if kind == "single":
             idx = rng.integers(0, M, n)
-            per = {s: studentized_tstats(np.asarray(rows[s])[idx], resamples, V2_RESAMPLE_SEED) for s in stats}
+            per = {s: studentized_tstats(rows[s][idx], resamples, V2_RESAMPLE_SEED) for s in stats}
         else:
             draws = [rng.integers(0, len(next(iter(st.values()))), n) for st in rows]
-            per = {s: stratified_tstats([np.asarray(st[s])[i] for st, i in zip(rows, draws)], resamples, V2_RESAMPLE_SEED) for s in stats}
+            per = {s: stratified_tstats([st[s][i] for st, i in zip(rows, draws)], resamples, V2_RESAMPLE_SEED) for s in stats}
         for s, (mean, se, t) in per.items():
             for tail in tails:
                 for kp in kappas:

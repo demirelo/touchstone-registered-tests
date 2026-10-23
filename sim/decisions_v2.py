@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .intervals import calibrated, holm, stratified_at, stratified_two_sided
+from .intervals import calibrated, holm, stratified_at, stratified_mean, stratified_two_sided
 
 MARGIN = 0.05
 ALPHA = 0.05
@@ -16,7 +16,7 @@ NO_DECISION = "no confirmatory decision"
 def q1_category(strata_diffs, kappa: float | None, holm_reject: bool, m: int = 4) -> str:
     if kappa is None:
         return NO_DECISION
-    mean = float(np.mean([np.mean(s) for s in strata_diffs]))
+    mean = stratified_mean(strata_diffs)                       # refuses nonfinite or short strata
     if holm_reject:
         return "R lower" if mean < 0 else "C lower"
     tail = ALPHA / (2 * m) * kappa

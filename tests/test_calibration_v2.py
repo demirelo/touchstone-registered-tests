@@ -144,3 +144,45 @@ def test_calibration_uses_production_bounds():
     for side in ("lower", "upper"):
         assert bound_single(x, side, 0.0125, 999) == pytest.approx(I.studentized_at(x, side, 0.0125, 999))
         assert bound_pooled(st, side, 0.0125, 999) == pytest.approx(I.stratified_at(st, side, 0.0125, 999))
+
+
+def _reference_misses(pool, tails, kappas, R, resamples, seed, n):
+    """The definition, through the production bound functions: replication r draws n rows from SeedSequence([seed, r])."""
+    from sim import intervals as I
+    truth = float(pool[0]) if np.all(pool == pool[0]) else float(np.mean(pool)); out = {}
+    for r in range(R):
+        idx = np.random.default_rng(np.random.SeedSequence([seed, r])).integers(0, pool.size, n); x = pool[idx]
+        for t in tails:
+            for kp in kappas:
+                out[("lower", t, kp)] = out.get(("lower", t, kp), 0) + int(I.studentized_at(x, "lower", t * kp, resamples) > truth)
+                out[("upper", t, kp)] = out.get(("upper", t, kp), 0) + int(I.studentized_at(x, "upper", t * kp, resamples) < truth)
+    return out
+
+
+def test_g5_miss_counts_equal_production_replications():
+    from sim import intervals as I
+    from sim.calibration_v2 import miss_counts
+    rng = np.random.default_rng(4)
+    pools = {"normal": rng.normal(0.01, 1.0, 2000), "skew": rng.exponential(1.0, 2000) - 1.0, "const": np.full(20000, 1.1)}
+    c = miss_counts(pools, "single", [0.05, 0.2], [1.0, 0.5], replications=30, resamples=99, seed=5, n=50)
+    for s, pool in pools.items():
+        ref = _reference_misses(pool, [0.05, 0.2], [1.0, 0.5], 30, 99, 5, 50)
+        assert {k: c[(s, *k)] for k in ref} == ref
+    assert all(c[("const", side, t, kp)] == 0 for side in ("lower", "upper") for t in (0.05, 0.2) for kp in (1.0, 0.5))
+    strata = [{"d": rng.normal(0.0, 1.0, 300)} for _ in range(6)]
+    cp = miss_counts(strata, "pooled", [0.1], [1.0], replications=20, resamples=99, seed=6, n=40)
+    truth = I.stratified_mean([st["d"] for st in strata]); want = {"lower": 0, "upper": 0}
+    for r in range(20):
+        g = np.random.default_rng(np.random.SeedSequence([6, r])); draws = [g.integers(0, 300, 40) for _ in strata]
+        x = [st["d"][i] for st, i in zip(strata, draws)]
+        want["lower"] += int(I.stratified_at(x, "lower", 0.1, 99) > truth); want["upper"] += int(I.stratified_at(x, "upper", 0.1, 99) < truth)
+    assert {side: cp[("d", side, 0.1, 1.0)] for side in want} == want
+
+
+def test_g4_nonfinite_pools_are_refused():
+    from sim.calibration_v2 import miss_counts
+    pool = np.zeros(20000); pool[7] = np.nan
+    with pytest.raises(ValueError):
+        miss_counts({"x": pool}, "single", [0.05], [1.0], replications=2, resamples=99, seed=1)
+    with pytest.raises(ValueError):
+        miss_counts([{"x": pool[:300]}, {"x": np.zeros(300)}], "pooled", [0.05], [1.0], replications=2, resamples=99, seed=1)

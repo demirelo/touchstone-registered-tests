@@ -96,3 +96,35 @@ def test_q1_constant_differences_do_not_crash():
     from sim.decisions_v2 import q1_family
     out = q1_family({"a": [np.zeros(200) for _ in range(6)]}, 1.0)
     assert out["a"]["category"] == "equivalent"
+
+
+def test_g4_nonfinite_or_short_samples_are_refused():
+    from sim import decisions_v2 as D
+    bad = [np.array([np.nan, 1.0, 2.0]), np.array([np.inf, 1.0, 2.0]), np.array([1.0])]
+    for x in bad:
+        with pytest.raises(ValueError):
+            I.studentized_at(x, "lower", 0.01, 99)
+        with pytest.raises(ValueError):
+            I.bootstrap_pvalue(x, 0.0, "lower", 99)
+        st = [np.random.default_rng(k).normal(0, 1, 50) for k in range(5)] + [x]
+        with pytest.raises(ValueError):
+            I.stratified_at(st, "lower", 0.01, 99, 1)
+        with pytest.raises(ValueError):
+            D.q1_family({"a": st}, 1.0)
+        with pytest.raises(ValueError):
+            D.q1_category(st, 1.0, True)
+    with pytest.raises(ValueError):
+        D.q1_family({"a": [np.full(50, np.nan) for _ in range(6)]}, 1.0)          # six all-NaN strata: no decision, an error
+    for p in (np.nan, -0.1, 1.5):
+        with pytest.raises(ValueError):
+            I.calibrated(p, 1.0)
+
+
+def test_g5_exact_constant_samples_in_every_path():
+    x = np.full(200, 1.1)
+    m, se, t = I.studentized_tstats(x, 99, 1)
+    assert (m, se) == (1.1, 0.0) and not t.any()
+    assert I.studentized_at(x, "upper", 0.01, 99) == 1.1 and I.studentized_at(x, "lower", 0.01, 99) == 1.1
+    st = [np.full(50, 0.3) for _ in range(6)]
+    m, se, t = I.stratified_tstats(st, 99, 1)
+    assert se == 0.0 and m == I.stratified_mean(st) and I.stratified_at(st, "lower", 0.01, 99, 1) == m
