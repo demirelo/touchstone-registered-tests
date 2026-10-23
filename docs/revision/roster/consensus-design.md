@@ -21,3 +21,12 @@ Accepted scope (both seats, round 6): Q1 pooled and Q4 per market are confirmato
 | 1 | reject 0.96 | reject 0.96 | pacing needs L; independent P and G phases; B3 tie order; oracle accounting; window boundary; public constants; X7 adapters (lambda, 769 controls, incumbents); reference contexts and families; freeze completeness; doubling; inference functions; coverage inputs; anchor binding; H4 loader; cut count; pod arguments |
 | 2 | reject 0.95 | reject 0.95 | chained assertion; freeze acceptance; doubling execution; anchor hash; H4 constants; stratified streams; Q2 expectations; task order; command outputs |
 | 3 | accept-with-caveat 0.95 | accept-with-caveat 0.94 | fixture missing from the commit step; anchor from the verified attestation (both applied) |
+
+## Build fix pass (`revision-v2`, range 963e04c..HEAD)
+
+| Round | Sol | Astra | Main issues |
+|---|---|---|---|
+| 1 | request-changes 0.96 | request-changes 0.94 | F4, F8, F9, F11 partly closed: cross and doubling resume, auxiliary resume, nonfinite inputs, constant-sample parity, benchmark order and scope (G1-G8) |
+| 2 | request-changes 0.94 | request-changes 0.94 | bank size, extra-seed pricing, reference allocation, derived-record reuse, pooled constants (H1-H5) |
+| 3 | request-changes 0.94 | request-changes 0.94 | development reference costs; test strength (I1-I2) |
+| 4 | **approve-with-caveat 0.94** | **approve-with-caveat 0.94** | bank test distinctness and shortage (applied) |
