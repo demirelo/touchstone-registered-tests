@@ -30,3 +30,17 @@ Accepted scope (both seats, round 6): Q1 pooled and Q4 per market are confirmato
 | 2 | request-changes 0.94 | request-changes 0.94 | bank size, extra-seed pricing, reference allocation, derived-record reuse, pooled constants (H1-H5) |
 | 3 | request-changes 0.94 | request-changes 0.94 | development reference costs; test strength (I1-I2) |
 | 4 | **approve-with-caveat 0.94** | **approve-with-caveat 0.94** | bank test distinctness and shortage (applied) |
+
+## Operations plan (`docs/superpowers/plans/2026-10-25-revision-operations.md`)
+
+| Round | Version | Sol | Astra | Main issues |
+|---|---|---|---|---|
+| 1 | 1 | reject 0.96 | reject 0.95 | failed validation kept kappa; draw not bound; late publication; tag before proof; H4 custody and per-pod decisions; promotion; costs; verify; report scope; artifact |
+| 2 | 2 | reject 0.94 | reject 0.94 | proof binding; producer metadata; branch propagation; reservations; utilisation; verify custody; stop before freeze; Q4 Holm slots |
+| 3 | 3 | reject 0.93 | reject 0.92 | tuning logs; promotion fixtures; `answers_at_h`; lowest anchor; verify side effects; frozen cost decision; serial stages |
+| 4 | 4 | reject 0.92 | reject 0.94 | combined approval gate; reader test; verify aliases; priority barriers; unequal task durations |
+| 5 | 5 | reject 0.93 | reject 0.92 | write guard; reservation test; kappa equality |
+| 6 | 6 | reject 0.91 | reject 0.91 | coverage pool size; child processes |
+| 7 | 7 | reject 0.89 | reject 0.89 | coverage input identity; permitted git child; reproduction passing case |
+| 8 | 8 | reject 0.89 | **accept 0.89** | successful H4 decision case |
+| 9 | 9 | **accept 0.90** | **accept 0.89** | none (Sol's first round-9 run hit model capacity and was rerun on the same brief) |

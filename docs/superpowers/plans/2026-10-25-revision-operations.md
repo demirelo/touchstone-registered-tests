@@ -1,5 +1,7 @@
 # Revision program, operations phase: Implementation Plan (version 9)
 
+Status: accepted by Sol high and Astra high in round 9 (both accept, no findings; confidence 0.90 and 0.89). Rounds and dispositions: `docs/revision/roster/{sol,astra}-ops-plan-r1.md` to `-r9.md` and the tables at the end.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Take the built and reviewed revision code (main `8569e07`) through design 11 steps 2 to 9 (sealed H4, paid benchmark, comparator selection and tuning, coverage, protocol v2 and lock, block draw, evaluation, report, artifact), with the code those steps still lack.
