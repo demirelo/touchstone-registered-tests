@@ -119,7 +119,8 @@ def test_cli_select_and_validate_on_synthetic_pools(tmp_path):
         norm = {key(p): rng.normal(0.1, 0.2, 400).tolist() for p in __import__("sim.calibration_v2", fromlist=["x"]).PROFILES}
         eff = {k: rng.normal(0.98, 0.01, 400).tolist() for k in norm}
         (pools / f"{m}.json").write_text(json.dumps({"seeds": list(range(400)), "normalized": norm, "eff": eff, "market": m, "branch": "three20k",
-                                                     "pool_size": 400, "inputs_manifest": {"comparator.json": "0" * 64}, "commit": "c"}))
+                                                     "pool_size": 400, "inputs_manifest": {"comparator.json": "0" * 64},
+                                                     "commit": __import__("scripts.revision_v2", fromlist=["x"]).git_commit()}))
     assert main(["--select", "--branch", "three20k", "--out", str(tmp_path), "--replications", "40", "--resamples", "99", "--pool-size", "400"]) == 0
     cov = json.loads((tmp_path / "coverage.json").read_text())
     assert set(cov) >= {"Q1", "Q4"} and "kappa" in cov["Q1"]
@@ -209,14 +210,15 @@ def test_h5_every_replication_bound_equals_production():
 
 # ---- operations plan Task 3: pools per market on many cores; admitted kappa only ------------------------------------------
 
-def _synthetic_pools(out, markets, branch, n=60, manifest=None, seed=5):
+def _synthetic_pools(out, markets, branch, n=60, manifest=None, seed=5, commit=None):
     import json
     from sim.calibration_v2 import PROFILES
     rng = np.random.default_rng(seed); (out / "pools").mkdir(parents=True, exist_ok=True)
     for m in markets:
         norm = {key(p): rng.normal(0.1, 0.2, n).tolist() for p in PROFILES}; eff = {k: rng.normal(0.98, 0.01, n).tolist() for k in norm}
         (out / "pools" / f"{m}.json").write_text(json.dumps({"seeds": list(range(n)), "normalized": norm, "eff": eff, "market": m, "branch": branch,
-                                                            "pool_size": n, "inputs_manifest": manifest or {"comparator.json": "a" * 64}, "commit": "c"}))
+                                                            "pool_size": n, "inputs_manifest": manifest or {"comparator.json": "a" * 64},
+                                                            "commit": commit or __import__("scripts.revision_v2", fromlist=["x"]).git_commit()}))
 
 
 def test_failed_validation_exports_null(tmp_path, monkeypatch):
@@ -324,3 +326,24 @@ def test_two20k_branch_end_to_end(tmp_path):
     assert main(["--select", "--branch", "two20k", *common]) == 0 and main(["--validate", "--branch", "two20k", *common]) == 0
     cov = json.loads((tmp_path / "coverage.json").read_text())
     assert cov["branch"] == "two20k" and cov["markets"] == ["headline", "dev0"] and "validation" in cov["Q4"]
+
+
+
+# ---- final review K4: pools from other code or replaced between stages are refused --------------------------------------------
+
+def test_k4_a_pool_from_another_commit_is_refused(tmp_path):
+    from scripts.coverage_v2 import main
+    _synthetic_pools(tmp_path, ("headline", "dev0", "dev1"), "three20k")
+    _synthetic_pools(tmp_path, ("dev1",), "three20k", commit="f" * 40)
+    with pytest.raises(SystemExit, match="commit"):
+        main(["--select", "--branch", "three20k", "--out", str(tmp_path), "--replications", "10", "--resamples", "99", "--pool-size", "60"])
+
+
+def test_k4_pools_replaced_between_select_and_validate_are_refused(tmp_path):
+    from scripts.coverage_v2 import main
+    _synthetic_pools(tmp_path, ("headline", "dev0", "dev1"), "three20k")
+    common = ["--branch", "three20k", "--out", str(tmp_path), "--replications", "10", "--resamples", "99", "--pool-size", "60"]
+    assert main(["--select", *common]) == 0
+    _synthetic_pools(tmp_path, ("dev0",), "three20k", seed=99)                  # same metadata, other values
+    with pytest.raises(SystemExit, match="select"):
+        main(["--validate", *common])

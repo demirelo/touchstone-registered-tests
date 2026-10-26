@@ -82,8 +82,9 @@ def build_market_pool(label: str, inputs: Path, branch: str, M: int, workers: in
     return {**pool, "market": label, "branch": branch, "pool_size": int(M), "inputs_manifest": inputs_manifest(inputs), "commit": RV.git_commit()}
 
 
-def read_pools(out: Path, branch: str) -> dict:
-    markets = C.BRANCHES[branch][0]; pools = {}
+def read_pools(out: Path, branch: str, commit: str | None = None) -> dict:
+    """Every pool of the branch, built by this code (`commit`), for its own market and branch, from the same tuning inputs."""
+    markets = C.BRANCHES[branch][0]; pools = {}; commit = commit or RV.git_commit()
     for m in markets:
         p = Path(out) / "pools" / f"{m}.json"
         if not p.exists():
@@ -91,6 +92,8 @@ def read_pools(out: Path, branch: str) -> dict:
         pools[m] = json.loads(p.read_text())
         if pools[m].get("branch") != branch:
             raise SystemExit(f"pool {m} was built for branch {pools[m].get('branch')!r}, not {branch!r}")
+        if pools[m].get("market") not in (None, m) or pools[m].get("commit") != commit:
+            raise SystemExit(f"pool {m} was built by commit {pools[m].get('commit')!r} for market {pools[m].get('market')!r}, not by {commit!r}")
     if len({json.dumps(pl.get("inputs_manifest"), sort_keys=True) for pl in pools.values()}) != 1:
         raise SystemExit("the pools were built from different tuning inputs")
     return pools
@@ -136,6 +139,11 @@ def main(argv=None) -> int:
     cov = json.loads(cov_path.read_text()) if cov_path.exists() else {}
     if cov.get("branch") not in (None, a.branch):
         raise SystemExit(f"coverage.json is for branch {cov.get('branch')!r}")
+    shas = {m: _sha(out / "pools" / f"{m}.json") for m in pools}
+    if a.select:
+        cov["selected_pools"] = shas
+    elif cov.get("selected_pools") != shas:
+        raise SystemExit("the pools differ from the pools selected on: validate reads the same pool bytes as select")
     for fam in ("Q1", "Q4"):
         if a.select:
             reps = a.replications or REGISTERED["selection"]

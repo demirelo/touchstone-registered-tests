@@ -177,6 +177,8 @@ def _coverage(src, to, markets, code_commit, branch):
         p = Path(src) / "pools" / f"{m}.json"
         _require(p.exists() and _sha(p) == (cov.get("pools") or {}).get(m, {}).get("sha256"), f"{what}: pool {m} is missing or its hash differs")
         pl = _json(p)
+        _require(pl.get("commit") == code_commit and pl.get("market") == m and pl.get("branch") == branch and pl.get("inputs_manifest") == cov.get("inputs_manifest"),
+                 f"{what}: pool {m} has commit {pl.get('commit')!r}, market {pl.get('market')!r}, branch {pl.get('branch')!r}, or inputs other than the coverage's")
         _require(pl["seeds"] == coverage_pool(m, M), f"{what}: pool {m}'s seeds are not the registered coverage pool")
         _require(all(len(v) == M for v in list(pl["normalized"].values()) + list(pl["eff"].values())), f"{what}: pool {m} has a profile of the wrong length")
         files.append((p, f"pools/{m}.json"))

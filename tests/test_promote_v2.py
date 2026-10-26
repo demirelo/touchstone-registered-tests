@@ -195,3 +195,14 @@ def test_k5_final_refuses_a_file_changed_after_promotion(produced, tmp_path):
     with pytest.raises(P.Refused, match="hash"):
         P.final(to)
     assert P.verify_promoted(to) and not (to / "params.json").exists()
+
+
+
+def test_k4_promotion_refuses_a_pool_from_another_commit(produced, tmp_path):
+    import hashlib
+    import scripts.promote_v2 as P
+    src = tmp_path / "src"; shutil.copytree(produced["root"] / "cov", src)
+    pool = src / "pools" / "dev1.json"; _edit(pool, lambda d: d.update(commit="f" * 40))
+    _edit(src / "coverage.json", lambda d: d["pools"]["dev1"].update(sha256=hashlib.sha256(pool.read_bytes()).hexdigest()))
+    with pytest.raises(P.Refused, match="commit"):
+        P.promote("coverage", src, _clone_dest(produced, tmp_path), MARKETS, branch="three20k", code_commit=produced["head"])
