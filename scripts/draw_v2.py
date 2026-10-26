@@ -81,11 +81,13 @@ def verify_draw(draw: dict, protocol_bytes: bytes, proof_bytes: bytes, offset: i
     _require(len(answers) == 2 and set(answers.values()) == {h}, "the explorers' answers at H disagree with the hash")
 
 
-def instances(draw: dict, protocol_bytes: bytes, proof_bytes: bytes, published_height: int | None, offset: int = 144, depth: int = 6) -> dict:
+def instances(draw: dict, protocol_bytes: bytes, proof_bytes: bytes, published_height: int | None, offset: int = 144, depth: int = 6,
+              calibrate: bool = True) -> dict:
+    """calibrate=False leaves out calibrated_cfg (the slow step); the artifact check recomputes everything else."""
     verify_draw(draw, protocol_bytes, proof_bytes, offset, depth)
     root = draw["hash"]; Ht = int(draw["height"])
     markets = {m["label"]: {"stream_index": m["stream_index"], "rejections": m["rejections"], "cfg": cfg_to_dict(m["cfg"]),
-                            "calibrated_cfg": cfg_to_dict(INST.calibrated(m["cfg"]))} for m in INST.markets(root, 6)}
+                            **({"calibrated_cfg": cfg_to_dict(INST.calibrated(m["cfg"]))} if calibrate else {})} for m in INST.markets(root, 6)}
     return {"root": root, "height": Ht, "markets": markets, "seeds": {m: INST.eval_seeds(root, m) for m in LABELS},
             "salt_sha256": hashlib.sha256(bytes.fromhex(INST.identity_salt_hex(root))).hexdigest(),
             "confirmatory": published_height is not None and int(published_height) < Ht, "published_height": published_height}

@@ -40,10 +40,10 @@ def world(tmp_path, monkeypatch):
     cfg.write_text(f"[user]\n\tname = T\n\temail = test@example.com\n\tsigningkey = {key}\n[gpg]\n\tformat = ssh\n[gpg \"ssh\"]\n\tallowedSignersFile = {allowed}\n"
                    "[commit]\n\tgpgsign = false\n[tag]\n\tgpgsign = false\n[init]\n\tdefaultBranch = main\n")
     monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(cfg)); monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
-    repo = tmp_path / "repo"
-    for rel, text in {"scripts/report_v2.py": STUB, "experiments/v2/params.json": "{}", "experiments/protocol-v2.yaml": "version: 2\n",
-                      "experiments/protocol-v2.yaml.ots": "proof", "paper/main.tex": "\\\\documentclass{article}", "uv.lock": "lock"}.items():
+    repo = tmp_path / "repo"; proto, proof, draw_rec, inst = _registration(b"version: 2\n")
+    for rel, text in {"scripts/report_v2.py": STUB, "experiments/v2/params.json": "{}", "paper/main.tex": "\\\\documentclass{article}", "uv.lock": "lock"}.items():
         (repo / rel).parent.mkdir(parents=True, exist_ok=True); (repo / rel).write_text(text)
+    (repo / "experiments" / "protocol-v2.yaml").write_bytes(proto); (repo / "experiments" / "protocol-v2.yaml.ots").write_bytes(proof)
     _git(repo, "init", "-q"); _git(repo, "add", "-A"); _git(repo, "commit", "-qm", "protocol"); _git(repo, "tag", "-s", "protocol-v2", "-m", "protocol v2")
     ev = tmp_path / "eval"; (ev / "evaluate").mkdir(parents=True); (ev / "freeze").mkdir()
     from scripts.revision_v2 import path_of
@@ -51,12 +51,36 @@ def world(tmp_path, monkeypatch):
     rec = ev / "evaluate" / "a.json"; rec.write_text(json.dumps({"gain": [0.1, 0.2]}))
     ref = path_of(ev, "reference/fresh0@rho0.2/F111"); ref.parent.mkdir(parents=True); ref.write_text("{}")
     (ev / "freeze" / "fresh0@rho0.2.json").write_text(json.dumps({"stage": "freeze", "records": {"reference/fresh0@rho0.2/F111": sha_file(ref)}}))
-    draw = tmp_path / "draw"; draw.mkdir()
-    for n in ("draw.json", "instances.json", "h4.json"):
-        (draw / n).write_text("{}")
+    draw = tmp_path / "draw"; draw.mkdir(); (draw / "draw.json").write_text(json.dumps(draw_rec)); (draw / "instances.json").write_text(json.dumps(inst))
+    (draw / "h4.json").write_text("{}")
     rep = tmp_path / "report"; rep.mkdir(); (rep / "report.json").write_text(json.dumps({"a.json": 0.30000000000000004})); (rep / "report.md").write_text("# r")
     h4 = tmp_path / "sealed2"; (h4 / "h4").mkdir(parents=True); (h4 / "h4" / "family.py").write_text("x = 1")
     return {"repo": repo, "eval": ev, "draw": draw, "report": rep, "h4": h4, "out": tmp_path / "release"}
+
+
+def _registration(protocol: bytes):
+    """A protocol, its proof, a final draw record on a synthetic chain whose root is the proof's commitment, and the
+    instances derived from it (offset 4; tests/_chain.py)."""
+    import hashlib
+    from scripts.block_draw import anchor, read_final
+    from scripts.draw_v2 import instances
+    from scripts.ots_proof import parse
+    from tests import _chain as C
+    S = C.START; ch = C.chain(14, {S + 2: C.commitment(protocol, b"a")}); proof = C.proof(protocol, [(b"a", S + 2)]); f = C.fetcher(ch)
+    rec = read_final(anchor(parse(proof)["attestations"], f), f, offset=4); rec["protocol_sha256"] = hashlib.sha256(protocol).hexdigest()
+    rec = json.loads(json.dumps(rec))
+    inst = instances(rec, protocol, proof, S + 3, offset=4, calibrate=False)
+    for m in inst["markets"].values():                             # stands in for the slow calibration, which check does not recompute
+        m["calibrated_cfg"] = m["cfg"]
+    return protocol, proof, rec, json.loads(json.dumps(inst))
+
+
+def _manifest_rebuilt(tar: Path):
+    import hashlib
+    with tarfile.open(tar) as tf:
+        files = {m.name: tf.extractfile(m).read() for m in tf.getmembers() if m.isfile()}
+    man = {k.split("/", 1)[1]: hashlib.sha256(v).hexdigest() for k, v in files.items() if not k.endswith("MANIFEST.json")}
+    _rewrite(tar, "MANIFEST.json", json.dumps(man).encode())
 
 
 def _assemble(w):
@@ -79,7 +103,7 @@ def _rewrite(tar: Path, name: str, data: bytes | None):
 def test_assemble_and_check_a_synthetic_release(world):
     from scripts.artifact_v2 import check
     tar = _assemble(world)
-    assert tar.name == "touchstone-v2.tar.gz" and check(tar, repo=world["repo"]) == []
+    assert tar.name == "touchstone-v2.tar.gz" and check(tar, repo=world["repo"], offset=4) == []
     with tarfile.open(tar) as tf:
         names = tf.getnames()
     assert any(n.endswith("MANIFEST.json") for n in names) and any(n.endswith("paper/main.tex") for n in names) and any("h4/family.py" in n for n in names)
@@ -97,7 +121,7 @@ def test_check_reports_missing_and_changed_files(world, case):
         _rewrite(tar, "freeze/fresh0@rho0.2.json", json.dumps({"stage": "freeze", "records": {"reference/fresh0@rho0.2/F111": "0" * 64}}).encode())
     if case == "unsigned tag":
         _git(world["repo"], "tag", "-d", "protocol-v2"); _git(world["repo"], "tag", "protocol-v2")
-    assert check(tar, repo=world["repo"])
+    assert check(tar, repo=world["repo"], offset=4)
 
 
 # ---- final review K12: the archive is bound to the signed registration; reproduction runs the real report ----------------------
@@ -105,13 +129,8 @@ def test_check_reports_missing_and_changed_files(world, case):
 def test_k12_packed_registration_must_equal_the_tagged_files(world):
     from scripts.artifact_v2 import check
     tar = _assemble(world)
-    _rewrite(tar, "experiments/v2/params.json", b'{"cred": "changed"}')
-    with tarfile.open(tar) as tf:                                   # recompute the manifest so only the tag binding can catch it
-        files = {m.name: tf.extractfile(m).read() for m in tf.getmembers() if m.isfile()}
-    import hashlib
-    man = {k.split("/", 1)[1]: hashlib.sha256(v).hexdigest() for k, v in files.items() if not k.endswith("MANIFEST.json")}
-    _rewrite(tar, "MANIFEST.json", json.dumps(man).encode())
-    assert any("tag" in p for p in check(tar, repo=world["repo"]))
+    _rewrite(tar, "experiments/v2/params.json", b'{"cred": "changed"}'); _manifest_rebuilt(tar)          # only the tag binding can catch it
+    assert any("tag" in p for p in check(tar, repo=world["repo"], offset=4))
 
 
 @pytest.fixture(scope="module")
@@ -133,13 +152,10 @@ def real(tmp_path_factory):
         repo = base / "repo"; subprocess.run(["git", "clone", "-q", str(root), str(repo)], check=True)
         params = {"cred": {"variant": "thr", "K": 6, "M": None}, "tuned": {s: {"tol": 0.16, "L": 10} for s in ("B3-t", "R3-t", "R4-t", "C*-t")}}
         (repo / "experiments" / "v2").mkdir(parents=True, exist_ok=True); (repo / "experiments" / "v2" / "params.json").write_text(json.dumps(params))
-        (repo / "experiments" / "protocol-v2.yaml").write_text(yaml.safe_dump({"version": 2, "kappa": {"Q1": None, "Q4": None}, "cuts": 0, "h4": None}))
-        (repo / "experiments" / "protocol-v2.yaml.ots").write_bytes(b"proof")
+        proto, proof, draw_rec, inst0 = _registration(yaml.safe_dump({"version": 2, "kappa": {"Q1": None, "Q4": None}, "cuts": 0, "h4": None}).encode())
+        (repo / "experiments" / "protocol-v2.yaml").write_bytes(proto); (repo / "experiments" / "protocol-v2.yaml.ots").write_bytes(proof)
         _git(repo, "add", "-A"); _git(repo, "commit", "-qm", "protocol"); _git(repo, "tag", "-s", "protocol-v2", "-m", "protocol v2")
-        rh = "cd" * 32
-        draw = base / "draw"; draw.mkdir(); (draw / "draw.json").write_text("{}")
-        (draw / "instances.json").write_text(json.dumps({"root": rh, "confirmatory": True, "markets": {m["label"]: {"calibrated_cfg": cfg_to_dict(m["cfg"])} for m in INST.markets(rh, 6)},
-                                                        "seeds": {}, "salt_sha256": hashlib.sha256(bytes.fromhex(INST.identity_salt_hex(rh))).hexdigest()}))
+        draw = base / "draw"; draw.mkdir(); (draw / "draw.json").write_text(json.dumps(draw_rec)); (draw / "instances.json").write_text(json.dumps(inst0))
         (draw / "h4.json").write_text(json.dumps({"loaded": False, "reason": "no bundle is registered", "bundle_sha256": None, "h4_excluded": True, "registered_sha256": None}))
         ev = base / "eval"; ev.mkdir(); rep = base / "report"
         r = subprocess.run([sys.executable, "scripts/report_v2.py", "--out", str(ev), "--protocol", str(repo / "experiments" / "protocol-v2.yaml"), "--instances", str(draw / "instances.json"),
@@ -153,7 +169,7 @@ def real(tmp_path_factory):
 
 def test_k12_reproduce_passes_an_unchanged_release_with_the_real_report(real, capsys):
     from scripts.reproduce import main
-    assert main(["--artifact", str(real["tar"]), "--repo", str(real["repo"]), "--smoke"]) == 0 and "ok" in capsys.readouterr().out
+    assert main(["--artifact", str(real["tar"]), "--repo", str(real["repo"]), "--smoke", "--offset", "4"]) == 0 and "ok" in capsys.readouterr().out
 
 
 def test_k12_reproduce_detects_a_changed_report(real, tmp_path, capsys):
@@ -162,8 +178,8 @@ def test_k12_reproduce_detects_a_changed_report(real, tmp_path, capsys):
     tar = tmp_path / "t.tar.gz"; shutil.copy(real["tar"], tar)
     with tarfile.open(tar) as tf:
         md = next(tf.extractfile(m).read() for m in tf.getmembers() if m.name.endswith("report/report.md"))
-    _rewrite(tar, "report/report.md", md.replace(b"unanswered", b"answered", 1))
-    assert main(["--artifact", str(tar), "--repo", str(real["repo"]), "--smoke"]) != 0
+    _rewrite(tar, "report/report.md", md.replace(b"unanswered", b"answered", 1)); _manifest_rebuilt(tar)     # only the real report check can catch it
+    assert main(["--artifact", str(tar), "--repo", str(real["repo"]), "--smoke", "--offset", "4"]) != 0
 
 
 def test_k12_reproduce_refuses_an_unsigned_tag(real, tmp_path):
@@ -171,7 +187,7 @@ def test_k12_reproduce_refuses_an_unsigned_tag(real, tmp_path):
     from scripts.reproduce import main
     repo = tmp_path / "unsigned"; shutil.copytree(real["repo"], repo)
     _git(repo, "tag", "-d", "protocol-v2"); _git(repo, "tag", "protocol-v2")
-    assert main(["--artifact", str(real["tar"]), "--repo", str(repo), "--smoke"]) != 0
+    assert main(["--artifact", str(real["tar"]), "--repo", str(repo), "--smoke", "--offset", "4"]) != 0
 
 
 def test_k12_environment_must_match_the_lock(real, monkeypatch):
@@ -179,3 +195,33 @@ def test_k12_environment_must_match_the_lock(real, monkeypatch):
     assert RP.environment_problems(real["repo"] / "uv.lock") == []
     monkeypatch.setattr(RP, "_installed", lambda name: "0.0.0" if name == "numpy" else RP._real_installed(name))
     assert any("numpy" in p for p in RP.environment_problems(real["repo"] / "uv.lock"))
+
+
+
+# ---- fix-pass re-review L6, L7: the draw is validated and bound; the environment is the locked one --------------------------------
+
+@pytest.mark.parametrize("what", ["draw headers", "instance seeds", "instance root"])
+def test_l6_a_changed_draw_or_instances_is_refused(world, what):
+    from scripts.artifact_v2 import check
+    tar = _assemble(world)
+    if what == "draw headers":
+        d = json.loads((world["draw"] / "draw.json").read_text()); d["headers"][3], d["headers"][4] = d["headers"][4], d["headers"][3]
+        _rewrite(tar, "draw/draw.json", json.dumps(d).encode())
+    else:
+        i = json.loads((world["draw"] / "instances.json").read_text())
+        if what == "instance seeds":
+            i["seeds"]["fresh0"][0] += 1
+        else:
+            i["root"] = "ef" * 32
+        _rewrite(tar, "draw/instances.json", json.dumps(i).encode())
+    _manifest_rebuilt(tar)
+    assert any("draw" in p or "instances" in p for p in check(tar, repo=world["repo"], offset=4))
+
+
+def test_l7_missing_locked_packages_and_python_are_reported(real, monkeypatch):
+    import scripts.reproduce as RP
+    monkeypatch.setattr(RP, "_installed", lambda name: None)
+    probs = RP.environment_problems(real["repo"] / "uv.lock")
+    assert any("numpy" in p and "not installed" in p for p in probs)
+    monkeypatch.setattr(RP, "_installed", RP._real_installed); monkeypatch.setattr(RP, "_python", lambda: "2.7.18")
+    assert any("Python" in p for p in RP.environment_problems(real["repo"] / "uv.lock"))

@@ -2,8 +2,9 @@
 the draw (record with headers, instances, H4 decision), the report, the released H4 bundle, the promoted inputs, the
 protocol and its upgraded proof, the paper sources, and uv.lock are packed into release/touchstone-v2.tar.gz with a
 MANIFEST.json of SHA-256s. --check verifies every listed hash, the required files, the freeze records' hashes against the
-packed records, the signed tag protocol-v2 in the repository, and that every packed registration input (experiments/)
-equals the file at that tag."""
+packed records, the draw record against the packed protocol and proof, the packed instances against the ones the draw
+gives (all but calibrated_cfg, the slow step), the signed tag protocol-v2 in the repository, and that every packed
+registration input (experiments/) equals the file at that tag."""
 from __future__ import annotations
 
 import argparse
@@ -17,6 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from scripts.draw_v2 import Refused, instances  # noqa: E402
 from scripts.revision_v2 import path_of  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -55,7 +57,27 @@ def _members(tar: Path) -> dict:
         return {m.name[len(TOP) + 1:]: tf.extractfile(m).read() for m in tf.getmembers() if m.isfile() and m.name.startswith(TOP + "/")}
 
 
-def check(tar, repo=ROOT) -> list[str]:
+def _draw_problems(files: dict, offset: int) -> list[str]:
+    need = ("draw/draw.json", "draw/instances.json", "experiments/protocol-v2.yaml", "experiments/protocol-v2.yaml.ots")
+    if any(n not in files for n in need):
+        return []                                                  # reported as required files
+    try:
+        draw, packed = json.loads(files["draw/draw.json"]), json.loads(files["draw/instances.json"])
+        got = instances(draw, files["experiments/protocol-v2.yaml"], files["experiments/protocol-v2.yaml.ots"], packed.get("published_height"),
+                        offset, calibrate=False)
+    except Refused as e:
+        return [f"draw/draw.json: does not verify against the packed protocol and proof: {e}"]
+    except (ValueError, KeyError, TypeError) as e:
+        return [f"draw/draw.json or draw/instances.json: unreadable: {e!r}"]
+    strip = {**packed, "markets": {k: {f: v for f, v in m.items() if f != "calibrated_cfg"} for k, m in packed.get("markets", {}).items()}}
+    if json.loads(json.dumps(got, default=float)) != strip:
+        return ["draw/instances.json: differs from the instances the packed draw gives"]
+    if any("calibrated_cfg" not in m for m in packed["markets"].values()):
+        return ["draw/instances.json: a market has no calibrated_cfg"]
+    return []
+
+
+def check(tar, repo=ROOT, offset: int = 144) -> list[str]:
     files = _members(Path(tar)); problems = []
     if "MANIFEST.json" not in files:
         return ["MANIFEST.json is missing"]
@@ -73,6 +95,7 @@ def check(tar, repo=ROOT) -> list[str]:
                 rel = path_of(Path("eval"), rid).as_posix()
                 if rel not in files or _sha(files[rel]) != h:
                     problems.append(f"{arc}: frozen record {rid} is missing or its hash differs")
+    problems += _draw_problems(files, offset)
     if subprocess.run(["git", "tag", "-v", TAG], cwd=Path(repo), capture_output=True, text=True).returncode != 0:
         problems.append(f"tag {TAG} is missing, unsigned, or does not verify")
         return problems
@@ -89,12 +112,12 @@ def main(argv=None) -> int:
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument("--assemble", action="store_true"); g.add_argument("--check", default=None, metavar="TARBALL")
     ap.add_argument("--eval"); ap.add_argument("--draw"); ap.add_argument("--report"); ap.add_argument("--h4", default=None)
-    ap.add_argument("--out", default="release"); ap.add_argument("--repo", default=str(ROOT))
+    ap.add_argument("--out", default="release"); ap.add_argument("--repo", default=str(ROOT)); ap.add_argument("--offset", type=int, default=144)
     a = ap.parse_args(argv)
     if a.assemble:
         print(assemble(a.eval, a.draw, a.report, a.h4, a.out, a.repo))
         return 0
-    problems = check(a.check, a.repo)
+    problems = check(a.check, a.repo, a.offset)
     print("\n".join(problems) or "ok")
     return 1 if problems else 0
 
