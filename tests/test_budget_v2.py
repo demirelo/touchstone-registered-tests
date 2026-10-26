@@ -84,3 +84,38 @@ def test_cli(tmp_path, capsys):
     assert main(["--ledger", str(p), "--reserve", "development", "bench", "2.4"]) == 0 and "3.0" in capsys.readouterr().out
     assert main(["--ledger", str(p), "--record", "bench", "1.2"]) == 0 and main(["--ledger", str(p), "--show"]) == 0
     assert main(["--ledger", str(p), "--reserve", "development", "big", "50"]) == 1
+
+
+# ---- final review K6: invalid amounts never disable the caps ----------------------------------------------------------------
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), -1.0, 0.0])
+def test_k6_invalid_estimates_are_refused(tmp_path, bad):
+    from scripts.budget_v2 import Refused, reserve
+    p = _new(tmp_path / "l.json")
+    with pytest.raises(Refused):
+        reserve(p, "development", "x", bad)
+    assert json.loads(p.read_text())["reservations"] == []
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), -0.5])
+def test_k6_invalid_spend_is_refused(tmp_path, bad):
+    from scripts.budget_v2 import Refused, record, reserve
+    p = _new(tmp_path / "l.json"); reserve(p, "development", "a", 1.0)
+    with pytest.raises(Refused):
+        record(p, "a", bad)
+
+
+def test_k6_a_corrupt_ledger_is_refused(tmp_path):
+    from scripts.budget_v2 import Refused, reserve
+    p = _new(tmp_path / "l.json"); d = json.loads(p.read_text()); d["spent"] = [{"op": "development", "tag": "x", "usd": float("nan")}]
+    p.write_text(json.dumps(d))
+    with pytest.raises(Refused):
+        reserve(p, "development", "big", 1000.0)                         # a NaN must not make 1,250 USD look affordable
+
+
+@pytest.mark.parametrize("limit,text", [(float("nan"), "ok"), (-5.0, "ok"), (45.0, "")])
+def test_k6_invalid_approval_is_refused(tmp_path, limit, text):
+    from scripts.budget_v2 import Refused, approve
+    p = _new(tmp_path / "l.json")
+    with pytest.raises(Refused):
+        approve(p, limit, text)

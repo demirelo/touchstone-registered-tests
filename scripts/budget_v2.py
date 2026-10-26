@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import fcntl
 import json
+import math
 import os
 import sys
 from contextlib import contextmanager
@@ -23,6 +24,29 @@ class Refused(Exception):
     pass
 
 
+def _amount(x, what: str, positive: bool = False) -> float:
+    """A finite, nonnegative amount (positive when required); anything else would disable the cap comparisons."""
+    try:
+        v = float(x)
+    except (TypeError, ValueError):
+        raise Refused(f"{what} {x!r} is not a number")
+    if not math.isfinite(v) or v < 0 or (positive and v <= 0):
+        raise Refused(f"{what} {x!r} must be finite and {'positive' if positive else 'nonnegative'}")
+    return v
+
+
+def _valid(d: dict) -> dict:
+    for op, cap in d.get("caps", {}).items():
+        _amount(cap, f"cap {op}", positive=True)
+    for r in d.get("spent", []):
+        _amount(r.get("usd"), f"spend {r.get('tag')}")
+    for r in d.get("reservations", []):
+        _amount(r.get("cap"), f"reservation {r.get('tag')}")
+    if d.get("approval"):
+        _amount(d["approval"].get("limit"), "approval limit", positive=True)
+    return d
+
+
 def _after_read() -> None:
     """Called between the ledger read and write of an update; a test replaces it to widen the race window."""
 
@@ -33,7 +57,7 @@ def _locked(path: Path):
     with open(f"{path}.lock", "a") as lk:
         fcntl.flock(lk, fcntl.LOCK_EX)
         try:
-            d = json.loads(path.read_text()) if path.exists() else {"caps": dict(CAPS), "reservations": [], "spent": [], "approval": None}
+            d = _valid(json.loads(path.read_text()) if path.exists() else {"caps": dict(CAPS), "reservations": [], "spent": [], "approval": None})
             _after_read()
             yield d
             tmp = Path(f"{path}.{os.getpid()}.tmp"); tmp.write_text(json.dumps(d, indent=1)); os.replace(tmp, path)
@@ -51,6 +75,7 @@ def limit(d: dict) -> float:
 
 
 def reserve(path, op: str, tag: str, estimate: float) -> float:
+    estimate = _amount(estimate, "estimate", positive=True)
     with _locked(path) as d:
         if any(r["tag"] == tag for r in d["reservations"] + d["spent"]):
             raise Refused(f"tag {tag!r} is already in the ledger")
@@ -64,6 +89,7 @@ def reserve(path, op: str, tag: str, estimate: float) -> float:
 
 
 def record(path, tag: str, usd: float) -> None:
+    usd = _amount(usd, "spend")
     with _locked(path) as d:
         r = next((r for r in d["reservations"] if r["tag"] == tag), None)
         if r is None:
@@ -72,6 +98,9 @@ def record(path, tag: str, usd: float) -> None:
 
 
 def approve(path, new_limit: float, text: str) -> None:
+    new_limit = _amount(new_limit, "approval limit", positive=True)
+    if not str(text).strip():
+        raise Refused("an approval needs the author's written text")
     with _locked(path) as d:
         d["approval"] = {"limit": float(new_limit), "text": str(text)}
 
