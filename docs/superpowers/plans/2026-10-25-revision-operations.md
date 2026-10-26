@@ -185,8 +185,8 @@ Each operation is logged in `docs/revision/operations-ledger.md` (date, commit, 
 
 ### Operation 7: Evaluation on pods
 - [ ] Executor, per pod before any stage (eval checkout copied): `lock_v2.py --check-commit`; `params.json`, `h4.json`, and (when loaded) the bundle present; `OMP_NUM_THREADS=1`.
-- [ ] Executor: six fresh-market pods first (`--markets freshK`), then two headline pods by context (`--select 'headline@rho0.2|*'`, `--select 'headline@rho1|*'`); each runs `search`, `reference`, `dependent`, `freeze`, `evaluate`, `cross`, `doubling` on one `--out` with `revision_v2.py --stage S --root <hash> --params experiments/v2/params.json --cuts <c> --h4-decision results/v2/draw/h4.json [--h4 DIR --h4-sha HEX] --workers <vcpu>`; each pod's cap reserved with `budget_v2.py --reserve evaluation <tag> <estimate>` before launch and recorded after, so reservations plus spend never pass 40 USD.
-- [ ] Executor: pull every `--out` into `results/v2/eval/`; `revision_v2.py --stage verify --commit $(git rev-parse protocol-v2^{commit})` per market (read-only, no H4 import, no writes, no child process).
+- [ ] Executor: six fresh-market pods first (`--markets freshK`), then two headline pods by context (`--select 'headline@rho0.2|*'`, `--select 'headline@rho1|*'`); each runs `search`, `reference`, `dependent`, `freeze`, `evaluate`, `cross`, `doubling` on one `--out` with `revision_v2.py --stage S --root <hash> --markets <m> --params experiments/v2/params.json --cuts <c> --protocol experiments/protocol-v2.yaml --h4-decision results/v2/draw/h4.json [--h4 DIR --h4-sha HEX] --workers <vcpu> --out <dir>`; each pod's cap reserved with `budget_v2.py --reserve evaluation <tag> <estimate>` before launch and recorded after, so reservations plus spend never pass 40 USD.
+- [ ] Executor: pull every `--out` into `results/v2/eval/`; `revision_v2.py --stage verify --root <hash> --markets <m> --params experiments/v2/params.json --cuts <c> --protocol experiments/protocol-v2.yaml --instances results/v2/draw/instances.json --h4-decision results/v2/draw/h4.json --commit $(git rev-parse protocol-v2^{commit}) --out results/v2/eval` per market (read-only, no H4 import, no writes, no child process; `--out` must exist).
 - **Exit:** verify clean except missing cells logged as cap stops; pods deleted and verified.
 
 ### Operation 8: Report and review
@@ -291,3 +291,9 @@ Astra: accept, no findings. Sol: one finding.
 | Finding (Sol) | Change |
 |---|---|
 | No successful H4 decision case (S1) | Task 7 `test_h4_decision_loads_a_valid_bundle`; Task 8 `test_loaded_decision_runs_h4` feeds that decision to the runner and requires an H4 record |
+
+## Interfaces changed by the Part A final review (see docs/revision/operations-build-ledger-2026-10-26.md)
+
+- Task 7: the draw is checked against the committed proof's bytes, parsed by `scripts/ots_proof.py` (no `ots info` listing); `block_draw.anchor` also records the headers from the lowest rejected attestation to A; `draw_v2.py --instances` takes `--ots PROOF`; `--h4-decision` writes `h4.json` once (with `registered_sha256`) and accepts only an identical rerun.
+- Task 8: fresh runs need `--protocol` (the H4 decision is checked against it before any episode); `verify` needs `--instances`, `--protocol`, and `--commit` in every mode. Operation 7's commands above carry these arguments.
+- Task 10: `reproduce.py` verifies the tag signature, runs the artifact check (including the draw and the instances bound to it), checks the installed packages against the clone's `uv.lock`, and runs the real report's `--check`.
