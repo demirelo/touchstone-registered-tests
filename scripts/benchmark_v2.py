@@ -61,16 +61,7 @@ def wave_bound(times, vcpu: int) -> float:
     return (sum(t) / vcpu + (1 - 1 / vcpu) * max(t)) if t else 0.0
 
 
-def _cell_seconds(timings: dict, c: dict) -> float:
-    e = timings.get("eval160") or {}; x7 = timings["x7_cell"] / timings["d2h3_cell"]
-    if c["objective"] in ("total", "min"):
-        return timings["coalition_total"] + e.get("coalition", 0.0)
-    if c["objective"] in ("W0", "W1"):
-        return timings["w1"] * (x7 if c["family"] == "X7-SC" else 1.0) + e.get("welfare", 0.0)
-    return timings["x7_cell"] + e.get("x7", 0.0) if c["family"] == "X7-SC" else timings["d2h3_cell"] + e.get("profit", 0.0)
-
-
-STAGES_BILLED = ("search", "reference", "dependent", "cross", "doubling")
+STAGES_BILLED = ("search", "reference", "dependent", "evaluate", "cross", "doubling")
 
 
 def eval_pods(cuts: int = 0, h4_excluded: bool = False) -> dict:
@@ -85,25 +76,30 @@ def eval_pods(cuts: int = 0, h4_excluded: bool = False) -> dict:
     return pods
 
 
+def _task(ts: dict, st: str, j: dict) -> float:
+    x7 = j.get("family") == "X7-SC"; obj = j.get("objective")
+    if st == "search":
+        return ts["search"][("x7" if x7 else "profit") if obj == "profit" else ("W0_x7" if x7 else "W0")]
+    if st == "reference":
+        return ts["reference"]
+    if st == "prereqs":
+        return ts["prereqs"]
+    if st == "dependent":
+        return ts["coalition"] if obj in ("total", "min") else ts["W1_x7" if x7 else "W1"]
+    if st == "evaluate":
+        return ts["evaluate"]["coalition" if obj in ("total", "min") else "welfare" if obj in ("W0", "W1") else "x7" if x7 else "profit"]
+    if st == "cross":
+        return ts["cross_item"]
+    return ts["doubling_x7" if x7 else "doubling"]
+
+
 def pod_plan(timings: dict, jobs: list[dict]) -> list[list[float]]:
-    """One pod's waves, exactly the runner's dispatch (`revision_v2._waves`) per stage, with measured task times; a cell's
-    time includes its 200-seed evaluation and its share of the coalition prerequisites, so the evaluate stage and the
-    prerequisite waves carry no further time."""
+    """One pod's waves, exactly the runner's dispatch (`revision_v2._waves`) per stage, each task at its measured component
+    time (`task_seconds`): searches, reference menus, W1 searches, coalition prerequisites and objectives, evaluations on
+    200 seeds, cross items, and doublings, every one in its own wave."""
     from scripts import revision_v2 as RV
-    by = {j["id"]: j for j in jobs}; plan = []
-    for stage in STAGES_BILLED:
-        for st, items in RV._waves(stage, jobs, jobs):
-            if st in ("search", "dependent"):
-                plan.append([_cell_seconds(timings, by[i["id"]]) for i in items])
-            elif st == "reference":
-                plan.append([timings["reference"]] * len(items))
-            elif st == "prereqs":
-                plan.append([0.0] * len(items))
-            elif st == "cross":
-                plan.append([8 * timings["cross_row"] * FINAL_SEEDS / EVAL_SEEDS] * len(items))
-            else:
-                plan.append([timings["doubling_x7"] if i["family"] == "X7-SC" else timings["doubling"] for i in items])
-    return plan
+    ts = timings["task_seconds"]
+    return [[_task(ts, st, i) for i in items] for stage in STAGES_BILLED for st, items in RV._waves(stage, jobs, jobs)]
 
 
 def default_eval_plan(timings: dict, cuts: int = 0, h4_excluded: bool = False) -> list[list[float]]:
@@ -323,6 +319,12 @@ def measure(out: Path, workers: int, fns: dict | None = None, smoke: bool = Fals
          "bootstrap_batch": r["coverage_batch"] * (30_000 / int(meta.get("coverage_replications", 100))) * 2}
     to160 = (FINAL_SEEDS - 40) / n_eval
     t["eval160"] = {"profit": to160 * r["eval_d2h3"], "x7": to160 * r["eval_x7"], "welfare": to160 * r["w1_eval"], "coalition": to160 * r["coalition_eval"]}
+    to200, x7 = FINAL_SEEDS / n_eval, r["search_x7"] / max(r["search_d2h3"], 1e-12)
+    t["task_seconds"] = {"search": {"profit": r["search_d2h3"], "x7": r["search_x7"], "W0": r["w1_search"], "W0_x7": r["w1_search"] * x7},
+                         "reference": r["reference"], "W1": r["w1_search"], "W1_x7": r["w1_search"] * x7, "prereqs": r["coalition_prereqs"],
+                         "coalition": r["coalition_search"],
+                         "evaluate": {"profit": to200 * r["eval_d2h3"], "x7": to200 * r["eval_x7"], "welfare": to200 * r["w1_eval"], "coalition": to200 * r["coalition_eval"]},
+                         "cross_item": 8 * t["cross_row"] * FINAL_SEEDS / EVAL_SEEDS, "doubling": r["doubling"], "doubling_x7": r["doubling_x7"]}
     t["components"] = r; t["bank_sizes"] = dict(meta.get("state", {}).get("bank_sizes", {}))
     from scripts.revision_v2 import git_commit
     t.update(vcpu=int(workers), usd_per_pod_hour=usd_per_pod_hour, markets=["headline", "dev0"], commit=git_commit(), wall_seconds=wall, smoke=bool(smoke))

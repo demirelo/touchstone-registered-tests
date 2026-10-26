@@ -183,7 +183,10 @@ def test_caveat_stand_in_bank_is_distinct_excludes_the_best_and_refuses_shortage
 
 POD = {"d2h3_cell": 1200.0, "x7_cell": 3000.0, "reference": 300.0, "w1": 1500.0, "coalition_total": 1500.0,
        "eval160": {"profit": 240.0, "x7": 240.0, "welfare": 240.0, "coalition": 240.0}, "cross_row": 12.0, "doubling": 1200.0, "doubling_x7": 3000.0,
-       "episode": 1500.0 / 18000, "bootstrap_batch": 3000.0, "dev_inner_config": 200.0, "dev_recheck_config": 6000.0, "usd_per_pod_hour": 0.56}
+       "episode": 1500.0 / 18000, "bootstrap_batch": 3000.0, "dev_inner_config": 200.0, "dev_recheck_config": 6000.0, "usd_per_pod_hour": 0.56,
+       "task_seconds": {"search": {"profit": 1000.0, "x7": 2500.0, "W0": 1000.0, "W0_x7": 2500.0}, "reference": 300.0, "W1": 1000.0, "W1_x7": 2500.0,
+                        "prereqs": 400.0, "coalition": 800.0, "evaluate": {"profit": 240.0, "x7": 400.0, "welfare": 240.0, "coalition": 240.0},
+                        "cross_item": 960.0, "doubling": 1200.0, "doubling_x7": 3000.0}}
 
 
 def test_defaults_reproduce_the_current_table():
@@ -249,14 +252,14 @@ def test_choose_follows_design_order():
     d = choose(heavy, _ledger())
     assert d["branch"] in ("two20k", "two10k") and d["markets"] == ["headline", "dev0"] and d["development_usd"] <= 12.0
     assert choose(dict(POD, dev_recheck_config=1e7), _ledger())["stop"] == "development"
-    keys = ("d2h3_cell", "x7_cell", "reference", "w1", "coalition_total", "cross_row", "doubling", "doubling_x7")
+    scale = lambda v, f: {k: scale(x, f) for k, x in v.items()} if isinstance(v, dict) else v * f
     e = {c: cost_table(POD, cuts=c)["evaluation_usd"] for c in range(5)}
-    f = 39.0 / ((e[0] + e[4]) / 2)                                                   # evaluation cost is linear in the evaluation times
-    ev = dict(POD, **{k: POD[k] * f for k in keys}, eval160={k: v * f for k, v in POD["eval160"].items()})
+    f = 39.0 / ((e[0] + e[4]) / 2)                                                   # evaluation cost is linear in the task times
+    ev = dict(POD, task_seconds=scale(POD["task_seconds"], f))
     want = next(c for c in range(5) if e[c] * f + 1.0 <= 40.0)
     got = choose(ev, _ledger())
     assert want >= 1 and got["cuts"] == want and got["evaluation_usd"] == pytest.approx(e[want] * f + 1.0)
-    assert choose(dict(POD, d2h3_cell=1e7), _ledger())["stop"] == "evaluation"
+    assert choose(dict(POD, task_seconds=dict(POD["task_seconds"], reference=1e7)), _ledger())["stop"] == "evaluation"
 
 
 def test_benchmark_spend_decides_a_borderline_case():
@@ -296,3 +299,32 @@ def test_default_eval_plan_follows_the_runner_dispatch():
         jobs = pods[name]
         want = [len(ids) for st in STAGES_BILLED for ids in RV.dispatch_plan(st, jobs)]
         assert [len(w) for w in pod_plan(POD, jobs)] == want
+
+
+
+def test_k10_waves_are_priced_with_their_measured_components():
+    """Final review K10: prerequisites and evaluations are billed in their own dispatch waves, at their measured times."""
+    import scripts.revision_v2 as RV
+    from scripts.benchmark_v2 import eval_pods, pod_plan
+    ts = dict(POD["task_seconds"], prereqs=100.0, coalition=0.001)
+    jobs = eval_pods()["headline@rho0.2"]; plan = pod_plan(dict(POD, task_seconds=ts), jobs)
+    calls = [(st, items) for stage in ("search", "reference", "dependent", "evaluate", "cross", "doubling") for st, items in RV._waves(stage, jobs, jobs)]
+    assert len(plan) == len(calls)
+    for (st, items), wave in zip(calls, plan):
+        if st == "prereqs":
+            assert wave == [100.0] * len(items)
+        if st == "dependent" and items[0]["objective"] in ("total", "min"):
+            assert wave == [0.001] * len(items)
+        if st == "evaluate":
+            assert all(w in (240.0, 400.0) for w in wave)
+    assert any(st == "evaluate" for st, _ in calls) and any(st == "prereqs" for st, _ in calls)
+
+
+def test_k10_measure_records_task_seconds(tmp_path, monkeypatch):
+    import scripts.benchmark_v2 as B
+    secs = {k: float(n + 1) for n, k in enumerate(B.WORKLOADS)}
+    monkeypatch.setattr(B, "_timed", lambda f: secs[f()])
+    fns = {k: (lambda k=k: k) for k in B.WORKLOADS}; fns["_meta"] = {"eval_seeds": 20, "episodes": 20, "coverage_replications": 100}
+    t = B.measure(tmp_path, 16, fns=fns)["task_seconds"]
+    assert t["prereqs"] == secs["coalition_prereqs"] and t["coalition"] == secs["coalition_search"] and t["reference"] == secs["reference"]
+    assert t["evaluate"]["profit"] == secs["eval_d2h3"] * 10 and t["search"]["x7"] == secs["search_x7"] and t["cross_item"] == secs["cross_row"] * 8 * 10
