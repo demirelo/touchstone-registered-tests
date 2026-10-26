@@ -181,8 +181,8 @@ def test_caveat_stand_in_bank_is_distinct_excludes_the_best_and_refuses_shortage
 
 # ---- operations plan Task 4: cuts, branches, wave billing, the cost decision ----------------------------------------------
 
-POD = {"d2h3_cell": 1500.0, "x7_cell": 3750.0, "reference": 300.0, "w1": 1500.0, "coalition_total": 1500.0,
-       "eval160": {"profit": 240.0, "x7": 240.0, "welfare": 240.0, "coalition": 240.0}, "cross_row": 12.0, "doubling": 1500.0, "doubling_x7": 3750.0,
+POD = {"d2h3_cell": 1200.0, "x7_cell": 3000.0, "reference": 300.0, "w1": 1500.0, "coalition_total": 1500.0,
+       "eval160": {"profit": 240.0, "x7": 240.0, "welfare": 240.0, "coalition": 240.0}, "cross_row": 12.0, "doubling": 1200.0, "doubling_x7": 3000.0,
        "episode": 1500.0 / 18000, "bootstrap_batch": 3000.0, "dev_inner_config": 200.0, "dev_recheck_config": 6000.0, "usd_per_pod_hour": 0.56}
 
 
@@ -284,3 +284,15 @@ def test_decide_writes_the_decision_once_with_a_ledger_snapshot(tmp_path):
     assert len(d["timings_sha256"]) == 64
     with pytest.raises(SystemExit):
         main(["--decide", str(tm), "--ledger", str(lg), "--out", str(out)])           # written once
+
+
+def test_default_eval_plan_follows_the_runner_dispatch():
+    """Operations plan Task 8 (pre-flight ruling): the evaluation bill uses the runner's own dispatch waves per pod."""
+    import scripts.revision_v2 as RV
+    from scripts.benchmark_v2 import STAGES_BILLED, eval_pods, pod_plan
+    pods = eval_pods()
+    assert set(pods) == {"headline@rho0.2", "headline@rho1"} | {f"fresh{i}" for i in range(6)}
+    for name in ("fresh0", "headline@rho0.2"):
+        jobs = pods[name]
+        want = [len(ids) for st in STAGES_BILLED for ids in RV.dispatch_plan(st, jobs)]
+        assert [len(w) for w in pod_plan(POD, jobs)] == want

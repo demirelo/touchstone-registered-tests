@@ -336,13 +336,12 @@ def test_f6_unique_tmp_and_prereqs_before_pool(patched, monkeypatch, tmp_path):
     from sim import records_v2
     RV = patched
     assert "getpid" in inspect.getsource(records_v2.write)
-    order = []
-    monkeypatch.setattr(RV, "coalition_prereqs", lambda job, out, *rest: order.append(("prereq", RV._coalition_tag(job))))
-    monkeypatch.setattr(RV, "_pool", lambda stage, jobs, out, w, c, h, *rest: order.append(("pool", len(jobs))) or ["done"] * len(jobs))
+    order = []                                             # the group's prerequisites are one pool wave, before the objectives' wave
+    monkeypatch.setattr(RV, "_pool", lambda stage, jobs, out, w, c, h, *rest: order.append((stage, [j["id"] for j in jobs])) or ["done"] * len(jobs))
     mkt = RV.market("dev0", RV.DEV_ROOT, 0.2, dev=True, smoke=True)
     js = [RV.job(mkt, "F111", "X6-SE/v2", o, 2, "synchronised", smoke=True) for o in ("total", "min")]
     RV.run("dependent", js, tmp_path)
-    assert order[0] == ("prereq", "F111_c2_synchronised") and order.count(("prereq", "F111_c2_synchronised")) == 1 and order[-1][0] == "pool"
+    assert order == [("prereqs", [f"coalition/{CTX}/F111_c2_synchronised"]), ("dependent", [j["id"] for j in js])]
 
 
 def test_f7_w1_and_w0_doubling_keep_metadata(ctx_dir, patched, tmp_path):
@@ -465,3 +464,170 @@ def test_h4_valid_derived_records_are_reused(ctx_dir, patched, monkeypatch, tmp_
         with pytest.raises(SystemExit):
             RV.derived_records(CTX, jobs, d, 0, False)
         real(bp, b)
+
+
+# ---- operations plan Task 8: priority tiers, read-only verify, the H4 decision ---------------------------------------------
+
+FULL = {"cred": {"variant": "thr", "K": 6, "M": None}, "tuned": {s: {"tol": 0.16, "L": 10} for s in ("B3-t", "R3-t", "R4-t", "C*-t")}}
+
+
+def _catalog(RV):
+    return RV.build_jobs(["dev0"], RV.DEV_ROOT, True, True, FULL, 0, None, True)
+
+
+def test_jobs_carry_block_and_priority(patched):
+    RV = patched; cat = _catalog(RV); by = {j["id"]: j for j in cat}
+    assert by[f"{CTX}|F111|X7-SC|profit"]["priority"] == 0 and by[f"{CTX}|F001|D2+H3|profit"]["priority"] == 1
+    assert {j["priority"] for j in cat} == {0, 1, 2, 3} and all(j["block"] for j in cat)
+
+
+def test_dispatch_follows_priority_tiers(patched, monkeypatch, tmp_path):
+    RV = patched; cat = _catalog(RV); calls = []
+    monkeypatch.setattr(RV, "_pool", lambda stage, items, out, w, c, h, catalog=None: calls.append((stage, [i["id"] for i in items])) or ["done"] * len(items))
+    RV.run("search", cat, tmp_path, catalog=cat)
+    pr = {j["id"]: j for j in cat}; order = [i for _, ids in calls for i in ids]
+    tiers = [pr[i]["priority"] for i in order]
+    assert tiers == sorted(tiers) and len(order) == len([j for j in cat if j["objective"] in ("profit", "W0")])
+    for _, ids in calls:                                                       # one tier and one dependency wave per call
+        assert len({pr[i]["priority"] for i in ids}) == 1 and len({pr[i]["family"] == "X7-SC" for i in ids}) == 1
+    assert [ids for _, ids in calls] == RV.dispatch_plan("search", cat, cat)
+
+
+def test_tiers_wait_for_slower_higher_tiers(patched, monkeypatch, tmp_path):
+    import threading
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+    RV = patched; cat = _catalog(RV); by = {j["id"]: j for j in cat}
+    jobs = [by[f"{CTX}|F111|D2+H3|profit"], by[f"{CTX}|F000|D2+H3|profit"], by[f"{CTX}|F001|D2+H3|profit"]]
+    events, lock = [], threading.Lock()
+
+    def body(job, out):
+        with lock:
+            events.append(("start", job["priority"], time.monotonic()))
+        if job["priority"] == 0:
+            time.sleep(0.4 if job["rule"] == "F111" else 0.1)
+        with lock:
+            events.append(("end", job["priority"], time.monotonic()))
+        return {}
+    monkeypatch.setattr(RV, "stage_search", body); monkeypatch.setattr(RV, "ProcessPoolExecutor", ThreadPoolExecutor)
+    seen = []; real = RV._pool
+    monkeypatch.setattr(RV, "_pool", lambda stage, items, *a, **k: seen.append([i["id"] for i in items]) or real(stage, items, *a, **k))
+    RV.run("search", jobs, tmp_path, workers=2, catalog=cat)
+    last0 = max(t for e, p, t in events if e == "end" and p == 0); first1 = min(t for e, p, t in events if e == "start" and p == 1)
+    assert last0 <= first1 and seen == RV.dispatch_plan("search", jobs, cat)
+
+
+def test_reference_and_cross_run_through_the_pool(ctx_dir, patched, monkeypatch, tmp_path):
+    RV = patched; out, jobs = ctx_dir; d = _copy(out, tmp_path); _banks(RV, d, jobs); calls = []
+    real = RV._pool
+    monkeypatch.setattr(RV, "_pool", lambda stage, items, *a, **k: calls.append((stage, [i["id"] for i in items])) or real(stage, items, *a, **k))
+    RV.run("reference", jobs, d, catalog=jobs); RV.run("cross", jobs, d, catalog=jobs)
+    refs = [i for s, ids in calls if s == "reference" for i in ids]; cross = [i for s, ids in calls if s == "cross" for i in ids]
+    assert refs == [f"reference/{CTX}/F111"] and sorted(cross) == [f"cross/{CTX}/D2+H3", f"cross/{CTX}/X7-SC"]
+
+
+def _toy_bundle(tmp_path):
+    import shutil
+    from sim.h4_loader import bundle_sha
+    d = tmp_path / "sealed2"; shutil.copytree(Path(__file__).resolve().parent / "fixtures" / "h4_toy", d)
+    (d / "h4" / "check.json").write_text(json.dumps({"load": {"ok": True}}))
+    return d, bundle_sha(d)
+
+
+def test_loaded_decision_runs_h4(patched, tmp_path):
+    from scripts.draw_v2 import h4_decision
+    RV = patched; d, sha = _toy_bundle(tmp_path)
+    dec = tmp_path / "h4.json"; dec.write_text(json.dumps(h4_decision(d, {"h4": {"commit": "a" * 40, "bundle_sha256": sha}})))
+    params = tmp_path / "params.json"; params.write_text(json.dumps(FULL)); out = tmp_path / "out"
+    assert RV.main(["--stage", "search", "--select", f"{CTX}|F111|H4|profit", "--dev", "--smoke", "--markets", "dev0", "--params", str(params),
+                    "--h4-decision", str(dec), "--h4", str(d), "--h4-sha", sha, "--out", str(out)]) == 0
+    rec = json.loads(RV.path_of(out, f"{CTX}|F111|H4|profit").read_text())
+    assert rec["stage"] == "search" and rec["provenance"]["h4_sha256"] == sha
+
+
+def test_pods_enforce_the_h4_decision(patched, monkeypatch, tmp_path):
+    RV = patched; d, sha = _toy_bundle(tmp_path)
+    h4, excl = RV.resolve_h4({"loaded": False, "reason": "x", "bundle_sha256": sha, "h4_excluded": True}, str(d), sha)
+    assert h4 is None and excl is True and not any(j["family"] == "H4" for j in RV.build_jobs(["dev0"], RV.DEV_ROOT, True, True, FULL, 0, h4, excl))
+    monkeypatch.setattr(RV, "run", lambda *a, **k: (_ for _ in ()).throw(AssertionError("an episode stage started")))
+    dec = tmp_path / "h4.json"; dec.write_text(json.dumps({"loaded": True, "reason": None, "bundle_sha256": sha, "h4_excluded": False}))
+    params = tmp_path / "params.json"; params.write_text(json.dumps(FULL))
+    with pytest.raises(SystemExit):
+        RV.main(["--stage", "search", "--dev", "--smoke", "--markets", "dev0", "--params", str(params), "--h4-decision", str(dec),
+                 "--h4", str(d), "--h4-sha", "0" * 64, "--out", str(tmp_path / "o")])
+    with pytest.raises(SystemExit):
+        RV.main(["--stage", "search", "--dev", "--smoke", "--markets", "dev0", "--params", str(params), "--h4-decision", str(dec), "--out", str(tmp_path / "o")])
+
+
+# ---- verify in a spawned, guarded process -------------------------------------------------------------------------------------
+
+ROOT_HEX = "ab" * 32
+FRESH = "fresh0@rho0.2"
+
+
+@pytest.fixture(scope="module")
+def fresh_dir(tmp_path_factory):
+    """A smoke fresh0 context (F111's two menu searches, reference, freeze, evaluation) and the recorded inputs verify reads."""
+    import yaml
+    import sim.instances as INST
+    from sim.records import cfg_to_dict
+    with pytest.MonkeyPatch.context() as mp:
+        RV = _patch(mp); base = tmp_path_factory.mktemp("fresh")
+        salt = base / "salt.hex"; salt.write_text(INST.identity_salt_hex(ROOT_HEX)); mp.setenv("TOUCHSTONE_IDENTITY_SALT", str(salt))
+        mkt = RV.market("fresh0", ROOT_HEX, 0.2, smoke=True)
+        jobs = [RV.job(mkt, "F111", f, smoke=True) for f in ("D2+H3", "X7-SC")]
+        out = base / "out"
+        for st in ("search", "reference", "freeze", "evaluate"):
+            RV.run(st, jobs, out, catalog=jobs)
+        inst = base / "instances.json"
+        inst.write_text(json.dumps({"root": ROOT_HEX, "markets": {"fresh0": {"calibrated_cfg": cfg_to_dict(mkt["cfg"])}},
+                                    "seeds": {"fresh0": INST.eval_seeds(ROOT_HEX, "fresh0")},
+                                    "salt_sha256": __import__("hashlib").sha256(bytes.fromhex(INST.identity_salt_hex(ROOT_HEX))).hexdigest()}))
+        proto = base / "protocol.yaml"; proto.write_text(yaml.safe_dump({"h4": None, "cuts": 0}))
+        h4 = base / "h4.json"; h4.write_text(json.dumps({"loaded": False, "reason": "no bundle is registered", "bundle_sha256": None, "h4_excluded": True}))
+        params = base / "params.json"; params.write_text(json.dumps(FULL))
+        return {"base": base, "out": out, "inst": inst, "proto": proto, "h4": h4, "params": params, "commit": RV.git_commit()}
+
+
+def _verify(fx, out, fault=None, tmp=None):
+    import multiprocessing as mp
+    from tests._verify_child import child
+    argv = ["--stage", "verify", "--root", ROOT_HEX, "--markets", "fresh0", "--select", f"{FRESH}|F111|D2+H3|profit,{FRESH}|F111|X7-SC|profit", "--smoke", "--params", str(fx["params"]),
+            "--commit", fx["commit"], "--instances", str(fx["inst"]), "--protocol", str(fx["proto"]), "--h4-decision", str(fx["h4"]), "--out", str(out)]
+    ctx = mp.get_context("spawn"); q = ctx.Queue(); p = ctx.Process(target=child, args=(argv, q, fault, str(tmp) if tmp else None))
+    p.start(); r = q.get(timeout=300); p.join(60)
+    return r
+
+
+def _snapshot(d):
+    from sim.records_v2 import sha_file
+    return {str(p): sha_file(p) for p in Path(d).rglob("*") if p.is_file()}
+
+
+def test_verify_stage_runs_no_episode(fresh_dir, tmp_path):
+    import shutil
+    fx = fresh_dir; d = tmp_path / "out"; shutil.copytree(fx["out"], d); before = _snapshot(d)
+    status, rc, text = _verify(fx, d)
+    assert status == "ok", text
+    rep = json.loads(text); c = rep["contexts"][FRESH]
+    assert rc == 0 and c["status"] == "ok" and not c["stale"] and not c["foreign"] and not c["missing"] and _snapshot(d) == before
+    cases = {}
+    for name in ("deleted evaluate", "stale freeze", "foreign record", "before freeze"):
+        e = tmp_path / name.replace(" ", "_"); shutil.copytree(fx["out"], e); cases[name] = e
+    from scripts.revision_v2 import eval_path, path_of
+    eval_path(cases["deleted evaluate"], f"{FRESH}|F111|D2+H3|profit").unlink()
+    fr = path_of(cases["stale freeze"], f"freeze/{FRESH}"); f = json.loads(fr.read_text()); f["records"][f"reference/{FRESH}/F111"] = "0" * 64; fr.write_text(json.dumps(f))
+    ep = eval_path(cases["foreign record"], f"{FRESH}|F111|X7-SC|profit"); r = json.loads(ep.read_text()); r["provenance"]["git_commit"] = "f" * 40; ep.write_text(json.dumps(r))
+    path_of(cases["before freeze"], f"freeze/{FRESH}").unlink()
+    got = {k: _verify(fx, v) for k, v in cases.items()}
+    rep = {k: json.loads(v[2])["contexts"][FRESH] for k, v in got.items() if v[0] == "ok"}
+    assert f"{FRESH}|F111|D2+H3|profit" in rep["deleted evaluate"]["missing"] and rep["deleted evaluate"]["status"] == "ok"
+    assert rep["stale freeze"]["status"] == "error" and got["stale freeze"][1] == 1
+    assert f"{FRESH}|F111|X7-SC|profit" in rep["foreign record"]["foreign"] and got["foreign record"][1] == 1
+    assert rep["before freeze"]["status"] == "unavailable" and set(rep["before freeze"]["missing"]) >= {f"{FRESH}|F111|D2+H3|profit", f"{FRESH}|F111|X7-SC|profit"}
+
+
+@pytest.mark.parametrize("fault", ["write outside out", "create a directory", "hard link", "child process"])
+def test_verify_guard_rejects_faulty_verifiers(fresh_dir, tmp_path, fault):
+    status, rc, text = _verify(fresh_dir, fresh_dir["out"], fault=fault, tmp=tmp_path)
+    assert status == "error" and "Guarded" in text and not (tmp_path / "leak.txt").exists() and not (tmp_path / "newdir").exists()

@@ -70,27 +70,44 @@ def _cell_seconds(timings: dict, c: dict) -> float:
     return timings["x7_cell"] + e.get("x7", 0.0) if c["family"] == "X7-SC" else timings["d2h3_cell"] + e.get("profit", 0.0)
 
 
-def default_eval_plan(timings: dict, cuts: int = 0, h4_excluded: bool = False) -> list[list[float]]:
-    """The runner's waves per context (search non-X7, search X7-SC, references, W1 non-X7, W1 X7-SC, coalitions, cross
-    rows, doublings) with measured task times; Task 8 replaces it by the runner's own dispatch plan."""
+STAGES_BILLED = ("search", "reference", "dependent", "cross", "doubling")
+
+
+def eval_pods(cuts: int = 0, h4_excluded: bool = False) -> dict:
+    """Manifest cells as runner-shaped jobs, grouped by pod (Operation 7): one pod per fresh market, the headline market split
+    by context."""
     from sim import manifest_v2 as MAN
-    cs = MAN.effective(cuts, h4_excluded); by = {}
-    for c in cs:
-        by.setdefault(c["context"], []).append(c)
-    cross = {}
-    for ctx, _ in MAN.cross_evaluations():
-        cross[ctx] = cross.get(ctx, 0) + 8
-    dbl = set(MAN.doublings()); plan = []
-    for ctx, cells in sorted(by.items()):
-        pick = lambda f: [_cell_seconds(timings, c) for c in cells if f(c)]
-        plan += [pick(lambda c: c["objective"] in ("profit", "W0") and c["family"] != "X7-SC"),
-                 pick(lambda c: c["objective"] in ("profit", "W0") and c["family"] == "X7-SC"),
-                 [timings["reference"]] * len({c["rule"] for c in cells if c["objective"] == "profit" and c["family"] in ("D2+H3", "X7-SC")}),
-                 pick(lambda c: c["objective"] == "W1" and c["family"] != "X7-SC"), pick(lambda c: c["objective"] == "W1" and c["family"] == "X7-SC"),
-                 pick(lambda c: c["objective"] in ("total", "min")),
-                 [timings["cross_row"] * FINAL_SEEDS / EVAL_SEEDS] * cross.get(ctx, 0),
-                 [timings["doubling_x7"] if c["family"] == "X7-SC" else timings["doubling"] for c in cells if c["id"] in dbl]]
-    return [w for w in plan if w]
+    pods = {}
+    for c in MAN.effective(cuts, h4_excluded):
+        j = {k: c.get(k) for k in ("id", "context", "rule", "family", "objective", "c", "schedule", "block")}; j["priority"] = MAN.priority(c)
+        label = c["context"].split("@", 1)[0]
+        pods.setdefault(c["context"] if label == "headline" else label, []).append(j)
+    return pods
+
+
+def pod_plan(timings: dict, jobs: list[dict]) -> list[list[float]]:
+    """One pod's waves, exactly the runner's dispatch (`revision_v2._waves`) per stage, with measured task times; a cell's
+    time includes its 200-seed evaluation and its share of the coalition prerequisites, so the evaluate stage and the
+    prerequisite waves carry no further time."""
+    from scripts import revision_v2 as RV
+    by = {j["id"]: j for j in jobs}; plan = []
+    for stage in STAGES_BILLED:
+        for st, items in RV._waves(stage, jobs, jobs):
+            if st in ("search", "dependent"):
+                plan.append([_cell_seconds(timings, by[i["id"]]) for i in items])
+            elif st == "reference":
+                plan.append([timings["reference"]] * len(items))
+            elif st == "prereqs":
+                plan.append([0.0] * len(items))
+            elif st == "cross":
+                plan.append([8 * timings["cross_row"] * FINAL_SEEDS / EVAL_SEEDS] * len(items))
+            else:
+                plan.append([timings["doubling_x7"] if i["family"] == "X7-SC" else timings["doubling"] for i in items])
+    return plan
+
+
+def default_eval_plan(timings: dict, cuts: int = 0, h4_excluded: bool = False) -> list[list[float]]:
+    return [w for jobs in eval_pods(cuts, h4_excluded).values() for w in pod_plan(timings, jobs)]
 
 
 def _pod_table(timings: dict, cuts: int, h4_excluded: bool, markets, branch: str, vcpu: int, plan) -> dict:

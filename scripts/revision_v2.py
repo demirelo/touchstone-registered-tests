@@ -45,7 +45,7 @@ from sim.rules_v2 import CORE, MATCHED, make_rule, public_constants, registered_
 from sim.search import Objective, SearchSettings, cma_search, settings_from_locked  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
-STAGES = ("search", "reference", "dependent", "freeze", "evaluate", "cross", "doubling")
+STAGES = ("search", "reference", "dependent", "freeze", "evaluate", "cross", "doubling", "verify")
 CATEGORIES = ("abstain", "honest_max", "twin_search", "attack_projection", "archive_clip1", "archive_truthful_clip0", "bank")
 MENU = ("D2+H3", "X7-SC")
 SMOKE = (1, 16, 1, 2)
@@ -95,14 +95,22 @@ def _market_cfg(label: str, root: str, rho: float):
     return INST.calibrated(base, rho=rho)
 
 
-def market(label: str, root: str, rho: float = 0.2, dev: bool = False, smoke: bool = False) -> dict:
-    cfg = _market_cfg(label, root, float(rho))
+def market(label: str, root: str, rho: float = 0.2, dev: bool = False, smoke: bool = False, cfg=None, commit: str | None = None,
+           salt_sha256: str | None = None) -> dict:
+    """`cfg`, `commit`, and `salt_sha256` come from recorded inputs when given (the verify stage), so no calibration
+    episode, git process, or salt read happens."""
+    cfg = cfg if cfg is not None else _market_cfg(label, root, float(rho))
     train, val = list(range(1000, 1005)), list(range(2000, 2020))
     ev = val if dev else INST.eval_seeds(root, label)
     if smoke:
         train, ev = train[: SMOKE[2]], ev[: SMOKE[3]]
-    return {"label": label, "root": root, "rho": float(rho), "dev": bool(dev), "smoke": bool(smoke), "cfg": cfg, "focal": int(positions(cfg)["median"]),
-            "seeds_train": train, "seeds_val": val, "seeds_eval": list(ev), "context": MAN.context(label, float(rho))}
+    out = {"label": label, "root": root, "rho": float(rho), "dev": bool(dev), "smoke": bool(smoke), "cfg": cfg, "focal": int(positions(cfg)["median"]),
+           "seeds_train": train, "seeds_val": val, "seeds_eval": list(ev), "context": MAN.context(label, float(rho))}
+    if commit is not None:
+        out["commit"] = str(commit)
+    if salt_sha256 is not None:
+        out["salt_sha256"] = str(salt_sha256)
+    return out
 
 
 def manifest_ctx(ctx: str) -> str:
@@ -158,28 +166,33 @@ def cell_id(ctx: str, rule: str, family: str, objective: str, c=None, schedule=N
     return f"{ctx}|{rule}|{family}|{objective}" + (f"|c{c}_{schedule}" if c is not None else "")
 
 
+@lru_cache(maxsize=1)
+def _cells_by_id() -> dict:
+    return {c["id"]: c for c in MAN.cells()}
+
+
 def job(mkt: dict, rule: str, family: str, objective: str = "profit", c: int | None = None, schedule: str | None = None,
-        smoke: bool = False, params: dict | None = None, h4: dict | None = None) -> dict:
+        smoke: bool = False, params: dict | None = None, h4: dict | None = None, block: str | None = None) -> dict:
     lk = load_locked(); s = lk["search"]
     R, E, n_train, n_eval = SMOKE if (smoke or mkt["smoke"]) else (int(s["restarts"]), int(s["evals_per_restart"]), len(mkt["seeds_train"]), len(mkt["seeds_eval"]))
     if family == "X7-SC":
         E *= 2
     spec = rule_spec(rule, params)
-    salt = _sha(load_identity_salt())
     j = {"id": cell_id(mkt["context"], rule, family, objective, c, schedule), "context": mkt["context"], "rule": rule, "family": family,
          "objective": objective, "c": c, "schedule": schedule, "budget": [R, E, n_train, n_eval], "spec": spec, "mkt": mkt,
          "h4": h4 if family == "H4" else None}
+    cell = _cells_by_id().get(j["id"].replace(j["context"], manifest_ctx(j["context"]), 1))
+    j["block"] = block or (cell or {}).get("block"); j["priority"] = MAN.priority(cell) if cell else 3      # execution priority (design 8.2)
     j["provenance"] = context_provenance(mkt) | {"budget": j["budget"], "rule_params_sha256": _sha_json(spec), "id": j["id"]}
-    j["provenance"]["salt_sha256"] = salt
     if family == "H4" and h4:
         j["provenance"]["h4_sha256"] = str(h4["sha"])
     return j
 
 
 def context_provenance(mkt: dict) -> dict:
-    return {"git_commit": git_commit(), "runner_sha256": _sha(Path(__file__).read_bytes()), "cfg_sha256": _sha_json(cfg_to_dict(mkt["cfg"])),
-            "salt_sha256": _sha(load_identity_salt()), "root": mkt["root"], "seeds_train": mkt["seeds_train"], "seeds_val": mkt["seeds_val"],
-            "seeds_eval": mkt["seeds_eval"], "context": mkt["context"]}
+    return {"git_commit": mkt.get("commit") or git_commit(), "runner_sha256": _sha(Path(__file__).read_bytes()), "cfg_sha256": _sha_json(cfg_to_dict(mkt["cfg"])),
+            "salt_sha256": mkt.get("salt_sha256") or _sha(load_identity_salt()), "root": mkt["root"], "seeds_train": mkt["seeds_train"],
+            "seeds_val": mkt["seeds_val"], "seeds_eval": mkt["seeds_eval"], "context": mkt["context"]}
 
 
 def settings(job: dict) -> SearchSettings:
@@ -713,8 +726,98 @@ def stage_upstream(stage: str, job: dict, catalog: list[dict], cuts: int, h4_exc
     return ids
 
 
+def _tiers(items: list) -> list[list]:
+    return [[i for i in items if i.get("priority", 3) == t] for t in range(4)]
+
+
+def _menu_items(jobs: list[dict]) -> list[dict]:
+    menus = {}
+    for j in jobs:
+        if j["objective"] == "profit" and j["family"] in MENU:
+            k = (j["context"], j["rule"]); m = menus.get(k)
+            if m is None or (j["family"] == "D2+H3" and m["family"] != "D2+H3"):
+                menus[k] = {**j, "id": f"reference/{k[0]}/{k[1]}", "priority": min(j.get("priority", 3), (m or {}).get("priority", 3))}
+            else:
+                m["priority"] = min(m["priority"], j.get("priority", 3))
+    return list(menus.values())
+
+
+def _cross_items(jobs: list[dict]) -> list[dict]:
+    ok = {c for c, _ in MAN.cross_evaluations()}
+    return [{"id": f"cross/{ctx}/{fam}", "context": ctx, "family": fam, "priority": 1}
+            for ctx in sorted({j["context"] for j in jobs}) if manifest_ctx(ctx) in ok or ctx.startswith("dev") for fam in MENU]
+
+
+def _waves(stage: str, jobs: list[dict], catalog: list[dict]) -> list[tuple[str, list]]:
+    """The (stage, items) calls `run` makes, in order: priority tiers 0 to 3 (design 8.2), and inside a tier the dependency
+    waves. Each call is a completion barrier: it returns only when all its items have finished."""
+    out = []
+    add = lambda st, items: out.append((st, items)) if items else None
+    if stage == "search":
+        for t in _tiers([j for j in jobs if j["objective"] in ("profit", "W0")]):
+            add("search", [j for j in t if j["family"] != "X7-SC"]); add("search", [j for j in t if j["family"] == "X7-SC"])
+    elif stage == "reference":
+        for t in _tiers(_menu_items(jobs)):
+            add("reference", t)
+    elif stage == "dependent":
+        for t in _tiers([j for j in jobs if j["objective"] in ("W1", "total", "min")]):
+            add("dependent", [j for j in t if j["objective"] == "W1" and j["family"] != "X7-SC"])
+            add("dependent", [j for j in t if j["objective"] == "W1" and j["family"] == "X7-SC"])
+            groups = {}
+            for j in t:
+                if j["objective"] in ("total", "min"):
+                    groups.setdefault((j["context"], _coalition_tag(j)), {**j, "id": f"coalition/{j['context']}/{_coalition_tag(j)}"})
+            add("prereqs", list(groups.values())); add("dependent", [j for j in t if j["objective"] in ("total", "min")])
+    elif stage == "evaluate":
+        for t in _tiers(jobs):
+            add("evaluate", t)
+    elif stage == "cross":
+        for t in _tiers(_cross_items(jobs)):
+            add("cross", t)
+    elif stage == "doubling":
+        dbl = set(MAN.doublings())
+        for t in _tiers([j for j in jobs if j["id"].replace(j["context"], manifest_ctx(j["context"]), 1) in dbl]):
+            add("doubling", t)
+    return out
+
+
+def dispatch_plan(stage: str, jobs: list[dict], catalog: list[dict] | None = None) -> list[list[str]]:
+    """The ids of every `_pool` call `run(stage, jobs)` makes, in order (Task 4's cost model bills these waves)."""
+    return [[i["id"] for i in items] for _, items in _waves(stage, jobs, catalog if catalog is not None else jobs)]
+
+
+def _run_cross(item: dict, out: Path, catalog: list[dict]) -> str:
+    ctx, fam = item["context"], item["family"]
+    p = Path(out) / "cross" / ctx / (_safe(fam) + ".json"); old = read(p); prov, ids = cross_expected(ctx, fam, catalog, out)
+
+    def check():
+        if set(old.get("upstream") or {}) != ids:
+            raise ValueError("dependency set")
+        validate({"provenance": prov}, "cross", old, {u: path_of(out, u) for u in ids})
+    if reusable(p, old, prov, check):
+        return "skipped"
+    write(p, stage_cross(ctx, fam, catalog, out))
+    return "done"
+
+
+def _run_reference(item: dict, out: Path, cuts: int, h4_excluded: bool, catalog: list[dict]) -> str:
+    rid = item["id"]; p = path_of(out, rid); old = read(p)
+    if reusable(p, old, reference_provenance(item), lambda: check_record(rid, old, catalog, out, cuts, h4_excluded)):
+        return "skipped"
+    rec = stage_reference(item, out, cuts, h4_excluded); up = rec.pop("upstream")
+    write(p, {"stage": "reference", "provenance": reference_provenance(item), "upstream": up, **rec})
+    return "done"
+
+
 def _run_one(stage: str, job: dict, out: str, cuts: int, h4_excluded: bool, catalog: list | None = None) -> str:
-    out = Path(out); p = _stage_record_path(stage, job, out); rec = read(p); catalog = catalog or [job]
+    out = Path(out); catalog = catalog or [job]
+    if stage == "reference":
+        return _run_reference(job, out, cuts, h4_excluded, catalog)
+    if stage == "cross":
+        return _run_cross(job, out, catalog)
+    if stage == "prereqs":
+        coalition_prereqs(job, out, catalog); return "done"
+    p = _stage_record_path(stage, job, out); rec = read(p)
     want = stage_upstream(stage, job, catalog, cuts, h4_excluded)
     def check():
         if set(rec.get("upstream") or {}) != want:
@@ -741,76 +844,140 @@ def _pool(stage, jobs, out, workers, cuts, h4_excluded, catalog=None) -> list:
 
 def run(stage: str, jobs: list[dict], out: Path, workers: int = 1, cuts: int = 0, h4_excluded: bool = False, catalog: list | None = None) -> dict:
     """`jobs` is the execution subset; `catalog` (default: `jobs`) is the full job list that freeze checks and
-    acceptance validate against."""
+    acceptance validate against. Every stage but freeze runs its `_waves` calls in order through `_pool`."""
     out = Path(out); res = {}; catalog = catalog if catalog is not None else jobs
-    pool = lambda st_, js: _pool(st_, js, out, workers, cuts, h4_excluded, catalog) if js else []
-    if stage == "search":
-        first = [j for j in jobs if j["objective"] in ("profit", "W0") and j["family"] != "X7-SC"]
-        second = [j for j in jobs if j["objective"] in ("profit", "W0") and j["family"] == "X7-SC"]
-        for wave in (first, second):
-            for j, r in zip(wave, pool(stage, wave)):
-                res[j["id"]] = r
-    elif stage == "reference":
-        seen = set()
-        for j in jobs:
-            key = (j["context"], j["rule"])
-            if j["objective"] == "profit" and j["family"] in MENU and key not in seen:
-                seen.add(key); rid = f"reference/{key[0]}/{key[1]}"; p = path_of(out, rid); old = read(p)
-                if reusable(p, old, reference_provenance(j), lambda: check_record(rid, old, catalog, out, cuts, h4_excluded)):
-                    res[rid] = "skipped"; continue
-                rec = stage_reference(j, out, cuts, h4_excluded); up = rec.pop("upstream")
-                write(p, {"stage": "reference", "provenance": reference_provenance(j), "upstream": up, **rec})
-                res[rid] = "done"
-    elif stage == "dependent":
-        w1 = [j for j in jobs if j["objective"] == "W1"]
-        for wave in ([j for j in w1 if j["family"] != "X7-SC"], [j for j in w1 if j["family"] == "X7-SC"]):
-            for j, r in zip(wave, pool(stage, wave)):
-                res[j["id"]] = r
-        coal = [j for j in jobs if j["objective"] in ("total", "min")]
-        done = set()
-        for j in coal:
-            g = (j["context"], _coalition_tag(j))
-            if g not in done:
-                done.add(g); coalition_prereqs(j, out, catalog)
-        for j, r in zip(coal, pool(stage, coal)):
-            res[j["id"]] = r
-    elif stage == "freeze":
+    if stage not in STAGES or stage == "verify":
+        raise SystemExit(f"unknown stage {stage!r}")
+    if stage == "freeze":
         for ctx in sorted({j["context"] for j in jobs}):
             stage_freeze(ctx, catalog, out, cuts, h4_excluded); res[ctx] = "frozen"
-    elif stage == "evaluate":
-        for ctx in sorted({j["context"] for j in jobs}):
+        return res
+    calls = _waves(stage, jobs, catalog)
+    if stage in ("evaluate", "cross", "doubling"):                        # each only after the context's freeze is accepted again
+        for ctx in sorted({i["context"] for _, items in calls for i in items}):
             accept(ctx, catalog, out, cuts, h4_excluded)
-        for j, r in zip(jobs, pool(stage, jobs)):
-            res[j["id"]] = r
-    elif stage == "cross":
-        ctxs = sorted({j["context"] for j in jobs})
-        for ctx in ctxs:
-            if not (ctx in {c for c, _ in MAN.cross_evaluations()} or ctx.startswith("dev")):
-                continue
-            accept(ctx, catalog, out, cuts, h4_excluded)
-            for fam in MENU:
-                p = Path(out) / "cross" / ctx / (_safe(fam) + ".json"); old = read(p); prov, ids = cross_expected(ctx, fam, catalog, out)
-
-                def check(old=old, ids=ids, prov=prov):
-                    if set(old.get("upstream") or {}) != ids:
-                        raise ValueError("dependency set")
-                    validate({"provenance": prov}, "cross", old, {u: path_of(out, u) for u in ids})
-                if reusable(p, old, prov, check):
-                    res[f"cross/{ctx}/{fam}"] = "skipped"; continue
-                write(p, stage_cross(ctx, fam, catalog, out)); res[f"cross/{ctx}/{fam}"] = "done"
-    elif stage == "doubling":
-        dbl = set(MAN.doublings())
-        sel = [j for j in jobs if j["id"].replace(j["context"], manifest_ctx(j["context"]), 1) in dbl]
-        for ctx in sorted({j["context"] for j in sel}):
-            accept(ctx, catalog, out, cuts, h4_excluded)                      # a diagnostic of the accepted freeze only
-        for j, r in zip(sel, pool(stage, sel)):
-            res[j["id"]] = r
-    else:
-        raise SystemExit(f"unknown stage {stage!r}")
+    for st, items in calls:
+        for item, r in zip(items, _pool(st, items, out, workers, cuts, h4_excluded, catalog)):
+            res[item["id"]] = r
     return res
 
 
-def build_jobs(markets: list[str], root: str, dev: bool, smoke: bool, params: dict | None, cuts: int, h4: dict | None, h4_excluded: bool) -> list[dict]:
+# ---- read-only verification ----------------------------------------------------------------------------------------------
+
+def _numbers_ok(v) -> bool:
+    if isinstance(v, bool) or v is None or isinstance(v, str):
+        return True
+    if isinstance(v, (int, float)):
+        return bool(np.isfinite(v))
+    if isinstance(v, dict):
+        return all(_numbers_ok(x) for x in v.values())
+    if isinstance(v, list):
+        return all(_numbers_ok(x) for x in v)
+    return True
+
+
+def _check_evaluate(j: dict, rec: dict, out: Path, catalog: list[dict], cuts: int, h4_excluded: bool, seeds: list | None) -> None:
+    want = stage_upstream("evaluate", j, catalog, cuts, h4_excluded)
+    if rec.get("stage") != "evaluate" or set(rec.get("upstream") or {}) != want:
+        raise ValueError("stage or dependency set")
+    validate(j, "evaluate", rec, {u: path_of(out, u) for u in want})
+    n = len(j["mkt"]["seeds_eval"])
+    if rec.get("seeds") != list(j["mkt"]["seeds_eval"]) or (seeds is not None and list(seeds[:n]) != rec.get("seeds")):
+        raise ValueError("seeds differ from the instance's")
+    for k in (GAIN_FIELDS if j["objective"] == "profit" else ("eff", "normalized", "constraint") if j["objective"] in ("W0", "W1") else ()):
+        if k in rec and len(rec[k]) != n:
+            raise ValueError(f"{k} has the wrong length")
+    if not _numbers_ok(rec):
+        raise ValueError("nonfinite values")
+
+
+def verify(out: Path, catalog: list[dict], selected: list[dict], instances: dict | None, protocol: dict | None, h4: dict | None,
+           cuts: int = 0, h4_excluded: bool = False) -> dict:
+    """Read-only: per context of the selection, `unavailable` without a freeze; else `accept`, then every evaluate record
+    (stage, provenance, dependencies and their hashes, seeds equal to the instance's, lengths, finiteness), the cross
+    records, and the doubling records. Starts no episode, imports no H4 bundle, writes nothing."""
+    out = Path(out); rep = {"contexts": {}, "h4": None}
+    reg = (protocol or {}).get("h4"); h4 = h4 or {}
+    if h4.get("loaded") and (not reg or h4.get("bundle_sha256") != reg.get("bundle_sha256")):
+        rep["h4"] = "the decision's bundle hash differs from the protocol's"
+    seeds_of = lambda ctx: ((instances or {}).get("seeds") or {}).get(ctx.split("@", 1)[0])
+    for ctx in sorted({j["context"] for j in selected}):
+        sel = [j for j in selected if j["context"] == ctx]
+        c = {"status": "ok", "missing": [], "stale": [], "foreign": [], "missing_doubling": [], "error": None}; rep["contexts"][ctx] = c
+        if not path_of(out, f"freeze/{ctx}").exists():
+            c["status"] = "unavailable"; c["missing"] = [j["id"] for j in sel]; continue
+        try:
+            accept(ctx, catalog, out, cuts, h4_excluded)
+        except SystemExit as e:
+            c["status"] = "error"; c["error"] = str(e); continue
+        for j in sel:
+            if j["family"] == "H4" and h4.get("loaded"):
+                srec = read(path_of(out, j["id"])) or {}
+                if (srec.get("provenance") or {}).get("h4_sha256") != h4.get("bundle_sha256"):
+                    c["foreign"].append(j["id"]); continue
+            rec = read(eval_path(out, j["id"]))
+            if rec is None:
+                c["missing"].append(j["id"]); continue
+            if rec.get("provenance") != j["provenance"]:
+                c["foreign"].append(j["id"]); continue
+            try:
+                _check_evaluate(j, rec, out, catalog, cuts, h4_excluded, seeds_of(ctx))
+            except (ValueError, KeyError, TypeError):
+                c["stale"].append(j["id"])
+        sel_ids = {j["id"] for j in sel}
+        for item in _cross_items(sel):
+            fam = item["family"]; facts = [j["id"] for j in catalog if j["context"] == ctx and j["family"] == fam and j["objective"] == "profit" and j["rule"] in MAN.FACTORIAL]
+            p = Path(out) / "cross" / ctx / (_safe(fam) + ".json"); old = read(p)
+            if old is None:
+                if facts and set(facts) <= sel_ids:
+                    c["missing"].append(item["id"])
+                continue
+            try:
+                prov, ids = cross_expected(ctx, fam, catalog, out)
+                if old.get("provenance") != prov:
+                    c["foreign"].append(item["id"]); continue
+                if set(old.get("upstream") or {}) != ids:
+                    raise ValueError("dependency set")
+                validate({"provenance": prov}, "cross", old, {u: path_of(out, u) for u in ids})
+                if not _numbers_ok(old):
+                    raise ValueError("nonfinite values")
+            except (ValueError, KeyError, TypeError, SystemExit):
+                c["stale"].append(item["id"])
+        for _, items in _waves("doubling", sel, catalog):
+            for j in items:
+                p = _stage_record_path("doubling", j, out); rec = read(p)
+                if rec is None:
+                    c["missing_doubling"].append(j["id"]); continue
+                if rec.get("provenance") != j["provenance"]:
+                    c["foreign"].append(p.name); continue
+                want = stage_upstream("doubling", j, catalog, cuts, h4_excluded)
+                try:
+                    if rec.get("stage") != "doubling" or set(rec.get("upstream") or {}) != want:
+                        raise ValueError("stage or dependency set")
+                    validate(j, "doubling", rec, {u: path_of(out, u) for u in want})
+                    if not _numbers_ok(rec):
+                        raise ValueError("nonfinite values")
+                except (ValueError, KeyError, TypeError):
+                    c["stale"].append(p.name)
+        if c["stale"] or c["foreign"]:
+            c["status"] = "error"
+    rep["ok"] = rep["h4"] is None and all(c["status"] != "error" for c in rep["contexts"].values())
+    return rep
+
+
+def resolve_h4(decision: dict, h4_dir: str | None, h4_sha: str | None) -> tuple[dict | None, bool]:
+    """The one recorded H4 decision: excluded excludes H4 everywhere; loaded requires the same bundle and a successful load."""
+    if not decision.get("loaded"):
+        return None, True
+    if not h4_dir or h4_sha != decision.get("bundle_sha256"):
+        raise SystemExit("the H4 decision is loaded: --h4 and the decision's bundle hash are required")
+    if isinstance(_h4(h4_dir, h4_sha), Excluded):
+        raise SystemExit(f"the H4 decision is loaded but this bundle does not load: {_h4(h4_dir, h4_sha).reason}")
+    return {"dir": h4_dir, "sha": h4_sha}, False
+
+
+def build_jobs(markets: list[str], root: str, dev: bool, smoke: bool, params: dict | None, cuts: int, h4: dict | None, h4_excluded: bool,
+               cfgs: dict | None = None, commit: str | None = None, salt_sha256: str | None = None) -> list[dict]:
     jobs = []
     for label in markets:
         for rho in sorted({c["rho"] for c in MAN.effective(cuts, h4_excluded)}):
@@ -818,9 +985,10 @@ def build_jobs(markets: list[str], root: str, dev: bool, smoke: bool, params: di
             cs = [c for c in MAN.effective(cuts, h4_excluded) if c["context"] == mctx]
             if not cs:
                 continue
-            mkt = market(label, root, rho, dev=dev, smoke=smoke)
+            cfg = (cfgs or {}).get(label) if rho == 0.2 else None
+            mkt = market(label, root, rho, dev=dev, smoke=smoke, cfg=cfg, commit=commit, salt_sha256=salt_sha256)
             for c in cs:
-                jobs.append(job(mkt, c["rule"], c["family"], c["objective"], c["c"], c["schedule"], smoke, params, h4))
+                jobs.append(job(mkt, c["rule"], c["family"], c["objective"], c["c"], c["schedule"], smoke, params, h4, block=c["block"]))
     return jobs
 
 
@@ -830,28 +998,60 @@ def main(argv=None) -> int:
     ap.add_argument("--workers", type=int, default=1); ap.add_argument("--dev", action="store_true"); ap.add_argument("--smoke", action="store_true")
     ap.add_argument("--root", default=None); ap.add_argument("--h4", default=None); ap.add_argument("--h4-sha", dest="h4_sha", default=None)
     ap.add_argument("--params", default=None); ap.add_argument("--cuts", type=int, default=0); ap.add_argument("--markets", default=None)
-    a = ap.parse_args(argv)
-    out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
-    if a.dev:
-        root = DEV_ROOT; markets = (a.markets or "dev0,dev1").split(",")
-    else:
-        if not a.root:
-            raise SystemExit("a fresh run needs --root (the block hash); use --dev for development markets")
-        root = a.root; install_salt(root, out); markets = (a.markets or ",".join(MAN.doc()["markets"])).split(",")
+    ap.add_argument("--h4-decision", dest="h4_decision", default=None, help="results/v2/draw/h4.json: the one recorded H4 decision")
+    ap.add_argument("--commit", default=None, help="verify: the expected commit (git rev-parse protocol-v2^{commit})")
+    ap.add_argument("--instances", default=None, help="verify: results/v2/draw/instances.json"); ap.add_argument("--protocol", default=None)
+    a = ap.parse_args(argv); out = Path(a.out); verifying = a.stage == "verify"
+    if verifying and not out.is_dir():
+        raise SystemExit(f"verify reads an existing --out; {out} is not a directory")
+    if not a.dev and not a.root:
+        raise SystemExit("a fresh run needs --root (the block hash); use --dev for development markets")
+    if not a.dev and not a.h4_decision:
+        raise SystemExit("a fresh run needs --h4-decision (the recorded H4 decision)")
+    decision = json.loads(Path(a.h4_decision).read_text()) if a.h4_decision else None
     params = json.loads(Path(a.params).read_text()) if a.params else None
-    h4 = {"dir": a.h4, "sha": a.h4_sha} if a.h4 else None
-    h4_excluded = h4 is None or isinstance(_h4(a.h4, a.h4_sha), Excluded)
-    if h4 is not None and h4_excluded:
-        write(out / "h4_excluded.json", {"reason": _h4(a.h4, a.h4_sha).reason})
+    root = DEV_ROOT if a.dev else a.root
+    markets = (a.markets or ("dev0,dev1" if a.dev else ",".join(MAN.doc()["markets"]))).split(",")
+    cfgs = commit = salt = None
+    if verifying:
+        if not a.commit:
+            raise SystemExit("verify needs --commit")
+        commit = a.commit
+        if decision is not None:                                   # the recorded identity only; the bundle is not loaded
+            h4 = {"dir": None, "sha": decision["bundle_sha256"]} if decision.get("loaded") else None; h4_excluded = not decision.get("loaded")
+        else:
+            h4, h4_excluded = None, True
+        if a.instances:
+            inst = json.loads(Path(a.instances).read_text()); salt = inst["salt_sha256"]
+            from sim.records import cfg_from_dict
+            cfgs = {k: cfg_from_dict(v["calibrated_cfg"]) for k, v in inst.get("markets", {}).items()}
+        else:
+            inst = None
+    else:
+        out.mkdir(parents=True, exist_ok=True)
+        if not a.dev:
+            install_salt(root, out)
+        if decision is not None:
+            h4, h4_excluded = resolve_h4(decision, a.h4, a.h4_sha)
+        else:
+            h4 = {"dir": a.h4, "sha": a.h4_sha} if a.h4 else None
+            h4_excluded = h4 is None or isinstance(_h4(a.h4, a.h4_sha), Excluded)
+            if h4 is not None and h4_excluded:
+                write(out / "h4_excluded.json", {"reason": _h4(a.h4, a.h4_sha).reason})
     patterns = a.select.split(",")
     try:
-        jobs = build_jobs(markets, root, a.dev, a.smoke, params, a.cuts, h4, h4_excluded)
+        jobs = build_jobs(markets, root, a.dev, a.smoke, params, a.cuts, h4, h4_excluded, cfgs, commit, salt)
     except SystemExit as e:
-        if a.select == "*":
+        if a.select == "*" or verifying:
             raise
         print(f"note: {e}", file=sys.stderr); jobs = []
     catalog = jobs
     jobs = [j for j in jobs if any(fnmatch.fnmatchcase(j["id"], p) for p in patterns)] if a.select != "*" else jobs
+    if verifying:
+        protocol = __import__("yaml").safe_load(Path(a.protocol).read_text()) if a.protocol else None
+        rep = verify(out, catalog, jobs, inst, protocol, decision, a.cuts, h4_excluded)
+        print(json.dumps(rep, default=float))
+        return 0 if rep["ok"] else 1
     res = run(a.stage, jobs, out, a.workers, a.cuts, h4_excluded, catalog=catalog) if jobs else {}
     print(json.dumps({"stage": a.stage, "jobs": len(jobs), "results": res}))
     return 0
