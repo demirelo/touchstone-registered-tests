@@ -177,3 +177,110 @@ def test_caveat_stand_in_bank_is_distinct_excludes_the_best_and_refuses_shortage
     import sim.manifest_v2 as MAN
     monkeypatch.setattr(MAN, "bank_rules", lambda ctx, f, cuts=0, h4_excluded=False: ["F000", "F111", "R4", "C*", "F010"])       # the size follows the manifest
     assert B._default_fns(tmp_path, smoke=True)["_meta"]["n_bank"] == {"D2+H3": 4, "X7-SC": 4}
+
+
+# ---- operations plan Task 4: cuts, branches, wave billing, the cost decision ----------------------------------------------
+
+POD = {"d2h3_cell": 1500.0, "x7_cell": 3750.0, "reference": 300.0, "w1": 1500.0, "coalition_total": 1500.0,
+       "eval160": {"profit": 240.0, "x7": 240.0, "welfare": 240.0, "coalition": 240.0}, "cross_row": 12.0, "doubling": 1500.0, "doubling_x7": 3750.0,
+       "episode": 1500.0 / 18000, "bootstrap_batch": 3000.0, "dev_inner_config": 200.0, "dev_recheck_config": 6000.0, "usd_per_pod_hour": 0.56}
+
+
+def test_defaults_reproduce_the_current_table():
+    import sim.manifest_v2 as MAN
+    from scripts.benchmark_v2 import counts
+    c = counts()
+    assert c["cells"] == {"plain": 208, "x7": 118, "welfare_h3": 8, "welfare_x7": 8, "coalition": 32} and c["reference_menus"] == 118
+    assert c["doublings"] == (82, 50) and c["cross_rows"] == 14 * 8 and sum(c["cells"].values()) == len(MAN.effective(0, False)) == 374
+    assert c["config_markets"] == {"comparator_inner": 36, "comparator_recheck": 6, "tuning_inner": 192, "tuning_recheck": 24, "fixtures_inner": 3}
+    assert c["coverage_episodes"] == 14 * 20_000 * 3
+    from scripts.benchmark_v2 import cost_table
+    assert cost_table(DESIGN, usd_per_core_hour=0.108)["evaluation_units"] == pytest.approx(868.8, abs=0.5)      # the u = 1 table is unchanged
+
+
+@pytest.mark.parametrize("cuts", [1, 2, 3, 4])
+def test_cuts_and_branches_change_counts(cuts):
+    import sim.manifest_v2 as MAN
+    from scripts.benchmark_v2 import counts
+    c = counts(cuts=cuts)
+    assert sum(c["cells"].values()) == len(MAN.effective(cuts, False)) < 374
+    menus = {(x["context"], x["rule"]) for x in MAN.effective(cuts, False) if x["objective"] == "profit" and x["family"] in ("D2+H3", "X7-SC")}
+    assert c["reference_menus"] == len(menus)
+    two = counts(markets=("headline", "dev0"), branch="two10k")
+    assert two["coverage_episodes"] == 14 * 10_000 * 2 and two["config_markets"]["tuning_inner"] == 192 * 2 // 3
+
+
+def _greedy(times, m):
+    loads = [0.0] * m
+    for t in times:
+        i = loads.index(min(loads)); loads[i] += t
+    return max(loads)
+
+
+def test_wave_bound_covers_unequal_tasks():
+    import numpy as np
+    from scripts.benchmark_v2 import wave_bound
+    assert wave_bound([1.0] * 15 + [100.0], 16) >= 100.0
+    rng = np.random.default_rng(1)
+    for _ in range(300):
+        n, m = int(rng.integers(1, 60)), int(rng.choice([1, 4, 16]))
+        times = list(rng.exponential(10.0, n) * rng.choice([1, 10], n))
+        assert wave_bound(times, m) >= _greedy(times, m) - 1e-9 and wave_bound(times, m) >= sum(times) / m - 1e-9
+
+
+def test_evaluation_bill_follows_the_dispatch_plan():
+    from scripts.benchmark_v2 import cost_table, wave_bound
+    plan = [[50.0], [1.0] * 15 + [100.0], [2.0] * 40]
+    t = cost_table(POD, plan=plan, vcpu=16)
+    assert t["evaluation_usd"] == pytest.approx(sum(wave_bound(w, 16) for w in plan) / 3600 * POD["usd_per_pod_hour"])
+
+
+def _ledger(spent=()):
+    return {"caps": {"development": 12.0, "evaluation": 40.0}, "reservations": [], "spent": [{"op": op, "tag": f"t{i}", "usd": u} for i, (op, u) in enumerate(spent)]}
+
+
+def test_choose_follows_design_order():
+    from scripts.benchmark_v2 import choose
+    ok = choose(POD, _ledger())
+    assert ok["branch"] == "three20k" and ok["cuts"] == 0 and ok["stop"] is None
+    from scripts.benchmark_v2 import cost_table
+    heavy = dict(POD, episode=1.0)                                                   # coverage pushes three markets over the development cap
+    assert cost_table(heavy)["development_usd"] > 12.0
+    d = choose(heavy, _ledger())
+    assert d["branch"] in ("two20k", "two10k") and d["markets"] == ["headline", "dev0"] and d["development_usd"] <= 12.0
+    assert choose(dict(POD, dev_recheck_config=1e7), _ledger())["stop"] == "development"
+    keys = ("d2h3_cell", "x7_cell", "reference", "w1", "coalition_total", "cross_row", "doubling", "doubling_x7")
+    e = {c: cost_table(POD, cuts=c)["evaluation_usd"] for c in range(5)}
+    f = 39.0 / ((e[0] + e[4]) / 2)                                                   # evaluation cost is linear in the evaluation times
+    ev = dict(POD, **{k: POD[k] * f for k in keys}, eval160={k: v * f for k, v in POD["eval160"].items()})
+    want = next(c for c in range(5) if e[c] * f + 1.0 <= 40.0)
+    got = choose(ev, _ledger())
+    assert want >= 1 and got["cuts"] == want and got["evaluation_usd"] == pytest.approx(e[want] * f + 1.0)
+    assert choose(dict(POD, d2h3_cell=1e7), _ledger())["stop"] == "evaluation"
+
+
+def test_benchmark_spend_decides_a_borderline_case():
+    from scripts.benchmark_v2 import choose
+    base = choose(POD, _ledger())
+    assert base["branch"] == "three20k"
+    margin = 12.0 - base["development_usd"]
+    assert choose(POD, _ledger([("development", margin + 0.01)]))["branch"] != "three20k"
+
+
+def test_measure_records_billing_metadata(tmp_path):
+    from scripts.benchmark_v2 import WORKLOADS, measure
+    t = measure(tmp_path, 16, fns={k: (lambda: None) for k in WORKLOADS}, usd_per_pod_hour=0.56)
+    assert t["vcpu"] == 16 and t["usd_per_pod_hour"] == 0.56 and t["markets"] == ["headline", "dev0"] and len(t["commit"]) >= 7 and t["wall_seconds"] >= 0
+
+
+def test_decide_writes_the_decision_once_with_a_ledger_snapshot(tmp_path):
+    from scripts.benchmark_v2 import main
+    tm = tmp_path / "timings.json"; tm.write_text(json.dumps({"timings": POD, "smoke": False}))
+    lg = tmp_path / "ledger.json"; lg.write_text(json.dumps(_ledger([("development", 1.5)])))
+    out = tmp_path / "decision.json"
+    assert main(["--decide", str(tm), "--ledger", str(lg), "--out", str(out)]) == 0
+    d = json.loads(out.read_text())
+    assert d["decision"]["branch"] == "three20k" and d["decision"]["spent_usd"] == 1.5 and d["ledger"] == json.loads(lg.read_text())
+    assert len(d["timings_sha256"]) == 64
+    with pytest.raises(SystemExit):
+        main(["--decide", str(tm), "--ledger", str(lg), "--out", str(out)])           # written once

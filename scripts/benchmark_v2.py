@@ -30,35 +30,121 @@ EPISODE_SEEDS = tuple(range(2000, 2020))                                        
 EVAL_SEEDS, FINAL_SEEDS = 20, 200
 
 
-def cost_table(timings: dict, usd_per_core_hour: float) -> dict:
-    """Design 8.2's rows in units of the measured headline D2+H3 cell, then core-hours and USD. Measured timings price a
-    cell as its search and 40-seed evaluation, the reference menus once per (context, rule) (`reference`), and the 160
-    further evaluation seeds from each kind's own evaluation (`eval160`), and development per configuration and market
-    (`dev_inner_config`, `dev_recheck_config`: three searches, the development reference, three evaluations); design-unit
-    timings (no `reference`, an `eval200_extra_fraction`, inner searches) reproduce the design's table, where the non-X7
-    inner share (D2 and D2+H3, equal counts) is the mean of the two inner searches. The cross-evaluation is priced at the
-    measured row (one attack against the 8 factorial rules and their references) scaled from 20 to 200 seeds."""
+DEFAULT_MARKETS = ("headline", "dev0", "dev1")
+DEV_BRANCHES = (("three20k", DEFAULT_MARKETS), ("two20k", ("headline", "dev0")), ("two10k", ("headline", "dev0")))
+H4_RESERVE_USD = 1.0                                                                      # the H4 decision pod (Operation 6)
+
+
+def counts(cuts: int = 0, h4_excluded: bool = False, markets=DEFAULT_MARKETS, branch: str = "three20k") -> dict:
+    """The design 8.2 counts from the effective manifest, the tuning markets, and the coverage branch."""
+    from sim import calibration_v2 as CAL
+    from sim import manifest_v2 as MAN
+    cs = MAN.effective(cuts, h4_excluded); ids = {c["id"] for c in cs}; ctxs = {c["context"] for c in cs}
+    kind = lambda c: ("coalition" if c["objective"] in ("total", "min") else ("welfare_x7" if c["family"] == "X7-SC" else "welfare_h3")
+                      if c["objective"] in ("W0", "W1") else ("x7" if c["family"] == "X7-SC" else "plain"))
+    cells = {k: 0 for k in ("plain", "x7", "welfare_h3", "welfare_x7", "coalition")}
+    for c in cs:
+        cells[kind(c)] += 1
+    dbl = [d for d in MAN.doublings() if d in ids]
+    k = len(markets) / 3
+    M = CAL.BRANCHES[branch][1]; n_cov = len(CAL.BRANCHES[branch][0])
+    return {"cells": cells, "reference_menus": len({(c["context"], c["rule"]) for c in cs if c["objective"] == "profit" and c["family"] in ("D2+H3", "X7-SC")}),
+            "doublings": (sum("|X7-SC|" not in d for d in dbl), sum("|X7-SC|" in d for d in dbl)),
+            "cross_rows": 8 * sum(1 for ctx, _ in MAN.cross_evaluations() if ctx in ctxs),
+            "config_markets": {name: int(round(n * k)) for name, n in CONFIG_MARKETS.items()}, "coverage_episodes": 14 * M * n_cov}
+
+
+def wave_bound(times, vcpu: int) -> float:
+    """Pod seconds for one wave of tasks with times `times` on `vcpu` workers: sum / vcpu + (1 - 1 / vcpu) max, an upper
+    bound on the elapsed time of any greedy (list-scheduling) assignment."""
+    t = [float(x) for x in times]
+    return (sum(t) / vcpu + (1 - 1 / vcpu) * max(t)) if t else 0.0
+
+
+def _cell_seconds(timings: dict, c: dict) -> float:
+    e = timings.get("eval160") or {}; x7 = timings["x7_cell"] / timings["d2h3_cell"]
+    if c["objective"] in ("total", "min"):
+        return timings["coalition_total"] + e.get("coalition", 0.0)
+    if c["objective"] in ("W0", "W1"):
+        return timings["w1"] * (x7 if c["family"] == "X7-SC" else 1.0) + e.get("welfare", 0.0)
+    return timings["x7_cell"] + e.get("x7", 0.0) if c["family"] == "X7-SC" else timings["d2h3_cell"] + e.get("profit", 0.0)
+
+
+def default_eval_plan(timings: dict, cuts: int = 0, h4_excluded: bool = False) -> list[list[float]]:
+    """The runner's waves per context (search non-X7, search X7-SC, references, W1 non-X7, W1 X7-SC, coalitions, cross
+    rows, doublings) with measured task times; Task 8 replaces it by the runner's own dispatch plan."""
+    from sim import manifest_v2 as MAN
+    cs = MAN.effective(cuts, h4_excluded); by = {}
+    for c in cs:
+        by.setdefault(c["context"], []).append(c)
+    cross = {}
+    for ctx, _ in MAN.cross_evaluations():
+        cross[ctx] = cross.get(ctx, 0) + 8
+    dbl = set(MAN.doublings()); plan = []
+    for ctx, cells in sorted(by.items()):
+        pick = lambda f: [_cell_seconds(timings, c) for c in cells if f(c)]
+        plan += [pick(lambda c: c["objective"] in ("profit", "W0") and c["family"] != "X7-SC"),
+                 pick(lambda c: c["objective"] in ("profit", "W0") and c["family"] == "X7-SC"),
+                 [timings["reference"]] * len({c["rule"] for c in cells if c["objective"] == "profit" and c["family"] in ("D2+H3", "X7-SC")}),
+                 pick(lambda c: c["objective"] == "W1" and c["family"] != "X7-SC"), pick(lambda c: c["objective"] == "W1" and c["family"] == "X7-SC"),
+                 pick(lambda c: c["objective"] in ("total", "min")),
+                 [timings["cross_row"] * FINAL_SEEDS / EVAL_SEEDS] * cross.get(ctx, 0),
+                 [timings["doubling_x7"] if c["family"] == "X7-SC" else timings["doubling"] for c in cells if c["id"] in dbl]]
+    return [w for w in plan if w]
+
+
+def _pod_table(timings: dict, cuts: int, h4_excluded: bool, markets, branch: str, vcpu: int, plan) -> dict:
+    n = counts(cuts, h4_excluded, markets, branch); m = len(markets); v = int(vcpu)
+    ic, rc = float(timings["dev_inner_config"]), float(timings["dev_recheck_config"])
+    stage = lambda inner_tasks: wave_bound([ic] * inner_tasks, v) + wave_bound([rc] * (2 * m), v)
+    M_markets = n["coverage_episodes"] // 14
+    from sim import calibration_v2 as CAL
+    n_cov = len(CAL.BRANCHES[branch][0]); per_market = 14 * (M_markets // n_cov) * float(timings["episode"])
+    rows = {"comparator_selection": stage(12 * m), "tuning": 4 * stage(16 * m), "fixtures": wave_bound([ic] * m, v),
+            "coverage": n_cov * wave_bound([per_market / v] * v, v) + wave_bound([float(timings["bootstrap_batch"])], v)}
+    rows["evaluation"] = sum(wave_bound(w, v) for w in (plan if plan is not None else default_eval_plan(timings, cuts, h4_excluded)))
+    rate = float(timings["usd_per_pod_hour"]) / 3600.0
+    dev = rows["comparator_selection"] + rows["tuning"] + rows["fixtures"] + rows["coverage"]
+    out = {"rows_seconds": rows, "vcpu": v, "counts": n, "development_usd": dev * rate, "evaluation_usd": rows["evaluation"] * rate,
+           "total_usd": (dev + rows["evaluation"]) * rate}
+    out["flags"] = {"development_over_cap": out["development_usd"] > CAPS["development"], "evaluation_over_cap": out["evaluation_usd"] > CAPS["evaluation"],
+                    "approval_required": out["total_usd"] > CAPS["approval"]}
+    return out
+
+
+def cost_table(timings: dict, usd_per_core_hour: float | None = None, *, cuts: int = 0, h4_excluded: bool = False, markets=DEFAULT_MARKETS,
+               branch: str = "three20k", vcpu: int = 16, plan=None) -> dict:
+    """Without `usd_per_core_hour`: billed pod time at the measured `usd_per_pod_hour`, every wave at the list-scheduling
+    bound (`wave_bound`), counts from the effective manifest (`counts`), development per configuration and market, and the
+    evaluation from `plan` (default: `default_eval_plan`). With `usd_per_core_hour`: design 8.2's rows in units of the
+    measured headline D2+H3 cell at full utilisation (design-unit timings reproduce the design's table): a cell is its search
+    and 40-seed evaluation, the reference menus once per (context, rule), the 160 further seeds from each kind's own
+    evaluation (`eval160`), the cross row scaled from 20 to 200 seeds."""
+    if usd_per_core_hour is None:
+        return _pod_table(timings, cuts, h4_excluded, markets, branch, vcpu, plan)
+    n = counts(cuts, h4_excluded, markets, branch); C = n["cells"]; k = len(markets) / 3
     u = float(timings["d2h3_cell"])
     x7 = timings["x7_cell"] / u
     dbl, dbl_x7 = timings["doubling"] / u, timings["doubling_x7"] / u
     mix = lambda pair, a, b: pair[0] * a + pair[1] * b
     if "dev_inner_config" in timings:
-        ic, rc, n = timings["dev_inner_config"] / u, timings["dev_recheck_config"] / u, CONFIG_MARKETS
-        rows = {"comparator_selection": n["comparator_inner"] * ic + n["comparator_recheck"] * rc, "tuning": n["tuning_inner"] * ic + n["tuning_recheck"] * rc,
-                "fixtures": n["fixtures_inner"] * ic}
+        ic, rc, cm = timings["dev_inner_config"] / u, timings["dev_recheck_config"] / u, n["config_markets"]
+        rows = {"comparator_selection": cm["comparator_inner"] * ic + cm["comparator_recheck"] * rc, "tuning": cm["tuning_inner"] * ic + cm["tuning_recheck"] * rc,
+                "fixtures": cm["fixtures_inner"] * ic}
     else:
         inner, inner_x7 = (timings["inner"] + timings.get("inner_d2", timings["inner"])) / 2 / u, timings["inner_x7"] / u
-        rows = {"comparator_selection": mix(COUNTS["comparator_inner"], inner, inner_x7) + mix(COUNTS["comparator_recheck"], 1.0, x7),
-                "tuning": mix(COUNTS["tuning_inner"], inner, inner_x7) + mix(COUNTS["tuning_recheck"], 1.0, x7),
-                "fixtures": mix(COUNTS["fixtures_inner"], inner, inner_x7)}
-    rows["coverage"] = EPISODES["coverage"] * timings["episode"] / u + timings["bootstrap_batch"] / u
+        sc = lambda pair: (pair[0] * k, pair[1] * k)
+        rows = {"comparator_selection": mix(sc(COUNTS["comparator_inner"]), inner, inner_x7) + mix(sc(COUNTS["comparator_recheck"]), 1.0, x7),
+                "tuning": mix(sc(COUNTS["tuning_inner"]), inner, inner_x7) + mix(sc(COUNTS["tuning_recheck"]), 1.0, x7),
+                "fixtures": mix(sc(COUNTS["fixtures_inner"]), inner, inner_x7)}
+    rows["coverage"] = n["coverage_episodes"] * timings["episode"] / u + timings["bootstrap_batch"] / u
     w, co = timings.get("w1", u) / u, timings.get("coalition_total", u) / u
-    cells = CELLS["plain"] + CELLS["x7"] * x7 + CELLS["welfare_h3"] * w + CELLS["welfare_x7"] * w * x7 + CELLS["coalition"] * co
+    cells = C["plain"] + C["x7"] * x7 + C["welfare_h3"] * w + C["welfare_x7"] * w * x7 + C["coalition"] * co
     e = timings.get("eval160")
-    extra = ((CELLS["plain"] * e["profit"] + CELLS["x7"] * e["x7"] + (CELLS["welfare_h3"] + CELLS["welfare_x7"]) * e["welfare"]
-              + CELLS["coalition"] * e["coalition"]) / u) if e else float(timings["eval200_extra_fraction"]) * cells
-    rows.update({"cells": cells, "references": REFERENCE_MENUS * float(timings.get("reference", 0.0)) / u, "eval200_extra": extra,
-                 "cross": CROSS_ROWS * timings["cross_row"] * (FINAL_SEEDS / EVAL_SEEDS) / u, "doublings": mix(COUNTS["doublings"], dbl, dbl_x7)})
+    extra = ((C["plain"] * e["profit"] + C["x7"] * e["x7"] + (C["welfare_h3"] + C["welfare_x7"]) * e["welfare"]
+              + C["coalition"] * e["coalition"]) / u) if e else float(timings["eval200_extra_fraction"]) * cells
+    rows.update({"cells": cells, "references": n["reference_menus"] * float(timings.get("reference", 0.0)) / u, "eval200_extra": extra,
+                 "cross": n["cross_rows"] * timings["cross_row"] * (FINAL_SEEDS / EVAL_SEEDS) / u, "doublings": mix(n["doublings"], dbl, dbl_x7)})
     dev = rows["comparator_selection"] + rows["tuning"] + rows["fixtures"] + rows["coverage"]
     ev = rows["cells"] + rows["references"] + rows["eval200_extra"] + rows["cross"] + rows["doublings"]
     usd_unit = u / 3600.0 * float(usd_per_core_hour)
@@ -66,6 +152,28 @@ def cost_table(timings: dict, usd_per_core_hour: float) -> dict:
            "development_usd": dev * usd_unit, "evaluation_usd": ev * usd_unit, "total_usd": (dev + ev) * usd_unit}
     out["flags"] = {"development_over_cap": out["development_usd"] > CAPS["development"], "evaluation_over_cap": out["evaluation_usd"] > CAPS["evaluation"],
                     "approval_required": out["total_usd"] > CAPS["approval"]}
+    return out
+
+
+def choose(timings: dict, ledger: dict, vcpu: int = 16) -> dict:
+    """Design 8.2's decision from the benchmark: the first development branch whose cost plus the spend so far fits the
+    development cap, the smallest cut whose evaluation cost plus the H4 decision reserve fits the evaluation cap, and the
+    approval flag on the total; "stop" names the phase that fits under no option."""
+    spent = sum(float(r["usd"]) for r in ledger.get("spent", []) if r["op"] == "development")
+    out = {"branch": None, "markets": None, "cuts": None, "spent_usd": spent, "h4_reserve_usd": H4_RESERVE_USD, "stop": None}
+    for branch, markets in DEV_BRANCHES:
+        dev = cost_table(timings, markets=markets, branch=branch, vcpu=vcpu)["development_usd"] + spent
+        if dev <= CAPS["development"]:
+            out.update(branch=branch, markets=list(markets), development_usd=dev); break
+    else:
+        out["stop"] = "development"; return out
+    for cuts in range(0, 5):
+        ev = cost_table(timings, cuts=cuts, vcpu=vcpu)["evaluation_usd"] + H4_RESERVE_USD
+        if ev <= CAPS["evaluation"]:
+            out.update(cuts=cuts, evaluation_usd=ev); break
+    else:
+        out["stop"] = "evaluation"; return out
+    out["total_usd"] = out["development_usd"] + out["evaluation_usd"]; out["approval_required"] = out["total_usd"] > CAPS["approval"]
     return out
 
 
@@ -173,7 +281,7 @@ def _default_fns(out: Path, smoke: bool = False) -> dict:
                                                                                   "coverage_replications": B[0], "state": state, "n_bank": n_bank}}
 
 
-def measure(out: Path, workers: int, fns: dict | None = None, smoke: bool = False) -> dict:
+def measure(out: Path, workers: int, fns: dict | None = None, smoke: bool = False, usd_per_pod_hour: float | None = None) -> dict:
     """Seconds per kind, composed from the components measured in WORKLOADS order. A profit cell is its search and its
     evaluation scaled from the measured dev-val seeds to 40; the reference menu (with its bank) is a kind of its own,
     priced once per (context, rule); W1 is its search and evaluation; a coalition objective half the group's joint twin
@@ -187,7 +295,7 @@ def measure(out: Path, workers: int, fns: dict | None = None, smoke: bool = Fals
     if missing:
         raise SystemExit(f"benchmark workloads missing: {missing}")
     meta = f.get("_meta", {}); n_eval = int(meta.get("eval_seeds", EVAL_SEEDS)); n_ep = int(meta.get("episodes", len(EPISODE_SEEDS)))
-    r = {k: _timed(f[k]) for k in WORKLOADS}
+    t0 = time.perf_counter(); r = {k: _timed(f[k]) for k in WORKLOADS}; wall = time.perf_counter() - t0
     to40 = 40 / n_eval
     t = {"d2h3_cell": r["search_d2h3"] + to40 * r["eval_d2h3"], "x7_cell": r["search_x7"] + to40 * r["eval_x7"], "reference": r["reference"],
          "w1": r["w1_search"] + to40 * r["w1_eval"], "coalition_total": r["coalition_prereqs"] / 2 + r["coalition_search"] + to40 * r["coalition_eval"],
@@ -199,6 +307,8 @@ def measure(out: Path, workers: int, fns: dict | None = None, smoke: bool = Fals
     to160 = (FINAL_SEEDS - 40) / n_eval
     t["eval160"] = {"profit": to160 * r["eval_d2h3"], "x7": to160 * r["eval_x7"], "welfare": to160 * r["w1_eval"], "coalition": to160 * r["coalition_eval"]}
     t["components"] = r; t["bank_sizes"] = dict(meta.get("state", {}).get("bank_sizes", {}))
+    from scripts.revision_v2 import git_commit
+    t.update(vcpu=int(workers), usd_per_pod_hour=usd_per_pod_hour, markets=["headline", "dev0"], commit=git_commit(), wall_seconds=wall, smoke=bool(smoke))
     return t
 
 
@@ -206,10 +316,25 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument("--run", action="store_true"); g.add_argument("--table", default=None)
+    g.add_argument("--decide", default=None, help="timings.json: write the design 8.2 decision once, with a ledger snapshot")
+    ap.add_argument("--ledger", default=None)
     ap.add_argument("--out", default="."); ap.add_argument("--workers", type=int, default=1); ap.add_argument("--dry-run", dest="dry_run", action="store_true")
     ap.add_argument("--smoke", action="store_true", help="the same workloads at the smoke budget (wiring check; not a cost estimate)")
     ap.add_argument("--usd-per-core-hour", dest="rate", type=float, default=0.108)
+    ap.add_argument("--usd-per-pod-hour", dest="pod_rate", type=float, default=None, help="the pod's measured price (runpod.py list); bills pod time")
     a = ap.parse_args(argv)
+    if a.decide:
+        import hashlib
+        target = Path(a.out)
+        if target.exists():
+            raise SystemExit(f"{target} exists: the decision is written once")
+        raw = Path(a.decide).read_bytes(); ledger = json.loads(Path(a.ledger).read_text())
+        tm = json.loads(raw)["timings"]
+        d = {"decision": choose(tm, ledger, vcpu=int(tm.get("vcpu") or 16)), "ledger": ledger,
+             "timings_sha256": hashlib.sha256(raw).hexdigest()}
+        target.parent.mkdir(parents=True, exist_ok=True); target.write_text(json.dumps(d, indent=1, default=float))
+        print(json.dumps(d["decision"], default=float))
+        return 0
     if a.table:
         d = json.loads(Path(a.table).read_text())
         print(json.dumps(cost_table(d["timings"], float(d.get("usd_per_core_hour", a.rate))), default=float))
@@ -218,9 +343,10 @@ def main(argv=None) -> int:
     (out / "benchmark_plan.json").write_text(json.dumps({"kinds": plan(), "workers": a.workers}))
     if a.dry_run:
         return 0
-    t = measure(out, a.workers, smoke=a.smoke)
+    t = measure(out, a.workers, smoke=a.smoke, usd_per_pod_hour=a.pod_rate)
     (out / "timings.json").write_text(json.dumps({"timings": t, "usd_per_core_hour": a.rate, "smoke": a.smoke}))
-    (out / "cost_table.json").write_text(json.dumps(cost_table(t, a.rate), default=float))
+    table = cost_table(t, vcpu=a.workers) if a.pod_rate else cost_table(t, a.rate)
+    (out / "cost_table.json").write_text(json.dumps(table, default=float))
     return 0
 
 
