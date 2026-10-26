@@ -1022,6 +1022,8 @@ def main(argv=None) -> int:
     if verifying:
         if not a.commit:
             raise SystemExit("verify needs --commit")
+        if not a.dev and not (a.instances and a.protocol):
+            raise SystemExit("verify of fresh markets needs --instances and --protocol (it builds jobs from recorded inputs only)")
         commit = a.commit
         if decision is not None:                                   # the recorded identity only; the bundle is not loaded
             h4 = {"dir": None, "sha": decision["bundle_sha256"]} if decision.get("loaded") else None; h4_excluded = not decision.get("loaded")
@@ -1031,6 +1033,9 @@ def main(argv=None) -> int:
             inst = json.loads(Path(a.instances).read_text()); salt = inst["salt_sha256"]
             from sim.records import cfg_from_dict
             cfgs = {k: cfg_from_dict(v["calibrated_cfg"]) for k, v in inst.get("markets", {}).items()}
+            absent = [m for m in markets if m.startswith("fresh") and m not in cfgs]
+            if absent or not inst.get("salt_sha256"):
+                raise SystemExit(f"instances.json lacks the recorded configuration of {absent} or the salt hash; verify never calibrates")
         else:
             inst = None
     else:

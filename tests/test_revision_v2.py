@@ -646,3 +646,20 @@ def test_k7_runner_refuses_a_decision_that_differs_from_the_protocol(patched, mo
     with pytest.raises(SystemExit, match="protocol"):
         RV.main(["--stage", "search", "--root", "ab" * 32, "--markets", "fresh0", "--params", str(params), "--h4-decision", str(dec),
                  "--h4", str(d), "--h4-sha", sha, "--out", str(tmp_path / "o2")])                     # a fresh run needs the protocol
+
+
+# ---- final review K9: verify refuses without its recorded inputs ------------------------------------------------------------------
+
+@pytest.mark.parametrize("drop", ["--instances", "--protocol", "market config"])
+def test_k9_verify_needs_recorded_inputs(fresh_dir, tmp_path, drop):
+    import multiprocessing as mp
+    from tests._verify_child import child
+    fx = fresh_dir; inst = fx["inst"]
+    if drop == "market config":
+        d = json.loads(inst.read_text()); d["markets"] = {}; inst = tmp_path / "instances.json"; inst.write_text(json.dumps(d))
+    argv = ["--stage", "verify", "--root", ROOT_HEX, "--markets", "fresh0", "--smoke", "--params", str(fx["params"]), "--commit", fx["commit"],
+            "--instances", str(inst), "--protocol", str(fx["proto"]), "--h4-decision", str(fx["h4"]), "--out", str(fx["out"])]
+    if drop in ("--instances", "--protocol"):
+        i = argv.index(drop); del argv[i:i + 2]
+    ctx = mp.get_context("spawn"); q = ctx.Queue(); p = ctx.Process(target=child, args=(argv, q)); p.start(); r = q.get(timeout=300); p.join(60)
+    assert r[0] == "error" and r[2].startswith("SystemExit") and "Guarded" not in r[2]           # refused before any calibration
