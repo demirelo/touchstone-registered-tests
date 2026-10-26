@@ -2,7 +2,8 @@
 the draw (record with headers, instances, H4 decision), the report, the released H4 bundle, the promoted inputs, the
 protocol and its upgraded proof, the paper sources, and uv.lock are packed into release/touchstone-v2.tar.gz with a
 MANIFEST.json of SHA-256s. --check verifies every listed hash, the required files, the freeze records' hashes against the
-packed records, and the signed tag protocol-v2 in the repository."""
+packed records, the signed tag protocol-v2 in the repository, and that every packed registration input (experiments/)
+equals the file at that tag."""
 from __future__ import annotations
 
 import argparse
@@ -74,6 +75,12 @@ def check(tar, repo=ROOT) -> list[str]:
                     problems.append(f"{arc}: frozen record {rid} is missing or its hash differs")
     if subprocess.run(["git", "tag", "-v", TAG], cwd=Path(repo), capture_output=True, text=True).returncode != 0:
         problems.append(f"tag {TAG} is missing, unsigned, or does not verify")
+        return problems
+    for arc, b in files.items():                                   # the packed registration inputs are the tagged files
+        if arc.startswith("experiments/"):
+            tagged = subprocess.run(["git", "show", f"{TAG}:{arc}"], cwd=Path(repo), capture_output=True)
+            if tagged.returncode != 0 or tagged.stdout != b:
+                problems.append(f"{arc}: differs from the file at tag {TAG}")
     return problems
 
 
