@@ -118,7 +118,8 @@ def test_cli_select_and_validate_on_synthetic_pools(tmp_path):
     for m in ("headline", "dev0", "dev1"):
         norm = {key(p): rng.normal(0.1, 0.2, 400).tolist() for p in __import__("sim.calibration_v2", fromlist=["x"]).PROFILES}
         eff = {k: rng.normal(0.98, 0.01, 400).tolist() for k in norm}
-        (pools / f"{m}.json").write_text(json.dumps({"seeds": list(range(400)), "normalized": norm, "eff": eff}))
+        (pools / f"{m}.json").write_text(json.dumps({"seeds": list(range(400)), "normalized": norm, "eff": eff, "market": m, "branch": "three20k",
+                                                     "pool_size": 400, "inputs_manifest": {"comparator.json": "0" * 64}, "commit": "c"}))
     assert main(["--select", "--branch", "three20k", "--out", str(tmp_path), "--replications", "40", "--resamples", "99", "--pool-size", "400"]) == 0
     cov = json.loads((tmp_path / "coverage.json").read_text())
     assert set(cov) >= {"Q1", "Q4"} and "kappa" in cov["Q1"]
@@ -204,3 +205,122 @@ def test_h5_every_replication_bound_equals_production():
     for r, s, side, tail, kp, b in tr:
         g = np.random.default_rng(np.random.SeedSequence([4, r])); draws = [g.integers(0, 200, 20) for _ in strata]
         assert b == I.stratified_at([st["d"][i] for st, i in zip(strata, draws)], side, tail * kp, 99)
+
+
+# ---- operations plan Task 3: pools per market on many cores; admitted kappa only ------------------------------------------
+
+def _synthetic_pools(out, markets, branch, n=60, manifest=None, seed=5):
+    import json
+    from sim.calibration_v2 import PROFILES
+    rng = np.random.default_rng(seed); (out / "pools").mkdir(parents=True, exist_ok=True)
+    for m in markets:
+        norm = {key(p): rng.normal(0.1, 0.2, n).tolist() for p in PROFILES}; eff = {k: rng.normal(0.98, 0.01, n).tolist() for k in norm}
+        (out / "pools" / f"{m}.json").write_text(json.dumps({"seeds": list(range(n)), "normalized": norm, "eff": eff, "market": m, "branch": branch,
+                                                            "pool_size": n, "inputs_manifest": manifest or {"comparator.json": "a" * 64}, "commit": "c"}))
+
+
+def test_failed_validation_exports_null(tmp_path, monkeypatch):
+    import json
+    import sim.calibration_v2 as C
+    from scripts.coverage_v2 import main
+    _synthetic_pools(tmp_path, ("headline", "dev0", "dev1"), "three20k")
+    monkeypatch.setattr(C, "select_kappa", lambda *a, **k: 0.5)
+    monkeypatch.setattr(C, "validate", lambda fam, kp, *a, **k: {"family": fam, "kappa": kp, "admitted": False, "endpoints": []})
+    common = ["--branch", "three20k", "--out", str(tmp_path), "--replications", "10", "--resamples", "99", "--pool-size", "60"]
+    assert main(["--select", *common]) == 0 and main(["--validate", *common]) == 0
+    cov = json.loads((tmp_path / "coverage.json").read_text())
+    assert cov["Q1"]["kappa"] == 0.5 and cov["Q1"]["kappa_effective"] is None and cov["Q4"]["kappa_effective"] is None
+    assert cov["smoke"] is True and cov["branch"] == "three20k" and cov["markets"] == ["headline", "dev0", "dev1"] and cov["pool_size"] == 60
+    assert set(cov["pools"]) == {"headline", "dev0", "dev1"} and cov["pools"]["dev0"]["seeds"] == 60 and cov["inputs_manifest"] == {"comparator.json": "a" * 64}
+
+
+def test_admitted_validation_exports_kappa(tmp_path, monkeypatch):
+    import json
+    import sim.calibration_v2 as C
+    from scripts.coverage_v2 import main
+    _synthetic_pools(tmp_path, ("headline", "dev0", "dev1"), "three20k")
+    monkeypatch.setattr(C, "select_kappa", lambda *a, **k: 0.25)
+    monkeypatch.setattr(C, "validate", lambda fam, kp, *a, **k: {"family": fam, "kappa": kp, "admitted": True, "endpoints": [{"misses": 0}]})
+    common = ["--branch", "three20k", "--out", str(tmp_path), "--replications", "10", "--resamples", "99", "--pool-size", "60"]
+    main(["--select", *common]); main(["--validate", *common])
+    cov = json.loads((tmp_path / "coverage.json").read_text())
+    assert cov["Q1"]["kappa_effective"] == 0.25 and cov["Q1"]["validation_replications"] == 10 and cov["Q1"]["resamples"] == 99
+
+
+class _Recorder:
+    seen = []
+
+    def __init__(self, max_workers=None):
+        _Recorder.seen.append(("pool", max_workers))
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+    def map(self, fn, *its):
+        out = []
+        for args in zip(*its):
+            _Recorder.seen.append(("chunk", list(args[3]))); out.append(fn(*args))
+        return iter(out)
+
+
+def _fake_build_pool(mkt, attacks, refs, seeds, cred):
+    from sim.calibration_v2 import PROFILES
+    return {"seeds": list(seeds), "normalized": {key(p): [s * 1e-3 + i for s in seeds] for i, p in enumerate(PROFILES)},
+            "eff": {key(p): [0.9 + s * 1e-6 for s in seeds] for p in PROFILES}}
+
+
+def _inputs(tmp_path):
+    import json
+    d = tmp_path / "inputs"; (d / "log").mkdir(parents=True)
+    (d / "comparator.json").write_text(json.dumps({"cred": {"variant": "thr", "K": 6, "M": None}})); (d / "log" / "a.json").write_text("{}")
+    (d / "fixture_cstar_s2.json").write_text("{}")
+    return d
+
+
+def test_pool_by_market_and_workers_equals_serial(tmp_path, monkeypatch):
+    import json
+    import scripts.coverage_v2 as CV
+    import sim.calibration_v2 as C
+    monkeypatch.setattr(C, "build_pool", _fake_build_pool); monkeypatch.setattr(CV, "fixture_inputs", lambda inputs, m: ({}, {}))
+    monkeypatch.setattr(CV, "coverage_pool", lambda m, n: list(range(1000, 1000 + n))); _Recorder.seen = []
+    inp = _inputs(tmp_path)
+    for w, sub in ((1, "a"), (3, "b")):
+        if w > 1:
+            monkeypatch.setattr(CV, "ProcessPoolExecutor", _Recorder)
+        assert CV.main(["--pools", "--market", "dev0", "--branch", "three20k", "--inputs", str(inp), "--workers", str(w), "--pool-size", "40", "--out", str(tmp_path / sub)]) == 0
+    a, b = ((tmp_path / s / "pools" / "dev0.json").read_text() for s in ("a", "b"))
+    assert a == b and not (tmp_path / "b" / "pools" / "headline.json").exists()
+    chunks = [x[1] for x in _Recorder.seen if x[0] == "chunk"]
+    assert ("pool", 3) in _Recorder.seen and len(chunks) == 3 and sorted(s for c in chunks for s in c) == list(range(1000, 1040))
+    d = json.loads(a)
+    assert d["market"] == "dev0" and d["branch"] == "three20k" and d["pool_size"] == 40 and set(d["inputs_manifest"]) == {"comparator.json", "log/a.json", "fixture_cstar_s2.json"}
+
+
+def test_select_needs_every_branch_market(tmp_path):
+    from scripts.coverage_v2 import main
+    _synthetic_pools(tmp_path, ("headline", "dev0"), "three20k")
+    with pytest.raises(SystemExit):
+        main(["--select", "--branch", "three20k", "--out", str(tmp_path), "--replications", "10", "--resamples", "99", "--pool-size", "60"])
+
+
+def test_pools_must_agree_on_inputs(tmp_path):
+    from scripts.coverage_v2 import main
+    _synthetic_pools(tmp_path, ("headline", "dev0"), "two20k", manifest={"comparator.json": "a" * 64})
+    _synthetic_pools(tmp_path, ("dev0",), "two20k", manifest={"comparator.json": "b" * 64})
+    with pytest.raises(SystemExit):
+        main(["--select", "--branch", "two20k", "--out", str(tmp_path), "--replications", "10", "--resamples", "99", "--pool-size", "60"])
+
+
+def test_two20k_branch_end_to_end(tmp_path):
+    import json
+    from scripts.coverage_v2 import main
+    _synthetic_pools(tmp_path, ("headline", "dev0"), "two20k", n=60)
+    common = ["--out", str(tmp_path), "--replications", "10", "--resamples", "99", "--pool-size", "60"]
+    with pytest.raises(SystemExit):
+        main(["--select", "--branch", "three20k", *common])                     # the pools record two20k
+    assert main(["--select", "--branch", "two20k", *common]) == 0 and main(["--validate", "--branch", "two20k", *common]) == 0
+    cov = json.loads((tmp_path / "coverage.json").read_text())
+    assert cov["branch"] == "two20k" and cov["markets"] == ["headline", "dev0"] and "validation" in cov["Q4"]
