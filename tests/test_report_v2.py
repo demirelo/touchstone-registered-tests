@@ -78,7 +78,7 @@ def _world(tmp_path, seed=0, missing=(), gain=None, eff=None):
                     write(eval_path(out, j["id"]), {"stage": "evaluate", "id": j["id"], "seeds": list(range(N_SEEDS)), "member_gain": mg.tolist(),
                                                     "total": float(mg.mean(axis=1).sum()), "min": float(mg.mean(axis=1).min())})
     for r in ("B3-t", "R3-t", "R4-t", "C*-t"):
-        for m in FRESH:
+        for m in FRESH + ["headline"]:
             for fam in ("D2+H3", "X7-SC"):
                 j = _job(f"{m}@rho0.2", r, fam); cat.append(j); write(eval_path(out, j["id"]), {"stage": "evaluate", "id": j["id"], **_profit(rng, 0.05)})
     for r in ("F000", "F111", "R4", "C*", "C*/S2"):
@@ -227,3 +227,34 @@ def test_check_mode_detects_a_changed_record(tmp_path, monkeypatch):
     assert R.check(_run(monkeypatch, out, cat), rep) == []
     p = eval_path(out, cell_id("fresh1@rho0.2", "F111", "X7-SC", "profit")); d = json.loads(p.read_text()); d["gain"][0] += 1.0; p.write_text(json.dumps(d))
     assert R.check(_run(monkeypatch, out, cat), rep)
+
+
+
+# ---- final review K11: a complete report, Markdown included -----------------------------------------------------------------------
+
+def test_k11_headline_whole_systems_are_reported(tmp_path, monkeypatch):
+    out, cat = _world(tmp_path)
+    r = _run(monkeypatch, out, cat)
+    assert set(r["secondary"]["whole_systems"]["B3-t"]) == set(FRESH) | {"headline"}
+
+
+def test_k11_markdown_renders_every_section(tmp_path, monkeypatch):
+    import scripts.report_v2 as R
+    out, cat = _world(tmp_path)
+    miss = cat[1]["id"]
+    r = _run(monkeypatch, out, cat, h4_loaded=False, verify={"ok": True, "h4": None, "contexts": {"x": {"status": "ok", "missing": [], "missing_doubling": [miss]}}})
+    md = R.markdown(r)
+    p = r["q2"]["searched"]["D2+H3"]["P"]["estimate"]; env = r["q3"]["envelope"]["F111"]["fresh0"]["estimate"]
+    for needle in ("## Q2", "## Q3", "## Secondary", "## Doubling", f"{p:.4f}", f"{env:.4f}", "independently authored family (H4): unanswered",
+                   "no feasible candidate found", "G_min", "B3-t", f"no doubling record: {miss}"):
+        assert needle in md, needle
+    assert r["doubling_missing"] == [miss]
+
+
+def test_k11_check_compares_the_markdown(tmp_path, monkeypatch):
+    import scripts.report_v2 as R
+    out, cat = _world(tmp_path); r = _run(monkeypatch, out, cat); rep = tmp_path / "report"
+    R.save(r, rep)
+    assert R.check(r, rep) == []
+    (rep / "report.md").write_text((rep / "report.md").read_text().replace("Q1", "Q one", 1))
+    assert any("report.md" in d for d in R.check(r, rep))

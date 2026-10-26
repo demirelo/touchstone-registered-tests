@@ -198,7 +198,7 @@ def q3(R: Records, h4_loaded: bool):
 def secondary(R: Records) -> dict:
     out = {"whole_systems": {}, "repair_rho1": {}, "label": NOMINAL_LABEL}
     for r in WHOLE:
-        for m in FRESH:
+        for m in FRESH + ("headline",):
             for f in FAMS:
                 rec = R.get(m, r, f)
                 if rec is not None:
@@ -225,12 +225,12 @@ def build(out, protocol: dict, instances: dict, h4: dict, catalog: list[dict], c
     rep = verify_records(out, catalog, instances, protocol, h4, cuts, not h4.get("loaded"))
     if not rep.get("ok"):
         raise SystemExit(f"verify found stale, foreign, or erroneous records; the report is refused: {json.dumps(rep)[:600]}")
-    missing = set()
+    missing, no_doubling = set(), set()
     for c in rep.get("contexts", {}).values():
-        missing |= set(c.get("missing", []))
+        missing |= set(c.get("missing", [])); no_doubling |= set(c.get("missing_doubling", []))
     R = Records(out, catalog, missing); conf = bool((instances or {}).get("confirmatory")); kappa = protocol.get("kappa") or {}
     r = {"confirmatory": conf, "q1": q1(R, kappa.get("Q1"), conf), "q2": q2(R), "q3": q3(R, bool(h4.get("loaded"))), "q4": q4(R, kappa.get("Q4"), conf)}
-    r["secondary"] = secondary(R); r["doubling"] = doubling(R)
+    r["secondary"] = secondary(R); r["doubling"] = doubling(R); r["doubling_missing"] = sorted(no_doubling)
     for j in catalog:
         if read(RV.eval_path(R.out, j["id"])) is None:
             R.missing.add(j["id"])
@@ -238,27 +238,62 @@ def build(out, protocol: dict, instances: dict, h4: dict, catalog: list[dict], c
     return json.loads(json.dumps(r, default=float))
 
 
+def _iv(x: dict) -> str:
+    return f"{x['estimate']:.4f} [{x['interval'][0]:.4f}, {x['interval'][1]:.4f}]"
+
+
 def markdown(r: dict) -> str:
-    lines = ["# Protocol v2 report", ""]
+    L = ["# Protocol v2 report", ""]
     if not r["confirmatory"]:
-        lines += [f"All Q1 and Q4 results are descriptive: {NONCONF}.", ""]
-    for q, title in (("q1", "Q1 comparator"), ("q4", "Q4 replication"), ("q2", "Q2 attribution (descriptive)"), ("q3", "Q3 attack strength (descriptive)")):
-        lines.append(f"## {title}")
-        v = r[q]
-        if v == "unanswered":
-            lines += ["unanswered: a required cell is missing", ""]; continue
-        if q in ("q1", "q4"):
-            lines.append(f"_{v['heading']}_")
-        if q == "q1":
-            lines += ["| test | estimate | interval | category |", "|---|---|---|---|"]
-            lines += [f"| {k} | {t['estimate']:.4f} | [{t['interval'][0]:.4f}, {t['interval'][1]:.4f}] ({t['interval_label']}) | {t['category']} |" for k, t in v["tests"].items()]
-        elif q == "q4":
-            lines.append(v["wording"] + (f"; failing: {', '.join(v['failing'])}" if v.get("failing") else ""))
-        else:
-            lines.append(f"intervals: {v['label']}")
-        lines.append("")
-    lines += ["## Missing cells", ", ".join(r["missing"]) or "none", ""]
-    return "\n".join(lines)
+        L += [f"All Q1 and Q4 results are descriptive: {NONCONF}.", ""]
+    L.append("## Q1 comparator")
+    if r["q1"] == "unanswered":
+        L.append("unanswered: a required cell is missing")
+    else:
+        L += [f"_{r['q1']['heading']}_", "| test | estimate [interval] | interval kind | category |", "|---|---|---|---|"]
+        L += [f"| {k} | {_iv(t)} | {t['interval_label']} | {t['category']} |" for k, t in r["q1"]["tests"].items()]
+        for m, d in r["q1"]["descriptive"].items():
+            L += [f"- {m} (descriptive, {NOMINAL_LABEL}): " + "; ".join(f"{k} {_iv(v)}" for k, v in d.items())]
+    L += ["", "## Q4 replication", f"_{r['q4']['heading']}_", r["q4"]["wording"] + (f"; failing: {', '.join(r['q4']['failing'])}" if r["q4"].get("failing") else "")]
+    for m, v in r["q4"]["markets"].items():
+        L.append(f"- {m}: not decided" if v == "not decided" else
+                 f"- {m}: gain difference {v['gain_diff']:.4f} (lower {v['gain_diff_lower']:.4f}), efficiency {v['eff']:.4f} (lower {v['eff_lower']:.4f}); {v['bound_label']}")
+    L += ["", "## Q2 attribution (descriptive)"]
+    if r["q2"] == "unanswered":
+        L.append("unanswered: a required cell or cross record is missing")
+    else:
+        for kind in ("searched", "fixed"):
+            for f, cs in r["q2"][kind].items():
+                L.append(f"- {kind} attacks, {f}: " + "; ".join(f"{k} {_iv(v)}" for k, v in cs.items()))
+        for f, ms in r["q2"]["envelope"].items():
+            L.append(f"- bank envelope, {f}: " + "; ".join(f"{m}: " + ", ".join(f"{k} {v:.4f}" for k, v in d.items()) for m, d in ms.items()))
+    L += ["", "## Q3 attack strength (descriptive)"]
+    q3 = r["q3"]
+    if q3 == "unanswered":
+        L.append("unanswered: a required cell is missing")
+    else:
+        for rule, ms in q3["envelope"].items():
+            L.append(f"- envelope {rule}: " + "; ".join(f"{m} {v['family']} {_iv(v)}" for m, v in ms.items()))
+        for rule, fs in q3["welfare"].items():
+            for f, objs in fs.items():
+                for obj, v in objs.items():
+                    L.append(f"- welfare {rule} {f} {obj}: " + (v if isinstance(v, str) else
+                             f"efficiency {v['efficiency']:.4f} [{v['interval'][0]:.4f}, {v['interval'][1]:.4f}], attacker gain {v['attacker_gain']:.4f}"))
+        for rule, gs in q3["coalition"].items():
+            L.append(f"- coalition {rule}: " + "; ".join(f"{g} G_tot {v['G_tot']['estimate']:.4f}, G_min {v['G_min']['estimate']:.4f} "
+                                                        f"[{v['G_min']['bounds'][0]:.4f}, {v['G_min']['bounds'][1]:.4f}]" for g, v in gs.items()))
+        L.append("- independently authored family (H4): " + ("unanswered" if q3["independent"] == "unanswered" else
+                 "; ".join(f"{rule}: " + ", ".join(f"{m} {v:.4f}" for m, v in ms.items()) for rule, ms in q3["independent"].items())))
+    L += ["", f"## Secondary (descriptive, {NOMINAL_LABEL})"]
+    for part in ("whole_systems", "repair_rho1"):
+        for rule, d in r["secondary"][part].items():
+            L.append(f"- {part} {rule}: " + "; ".join(f"{k}: " + ", ".join(f"{f} {_iv(x)}" for f, x in v.items()) if isinstance(v, dict) and "estimate" not in v
+                                                 else f"{k} {_iv(v)}" for k, v in d.items()))
+    L += ["", "## Doubling diagnostics (labels beside the estimates; they change no decision)"]
+    L += [f"- {rid}: " + ", ".join(f"{k} {v}" for k, v in sorted(d.items())) for rid, d in r["doubling"].items()]
+    L += [f"- no doubling record: {rid}" for rid in r.get("doubling_missing", [])]
+    L += ["", "## Missing cells", ", ".join(r["missing"]) or "none", ""]
+    return "\n".join(L)
 
 
 def save(r: dict, report_dir) -> None:
@@ -280,7 +315,10 @@ def _diff(a, b, path="") -> list[str]:
 
 
 def check(r: dict, report_dir) -> list[str]:
-    return _diff(r, json.loads((Path(report_dir) / "report.json").read_text()))
+    d = Path(report_dir); out = _diff(r, json.loads((d / "report.json").read_text()))
+    if (d / "report.md").read_text() != markdown(r):
+        out.append("report.md differs from the report rebuilt from the records")
+    return out
 
 
 def main(argv=None) -> int:
