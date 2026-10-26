@@ -1,6 +1,6 @@
 """The fresh draw's block reader (design 7.3). The anchor A is the lowest Bitcoin attestation of the protocol file's
 OpenTimestamps proof whose block header, as served by both explorers, carries the proof's Merkle root (the commitment);
-`ots verify` needs a local Bitcoin node, so this check replaces it. H = A + 144. The hash at H is final once both explorers
+`ots verify` needs a local Bitcoin node, so this check replaces it; the proof is parsed from its bytes (scripts/ots_proof.py). H = A + 144. The hash at H is final once both explorers
 report a tip of at least H + 6 and agree on it, and the header chain from A to H + 6 links and carries its proof of work."""
 from __future__ import annotations
 
@@ -8,7 +8,6 @@ import argparse
 import hashlib
 import json
 import re
-import subprocess
 import sys
 import time
 from pathlib import Path
@@ -83,10 +82,12 @@ def _header(fetch, h: str) -> bytes:
     return bytes.fromhex(str(fetch(SOURCES[0], f"block/{h}/header")).strip())
 
 
-def anchor(ots_info: str, fetch) -> dict:
+def anchor(atts, fetch) -> dict:
     """The lowest attestation whose header (both sources agreeing on its hash) carries the attested Merkle root; every
-    lower attestation it rejected is kept with the header served at its height, so the choice can be re-checked offline."""
-    att = attestations(ots_info)
+    lower attestation it rejected is kept with the header served at its height, and the headers from the lowest rejected
+    height up to A are kept too, so the choice can be re-checked offline as one continuous chain. `atts` is a parsed list
+    of (height, root) or an `ots info` listing."""
+    att = attestations(atts) if isinstance(atts, str) else sorted(atts)
     if not att:
         raise ValueError("the proof has no Bitcoin attestation")
     lower = []
@@ -96,7 +97,13 @@ def anchor(ots_info: str, fetch) -> dict:
             return {"status": "wait", "height": height, "reason": "sources disagree", "answers": hs}
         h = hs[SOURCES[0]]; raw = _header(fetch, h)
         if header_hash(raw) == h and merkle_root(raw) == root:
-            return {"status": "verified", "height": height, "merkle_root": root, "hash": h, "lower_attestations": lower}
+            prefix = []
+            for hh in range(lower[0]["height"], height) if lower else ():
+                ans = _hash_at(fetch, hh)
+                if len(set(ans.values())) != 1:
+                    return {"status": "wait", "height": hh, "reason": "sources disagree", "answers": ans}
+                prefix.append(_header(fetch, ans[SOURCES[0]]).hex())
+            return {"status": "verified", "height": height, "merkle_root": root, "hash": h, "lower_attestations": lower, "lower_headers": prefix}
         lower.append({"height": height, "attested_root": root, "hash": h, "header": raw.hex()})
     raise ValueError("no attestation matches its block header")
 
@@ -134,10 +141,12 @@ def main(argv=None) -> None:
     ap.add_argument("--ots", required=True); ap.add_argument("--protocol", required=True); ap.add_argument("--out", required=True)
     ap.add_argument("--poll", type=int, default=3600)
     a = ap.parse_args(argv)
-    info = subprocess.run(["uvx", "--from", "opentimestamps-client", "ots", "info", a.ots], capture_output=True, text=True, check=True).stdout
-    digest = check_protocol(info, Path(a.protocol).read_bytes())
+    from scripts.ots_proof import parse
+    proof = parse(Path(a.ots).read_bytes()); digest = hashlib.sha256(Path(a.protocol).read_bytes()).hexdigest()
+    if proof["digest"] != digest:
+        raise ValueError("the proof does not commit to this protocol file")
     while True:
-        anc = anchor(info, http_fetch)
+        anc = anchor(proof["attestations"], http_fetch)
         if anc["status"] == "verified":
             r = read_final(anc, http_fetch)
             if r["status"] == "final":

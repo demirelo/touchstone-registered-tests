@@ -71,7 +71,7 @@ def test_attestations_parse():
 def test_anchor_is_verified_attestation_and_merkle_root():
     from scripts.block_draw import anchor, merkle_root
     a = anchor(INFO, fake_fetch())
-    assert a == {"status": "verified", "height": A, "merkle_root": merkle_root(raw(0)), "hash": H[0]["hash"], "lower_attestations": []}
+    assert a == {"status": "verified", "height": A, "merkle_root": merkle_root(raw(0)), "hash": H[0]["hash"], "lower_attestations": [], "lower_headers": []}
 
 
 def test_anchor_skips_failed_lower_attestation():
