@@ -84,17 +84,20 @@ def _header(fetch, h: str) -> bytes:
 
 
 def anchor(ots_info: str, fetch) -> dict:
-    """The lowest attestation whose header (both sources agreeing on its hash) carries the attested Merkle root."""
+    """The lowest attestation whose header (both sources agreeing on its hash) carries the attested Merkle root; every
+    lower attestation it rejected is kept with the header served at its height, so the choice can be re-checked offline."""
     att = attestations(ots_info)
     if not att:
         raise ValueError("the proof has no Bitcoin attestation")
+    lower = []
     for height, root in att:
         hs = _hash_at(fetch, height)
         if len(set(hs.values())) != 1:
             return {"status": "wait", "height": height, "reason": "sources disagree", "answers": hs}
         h = hs[SOURCES[0]]; raw = _header(fetch, h)
         if header_hash(raw) == h and merkle_root(raw) == root:
-            return {"status": "verified", "height": height, "merkle_root": root, "hash": h}
+            return {"status": "verified", "height": height, "merkle_root": root, "hash": h, "lower_attestations": lower}
+        lower.append({"height": height, "attested_root": root, "hash": h, "header": raw.hex()})
     raise ValueError("no attestation matches its block header")
 
 

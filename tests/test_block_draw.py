@@ -71,14 +71,15 @@ def test_attestations_parse():
 def test_anchor_is_verified_attestation_and_merkle_root():
     from scripts.block_draw import anchor, merkle_root
     a = anchor(INFO, fake_fetch())
-    assert a == {"status": "verified", "height": A, "merkle_root": merkle_root(raw(0)), "hash": H[0]["hash"]}
+    assert a == {"status": "verified", "height": A, "merkle_root": merkle_root(raw(0)), "hash": H[0]["hash"], "lower_attestations": []}
 
 
 def test_anchor_skips_failed_lower_attestation():
     from scripts.block_draw import anchor
     info = f"    verify BitcoinBlockHeaderAttestation({A - 1})\n    # Bitcoin block merkle root {'ab' * 32}\n" + INFO
     f = fake_fetch(at={"blockstream": {A - 1: H[1]["hash"]}, "mempool": {A - 1: H[1]["hash"]}})
-    assert anchor(info, f)["height"] == A
+    a = anchor(info, f)
+    assert a["height"] == A and a["lower_attestations"] == [{"height": A - 1, "attested_root": "ab" * 32, "hash": H[1]["hash"], "header": H[1]["header"]}]
 
 
 def test_anchor_refuses_without_bitcoin_attestation():
