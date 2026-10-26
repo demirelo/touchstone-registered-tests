@@ -910,7 +910,11 @@ def _cross_problems(rec: dict, rules: list[str], n: int) -> str | None:
     rows = rec.get("per_seed") or {}
     if set(rows) != {f"{a}>{r}" for a in rules for r in rules} or any(not isinstance(v, list) or len(v) != n for v in rows.values()):
         return "per-seed rows are incomplete or of the wrong length"
+    if not all(_num(x) for v in rows.values() for x in v):
+        return "per-seed rows must hold finite numbers"
     mat = rec.get("matrix") or []
+    if not (isinstance(mat, list) and all(isinstance(row, list) and all(_num(x) for x in row) for row in mat)):
+        return "the matrix must hold finite numbers"
     if len(mat) != len(rules) or any(len(row) != len(rules) for row in mat) or any(
             abs(float(mat[i][k]) - float(np.mean(rows[f"{a}>{r}"]))) > 1e-9 for i, a in enumerate(rules) for k, r in enumerate(rules)):
         return "the matrix differs from the per-seed row means"

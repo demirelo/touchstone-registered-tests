@@ -3,7 +3,8 @@ the draw (record with headers, instances, H4 decision), the report, the released
 protocol and its upgraded proof, the paper sources, and uv.lock are packed into release/touchstone-v2.tar.gz with a
 MANIFEST.json of SHA-256s. --check verifies every listed hash, the required files, the freeze records' hashes against the
 packed records, the draw record against the packed protocol and proof, the packed instances against the ones the draw
-gives (all but calibrated_cfg, the slow step), the signed tag protocol-v2 in the repository, and that every packed
+gives (calibrated_cfg is not recalibrated, the slow step, but must equal the drawn cfg outside alpha and budget,
+which must be finite and positive), the signed tag protocol-v2 in the repository, and that every packed
 registration input (experiments/) equals the file at that tag."""
 from __future__ import annotations
 
@@ -11,6 +12,7 @@ import argparse
 import hashlib
 import io
 import json
+import math
 import subprocess
 import sys
 import tarfile
@@ -72,9 +74,14 @@ def _draw_problems(files: dict, offset: int) -> list[str]:
     strip = {**packed, "markets": {k: {f: v for f, v in m.items() if f != "calibrated_cfg"} for k, m in packed.get("markets", {}).items()}}
     if json.loads(json.dumps(got, default=float)) != strip:
         return ["draw/instances.json: differs from the instances the packed draw gives"]
-    if any("calibrated_cfg" not in m for m in packed["markets"].values()):
-        return ["draw/instances.json: a market has no calibrated_cfg"]
-    return []
+    out = []
+    for label, m in packed["markets"].items():                    # calibration sets alpha and budget only (sim/calibrate.cell_config)
+        cal, cfg = m.get("calibrated_cfg"), m["cfg"]
+        if not isinstance(cal, dict) or set(cal) != set(cfg) or any(cal[k] != cfg[k] for k in cfg if k not in ("alpha", "budget")):
+            out.append(f"draw/instances.json: {label} calibrated_cfg differs from the drawn cfg outside alpha and budget")
+        elif not all(isinstance(cal[k], (int, float)) and not isinstance(cal[k], bool) and math.isfinite(cal[k]) and cal[k] > 0 for k in ("alpha", "budget")):
+            out.append(f"draw/instances.json: {label} calibrated_cfg alpha and budget must be finite positive numbers")
+    return out
 
 
 def check(tar, repo=ROOT, offset: int = 144) -> list[str]:

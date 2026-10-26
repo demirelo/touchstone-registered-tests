@@ -745,10 +745,35 @@ def test_l3_null_elements_are_refused_through_the_real_verifier_and_report(fresh
         R.build(d, {"h4": None, "cuts": 0, "kappa": {"Q1": None, "Q4": None}}, inst, json.loads(fx["h4"].read_text()), cat)
 
 
-def test_l4_development_verify_needs_recorded_inputs(fresh_dir, tmp_path):
+@pytest.mark.parametrize("given", ["neither", "instances", "protocol"])
+def test_l4_development_verify_needs_recorded_inputs(fresh_dir, tmp_path, given):
     import multiprocessing as mp
     from tests._verify_child import child
     fx = fresh_dir
     argv = ["--stage", "verify", "--dev", "--markets", "dev0", "--smoke", "--params", str(fx["params"]), "--commit", fx["commit"], "--out", str(fx["out"])]
+    argv += {"neither": [], "instances": ["--instances", str(fx["inst"])], "protocol": ["--protocol", str(fx["proto"])]}[given]
     ctx = mp.get_context("spawn"); q = ctx.Queue(); p = ctx.Process(target=child, args=(argv, q)); p.start(); r = q.get(timeout=300); p.join(60)
     assert r[0] == "error" and r[2].startswith("SystemExit") and "Guarded" not in r[2]
+
+
+# ---- fix-pass re-review round 2: cross records hold finite numbers only ------------------------------------------------------------
+
+def test_m2_cross_rows_and_matrix_must_be_finite_numbers(patched):
+    RV = patched; rules = ["F000", "F111"]; n = 2
+    rows = {f"{a}>{r}": [0.1, 0.3] for a in rules for r in rules}
+    rec = {"attacks": rules, "rules": rules, "per_seed": rows, "matrix": [[0.2, 0.2], [0.2, 0.2]]}
+    for bad in ({**rec, "per_seed": {**rows, "F000>F000": [True, True]}, "matrix": [[1.0, 0.2], [0.2, 0.2]]},
+                {**rec, "per_seed": {**rows, "F000>F000": [None, 0.3]}},
+                {**rec, "matrix": [["nan", 0.2], [0.2, 0.2]]}, {**rec, "matrix": [[True, 0.2], [0.2, 0.2]]}):
+        assert RV._cross_problems(bad, rules, n), bad
+
+
+def test_m2_boolean_cross_rows_are_stale_through_the_real_verifier(ctx_dir, patched, tmp_path):
+    from sim.records_v2 import write
+    RV = patched; out, jobs = ctx_dir; d = _copy(out, tmp_path); _banks(RV, d, jobs)
+    RV.run("cross", jobs, d, catalog=jobs); cid = f"cross/{CTX}/D2+H3"
+    assert cid not in RV.verify(d, jobs, jobs, None, None, None)["contexts"][CTX]["stale"]
+    p = d / "cross" / CTX / (RV._safe("D2+H3") + ".json"); rec = json.loads(p.read_text())
+    rec["per_seed"] = {k: [bool(i % 2) for i in range(len(v))] for k, v in rec["per_seed"].items()}
+    rec["matrix"] = [[float(np.mean(rec["per_seed"][f"{a}>{r}"])) for r in rec["rules"]] for a in rec["attacks"]]; write(p, rec)
+    assert cid in RV.verify(d, jobs, jobs, None, None, None)["contexts"][CTX]["stale"]

@@ -252,6 +252,7 @@ def test_k11_markdown_renders_every_section(tmp_path, monkeypatch):
     w1 = r["q3"]["welfare"]["F111"]["X7-SC"]["W1"]; w0 = r["q3"]["welfare"]["F111"]["D2+H3"]["W0"]
     for iv in (w1["constraint_interval"], w1["attacker_gain_interval"], w0["attacker_gain_interval"]):
         assert f"[{iv[0]:.4f}, {iv[1]:.4f}]" in md, iv                     # L8: the intervals are rendered with their bounds
+    c = w1["constraint_interval"]; assert f"W1 constraint [{c[0]:.4f}, {c[1]:.4f}]" in md          # the W1 constraint is labelled
 
 
 def test_k11_check_compares_the_markdown(tmp_path, monkeypatch):

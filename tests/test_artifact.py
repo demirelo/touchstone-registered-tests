@@ -223,5 +223,17 @@ def test_l7_missing_locked_packages_and_python_are_reported(real, monkeypatch):
     monkeypatch.setattr(RP, "_installed", lambda name: None)
     probs = RP.environment_problems(real["repo"] / "uv.lock")
     assert any("numpy" in p and "not installed" in p for p in probs)
+    assert not any("tzdata" in p for p in probs)                    # its marker (win32, emscripten) does not hold here
+    monkeypatch.setattr(RP, "_installed", lambda name: None if name == "six" else RP._real_installed(name))
+    assert any(p.startswith("six: not installed") for p in RP.environment_problems(real["repo"] / "uv.lock"))   # transitive, via python-dateutil
     monkeypatch.setattr(RP, "_installed", RP._real_installed); monkeypatch.setattr(RP, "_python", lambda: "2.7.18")
     assert any("Python" in p for p in RP.environment_problems(real["repo"] / "uv.lock"))
+
+
+@pytest.mark.parametrize("change", [("v_max", 7.0), ("N", 99), ("alpha", float("inf")), ("budget", -1.0), ("alpha", True)])
+def test_m1_the_calibrated_configuration_follows_from_the_draw(world, change):
+    from scripts.artifact_v2 import check
+    tar = _assemble(world); i = json.loads((world["draw"] / "instances.json").read_text())
+    i["markets"]["fresh0"]["calibrated_cfg"][change[0]] = change[1]
+    _rewrite(tar, "draw/instances.json", json.dumps(i).encode()); _manifest_rebuilt(tar)
+    assert any("calibrated_cfg" in p for p in check(tar, repo=world["repo"], offset=4))

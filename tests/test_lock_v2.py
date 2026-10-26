@@ -201,7 +201,7 @@ def test_k5_params_must_follow_from_the_promoted_files(tmp_path):
         _build(r)
 
 
-@pytest.mark.parametrize("fail", ["status", "rev-parse"])
+@pytest.mark.parametrize("fail", [("status",), ("rev-parse", "HEAD"), ("rev-parse", "protocol-v2^{commit}")])
 def test_l5_every_git_command_must_succeed(signed, monkeypatch, fail):
     import scripts.lock_v2 as L
     r, code, env = signed; _ok(monkeypatch); _git(r, "tag", "-s", "protocol-v2", "-m", "protocol v2", env=env)
@@ -209,8 +209,8 @@ def test_l5_every_git_command_must_succeed(signed, monkeypatch, fail):
 
     def broken(repo, *args):
         out = real(repo, *args)
-        if args[0] == fail:
-            return type(out)(out.args, 128, "", "fatal: broken")
+        if tuple(args[:len(fail)]) == fail:                       # only this command fails, and its output still looks valid
+            return type(out)(out.args, 128, out.stdout, "fatal: broken")
         return out
     monkeypatch.setattr(L, "_git", broken)
     with pytest.raises(SystemExit):
