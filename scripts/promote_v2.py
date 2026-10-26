@@ -222,12 +222,31 @@ def promote(kind: str, src, to, markets: list[str], branch: str | None = None, c
     return _record(to, kind, files)
 
 
+def verify_promoted(to) -> list[str]:
+    """Every promoted entry still matches its file: nothing changes between promotion, --final, and the lock."""
+    to = Path(to); out = []
+    for rel, h in _promotion(to)["entries"].items():
+        f = to / rel
+        if not f.exists():
+            out.append(f"promoted {rel} is missing")
+        elif _sha(f) != h:
+            out.append(f"promoted {rel}: its hash differs from promotion.json")
+    return out
+
+
+def derive_params(to) -> dict:
+    to = Path(to)
+    return {"cred": _json(to / "comparator.json")["cred"], "tuned": {s: _json(to / f"tuned_{s}.json")["best_params"] for s in SYSTEMS}}
+
+
 def final(to) -> dict:
     to = Path(to); prom = _promotion(to)
     need = ["comparator.json", "fixture_cstar_s2.json", "coverage.json", "benchmark/timings.json", "benchmark/decision.json"] + [f"tuned_{s}.json" for s in SYSTEMS]
     missing = [p for p in need if p not in prom["entries"]]
     _require(not missing, f"final: missing {missing}")
-    params = {"cred": _json(to / "comparator.json")["cred"], "tuned": {s: _json(to / f"tuned_{s}.json")["best_params"] for s in SYSTEMS}}
+    changed = verify_promoted(to)
+    _require(not changed, f"final: {changed}")
+    params = derive_params(to)
     (to / "params.json").write_text(json.dumps(params, indent=1, sort_keys=True))
     return params
 

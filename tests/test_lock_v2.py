@@ -18,12 +18,17 @@ def _repo(tmp_path, total=30.0, kappa_q1=0.5, kappa_q4=None) -> Path:
     r = tmp_path / "repo"; (r / "experiments" / "v2" / "benchmark").mkdir(parents=True); (r / "docs" / "revision").mkdir(parents=True)
     shutil.copy(ROOT / "experiments" / "revision-v2-manifest.yaml", r / "experiments" / "revision-v2-manifest.yaml")
     v2 = r / "experiments" / "v2"
-    (v2 / "params.json").write_text(json.dumps({"cred": {"variant": "thr", "K": 6, "M": None}, "tuned": {"B3-t": {"tol": 0.16, "L": 10}}}))
+    cred = {"variant": "thr", "K": 6, "M": None}; (v2 / "comparator.json").write_text(json.dumps({"cred": cred}))
+    tuned = {s: {"tol": 0.16, "L": 10} for s in ("B3-t", "R3-t", "R4-t", "C*-t")}
+    for s, bp in tuned.items():
+        (v2 / f"tuned_{s}.json").write_text(json.dumps({"rule": s, "best_params": bp}))
+    (v2 / "params.json").write_text(json.dumps({"cred": cred, "tuned": tuned}))
     (v2 / "coverage.json").write_text(json.dumps({"Q1": {"kappa": 0.5, "kappa_effective": kappa_q1}, "Q4": {"kappa": 0.25, "kappa_effective": kappa_q4}}))
-    (v2 / "promotion.json").write_text(json.dumps({"entries": {"comparator.json": "c" * 64}, "kinds": {}}))
     dec = {"branch": "two20k", "markets": ["headline", "dev0"], "cuts": 1, "development_usd": 9.0, "evaluation_usd": total - 9.0, "total_usd": total,
            "approval_required": total > 40, "spent_usd": 1.0, "stop": None}
     (v2 / "benchmark" / "decision.json").write_text(json.dumps({"decision": dec, "ledger": {"spent": [{"op": "development", "tag": "bench", "usd": 1.0}]}, "timings_sha256": "d" * 64}))
+    entries = {p.relative_to(v2).as_posix(): _sha(p) for p in v2.rglob("*.json") if p.name not in ("params.json", "promotion.json")}
+    (v2 / "promotion.json").write_text(json.dumps({"entries": entries, "kinds": {}}))
     (r / "docs" / "revision" / "predictions-v2.md").write_text("# Predictions\n")
     (r / "docs" / "revision" / "budget-ledger.json").write_text(json.dumps({"caps": {}, "reservations": [], "spent": [{"op": "development", "tag": "bench", "usd": 1.0},
                                                                                                                        {"op": "development", "tag": "tune", "usd": 4.5}]}))
@@ -174,3 +179,23 @@ def test_k3_unresolvable_or_foreign_code_commit_is_refused(signed, monkeypatch, 
     _git(r, "tag", "-s", "protocol-v2", "-m", "protocol v2", env=env)
     with pytest.raises(SystemExit):
         check_commit(r)
+
+
+
+# ---- final review K5: the lock checks every promoted file and the parameters derived from them ----------------------------
+
+@pytest.mark.parametrize("rel,edit", [("experiments/v2/tuned_R3-t.json", lambda d: d.update(best_params={"tol": 0.08, "L": 3})),
+                                      ("experiments/v2/comparator.json", lambda d: d.update(cred={"variant": "mem", "K": 6, "M": 50}))])
+def test_k5_lock_detects_promoted_files_changed_after_promotion(tmp_path, rel, edit):
+    from scripts.lock_v2 import check
+    r = _repo(tmp_path); p = _build(r)
+    f = r / rel; d = json.loads(f.read_text()); edit(d); f.write_text(json.dumps(d))
+    assert any("promot" in x for x in check(r, p))
+
+
+def test_k5_params_must_follow_from_the_promoted_files(tmp_path):
+    from scripts.lock_v2 import check
+    r = _repo(tmp_path)
+    f = r / "experiments/v2/params.json"; d = json.loads(f.read_text()); d["tuned"]["B3-t"]["L"] = 50; f.write_text(json.dumps(d))
+    with pytest.raises(SystemExit):
+        _build(r)

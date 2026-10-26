@@ -180,3 +180,18 @@ def test_final_needs_all_kinds_and_writes_params(produced, tmp_path):
     params = P.final(to)
     tuned = {s: json.loads((r / "sys" / s / f"tuned_{s}.json").read_text())["best_params"] for s in SYSTEMS}
     assert params == {"cred": produced["cred"], "tuned": tuned} and json.loads((to / "params.json").read_text()) == params
+
+
+
+# ---- final review K5: promoted bytes are checked at --final -------------------------------------------------------------------
+
+def test_k5_final_refuses_a_file_changed_after_promotion(produced, tmp_path):
+    import scripts.promote_v2 as P
+    r, h = produced["root"], produced["head"]; to = _clone_dest(produced, tmp_path)
+    P.promote("coverage", r / "cov", to, MARKETS, branch="three20k", code_commit=h)
+    P.promote("benchmark", r / "bench", to, ["headline", "dev0"], code_commit=h)
+    P.promote("decision", r / "dec", to, MARKETS, code_commit=h)
+    _edit(to / "tuned_B3-t.json", lambda d: d.update(best_params={"tol": 0.08, "L": 50}))
+    with pytest.raises(P.Refused, match="hash"):
+        P.final(to)
+    assert P.verify_promoted(to) and not (to / "params.json").exists()

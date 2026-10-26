@@ -79,6 +79,14 @@ def check(repo, protocol: dict) -> list[str]:
             out.append(f"{rel}: missing or its hash differs from the protocol's {k}")
     if out:
         return out
+    from scripts.promote_v2 import derive_params, verify_promoted
+    v2 = repo / "experiments" / "v2"
+    out += verify_promoted(v2)
+    try:
+        if _json(v2 / "params.json") != derive_params(v2):
+            out.append("params.json does not follow from the promoted comparator and tuned files")
+    except (OSError, KeyError, ValueError) as e:
+        out.append(f"params.json cannot be derived from the promoted files: {e}")
     dec = _json(repo / FILES["decision_sha256"])["decision"]
     out += _choices(dec, protocol.get("cuts"), protocol.get("branch"), protocol.get("development_markets") or [], protocol.get("approval"))
     cov = _json(repo / FILES["coverage_sha256"])
