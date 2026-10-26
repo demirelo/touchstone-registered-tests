@@ -876,6 +876,40 @@ def _numbers_ok(v) -> bool:
     return True
 
 
+def _schema_problems(j: dict, rec: dict, n: int) -> str | None:
+    """The evaluate record's complete shape for its objective (stage_evaluate's fields, n seeds), or what is wrong."""
+    obj = j["objective"]; ln = lambda k: isinstance(rec.get(k), list) and len(rec[k]) == n
+    if obj == "profit":
+        bad = [k for k in GAIN_FIELDS if not ln(k)]
+        return f"profit fields missing or of the wrong length: {bad}" if bad else None
+    if obj in ("W0", "W1"):
+        if rec.get("no_feasible_candidate") is True:
+            return None
+        bad = [k for k in ("eff", "normalized") + (("constraint",) if obj == "W1" else ()) if not ln(k)]
+        return f"welfare fields missing or of the wrong length: {bad}" if bad else None
+    mg = rec.get("member_gain")
+    if not (isinstance(mg, list) and len(mg) == int(j["c"]) and all(isinstance(r, list) and len(r) == n for r in mg)):
+        return f"member_gain is not {j['c']} members x {n} seeds"
+    means = [float(np.mean(r)) for r in mg]
+    if abs(float(rec.get("total", np.nan)) - sum(means)) > 1e-9 or abs(float(rec.get("min", np.nan)) - min(means)) > 1e-9:
+        return "the stored total or minimum differs from the member gains"
+    return None
+
+
+def _cross_problems(rec: dict, rules: list[str], n: int) -> str | None:
+    """A cross record covers every (attack, rule) pair of the bank with n seeds, and its matrix holds the row means."""
+    if list(rec.get("attacks") or []) != list(rules) or list(rec.get("rules") or []) != list(rules):
+        return "attacks or rules differ from the bank's factorial rules"
+    rows = rec.get("per_seed") or {}
+    if set(rows) != {f"{a}>{r}" for a in rules for r in rules} or any(not isinstance(v, list) or len(v) != n for v in rows.values()):
+        return "per-seed rows are incomplete or of the wrong length"
+    mat = rec.get("matrix") or []
+    if len(mat) != len(rules) or any(len(row) != len(rules) for row in mat) or any(
+            abs(float(mat[i][k]) - float(np.mean(rows[f"{a}>{r}"]))) > 1e-9 for i, a in enumerate(rules) for k, r in enumerate(rules)):
+        return "the matrix differs from the per-seed row means"
+    return None
+
+
 def _check_evaluate(j: dict, rec: dict, out: Path, catalog: list[dict], cuts: int, h4_excluded: bool, seeds: list | None) -> None:
     want = stage_upstream("evaluate", j, catalog, cuts, h4_excluded)
     if rec.get("stage") != "evaluate" or set(rec.get("upstream") or {}) != want:
@@ -884,9 +918,9 @@ def _check_evaluate(j: dict, rec: dict, out: Path, catalog: list[dict], cuts: in
     n = len(j["mkt"]["seeds_eval"])
     if rec.get("seeds") != list(j["mkt"]["seeds_eval"]) or (seeds is not None and list(seeds[:n]) != rec.get("seeds")):
         raise ValueError("seeds differ from the instance's")
-    for k in (GAIN_FIELDS if j["objective"] == "profit" else ("eff", "normalized", "constraint") if j["objective"] in ("W0", "W1") else ()):
-        if k in rec and len(rec[k]) != n:
-            raise ValueError(f"{k} has the wrong length")
+    problem = _schema_problems(j, rec, n)
+    if problem:
+        raise ValueError(problem)
     if not _numbers_ok(rec):
         raise ValueError("nonfinite values")
 
@@ -939,9 +973,12 @@ def verify(out: Path, catalog: list[dict], selected: list[dict], instances: dict
                 if set(old.get("upstream") or {}) != ids:
                     raise ValueError("dependency set")
                 validate({"provenance": prov}, "cross", old, {u: path_of(out, u) for u in ids})
-                if not _numbers_ok(old):
-                    raise ValueError("nonfinite values")
-            except (ValueError, KeyError, TypeError, SystemExit):
+                bank = read(path_of(out, f"bank/{ctx}/{fam}")) or {"attacks": {}}
+                _, rules = _cross_rules(ctx, fam, catalog, bank); n = len(next(j for j in catalog if j["context"] == ctx)["mkt"]["seeds_eval"])
+                problem = _cross_problems(old, rules, n)
+                if problem or not _numbers_ok(old):
+                    raise ValueError(problem or "nonfinite values")
+            except (ValueError, KeyError, TypeError, SystemExit, StopIteration):
                 c["stale"].append(item["id"])
         for _, items in _waves("doubling", sel, catalog):
             for j in items:

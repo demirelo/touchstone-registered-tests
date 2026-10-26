@@ -663,3 +663,51 @@ def test_k9_verify_needs_recorded_inputs(fresh_dir, tmp_path, drop):
         i = argv.index(drop); del argv[i:i + 2]
     ctx = mp.get_context("spawn"); q = ctx.Queue(); p = ctx.Process(target=child, args=(argv, q)); p.start(); r = q.get(timeout=300); p.join(60)
     assert r[0] == "error" and r[2].startswith("SystemExit") and "Guarded" not in r[2]           # refused before any calibration
+
+
+# ---- final review K8: complete schemas, and the real verify behind the report -----------------------------------------------------
+
+def test_k8_schema_problems_for_each_record_kind(patched):
+    RV = patched; n = 3
+    prof = {k: [0.1] * n for k in RV.GAIN_FIELDS}
+    assert RV._schema_problems({"objective": "profit"}, {**prof, "seeds": [1, 2, 3]}, n) is None
+    assert RV._schema_problems({"objective": "profit"}, {k: v for k, v in prof.items() if k != "sstar"}, n)
+    assert RV._schema_problems({"objective": "profit"}, {**prof, "gain": [0.1]}, n)
+    assert RV._schema_problems({"objective": "W1"}, {"eff": [0.9] * n, "normalized": [0.5] * n}, n)            # W1 needs its constraint
+    assert RV._schema_problems({"objective": "W1"}, {"no_feasible_candidate": True}, n) is None
+    good = {"member_gain": [[0.1] * n, [0.2] * n], "total": 0.30000000000000004, "min": 0.1}
+    assert RV._schema_problems({"objective": "total", "c": 2}, good, n) is None
+    assert RV._schema_problems({"objective": "total", "c": 2}, {"member_gain": [[0.1]], "total": 0.1, "min": 0.1}, n)       # one member, one sample
+    assert RV._schema_problems({"objective": "min", "c": 2}, {**good, "min": 99.0}, n)                                       # stored summary differs
+
+
+def test_k8_cross_schema(patched):
+    RV = patched; rules = ["F000", "F111"]; n = 2
+    rows = {f"{a}>{r}": [0.1, 0.3] for a in rules for r in rules}
+    rec = {"attacks": rules, "rules": rules, "per_seed": rows, "matrix": [[0.2, 0.2], [0.2, 0.2]]}
+    assert RV._cross_problems(rec, rules, n) is None
+    assert RV._cross_problems({**rec, "per_seed": {k: v for k, v in rows.items() if k != "F111>F000"}}, rules, n)
+    assert RV._cross_problems({**rec, "per_seed": {**rows, "F000>F000": [0.1]}}, rules, n)
+    assert RV._cross_problems({**rec, "matrix": [[0.2, 0.9], [0.2, 0.2]]}, rules, n)
+    assert RV._cross_problems({**rec, "attacks": ["F000"]}, rules, n)
+
+
+def _report_inputs(RV, fx):
+    from sim.records import cfg_from_dict
+    inst = json.loads(fx["inst"].read_text()); inst["confirmatory"] = True
+    cfgs = {k: cfg_from_dict(v["calibrated_cfg"]) for k, v in inst["markets"].items()}
+    cat = RV.build_jobs(["fresh0"], ROOT_HEX, False, True, FULL, 0, None, True, cfgs, fx["commit"], inst["salt_sha256"])
+    return inst, cat
+
+
+def test_k8_real_verify_behind_the_report(fresh_dir, patched, tmp_path):
+    import shutil
+    import scripts.report_v2 as R
+    RV = patched; fx = fresh_dir; d = tmp_path / "out"; shutil.copytree(fx["out"], d)
+    inst, cat = _report_inputs(RV, fx)
+    proto = {"h4": None, "cuts": 0, "kappa": {"Q1": None, "Q4": None}}; h4 = json.loads(fx["h4"].read_text())
+    r = R.build(d, proto, inst, h4, cat)
+    assert r["q1"] == "unanswered" and f"{FRESH}|F111|D2+H3|profit" not in r["missing"] and f"{FRESH}|F000|D2+H3|profit" in r["missing"]
+    p = RV.eval_path(d, f"{FRESH}|F111|D2+H3|profit"); rec = json.loads(p.read_text()); rec["gain"] = rec["gain"][:1]; p.write_text(json.dumps(rec))
+    with pytest.raises(SystemExit):
+        R.build(d, proto, inst, h4, cat)                                  # a malformed record with valid provenance is refused
