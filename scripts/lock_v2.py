@@ -108,12 +108,16 @@ def _git(repo: Path, *args) -> subprocess.CompletedProcess:
 
 def check_commit(repo) -> None:
     repo = Path(repo)
-    if _git(repo, "status", "--porcelain").stdout.strip():
-        raise SystemExit("the tree is not clean")
+    st = _git(repo, "status", "--porcelain")
+    if st.returncode != 0 or st.stdout.strip():
+        raise SystemExit("the tree is not clean, or git status failed")
     if _git(repo, "tag", "-v", TAG).returncode != 0:
         raise SystemExit(f"tag {TAG} is missing, unsigned, or its signature does not verify")
-    head, tagged = _git(repo, "rev-parse", "HEAD").stdout.strip(), _git(repo, "rev-parse", f"{TAG}^{{commit}}").stdout.strip()
-    if head != tagged:
+    h, t = _git(repo, "rev-parse", "HEAD"), _git(repo, "rev-parse", f"{TAG}^{{commit}}")
+    if h.returncode != 0 or t.returncode != 0:
+        raise SystemExit("git rev-parse failed")
+    head, tagged = h.stdout.strip(), t.stdout.strip()
+    if not head or head != tagged:
         raise SystemExit(f"HEAD {head} is not the commit of {TAG} ({tagged})")
     protocol = yaml.safe_load((repo / PROTOCOL).read_text()); code = str(protocol["code_commit"])
     if _git(repo, "cat-file", "-e", f"{code}^{{commit}}").returncode != 0:

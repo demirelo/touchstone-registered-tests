@@ -119,3 +119,12 @@ def test_k6_invalid_approval_is_refused(tmp_path, limit, text):
     p = _new(tmp_path / "l.json")
     with pytest.raises(Refused):
         approve(p, limit, text)
+
+
+@pytest.mark.parametrize("approval", [{"limit": 100.0, "text": ""}, {"limit": 100.0}, {"limit": 100.0, "text": "   "}])
+def test_l1_a_saved_approval_needs_its_written_text(tmp_path, approval):
+    from scripts.budget_v2 import Refused, reserve
+    p = _new(tmp_path / "l.json", dev=12.0); d = json.loads(p.read_text())
+    d["spent"] = [{"op": "development", "tag": "x", "usd": 12.0}]; d["approval"] = approval; p.write_text(json.dumps(d))
+    with pytest.raises(Refused):
+        reserve(p, "evaluation", "big", 32.0)

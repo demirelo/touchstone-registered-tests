@@ -584,7 +584,7 @@ def fresh_dir(tmp_path_factory):
                                     "seeds": {"fresh0": INST.eval_seeds(ROOT_HEX, "fresh0")},
                                     "salt_sha256": __import__("hashlib").sha256(bytes.fromhex(INST.identity_salt_hex(ROOT_HEX))).hexdigest()}))
         proto = base / "protocol.yaml"; proto.write_text(yaml.safe_dump({"h4": None, "cuts": 0}))
-        h4 = base / "h4.json"; h4.write_text(json.dumps({"loaded": False, "reason": "no bundle is registered", "bundle_sha256": None, "h4_excluded": True}))
+        h4 = base / "h4.json"; h4.write_text(json.dumps({"loaded": False, "reason": "no bundle is registered", "bundle_sha256": None, "h4_excluded": True, "registered_sha256": None}))
         params = base / "params.json"; params.write_text(json.dumps(FULL))
         return {"base": base, "out": out, "inst": inst, "proto": proto, "h4": h4, "params": params, "commit": RV.git_commit()}
 
@@ -711,3 +711,44 @@ def test_k8_real_verify_behind_the_report(fresh_dir, patched, tmp_path):
     p = RV.eval_path(d, f"{FRESH}|F111|D2+H3|profit"); rec = json.loads(p.read_text()); rec["gain"] = rec["gain"][:1]; p.write_text(json.dumps(rec))
     with pytest.raises(SystemExit):
         R.build(d, proto, inst, h4, cat)                                  # a malformed record with valid provenance is refused
+
+
+def test_l2_an_unbound_decision_is_refused(patched, monkeypatch, tmp_path):
+    import yaml
+    RV = patched
+    monkeypatch.setattr(RV, "run", lambda *a, **k: (_ for _ in ()).throw(AssertionError("an episode stage started")))
+    dec = tmp_path / "h4.json"; dec.write_text(json.dumps({"loaded": False, "reason": "old", "bundle_sha256": None, "h4_excluded": True}))   # no registered_sha256
+    proto = tmp_path / "protocol.yaml"; proto.write_text(yaml.safe_dump({"h4": {"commit": "a" * 40, "bundle_sha256": "e" * 64}}))
+    params = tmp_path / "params.json"; params.write_text(json.dumps(FULL))
+    with pytest.raises(SystemExit, match="protocol"):
+        RV.main(["--stage", "search", "--dev", "--smoke", "--markets", "dev0", "--params", str(params), "--h4-decision", str(dec), "--protocol", str(proto), "--out", str(tmp_path / "o")])
+
+
+def test_l3_summaries_and_elements_must_be_finite_numbers(patched):
+    RV = patched; n = 2
+    good = {"member_gain": [[0.1, 0.1], [0.2, 0.2]], "total": 0.30000000000000004, "min": 0.1}
+    for bad in ({k: v for k, v in good.items() if k != "total"}, {k: v for k, v in good.items() if k != "min"}, {**good, "total": "nan"},
+                {**good, "member_gain": [[0.1, None], [0.2, 0.2]]}):
+        assert RV._schema_problems({"objective": "total", "c": 2}, bad, n), bad
+    prof = {k: [0.1] * n for k in RV.GAIN_FIELDS}
+    for bad in ({**prof, "gain": [None, None]}, {**prof, "gain": ["0.1", "0.2"]}, {**prof, "gain": [True, False]}):
+        assert RV._schema_problems({"objective": "profit"}, bad, n), bad
+
+
+def test_l3_null_elements_are_refused_through_the_real_verifier_and_report(fresh_dir, patched, tmp_path):
+    import shutil
+    import scripts.report_v2 as R
+    RV = patched; fx = fresh_dir; d = tmp_path / "out"; shutil.copytree(fx["out"], d)
+    inst, cat = _report_inputs(RV, fx)
+    p = RV.eval_path(d, f"{FRESH}|F111|X7-SC|profit"); rec = json.loads(p.read_text()); rec["gain"] = [None] * len(rec["gain"]); p.write_text(json.dumps(rec))
+    with pytest.raises(SystemExit):
+        R.build(d, {"h4": None, "cuts": 0, "kappa": {"Q1": None, "Q4": None}}, inst, json.loads(fx["h4"].read_text()), cat)
+
+
+def test_l4_development_verify_needs_recorded_inputs(fresh_dir, tmp_path):
+    import multiprocessing as mp
+    from tests._verify_child import child
+    fx = fresh_dir
+    argv = ["--stage", "verify", "--dev", "--markets", "dev0", "--smoke", "--params", str(fx["params"]), "--commit", fx["commit"], "--out", str(fx["out"])]
+    ctx = mp.get_context("spawn"); q = ctx.Queue(); p = ctx.Process(target=child, args=(argv, q)); p.start(); r = q.get(timeout=300); p.join(60)
+    assert r[0] == "error" and r[2].startswith("SystemExit") and "Guarded" not in r[2]

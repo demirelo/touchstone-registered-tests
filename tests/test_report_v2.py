@@ -249,6 +249,9 @@ def test_k11_markdown_renders_every_section(tmp_path, monkeypatch):
                    "no feasible candidate found", "G_min", "B3-t", f"no doubling record: {miss}"):
         assert needle in md, needle
     assert r["doubling_missing"] == [miss]
+    w1 = r["q3"]["welfare"]["F111"]["X7-SC"]["W1"]; w0 = r["q3"]["welfare"]["F111"]["D2+H3"]["W0"]
+    for iv in (w1["constraint_interval"], w1["attacker_gain_interval"], w0["attacker_gain_interval"]):
+        assert f"[{iv[0]:.4f}, {iv[1]:.4f}]" in md, iv                     # L8: the intervals are rendered with their bounds
 
 
 def test_k11_check_compares_the_markdown(tmp_path, monkeypatch):

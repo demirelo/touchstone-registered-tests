@@ -199,3 +199,19 @@ def test_k5_params_must_follow_from_the_promoted_files(tmp_path):
     f = r / "experiments/v2/params.json"; d = json.loads(f.read_text()); d["tuned"]["B3-t"]["L"] = 50; f.write_text(json.dumps(d))
     with pytest.raises(SystemExit):
         _build(r)
+
+
+@pytest.mark.parametrize("fail", ["status", "rev-parse"])
+def test_l5_every_git_command_must_succeed(signed, monkeypatch, fail):
+    import scripts.lock_v2 as L
+    r, code, env = signed; _ok(monkeypatch); _git(r, "tag", "-s", "protocol-v2", "-m", "protocol v2", env=env)
+    real = L._git
+
+    def broken(repo, *args):
+        out = real(repo, *args)
+        if args[0] == fail:
+            return type(out)(out.args, 128, "", "fatal: broken")
+        return out
+    monkeypatch.setattr(L, "_git", broken)
+    with pytest.raises(SystemExit):
+        L.check_commit(r)

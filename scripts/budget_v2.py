@@ -44,6 +44,8 @@ def _valid(d: dict) -> dict:
         _amount(r.get("cap"), f"reservation {r.get('tag')}")
     if d.get("approval"):
         _amount(d["approval"].get("limit"), "approval limit", positive=True)
+        if not (isinstance(d["approval"].get("text"), str) and d["approval"]["text"].strip()):
+            raise Refused("the saved approval has no written text")
     return d
 
 

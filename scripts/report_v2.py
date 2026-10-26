@@ -277,8 +277,11 @@ def markdown(r: dict) -> str:
         for rule, fs in q3["welfare"].items():
             for f, objs in fs.items():
                 for obj, v in objs.items():
-                    L.append(f"- welfare {rule} {f} {obj}: " + (v if isinstance(v, str) else
-                             f"efficiency {v['efficiency']:.4f} [{v['interval'][0]:.4f}, {v['interval'][1]:.4f}], attacker gain {v['attacker_gain']:.4f}"))
+                    if isinstance(v, str):
+                        L.append(f"- welfare {rule} {f} {obj}: {v}"); continue
+                    g = v["attacker_gain_interval"]; c = v.get("constraint_interval")
+                    L.append(f"- welfare {rule} {f} {obj}: efficiency {v['efficiency']:.4f} [{v['interval'][0]:.4f}, {v['interval'][1]:.4f}], "
+                             f"attacker gain {v['attacker_gain']:.4f} [{g[0]:.4f}, {g[1]:.4f}]" + (f", W1 constraint [{c[0]:.4f}, {c[1]:.4f}]" if c else ""))
         for rule, gs in q3["coalition"].items():
             L.append(f"- coalition {rule}: " + "; ".join(f"{g} G_tot {v['G_tot']['estimate']:.4f}, G_min {v['G_min']['estimate']:.4f} "
                                                         f"[{v['G_min']['bounds'][0]:.4f}, {v['G_min']['bounds'][1]:.4f}]" for g, v in gs.items()))

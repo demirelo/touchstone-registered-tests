@@ -876,9 +876,14 @@ def _numbers_ok(v) -> bool:
     return True
 
 
+def _num(x) -> bool:
+    return isinstance(x, (int, float)) and not isinstance(x, bool) and bool(np.isfinite(x))
+
+
 def _schema_problems(j: dict, rec: dict, n: int) -> str | None:
-    """The evaluate record's complete shape for its objective (stage_evaluate's fields, n seeds), or what is wrong."""
-    obj = j["objective"]; ln = lambda k: isinstance(rec.get(k), list) and len(rec[k]) == n
+    """The evaluate record's complete shape for its objective (stage_evaluate's fields, n seeds, finite numbers only), or
+    what is wrong."""
+    obj = j["objective"]; ln = lambda k: isinstance(rec.get(k), list) and len(rec[k]) == n and all(_num(x) for x in rec[k])
     if obj == "profit":
         bad = [k for k in GAIN_FIELDS if not ln(k)]
         return f"profit fields missing or of the wrong length: {bad}" if bad else None
@@ -888,10 +893,12 @@ def _schema_problems(j: dict, rec: dict, n: int) -> str | None:
         bad = [k for k in ("eff", "normalized") + (("constraint",) if obj == "W1" else ()) if not ln(k)]
         return f"welfare fields missing or of the wrong length: {bad}" if bad else None
     mg = rec.get("member_gain")
-    if not (isinstance(mg, list) and len(mg) == int(j["c"]) and all(isinstance(r, list) and len(r) == n for r in mg)):
-        return f"member_gain is not {j['c']} members x {n} seeds"
+    if not (isinstance(mg, list) and len(mg) == int(j["c"]) and all(isinstance(r, list) and len(r) == n and all(_num(x) for x in r) for r in mg)):
+        return f"member_gain is not {j['c']} members x {n} finite seeds"
+    if not (_num(rec.get("total")) and _num(rec.get("min"))):
+        return "the stored total and minimum must be finite numbers"
     means = [float(np.mean(r)) for r in mg]
-    if abs(float(rec.get("total", np.nan)) - sum(means)) > 1e-9 or abs(float(rec.get("min", np.nan)) - min(means)) > 1e-9:
+    if abs(float(rec["total"]) - sum(means)) > 1e-9 or abs(float(rec["min"]) - min(means)) > 1e-9:
         return "the stored total or minimum differs from the member gains"
     return None
 
@@ -1050,7 +1057,7 @@ def main(argv=None) -> int:
     decision = json.loads(Path(a.h4_decision).read_text()) if a.h4_decision else None
     if decision is not None and a.protocol:
         reg = ((__import__("yaml").safe_load(Path(a.protocol).read_text()) or {}).get("h4") or {}).get("bundle_sha256")
-        if decision.get("registered_sha256", reg) != reg or (decision.get("loaded") and decision.get("bundle_sha256") != reg):
+        if "registered_sha256" not in decision or decision["registered_sha256"] != reg or (decision.get("loaded") and decision.get("bundle_sha256") != reg):
             raise SystemExit(f"the H4 decision does not match the protocol's registered bundle {reg!r}")
     params = json.loads(Path(a.params).read_text()) if a.params else None
     root = DEV_ROOT if a.dev else a.root
@@ -1059,8 +1066,8 @@ def main(argv=None) -> int:
     if verifying:
         if not a.commit:
             raise SystemExit("verify needs --commit")
-        if not a.dev and not (a.instances and a.protocol):
-            raise SystemExit("verify of fresh markets needs --instances and --protocol (it builds jobs from recorded inputs only)")
+        if not (a.instances and a.protocol):
+            raise SystemExit("verify needs --instances and --protocol in every mode (it builds jobs from recorded inputs only)")
         commit = a.commit
         if decision is not None:                                   # the recorded identity only; the bundle is not loaded
             h4 = {"dir": None, "sha": decision["bundle_sha256"]} if decision.get("loaded") else None; h4_excluded = not decision.get("loaded")
@@ -1070,7 +1077,7 @@ def main(argv=None) -> int:
             inst = json.loads(Path(a.instances).read_text()); salt = inst["salt_sha256"]
             from sim.records import cfg_from_dict
             cfgs = {k: cfg_from_dict(v["calibrated_cfg"]) for k, v in inst.get("markets", {}).items()}
-            absent = [m for m in markets if m.startswith("fresh") and m not in cfgs]
+            absent = [m for m in markets if m != "headline" and m not in cfgs]
             if absent or not inst.get("salt_sha256"):
                 raise SystemExit(f"instances.json lacks the recorded configuration of {absent} or the salt hash; verify never calibrates")
         else:
