@@ -70,8 +70,8 @@ def _registration(protocol: bytes):
     rec = read_final(anchor(parse(proof)["attestations"], f), f, offset=4); rec["protocol_sha256"] = hashlib.sha256(protocol).hexdigest()
     rec = json.loads(json.dumps(rec))
     inst = instances(rec, protocol, proof, S + 3, offset=4, calibrate=False)
-    for m in inst["markets"].values():                             # stands in for the slow calibration, which check does not recompute
-        m["calibrated_cfg"] = m["cfg"]
+    for i, m in enumerate(inst["markets"].values()):              # stands in for the slow calibration: alpha and budget only, positive
+        m["calibrated_cfg"] = {**m["cfg"], "alpha": 0.04 + 0.001 * i, "budget": 0.5 + 0.01 * i}
     return protocol, proof, rec, json.loads(json.dumps(inst))
 
 
@@ -234,6 +234,7 @@ def test_l7_missing_locked_packages_and_python_are_reported(real, monkeypatch):
 def test_m1_the_calibrated_configuration_follows_from_the_draw(world, change):
     from scripts.artifact_v2 import check
     tar = _assemble(world); i = json.loads((world["draw"] / "instances.json").read_text())
+    assert check(tar, repo=world["repo"], offset=4) == []          # the unchanged release passes, so only the change can be caught
     i["markets"]["fresh0"]["calibrated_cfg"][change[0]] = change[1]
     _rewrite(tar, "draw/instances.json", json.dumps(i).encode()); _manifest_rebuilt(tar)
-    assert any("calibrated_cfg" in p for p in check(tar, repo=world["repo"], offset=4))
+    assert [p for p in check(tar, repo=world["repo"], offset=4) if "calibrated_cfg" in p] == [p for p in check(tar, repo=world["repo"], offset=4) if "fresh0" in p] != []

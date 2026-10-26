@@ -753,7 +753,7 @@ def test_l4_development_verify_needs_recorded_inputs(fresh_dir, tmp_path, given)
     argv = ["--stage", "verify", "--dev", "--markets", "dev0", "--smoke", "--params", str(fx["params"]), "--commit", fx["commit"], "--out", str(fx["out"])]
     argv += {"neither": [], "instances": ["--instances", str(fx["inst"])], "protocol": ["--protocol", str(fx["proto"])]}[given]
     ctx = mp.get_context("spawn"); q = ctx.Queue(); p = ctx.Process(target=child, args=(argv, q)); p.start(); r = q.get(timeout=300); p.join(60)
-    assert r[0] == "error" and r[2].startswith("SystemExit") and "Guarded" not in r[2]
+    assert r[0] == "error" and r[2].startswith("SystemExit") and "--instances and --protocol" in r[2], r          # refused for the missing input
 
 
 # ---- fix-pass re-review round 2: cross records hold finite numbers only ------------------------------------------------------------
@@ -764,7 +764,8 @@ def test_m2_cross_rows_and_matrix_must_be_finite_numbers(patched):
     rec = {"attacks": rules, "rules": rules, "per_seed": rows, "matrix": [[0.2, 0.2], [0.2, 0.2]]}
     for bad in ({**rec, "per_seed": {**rows, "F000>F000": [True, True]}, "matrix": [[1.0, 0.2], [0.2, 0.2]]},
                 {**rec, "per_seed": {**rows, "F000>F000": [None, 0.3]}},
-                {**rec, "matrix": [["nan", 0.2], [0.2, 0.2]]}, {**rec, "matrix": [[True, 0.2], [0.2, 0.2]]}):
+                {**rec, "matrix": [["nan", 0.2], [0.2, 0.2]]},
+                {**rec, "per_seed": {**rows, "F000>F000": [1.0, 1.0]}, "matrix": [[True, 0.2], [0.2, 0.2]]}):    # the mean matches; only the type is wrong
         assert RV._cross_problems(bad, rules, n), bad
 
 
