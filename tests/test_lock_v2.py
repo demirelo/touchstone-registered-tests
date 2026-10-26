@@ -154,3 +154,23 @@ def test_check_commit_refuses_other_head_or_unsigned_tag(signed, monkeypatch, ca
         (r / "experiments" / "v2" / "x.json").write_text('{"dirty": 1}')
     with pytest.raises(SystemExit):
         check_commit(r)
+
+
+
+# ---- final review K3: a failed git comparison never passes ------------------------------------------------------------------
+
+@pytest.mark.parametrize("case", ["missing commit object", "not an ancestor"])
+def test_k3_unresolvable_or_foreign_code_commit_is_refused(signed, monkeypatch, case):
+    import yaml
+    from scripts.lock_v2 import check_commit
+    r, code, env = signed; _ok(monkeypatch)
+    if case == "missing commit object":
+        bogus = "1" * 40
+    else:
+        _git(r, "checkout", "-q", "--orphan", "other", env=env); (r / "o.txt").write_text("o"); _git(r, "add", "-A", env=env)
+        _git(r, "commit", "-qm", "unrelated", env=env); bogus = _git(r, "rev-parse", "HEAD", env=env); _git(r, "checkout", "-q", "main", env=env)
+    p = r / "experiments" / "protocol-v2.yaml"; p.write_text(yaml.safe_dump({"version": 2, "code_commit": bogus}))
+    _git(r, "add", "-A", env=env); _git(r, "commit", "-qm", "protocol points elsewhere", env=env)
+    _git(r, "tag", "-s", "protocol-v2", "-m", "protocol v2", env=env)
+    with pytest.raises(SystemExit):
+        check_commit(r)

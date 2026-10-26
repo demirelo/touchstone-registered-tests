@@ -107,8 +107,15 @@ def check_commit(repo) -> None:
     head, tagged = _git(repo, "rev-parse", "HEAD").stdout.strip(), _git(repo, "rev-parse", f"{TAG}^{{commit}}").stdout.strip()
     if head != tagged:
         raise SystemExit(f"HEAD {head} is not the commit of {TAG} ({tagged})")
-    protocol = yaml.safe_load((repo / PROTOCOL).read_text())
-    changed = [p for p in _git(repo, "diff", "--name-only", str(protocol["code_commit"]), "HEAD").stdout.split() if p]
+    protocol = yaml.safe_load((repo / PROTOCOL).read_text()); code = str(protocol["code_commit"])
+    if _git(repo, "cat-file", "-e", f"{code}^{{commit}}").returncode != 0:
+        raise SystemExit(f"code_commit {code} is not a commit in this checkout (shallow or foreign clone?)")
+    if _git(repo, "merge-base", "--is-ancestor", code, "HEAD").returncode != 0:
+        raise SystemExit(f"code_commit {code} is not an ancestor of HEAD")
+    diff = _git(repo, "diff", "--name-only", code, "HEAD")
+    if diff.returncode != 0:
+        raise SystemExit(f"git diff {code} HEAD failed: {diff.stderr.strip()}")
+    changed = [p for p in diff.stdout.split() if p]
     bad = [p for p in changed if not (p.startswith(ALLOWED) or p in ALLOWED_FILES)]
     if bad:
         raise SystemExit(f"files other than data and documents changed since code_commit: {bad}")
