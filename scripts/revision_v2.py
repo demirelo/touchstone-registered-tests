@@ -1008,7 +1008,13 @@ def main(argv=None) -> int:
         raise SystemExit("a fresh run needs --root (the block hash); use --dev for development markets")
     if not a.dev and not a.h4_decision:
         raise SystemExit("a fresh run needs --h4-decision (the recorded H4 decision)")
+    if not a.dev and not a.protocol:
+        raise SystemExit("a fresh run needs --protocol (experiments/protocol-v2.yaml), to check the H4 decision against it")
     decision = json.loads(Path(a.h4_decision).read_text()) if a.h4_decision else None
+    if decision is not None and a.protocol:
+        reg = ((__import__("yaml").safe_load(Path(a.protocol).read_text()) or {}).get("h4") or {}).get("bundle_sha256")
+        if decision.get("registered_sha256", reg) != reg or (decision.get("loaded") and decision.get("bundle_sha256") != reg):
+            raise SystemExit(f"the H4 decision does not match the protocol's registered bundle {reg!r}")
     params = json.loads(Path(a.params).read_text()) if a.params else None
     root = DEV_ROOT if a.dev else a.root
     markets = (a.markets or ("dev0,dev1" if a.dev else ",".join(MAN.doc()["markets"]))).split(",")

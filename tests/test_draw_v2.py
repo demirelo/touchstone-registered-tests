@@ -147,7 +147,7 @@ def test_h4_decision_loads_a_valid_bundle(tmp_path):
     from scripts.draw_v2 import h4_decision
     d, sha = _bundle(tmp_path)
     dec = h4_decision(d, {"h4": {"commit": "a" * 40, "bundle_sha256": sha}})
-    assert dec == {"loaded": True, "reason": None, "bundle_sha256": sha, "h4_excluded": False}
+    assert dec == {"loaded": True, "reason": None, "bundle_sha256": sha, "h4_excluded": False, "registered_sha256": sha}
 
 
 def test_h4_decision_records_exclusion(tmp_path):
@@ -172,3 +172,27 @@ def test_cli_writes_both_files(tmp_path):
     py = tmp_path / "protocol-v2.yaml"; py.write_text(yaml.safe_dump({"h4": {"commit": "a" * 40, "bundle_sha256": sha}}))
     assert main(["--h4-decision", "--protocol", str(py), "--bundle", str(d), "--out", str(out)]) == 0
     assert json.loads((out / "h4.json").read_text())["loaded"] is True
+
+
+# ---- final review K7: one H4 decision, never rewritten --------------------------------------------------------------------------
+
+def test_k7_the_decision_is_written_once(tmp_path):
+    import yaml
+    from scripts.draw_v2 import main
+    d, sha = _bundle(tmp_path); out = tmp_path / "draw"
+    py = tmp_path / "protocol-v2.yaml"; py.write_text(yaml.safe_dump({"h4": {"commit": "a" * 40, "bundle_sha256": sha}}))
+    assert main(["--h4-decision", "--protocol", str(py), "--bundle", str(d), "--out", str(out)]) == 0
+    first = (out / "h4.json").read_text()
+    assert json.loads(first)["loaded"] is True and json.loads(first)["registered_sha256"] == sha
+    assert main(["--h4-decision", "--protocol", str(py), "--out", str(out)]) == 1                  # a rerun without the bundle cannot reverse it
+    assert main(["--h4-decision", "--protocol", str(py), "--bundle", str(d), "--out", str(out)]) == 0   # an identical rerun is accepted
+    assert (out / "h4.json").read_text() == first
+
+
+def test_k7_an_exclusion_cannot_be_reversed(tmp_path):
+    import yaml
+    from scripts.draw_v2 import main
+    d, sha = _bundle(tmp_path); out = tmp_path / "draw"
+    py = tmp_path / "protocol-v2.yaml"; py.write_text(yaml.safe_dump({"h4": {"commit": "a" * 40, "bundle_sha256": sha}}))
+    assert main(["--h4-decision", "--protocol", str(py), "--out", str(out)]) == 0 and json.loads((out / "h4.json").read_text())["loaded"] is False
+    assert main(["--h4-decision", "--protocol", str(py), "--bundle", str(d), "--out", str(out)]) == 1

@@ -83,13 +83,14 @@ def instances(draw: dict, protocol_bytes: bytes, ots_info: str, published_height
 def h4_decision(bundle: Path | None, protocol: dict) -> dict:
     reg = protocol.get("h4")
     if not reg:
-        return {"loaded": False, "reason": "no bundle is registered", "bundle_sha256": None, "h4_excluded": True}
+        return {"loaded": False, "reason": "no bundle is registered", "bundle_sha256": None, "h4_excluded": True, "registered_sha256": None}
+    base = {"bundle_sha256": reg["bundle_sha256"], "registered_sha256": reg["bundle_sha256"]}
     if bundle is None:
-        return {"loaded": False, "reason": "the bundle was not supplied", "bundle_sha256": reg["bundle_sha256"], "h4_excluded": True}
+        return {"loaded": False, "reason": "the bundle was not supplied", "h4_excluded": True, **base}
     src = load(Path(bundle), reg["bundle_sha256"])
     if isinstance(src, H4Source):
-        return {"loaded": True, "reason": None, "bundle_sha256": reg["bundle_sha256"], "h4_excluded": False}
-    return {"loaded": False, "reason": src.reason, "bundle_sha256": reg["bundle_sha256"], "h4_excluded": True}
+        return {"loaded": True, "reason": None, "h4_excluded": False, **base}
+    return {"loaded": False, "reason": src.reason, "h4_excluded": True, **base}
 
 
 def main(argv=None) -> int:
@@ -115,7 +116,13 @@ def main(argv=None) -> int:
         (out / "instances.json").write_text(json.dumps(inst, indent=1, default=float))
         return 0
     dec = h4_decision(Path(a.bundle) if a.bundle else None, yaml.safe_load(Path(a.protocol).read_text()))
-    (out / "h4.json").write_text(json.dumps(dec, indent=1))
+    target = out / "h4.json"
+    if target.exists():                                          # the decision is made once; only an identical rerun is accepted
+        if json.loads(target.read_text()) != dec:
+            print(f"refused: {target} holds another decision; it is never rewritten", file=sys.stderr)
+            return 1
+        return 0
+    target.write_text(json.dumps(dec, indent=1))
     return 0
 
 

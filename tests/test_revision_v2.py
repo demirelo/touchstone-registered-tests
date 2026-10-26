@@ -631,3 +631,18 @@ def test_verify_stage_runs_no_episode(fresh_dir, tmp_path):
 def test_verify_guard_rejects_faulty_verifiers(fresh_dir, tmp_path, fault):
     status, rc, text = _verify(fresh_dir, fresh_dir["out"], fault=fault, tmp=tmp_path)
     assert status == "error" and "Guarded" in text and not (tmp_path / "leak.txt").exists() and not (tmp_path / "newdir").exists()
+
+
+def test_k7_runner_refuses_a_decision_that_differs_from_the_protocol(patched, monkeypatch, tmp_path):
+    import yaml
+    RV = patched; d, sha = _toy_bundle(tmp_path)
+    monkeypatch.setattr(RV, "run", lambda *a, **k: (_ for _ in ()).throw(AssertionError("an episode stage started")))
+    dec = tmp_path / "h4.json"; dec.write_text(json.dumps({"loaded": True, "reason": None, "bundle_sha256": sha, "h4_excluded": False, "registered_sha256": sha}))
+    proto = tmp_path / "protocol.yaml"; proto.write_text(yaml.safe_dump({"h4": {"commit": "a" * 40, "bundle_sha256": "e" * 64}}))
+    params = tmp_path / "params.json"; params.write_text(json.dumps(FULL))
+    with pytest.raises(SystemExit, match="protocol"):
+        RV.main(["--stage", "search", "--dev", "--smoke", "--markets", "dev0", "--params", str(params), "--h4-decision", str(dec), "--protocol", str(proto),
+                 "--h4", str(d), "--h4-sha", sha, "--out", str(tmp_path / "o")])
+    with pytest.raises(SystemExit, match="protocol"):
+        RV.main(["--stage", "search", "--root", "ab" * 32, "--markets", "fresh0", "--params", str(params), "--h4-decision", str(dec),
+                 "--h4", str(d), "--h4-sha", sha, "--out", str(tmp_path / "o2")])                     # a fresh run needs the protocol
