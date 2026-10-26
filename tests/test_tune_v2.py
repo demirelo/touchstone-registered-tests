@@ -24,18 +24,19 @@ def test_ties_by_grid_order():
 
 
 def _fake_score(calls):
-    def f(rule, spec, markets, budget, recheck, log):
+    """A per-(configuration, market) scorer: the objective of a configuration is the minimum of its markets' margins."""
+    def f(rule, spec, label, budget, recheck):
         calls.append((rule, json.dumps(spec, sort_keys=True), recheck))
         tol, L = spec["tol"], spec["L"]
         v = -abs(tol - 0.12) - abs(L - 10) / 100 + (0.001 if spec.get("cred", {}).get("variant") == "mem" else 0)
-        return {"objective": v, "margins": {}, "episodes": 1}
+        return {"label": label, "margins": {"D2": v}, "detail": {}, "episodes": 1}
     return f
 
 
 def test_recheck_top2_on_dev_val(monkeypatch, tmp_path):
     import scripts.tune_v2 as TV
     calls = []
-    monkeypatch.setattr(TV, "score_config", _fake_score(calls))
+    monkeypatch.setattr(TV, "_score_market", _fake_score(calls))
     res = TV.tune_system("B3-t", ["headline"], tmp_path, smoke=True)
     rechecks = [c for c in calls if c[2]]
     assert len([c for c in calls if not c[2]]) == 16 and len(rechecks) == 2
@@ -45,7 +46,7 @@ def test_recheck_top2_on_dev_val(monkeypatch, tmp_path):
 def test_c_t_keeps_comparator_variant(monkeypatch, tmp_path):
     import scripts.tune_v2 as TV
     calls = []
-    monkeypatch.setattr(TV, "score_config", _fake_score(calls))
+    monkeypatch.setattr(TV, "_score_market", _fake_score(calls))
     cred = {"variant": "mem", "K": 6, "M": 50}
     res = TV.tune_system("C*-t", ["headline"], tmp_path, cred=cred, smoke=True)
     assert all(json.loads(c[1])["cred"] == cred for c in calls) and set(res["best_params"]) == {"tol", "L"} and res["cred"] == cred
@@ -54,7 +55,7 @@ def test_c_t_keeps_comparator_variant(monkeypatch, tmp_path):
 def test_select_comparator(monkeypatch, tmp_path):
     import scripts.tune_v2 as TV
     calls = []
-    monkeypatch.setattr(TV, "score_config", _fake_score(calls))
+    monkeypatch.setattr(TV, "_score_market", _fake_score(calls))
     res = TV.select_comparator(["headline"], tmp_path, smoke=True)
     assert len([c for c in calls if not c[2]]) == 12 and len([c for c in calls if c[2]]) == 2
     assert res["cred"]["variant"] == "mem" and json.loads((tmp_path / "comparator.json").read_text())["cred"] == res["cred"]
@@ -79,17 +80,82 @@ def test_smoke_run_writes_logs(tmp_path):
 
 def test_cli_accepts_pod_arguments(tmp_path, monkeypatch):
     import scripts.tune_v2 as TV
-    monkeypatch.setattr(TV, "score_config", _fake_score([]))
+    monkeypatch.setattr(TV, "_score_market", _fake_score([])); monkeypatch.setattr(TV, "ProcessPoolExecutor", _Recorder)
     assert TV.main(["--select", "comparator", "--markets", "dev0", "--smoke", "--workers", "2", "--out", str(tmp_path)]) == 0
     assert (tmp_path / "comparator.json").exists()
 
 
 def test_recheck_ties_keep_grid_order(monkeypatch, tmp_path):
     import scripts.tune_v2 as TV
-    def f(rule, spec, markets, budget, recheck, log):
+    def f(rule, spec, label, budget, recheck):
         if not recheck:                                       # inner prefers L = 10 over L = 3
-            return {"objective": {3: 0.1, 10: 0.2}.get(spec["L"], -1.0), "margins": {}, "episodes": 1}
-        return {"objective": 0.5 if spec["L"] in (3, 10) else -1.0, "margins": {}, "episodes": 1}
-    monkeypatch.setattr(TV, "score_config", f)
+            return {"label": label, "margins": {"D2": {3: 0.1, 10: 0.2}.get(spec["L"], -1.0)}, "detail": {}, "episodes": 1}
+        return {"label": label, "margins": {"D2": 0.5 if spec["L"] in (3, 10) else -1.0}, "detail": {}, "episodes": 1}
+    monkeypatch.setattr(TV, "_score_market", f)
     monkeypatch.setattr(TV, "COMMON_GRID", [(0.08, 3), (0.08, 10), (0.08, 20)])
     assert TV.tune_system("B3-t", ["headline"], tmp_path, smoke=True)["best_params"] == {"tol": 0.08, "L": 3}
+
+
+# ---- operations plan Task 2: many cores, fixture provenance ---------------------------------------------------------------
+
+class _Recorder:
+    """Stands in for ProcessPoolExecutor: runs inline and records max_workers and every submitted call."""
+    seen = []
+
+    def __init__(self, max_workers=None):
+        _Recorder.seen.append(("pool", max_workers))
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+    def map(self, fn, *its):
+        out = []
+        for args in zip(*its):
+            _Recorder.seen.append(("call", args[2] if len(args) > 2 else args)); out.append(fn(*args))
+        return iter(out)
+
+
+def test_workers_submit_one_task_per_configuration_and_market(monkeypatch, tmp_path):
+    import scripts.tune_v2 as TV
+    calls = []; _Recorder.seen = []
+    monkeypatch.setattr(TV, "_score_market", _fake_score(calls)); monkeypatch.setattr(TV, "ProcessPoolExecutor", _Recorder)
+    monkeypatch.setattr(TV, "COMMON_GRID", [(0.08, 3), (0.12, 10), (0.16, 20)])
+    TV.tune_system("B3-t", ["headline", "dev0"], tmp_path, smoke=True, workers=2)
+    pools = [x for x in _Recorder.seen if x[0] == "pool"]; submitted = [x for x in _Recorder.seen if x[0] == "call"]
+    assert pools == [("pool", 2), ("pool", 2)]                      # inner, then rechecks
+    assert len(submitted) == 3 * 2 + 2 * 2 and {x[1] for x in submitted} == {"headline", "dev0"}
+
+
+def test_parallel_logs_hold_every_market(monkeypatch, tmp_path):
+    import scripts.tune_v2 as TV
+    def f(rule, spec, label, budget, recheck):
+        return {"label": label, "margins": {"D2": 0.1}, "detail": {"D2": {"eff": 0.95, "gain": 0.0, "attack": {"u0": 0.1}}, "reference": {"name": "honest_max"}}, "episodes": 2}
+    monkeypatch.setattr(TV, "_score_market", f); monkeypatch.setattr(TV, "ProcessPoolExecutor", _Recorder)
+    monkeypatch.setattr(TV, "COMMON_GRID", [(0.16, 10)])
+    res = TV.tune_system("R3-t", ["headline", "dev0", "dev1"], tmp_path, smoke=True, workers=3)
+    logs = [json.loads(p.read_text()) for p in (tmp_path / "log").glob("*.json")]
+    assert logs and all(set(d["detail"]) == {"headline", "dev0", "dev1"} for d in logs) and res["episodes"] == 2 * 3 * 2
+    assert {"budget_inner", "budget_full", "commit", "smoke", "markets"} <= set(res)
+
+
+@pytest.mark.slow
+def test_parallel_tuning_equals_serial(tmp_path):
+    import scripts.tune_v2 as TV
+    a = TV.tune_system("B3-t", ["dev0"], tmp_path / "a", smoke=True, grid_limit=2, workers=1)
+    b = TV.tune_system("B3-t", ["dev0"], tmp_path / "b", smoke=True, grid_limit=2, workers=2)
+    strip = lambda r: [{k: v for k, v in s.items()} for s in r]
+    assert strip(a["scores"]) == strip(b["scores"]) and strip(a["rechecked"]) == strip(b["rechecked"]) and a["best_params"] == b["best_params"]
+    for p in (tmp_path / "b" / "log").glob("*.json"):
+        assert set(json.loads(p.read_text())["detail"]) == {"dev0"}
+
+
+def test_fixture_file_carries_provenance(monkeypatch, tmp_path):
+    import scripts.tune_v2 as TV
+    monkeypatch.setattr(TV, "market_searches", lambda rule, spec, mkt, budget, cache: {"attacks": {"D2": {}, "D2+H3": {}, "X7-SC": {}}, "reference": {"name": "honest_max"}, "episodes": 0})
+    monkeypatch.setattr(TV, "_market", lambda label, smoke: {"label": label})
+    res = TV.fixture_searches(["headline", "dev0"], tmp_path, cred={"variant": "thr", "K": 6, "M": None}, smoke=False)
+    d = json.loads((tmp_path / "fixture_cstar_s2.json").read_text())
+    assert d["smoke"] is False and d["budget"] == list(TV._budgets(False)[0]) and list(d["markets"]) == ["headline", "dev0"] and len(d["commit"]) >= 7

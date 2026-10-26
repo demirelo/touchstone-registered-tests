@@ -3,12 +3,15 @@ J = min over tuning markets of min(m_D2, m_H3, m_X7), m = min((eff - 0.90) / 0.9
 the rule's development reference (design 6.4: one menu from its D2, D2+H3, and X7-SC searches). The registered inner
 search scores every configuration in-sample on the dev-train seeds; the top 2 are rechecked at the full budget on dev-train
 and scored on dev-val; ties by grid order. As in the registered tuning, no corner controls run inside tuning. The C*/S2
-fixture searches supply the coverage fixtures (design 9.5). All outputs stay under --out."""
+fixture searches supply the coverage fixtures (design 9.5). With --workers N every (configuration, market) pair is one task
+in a process pool; the parent alone writes the logs, one per configuration and stage with every market. All outputs stay
+under --out."""
 from __future__ import annotations
 
 import argparse
 import json
 import sys
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import replace
 from pathlib import Path
 
@@ -80,23 +83,46 @@ def market_searches(rule: str, spec: dict, mkt: dict, budget: tuple, cache: Seed
     return {"cell": cell, "families": fams, "attacks": attacks, "reference": ref, "reference_json": RV.cand_to_json(cands[idx], cfams[idx], T, L), "T": T, "L": L}
 
 
-def score_config(rule: str, spec: dict, markets: list[str], budget: tuple, recheck: bool, log: Path) -> dict:
-    """Margins per market and family; inner scoring on the search seeds, recheck scoring on dev-val."""
-    cache = SeedCache(); margins, detail = {}, {}
-    for label in markets:
-        mkt = _market(label, False); s = market_searches(rule, spec, mkt, budget, cache)
-        score_cell = s["cell"] if not recheck else replace(s["cell"], seeds=tuple(mkt["seeds_val"][: budget[3]]))
-        margins[label], detail[label] = {}, {}
-        for fname in FAMILIES:
-            g = evaluate_gain(score_cell, s["families"][fname], s["attacks"][fname].best_knobs, s["reference"].candidate, cache)
-            eff, gain = float(g.eff_attack.mean()), float(g.gain.mean())
-            margins[label][fname] = margin(eff, gain); detail[label][fname] = {"eff": eff, "gain": gain, "attack": s["attacks"][fname].best_knobs}
-        detail[label]["reference"] = s["reference_json"]
+def _score_market(rule: str, spec: dict, label: str, budget: tuple, recheck: bool) -> dict:
+    """One configuration on one market: its searches, development reference, and three evaluations (a pool task)."""
+    cache = SeedCache(); mkt = _market(label, False); s = market_searches(rule, spec, mkt, budget, cache)
+    score_cell = s["cell"] if not recheck else replace(s["cell"], seeds=tuple(mkt["seeds_val"][: budget[3]]))
+    margins, detail = {}, {}
+    for fname in FAMILIES:
+        g = evaluate_gain(score_cell, s["families"][fname], s["attacks"][fname].best_knobs, s["reference"].candidate, cache)
+        eff, gain = float(g.eff_attack.mean()), float(g.gain.mean())
+        margins[fname] = margin(eff, gain); detail[fname] = {"eff": eff, "gain": gain, "attack": s["attacks"][fname].best_knobs}
+    detail["reference"] = s["reference_json"]
+    return {"label": label, "margins": margins, "detail": detail, "episodes": cache.runs}
+
+
+def _map(fn, items: list[tuple], workers: int) -> list:
+    if workers <= 1 or len(items) <= 1:
+        return [fn(*it) for it in items]
+    with ProcessPoolExecutor(max_workers=workers) as ex:
+        return list(ex.map(fn, *zip(*items)))
+
+
+def _combine(rule: str, spec: dict, budget: tuple, recheck: bool, parts: list[dict], log: Path) -> dict:
+    margins = {p["label"]: p["margins"] for p in parts}; detail = {p["label"]: p["detail"] for p in parts}
+    episodes = int(sum(p["episodes"] for p in parts))
     tag = f"{rule}|{json.dumps(spec, sort_keys=True)}|{'recheck' if recheck else 'inner'}"
     Path(log).mkdir(parents=True, exist_ok=True)
     (Path(log) / (RV._safe(tag).replace(" ", "") + ".json")).write_text(json.dumps({"rule": rule, "spec": spec, "recheck": recheck, "budget": list(budget),
-                                                                                     "margins": margins, "detail": detail, "episodes": cache.runs}, default=float))
-    return {"objective": objective(margins), "margins": margins, "episodes": cache.runs}
+                                                                                     "margins": margins, "detail": detail, "episodes": episodes}, default=float))
+    return {"objective": objective(margins), "margins": margins, "episodes": episodes}
+
+
+def score_config(rule: str, spec: dict, markets: list[str], budget: tuple, recheck: bool, log: Path) -> dict:
+    """Margins per market and family; inner scoring on the search seeds, recheck scoring on dev-val."""
+    return _combine(rule, spec, budget, recheck, [_score_market(rule, spec, m, budget, recheck) for m in markets], log)
+
+
+def _score_all(rule: str, specs: list[dict], markets: list[str], budget: tuple, recheck: bool, log: Path, workers: int) -> list[dict]:
+    """Every (configuration, market) pair as one task; results recombined per configuration in grid order."""
+    items = [(rule, spec, m, budget, recheck) for spec in specs for m in markets]
+    parts = _map(_score_market, items, workers); k = len(markets)
+    return [_combine(rule, spec, budget, recheck, parts[i * k:(i + 1) * k], log) for i, spec in enumerate(specs)]
 
 
 def _budgets(smoke: bool) -> tuple[tuple, tuple]:
@@ -105,46 +131,54 @@ def _budgets(smoke: bool) -> tuple[tuple, tuple]:
     return ((*SMOKE_INNER, 2), SMOKE_FULL) if smoke else ((*INNER, 20), full)
 
 
-def _tune(rule: str, specs: list[dict], markets: list[str], out: Path, smoke: bool) -> tuple[list, list]:
+def _tune(rule: str, specs: list[dict], markets: list[str], out: Path, smoke: bool, workers: int = 1) -> tuple[list, list]:
     inner, full = _budgets(smoke); log = Path(out) / "log"
-    scores = []
-    for i, spec in enumerate(specs):
-        r = score_config(rule, spec, markets, inner, False, log); scores.append({"spec": spec, "grid": i, **r})
-    rechecked = []
-    for s in rank(scores)[:TOP]:
-        r = score_config(rule, s["spec"], markets, full, True, log); rechecked.append({"spec": s["spec"], "grid": s["grid"], **r})
+    scores = [{"spec": spec, "grid": i, **r} for i, (spec, r) in enumerate(zip(specs, _score_all(rule, specs, markets, inner, False, log, workers)))]
+    top = rank(scores)[:TOP]
+    rechecked = [{"spec": s["spec"], "grid": s["grid"], **r} for s, r in zip(top, _score_all(rule, [s["spec"] for s in top], markets, full, True, log, workers))]
     return scores, rank(rechecked)
 
 
-def select_comparator(markets: list[str], out: Path, smoke: bool = False, grid_limit: int | None = None) -> dict:
+def _provenance(smoke: bool, markets: list[str]) -> dict:
+    inner, full = _budgets(smoke)
+    return {"smoke": smoke, "markets": list(markets), "budget_inner": list(inner), "budget_full": list(full), "commit": RV.git_commit()}
+
+
+def select_comparator(markets: list[str], out: Path, smoke: bool = False, grid_limit: int | None = None, workers: int = 1) -> dict:
     grid = comparator_grid()[:grid_limit] if grid_limit else comparator_grid()
     specs = [{**FIXED, "cred": g} for g in grid]
-    scores, rechecked = _tune("C*", specs, markets, out, smoke)
-    res = {"cred": rechecked[0]["spec"]["cred"], "scores": scores, "rechecked": rechecked, "markets": markets,
-           "episodes": int(sum(s["episodes"] for s in scores + rechecked)), "smoke": smoke}
+    scores, rechecked = _tune("C*", specs, markets, out, smoke, workers)
+    res = {"cred": rechecked[0]["spec"]["cred"], "scores": scores, "rechecked": rechecked,
+           "episodes": int(sum(s["episodes"] for s in scores + rechecked)), **_provenance(smoke, markets)}
     Path(out).mkdir(parents=True, exist_ok=True); (Path(out) / "comparator.json").write_text(json.dumps(res, default=float))
     return res
 
 
-def tune_system(name: str, markets: list[str], out: Path, cred: dict | None = None, smoke: bool = False, grid_limit: int | None = None) -> dict:
+def tune_system(name: str, markets: list[str], out: Path, cred: dict | None = None, smoke: bool = False, grid_limit: int | None = None,
+                workers: int = 1) -> dict:
     grid = COMMON_GRID[:grid_limit] if grid_limit else COMMON_GRID
     specs = [{"tol": t, "L": L, **({"cred": cred} if cred else {})} for t, L in grid]
     rule = {"B3-t": "B3-t", "R3-t": "R3-t", "R4-t": "R4-t", "C*-t": "C*-t"}[name]
-    scores, rechecked = _tune(rule, specs, markets, out, smoke)
+    scores, rechecked = _tune(rule, specs, markets, out, smoke, workers)
     best = rechecked[0]["spec"]
     res = {"rule": name, "best_params": {"tol": best["tol"], "L": best["L"]}, "cred": cred, "scores": scores, "rechecked": rechecked,
-           "markets": markets, "episodes": int(sum(s["episodes"] for s in scores + rechecked)), "smoke": smoke}
+           "episodes": int(sum(s["episodes"] for s in scores + rechecked)), **_provenance(smoke, markets)}
     Path(out).mkdir(parents=True, exist_ok=True); (Path(out) / f"tuned_{name}.json").write_text(json.dumps(res, default=float))
     return res
 
 
-def fixture_searches(markets: list[str], out: Path, cred: dict, smoke: bool = False) -> dict:
-    inner, _ = _budgets(smoke); cache = SeedCache(); res = {"rule": "C*/S2", "spec": {**FIXED, "cred": cred}, "markets": {}}
-    for label in markets:
-        s = market_searches("C*/S2", {**FIXED, "cred": cred}, _market(label, smoke), inner, cache)
-        res["markets"][label] = {"attacks": {f: (a.best_knobs if hasattr(a, "best_knobs") else a) for f, a in s["attacks"].items()},
-                                 "reference": s.get("reference_json", s["reference"])}
-    res["episodes"] = cache.runs
+def _fixture_market(cred: dict, label: str, smoke: bool) -> dict:
+    inner, _ = _budgets(smoke); cache = SeedCache()
+    s = market_searches("C*/S2", {**FIXED, "cred": cred}, _market(label, smoke), inner, cache)
+    return {"attacks": {f: (a.best_knobs if hasattr(a, "best_knobs") else a) for f, a in s["attacks"].items()},
+            "reference": s.get("reference_json", s["reference"]), "episodes": cache.runs}
+
+
+def fixture_searches(markets: list[str], out: Path, cred: dict, smoke: bool = False, workers: int = 1) -> dict:
+    inner, _ = _budgets(smoke)
+    parts = _map(_fixture_market, [(cred, m, smoke) for m in markets], workers)
+    res = {"rule": "C*/S2", "spec": {**FIXED, "cred": cred}, "markets": {m: {k: v for k, v in p.items() if k != "episodes"} for m, p in zip(markets, parts)},
+           "episodes": int(sum(p["episodes"] for p in parts)), "smoke": smoke, "budget": list(inner), "commit": RV.git_commit()}
     Path(out).mkdir(parents=True, exist_ok=True); (Path(out) / "fixture_cstar_s2.json").write_text(json.dumps(res, default=float))
     return res
 
@@ -158,15 +192,15 @@ def main(argv=None) -> int:
     markets = a.markets.split(","); out = Path(a.out)
     cred = json.loads(Path(a.comparator).read_text())["cred"] if a.comparator else None
     if a.select == "comparator":
-        select_comparator(markets, out, a.smoke)
+        select_comparator(markets, out, a.smoke, workers=a.workers)
     elif a.select == "fixtures":
         if cred is None:
             raise SystemExit("fixtures need --comparator")
-        fixture_searches(markets, out, cred, a.smoke)
+        fixture_searches(markets, out, cred, a.smoke, workers=a.workers)
     else:
         if a.select == "C*-t" and cred is None:
             raise SystemExit("C*-t needs --comparator")
-        tune_system(a.select, markets, out, cred if a.select == "C*-t" else None, a.smoke)
+        tune_system(a.select, markets, out, cred if a.select == "C*-t" else None, a.smoke, workers=a.workers)
     return 0
 
 
