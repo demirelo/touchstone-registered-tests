@@ -7,6 +7,7 @@ from .policies.honest import HonestMax
 from .policies.identity import h3_family
 from .policies.v2 import x5v2_family, x6v2_family
 from .policies.x7 import x7_family
+from .policies.x8 import x8_family
 from .reference import Candidate
 
 
@@ -21,6 +22,8 @@ def family_for(name: str, T: int, L: int, h4_source=None) -> Family:
         return x5v2_family(T, L)
     if name == "X6-SE/v2":
         return x6v2_family(T, L)
+    if name == "X8-DB":
+        return x8_family(T, L)
     if name == "H4":
         if h4_source is None:
             raise ValueError("H4 is not loaded")
