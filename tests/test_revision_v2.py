@@ -869,3 +869,40 @@ def test_coalition_six_steps_smoke_and_final_reference_can_win(patched, tmp_path
     RV.coalition_step("coalition_select", item, tmp_path, js)
     w = read(sp)["winners"][gmin["id"]]
     assert w["score"] == 0.0 and w["descriptor"]["knobs"] == k
+
+
+# ---- design draft 7, 6.4 exception: the reduced fresh-market menu of the secondary systems (Part A2 Task 6) ----
+
+TUNED = {"tuned": {s: {"tol": 0.16, "L": 10} for s in ("B3-t", "R3-t", "C*-t")}, **CRED}
+FROOT = "ab" * 32
+
+
+def test_menu_families():
+    from sim.manifest_v2 import menu_families
+    for s in ("B3-t", "R3-t", "C*-t"):
+        assert menu_families("fresh1@rho0.2", s) == ("D2+H3",) and menu_families("headline@rho0.2", s) == ("D2+H3", "X7-SC")
+    assert menu_families("fresh1@rho0.2", "F111") == ("D2+H3", "X7-SC")
+
+
+@pytest.fixture(scope="module")
+def fresh_secondary(tmp_path_factory):
+    with pytest.MonkeyPatch.context() as mp:
+        RV = _patch(mp)
+        mkt = RV.market("fresh1", FROOT, 0.2, dev=True, smoke=True)
+        jobs = [RV.job(mkt, s, "D2+H3", smoke=True, params=TUNED) for s in ("B3-t", "R3-t", "C*-t")]
+        out = tmp_path_factory.mktemp("fresh_secondary")
+        RV.run("search", jobs, out)
+        return out, jobs, mkt
+
+
+def test_fresh_secondary_menu_ignores_x7_records(fresh_secondary, patched):
+    from sim.records_v2 import read, write
+    RV = patched; out, jobs, mkt = fresh_secondary
+    for j in jobs:
+        assert RV.expected_upstream(f"reference/fresh1@rho0.2/{j['rule']}", jobs) == {j["id"]}
+    stray = RV.cell_id("fresh1@rho0.2", "R3-t", "X7-SC", "profit")
+    write(RV.path_of(out, stray), read(RV.path_of(out, jobs[1]["id"])))            # a stray X7-SC record on disk
+    RV.run("reference", jobs, out)
+    for j in jobs:
+        rec = read(RV.path_of(out, f"reference/fresh1@rho0.2/{j['rule']}"))
+        assert rec["menu_families"] == ["D2+H3"] and set(rec["upstream"]) == {j["id"]}

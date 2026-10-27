@@ -336,8 +336,8 @@ def cand_from_json(d: dict, h4: dict | None = None) -> Candidate:
 def menu(job: dict, out: Path, cuts: int = 0, h4_excluded: bool = False) -> tuple[list, list, dict]:
     """The reference menu of the job's rule in its context (design 6.4): candidates, their family names, upstream hashes."""
     ctx, rule = job["context"], job["rule"]; T, L = constants(job); cell = train_cell(job)
-    groups: dict[tuple, list] = {}; upstream = {}
-    for fname in MENU:
+    groups: dict[tuple, list] = {}; upstream = {}; fnames = MAN.menu_families(manifest_ctx(ctx), rule)
+    for fname in fnames:
         rid = _menu_id(ctx, rule, fname); rec = read(path_of(out, rid))
         if rec is None:
             raise SystemExit(f"reference {ctx}/{rule}: needs {rid}")
@@ -357,7 +357,7 @@ def menu(job: dict, out: Path, cuts: int = 0, h4_excluded: bool = False) -> tupl
         for c in cands:
             cat = "bank" if c.name.startswith("bank_") else c.name
             groups.setdefault((cat, fname), []).append(c)
-    out_c, fams = merge_menu(groups, MENU)
+    out_c, fams = merge_menu(groups, fnames)
     return out_c, fams, upstream
 
 
@@ -380,7 +380,8 @@ def stage_reference(job: dict, out: Path, cuts: int = 0, h4_excluded: bool = Fal
     choice = select_reference(train_cell(job), cands, SeedCache())
     idx = next(i for i, c in enumerate(cands) if c is choice.candidate)
     return {"candidates": [cand_to_json(c, f, T, L) for c, f in zip(cands, fams)], "choice": idx, "scores": choice.scores,
-            "per_seed_normalized": [float(v) for v in choice.per_seed_normalized], "upstream": upstream, "T": T, "L": L}
+            "per_seed_normalized": [float(v) for v in choice.per_seed_normalized], "upstream": upstream, "T": T, "L": L,
+            "menu_families": list(MAN.menu_families(manifest_ctx(job["context"]), job["rule"]))}
 
 
 def reference_provenance(job: dict) -> dict:
@@ -576,7 +577,7 @@ def expected_upstream(rid: str, catalog: list[dict], cuts: int = 0, h4_excluded:
         return {f"joint_reference_pre/{ctx}/{_coalition_tag(j)}"}
     kind, ctx, rest = rid.split("/", 2)
     if kind == "reference":
-        ids = {_menu_id(ctx, rest, f) for f in MENU}
+        ids = {_menu_id(ctx, rest, f) for f in MAN.menu_families(manifest_ctx(ctx), rest)}
         if rest in FIXED:
             ids |= {_menu_id(ctx, o, f) for f in MENU for o in MAN.bank_rules(manifest_ctx(ctx), f, cuts, h4_excluded) if o != rest}
         return ids
