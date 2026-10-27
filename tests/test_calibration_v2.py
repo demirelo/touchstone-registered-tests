@@ -6,8 +6,8 @@ import pytest
 
 def test_profiles():
     from sim.calibration_v2 import PROFILES
-    assert len(PROFILES) == 14 and ("attack", "F000", "D2+H3") in PROFILES and ("attack", "F000", "X7-SC") not in PROFILES
-    assert sum(p[0] == "ref" for p in PROFILES) == 5
+    assert len(PROFILES) == 8 and ("attack", "F000", "D2+H3") in PROFILES and ("attack", "F000", "X7-SC") not in PROFILES
+    assert sum(p[0] == "ref" for p in PROFILES) == 3 and not any(p[1] in ("R4", "C*/S2") for p in PROFILES)
 
 
 def test_pool_rows_align_by_seed():
@@ -20,13 +20,13 @@ def test_pool_rows_align_by_seed():
     from tests._v2_profiles import CFG
     from sim.positions import positions
     honest_h3 = {"u0": 0.0, "m0": 0.0, "s": 0.0, "d": 0.0, "r": 0.0, "w": 0.0, "x": 0, "clip": 1}
-    honest_x7 = {"u0": 0.0, "m0": 0.0, "s": 0.0, "d": 0.0, "r": 0.0, "w": 0.0, "k_F": 1.0, "k_T": 1.0, "a_F": 0.0, "n_P": 0.0, "h_R": 200.0, "lambda": 1.0, "clip": 1}
+    honest_x7 = {"u0": 0.0, "m0": 0.0, "s": 0.0, "d": 0.0, "r": 0.0, "w": 0.0, "k_F": 1.0, "k_T": 1.0, "a_F": 0.0, "n_P": 0.0, "h_R": 200.0, "a_R": 200.0, "e_P": 1.0, "lambda": 1.0, "clip": 1}
     attacks = {(r, f): (honest_h3 if f == "D2+H3" else honest_x7) for k, r, *f in PROFILES if k == "attack" for f in f}
     refs = {r: {"name": "honest_max", "family": None, "T": 200, "L": 10, "knobs": None} for k, r, *_ in PROFILES if k == "ref"}
     mkt = {"cfg": CFG, "focal": positions(CFG)["median"]}
     seeds = [2000, 2001, 2002]
     pool = build_pool(mkt, attacks, refs, seeds, cred={"variant": "thr", "K": 6, "M": None})
-    assert pool["seeds"] == seeds and len(pool["normalized"]) == 14
+    assert pool["seeds"] == seeds and len(pool["normalized"]) == 8
     one = run_focal(Cell(cfg=CFG, rule_factory=lambda: make_rule("F111"), focal=mkt["focal"], seeds=(2001,), name="x"),
                     lambda: h3_family(D2).make(honest_h3), SeedCache())
     assert pool["normalized"]["attack|F111|D2+H3"][1] == pytest.approx(float(one.normalized[0]))
@@ -42,11 +42,12 @@ def test_strata_branches_sizes_and_remainders():
 
 def test_endpoint_counts_by_branch():
     from sim.calibration_v2 import denominator, endpoints
-    assert len(endpoints("Q1", "three20k")) == 32 and len(endpoints("Q1", "two10k")) == 32
+    assert len(endpoints("Q1", "three20k")) == 8 and len(endpoints("Q1", "two10k")) == 8
     assert len(endpoints("Q4", "three20k")) == 36 and len(endpoints("Q4", "two20k")) == 24
-    assert denominator("Q1") == 32 and denominator("Q4") == 36
+    assert denominator("Q1") == 8 and denominator("Q4") == 36
     tails = sorted({e["alpha_e"] for e in endpoints("Q1", "three20k")})
-    assert tails == pytest.approx(sorted([0.05 / 8, 0.05 / 6, 0.05 / 4, 0.05 / 2]))
+    assert tails == pytest.approx(sorted([0.05 / 4, 0.05 / 2]))
+    assert {e["stat"] for e in endpoints("Q1", "three20k")} == {"C*-F111|D2+H3", "C*-F111|X7-SC"}
 
 
 def test_miss_rate_near_nominal_on_normal_data():
@@ -66,7 +67,22 @@ def _fake_misses(table):
 def test_select_largest_passing_kappa(monkeypatch):
     import sim.calibration_v2 as C
     monkeypatch.setattr(C, "endpoint_misses", _fake_misses(lambda k, e: e["alpha_e"] * (1.5 if k == 1.0 else 0.5)))
-    assert C.select_kappa("Q1", None, "three20k", seed=1, replications=1000) == 0.5
+    assert C.select_kappa("Q1", None, "three20k", seed=1, replications=10000) == 0.5
+
+
+def test_select_kappa_uses_clopper_pearson(monkeypatch):
+    # observed miss rate exactly alpha_e passes draft 6's rule; its Clopper-Pearson upper bound exceeds alpha_e, so draft 7 refuses it
+    import sim.calibration_v2 as C
+    monkeypatch.setattr(C, "endpoint_misses", _fake_misses(lambda k, e: e["alpha_e"] if k == 1.0 else e["alpha_e"] * 0.3))
+    assert C.select_kappa("Q1", None, "three20k", seed=1, replications=10000) == 0.5
+
+
+def test_no_fallback_after_failed_validation(monkeypatch):
+    import sim.calibration_v2 as C
+    calls = []
+    monkeypatch.setattr(C, "endpoint_misses", lambda fam, fx, br, kp, reps, seed, res: calls.append(kp) or {i: reps for i, _ in enumerate(C.endpoints(fam, br))})
+    v = C.validate("Q1", 0.5, None, "three20k", seed=1, replications=100)
+    assert v["admitted"] is False and calls == [0.5]                     # only the selected kappa is validated; no other candidate is tried
 
 
 def test_select_none_when_all_fail(monkeypatch):
@@ -77,7 +93,7 @@ def test_select_none_when_all_fail(monkeypatch):
 
 def test_validation_rejects_if_any_endpoint_fails(monkeypatch):
     import sim.calibration_v2 as C
-    monkeypatch.setattr(C, "endpoint_misses", _fake_misses(lambda k, e: 0.0 if e["alpha_e"] > 0.01 else e["alpha_e"] * 2))
+    monkeypatch.setattr(C, "endpoint_misses", _fake_misses(lambda k, e: 0.0 if e["alpha_e"] > 0.02 else e["alpha_e"] * 2))
     v = C.validate("Q1", 1.0, None, "three20k", seed=1, replications=20000)
     assert v["admitted"] is False and any(not r["pass"] for r in v["endpoints"])
     monkeypatch.setattr(C, "endpoint_misses", _fake_misses(lambda k, e: 0.0))
@@ -99,16 +115,19 @@ def test_fixture_inputs_from_tuning_outputs(tmp_path):
     from scripts.coverage_v2 import fixture_inputs
     cred = {"variant": "thr", "K": 6, "M": None}; log = tmp_path / "log"; log.mkdir()
     att = {"D2+H3": {"attack": {"a": 1}}, "X7-SC": {"attack": {"b": 2}}, "D2": {"attack": {"c": 3}}}
-    for n, (rule, spec) in enumerate([("B3-t", {"tol": 0.16, "L": 10}), ("R3-t", {"tol": 0.16, "L": 10}), ("R4-t", {"tol": 0.16, "L": 10}),
+    for n, (rule, spec) in enumerate([("B3-t", {"tol": 0.16, "L": 10}), ("R3-t", {"tol": 0.16, "L": 10}),
                                       ("C*", {"tol": 0.16, "L": 10, "cred": cred}), ("B3-t", {"tol": 0.12, "L": 10})]):
         (log / f"{n}.json").write_text(json.dumps({"rule": rule, "spec": spec, "recheck": False,
                                                     "detail": {"dev0": {**att, "reference": {"name": rule, "family": None, "T": 200, "L": 10, "knobs": None}}}}))
     (tmp_path / "comparator.json").write_text(json.dumps({"cred": cred}))
-    (tmp_path / "fixture_cstar_s2.json").write_text(json.dumps({"markets": {"dev0": {"attacks": {"D2+H3": {"d": 4}, "X7-SC": {"e": 5}, "D2": {}},
-                                                                                   "reference": {"name": "S2", "family": None, "T": 200, "L": 10, "knobs": None}}}}))
     attacks, refs = fixture_inputs(tmp_path, "dev0")
-    assert attacks[("F000", "D2+H3")] == {"a": 1} and attacks[("C*/S2", "X7-SC")] == {"e": 5} and ("F000", "X7-SC") not in attacks
-    assert refs["F111"]["name"] == "R3-t" and refs["C*"]["name"] == "C*" and refs["C*/S2"]["name"] == "S2" and len(attacks) == 9 and len(refs) == 5
+    assert attacks[("F000", "D2+H3")] == {"a": 1} and ("F000", "X7-SC") not in attacks and ("C*/S2", "X7-SC") not in attacks
+    assert refs["F111"]["name"] == "R3-t" and refs["C*"]["name"] == "C*" and len(attacks) == 5 and len(refs) == 3
+
+
+def test_coverage_source_no_r4():
+    from scripts.coverage_v2 import SOURCE
+    assert SOURCE == {"F000": "B3-t", "F111": "R3-t"}
 
 
 def test_cli_select_and_validate_on_synthetic_pools(tmp_path):
@@ -298,7 +317,7 @@ def test_pool_by_market_and_workers_equals_serial(tmp_path, monkeypatch):
     chunks = [x[1] for x in _Recorder.seen if x[0] == "chunk"]
     assert ("pool", 3) in _Recorder.seen and len(chunks) == 3 and sorted(s for c in chunks for s in c) == list(range(1000, 1040))
     d = json.loads(a)
-    assert d["market"] == "dev0" and d["branch"] == "three20k" and d["pool_size"] == 40 and set(d["inputs_manifest"]) == {"comparator.json", "log/a.json", "fixture_cstar_s2.json"}
+    assert d["market"] == "dev0" and d["branch"] == "three20k" and d["pool_size"] == 40 and set(d["inputs_manifest"]) == {"comparator.json", "log/a.json"}
 
 
 def test_select_needs_every_branch_market(tmp_path):

@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 MARKETS = ["headline", "dev0", "dev1"]
-SYSTEMS = ("B3-t", "R3-t", "R4-t", "C*-t")
+SYSTEMS = ("B3-t", "R3-t", "C*-t")
 
 
 def _score(rule, spec, label, budget, recheck):
@@ -19,11 +19,6 @@ def _score(rule, spec, label, budget, recheck):
             "detail": {"D2": {"eff": 0.97, "gain": 0.1, "attack": att}, "D2+H3": {"eff": 0.96, "gain": 0.1, "attack": att},
                        "X7-SC": {"eff": 0.95, "gain": 0.1, "attack": att}, "reference": {"name": "honest_max", "family": None, "T": 200, "L": 10, "knobs": None}},
             "episodes": 3}
-
-
-def _fixture_market(cred, label, smoke):
-    att = {"u0": 0.3}
-    return {"attacks": {"D2": att, "D2+H3": att, "X7-SC": att}, "reference": {"name": "honest_max", "family": None, "T": 200, "L": 10, "knobs": None}, "episodes": 2}
 
 
 def _fake_pool(mkt, attacks, refs, seeds, cred):
@@ -47,18 +42,16 @@ def produced(tmp_path_factory):
     import sim.calibration_v2 as C
     root = tmp_path_factory.mktemp("produced")
     with pytest.MonkeyPatch.context() as mp:
-        mp.setattr(TV, "_score_market", _score); mp.setattr(TV, "_fixture_market", _fixture_market)
+        mp.setattr(TV, "_score_market", _score)
         TV.select_comparator(MARKETS, root / "cmp")
         cred = json.loads((root / "cmp" / "comparator.json").read_text())["cred"]
         for s in SYSTEMS:
             TV.tune_system(s, MARKETS, root / "sys" / s, cred=cred if s == "C*-t" else None)
-        TV.fixture_searches(MARKETS, root / "fix", cred)
         TV.select_comparator(MARKETS, root / "cmp_smoke", smoke=True)
         to = root / "v2"; head = P.head()
         P.promote("comparator", root / "cmp", to, MARKETS, code_commit=head)
         for s in SYSTEMS:
             P.promote("system", root / "sys" / s, to, MARKETS, code_commit=head)
-        P.promote("fixtures", root / "fix", to, MARKETS, code_commit=head)
         mp.setattr(C, "build_pool", _fake_pool); mp.setattr(C, "endpoint_misses", _misses)
         for m in MARKETS:
             CV.main(["--pools", "--market", m, "--inputs", str(to), "--out", str(root / "cov")])
@@ -83,7 +76,8 @@ def test_unedited_producer_outputs_pass_schema(produced, tmp_path):
     P.promote("benchmark", r / "bench", to, ["headline", "dev0"], code_commit=h)
     P.promote("decision", r / "dec", to, MARKETS, code_commit=h)
     prom = json.loads((to / "promotion.json").read_text())
-    assert {"comparator.json", "fixture_cstar_s2.json", "coverage.json", "benchmark/timings.json", "benchmark/decision.json"} <= set(prom["entries"])
+    assert {"comparator.json", "coverage.json", "benchmark/timings.json", "benchmark/decision.json"} <= set(prom["entries"])
+    assert "fixture_cstar_s2.json" not in prom["entries"]
     assert all(f"tuned_{s}.json" in prom["entries"] for s in SYSTEMS) and any(p.startswith("pools/") for p in prom["entries"])
 
 
@@ -115,10 +109,7 @@ MUTATIONS = {
     "comparator cred not the top recheck": ("comparator", "cmp", "comparator.json", _top_cred_changed, "cred"),
     "system 15 scored": ("system", "sys/B3-t", "tuned_B3-t.json", lambda d: d["scores"].pop(), "16"),
     "system best not the top recheck": ("system", "sys/R3-t", "tuned_R3-t.json", lambda d: d.update(best_params={"tol": 0.08, "L": 50}), "best"),
-    "system full budget": ("system", "sys/R4-t", "tuned_R4-t.json", lambda d: d.update(budget_full=[1, 16, 1, 2]), "budget"),
-    "fixtures missing market": ("fixtures", "fix", "fixture_cstar_s2.json", lambda d: d["markets"].pop("dev1"), "markets"),
-    "fixtures budget": ("fixtures", "fix", "fixture_cstar_s2.json", lambda d: d.update(budget=[1, 16, 1, 2]), "budget"),
-    "fixtures cred": ("fixtures", "fix", "fixture_cstar_s2.json", lambda d: d["spec"].update(cred={"variant": "x"}), "cred"),
+    "system full budget": ("system", "sys/R3-t", "tuned_R3-t.json", lambda d: d.update(budget_full=[1, 16, 1, 2]), "budget"),
     "coverage substituted endpoint": ("coverage", "cov", "coverage.json", lambda d: _first_endpoint(d, "alpha_e", 0.5), "endpoint"),
     "coverage admitted with a failing endpoint": ("coverage", "cov", "coverage.json", lambda d: _first_endpoint(d, "misses", 19_000), "admi"),
     "coverage kappa_effective changed to 1": ("coverage", "cov", "coverage.json", lambda d: d["Q1"].update(kappa_effective=1.0), "kappa"),
@@ -206,3 +197,18 @@ def test_k4_promotion_refuses_a_pool_from_another_commit(produced, tmp_path):
     _edit(src / "coverage.json", lambda d: d["pools"]["dev1"].update(sha256=hashlib.sha256(pool.read_bytes()).hexdigest()))
     with pytest.raises(P.Refused, match="commit"):
         P.promote("coverage", src, _clone_dest(produced, tmp_path), MARKETS, branch="three20k", code_commit=produced["head"])
+
+
+def test_promote_systems_three_and_no_fixture_kind():
+    import scripts.promote_v2 as P
+    assert P.SYSTEMS == ("B3-t", "R3-t", "C*-t") and "fixtures" not in P.CHECKS
+
+
+def test_final_promotion_three_systems(produced, tmp_path):
+    import scripts.promote_v2 as P
+    r, h = produced["root"], produced["head"]; to = _clone_dest(produced, tmp_path)
+    P.promote("coverage", r / "cov", to, MARKETS, branch="three20k", code_commit=h)
+    P.promote("benchmark", r / "bench", to, ["headline", "dev0"], code_commit=h)
+    P.promote("decision", r / "dec", to, MARKETS, code_commit=h)
+    assert not (to / "fixture_cstar_s2.json").exists() and set(P.final(to)["tuned"]) == set(SYSTEMS)
+

@@ -1,10 +1,11 @@
-"""Coverage check and calibration of protocol v2 (design 9.5). Pools: 14 profiles run on the same seeds (common random
-numbers), so per-seed differences keep their dependence. Fixtures: Q1 pools six equal-weight strata; Q4 checks each market.
-Endpoints: Q1, both sides of the four pooled differences at the Holm tails 0.05/8, 0.05/6, 0.05/4, 0.05/2 (32); Q4, the
-one-sided lower bounds of the gain difference and of the efficiency at 0.05/6 .. 0.05/1 per market (36 with three markets).
-Selection: the largest kappa in (1, 1/2, 1/4) whose every endpoint misses at most alpha_e of 10,000 replications.
-Validation: 20,000 independent replications; admitted if every endpoint's Clopper-Pearson upper bound at 1 - 0.01 / m_F
-(m_F = 32 or 36 in every branch) is at most alpha_e. Admission is conditional on the empirical fixtures."""
+"""Coverage check and calibration of protocol v2 (design draft 7, 9.5). Pools: 8 profiles run on the same seeds (common
+random numbers), so per-seed differences keep their dependence. Fixtures: Q1 pools six equal-weight strata; Q4 checks each
+market. Endpoints: Q1, both sides of the two pooled differences d = g_C* - g_F111 at the Holm tails 0.05/4 and 0.05/2 (8);
+Q4, the one-sided lower bounds of the gain difference and of the efficiency at 0.05/6 .. 0.05/1 per market (36 with three
+markets). Selection: the largest kappa in (1, 1/2, 1/4) whose every endpoint has a Clopper-Pearson upper bound, at
+1 - 0.01 / m_F, at most alpha_e on 10,000 replications (the validation criterion). Validation: 20,000 independent
+replications, the same criterion (m_F = 8 or 36 in every branch); no fallback after a failed validation. Admission is
+conditional on the empirical fixtures."""
 from __future__ import annotations
 
 import numpy as np
@@ -16,11 +17,11 @@ from .intervals import (V2_RESAMPLE_SEED, _bound_from, clopper_pearson_upper, sa
 from .objectives_v2 import gross_efficiency
 from .rules_v2 import make_rule, public_constants
 
-PROFILES = ([("attack", "F000", "D2+H3")] + [("attack", r, f) for r in ("F111", "C*", "R4", "C*/S2") for f in ("D2+H3", "X7-SC")]
-            + [("ref", r) for r in ("F000", "F111", "C*", "R4", "C*/S2")])
-Q1_STATS = tuple(f"{a}-{b}|{f}" for a, b in (("F111", "C*"), ("R4", "C*/S2")) for f in ("D2+H3", "X7-SC"))
+PROFILES = ([("attack", "F000", "D2+H3")] + [("attack", r, f) for r in ("F111", "C*") for f in ("D2+H3", "X7-SC")]
+            + [("ref", r) for r in ("F000", "F111", "C*")])
+Q1_STATS = tuple(f"C*-F111|{f}" for f in ("D2+H3", "X7-SC"))
 Q4_STATS = ("gain_diff", "eff")
-Q1_TAILS = tuple(0.05 / (2 * m) for m in (4, 3, 2, 1))
+Q1_TAILS = tuple(0.05 / (2 * m) for m in (2, 1))
 Q4_TAILS = tuple(0.05 / m for m in (6, 5, 4, 3, 2, 1))
 KAPPAS = (1.0, 0.5, 0.25)
 BRANCHES = {"three20k": (("headline", "dev0", "dev1"), 20_000, 2), "two20k": (("headline", "dev0"), 20_000, 3), "two10k": (("headline", "dev0"), 10_000, 3)}
@@ -50,7 +51,7 @@ def build_pool(mkt: dict, attacks: dict, refs: dict, seeds: list[int], cred: dic
 def q1_stats(pool: dict) -> dict:
     n = {k: np.asarray(v) for k, v in pool["normalized"].items()}
     g = lambda r, f: n[f"attack|{r}|{f}"] - n[f"ref|{r}"]
-    return {f"{a}-{b}|{f}": g(a, f) - g(b, f) for a, b in (("F111", "C*"), ("R4", "C*/S2")) for f in ("D2+H3", "X7-SC")}
+    return {f"C*-F111|{f}": g("C*", f) - g("F111", f) for f in ("D2+H3", "X7-SC")}
 
 
 def q4_stats(pool: dict) -> dict:
@@ -73,7 +74,7 @@ def endpoints(family: str, branch: str) -> list[dict]:
 
 
 def denominator(family: str) -> int:
-    return {"Q1": 32, "Q4": 36}[family]
+    return {"Q1": 8, "Q4": 36}[family]
 
 
 def bound_single(x, side: str, tail: float, resamples: int = 9999) -> float:
@@ -137,10 +138,10 @@ def endpoint_misses(family: str, fixtures, branch: str, kappa: float, replicatio
 
 
 def select_kappa(family: str, fixtures, branch: str, seed: int, replications: int = 10_000, resamples: int = 9999) -> float | None:
-    eps = endpoints(family, branch)
+    eps = endpoints(family, branch); conf = 1.0 - 0.01 / denominator(family)
     for kp in KAPPAS:
         m = endpoint_misses(family, fixtures, branch, kp, replications, seed, resamples)
-        if all(m[i] <= e["alpha_e"] * replications for i, e in enumerate(eps)):
+        if all(clopper_pearson_upper(int(m[i]), int(replications), conf) <= e["alpha_e"] for i, e in enumerate(eps)):
             return kp
     return None
 

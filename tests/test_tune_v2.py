@@ -61,14 +61,13 @@ def test_select_comparator(monkeypatch, tmp_path):
     assert res["cred"]["variant"] == "mem" and json.loads((tmp_path / "comparator.json").read_text())["cred"] == res["cred"]
 
 
-def test_fixture_searches_count(monkeypatch, tmp_path):
+def test_tune_three_systems_and_no_fixture_searches():
     import scripts.tune_v2 as TV
-    seen = []
-    monkeypatch.setattr(TV, "market_searches", lambda rule, spec, mkt, budget, cache: seen.append((rule, mkt["label"])) or {"attacks": {"D2": {}, "D2+H3": {}, "X7-SC": {}}, "reference": {"name": "honest_max"}, "episodes": 0})
-    monkeypatch.setattr(TV, "_market", lambda label, smoke: {"label": label})
-    res = TV.fixture_searches(["headline", "dev0", "dev1"], tmp_path, cred={"variant": "thr", "K": 6, "M": None}, smoke=True)
-    assert seen == [("C*/S2", m) for m in ("headline", "dev0", "dev1")]
-    assert sum(len(v["attacks"]) for v in res["markets"].values()) == 9 and (tmp_path / "fixture_cstar_s2.json").exists()
+    assert TV.SYSTEMS == ("B3-t", "R3-t", "C*-t") and not hasattr(TV, "fixture_searches")
+    with pytest.raises(SystemExit):
+        TV.main(["--select", "fixtures", "--markets", "headline", "--out", "x"])
+    with pytest.raises(SystemExit):
+        TV.main(["--select", "R4-t", "--markets", "headline", "--out", "x"])
 
 
 @pytest.mark.slow
@@ -150,12 +149,3 @@ def test_parallel_tuning_equals_serial(tmp_path):
     assert strip(a["scores"]) == strip(b["scores"]) and strip(a["rechecked"]) == strip(b["rechecked"]) and a["best_params"] == b["best_params"]
     for p in (tmp_path / "b" / "log").glob("*.json"):
         assert set(json.loads(p.read_text())["detail"]) == {"dev0"}
-
-
-def test_fixture_file_carries_provenance(monkeypatch, tmp_path):
-    import scripts.tune_v2 as TV
-    monkeypatch.setattr(TV, "market_searches", lambda rule, spec, mkt, budget, cache: {"attacks": {"D2": {}, "D2+H3": {}, "X7-SC": {}}, "reference": {"name": "honest_max"}, "episodes": 0})
-    monkeypatch.setattr(TV, "_market", lambda label, smoke: {"label": label})
-    res = TV.fixture_searches(["headline", "dev0"], tmp_path, cred={"variant": "thr", "K": 6, "M": None}, smoke=False)
-    d = json.loads((tmp_path / "fixture_cstar_s2.json").read_text())
-    assert d["smoke"] is False and d["budget"] == list(TV._budgets(False)[0]) and list(d["markets"]) == ["headline", "dev0"] and len(d["commit"]) >= 7

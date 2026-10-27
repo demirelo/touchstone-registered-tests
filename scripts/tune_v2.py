@@ -30,6 +30,7 @@ from sim.rules_v2 import make_rule, public_constants  # noqa: E402
 from sim.search import settings_from_locked  # noqa: E402
 
 FAMILIES = ("D2", "D2+H3", "X7-SC")
+SYSTEMS = ("B3-t", "R3-t", "C*-t")                  # design draft 7, 3.5: R4-t is dropped; no C*/S2 fixture searches
 COMMON_GRID = [(t, L) for t in (0.08, 0.12, 0.14, 0.16) for L in (3, 10, 20, 50)]
 FIXED = {"tol": 0.16, "L": 10}
 TOP = 2
@@ -158,7 +159,9 @@ def tune_system(name: str, markets: list[str], out: Path, cred: dict | None = No
                 workers: int = 1) -> dict:
     grid = COMMON_GRID[:grid_limit] if grid_limit else COMMON_GRID
     specs = [{"tol": t, "L": L, **({"cred": cred} if cred else {})} for t, L in grid]
-    rule = {"B3-t": "B3-t", "R3-t": "R3-t", "R4-t": "R4-t", "C*-t": "C*-t"}[name]
+    if name not in SYSTEMS:
+        raise SystemExit(f"unknown whole system {name!r} (design draft 7: {SYSTEMS})")
+    rule = name
     scores, rechecked = _tune(rule, specs, markets, out, smoke, workers)
     best = rechecked[0]["spec"]
     res = {"rule": name, "best_params": {"tol": best["tol"], "L": best["L"]}, "cred": cred, "scores": scores, "rechecked": rechecked,
@@ -167,25 +170,9 @@ def tune_system(name: str, markets: list[str], out: Path, cred: dict | None = No
     return res
 
 
-def _fixture_market(cred: dict, label: str, smoke: bool) -> dict:
-    inner, _ = _budgets(smoke); cache = SeedCache()
-    s = market_searches("C*/S2", {**FIXED, "cred": cred}, _market(label, smoke), inner, cache)
-    return {"attacks": {f: (a.best_knobs if hasattr(a, "best_knobs") else a) for f, a in s["attacks"].items()},
-            "reference": s.get("reference_json", s["reference"]), "episodes": cache.runs}
-
-
-def fixture_searches(markets: list[str], out: Path, cred: dict, smoke: bool = False, workers: int = 1) -> dict:
-    inner, _ = _budgets(smoke)
-    parts = _map(_fixture_market, [(cred, m, smoke) for m in markets], workers)
-    res = {"rule": "C*/S2", "spec": {**FIXED, "cred": cred}, "markets": {m: {k: v for k, v in p.items() if k != "episodes"} for m, p in zip(markets, parts)},
-           "episodes": int(sum(p["episodes"] for p in parts)), "smoke": smoke, "budget": list(inner), "commit": RV.git_commit()}
-    Path(out).mkdir(parents=True, exist_ok=True); (Path(out) / "fixture_cstar_s2.json").write_text(json.dumps(res, default=float))
-    return res
-
-
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--select", required=True, choices=["comparator", "B3-t", "R3-t", "R4-t", "C*-t", "fixtures"])
+    ap.add_argument("--select", required=True, choices=["comparator", *SYSTEMS])
     ap.add_argument("--markets", default="headline,dev0,dev1"); ap.add_argument("--out", required=True)
     ap.add_argument("--workers", type=int, default=1); ap.add_argument("--smoke", action="store_true"); ap.add_argument("--comparator", default=None)
     a = ap.parse_args(argv)
@@ -193,10 +180,6 @@ def main(argv=None) -> int:
     cred = json.loads(Path(a.comparator).read_text())["cred"] if a.comparator else None
     if a.select == "comparator":
         select_comparator(markets, out, a.smoke, workers=a.workers)
-    elif a.select == "fixtures":
-        if cred is None:
-            raise SystemExit("fixtures need --comparator")
-        fixture_searches(markets, out, cred, a.smoke, workers=a.workers)
     else:
         if a.select == "C*-t" and cred is None:
             raise SystemExit("C*-t needs --comparator")

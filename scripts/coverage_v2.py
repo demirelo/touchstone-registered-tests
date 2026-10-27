@@ -25,12 +25,12 @@ from sim.instances import coverage_pool  # noqa: E402
 
 FIXED = {"tol": 0.16, "L": 10}
 REGISTERED = {"selection": 10_000, "validation": 20_000, "resamples": 9999}
-SOURCE = {"F000": "B3-t", "F111": "R3-t", "R4": "R4-t"}
+SOURCE = {"F000": "B3-t", "F111": "R3-t"}
 
 
 def fixture_inputs(inputs: Path, label: str) -> tuple[dict, dict]:
-    """Attacks and references of the five fixture rules on one market, from the tuning logs (inner searches at the fixed
-    pair), the comparator selection, and the C*/S2 fixture searches."""
+    """Attacks and references of the three fixture rules (F000, F111, C*) on one market, from the tuning logs (inner searches
+    at the fixed pair) and the comparator selection (design draft 7, 9.5)."""
     inputs = Path(inputs); cred = json.loads((inputs / "comparator.json").read_text())["cred"]
     want = {**{rule: (src, dict(FIXED)) for rule, src in SOURCE.items()}, "C*": ("C*", {**FIXED, "cred": cred})}
     attacks, refs = {}, {}
@@ -43,10 +43,6 @@ def fixture_inputs(inputs: Path, label: str) -> tuple[dict, dict]:
                 det = d["detail"][label]; refs[rule] = det["reference"]
                 for fam in (("D2+H3",) if rule == "F000" else ("D2+H3", "X7-SC")):
                     attacks[(rule, fam)] = det[fam]["attack"]
-    fx = json.loads((inputs / "fixture_cstar_s2.json").read_text())["markets"][label]
-    refs["C*/S2"] = fx["reference"]
-    for fam in ("D2+H3", "X7-SC"):
-        attacks[("C*/S2", fam)] = fx["attacks"][fam]
     missing = sorted((set(SOURCE) | {"C*"}) - set(refs))
     if missing:
         raise SystemExit(f"{label}: no tuning log for {missing}")
@@ -59,7 +55,7 @@ def _sha(path: Path) -> str:
 
 def inputs_manifest(inputs: Path) -> dict:
     """SHA-256 of the tuning files a pool is built from, keyed by their path under --inputs."""
-    d = Path(inputs); files = [d / "comparator.json", *sorted((d / "log").glob("*.json")), d / "fixture_cstar_s2.json"]
+    d = Path(inputs); files = [d / "comparator.json", *sorted((d / "log").glob("*.json"))]
     return {f.relative_to(d).as_posix(): _sha(f) for f in files if f.exists()}
 
 

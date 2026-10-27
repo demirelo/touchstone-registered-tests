@@ -2,7 +2,7 @@
 producer's schema and the registered procedure, then copied, and every copied file's SHA-256 is appended to
 experiments/v2/promotion.json; a path already promoted with another hash is refused. --final checks that every kind is
 present and writes params.json, the --params file of scripts/revision_v2.py. Kinds: comparator, system (one tuned file),
-fixtures, coverage (with its pools), benchmark, decision."""
+coverage (with its pools), benchmark, decision."""
 from __future__ import annotations
 
 import argparse
@@ -21,7 +21,7 @@ from sim import calibration_v2 as CAL  # noqa: E402
 from sim.instances import coverage_pool  # noqa: E402
 from sim.intervals import clopper_pearson_upper  # noqa: E402
 
-SYSTEMS = ("B3-t", "R3-t", "R4-t", "C*-t")
+SYSTEMS = ("B3-t", "R3-t", "C*-t")                  # design draft 7, 3.5
 KAPPAS = (1.0, 0.5, 0.25)
 REGISTERED = {"selection": 10_000, "validation": 20_000, "resamples": 9999}
 BENCH_MARKETS = ["headline", "dev0"]
@@ -124,17 +124,6 @@ def _system(src, to, markets, code_commit):
     return [(tuned[0], tuned[0].name), *_logs(src, name, [s["spec"] for s in d["scores"]], markets, what)]
 
 
-def _fixtures(src, to, markets, code_commit):
-    d = _json(Path(src) / "fixture_cstar_s2.json"); what = "fixtures"
-    _common(d, code_commit, None, what)
-    _require(list(d.get("budget") or []) == list(TV._budgets(False)[0]), f"{what}: budget {d.get('budget')} is not the inner budget")
-    _require(list(d.get("markets") or {}) == list(markets), f"{what}: markets {list(d.get('markets') or {})} are not {list(markets)}")
-    for m, v in d["markets"].items():
-        _require(set(v.get("attacks", {})) >= {"D2", "D2+H3", "X7-SC"} and "reference" in v, f"{what}: market {m} lacks attacks or a reference")
-    _require(d["spec"].get("cred") == _promoted_cred(to), f"{what}: cred differs from the promoted comparator's")
-    return [(Path(src) / "fixture_cstar_s2.json", "fixture_cstar_s2.json")]
-
-
 def _family(cov: dict, fam: str, branch: str) -> None:
     f = cov.get(fam) or {}; what = f"coverage {fam}"
     _require("kappa_effective" in f, f"{what}: no kappa_effective")
@@ -170,7 +159,7 @@ def _coverage(src, to, markets, code_commit, branch):
     for fam in ("Q1", "Q4"):
         _family(cov, fam, branch)
     prom = _promotion(to)["entries"]
-    tuning = {p: h for p, h in prom.items() if p == "comparator.json" or p.startswith("log/") or p == "fixture_cstar_s2.json"}
+    tuning = {p: h for p, h in prom.items() if p == "comparator.json" or p.startswith("log/")}
     _require(cov.get("inputs_manifest") == tuning, f"{what}: the pools' inputs differ from the promoted tuning files")
     files = [(Path(src) / "coverage.json", "coverage.json")]
     for m in bm:
@@ -215,7 +204,7 @@ def _decision(src, to, markets, code_commit):
     return [(Path(src) / "decision.json", "benchmark/decision.json")]
 
 
-CHECKS = {"comparator": _comparator, "system": _system, "fixtures": _fixtures, "benchmark": _benchmark, "decision": _decision}
+CHECKS = {"comparator": _comparator, "system": _system, "benchmark": _benchmark, "decision": _decision}
 
 
 def promote(kind: str, src, to, markets: list[str], branch: str | None = None, code_commit: str | None = None) -> list[str]:
@@ -243,7 +232,7 @@ def derive_params(to) -> dict:
 
 def final(to) -> dict:
     to = Path(to); prom = _promotion(to)
-    need = ["comparator.json", "fixture_cstar_s2.json", "coverage.json", "benchmark/timings.json", "benchmark/decision.json"] + [f"tuned_{s}.json" for s in SYSTEMS]
+    need = ["comparator.json", "coverage.json", "benchmark/timings.json", "benchmark/decision.json"] + [f"tuned_{s}.json" for s in SYSTEMS]
     missing = [p for p in need if p not in prom["entries"]]
     _require(not missing, f"final: missing {missing}")
     changed = verify_promoted(to)
@@ -255,7 +244,7 @@ def final(to) -> dict:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--kind", choices=["comparator", "system", "fixtures", "coverage", "benchmark", "decision"]); ap.add_argument("--from", dest="src")
+    ap.add_argument("--kind", choices=["comparator", "system", "coverage", "benchmark", "decision"]); ap.add_argument("--from", dest="src")
     ap.add_argument("--to", default="experiments/v2"); ap.add_argument("--markets", default="headline,dev0,dev1"); ap.add_argument("--branch", default=None)
     ap.add_argument("--code-commit", dest="code_commit", default=None); ap.add_argument("--final", action="store_true")
     a = ap.parse_args(argv)
