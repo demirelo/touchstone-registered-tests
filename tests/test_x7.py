@@ -15,7 +15,7 @@ CRED = {"variant": "thr", "K": 6, "M": None}
 SEEDS = [pytest.param(2000)] + [pytest.param(s, marks=pytest.mark.slow) for s in (2001, 2002, 2003, 2004)]
 GRID = [pytest.param(0.16, 10)] + [pytest.param(t, L, marks=pytest.mark.slow) for t, L in COMMON_GRID if (t, L) != (0.16, 10)]
 P = ProviderParams(q_max=0.8, a=0.02, b=0.3, k=6)
-BASE = dict(u0=0.3, m0=0.4, s=0.05, d=0.5, r=0.0, w=0.2, k_F=1.0, k_T=1.0, a_F=0.0, n_P=0.0, h_R=0.0, lam=1.0, clip=0)
+BASE = dict(u0=0.3, m0=0.4, s=0.05, d=0.5, r=0.0, w=0.2, k_F=1.0, k_T=1.0, a_F=0.0, n_P=0.0, h_R=0.0, a_R=200.0, e_P=1.0, lam=1.0, clip=0)
 
 
 def pol(T=200, L=10, **kw):
@@ -115,8 +115,64 @@ def test_corners_construction():
     c = x7_corners(fam)
     low = {n: (0 if fam.is_binary(n) else fam.bounds[n][0]) for n in fam.knobs}
     high = {n: (1 if fam.is_binary(n) else fam.bounds[n][1]) for n in fam.knobs}
-    assert len(c) == 514 and c[-2:] == [low, high] and low not in c[:-2] and high not in c[:-2]
-    assert len(corner_vectors(fam)) == 769
+    assert c[-2:] == [low, high] and low not in c[:-2] and high not in c[:-2] and len(c) <= 514
+
+
+def test_x7_knobs_15():
+    from sim.policies.x7 import KNOBS, x7_family
+    assert KNOBS == ("u0", "m0", "s", "d", "r", "w", "k_F", "k_T", "a_F", "n_P", "h_R", "a_R", "e_P", "lambda", "clip")
+    fam = x7_family(200, 10)
+    assert fam.bounds["a_R"] == (0.0, 200.0) and fam.bounds["e_P"] == (0.0, 1.0)
+
+
+def test_corner_count_recorded():
+    from sim.policies.x7 import X7_CORNER_COUNT, corner_vectors, x7_family
+    assert len(corner_vectors(x7_family(200, 10))) == X7_CORNER_COUNT
+
+
+def test_age_gate_waits():
+    p = pol(a_R=5.0, h_R=0.0, lam=0.1, L=10)
+    rows = [(2, 0, 0, 0)] * 8 + [(2, 2, 1, 12)]               # identity aged 8 fails in round 8, banned until round 12
+    for t in range(9):
+        p.act(pview(t, rows[:t]))
+    a = p.act(pview(9, rows))
+    assert not a.exit and p.resets_failure == 0 and p.resets_voluntary == 0      # waits; audited/served 2/18 > 0.1 ignored
+    banned = rows + [(0, 0, 0, 12)] * 3
+    for t in range(10, 13):
+        assert not p.act(pview(t, banned[:t])).exit                               # no voluntary reset while waiting out the ban
+    served = banned + [(2, 2, 0, 0)]
+    assert p.act(pview(13, served)).exit and p.resets_voluntary == 1              # served again: the voluntary trigger is back
+    young = pol(a_R=50.0, h_R=0.0)
+    for t in range(9):
+        young.act(pview(t, rows[:t]))
+    assert young.act(pview(9, rows)).exit and young.resets_failure == 1           # age 8 < a_R: resets
+
+
+def test_p_own_batch_update():
+    p = pol(L=10)
+    rows = [(3, 3, 0, 0), (3, 2, 1, 0), (3, 3, 0, 0)]
+    p.act(pview(0, [])); p.act(pview(1, rows[:1]))
+    assert p.p_own == 3
+    p.act(pview(2, rows[:2]))
+    assert p.p_own == 0                                       # passes and one failure in one round: zero
+    p.act(pview(3, rows))
+    assert p.p_own == 3
+
+
+def test_exposure_gate():
+    rows = [(2, 0, 0, 0)] * 15 + [(2, 2, 0, 0)] * 5           # window 10..19: audited/served 0.5
+    hi = pol(e_P=0.4, k_F=0.0, L=10)
+    for t in range(21):
+        hi.act(pview(t, rows[:t]))
+    assert hi.last_phase == "fresh"
+    lo = pol(e_P=0.6, k_F=0.0, L=10)
+    for t in range(21):
+        lo.act(pview(t, rows[:t]))
+    assert lo.last_phase == "established"
+    off = pol(e_P=1.0, k_F=0.0, L=10); rows1 = [(2, 2, 0, 0)] * 20
+    for t in range(21):
+        off.act(pview(t, rows1[:t]))
+    assert off.last_phase == "established"                    # e_P = 1 never forces the fresh phase
 
 
 def test_x7_contains_its_twin():

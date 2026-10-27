@@ -100,7 +100,7 @@ def test_bank_group_follows_effective_manifest(monkeypatch):
     assert len(M.bank_rules(RV.manifest_ctx("dev0@rho0.2"), "D2+H3")) == 10
 
 
-def test_x7_uses_769_controls_and_embedded_incumbent(monkeypatch):
+def test_x7_uses_recorded_controls_and_embedded_incumbent(monkeypatch):
     import scripts.revision_v2 as RV
     from sim.policies.x7 import corner_vectors, x7_family
     monkeypatch.setattr(RV, "corner_vectors", corner_vectors)
@@ -110,7 +110,8 @@ def test_x7_uses_769_controls_and_embedded_incumbent(monkeypatch):
         def eval_knobs(self, k, source="search"):
             calls.append(k); return 0.0
     fam = x7_family(200, 10)
-    assert len(RV.controls(Stub(), fam)) == 769 and len(calls) == 769
+    from sim.policies.x7 import X7_CORNER_COUNT
+    assert len(RV.controls(Stub(), fam)) == X7_CORNER_COUNT and len(calls) == X7_CORNER_COUNT
     seen = {}
     monkeypatch.setattr(RV, "cma_search", lambda obj, fam, st, seed, incumbents=None, starts=None: seen.update(incumbents or {}) or "res")
     tw = type("T", (), {"best_knobs": {"a": 1}})()
