@@ -1,8 +1,9 @@
-# Revision program: design (draft 7, under review)
+# Revision program: design (draft 7, accepted)
 
 Status: draft 6 was accepted by Sol high and Astra high in round 6 (`docs/revision/roster/consensus-design.md`). A second
 external review (GPT Pro, 2026-10-27; triage `docs/revision/gpt-pro-review-r2-triage-2026-10-27.md`) found a duplicate
-comparison and 17 further corrections before the lock (D1 to D18). Draft 7 applies them; it is under review from round 7.
+comparison and 17 further corrections before the lock (D1 to D18). Draft 7 applies them; after rounds 7 and 8, both
+seats accepted it in round 9 (`docs/revision/roster/consensus-design-r9.md`).
 Reviewer acceptance is development assistance, not validation of the protocol. Nothing here is registered yet. After
 consensus, this document is the specification of the implementation plan (the Part A code built to draft 6 changes where
 section 13 says so), and section 9 becomes the second registered protocol ("protocol v2").
@@ -783,4 +784,9 @@ Every code change above gets a regression test that fails against the draft-6 co
 | Sol 2 / Astra 1: Code column lacked the reduced fresh menu | added to D1's code entry with tests | 14 |
 | Astra 2: D5 summary described the obsolete order | corrected | 14 |
 | Astra 3: projection evaluations not priced | separate cost item (new episodes), benchmarked | 8.2 |
+
+### Round 9: both seats accept (Sol 0.94, Astra 0.95); consensus
+
+No corrections. Both seats note that acceptance covers the design only; the implementation and the measured costs are
+unverified until the plan revision, the benchmark, and the cost recomputation after H4.
 
