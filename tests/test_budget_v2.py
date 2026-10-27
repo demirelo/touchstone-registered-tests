@@ -128,3 +128,36 @@ def test_l1_a_saved_approval_needs_its_written_text(tmp_path, approval):
     d["spent"] = [{"op": "development", "tag": "x", "usd": 12.0}]; d["approval"] = approval; p.write_text(json.dumps(d))
     with pytest.raises(Refused):
         reserve(p, "evaluation", "big", 32.0)
+
+
+# ---- design draft 7 (Part A2 Task 10): the gate after the H4 decision ---------------------------------------------------------
+
+def _decision_h4(tmp_path, **kw):
+    p = tmp_path / "decision-h4.json"; p.write_text(json.dumps({"decision": {"stop": None, "approval_required": False, "total_usd": 38.0, **kw}}))
+    return p
+
+
+def test_reservation_gate_after_h4(tmp_path):
+    from scripts.budget_v2 import Refused, approve, reserve
+    p = _new(tmp_path / "l.json", dev=12.0)
+    for dec, ok in ((_decision_h4(tmp_path, stop="evaluation"), False), (_decision_h4(tmp_path, approval_required=True, total_usd=45.0), False)):
+        for tag in ("coverage-headline", "coverage-dev0"):
+            with pytest.raises(Refused):
+                reserve(p, "development", tag, 1.0, decision_h4=dec)
+    dec = _decision_h4(tmp_path, approval_required=True, total_usd=45.0)
+    approve(p, 45.0, "Approved up to 45 USD after the H4 timing. (author)")
+    assert reserve(p, "development", "coverage-headline", 1.0, decision_h4=dec) > 0 and reserve(p, "development", "coverage-dev0", 1.0, decision_h4=dec) > 0
+    assert reserve(p, "evaluation", "pod-fresh0", 1.0, decision_h4=_decision_h4(tmp_path, stop="development")) > 0    # the gate is for development only
+
+
+def test_approved_limit_reaches_evaluation(tmp_path):
+    from scripts.budget_v2 import Refused, approve, reserve
+    p = _new(tmp_path / "l.json", dev=12.0)
+    d = json.loads(p.read_text()); d["spent"] = [{"op": "development", "tag": "x", "usd": 11.0}, {"op": "evaluation", "tag": "y", "usd": 28.0}]; p.write_text(json.dumps(d))
+    with pytest.raises(Refused):
+        reserve(p, "evaluation", "z", 2.0)                                       # 39 + 2.5 passes 40
+    approve(p, 45.0, "Approved up to 45 USD after the H4 timing. (author)")
+    assert reserve(p, "evaluation", "z", 2.0) == pytest.approx(2.5)              # combined 41.5 within 45; evaluation 30.5 within its 40 cap
+    with pytest.raises(Refused):
+        reserve(p, "evaluation", "w", 4.0)                                       # combined 46.5 passes 45
+

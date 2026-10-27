@@ -19,7 +19,7 @@ def _repo(tmp_path, total=30.0, kappa_q1=0.5, kappa_q4=None) -> Path:
     shutil.copy(ROOT / "experiments" / "revision-v2-manifest.yaml", r / "experiments" / "revision-v2-manifest.yaml")
     v2 = r / "experiments" / "v2"
     cred = {"variant": "thr", "K": 6, "M": None}; (v2 / "comparator.json").write_text(json.dumps({"cred": cred}))
-    tuned = {s: {"tol": 0.16, "L": 10} for s in ("B3-t", "R3-t", "R4-t", "C*-t")}
+    tuned = {s: {"tol": 0.16, "L": 10} for s in ("B3-t", "R3-t", "C*-t")}
     for s, bp in tuned.items():
         (v2 / f"tuned_{s}.json").write_text(json.dumps({"rule": s, "best_params": bp}))
     (v2 / "params.json").write_text(json.dumps({"cred": cred, "tuned": tuned}))
@@ -27,6 +27,7 @@ def _repo(tmp_path, total=30.0, kappa_q1=0.5, kappa_q4=None) -> Path:
     dec = {"branch": "two20k", "markets": ["headline", "dev0"], "cuts": 1, "development_usd": 9.0, "evaluation_usd": total - 9.0, "total_usd": total,
            "approval_required": total > 40, "spent_usd": 1.0, "stop": None}
     (v2 / "benchmark" / "decision.json").write_text(json.dumps({"decision": dec, "ledger": {"spent": [{"op": "development", "tag": "bench", "usd": 1.0}]}, "timings_sha256": "d" * 64}))
+    (v2 / "benchmark" / "decision-h4.json").write_text(json.dumps({"decision": dec, "ledger": {"spent": [{"op": "development", "tag": "bench", "usd": 1.0}]}, "timings_sha256": "d" * 64}))
     entries = {p.relative_to(v2).as_posix(): _sha(p) for p in v2.rglob("*.json") if p.name not in ("params.json", "promotion.json")}
     (v2 / "promotion.json").write_text(json.dumps({"entries": entries, "kinds": {}}))
     (r / "docs" / "revision" / "predictions-v2.md").write_text("# Predictions\n")
@@ -215,3 +216,26 @@ def test_l5_every_git_command_must_succeed(signed, monkeypatch, fail):
     monkeypatch.setattr(L, "_git", broken)
     with pytest.raises(SystemExit):
         L.check_commit(r)
+
+
+# ---- design draft 7 (Part A2 Task 10): decision after H4 and the ledger's approval ----------------------------------------------
+
+def test_lock_uses_decision_h4_when_h4(tmp_path):
+    from scripts.lock_v2 import decision_file
+    r = _repo(tmp_path)
+    assert decision_file(r, H4).name == "decision-h4.json" and decision_file(r, None).name == "decision.json"
+    p = _build(r)
+    assert p["decision_sha256"] == _sha(r / "experiments" / "v2" / "benchmark" / "decision-h4.json")
+    (r / "experiments" / "v2" / "benchmark" / "decision-h4.json").unlink()
+    with pytest.raises(SystemExit):
+        _build(r)
+
+
+def test_lock_approval_matches_ledger(tmp_path):
+    r = _repo(tmp_path, total=45.0)
+    led = r / "docs" / "revision" / "budget-ledger.json"; d = json.loads(led.read_text())
+    d["approval"] = {"limit": 45.0, "text": "Approved up to 45 USD after the H4 timing. (author)"}; led.write_text(json.dumps(d))
+    with pytest.raises(SystemExit):
+        _build(r, approval="a different sentence")
+    assert _build(r, approval="Approved up to 45 USD after the H4 timing. (author)")["approval"].startswith("Approved")
+

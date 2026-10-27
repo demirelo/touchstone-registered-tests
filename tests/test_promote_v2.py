@@ -212,3 +212,30 @@ def test_final_promotion_three_systems(produced, tmp_path):
     P.promote("decision", r / "dec", to, MARKETS, code_commit=h)
     assert not (to / "fixture_cstar_s2.json").exists() and set(P.final(to)["tuned"]) == set(SYSTEMS)
 
+
+
+def _decide_h4(produced, tmp_path, h4=None):
+    import scripts.benchmark_v2 as BV
+    r = produced["root"]; src = tmp_path / "dh4"; src.mkdir()
+    (src / "timing.json").write_text(json.dumps({"bundle_sha256": "b" * 64, "commit": "c" * 40, "defender_commit": "d" * 40, "h4_seconds": 2.0,
+                                                 "x7_seconds": 1.0, "h4_episodes": 10, "x7_episodes": 10, "knobs": 9, "controls": 100, **(h4 or {})}))
+    lg = tmp_path / "ledger.json"; lg.write_text(json.dumps({"caps": {"development": 12.0, "evaluation": 40.0}, "reservations": [],
+                                                             "spent": [{"op": "development", "tag": "tune", "usd": 3.0}]}))
+    assert BV.main(["--decide-h4", str(src / "timing.json"), "--timings", str(r / "bench" / "timings.json"), "--frozen", str(r / "dec" / "decision.json"),
+                    "--ledger", str(lg), "--out", str(src / "decision-h4.json")]) == 0
+    return src
+
+
+def test_promote_decision_h4_recomputes(produced, tmp_path):
+    import scripts.promote_v2 as P
+    r, h = produced["root"], produced["head"]; to = _clone_dest(produced, tmp_path)
+    P.promote("benchmark", r / "bench", to, ["headline", "dev0"], code_commit=h); P.promote("decision", r / "dec", to, MARKETS, code_commit=h)
+    src = _decide_h4(produced, tmp_path)
+    P.promote("decision_h4", src, to, MARKETS, code_commit=h)
+    d = json.loads((to / "benchmark" / "decision-h4.json").read_text())
+    assert d["decision"]["h4_ratio"] == 2.0 and d["decision"]["branch"] == json.loads((to / "benchmark" / "decision.json").read_text())["decision"]["branch"]
+    _edit(src / "decision-h4.json", lambda x: x["decision"].update(cuts=4))
+    to2 = tmp_path / "v2b"; shutil.copytree(produced["to"], to2)
+    P.promote("benchmark", r / "bench", to2, ["headline", "dev0"], code_commit=h); P.promote("decision", r / "dec", to2, MARKETS, code_commit=h)
+    with pytest.raises(P.Refused, match="recomputation"):
+        P.promote("decision_h4", src, to2, MARKETS, code_commit=h)

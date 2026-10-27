@@ -15,6 +15,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 DEFAULT = Path(__file__).resolve().parents[1] / "docs" / "revision" / "budget-ledger.json"
+DECISION_H4 = Path(__file__).resolve().parents[1] / "experiments" / "v2" / "benchmark" / "decision-h4.json"
 CAPS = {"development": 12.0, "evaluation": 40.0}
 APPROVAL_LIMIT = 40.0
 HEADROOM = 1.25
@@ -76,9 +77,23 @@ def limit(d: dict) -> float:
     return float((d.get("approval") or {}).get("limit", APPROVAL_LIMIT))
 
 
-def reserve(path, op: str, tag: str, estimate: float) -> float:
+def _gate(d: dict, op: str, decision_h4) -> None:
+    """Design draft 7, 5.3 and 8.2: once the decision after the H4 timing exists, no development reservation (any tag)
+    while it stops, or while its total needs an approval that the ledger's limit does not cover."""
+    p = Path(decision_h4) if decision_h4 is not None else None
+    if op != "development" or p is None or not p.exists():
+        return
+    dec = json.loads(p.read_text())["decision"]
+    if dec.get("stop"):
+        raise Refused(f"the decision after the H4 timing stops at {dec['stop']!r}: no further development reservation")
+    if dec.get("approval_required") and limit(d) + 1e-9 < float(dec.get("total_usd") or 0.0):
+        raise Refused(f"the decision after the H4 timing totals {dec.get('total_usd')} USD; record the author's approval with --approve first")
+
+
+def reserve(path, op: str, tag: str, estimate: float, decision_h4=DECISION_H4) -> float:
     estimate = _amount(estimate, "estimate", positive=True)
     with _locked(path) as d:
+        _gate(d, op, decision_h4)
         if any(r["tag"] == tag for r in d["reservations"] + d["spent"]):
             raise Refused(f"tag {tag!r} is already in the ledger")
         grant = min(float(estimate) * HEADROOM, float(d["caps"][op]) - _used(d, op))

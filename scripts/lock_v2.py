@@ -51,13 +51,30 @@ def _choices(dec: dict, cuts: int, branch: str, markets: list[str], approval: st
     return out
 
 
+def decision_file(repo, h4: dict | None) -> Path:
+    """Design draft 7, 5.3: with H4 committed, the protocol binds the decision after the H4 timing."""
+    b = Path(repo) / "experiments" / "v2" / "benchmark"
+    return b / ("decision-h4.json" if h4 else "decision.json")
+
+
+def _ledger_approval(repo) -> str | None:
+    p = Path(repo) / LEDGER
+    return ((_json(p).get("approval") or {}).get("text")) if p.exists() else None
+
+
 def build(repo, code_commit: str, cuts: int, h4: dict | None, approval: str | None, branch: str, markets: list) -> dict:
-    repo = Path(repo); dec = _json(repo / FILES["decision_sha256"])["decision"]
+    repo = Path(repo); df = decision_file(repo, h4)
+    if not df.exists():
+        raise SystemExit(f"{df.relative_to(repo)}: missing (with H4, the protocol needs the decision after the H4 timing)")
+    dec = _json(df)["decision"]
     problems = _choices(dec, cuts, branch, markets, approval)
+    led = _ledger_approval(repo)
+    if approval and led is not None and approval != led:
+        problems.append("approval: the text differs from the approval recorded in the budget ledger (budget_v2 --approve)")
     if problems:
         raise SystemExit("; ".join(problems))
     cov = _json(repo / FILES["coverage_sha256"])
-    p = {"version": 2, "code_commit": str(code_commit), **{k: _sha(repo / rel) for k, rel in FILES.items()}, "cuts": int(cuts), "branch": branch,
+    p = {"version": 2, "code_commit": str(code_commit), **{k: _sha(repo / rel) for k, rel in FILES.items()}, "decision_sha256": _sha(df), "cuts": int(cuts), "branch": branch,
          "development_markets": list(markets), "h4": dict(h4) if h4 else None,
          "kappa": {f: (cov.get(f) or {}).get("kappa_effective") for f in ("Q1", "Q4")},
          "cost": {"development_usd": dec.get("development_usd"), "evaluation_usd": dec.get("evaluation_usd"), "total_usd": dec.get("total_usd"),
@@ -73,7 +90,8 @@ def build(repo, code_commit: str, cuts: int, h4: dict | None, approval: str | No
 
 def check(repo, protocol: dict) -> list[str]:
     repo = Path(repo); out = []
-    for k, rel in FILES.items():
+    files = {**FILES, "decision_sha256": decision_file(repo, protocol.get("h4")).relative_to(repo).as_posix()}
+    for k, rel in files.items():
         f = repo / rel
         if not f.exists() or _sha(f) != protocol.get(k):
             out.append(f"{rel}: missing or its hash differs from the protocol's {k}")
@@ -87,8 +105,11 @@ def check(repo, protocol: dict) -> list[str]:
             out.append("params.json does not follow from the promoted comparator and tuned files")
     except (OSError, KeyError, ValueError) as e:
         out.append(f"params.json cannot be derived from the promoted files: {e}")
-    dec = _json(repo / FILES["decision_sha256"])["decision"]
+    dec = _json(repo / files["decision_sha256"])["decision"]
     out += _choices(dec, protocol.get("cuts"), protocol.get("branch"), protocol.get("development_markets") or [], protocol.get("approval"))
+    led = _ledger_approval(repo)
+    if protocol.get("approval") and led is not None and protocol["approval"] != led:
+        out.append("approval: the text differs from the approval recorded in the budget ledger")
     cov = _json(repo / FILES["coverage_sha256"])
     if protocol.get("kappa") != {f: (cov.get(f) or {}).get("kappa_effective") for f in ("Q1", "Q4")}:
         out.append("coverage: kappa differs from kappa_effective")

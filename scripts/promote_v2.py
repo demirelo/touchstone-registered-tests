@@ -204,7 +204,19 @@ def _decision(src, to, markets, code_commit):
     return [(Path(src) / "decision.json", "benchmark/decision.json")]
 
 
-CHECKS = {"comparator": _comparator, "system": _system, "benchmark": _benchmark, "decision": _decision}
+def _decision_h4(src, to, markets, code_commit):
+    """Design draft 7, 5.3: the decision after the H4 timing, recomputed from the promoted timings and frozen decision."""
+    d = _json(Path(src) / "decision-h4.json"); what = "decision_h4"
+    tm, fr = Path(to) / "benchmark" / "timings.json", Path(to) / "benchmark" / "decision.json"
+    _require(tm.exists() and fr.exists(), f"{what}: the benchmark and its decision are not promoted yet")
+    _require(d.get("timings_sha256") == _sha(tm) and d.get("frozen_sha256") == _sha(fr), f"{what}: it was not decided on the promoted timings and decision")
+    t = _json(tm)["timings"]
+    want = BV.choose_after_h4(t, d["ledger"], _json(fr)["decision"], d["h4_timing"], vcpu=int(t.get("vcpu") or 16))
+    _require(_close(json.loads(json.dumps(want, default=float)), d["decision"]), f"{what}: the decision differs from its recomputation")
+    return [(Path(src) / "decision-h4.json", "benchmark/decision-h4.json")]
+
+
+CHECKS = {"comparator": _comparator, "system": _system, "benchmark": _benchmark, "decision": _decision, "decision_h4": _decision_h4}
 
 
 def promote(kind: str, src, to, markets: list[str], branch: str | None = None, code_commit: str | None = None) -> list[str]:
@@ -244,7 +256,7 @@ def final(to) -> dict:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--kind", choices=["comparator", "system", "coverage", "benchmark", "decision"]); ap.add_argument("--from", dest="src")
+    ap.add_argument("--kind", choices=["comparator", "system", "coverage", "benchmark", "decision", "decision_h4"]); ap.add_argument("--from", dest="src")
     ap.add_argument("--to", default="experiments/v2"); ap.add_argument("--markets", default="headline,dev0,dev1"); ap.add_argument("--branch", default=None)
     ap.add_argument("--code-commit", dest="code_commit", default=None); ap.add_argument("--final", action="store_true")
     a = ap.parse_args(argv)

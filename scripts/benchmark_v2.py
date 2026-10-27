@@ -17,15 +17,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 KINDS = ("d2h3_cell", "x7_cell", "w1", "coalition_total", "inner", "inner_x7", "coverage_batch", "cross_row", "doubling")
 # measured components, in dependency order (a component may read the records of the ones before it)
 WORKLOADS = ("search_d2h3", "search_x7", "reference", "eval_d2h3", "eval_x7", "w1_search", "w1_eval", "coalition_prereqs", "coalition_search",
-             "coalition_eval", "dev_inner_config", "coverage_batch", "cross_row", "doubling", "doubling_x7", "episode")
+             "coalition_reference", "coalition_final", "coalition_select", "coalition_eval", "dev_inner_config", "coverage_batch", "cross_row",
+             "doubling", "doubling_x7", "episode")
 CAPS = {"development": 12.0, "evaluation": 40.0, "approval": 40.0}
-EPISODES = {"coverage": 14 * 20_000 * 3}
+EPISODES = {"coverage": 8 * 20_000 * 3}                                                   # design draft 7, 9.5: 8 profiles
 CROSS_ROWS = 14 * 8                                                                       # 14 cross-evaluations, 8 attack rows each
-REFERENCE_MENUS = 118                                                                     # (context, rule) pairs with a D2+H3 and X7-SC menu
-CONFIG_MARKETS = {"comparator_inner": 36, "comparator_recheck": 6, "tuning_inner": 192, "tuning_recheck": 24, "fixtures_inner": 3}   # design 8.2's searches / 3
-COUNTS = {"comparator_inner": (72, 36), "comparator_recheck": (12, 6), "tuning_inner": (384, 192), "tuning_recheck": (48, 24), "fixtures_inner": (6, 3),
-          "doublings": (82, 50)}
-CELLS = {"plain": 208, "x7": 118, "welfare_h3": 8, "welfare_x7": 8, "coalition": 32}       # 374 cells, 126 on the X7-SC knob space
+REFERENCE_MENUS = 79                                                                      # (context, rule) pairs with a D2+H3 and X7-SC menu
+REDUCED_MENUS = 18                                                                        # fresh-market secondary systems: D2+H3 only (design 6.4)
+CONFIG_MARKETS = {"comparator_inner": 36, "comparator_recheck": 6, "tuning_inner": 144, "tuning_recheck": 18}   # design 8.2's searches / 3
+COUNTS = {"comparator_inner": (72, 36), "comparator_recheck": (12, 6), "tuning_inner": (288, 144), "tuning_recheck": (36, 18), "doublings": (64, 34)}
+CELLS = {"plain": 145, "x7": 79, "h4": 21, "welfare_h3": 6, "welfare_x7": 6, "coalition": 30}   # 287 search cells (design draft 7, 8.1)
+TRAIN_SEEDS = 5                                                                           # dev-train seeds of the registered search (bank matrix)
+COALITION_EXTRAS_UNITS, HELDOUT_UNITS = 18.0, 2.0                                         # design 8.2's estimates when the components are unmeasured
 EPISODE_SEEDS = tuple(range(2000, 2020))                                                  # dev-val: timing never touches reserved ranges
 EVAL_SEEDS, FINAL_SEEDS = 20, 200
 
@@ -39,19 +42,24 @@ def counts(cuts: int = 0, h4_excluded: bool = False, markets=DEFAULT_MARKETS, br
     """The design 8.2 counts from the effective manifest, the tuning markets, and the coverage branch."""
     from sim import calibration_v2 as CAL
     from sim import manifest_v2 as MAN
-    cs = MAN.effective(cuts, h4_excluded); ids = {c["id"] for c in cs}; ctxs = {c["context"] for c in cs}
+    eff = MAN.effective(cuts, h4_excluded); cs = [c for c in eff if c["block"] != "diagnostic"]
+    ids = {c["id"] for c in cs}; ctxs = {c["context"] for c in cs}
     kind = lambda c: ("coalition" if c["objective"] in ("total", "min") else ("welfare_x7" if c["family"] == "X7-SC" else "welfare_h3")
-                      if c["objective"] in ("W0", "W1") else ("x7" if c["family"] == "X7-SC" else "plain"))
-    cells = {k: 0 for k in ("plain", "x7", "welfare_h3", "welfare_x7", "coalition")}
+                      if c["objective"] in ("W0", "W1") else ("x7" if c["family"] == "X7-SC" else "h4" if c["family"] == "H4" else "plain"))
+    cells = {k: 0 for k in ("plain", "x7", "h4", "welfare_h3", "welfare_x7", "coalition")}
     for c in cs:
         cells[kind(c)] += 1
     dbl = [d for d in MAN.doublings() if d in ids]
     k = len(markets) / 3
     M = CAL.BRANCHES[branch][1]; n_cov = len(CAL.BRANCHES[branch][0])
-    return {"cells": cells, "reference_menus": len({(c["context"], c["rule"]) for c in cs if c["objective"] == "profit" and c["family"] in ("D2+H3", "X7-SC")}),
-            "doublings": (sum("|X7-SC|" not in d for d in dbl), sum("|X7-SC|" in d for d in dbl)),
-            "cross_rows": 8 * sum(1 for ctx, _ in MAN.cross_evaluations() if ctx in ctxs),
-            "config_markets": {name: int(round(n * k)) for name, n in CONFIG_MARKETS.items()}, "coverage_episodes": 14 * M * n_cov}
+    menus = {(c["context"], c["rule"]) for c in cs if c["objective"] == "profit" and c["family"] in ("D2+H3", "X7-SC")}
+    full = {m for m in menus if MAN.menu_families(m[0], m[1]) == MAN.MENU_FAMILIES}
+    cross = sum(1 for ctx, _ in MAN.cross_evaluations() if ctx in ctxs)
+    return {"cells": cells, "reference_menus": len(full), "reduced_menus": len(menus - full),
+            "doublings": (sum("|X7-SC|" not in d for d in dbl), sum("|X7-SC|" in d for d in dbl)), "cross_rows": 8 * cross, "bank_train_items": cross,
+            "coalition_groups": len({(c["context"], c["rule"], c["c"]) for c in cs if c["objective"] in ("total", "min")}),
+            "diagnostic": sum(c["block"] == "diagnostic" for c in eff),
+            "config_markets": {name: int(round(n * k)) for name, n in CONFIG_MARKETS.items()}, "coverage_episodes": len(CAL.PROFILES) * M * n_cov}
 
 
 def wave_bound(times, vcpu: int) -> float:
@@ -76,48 +84,57 @@ def eval_pods(cuts: int = 0, h4_excluded: bool = False) -> dict:
     return pods
 
 
-def _task(ts: dict, st: str, j: dict) -> float:
-    x7 = j.get("family") == "X7-SC"; obj = j.get("objective")
+def _ratio(h4_timing: dict | None) -> float:
+    """An H4 cell's cost relative to an X7-SC cell, from the sealed session's timing payload (design draft 7, 5.3)."""
+    return float(h4_timing["h4_seconds"]) / float(h4_timing["x7_seconds"]) if h4_timing else 1.0
+
+
+def _task(ts: dict, st: str, j: dict, h4: float = 1.0) -> float:
+    fam = j.get("family"); x7 = fam in ("X7-SC", "H4"); obj = j.get("objective"); scale = h4 if fam == "H4" else 1.0
     if st == "search":
-        return ts["search"][("x7" if x7 else "profit") if obj == "profit" else ("W0_x7" if x7 else "W0")]
+        return ts["search"][("x7" if x7 else "profit") if obj == "profit" else ("W0_x7" if x7 else "W0")] * scale
     if st == "reference":
         return ts["reference"]
-    if st == "prereqs":
+    if st == "joint_twin":
         return ts["prereqs"]
+    if st in ("joint_reference_pre", "joint_reference", "coalition_select"):
+        return ts[{"joint_reference_pre": "coalition_reference", "joint_reference": "coalition_final", "coalition_select": "coalition_select"}[st]]
     if st == "dependent":
         return ts["coalition"] if obj in ("total", "min") else ts["W1_x7" if x7 else "W1"]
     if st == "evaluate":
-        return ts["evaluate"]["coalition" if obj in ("total", "min") else "welfare" if obj in ("W0", "W1") else "x7" if x7 else "profit"]
+        if obj == "diagnostic":
+            return ts["evaluate"]["diagnostic"]
+        return ts["evaluate"]["coalition" if obj in ("total", "min") else "welfare" if obj in ("W0", "W1") else "x7" if x7 else "profit"] * scale
     if st == "cross":
         return ts["cross_item"]
-    return ts["doubling_x7" if x7 else "doubling"]
+    return ts["doubling_x7" if x7 else "doubling"] * scale
 
 
-def pod_plan(timings: dict, jobs: list[dict]) -> list[list[float]]:
+def pod_plan(timings: dict, jobs: list[dict], h4: float = 1.0) -> list[list[float]]:
     """One pod's waves, exactly the runner's dispatch (`revision_v2._waves`) per stage, each task at its measured component
     time (`task_seconds`): searches, reference menus, W1 searches, coalition prerequisites and objectives, evaluations on
     200 seeds, cross items, and doublings, every one in its own wave."""
     from scripts import revision_v2 as RV
     ts = timings["task_seconds"]
-    return [[_task(ts, st, i) for i in items] for stage in STAGES_BILLED for st, items in RV._waves(stage, jobs, jobs)]
+    return [[_task(ts, st, i, h4) for i in items] for stage in STAGES_BILLED for st, items in RV._waves(stage, jobs, jobs)]
 
 
-def default_eval_plan(timings: dict, cuts: int = 0, h4_excluded: bool = False) -> list[list[float]]:
-    return [w for jobs in eval_pods(cuts, h4_excluded).values() for w in pod_plan(timings, jobs)]
+def default_eval_plan(timings: dict, cuts: int = 0, h4_excluded: bool = False, h4: float = 1.0) -> list[list[float]]:
+    return [w for jobs in eval_pods(cuts, h4_excluded).values() for w in pod_plan(timings, jobs, h4)]
 
 
-def _pod_table(timings: dict, cuts: int, h4_excluded: bool, markets, branch: str, vcpu: int, plan) -> dict:
-    n = counts(cuts, h4_excluded, markets, branch); m = len(markets); v = int(vcpu)
+def _pod_table(timings: dict, cuts: int, h4_excluded: bool, markets, branch: str, vcpu: int, plan, h4_timing: dict | None = None) -> dict:
+    from sim import calibration_v2 as CAL
+    n = counts(cuts, h4_excluded, markets, branch); m = len(markets); v = int(vcpu); P = len(CAL.PROFILES)
     ic, rc = float(timings["dev_inner_config"]), float(timings["dev_recheck_config"])
     stage = lambda inner_tasks: wave_bound([ic] * inner_tasks, v) + wave_bound([rc] * (2 * m), v)
-    M_markets = n["coverage_episodes"] // 14
-    from sim import calibration_v2 as CAL
-    n_cov = len(CAL.BRANCHES[branch][0]); per_market = 14 * (M_markets // n_cov) * float(timings["episode"])
-    rows = {"comparator_selection": stage(12 * m), "tuning": 4 * stage(16 * m), "fixtures": wave_bound([ic] * m, v),
+    M_markets = n["coverage_episodes"] // P
+    n_cov = len(CAL.BRANCHES[branch][0]); per_market = P * (M_markets // n_cov) * float(timings["episode"])
+    rows = {"comparator_selection": stage(12 * m), "tuning": 3 * stage(16 * m),                         # three tuned systems, no fixtures
             "coverage": n_cov * wave_bound([per_market / v] * v, v) + wave_bound([float(timings["bootstrap_batch"])], v)}
-    rows["evaluation"] = sum(wave_bound(w, v) for w in (plan if plan is not None else default_eval_plan(timings, cuts, h4_excluded)))
+    rows["evaluation"] = sum(wave_bound(w, v) for w in (plan if plan is not None else default_eval_plan(timings, cuts, h4_excluded, _ratio(h4_timing))))
     rate = float(timings["usd_per_pod_hour"]) / 3600.0
-    dev = rows["comparator_selection"] + rows["tuning"] + rows["fixtures"] + rows["coverage"]
+    dev = rows["comparator_selection"] + rows["tuning"] + rows["coverage"]
     out = {"rows_seconds": rows, "vcpu": v, "counts": n, "development_usd": dev * rate, "evaluation_usd": rows["evaluation"] * rate,
            "total_usd": (dev + rows["evaluation"]) * rate}
     out["flags"] = {"development_over_cap": out["development_usd"] > CAPS["development"], "evaluation_over_cap": out["evaluation_usd"] > CAPS["evaluation"],
@@ -126,7 +143,7 @@ def _pod_table(timings: dict, cuts: int, h4_excluded: bool, markets, branch: str
 
 
 def cost_table(timings: dict, usd_per_core_hour: float | None = None, *, cuts: int = 0, h4_excluded: bool = False, markets=DEFAULT_MARKETS,
-               branch: str = "three20k", vcpu: int = 16, plan=None) -> dict:
+               branch: str = "three20k", vcpu: int = 16, plan=None, h4_timing: dict | None = None) -> dict:
     """Without `usd_per_core_hour`: billed pod time at the measured `usd_per_pod_hour`, every wave at the list-scheduling
     bound (`wave_bound`), counts from the effective manifest (`counts`), development per configuration and market, and the
     evaluation from `plan` (default: `default_eval_plan`). With `usd_per_core_hour`: design 8.2's rows in units of the
@@ -134,32 +151,38 @@ def cost_table(timings: dict, usd_per_core_hour: float | None = None, *, cuts: i
     and 40-seed evaluation, the reference menus once per (context, rule), the 160 further seeds from each kind's own
     evaluation (`eval160`), the cross row scaled from 20 to 200 seeds."""
     if usd_per_core_hour is None:
-        return _pod_table(timings, cuts, h4_excluded, markets, branch, vcpu, plan)
-    n = counts(cuts, h4_excluded, markets, branch); C = n["cells"]; k = len(markets) / 3
+        return _pod_table(timings, cuts, h4_excluded, markets, branch, vcpu, plan, h4_timing)
+    n = counts(cuts, h4_excluded, markets, branch); C = n["cells"]; k = len(markets) / 3; h4 = _ratio(h4_timing)
     u = float(timings["d2h3_cell"])
     x7 = timings["x7_cell"] / u
     dbl, dbl_x7 = timings["doubling"] / u, timings["doubling_x7"] / u
     mix = lambda pair, a, b: pair[0] * a + pair[1] * b
     if "dev_inner_config" in timings:
         ic, rc, cm = timings["dev_inner_config"] / u, timings["dev_recheck_config"] / u, n["config_markets"]
-        rows = {"comparator_selection": cm["comparator_inner"] * ic + cm["comparator_recheck"] * rc, "tuning": cm["tuning_inner"] * ic + cm["tuning_recheck"] * rc,
-                "fixtures": cm["fixtures_inner"] * ic}
+        rows = {"comparator_selection": cm["comparator_inner"] * ic + cm["comparator_recheck"] * rc, "tuning": cm["tuning_inner"] * ic + cm["tuning_recheck"] * rc}
     else:
         inner, inner_x7 = (timings["inner"] + timings.get("inner_d2", timings["inner"])) / 2 / u, timings["inner_x7"] / u
         sc = lambda pair: (pair[0] * k, pair[1] * k)
         rows = {"comparator_selection": mix(sc(COUNTS["comparator_inner"]), inner, inner_x7) + mix(sc(COUNTS["comparator_recheck"]), 1.0, x7),
-                "tuning": mix(sc(COUNTS["tuning_inner"]), inner, inner_x7) + mix(sc(COUNTS["tuning_recheck"]), 1.0, x7),
-                "fixtures": mix(sc(COUNTS["fixtures_inner"]), inner, inner_x7)}
+                "tuning": mix(sc(COUNTS["tuning_inner"]), inner, inner_x7) + mix(sc(COUNTS["tuning_recheck"]), 1.0, x7)}
     rows["coverage"] = n["coverage_episodes"] * timings["episode"] / u + timings["bootstrap_batch"] / u
     w, co = timings.get("w1", u) / u, timings.get("coalition_total", u) / u
-    cells = C["plain"] + C["x7"] * x7 + C["welfare_h3"] * w + C["welfare_x7"] * w * x7 + C["coalition"] * co
+    cells = C["plain"] + C["x7"] * x7 + C["h4"] * x7 * h4 + C["welfare_h3"] * w + C["welfare_x7"] * w * x7 + C["coalition"] * co
     e = timings.get("eval160")
-    extra = ((C["plain"] * e["profit"] + C["x7"] * e["x7"] + (C["welfare_h3"] + C["welfare_x7"]) * e["welfare"]
+    extra = ((C["plain"] * e["profit"] + (C["x7"] + C["h4"]) * e["x7"] + (C["welfare_h3"] + C["welfare_x7"]) * e["welfare"]
               + C["coalition"] * e["coalition"]) / u) if e else float(timings["eval200_extra_fraction"]) * cells
-    rows.update({"cells": cells, "references": n["reference_menus"] * float(timings.get("reference", 0.0)) / u, "eval200_extra": extra,
-                 "cross": n["cross_rows"] * timings["cross_row"] * (FINAL_SEEDS / EVAL_SEEDS) / u, "doublings": mix(n["doublings"], dbl, dbl_x7)})
-    dev = rows["comparator_selection"] + rows["tuning"] + rows["fixtures"] + rows["coverage"]
-    ev = rows["cells"] + rows["references"] + rows["eval200_extra"] + rows["cross"] + rows["doublings"]
+    if "coalition_reference" in timings:                    # design 6.3: per group, the preliminary and final references and the selection
+        co_x = n["coalition_groups"] * (timings["coalition_reference"] + timings["coalition_final"] + timings["coalition_select"]) / u
+    else:
+        co_x = COALITION_EXTRAS_UNITS
+    rows.update({"cells": cells, "references": (n["reference_menus"] + n["reduced_menus"]) * float(timings.get("reference", 0.0)) / u,
+                 "eval200_extra": extra, "cross": n["cross_rows"] * timings["cross_row"] * (FINAL_SEEDS / EVAL_SEEDS) / u,
+                 "doublings": mix(n["doublings"], dbl, dbl_x7), "coalition_extras": co_x,
+                 "bank_train": n["bank_train_items"] * 8 * timings["cross_row"] * (TRAIN_SEEDS / EVAL_SEEDS) / u,
+                 "heldout": 0.0 if timings.get("doubling_includes_heldout") else HELDOUT_UNITS,
+                 "diagnostic": n["diagnostic"] * FINAL_SEEDS * timings["episode"] / u})
+    dev = rows["comparator_selection"] + rows["tuning"] + rows["coverage"]
+    ev = sum(rows[k] for k in ("cells", "references", "eval200_extra", "cross", "doublings", "coalition_extras", "bank_train", "heldout", "diagnostic"))
     usd_unit = u / 3600.0 * float(usd_per_core_hour)
     out = {"rows": rows, "development_units": dev, "evaluation_units": ev, "unit_core_hours": u / 3600.0,
            "development_usd": dev * usd_unit, "evaluation_usd": ev * usd_unit, "total_usd": (dev + ev) * usd_unit}
@@ -182,6 +205,28 @@ def choose(timings: dict, ledger: dict, vcpu: int = 16) -> dict:
         out["stop"] = "development"; return out
     for cuts in range(0, 5):
         ev = cost_table(timings, cuts=cuts, vcpu=vcpu)["evaluation_usd"] + H4_RESERVE_USD
+        if ev <= CAPS["evaluation"]:
+            out.update(cuts=cuts, evaluation_usd=ev); break
+    else:
+        out["stop"] = "evaluation"; return out
+    out["total_usd"] = out["development_usd"] + out["evaluation_usd"]; out["approval_required"] = out["total_usd"] > CAPS["approval"]
+    return out
+
+
+def choose_after_h4(timings: dict, ledger: dict, frozen: dict, h4_timing: dict, vcpu: int = 16) -> dict:
+    """Design draft 7, 5.3 and 8.2: the decision after the H4 timing. The frozen branch and markets are kept (the defenders
+    are frozen); development is the recorded development spend plus the remaining development work (the coverage only),
+    each completed item counted once, and stops above the 12 USD cap; the evaluation is recomputed with H4 priced from its
+    timing, plus the H4 decision reserve, at the smallest cut within the 40 USD cap; approval is flagged on the new total."""
+    spent = sum(float(r["usd"]) for r in ledger.get("spent", []) if r["op"] == "development")
+    branch, markets = frozen["branch"], list(frozen["markets"])
+    out = {"branch": branch, "markets": markets, "cuts": None, "spent_usd": spent, "h4_reserve_usd": H4_RESERVE_USD, "h4_ratio": _ratio(h4_timing), "stop": None}
+    t = cost_table(timings, markets=tuple(markets), branch=branch, vcpu=vcpu)
+    out["development_usd"] = spent + t["rows_seconds"]["coverage"] * float(timings["usd_per_pod_hour"]) / 3600.0
+    if out["development_usd"] > CAPS["development"]:
+        out["stop"] = "development"; return out
+    for cuts in range(0, 5):
+        ev = cost_table(timings, cuts=cuts, vcpu=vcpu, h4_timing=h4_timing)["evaluation_usd"] + H4_RESERVE_USD
         if ev <= CAPS["evaluation"]:
             out.update(cuts=cuts, evaluation_usd=ev); break
     else:
@@ -235,6 +280,7 @@ def _default_fns(out: Path, smoke: bool = False) -> dict:
     jobs = {f: RV.job(mkt, "F111", f, smoke=smoke, params=params) for f in RV.MENU}
     w1 = RV.job(mkt, "F111", "D2+H3", "W1", smoke=smoke, params=params)
     co = RV.job(mkt, "F111", "X6-SE/v2", "total", 2, "synchronised", smoke=smoke, params=params)
+    step = lambda kind, suffix="": {**co, "id": f"{kind}/{ctx}/F111_c2{suffix}", "record_id": f"{kind}/{ctx}/F111_c2{suffix}"}
     inner = TV.SMOKE_INNER if smoke else TV.INNER
     seeds = EPISODE_SEEDS[:2] if smoke else EPISODE_SEEDS; state = {"bank_sizes": {}}
     n_bank = {f: len([o for o in MAN.bank_rules(RV.manifest_ctx(ctx), f, 0, False) if o != "F111"]) for f in RV.MENU}
@@ -277,6 +323,7 @@ def _default_fns(out: Path, smoke: bool = False) -> dict:
             new = RV.continue_search(Objective(cell, fam, cache), fam, RV.settings(j), search_from_json(rec["attack"]))
             extra = reference_candidates(cell, fam, new, search_from_json(rec["twin"]), [], order)
             select_reference(cell, state["cands"] + [c for c in extra if c.knobs is not None], cache)
+            RV.gain_fields(rep(RV.eval_cell(j), seeds=seeds), fam, new.best_knobs, state["ref"], cache)      # the held-out diagnostic (design 6.5)
         return run
 
     rng = np.random.default_rng(0); B = (2, 99) if smoke else (100, 9999)
@@ -285,7 +332,11 @@ def _default_fns(out: Path, smoke: bool = False) -> dict:
     return {"search_d2h3": search("D2+H3"), "search_x7": search("X7-SC"), "reference": reference,
             "eval_d2h3": lambda: RV.stage_evaluate(jobs["D2+H3"], tmp), "eval_x7": lambda: RV.stage_evaluate(jobs["X7-SC"], tmp),
             "w1_search": lambda: RV._run_one("dependent", w1, str(tmp), 0, True), "w1_eval": lambda: RV.stage_evaluate(w1, tmp),
-            "coalition_prereqs": lambda: RV.coalition_prereqs(co, tmp), "coalition_search": lambda: RV._run_one("dependent", co, str(tmp), 0, True),
+            "coalition_prereqs": lambda: RV.coalition_step("joint_twin", step("joint_twin", "_synchronised"), tmp, [co]),
+            "coalition_search": lambda: RV._run_one("dependent", co, str(tmp), 0, True),
+            "coalition_reference": lambda: RV.coalition_step("joint_reference_pre", step("joint_reference_pre"), tmp, [co]),
+            "coalition_final": lambda: RV.coalition_step("joint_reference", step("joint_reference"), tmp, [co]),
+            "coalition_select": lambda: RV.coalition_step("coalition_select", step("coalition_select"), tmp, [co]),
             "coalition_eval": lambda: RV.stage_evaluate(co, tmp),
             "dev_inner_config": dev_inner_config,
             "coverage_batch": lambda: C.miss_counts(strata, "pooled", C.Q1_TAILS, [1.0], B[0], B[1], 1),
@@ -311,6 +362,8 @@ def measure(out: Path, workers: int, fns: dict | None = None, smoke: bool = Fals
     t0 = time.perf_counter(); r = {k: _timed(f[k]) for k in WORKLOADS}; wall = time.perf_counter() - t0
     to40 = 40 / n_eval
     t = {"d2h3_cell": r["search_d2h3"] + to40 * r["eval_d2h3"], "x7_cell": r["search_x7"] + to40 * r["eval_x7"], "reference": r["reference"],
+         "coalition_reference": r["coalition_reference"], "coalition_final": r["coalition_final"], "coalition_select": r["coalition_select"],
+         "doubling_includes_heldout": True,
          "w1": r["w1_search"] + to40 * r["w1_eval"], "coalition_total": r["coalition_prereqs"] / 2 + r["coalition_search"] + to40 * r["coalition_eval"],
          "dev_inner_config": r["dev_inner_config"],
          "dev_recheck_config": 2 * r["search_d2h3"] + r["search_x7"] + r["reference"] + 3 * r["eval_d2h3"] * 20 / n_eval,
@@ -322,8 +375,10 @@ def measure(out: Path, workers: int, fns: dict | None = None, smoke: bool = Fals
     to200, x7 = FINAL_SEEDS / n_eval, r["search_x7"] / max(r["search_d2h3"], 1e-12)
     t["task_seconds"] = {"search": {"profit": r["search_d2h3"], "x7": r["search_x7"], "W0": r["w1_search"], "W0_x7": r["w1_search"] * x7},
                          "reference": r["reference"], "W1": r["w1_search"], "W1_x7": r["w1_search"] * x7, "prereqs": r["coalition_prereqs"],
-                         "coalition": r["coalition_search"],
-                         "evaluate": {"profit": to200 * r["eval_d2h3"], "x7": to200 * r["eval_x7"], "welfare": to200 * r["w1_eval"], "coalition": to200 * r["coalition_eval"]},
+                         "coalition": r["coalition_search"], "coalition_reference": r["coalition_reference"], "coalition_final": r["coalition_final"],
+                         "coalition_select": r["coalition_select"],
+                         "evaluate": {"profit": to200 * r["eval_d2h3"], "x7": to200 * r["eval_x7"], "welfare": to200 * r["w1_eval"], "coalition": to200 * r["coalition_eval"],
+                                      "diagnostic": FINAL_SEEDS * r["episode"] / n_ep},
                          "cross_item": 8 * t["cross_row"] * FINAL_SEEDS / EVAL_SEEDS, "doubling": r["doubling"], "doubling_x7": r["doubling_x7"]}
     t["components"] = r; t["bank_sizes"] = dict(meta.get("state", {}).get("bank_sizes", {}))
     from scripts.revision_v2 import git_commit
@@ -336,6 +391,8 @@ def main(argv=None) -> int:
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument("--run", action="store_true"); g.add_argument("--table", default=None)
     g.add_argument("--decide", default=None, help="timings.json: write the design 8.2 decision once, with a ledger snapshot")
+    g.add_argument("--decide-h4", dest="decide_h4", default=None, help="the H4 timing export record: write the decision after the H4 timing once")
+    ap.add_argument("--timings", default=None); ap.add_argument("--frozen", default=None, help="the promoted decision.json")
     ap.add_argument("--ledger", default=None)
     ap.add_argument("--out", default="."); ap.add_argument("--workers", type=int, default=1); ap.add_argument("--dry-run", dest="dry_run", action="store_true")
     ap.add_argument("--smoke", action="store_true", help="the same workloads at the smoke budget (wiring check; not a cost estimate)")
@@ -351,6 +408,20 @@ def main(argv=None) -> int:
         tm = json.loads(raw)["timings"]
         d = {"decision": choose(tm, ledger, vcpu=int(tm.get("vcpu") or 16)), "ledger": ledger,
              "timings_sha256": hashlib.sha256(raw).hexdigest()}
+        target.parent.mkdir(parents=True, exist_ok=True); target.write_text(json.dumps(d, indent=1, default=float))
+        print(json.dumps(d["decision"], default=float))
+        return 0
+    if a.decide_h4:
+        import hashlib
+        target = Path(a.out)
+        if target.exists():
+            raise SystemExit(f"{target} exists: the decision after the H4 timing is written once")
+        if not (a.timings and a.frozen and a.ledger):
+            raise SystemExit("--decide-h4 needs --timings, --frozen, and --ledger")
+        raw, fr = Path(a.timings).read_bytes(), Path(a.frozen).read_bytes()
+        tm = json.loads(raw)["timings"]; ledger = json.loads(Path(a.ledger).read_text()); h4 = json.loads(Path(a.decide_h4).read_text())
+        d = {"decision": choose_after_h4(tm, ledger, json.loads(fr)["decision"], h4, vcpu=int(tm.get("vcpu") or 16)), "ledger": ledger, "h4_timing": h4,
+             "timings_sha256": hashlib.sha256(raw).hexdigest(), "frozen_sha256": hashlib.sha256(fr).hexdigest()}
         target.parent.mkdir(parents=True, exist_ok=True); target.write_text(json.dumps(d, indent=1, default=float))
         print(json.dumps(d["decision"], default=float))
         return 0
