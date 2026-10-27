@@ -30,7 +30,8 @@ from sim.calibrate import cell_config, load_calibration  # noqa: E402
 from sim.cell import Abstain, Cell, SeedCache, run_focal  # noqa: E402
 from sim.h4_loader import Excluded, load as load_h4  # noqa: E402
 from sim.locked import load_locked, market_config_from_locked  # noqa: E402
-from sim.objectives_v2 import CoalitionObjective, WelfareObjective, gross_efficiency, joint_reference, select_w1, _member_rows  # noqa: E402
+from sim.objectives_v2 import (CoalitionObjective, WelfareObjective, gross_efficiency, pick_joint, profile_descriptor, profile_factories,  # noqa: E402
+                               select_w1, _member_rows)
 from sim.policies.families import D2, Family, exact_key  # noqa: E402
 from sim.policies.honest import HonestMax  # noqa: E402
 from sim.policies.identity import h3_family  # noqa: E402
@@ -394,27 +395,128 @@ def reference_of(job: dict, out: Path) -> tuple[Candidate, dict, Path]:
 
 
 def _coalition_tag(job):
-    return f"{job['rule']}_c{job['c']}_{job['schedule']}"
+    """The coalition group of a cell (design draft 7, 6.3): one per context, rule, and c; X6-SE/v2 schedules and X8-DB share it."""
+    return f"{job['rule']}_c{job['c']}"
 
 
-def coalition_prereqs(job: dict, out: Path, catalog: list | None = None) -> None:
-    """The coalition group's joint twin and joint reference (design 6.3), created once per group before the objective
-    searches run, with the group's provenance; existing records are reused only if they pass the full record check."""
-    T, L = constants(job); cache = SeedCache(); st = settings(job); m = job["mkt"]; prov = group_provenance(job); catalog = catalog or [job]
-    fam = x6v2_family(T, L); members = x6v2_members(m["cfg"], m["focal"], int(job["c"])); stag = job["schedule"] == "staggered"
-    tag = _coalition_tag(job); tid, rid = f"joint_twin/{job['context']}/{tag}", f"joint_reference/{job['context']}/{tag}"
-    trec = read(path_of(out, tid))
-    if not reusable(path_of(out, tid), trec, prov, lambda: check_record(tid, trec, catalog, out)):
-        tobj = CoalitionObjective(m["cfg"], rule_factory(job), members, fam, m["seeds_train"], cache, "joint_twin", staggered=stag, T=T, L=L)
+def _twin_id(ctx: str, tag: str, schedule: str) -> str:
+    return f"joint_twin/{ctx}/{tag}_{schedule}"
+
+
+COALITION_STEPS = ("joint_twin", "joint_reference_pre", "joint_reference", "coalition_select")
+SCHEDULE_ORDER = ("synchronised", "staggered")
+
+
+def _group(job: dict, catalog: list[dict]) -> list[dict]:
+    return [j for j in catalog if j["context"] == job["context"] and j["objective"] in ("total", "min") and _coalition_tag(j) == _coalition_tag(job)]
+
+
+def _x6_schedules(group: list[dict]) -> list[str]:
+    present = {j["schedule"] for j in group if j["family"] == "X6-SE/v2"}
+    return [s for s in SCHEDULE_ORDER if s in present]
+
+
+def _members(job: dict) -> tuple:
+    return tuple(int(e) for e in x6v2_members(job["mkt"]["cfg"], job["mkt"]["focal"], int(job["c"])))
+
+
+def _desc(job: dict, knobs: dict) -> dict:
+    return profile_descriptor("knobs", job["family"], job["schedule"], knobs)
+
+
+def _desc_key(d: dict) -> tuple:
+    return (d["kind"], d["family"], d["schedule"], None if d["knobs"] is None else exact_key(d["knobs"]))
+
+
+def _project_desc(job: dict, knobs: dict) -> dict:
+    """The truthful projection of a coalition profile (spec 5.2): every member's claim clipped to its effort; for X8-DB
+    only the beneficiary's clip changes, every decoy knob is kept."""
+    return _desc(job, family_for(job["family"], *constants(job)).project(dict(knobs)))
+
+
+def _representable(job: dict, desc: dict) -> bool:
+    return desc["kind"] == "knobs" and desc["family"] == job["family"] and (job["family"] == "X8-DB" or desc["schedule"] == job["schedule"])
+
+
+def _rows_of(job: dict, desc: dict, seeds, cache) -> np.ndarray:
+    T, L = constants(job); members = _members(job)
+    return _member_rows(job["mkt"]["cfg"], rule_factory(job), members, seeds, cache, profile_factories(desc, members, T, L))
+
+
+def _coalition_objective(job: dict, kind: str, ref, cache) -> CoalitionObjective:
+    T, L = constants(job); m = job["mkt"]
+    return CoalitionObjective(m["cfg"], rule_factory(job), _members(job), family_for(job["family"], T, L), m["seeds_train"], cache, kind,
+                              joint_ref=ref, staggered=job["schedule"] == "staggered", T=T, L=L, family_name=job["family"])
+
+
+def _coalition_record(job: dict, obj, res, upstream: dict) -> dict:
+    T, L = constants(job)
+    return {"coalition": search_to_json(res), "selected": dict(res.best_knobs), "family": job["family"], "schedule": job["schedule"],
+            "members": list(_members(job)), "rows": [{"knobs": obj.archive[k].knobs, "member_rows": v["member_rows"]} for k, v in obj.extra.items()],
+            "upstream": upstream, "T": T, "L": L}
+
+
+def _menu_extension(group: list[dict], objective: str, out: Path) -> list[tuple[str, dict]]:
+    """Truthful projections of the group's searches for one objective: the winners in cell order, then every archive point
+    of each search in search order (design draft 7, 6.3 steps 3 and 5)."""
+    cells = [j for j in group if j["objective"] == objective]; recs = {j["id"]: read(path_of(out, j["id"])) for j in cells}
+    items = [(f"projection_winner:{j['id']}", _project_desc(j, recs[j["id"]]["selected"])) for j in cells]
+    for j in cells:
+        items += [(f"projection_archive:{j['id']}:{n}", _project_desc(j, e["knobs"])) for n, e in enumerate(recs[j["id"]]["coalition"]["archive"])]
+    return items
+
+
+def _joint_menu(group: list[dict], out: Path, final: bool) -> list[tuple[str, dict]]:
+    ctx, tag = group[0]["context"], _coalition_tag(group[0])
+    menu = [("honest_max", profile_descriptor("honest_max")), ("abstain", profile_descriptor("abstain"))]
+    for sch in _x6_schedules(group):
+        tw = read(path_of(out, _twin_id(ctx, tag, sch)))["twin"]["best_knobs"]
+        menu.append((f"joint_twin_{sch}", profile_descriptor("knobs", "X6-SE/v2", sch, {**tw, "clip": 1})))
+    menu += _menu_extension(group, "total", out)
+    if final:
+        menu += _menu_extension(group, "min", out)
+    seen, out_ = set(), []
+    for name, d in menu:
+        if _desc_key(d) not in seen:
+            seen.add(_desc_key(d)); out_.append((name, d))
+    return out_
+
+
+def coalition_step(kind: str, item: dict, out: Path, catalog: list[dict]) -> str:
+    """One coalition-group record (design draft 7, 6.3): a joint twin (per X6 schedule), the preliminary or final joint
+    reference, or the G_min selection; reused only if it passes the full record check (the resume rule)."""
+    rid = item["record_id"]; p = path_of(out, rid); rec = read(p); prov = expected_provenance(rid, catalog)
+    if reusable(p, rec, prov, lambda: check_record(rid, rec, catalog, out)):
+        return "skipped"
+    group = _group(item, catalog); j0 = group[0]; cache = SeedCache(); seeds = j0["mkt"]["seeds_train"]; T, L = constants(j0)
+    up = {u: sha_file(path_of(out, u)) for u in sorted(expected_upstream(rid, catalog))}
+    if kind == "joint_twin":
+        sch = rid.rsplit("_", 1)[1]; jt = next(j for j in group if j["family"] == "X6-SE/v2" and j["schedule"] == sch)
+        fam = x6v2_family(T, L); st = settings(jt)
+        tobj = _coalition_objective(jt, "joint_twin", None, cache)
         tw = cma_search(tobj, fam, st, 0, starts=fam.registered_starts({"near_corner": st.near_corner, "sobol_seed": st.sobol_seed}, twin=True))
-        write(path_of(out, tid), {"stage": "joint_twin", "provenance": prov, "twin": search_to_json(tw), "upstream": {}})
-        trec = read(path_of(out, tid))
-    jrec = read(path_of(out, rid))
-    if not reusable(path_of(out, rid), jrec, prov, lambda: check_record(rid, jrec, catalog, out)):
-        jr = joint_reference(m["cfg"], rule_factory(job), members, m["seeds_train"], cache, trec["twin"]["best_knobs"], stag, T, L)
-        write(path_of(out, rid), {"stage": "joint_reference", "provenance": prov, "name": jr["name"], "scores": jr["scores"],
-                                  "member_normalized": jr["member_normalized"].tolist(), "twin_knobs": jr["twin_knobs"],
-                                  "upstream": {tid: sha_file(path_of(out, tid))}})
+        body = {"twin": search_to_json(tw)}
+    elif kind in ("joint_reference_pre", "joint_reference"):
+        menu = _joint_menu(group, out, final=kind == "joint_reference")
+        rows = [(name, d, _rows_of(j0, d, seeds, cache)) for name, d in menu]
+        scores = [(name, float(r.sum(axis=0).mean())) for name, _, r in rows]
+        name = pick_joint(scores); _, d, r = next(x for x in rows if x[0] == name)
+        body = {"name": name, "descriptor": d, "scores": scores, "member_normalized": r.tolist(), "menu_size": len(menu)}
+    else:
+        final = read(path_of(out, f"joint_reference/{j0['context']}/{_coalition_tag(j0)}")); ref = np.asarray(final["member_normalized"])
+        winners = {}
+        for j in (g for g in group if g["objective"] == "min"):
+            rec = read(path_of(out, j["id"])); best = None
+            for e in rec["rows"]:
+                sc = float((np.asarray(e["member_rows"]) - ref).mean(axis=1).min())
+                if best is None or sc > best[1]:
+                    best = (_desc(j, e["knobs"]), sc)
+            if _representable(j, final["descriptor"]) and (best is None or 0.0 > best[1]):
+                best = (final["descriptor"], 0.0)
+            winners[j["id"]] = {"descriptor": best[0], "score": best[1]}
+        body = {"winners": winners}
+    write(p, {"stage": kind, "provenance": prov, **body, "upstream": up})
+    return "done"
 
 
 def stage_dependent(job: dict, out: Path) -> dict:
@@ -426,16 +528,26 @@ def stage_dependent(job: dict, out: Path) -> dict:
         res = cma_search(obj, fam, st, 1, incumbents={"honest_point": fam.honest_point(), **extra})
         controls(obj, fam)
         return _welfare_record(obj, res, select_w1(obj), {f"reference/{job['context']}/{job['rule']}": sha_file(rp), **up}, T, L)
-    fam = x6v2_family(T, L); members = x6v2_members(m["cfg"], m["focal"], int(job["c"])); stag = job["schedule"] == "staggered"
-    rid = f"joint_reference/{job['context']}/{_coalition_tag(job)}"; jrec = read(path_of(out, rid))
-    if jrec is None:
-        raise SystemExit(f"{job['id']}: needs {rid} (run the coalition prerequisites first)")
-    obj = CoalitionObjective(m["cfg"], rule_factory(job), members, fam, m["seeds_train"], cache, job["objective"],
-                             joint_ref=np.asarray(jrec["member_normalized"]), staggered=stag, T=T, L=L)
-    res = cma_search(obj, fam, st, 1, incumbents={"joint_twin": jrec["twin_knobs"], "honest_point": fam.honest_point()})
-    best = obj.extra[exact_key(res.best_knobs)] if exact_key(res.best_knobs) in obj.extra else None
-    return {"coalition": search_to_json(res), "selected": dict(res.best_knobs), "selected_extra": best, "members": list(members),
-            "upstream": {rid: sha_file(path_of(out, rid))}, "T": T, "L": L}
+    fam = family_for(job["family"], T, L)
+    ctx, tag = job["context"], _coalition_tag(job); incumbents = {"honest_point": fam.honest_point()}
+    if job["objective"] == "total":                                   # constant reference term: no reference needed (design 6.3 step 2)
+        obj = _coalition_objective(job, "total", np.zeros((len(_members(job)), len(m["seeds_train"]))), cache)
+        upstream = {}
+        if job["family"] == "X6-SE/v2":
+            tid = _twin_id(ctx, tag, job["schedule"]); trec = read(path_of(out, tid))
+            if trec is None:
+                raise SystemExit(f"{job['id']}: needs {tid} (run the coalition steps first)")
+            incumbents["joint_twin"] = {**trec["twin"]["best_knobs"], "clip": 1}; upstream[tid] = sha_file(path_of(out, tid))
+    else:
+        rid = f"joint_reference_pre/{ctx}/{tag}"; jrec = read(path_of(out, rid))
+        if jrec is None:
+            raise SystemExit(f"{job['id']}: needs {rid} (run the coalition steps first)")
+        obj = _coalition_objective(job, "min", np.asarray(jrec["member_normalized"]), cache)
+        if _representable(job, jrec["descriptor"]):
+            incumbents["joint_reference"] = dict(jrec["descriptor"]["knobs"])
+        upstream = {rid: sha_file(path_of(out, rid))}
+    res = cma_search(obj, fam, st, 1, incumbents=incumbents)
+    return _coalition_record(job, obj, res, upstream)
 
 
 # ---- freeze ------------------------------------------------------------------------------------------------------------
@@ -459,7 +571,9 @@ def expected_upstream(rid: str, catalog: list[dict], cuts: int = 0, h4_excluded:
             return {cell_id(ctx, rule, "D2+H3", "W0")} if fam == "X7-SC" else set()
         if obj == "W1":
             return {f"reference/{ctx}/{rule}"} | ({cell_id(ctx, rule, "D2+H3", "W1")} if fam == "X7-SC" else set())
-        return {f"joint_reference/{ctx}/{_coalition_tag(j)}"}
+        if obj == "total":
+            return {_twin_id(ctx, _coalition_tag(j), j["schedule"])} if fam == "X6-SE/v2" else set()
+        return {f"joint_reference_pre/{ctx}/{_coalition_tag(j)}"}
     kind, ctx, rest = rid.split("/", 2)
     if kind == "reference":
         ids = {_menu_id(ctx, rest, f) for f in MENU}
@@ -470,11 +584,25 @@ def expected_upstream(rid: str, catalog: list[dict], cuts: int = 0, h4_excluded:
         return {f"reference/{ctx}/{rest}"} | {cell_id(ctx, rest, f, "profit") for f in MAN.doc()["envelope_families"] if cell_id(ctx, rest, f, "profit") in by}
     if kind == "bank":
         return {cell_id(ctx, r, rest, "profit") for r in MAN.FACTORIAL if cell_id(ctx, r, rest, "profit") in by}
-    if kind == "joint_twin":
-        return set()
-    if kind == "joint_reference":
-        return {f"joint_twin/{ctx}/{rest}"}
+    if kind in COALITION_STEPS:
+        group = _group(_group_job(kind, ctx, rest, catalog), catalog)
+        tot = {j["id"] for j in group if j["objective"] == "total"}; mins = {j["id"] for j in group if j["objective"] == "min"}
+        if kind == "joint_twin":
+            return set()
+        if kind == "joint_reference_pre":
+            return {_twin_id(ctx, rest, s) for s in _x6_schedules(group)} | tot
+        if kind == "joint_reference":
+            return {f"joint_reference_pre/{ctx}/{rest}"} | mins
+        return {f"joint_reference/{ctx}/{rest}"} | mins
     raise ValueError(rid)
+
+
+def _group_job(kind: str, ctx: str, rest: str, catalog: list[dict]) -> dict:
+    tag = rest.rsplit("_", 1)[0] if kind == "joint_twin" else rest
+    j = next((j for j in catalog if j["context"] == ctx and j["objective"] in ("total", "min") and _coalition_tag(j) == tag), None)
+    if j is None or (kind == "joint_twin" and rest.rsplit("_", 1)[1] not in _x6_schedules(_group(j, catalog))):
+        raise ValueError(f"no coalition group for {kind}/{ctx}/{rest}")
+    return j
 
 
 def expected_provenance(rid: str, catalog: list[dict]) -> dict:
@@ -489,8 +617,7 @@ def expected_provenance(rid: str, catalog: list[dict]) -> dict:
         return aux_provenance(any_job["mkt"], rule=rest)
     if kind == "bank":
         return aux_provenance(any_job["mkt"], family=rest)
-    j = next(j for j in catalog if j["context"] == ctx and j["objective"] in ("total", "min") and _coalition_tag(j) == rest)
-    return group_provenance(j)
+    return group_provenance(_group_job(kind, ctx, rest, catalog))
 
 
 def check_record(rid: str, rec: dict | None, catalog: list[dict], out: Path, cuts: int = 0, h4_excluded: bool = False) -> None:
@@ -602,14 +729,15 @@ def stage_evaluate(job: dict, out: Path) -> dict:
             cand, _, _ = reference_of(job, out); ref = run_focal(cell, cand.policy_factory, cache)
             out_["constraint"] = (fr.normalized - ref.normalized).tolist()
         return out_
-    fam = x6v2_family(T, L); members = rec["members"]; c = len(members); stag = job["schedule"] == "staggered"; k = rec["selected"]
     jrec = read(path_of(out, f"joint_reference/{job['context']}/{_coalition_tag(job)}"))
-    rows = _member_rows(m["cfg"], rule_factory(job), members, cell.seeds, cache, [lambda j=j: x6v2_member(k, j, c, stag, T, L) for j in range(c)])
-    ref_f = {"honest_max": [HonestMax] * c, "abstain": [Abstain] * c,
-             "joint_twin": [lambda j=j: x6v2_member(jrec["twin_knobs"], j, c, stag, T, L) for j in range(c)]}[jrec["name"]]
-    ref_rows = _member_rows(m["cfg"], rule_factory(job), members, cell.seeds, cache, ref_f)
+    if job["objective"] == "min":
+        win = read(path_of(out, f"coalition_select/{job['context']}/{_coalition_tag(job)}"))["winners"][job["id"]]["descriptor"]
+    else:
+        win = _desc(job, rec["selected"])
+    rows = _rows_of(job, win, cell.seeds, cache); ref_rows = _rows_of(job, jrec["descriptor"], cell.seeds, cache)
     g = rows - ref_rows
-    return {"seeds": list(cell.seeds), "member_gain": g.tolist(), "total": float(g.mean(axis=1).sum()), "min": float(g.mean(axis=1).min())}
+    return {"seeds": list(cell.seeds), "member_gain": g.tolist(), "total": float(g.mean(axis=1).sum()), "min": float(g.mean(axis=1).min()),
+            "winner": win, "reference": jrec["descriptor"]}
 
 
 def _cross_rules(ctx: str, family: str, catalog: list[dict], bank: dict) -> tuple[dict, list]:
@@ -689,12 +817,29 @@ def stage_doubling(job: dict, out: Path, cuts: int = 0, h4_excluded: bool = Fals
         new_eff = obj.extra[exact_key(sel)]["eff"] if sel is not None else None
         return doubling_report("w1" if job["objective"] == "W1" else "welfare", {"eff": old_eff, "feasible": sel_old is not None},
                                {"eff": new_eff, "feasible": sel is not None})
-    m = job["mkt"]; fam = x6v2_family(T, L); orig = search_from_json(rec["coalition"])
-    jrec = read(path_of(out, f"joint_reference/{job['context']}/{_coalition_tag(job)}"))
-    obj = CoalitionObjective(m["cfg"], rule_factory(job), rec["members"], fam, m["seeds_train"], cache, job["objective"],
-                             joint_ref=np.asarray(jrec["member_normalized"]), staggered=job["schedule"] == "staggered", T=T, L=L)
+    m = job["mkt"]; fam = family_for(job["family"], T, L); orig = search_from_json(rec["coalition"])
+    if job["objective"] == "total":
+        obj = _coalition_objective(job, "total", np.zeros((len(_members(job)), len(m["seeds_train"]))), cache)
+        new = continue_search(obj, fam, st, orig)
+        return doubling_report("coalition", {"f": orig.best_f}, {"f": max(new.best_f, orig.best_f)})
+    ctx, tag = job["context"], _coalition_tag(job)                  # G_min: every score against the final reference (design 6.3)
+    ref = np.asarray(read(path_of(out, f"joint_reference/{ctx}/{tag}"))["member_normalized"])
+    sel = read(path_of(out, f"coalition_select/{ctx}/{tag}"))["winners"][job["id"]]
+    orig = rescore_min(orig, rec["rows"], ref)
+    obj = _coalition_objective(job, "min", ref, cache)
     new = continue_search(obj, fam, st, orig)
-    return doubling_report("coalition", {"f": orig.best_f}, {"f": max(new.best_f, orig.best_f)})
+    return doubling_report("coalition", {"f": sel["score"]}, {"f": max(new.best_f, sel["score"])})
+
+
+def rescore_min(orig, rows: list[dict], ref: np.ndarray):
+    """The search's archive with every G_min score recomputed against `ref` from the stored member rows (design 6.3)."""
+    by = {exact_key(e["knobs"]): np.asarray(e["member_rows"]) for e in rows}
+    arch = {}
+    for k, e in orig.archive.items():
+        f = float((by[k] - ref).mean(axis=1).min()) if k in by else e.f
+        arch[k] = replace(e, f=f)
+    best = max(arch.values(), key=lambda e: e.f)
+    return replace(orig, archive=arch, best_knobs=dict(best.knobs), best_f=best.f)
 
 
 # ---- orchestration -----------------------------------------------------------------------------------------------------
@@ -714,6 +859,8 @@ def _inputs(job: dict) -> set:
         ids.add(f"reference/{job['context']}/{job['rule']}")
     if job["objective"] in ("total", "min"):
         ids.add(f"joint_reference/{job['context']}/{_coalition_tag(job)}")
+    if job["objective"] == "min":
+        ids.add(f"coalition_select/{job['context']}/{_coalition_tag(job)}")
     return ids
 
 
@@ -763,11 +910,16 @@ def _waves(stage: str, jobs: list[dict], catalog: list[dict]) -> list[tuple[str,
         for t in _tiers([j for j in jobs if j["objective"] in ("W1", "total", "min")]):
             add("dependent", [j for j in t if j["objective"] == "W1" and j["family"] != "X7-SC"])
             add("dependent", [j for j in t if j["objective"] == "W1" and j["family"] == "X7-SC"])
-            groups = {}
-            for j in t:
-                if j["objective"] in ("total", "min"):
-                    groups.setdefault((j["context"], _coalition_tag(j)), {**j, "id": f"coalition/{j['context']}/{_coalition_tag(j)}"})
-            add("prereqs", list(groups.values())); add("dependent", [j for j in t if j["objective"] in ("total", "min")])
+            co = [j for j in t if j["objective"] in ("total", "min")]; groups = {}
+            for j in co:
+                groups.setdefault((j["context"], _coalition_tag(j)), j)
+            step = lambda kind, g, suffix="": {**g, "id": f"{kind}/{g['context']}/{_coalition_tag(g)}{suffix}", "record_id": f"{kind}/{g['context']}/{_coalition_tag(g)}{suffix}"}
+            add("joint_twin", [step("joint_twin", g, f"_{s}") for g in groups.values() for s in _x6_schedules(_group(g, catalog))])
+            add("dependent", [j for j in co if j["objective"] == "total"])
+            add("joint_reference_pre", [step("joint_reference_pre", g) for g in groups.values()])
+            add("dependent", [j for j in co if j["objective"] == "min"])
+            add("joint_reference", [step("joint_reference", g) for g in groups.values()])
+            add("coalition_select", [step("coalition_select", g) for g in groups.values()])
     elif stage == "evaluate":
         for t in _tiers(jobs):
             add("evaluate", t)
@@ -815,8 +967,8 @@ def _run_one(stage: str, job: dict, out: str, cuts: int, h4_excluded: bool, cata
         return _run_reference(job, out, cuts, h4_excluded, catalog)
     if stage == "cross":
         return _run_cross(job, out, catalog)
-    if stage == "prereqs":
-        coalition_prereqs(job, out, catalog); return "done"
+    if stage in COALITION_STEPS:
+        return coalition_step(stage, job, out, catalog)
     p = _stage_record_path(stage, job, out); rec = read(p)
     want = stage_upstream(stage, job, catalog, cuts, h4_excluded)
     def check():

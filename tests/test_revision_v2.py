@@ -337,12 +337,14 @@ def test_f6_unique_tmp_and_prereqs_before_pool(patched, monkeypatch, tmp_path):
     from sim import records_v2
     RV = patched
     assert "getpid" in inspect.getsource(records_v2.write)
-    order = []                                             # the group's prerequisites are one pool wave, before the objectives' wave
+    order = []                                             # the group's six steps are pool waves in design 6.3's order
     monkeypatch.setattr(RV, "_pool", lambda stage, jobs, out, w, c, h, *rest: order.append((stage, [j["id"] for j in jobs])) or ["done"] * len(jobs))
     mkt = RV.market("dev0", RV.DEV_ROOT, 0.2, dev=True, smoke=True)
     js = [RV.job(mkt, "F111", "X6-SE/v2", o, 2, "synchronised", smoke=True) for o in ("total", "min")]
     RV.run("dependent", js, tmp_path)
-    assert order == [("prereqs", [f"coalition/{CTX}/F111_c2_synchronised"]), ("dependent", [j["id"] for j in js])]
+    g = f"{CTX}/F111_c2"
+    assert order == [("joint_twin", [f"joint_twin/{g}_synchronised"]), ("dependent", [js[0]["id"]]), ("joint_reference_pre", [f"joint_reference_pre/{g}"]),
+                     ("dependent", [js[1]["id"]]), ("joint_reference", [f"joint_reference/{g}"]), ("coalition_select", [f"coalition_select/{g}"])]
 
 
 def test_f7_w1_and_w0_doubling_keep_metadata(ctx_dir, patched, tmp_path):
@@ -427,19 +429,19 @@ def test_g3_reference_resume_refuses_foreign_and_recomputes_stale(ctx_dir, patch
         RV.run("reference", jobs, d, catalog=jobs)
 
 
-def test_g3_coalition_prereqs_validate_before_reuse(patched, tmp_path):
+def test_g3_coalition_steps_validate_before_reuse(patched, tmp_path):
     from sim.records_v2 import write
     RV = patched
     mkt = RV.market("dev0", RV.DEV_ROOT, 0.2, dev=True, smoke=True)
     j = RV.job(mkt, "F111", "X6-SE/v2", "total", 2, "synchronised", smoke=True)
-    tag = RV._coalition_tag(j); tp, jp = RV.path_of(tmp_path, f"joint_twin/dev0@rho0.2/{tag}"), RV.path_of(tmp_path, f"joint_reference/dev0@rho0.2/{tag}")
-    RV.coalition_prereqs(j, tmp_path)
+    rid = f"joint_twin/dev0@rho0.2/{RV._coalition_tag(j)}_synchronised"; tp = RV.path_of(tmp_path, rid); item = {**j, "id": rid, "record_id": rid}
+    assert RV.coalition_step("joint_twin", item, tmp_path, [j]) == "done"
+    assert RV.coalition_step("joint_twin", item, tmp_path, [j]) == "skipped"
     t0 = json.loads(tp.read_text()); write(tp, {**t0, "stage": "search"})                     # same provenance, wrong stage
-    RV.coalition_prereqs(j, tmp_path)
-    assert json.loads(tp.read_text())["stage"] == "joint_twin" and json.loads(jp.read_text())["upstream"] == {f"joint_twin/dev0@rho0.2/{tag}": RV.sha_file(tp)}
-    write(jp, {**json.loads(jp.read_text()), "provenance": {**t0["provenance"], "context": "dev1@rho0.2"}})
+    assert RV.coalition_step("joint_twin", item, tmp_path, [j]) == "done" and json.loads(tp.read_text())["stage"] == "joint_twin"
+    write(tp, {**json.loads(tp.read_text()), "provenance": {**t0["provenance"], "context": "dev1@rho0.2"}})
     with pytest.raises(SystemExit):
-        RV.coalition_prereqs(j, tmp_path)
+        RV.coalition_step("joint_twin", item, tmp_path, [j])
 
 
 def test_h4_valid_derived_records_are_reused(ctx_dir, patched, monkeypatch, tmp_path):
@@ -779,3 +781,91 @@ def test_m2_boolean_cross_rows_are_stale_through_the_real_verifier(ctx_dir, patc
     rec["per_seed"] = {k: [bool(i % 2) for i in range(len(v))] for k, v in rec["per_seed"].items()}
     rec["matrix"] = [[float(np.mean(rec["per_seed"][f"{a}>{r}"])) for r in rec["rules"]] for a in rec["attacks"]]; write(p, rec)
     assert cid in RV.verify(d, jobs, jobs, None, None, None)["contexts"][CTX]["stale"]
+
+
+# ---- design draft 7, 6.3: the six-step coalition reference order (Part A2 Task 5) ----
+
+def _group_jobs(RV):
+    mkt = RV.market("dev0", RV.DEV_ROOT, 0.2, dev=True, smoke=True)
+    js = [RV.job(mkt, "F111", "X6-SE/v2", o, 2, s, smoke=True) for s in ("synchronised", "staggered") for o in ("total", "min")]
+    js += [RV.job(mkt, "F111", "X8-DB", o, 2, "roles", smoke=True) for o in ("total", "min")]
+    return js
+
+
+def test_coalition_order_is_enforced(patched, tmp_path):
+    RV = patched; js = _group_jobs(RV)
+    stages = [st for st, _ in RV._waves("dependent", js, js)]
+    assert stages == ["joint_twin", "dependent", "joint_reference_pre", "dependent", "joint_reference", "coalition_select"]
+    waves = dict((st, [i["id"] for i in items]) for st, items in RV._waves("dependent", js, js) if st != "dependent")
+    assert waves["joint_twin"] == [f"joint_twin/{CTX}/F111_c2_synchronised", f"joint_twin/{CTX}/F111_c2_staggered"]
+    gmin = next(j for j in js if j["objective"] == "min")
+    with pytest.raises(SystemExit):
+        RV.stage_dependent(gmin, tmp_path)                                     # no preliminary reference yet
+
+
+def test_group_upstream_and_x8_shares_group_reference(patched):
+    RV = patched; js = _group_jobs(RV)
+    tot = {j["id"] for j in js if j["objective"] == "total"}; mins = {j["id"] for j in js if j["objective"] == "min"}
+    assert RV.expected_upstream(f"joint_reference_pre/{CTX}/F111_c2", js) == tot | {f"joint_twin/{CTX}/F111_c2_synchronised", f"joint_twin/{CTX}/F111_c2_staggered"}
+    assert RV.expected_upstream(f"joint_reference/{CTX}/F111_c2", js) == mins | {f"joint_reference_pre/{CTX}/F111_c2"}
+    assert RV.expected_upstream(f"coalition_select/{CTX}/F111_c2", js) == mins | {f"joint_reference/{CTX}/F111_c2"}
+    x8min = next(j for j in js if j["family"] == "X8-DB" and j["objective"] == "min")
+    assert RV.expected_upstream(x8min["id"], js) == {f"joint_reference_pre/{CTX}/F111_c2"}
+    x8tot = next(j for j in js if j["family"] == "X8-DB" and j["objective"] == "total")
+    assert RV.expected_upstream(x8tot["id"], js) == set()                      # G_tot needs no reference (constant term)
+
+
+def test_per_schedule_joint_records_are_refused(patched, tmp_path):
+    RV = patched; js = _group_jobs(RV)
+    with pytest.raises((ValueError, StopIteration)):
+        RV.check_record(f"joint_reference/{CTX}/F111_c2_synchronised", {"stage": "joint_reference"}, js, tmp_path)
+
+
+def test_reload_projection_reference_and_x8_winner(patched):
+    from sim.cell import SeedCache
+    RV = patched; js = _group_jobs(RV); j = next(j for j in js if j["family"] == "X8-DB")
+    k = {"n_D": 3.0, "u_D": 0.2, "w_D": 0.1, "u_B": 0.4, "m_B": 0.3, "s_B": 0.0, "w_B": 0.1, "g_B": 1, "clip": 0}
+    d = RV._project_desc(j, k)
+    assert d["knobs"] == {**k, "clip": 1} and d["family"] == "X8-DB"
+    back = json.loads(json.dumps(d))
+    a = RV._rows_of(j, d, j["mkt"]["seeds_train"], SeedCache()); b = RV._rows_of(j, back, j["mkt"]["seeds_train"], SeedCache())
+    assert np.array_equal(a, b) and a.shape == (2, len(j["mkt"]["seeds_train"]))
+
+
+def test_rescore_min_against_final_reference():
+    import scripts.revision_v2 as RV
+    from sim.policies.families import exact_key
+    k1, k2 = {"u": 0.1, "clip": 0}, {"u": 0.2, "clip": 0}
+    rows = [{"knobs": k1, "member_rows": [[1.0, 1.0], [0.2, 0.2]]}, {"knobs": k2, "member_rows": [[0.5, 0.5], [0.5, 0.5]]}]
+    arch = {exact_key(k): ArchiveEntry(knobs=k, f=9.0, per_seed_profit=np.zeros(2), per_seed_normalized=np.zeros(2), inflated=False, source="s")
+            for k in (k1, k2)}
+    orig = SearchResult(np.zeros(2), k1, 9.0, "s", [], 2, [], {}, 0.0, False, archive=arch)
+    ref = np.array([[0.0, 0.0], [0.0, 0.0]])
+    new = RV.rescore_min(orig, rows, ref)
+    assert new.archive[exact_key(k1)].f == pytest.approx(0.2) and new.archive[exact_key(k2)].f == pytest.approx(0.5)
+    assert new.best_knobs == k2 and new.best_f == pytest.approx(0.5)
+
+
+def test_coalition_six_steps_smoke_and_final_reference_can_win(patched, tmp_path):
+    from sim.records_v2 import read, write
+    RV = patched; js = _group_jobs(RV)
+    RV.run("dependent", js, tmp_path)
+    tag = f"{CTX}/F111_c2"
+    for kind in ("joint_reference_pre", "joint_reference", "coalition_select"):
+        assert read(RV.path_of(tmp_path, f"{kind}/{tag}"))["stage"] == kind
+    pre = read(RV.path_of(tmp_path, f"joint_reference_pre/{tag}")); names = [n for n, _ in pre["scores"]]
+    assert names[:4] == ["honest_max", "abstain", "joint_twin_synchronised", "joint_twin_staggered"]
+    assert all(n.startswith("projection_") for n in names[4:]) and len(names) == pre["menu_size"]
+    sel = read(RV.path_of(tmp_path, f"coalition_select/{tag}"))["winners"]
+    assert set(sel) == {j["id"] for j in js if j["objective"] == "min"}
+    # Sol round-8 case: a representable final reference beats every archived point (all negative against it)
+    gmin = next(j for j in js if j["family"] == "X8-DB" and j["objective"] == "min")
+    fp = RV.path_of(tmp_path, f"joint_reference/{tag}"); fin = read(fp)
+    k = {"n_D": 3.0, "u_D": 0.2, "w_D": 0.1, "u_B": 0.4, "m_B": 0.3, "s_B": 0.0, "w_B": 0.1, "g_B": 1, "clip": 1}
+    big = (np.asarray(fin["member_normalized"]) + 100.0).tolist()
+    write(fp, {**fin, "descriptor": {"kind": "knobs", "family": "X8-DB", "schedule": "roles", "knobs": k}, "member_normalized": big})
+    sp = RV.path_of(tmp_path, f"coalition_select/{tag}"); sp.unlink()
+    item = {**gmin, "id": f"coalition_select/{tag}", "record_id": f"coalition_select/{tag}"}
+    RV.coalition_step("coalition_select", item, tmp_path, js)
+    w = read(sp)["winners"][gmin["id"]]
+    assert w["score"] == 0.0 and w["descriptor"]["knobs"] == k

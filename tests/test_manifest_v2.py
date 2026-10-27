@@ -138,7 +138,9 @@ def test_effective_and_required():
     assert len(effective(0, h4_excluded=True)) == 290 - 21
     req = required("headline@rho0.2")
     assert "reference/headline@rho0.2/F111" in req and "reference/headline@rho0.2/B2" in req
-    assert "joint_reference/headline@rho0.2/F111_c5_staggered" in req and "bank/headline@rho0.2/X7-SC" in req
+    assert "joint_twin/headline@rho0.2/F111_c5_staggered" in req and "joint_reference/headline@rho0.2/F111_c5" in req
+    assert "joint_reference_pre/headline@rho0.2/F111_c2" in req and "coalition_select/headline@rho0.2/C*_c2" in req
+    assert "joint_reference/headline@rho0.2/F111_c5_staggered" not in req and "bank/headline@rho0.2/X7-SC" in req
     assert "envelope/headline@rho0.2/C*" in req
     req1 = required("headline@rho1")
     assert "reference/headline@rho1/R4" in req1 and not any(r.startswith("bank/headline@rho1") for r in req1)

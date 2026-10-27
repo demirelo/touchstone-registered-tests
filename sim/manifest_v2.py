@@ -151,13 +151,13 @@ def required(ctx: str, cuts: int = 0, h4_excluded: bool = False) -> list[str]:
     req = [c["id"] for c in cs]
     rules = sorted({c["rule"] for c in cs if c["objective"] != "coalition"}, key=lambda r: (r not in FIXED, r))
     req += [f"reference/{ctx}/{r}" for r in rules]
+    groups: dict = {}
     for c in cs:
         if c["objective"] in ("total", "min"):
-            tag = f"{c['rule']}_c{c['c']}_{c['schedule']}"
-            for kind in ("joint_twin", "joint_reference"):
-                rid = f"{kind}/{ctx}/{tag}"
-                if rid not in req:
-                    req.append(rid)
+            groups.setdefault(f"{c['rule']}_c{c['c']}", set()).add(c["schedule"] if c["family"] == "X6-SE/v2" else None)
+    for tag, schedules in groups.items():                  # design draft 7, 6.3: one coalition group per rule and c
+        req += [f"joint_twin/{ctx}/{tag}_{s}" for s in ("synchronised", "staggered") if s in schedules]
+        req += [f"{kind}/{ctx}/{tag}" for kind in ("joint_reference_pre", "joint_reference", "coalition_select")]
     env_rules = sorted({c["rule"] for c in cs if c["block"] == "extras"})
     req += [f"envelope/{ctx}/{r}" for r in env_rules]
     if any(c["block"] == "matched" for c in cs) and ctx in {context(m) for m in doc()["markets"]}:
