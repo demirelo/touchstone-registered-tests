@@ -76,3 +76,22 @@ def test_check_json_is_inside_the_hash(tmp_path):
     d = _copy(tmp_path); main(["--bundle", str(d), "--smoke", "--comparator", _cred(tmp_path), "--defender-commit", "abc123"])
     before = bundle_sha(d); p = d / "h4" / "check.json"; p.write_text(p.read_text() + " ")
     assert bundle_sha(d) != before
+
+
+def test_h4_brief_allows_defender_source():
+    """Design draft 7, 5.3: the sealed author may study the frozen defence; the envelope and the timing record are stated."""
+    text = (Path(__file__).resolve().parents[1] / "docs" / "revision" / "h4-brief.md").read_text()
+    allowed = text.split("## What you may read", 1)[1].split("##", 1)[0]
+    assert "sim/mechanisms/" in allowed and "comparator.json" in allowed and "tuned" in allowed
+    assert "at most 15 knobs" in text and "8 core-hours" in text and "Family.project" in text
+    assert "--defender-commit" in text and "bundle_sha256" in text and "Do not read `sealed/`" in text
+    forbid = next(line for line in text.splitlines() if line.startswith("Do not read"))
+    assert "sim/mechanisms" not in forbid
+
+
+def test_operations_plan_has_part_a2_changes():
+    text = (Path(__file__).resolve().parents[1] / "docs" / "superpowers" / "plans" / "2026-10-25-revision-operations.md").read_text()
+    assert "## Changes in Part A2" in text and "decision_h4" in text and "defender_commit" in text
+    part_b = text.split("## Part B", 1)[1]
+    assert part_b.index("### Operation 3") < part_b.index("### Operation 1")              # H4 after the defenders are frozen
+    assert "R3-t | R4-t" not in part_b and "| fixtures" not in part_b and "--kind fixtures" not in part_b

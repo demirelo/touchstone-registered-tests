@@ -149,29 +149,33 @@ Status: accepted by Sol high and Astra high in round 9 (both accept, no findings
 
 Each operation is logged in `docs/revision/operations-ledger.md` (date, commit, command, pod ids, USD, outputs and hashes, deviations); every paid pod's spend is recorded with `budget_v2.py --record`.
 
-### Operation 1: H4 sealed session (author)
-- [ ] Executor: tag `code_commit` as `h4-base` (author signs); hand over `docs/revision/h4-brief.md`.
-- [ ] Author: in a fresh clone at `h4-base`, run the fresh Codex `gpt-6.1-sol` session (high) with the brief; it writes `sealed2/h4/`, runs `scripts/h4_check.py --bundle sealed2`, commits in that clone, and prints the commit and bundle hashes.
-- [ ] Author: record both hashes in the ledger; keep the clone outside this repository; do not read the bundle.
-- **Exit:** two hashes in the ledger; `git ls-files | grep -c sealed2` is 0 here. **Stop:** if `h4_check` cannot pass before the lock, the protocol records `h4: null` and Q3's independently authored part is unanswered.
+Order of Operations 1 to 4 under design draft 7 (section 11): Operation 2 (benchmark), Operation 3 (comparator and tuning, then the defender freeze), Operation 1 (the sealed H4 session at the defender-freeze commit, then the decision after the H4 timing), Operation 4 (coverage). The numbers are kept so that earlier records stay valid; the sections below are in execution order.
 
 ### Operation 2: Benchmark and the cost decision
 - [ ] Executor: `uv run python scripts/benchmark_v2.py --run --smoke --out results/v2/benchmark_smoke` (wiring only).
-- [ ] Executor: `budget_v2.py --reserve development bench 2.4` (3 USD cap); one 16-vCPU pod: `SCRIPT=scripts/benchmark_v2.py ROUT=results/v2/benchmark results/pods/explore_pod.sh <tarball> bench 3 results/v2/benchmark "--run"`; `promote_v2.py --kind benchmark`.
-- [ ] Executor: `budget_v2.py --record bench <actual>`; `choose()` on the promoted timings and the ledger, written once to `decision.json` and promoted (`--kind decision`); report branch, cuts, development, evaluation, and total USD. Author: approve in writing when the total exceeds 40 USD (the sentence goes into the protocol). A "stop" from `choose` stops the program for the author.
+- [ ] Executor: `budget_v2.py --reserve development bench 2.4` (3 USD cap); one 16-vCPU pod: `SCRIPT=scripts/benchmark_v2.py ROUT=results/v2/benchmark results/pods/explore_pod.sh <tarball> bench 3 results/v2/benchmark "--run --usd-per-pod-hour <price>"`; `promote_v2.py --kind benchmark`.
+- [ ] Executor: `budget_v2.py --record bench <actual>`; `benchmark_v2.py --decide results/v2/benchmark/timings.json --ledger docs/revision/budget-ledger.json --out results/v2/decision/decision.json` (written once) and `promote_v2.py --kind decision`; report branch, cuts, development, evaluation, and total USD. Author: approve in writing with `budget_v2.py --approve <limit> "<sentence>"` when the total exceeds 40 USD. A "stop" stops the program for the author. H4 is priced as an X7-SC cell until its timing exists (Operation 1).
 - **Exit:** the decision and the approval (if needed) in the ledger; no other paid step before this exit.
 
-### Operation 3: Comparator selection, whole-system tuning, fixtures
+### Operation 3: Comparator selection, whole-system tuning, and the defender freeze
 - [ ] Executor: one pod, `tune_v2.py --select comparator --markets <chosen> --workers <vcpu> --out results/v2/tune_comparator`, cap from `budget_v2.py --reserve development tune-comparator <row estimate>`; pull; `promote_v2.py --kind comparator`.
-- [ ] Executor: five pods in parallel, `--select B3-t | R3-t | R4-t | C*-t | fixtures --markets <chosen> --comparator experiments/v2/comparator.json --workers <vcpu>`, each cap reserved before its launch; pull; record each actual; promote each (`--kind system`, `--kind fixtures`).
-- **Exit:** promotions recorded; development spend under 12 USD; otherwise stop for the author.
+- [ ] Executor: three pods in parallel, `tune_v2.py --select B3-t | R3-t | C*-t --markets <chosen> --comparator experiments/v2/comparator.json --workers <vcpu>`, each cap reserved before its launch; pull; record each actual; promote each (`--kind system`). There are no C*/S2 fixture searches and no R4-t (design draft 7, 3.5).
+- [ ] Executor: commit `experiments/v2/` (comparator, tuned files, promotion record) on top of `code_commit`: this data-only commit is `defender_commit`. Author: sign it and tag it `h4-base`.
+- **Exit:** promotions recorded; development spend under 12 USD; `defender_commit` and `h4-base` exist; otherwise stop for the author.
+
+### Operation 1: H4 sealed session (author), then the decision after the H4 timing
+- [ ] Executor: hand over `docs/revision/h4-brief.md` (defence-aware, design 5.3).
+- [ ] Author: in a fresh clone at `h4-base`, run the fresh Codex `gpt-6.1-sol` session (high) with the brief; it writes `sealed2/h4/`, runs `scripts/h4_check.py --bundle sealed2 --defender-commit <defender_commit>`, commits in that clone, and prints the commit and the export record line (`bundle_sha256`, `commit`, and the timing payload).
+- [ ] Author: copy the export record line into `experiments/v2/h4/timing.json` and record `experiments/v2/h4/commitment.json` = `{"bundle_sha256": <from the line>, "defender_commit": <the h4-base commit>}`; keep the clone outside this repository; do not read the bundle.
+- [ ] Executor: `benchmark_v2.py --decide-h4 experiments/v2/h4/timing.json --timings experiments/v2/benchmark/timings.json --frozen experiments/v2/benchmark/decision.json --ledger docs/revision/budget-ledger.json --out experiments/v2/h4/decision-h4.json`, then `promote_v2.py --kind decision_h4 --from experiments/v2/h4 --code-commit <code_commit>` (refused if the timing record's identifiers differ from `commitment.json` or the defender files changed since `defender_commit`). If the decision stops, the program stops for the author; if it needs approval, the author records it with `budget_v2.py --approve <limit> "<sentence>"` before any coverage reservation (the gate refuses otherwise).
+- **Exit:** the two identifiers, the timing record, and `decision-h4.json` promoted; `git ls-files | grep -c sealed2` is 0 here. **Stop:** if `h4_check` cannot pass before the lock, the protocol records `h4: null`, Q3's independently authored part is unanswered, and the decision of Operation 2 stands.
 
 ### Operation 4: Coverage check
-- [ ] Executor: one pod per branch market (caps reserved), `coverage_v2.py --pools --market <m> --branch <chosen> --inputs experiments/v2 --workers <vcpu> --out results/v2/coverage`; pull the pools together; locally `coverage_v2.py --select --branch <chosen> --out results/v2/coverage` then `coverage_v2.py --validate --branch <chosen> --out results/v2/coverage`; `promote_v2.py --kind coverage --branch <chosen>`; then `promote_v2.py --final` writes `params.json`.
+- [ ] Executor: one pod per branch market, each reserved with its own tag (`budget_v2.py --reserve development coverage-<market> <estimate>`; the gate after the H4 decision applies to every such reservation): `coverage_v2.py --pools --market <m> --branch <chosen> --inputs experiments/v2 --code-commit <code_commit> --workers <vcpu> --out results/v2/coverage`; pull the pools together; locally `coverage_v2.py --select --branch <chosen> --code-commit <code_commit> --out results/v2/coverage` then `coverage_v2.py --validate --branch <chosen> --code-commit <code_commit> --out results/v2/coverage`; `promote_v2.py --kind coverage --branch <chosen>`; then `promote_v2.py --final [--h4]` writes `params.json` (with `--h4`, `decision-h4.json` is required).
 - **Exit:** `kappa_effective` for Q1 and Q4 (number or null).
 
 ### Operation 5: Protocol v2, review, lock
-- [ ] Executor: draft `docs/revision/predictions-v2.md` (design 9.7 directions against development results); `lock_v2.py --write ...`; `lock_v2.py --check`.
+- [ ] Executor: draft `docs/revision/predictions-v2.md` (design 9.7 directions against development results); `lock_v2.py --write ...` (with H4, the protocol binds `decision-h4.json`; an approval sentence must equal the ledger's); `lock_v2.py --check`.
 - [ ] Sol high and Astra high review protocol and predictions to consensus.
 - [ ] Author, in order: `git commit -S` (protocol and predictions); `ots stamp experiments/protocol-v2.yaml`; push the commit; `ots upgrade` until the proof holds a Bitcoin attestation; `git commit -S` the upgraded proof; `git tag -s protocol-v2` on that commit; push the commit and tag; record the tip height at the push (`published_height`).
 - [ ] Executor: a fresh clean clone at `protocol-v2` (`results/v2/eval-checkout`); `lock_v2.py --check-commit` there.
@@ -297,3 +301,14 @@ Astra: accept, no findings. Sol: one finding.
 - Task 7: the draw is checked against the committed proof's bytes, parsed by `scripts/ots_proof.py` (no `ots info` listing); `block_draw.anchor` also records the headers from the lowest rejected attestation to A; `draw_v2.py --instances` takes `--ots PROOF`; `--h4-decision` writes `h4.json` once (with `registered_sha256`) and accepts only an identical rerun.
 - Task 8: fresh runs need `--protocol` (the H4 decision is checked against it before any episode); `verify` needs `--instances`, `--protocol`, and `--commit` in every mode. Operation 7's commands above carry these arguments.
 - Task 10: `reproduce.py` verifies the tag signature, runs the artifact check (including the draw and the instances bound to it), checks the installed packages against the clone's `uv.lock`, and runs the real report's `--check`.
+
+## Changes in Part A2 (design draft 7; plan `docs/superpowers/plans/2026-10-27-revision-part-a2.md`)
+
+| Change | Where |
+|---|---|
+| Operation 1 (H4) runs after Operation 3 at `defender_commit` (tag `h4-base`), with the defence-aware brief, the envelope, and a timing record | Operations 1, 3; `docs/revision/h4-brief.md`; `scripts/h4_check.py` |
+| The decision after the H4 timing (`benchmark_v2.py --decide-h4`, `promote_v2.py --kind decision_h4`, identifiers in `commitment.json`); the gate on every development reservation after it; approval through `budget_v2.py --approve` | Operation 1, 4, 5; `scripts/benchmark_v2.py`, `scripts/promote_v2.py`, `scripts/budget_v2.py`, `scripts/lock_v2.py` |
+| Three tuned systems (no R4-t), no C*/S2 fixture searches, eight coverage profiles, Clopper-Pearson selection | Operations 3, 4 |
+| Coverage producers take `--code-commit`; records made at `defender_commit` or later data-only commits are accepted (`promote_v2.same_code`) | Operation 4 |
+| The manifest: 287 search cells, 3 diagnostic cells, 98 doublings; the pods of Operation 7 are unchanged (six fresh, two headline contexts) | Operation 7 |
+
