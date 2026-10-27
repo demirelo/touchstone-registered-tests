@@ -22,10 +22,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts import revision_v2 as RV  # noqa: E402
 from sim import calibration_v2 as C  # noqa: E402
 from sim.instances import coverage_pool  # noqa: E402
+from scripts.promote_v2 import same_code  # noqa: E402
 
 FIXED = {"tol": 0.16, "L": 10}
 REGISTERED = {"selection": 10_000, "validation": 20_000, "resamples": 9999}
 SOURCE = {"F000": "B3-t", "F111": "R3-t"}
+REPO = RV.ROOT                                      # the repository whose history `same_code` reads
 
 
 def fixture_inputs(inputs: Path, label: str) -> tuple[dict, dict]:
@@ -66,7 +68,7 @@ def _map(fn, items: list[tuple], workers: int) -> list:
         return list(ex.map(fn, *zip(*items)))
 
 
-def build_market_pool(label: str, inputs: Path, branch: str, M: int, workers: int) -> dict:
+def build_market_pool(label: str, inputs: Path, branch: str, M: int, workers: int, code_commit: str | None = None) -> dict:
     cred = json.loads((Path(inputs) / "comparator.json").read_text())["cred"]
     attacks, refs = fixture_inputs(Path(inputs), label); mkt = RV.market(label, RV.DEV_ROOT, 0.2, dev=True)
     seeds = list(coverage_pool(label, M)); k = max(1, min(int(workers), len(seeds)))
@@ -75,11 +77,16 @@ def build_market_pool(label: str, inputs: Path, branch: str, M: int, workers: in
     pool = {"seeds": [s for p in parts for s in p["seeds"]],
             "normalized": {key: [v for p in parts for v in p["normalized"][key]] for key in parts[0]["normalized"]},
             "eff": {key: [v for p in parts for v in p["eff"][key]] for key in parts[0]["eff"]}}
-    return {**pool, "market": label, "branch": branch, "pool_size": int(M), "inputs_manifest": inputs_manifest(inputs), "commit": RV.git_commit()}
+    head = RV.git_commit()
+    if code_commit is not None and not same_code(REPO, code_commit, head):
+        raise SystemExit(f"this checkout ({head}) is not the code commit {code_commit} or a data-only descendant: the pools are refused")
+    return {**pool, "market": label, "branch": branch, "pool_size": int(M), "inputs_manifest": inputs_manifest(inputs), "commit": head,
+            "code_commit": code_commit or head}
 
 
 def read_pools(out: Path, branch: str, commit: str | None = None) -> dict:
-    """Every pool of the branch, built by this code (`commit`), for its own market and branch, from the same tuning inputs."""
+    """Every pool of the branch, built by this code (`commit`, or a data-only descendant of it: design draft 7), for its own
+    market and branch, from the same tuning inputs."""
     markets = C.BRANCHES[branch][0]; pools = {}; commit = commit or RV.git_commit()
     for m in markets:
         p = Path(out) / "pools" / f"{m}.json"
@@ -88,7 +95,7 @@ def read_pools(out: Path, branch: str, commit: str | None = None) -> dict:
         pools[m] = json.loads(p.read_text())
         if pools[m].get("branch") != branch:
             raise SystemExit(f"pool {m} was built for branch {pools[m].get('branch')!r}, not {branch!r}")
-        if pools[m].get("market") not in (None, m) or pools[m].get("commit") != commit:
+        if pools[m].get("market") not in (None, m) or not same_code(REPO, commit, pools[m].get("commit")):
             raise SystemExit(f"pool {m} was built by commit {pools[m].get('commit')!r} for market {pools[m].get('market')!r}, not by {commit!r}")
     if len({json.dumps(pl.get("inputs_manifest"), sort_keys=True) for pl in pools.values()}) != 1:
         raise SystemExit("the pools were built from different tuning inputs")
@@ -115,6 +122,7 @@ def main(argv=None) -> int:
     ap.add_argument("--inputs", default=None); ap.add_argument("--workers", type=int, default=1); ap.add_argument("--market", default=None)
     ap.add_argument("--replications", type=int, default=None); ap.add_argument("--resamples", type=int, default=9999)
     ap.add_argument("--pool-size", dest="pool_size", type=int, default=None); ap.add_argument("--seed", type=int, default=20261022)
+    ap.add_argument("--code-commit", dest="code_commit", default=None, help="the reviewed code commit (default: this checkout's HEAD)")
     a = ap.parse_args(argv)
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True); cov_path = out / "coverage.json"
     if a.pools:
@@ -124,10 +132,12 @@ def main(argv=None) -> int:
         for m in ([a.market] if a.market else markets):
             if m not in markets:
                 raise SystemExit(f"{m} is not a market of branch {a.branch}")
-            pool = build_market_pool(m, Path(a.inputs), a.branch, M, a.workers)
+            pool = build_market_pool(m, Path(a.inputs), a.branch, M, a.workers, a.code_commit)
             (out / "pools").mkdir(exist_ok=True); (out / "pools" / f"{m}.json").write_text(json.dumps(pool))
         return 0
-    pools = read_pools(out, a.branch); sizes = {pl.get("pool_size") for pl in pools.values()}
+    if a.code_commit is not None and not same_code(REPO, a.code_commit, RV.git_commit()):
+        raise SystemExit(f"this checkout is not the code commit {a.code_commit} or a data-only descendant")
+    pools = read_pools(out, a.branch, a.code_commit); sizes = {pl.get("pool_size") for pl in pools.values()}
     if len(sizes) != 1 or (a.pool_size and a.pool_size not in sizes):
         raise SystemExit(f"pool sizes {sorted(sizes)} disagree with each other or with --pool-size")
     M = sizes.pop()
@@ -151,7 +161,7 @@ def main(argv=None) -> int:
             cov[fam]["admitted"] = bool(cov[fam]["validation"] and cov[fam]["validation"]["admitted"])
             cov[fam].update(validation_replications=reps, resamples=a.resamples, kappa_effective=kp if cov[fam]["admitted"] else None)
     reg = C.BRANCHES[a.branch][1]
-    cov.update(branch=a.branch, markets=list(C.BRANCHES[a.branch][0]), pool_size=int(M), commit=RV.git_commit(),
+    cov.update(branch=a.branch, markets=list(C.BRANCHES[a.branch][0]), pool_size=int(M), commit=RV.git_commit(), code_commit=a.code_commit or RV.git_commit(),
                inputs_manifest=next(iter(pools.values())).get("inputs_manifest"),
                pools={m: {"sha256": _sha(out / "pools" / f"{m}.json"), "seeds": len(pl["seeds"]),
                           "profile_lengths": sorted({len(v) for v in pl["normalized"].values()} | {len(v) for v in pl["eff"].values()})}

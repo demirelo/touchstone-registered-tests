@@ -116,6 +116,9 @@ def check(repo, protocol: dict) -> list[str]:
     if abs(float((protocol.get("cost") or {}).get("spent_usd", -1)) - _spent(repo)) > 1e-9:
         out.append("ledger: the recorded spend differs from the protocol's spent_usd")
     h4 = protocol.get("h4")
+    com = repo / "experiments" / "v2" / "h4" / "commitment.json"
+    if h4 is not None and com.exists() and _json(com).get("bundle_sha256") != h4.get("bundle_sha256"):
+        out.append("h4: the protocol's bundle hash differs from the author's commitment (experiments/v2/h4/commitment.json)")
     if h4 is not None and not (re.fullmatch(r"[0-9a-f]{40}", str(h4.get("commit"))) and re.fullmatch(r"[0-9a-f]{64}", str(h4.get("bundle_sha256")))):
         out.append("h4: the commitment needs a 40-hex commit and a 64-hex bundle hash")
     if protocol.get("version") != 2 or not re.fullmatch(r"[0-9a-f]{40}", str(protocol.get("code_commit"))):
@@ -125,6 +128,15 @@ def check(repo, protocol: dict) -> list[str]:
 
 def _git(repo: Path, *args) -> subprocess.CompletedProcess:
     return subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True)
+
+
+def changed_paths(repo, a: str, b: str) -> list[str]:
+    """Paths changed between two commits, NUL-separated so that names with quotes, braces, or spaces are exact (git quotes
+    them in plain --name-only output)."""
+    d = _git(Path(repo), "diff", "-z", "--name-only", a, b)
+    if d.returncode != 0:
+        raise ValueError(f"git diff {a} {b} failed: {d.stderr.strip()}")
+    return [p for p in d.stdout.split("\0") if p]
 
 
 def check_commit(repo) -> None:
@@ -145,10 +157,10 @@ def check_commit(repo) -> None:
         raise SystemExit(f"code_commit {code} is not a commit in this checkout (shallow or foreign clone?)")
     if _git(repo, "merge-base", "--is-ancestor", code, "HEAD").returncode != 0:
         raise SystemExit(f"code_commit {code} is not an ancestor of HEAD")
-    diff = _git(repo, "diff", "--name-only", code, "HEAD")
-    if diff.returncode != 0:
-        raise SystemExit(f"git diff {code} HEAD failed: {diff.stderr.strip()}")
-    changed = [p for p in diff.stdout.split() if p]
+    try:
+        changed = changed_paths(repo, code, "HEAD")
+    except ValueError as e:
+        raise SystemExit(str(e))
     bad = [p for p in changed if not (p.startswith(ALLOWED) or p in ALLOWED_FILES)]
     if bad:
         raise SystemExit(f"files other than data and documents changed since code_commit: {bad}")

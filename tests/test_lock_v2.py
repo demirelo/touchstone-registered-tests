@@ -239,3 +239,18 @@ def test_lock_approval_matches_ledger(tmp_path):
         _build(r, approval="a different sentence")
     assert _build(r, approval="Approved up to 45 USD after the H4 timing. (author)")["approval"].startswith("Approved")
 
+
+
+def test_changed_paths_handles_quoted_names(tmp_path):
+    """Part A2 Task 12: promoted tuning logs are named like `B3-t__{"L":10,"tol":0.12}__inner.json`; git quotes such names
+    in --name-only output unless -z is used, which made data-only commits look like code changes."""
+    import subprocess
+    from scripts.lock_v2 import changed_paths
+    from scripts.promote_v2 import same_code
+    r = tmp_path / "r"; (r / "sim").mkdir(parents=True)
+    run = lambda *a: subprocess.run(["git", "-C", str(r), *a], check=True, capture_output=True, text=True).stdout.strip()
+    run("init", "-q"); run("config", "user.email", "t@t"); run("config", "user.name", "t")
+    (r / "sim" / "a.py").write_text("x\n"); run("add", "-A"); run("-c", "commit.gpgsign=false", "commit", "-q", "-m", "a"); a = run("rev-parse", "HEAD")
+    name = 'experiments/v2/log/B3-t__{"L":10,"tol":0.12}__inner json.json'
+    (r / name).parent.mkdir(parents=True); (r / name).write_text("{}"); run("add", "-A"); run("-c", "commit.gpgsign=false", "commit", "-q", "-m", "b"); b = run("rev-parse", "HEAD")
+    assert changed_paths(r, a, b) == [name] and same_code(r, a, b) is True

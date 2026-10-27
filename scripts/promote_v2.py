@@ -2,13 +2,16 @@
 producer's schema and the registered procedure, then copied, and every copied file's SHA-256 is appended to
 experiments/v2/promotion.json; a path already promoted with another hash is refused. --final checks that every kind is
 present and writes params.json, the --params file of scripts/revision_v2.py. Kinds: comparator, system (one tuned file),
-coverage (with its pools), benchmark, decision."""
+coverage (with its pools), benchmark, decision, decision_h4. A record's commit is accepted if it is the code commit or a
+later commit that changes only experiments/v2/ and docs/ (`same_code`, design draft 7: the defender-freeze commit and later
+data-only commits run the same code)."""
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -25,6 +28,29 @@ SYSTEMS = ("B3-t", "R3-t", "C*-t")                  # design draft 7, 3.5
 KAPPAS = (1.0, 0.5, 0.25)
 REGISTERED = {"selection": 10_000, "validation": 20_000, "resamples": 9999}
 BENCH_MARKETS = ["headline", "dev0"]
+ROOT = Path(__file__).resolve().parents[1]
+ALLOWED = ("experiments/v2/", "docs/")             # the data-only paths (scripts/lock_v2.py ALLOWED)
+_REPO = {"path": ROOT}                             # the repository whose history `same_code` reads (set by `promote`)
+
+
+def same_code(repo, code_commit: str, commit: str | None) -> bool:
+    """True if `commit` is `code_commit`, or a descendant of it that changes only data-only paths."""
+    if not commit:
+        return False
+    if commit == code_commit:
+        return True
+    run = lambda *a: subprocess.run(["git", "-C", str(repo), *a], capture_output=True, text=True)
+    if run("merge-base", "--is-ancestor", str(code_commit), str(commit)).returncode != 0:
+        return False
+    from scripts.lock_v2 import changed_paths
+    try:
+        return all(any(f.startswith(a) for a in ALLOWED) for f in changed_paths(repo, str(code_commit), str(commit)))
+    except ValueError:
+        return False
+
+
+def _same(code_commit: str, commit) -> bool:
+    return same_code(_REPO["path"], code_commit, commit)
 
 
 class Refused(Exception):
@@ -67,7 +93,7 @@ def _record(to: Path, kind: str, files: list[tuple[Path, str]]) -> list[str]:
 
 def _common(d: dict, code_commit: str, markets: list[str] | None, what: str) -> None:
     _require(d.get("smoke") is False, f"{what}: smoke outputs are not promoted")
-    _require(d.get("commit") == code_commit, f"{what}: commit {d.get('commit')!r} differs from the code commit {code_commit!r}")
+    _require(_same(code_commit, d.get("commit")), f"{what}: commit {d.get('commit')!r} is not the code commit {code_commit!r} or a data-only descendant")
     if markets is not None:
         _require(list(d.get("markets") or []) == list(markets), f"{what}: markets {d.get('markets')} are not {list(markets)}")
 
@@ -150,7 +176,7 @@ def _coverage(src, to, markets, code_commit, branch):
     _require(branch is not None, "coverage: --branch is required")
     cov = _json(Path(src) / "coverage.json"); what = "coverage"
     _require(cov.get("smoke") is False, f"{what}: smoke outputs are not promoted")
-    _require(cov.get("commit") == code_commit, f"{what}: commit {cov.get('commit')!r} differs from the code commit {code_commit!r}")
+    _require(_same(code_commit, cov.get("commit")), f"{what}: commit {cov.get('commit')!r} is not the code commit {code_commit!r} or a data-only descendant")
     _require(cov.get("branch") == branch, f"{what}: branch {cov.get('branch')!r} is not {branch!r}")
     bm = list(CAL.BRANCHES[branch][0])
     _require(cov.get("markets") == bm == list(markets), f"{what}: markets {cov.get('markets')} are not the branch's {bm}")
@@ -166,7 +192,7 @@ def _coverage(src, to, markets, code_commit, branch):
         p = Path(src) / "pools" / f"{m}.json"
         _require(p.exists() and _sha(p) == (cov.get("pools") or {}).get(m, {}).get("sha256"), f"{what}: pool {m} is missing or its hash differs")
         pl = _json(p)
-        _require(pl.get("commit") == code_commit and pl.get("market") == m and pl.get("branch") == branch and pl.get("inputs_manifest") == cov.get("inputs_manifest"),
+        _require(_same(code_commit, pl.get("commit")) and pl.get("market") == m and pl.get("branch") == branch and pl.get("inputs_manifest") == cov.get("inputs_manifest"),
                  f"{what}: pool {m} has commit {pl.get('commit')!r}, market {pl.get('market')!r}, branch {pl.get('branch')!r}, or inputs other than the coverage's")
         _require(pl["seeds"] == coverage_pool(m, M), f"{what}: pool {m}'s seeds are not the registered coverage pool")
         _require(all(len(v) == M for v in list(pl["normalized"].values()) + list(pl["eff"].values())), f"{what}: pool {m} has a profile of the wrong length")
@@ -185,7 +211,7 @@ def _close(a, b) -> bool:
 def _benchmark(src, to, markets, code_commit):
     raw = _json(Path(src) / "timings.json"); t = raw["timings"]; what = "benchmark"
     _require(raw.get("smoke") is False and t.get("smoke") is False, f"{what}: smoke outputs are not promoted")
-    _require(t.get("commit") == code_commit, f"{what}: commit {t.get('commit')!r} differs from the code commit")
+    _require(_same(code_commit, t.get("commit")), f"{what}: commit {t.get('commit')!r} is not the code commit or a data-only descendant")
     _require(t.get("markets") == BENCH_MARKETS == list(markets), f"{what}: markets {t.get('markets')} are not {BENCH_MARKETS}")
     _require(int(t.get("vcpu") or 0) > 0 and float(t.get("usd_per_pod_hour") or 0) > 0, f"{what}: vcpu and usd_per_pod_hour must be recorded")
     table = json.loads(json.dumps(BV.cost_table(t, vcpu=int(t["vcpu"])), default=float))
@@ -204,9 +230,29 @@ def _decision(src, to, markets, code_commit):
     return [(Path(src) / "decision.json", "benchmark/decision.json")]
 
 
+def _h4_identifiers(src, to, what: str) -> None:
+    """Design draft 7, 5.3 (Task 12): the timing record's identifiers equal the author's commitment, the defender commit
+    exists, the promoted defender files are byte-identical at it, and the timing was measured at the full budget."""
+    from sim.locked import load_locked
+    tim, com = _json(Path(src) / "timing.json"), _json(Path(src) / "commitment.json")
+    _require(tim.get("bundle_sha256") == com.get("bundle_sha256"), f"{what}: the timing record's bundle hash differs from the author's commitment")
+    _require(tim.get("defender_commit") == com.get("defender_commit"), f"{what}: the timing record's defender commit differs from the author's commitment")
+    repo, dc = _REPO["path"], str(com.get("defender_commit"))
+    _require(subprocess.run(["git", "-C", str(repo), "cat-file", "-e", f"{dc}^{{commit}}"], capture_output=True).returncode == 0,
+             f"{what}: the defender commit {dc!r} does not exist")
+    rel_to = Path(to).resolve().relative_to(Path(repo).resolve()).as_posix()
+    for name in ["comparator.json"] + [f"tuned_{s}.json" for s in SYSTEMS]:
+        got = subprocess.run(["git", "-C", str(repo), "show", f"{dc}:{rel_to}/{name}"], capture_output=True)
+        _require(got.returncode == 0 and got.stdout == (Path(to) / name).read_bytes(), f"{what}: the promoted {name} differs from the defender commit's")
+    s = load_locked()["search"]; full = int(s["restarts"]) * int(s["evals_per_restart"]) * 2 * 5
+    _require(int(tim.get("x7_episodes") or 0) >= full, f"{what}: the timing record was not measured at the full X7-SC budget ({tim.get('x7_episodes')} < {full} episodes)")
+
+
 def _decision_h4(src, to, markets, code_commit):
     """Design draft 7, 5.3: the decision after the H4 timing, recomputed from the promoted timings and frozen decision."""
     d = _json(Path(src) / "decision-h4.json"); what = "decision_h4"
+    _h4_identifiers(src, to, what)
+    _require(d.get("h4_timing") == _json(Path(src) / "timing.json"), f"{what}: it was not decided on the recorded timing")
     tm, fr = Path(to) / "benchmark" / "timings.json", Path(to) / "benchmark" / "decision.json"
     _require(tm.exists() and fr.exists(), f"{what}: the benchmark and its decision are not promoted yet")
     _require(d.get("timings_sha256") == _sha(tm) and d.get("frozen_sha256") == _sha(fr), f"{what}: it was not decided on the promoted timings and decision")
@@ -219,8 +265,8 @@ def _decision_h4(src, to, markets, code_commit):
 CHECKS = {"comparator": _comparator, "system": _system, "benchmark": _benchmark, "decision": _decision, "decision_h4": _decision_h4}
 
 
-def promote(kind: str, src, to, markets: list[str], branch: str | None = None, code_commit: str | None = None) -> list[str]:
-    code_commit = code_commit or head(); Path(to).mkdir(parents=True, exist_ok=True)
+def promote(kind: str, src, to, markets: list[str], branch: str | None = None, code_commit: str | None = None, repo=None) -> list[str]:
+    code_commit = code_commit or head(); Path(to).mkdir(parents=True, exist_ok=True); _REPO["path"] = Path(repo) if repo is not None else ROOT
     files = _coverage(src, to, markets, code_commit, branch) if kind == "coverage" else CHECKS[kind](src, to, markets, code_commit)
     return _record(to, kind, files)
 
@@ -242,9 +288,10 @@ def derive_params(to) -> dict:
     return {"cred": _json(to / "comparator.json")["cred"], "tuned": {s: _json(to / f"tuned_{s}.json")["best_params"] for s in SYSTEMS}}
 
 
-def final(to) -> dict:
+def final(to, h4: bool = False) -> dict:
     to = Path(to); prom = _promotion(to)
     need = ["comparator.json", "coverage.json", "benchmark/timings.json", "benchmark/decision.json"] + [f"tuned_{s}.json" for s in SYSTEMS]
+    need += ["benchmark/decision-h4.json"] if h4 else []          # with H4 committed, the decision after its timing (design draft 7, 5.3)
     missing = [p for p in need if p not in prom["entries"]]
     _require(not missing, f"final: missing {missing}")
     changed = verify_promoted(to)
@@ -259,10 +306,11 @@ def main(argv=None) -> int:
     ap.add_argument("--kind", choices=["comparator", "system", "coverage", "benchmark", "decision", "decision_h4"]); ap.add_argument("--from", dest="src")
     ap.add_argument("--to", default="experiments/v2"); ap.add_argument("--markets", default="headline,dev0,dev1"); ap.add_argument("--branch", default=None)
     ap.add_argument("--code-commit", dest="code_commit", default=None); ap.add_argument("--final", action="store_true")
+    ap.add_argument("--h4", action="store_true", help="with --final: H4 is committed, so decision-h4.json is required")
     a = ap.parse_args(argv)
     try:
         if a.final:
-            print(json.dumps(final(a.to), sort_keys=True))
+            print(json.dumps(final(a.to, h4=a.h4), sort_keys=True))
         else:
             print("\n".join(promote(a.kind, a.src, a.to, a.markets.split(","), a.branch, a.code_commit)))
     except Refused as e:
