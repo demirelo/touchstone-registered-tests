@@ -70,3 +70,8 @@ Ranking received: GameSec 2027 (deadline not announced), WEIS 2027 (21 January 2
 ## 5. Consequence for the operations
 
 The Lock items change the design, protocol v2, and some Part A code. Order: design draft 7 with D1 to D18; Sol high and Astra high review to consensus; plan revision for the Part A code changes (manifest, coverage fixtures, C-boinc, X7 controller, decoy coalition family, reference decomposition, decision rules, H4 brief and order); TDD execution; whole-branch review. Part B resumes after that, with Operation 1 (H4) moved after Operation 3 (defenders frozen).
+
+## 6. Corrections to this triage (design round 7)
+
+- D1: the claim "capacity sum 54 to 67 > J = 50, so every job is served" generalised from 32 draws. The generator allows total capacity K from 40 to 80; positive first-best surplus (required by `MarketConfig.validate()`) gives n_FB = 200 min(50, K) and A_tot in [2,000, 2,500] at rho = 0.2. The conclusion (R4 = R3, C*/S2 = C* at L = 10) holds on the whole support (both review seats, round 7).
+- D1: the Q1 endpoints after the fix are 8, not 16 (2 differences x 2 sides x 2 Holm tails).

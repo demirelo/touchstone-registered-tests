@@ -121,15 +121,19 @@ age does not end intensive targeting: a replacement can remain the newest identi
 ### 3.4 Repaired R3 (R4)
 
 R4 is R3 with reserve = min(J L, floor(A_tot / 2)). The fix comes from robustness (rho = 1: reserve = A_tot, no early
-audits). **R4 differs from R3 only when J L > floor(A_tot / 2).** In every rho = 0.2 market of this program
-A_tot = floor((beta / rho) n_FB) = 2,500 (n_FB = 10,000: total capacity exceeds J and every job has positive first-best
-surplus; checked on the headline, `dev0`, `dev1`, and 30 generator draws), so at L = 10 both reserves are 500 and R4
-equals R3, and C*/S2 equals C*. R4 and C*/S2 therefore appear only in the rho = 1 repair test (A_tot = 500, R3's
-reserve 500 = A_tot, R4's 250), compared with R3, B3, and C* (section 8.1).
+audits). **R4 differs from R3 only when J L > floor(A_tot / 2).** A_tot = floor((beta / rho) n_FB)
+(`sim/calibrate.py` `cell_config`). `MarketConfig.validate()` requires positive first-best surplus, so every capacity
+slot is served in the first best and n_FB = T min(J, K) = 200 min(50, K), where the total capacity K lies in [40, 80]
+for the generator (k_i in {4, ..., 8}, N = 10; `sim/instances.py`). Hence at rho = 0.2, A_tot lies in [2,000, 2,500]
+on the headline market and on every market the generator can produce, floor(A_tot / 2) >= 1,000 > J L = 500 at L = 10,
+and R4 equals R3 and C*/S2 equals C*. At rho = 1, A_tot lies in [400, 500]; on the headline market R3's reserve is
+500 = A_tot (no early audits) and R4's is 250. R4 and C*/S2 therefore appear only in the rho = 1 repair test, compared
+with R3, B3, and C* (section 8.1).
 
 **Distinct-rule check.** For every block and market of the manifest, no two rules compared in that block may have the same
 selection and the same pacing schedule on that market (the reserve min(J L, A_tot) or min(J L, floor(A_tot / 2)) is
-computed from the market's calibrated A_tot); the build refuses a manifest that fails, and a test covers it.
+computed from the market's calibrated A_tot); the build refuses a manifest that fails, and a test covers it, including the
+generator bound above at both ends of [40, 80].
 
 ### 3.5 Rule set
 
@@ -157,7 +161,8 @@ held-out attack.
 
 - Common grid: tol in {0.08, 0.12, 0.14, 0.16} x L in {3, 10, 20, 50} (16 points; every value of both registered grids).
 - Every whole system gets exactly 16 configurations. C*-t keeps C*'s variant, K, and M frozen and tunes (tol, L). The
-  comparator's development selection (3.3, 12 configurations) is an extra cost that favours the comparator and is
+  comparator's development selection (3.3, 12 configurations) is an extra cost that provides additional development
+  selection (historical adaptation is not equalised) and is
   reported.
 - Markets: the headline market and the development instances `dev0`, `dev1` (section 7.2).
 - Search per configuration and family: the registered inner search (1 restart x 100 evaluations, 3 dev-train seeds; X7-SC
@@ -193,7 +198,9 @@ are compared without rounding.
 
 State: the markup m (initial m0), persisting across identities as in D2+H3; the current identity's creation round c,
 its own per-round served, audited, and failed counts (identity-local), and its pass count since its last failed audit
-(p_own; 0 at creation and after a failure, the provider's own image of C's credibility state).
+(p_own, the provider's own image of C's credibility state: 0 at creation; batch update after each round's audit results,
+as C's: if any audited job of the identity failed in that round, p_own = 0, otherwise p_own increases by the round's
+passes).
 
 Round t, in this order (the harness asks for the action before it creates a replacement, and applies an exit before the
 action's offer, `sim/policies/identity.py`, `sim/market.py`):
@@ -201,15 +208,18 @@ action's offer, `sim/policies/identity.py`, `sim/market.py`):
 1. Markup update from round t - 1, exactly once, as `AdaptiveCheat`: after a failed audit m <- m (1 - d); else, if the
    entity was banned in t - 1, unchanged; else m <- min(m0, m + r m0).
 2. Failure trigger (reset or wait): the identity that served in t - 1 had a failed audit in t - 1, T - t > h_R, and
-   its age t - c < a_R. An older identity waits out its ban and keeps its age (under age-ranked selection an old identity
-   is not the newest; under C its credibility is zero either way); a_R = T resets after every failure.
-3. Voluntary trigger (only if no failure trigger): over rounds [max(c, t - L), t), served >= 1 and audited / served >
-   lambda.
+   its age t - c < a_R. An identity with age at least a_R waits out its ban and keeps its age and its pass history; a_R = T
+   resets after every failure. (Whether keeping age helps depends on the rule: under R3 a replacement can remain the
+   newest identity, Lemma 2b; under C credibility is zero after a failure either way.)
+3. Voluntary trigger: over rounds [max(c, t - L), t), served >= 1 and audited / served > lambda. It is not evaluated in a
+   round where the failure trigger fired, nor in a round where a failure in t - 1 was rejected by the age gate, nor while
+   the identity is banned, so that a "wait" decision is not overridden; it is evaluated again once the identity has
+   served after the ban.
 4. If a trigger fires: exit; the identity-local counters and p_own are cleared and the replacement's creation round is t.
 5. Phase of the identity that will serve in round t (the replacement if one was created): terminal if T - t <= L; else
    fresh if (t - c) < a_F, or p_own < n_P, or (over rounds [max(c, t - L), t), served >= 1 and audited / served > e_P);
-   else established. The last condition shades only when the provider's own observed audit exposure is low; e_P = 1
-   disables it.
+   else established. The last condition keeps the fresh multiplier k_F while the provider's own observed audit exposure
+   is high, so the established multiplier applies only at low exposure; e_P = 1 disables it.
 6. Action: k = k_F (fresh), 1 (established), k_T (terminal); effort = q_max (1 - min(1, k u0)); claim =
    min(1, max(0, effort + k m - s)), and min(claim, effort) if clip = 1; bid = (1 + w)(a + b effort).
 
@@ -228,13 +238,21 @@ recorded, and fixed in protocol v2 (draft 6's 769 was for 13 knobs).
 
 **X8-DB** (decoy and beneficiary, c = 2). Members: `coalition_members(cfg, focal, 2)`; member 0 (the focal provider) is
 the beneficiary, member 1 the decoy. The coalition shares its members' own histories (collusion is allowed; each member's
-history is still only its own `ProviderView` history). Knobs (9; `clip` last): decoy n_D in [1, 2L] (the decoy replaces its
-identity every n_D rounds, and after every failed audit), u_D in [0, 1] (decoy effort q_max (1 - u_D), claim equal to
-effort), w_D in [0, 2] (decoy bid multiplier); beneficiary u_B in [0, 1], m_B in [0, 1], s_B in [0, 0.3], w_B in [0, 2]
-(as X7-SC's u0, m0, s, w, with k = 1 and no reset; the beneficiary never replaces its identity), g_B in {0, 1} (if 1, the
-beneficiary shades only in rounds where the decoy's current identity is younger than L, else it plays honest-max), clip
-in {0, 1} for the beneficiary's claim. The beneficiary's markup is constant m_B. Objectives G_tot and G_min (6.3).
-Required tests: the decoy's identity schedule; the gate; members read only member histories.
+history is still only its own `ProviderView` history). Knobs (9; `clip` last): decoy n_D in [1, 2L] (real), u_D in
+[0, 1] (decoy effort q_max (1 - u_D), claim equal to effort), w_D in [0, 2] (decoy bid multiplier); beneficiary u_B in
+[0, 1], m_B in [0, 1], s_B in [0, 0.3], w_B in [0, 2] (as X7-SC's u0, m0, s, w, with k = 1 and no reset; the
+beneficiary never replaces its identity), g_B in {0, 1}, clip in {0, 1} for the beneficiary's claim. The beneficiary's
+markup is constant m_B.
+
+Timing in round t (the harness asks for actions before it applies exits, `sim/market.py`): (1) the decoy decides
+whether to replace: it exits if its identity failed an audit in t - 1, or if its current identity's integer age t - c_D
+satisfies t - c_D >= n_D (real comparison, no rounding); after any replacement (failure or schedule) c_D = t and the
+schedule clock restarts. (2) The gate is computed from the decoy identity that will make round t's offer (the
+replacement if one was created in step 1): if g_B = 1, the beneficiary uses its shading action only when that identity's
+age t - c_D < L, and plays honest-max otherwise; if g_B = 0, it always uses its shading action. (3) Both actions. The
+result does not depend on the order in which the harness calls the members' policies. Objectives G_tot and G_min (6.3).
+Required tests: the decoy's identity schedule at real n_D, including restarts after failures; the gate at the
+replacement boundary; independence from the policy-call order; members read only member histories.
 
 ### 5.3 Sealed family H4 (defence-aware)
 
@@ -249,11 +267,19 @@ receives a brief with the family interface, the allowed observations (5.1), the 
 (6.1, 6.4). It must not read `sealed/` or any other clone's `sealed2/`. The running policy sees only the provider view
 and the public constants; the source is for the author, not the policy.
 
-Resource envelope (so that the cost is known): at most 15 real or binary knobs with finite bounds; the evaluation uses
-the X7-SC search budget (5 restarts x 600 on dev-train) and is priced as an X7-SC cell; the session's own development
-runs are on the author's machine, CPU only, no paid API, at most 8 core-hours. It writes `sealed2/h4/family.py` and
-`sealed2/h4/containment.md`, runs the load check (which also checks the envelope) and a smoke evaluation against F000,
-F111, and C* on the development instances, and records them in `sealed2/h4/check.json`, all before the commitment. The
+Resource envelope (so that the cost is known): at most 15 real or binary knobs with finite bounds and a truthful
+projection (`Family.project`). The evaluation of an H4 cell uses the X7-SC search budget (5 restarts x 600 on dev-train,
+the same twin search, and a doubling check at the X7-SC budget where scheduled) and the X7-SC bounded control
+procedure instead of `Family.corners()` (which would give up to 2^15 corners): Sobol with d equal to H4's knob count,
+the same scramble seed and 2^9 points, the same bit mapping, de-duplication, appended all-low and all-high corners, and
+truthful projections (5.2). The session's own development runs are on the author's machine, CPU only, no paid API, at
+most 8 core-hours. It writes `sealed2/h4/family.py` and `sealed2/h4/containment.md`, runs the load check (which also
+checks the envelope) and a smoke evaluation against F000, F111, and C* on the development instances, and records them
+in `sealed2/h4/check.json`, together with the measured wall time and episode count of one full-budget H4 search with
+its controls on the headline market, all before the commitment; the check prints the bundle hash and the timing record,
+so the author reads them from that output without opening the bundle. **Cost after H4:** before the protocol is written, the
+cost table (8.2) is recomputed with H4 priced from that measurement (scaled to the benchmark's pod timing); if the
+evaluation cap is exceeded, the cuts of 8.2 apply in their order. The
 author records the bundle hash in protocol v2 and does not read the bundle until the report. The evaluation code loads H4
 from the bundle after the lock and before any evaluation-seed episode, and verifies the hash. No repair is allowed after
 the lock: if H4 fails to load, it is excluded, the exclusion is reported, and the independently authored part of Q3 is
@@ -290,28 +316,40 @@ g_j = (pi_j - pi_j^0) / (S*/N), where pi_j^0 is member j's profit under the froz
 coalition (one per rule, market, and c). Objectives: total G_tot = sum_j E[g_j] and worst member G_min = min_j E[g_j]
 (not E[min_j g_j]).
 
-Because G_tot's reference term is a constant, the G_tot searches do not need the reference; G_min's do. Order per rule
-and c: (1) the joint twin, the result of the registered search (5 restarts x 300, dev-train seeds) over the X6-SE/v2
-knobs with clip = 1 forced for every member, maximising sum_j (pi_j / (S*/N)); (2) the G_tot searches (X6-SE/v2 sync and
-staggered; X8-DB at c = 2); (3) the joint reference: the candidate with the highest training mean of
-sum_j (pi_j / (S*/N)) among, in this tie order: all members honest-max, all members abstain, the joint twin, then the
-truthful projections (clip = 1 for every member, or for the X8-DB beneficiary with the decoy at u_D = 0) of the
-step-2 winners and of their archives' points, in search order; (4) freeze; (5) the G_min searches against the frozen
-reference, with the reference profile inserted as an incumbent where the family can represent it. The G_min searches'
-own projections do not enter the menu (stated). Claims are gains relative to this coordinated truthful profile; they
-say nothing about coalition stability or each member's best unilateral alternative.
+Because G_tot's reference term is a constant, the G_tot searches do not need the reference; G_min's do. Truthful
+projection of a coalition profile (spec 5.2, `Family.project`): every member's claim is clipped to its effort
+(clip = 1 for X6-SE/v2 members; for X8-DB the beneficiary's clip = 1 and every decoy knob, including u_D, n_D, and w_D,
+unchanged, since the decoy's claim already equals its effort). Order per rule and c, all on dev-train seeds:
+
+1. The joint twins: the registered search (5 restarts x 300) over the X6-SE/v2 knobs with clip = 1 forced for every
+   member, maximising sum_j (pi_j / (S*/N)), once with the synchronised and once with the staggered schedule.
+2. The G_tot searches (X6-SE/v2 synchronised and staggered; X8-DB at c = 2).
+3. Preliminary reference: the candidate with the highest training mean of sum_j (pi_j / (S*/N)) among, in this tie
+   order: all members honest-max, all members abstain, the synchronised twin, the staggered twin, then the truthful
+   projections of the step-2 winners and of every point in their archives, in search order.
+4. The G_min searches against the preliminary reference, with the reference profile inserted as an incumbent where the
+   family can represent it.
+5. Final reference: the same rule over the step-3 menu plus the truthful projections of the step-4 winners and archive
+   points, in search order; freeze.
+6. Every archived G_min point (step 4) is rescored against the final reference on the same training seeds, and the
+   G_min winner is the best rescored point; G_tot winners are unchanged (constant reference term). Then evaluation.
+
+Claims are gains relative to this coordinated truthful profile; they say nothing about coalition stability or each
+member's best unilateral alternative.
 
 ### 6.4 References and freeze order
 
 - **Menu.** A rule's truthful reference is selected on training seeds by the registered order (spec 5.2) from one menu:
   abstain, honest-max, and the twin, projection, and archive candidates of its D2+H3 and X7-SC searches. Every rule in the
   evaluation, including B2 and the rho = 1 repair cells, has exactly these two searches at the same budget (8.1), so
-  matched pairs have equivalent menus. Its D2, X5-AG/v2, H4, and welfare gains use the same frozen reference; no other
+  matched pairs have equivalent menus. **Exception:** the secondary whole systems (B3-t, R3-t, C*-t) on fresh markets
+  have no X7-SC cell (8.1); their fresh-market reference menu is abstain, honest-max, and the D2+H3 candidates, the same
+  reduced menu for all three systems, and their fresh-market results are labelled accordingly. Its D2, X5-AG/v2, H4, and welfare gains use the same frozen reference; no other
   family adds candidates. Coalitions use their own joint reference (6.3).
 - **Development reference** (tuning, comparator selection): the same construction with the tuning objective's families
   (D2, D2+H3, X7-SC) on the tuning markets. H4 is never available in development.
 - **Dependency and freeze order per market.** (1) Profit attack and twin searches and banks; (2) reference selection and
-  freeze; (3) the searches that need a frozen reference (W1) and the coalition steps of 6.3 in their order; (4) envelope
+  freeze; (3) the searches that need a frozen reference (W1) and the coalition steps 1 to 6 of 6.3 in their order; (4) envelope
   family choices (9.3 Q3), the fixed-attack bank and its training-seed matrix (6.6); (5) final freeze. Only then may any
   evaluation-seed episode of that market run; the evaluation stage refuses to run otherwise. Doubling results never enter
   the frozen candidates (6.5 says how they are used).
@@ -331,10 +369,14 @@ reported separately. A W1 check that finds a feasible point where the original f
 efficiency lower by at least 0.005, labels the cell incomplete. Cells without a scheduled check (factorial cells on fresh
 markets, whole systems, X5, H4, D2 extras) carry no search-quality claim.
 
-**Consequences.** An incomplete cell's estimate remains the estimate of the prescribed (frozen) search procedure. A
-confirmatory decision that uses an incomplete cell is reported as a decision about the prescribed search procedure only,
-and the robustness statement for that rule and family (Q3) is reported unanswered ("search incomplete"), never as "no
-attack found". **Held-out diagnostic:** for every scheduled check, the doubled search's winner (selected on its training
+**Two statuses.** A cell is **missing** if it did not run to completion or is invalid: not run (cap stop or cut), a
+refused sample, a nonfinite statistic (9.2), a search with no finite candidate, or a failed load (H4). A cell is
+**search-flagged** if it ran to completion but its scheduled doubling check exceeded the threshold above ("incomplete" in
+the check's own wording). Consequences: a missing cell removes every confirmatory decision that uses it (the test is
+reported "not decided: missing cell") and makes that part of its question unanswered (8.1a). A search-flagged cell keeps
+its estimate as the estimate of the prescribed (frozen) search procedure; a confirmatory decision that uses it is still
+made and is reported as a decision about the prescribed search procedure only; the robustness statement for that rule
+and family (Q3) is reported unanswered ("search flagged"), never as "no attack found". **Held-out diagnostic:** for every scheduled check, the doubled search's winner (selected on its training
 seeds) is evaluated unchanged on the cell's evaluation seeds against the same frozen reference, and reported beside the
 cell; it never replaces or adds to the frozen estimate.
 
@@ -427,12 +469,17 @@ are removed to fund X8-DB and the diagnostics.
 
 ### 8.1a Questions and their cells
 
-| Question | Required cells (a question with any required cell incomplete is reported unanswered for that part) |
+Statuses as in 6.5: a missing required cell makes that part unanswered (and removes the confirmatory decisions that use
+it); a search-flagged cell keeps confirmatory decisions (labelled as about the prescribed search procedure) and makes the
+Q3 robustness statement for that rule and family unanswered. Scheduled doubling checks (6.5) are listed with their
+question.
+
+| Question | Required cells, and scheduled checks |
 |---|---|
-| Q1 (confirmatory) | F111 and C* x {D2+H3, X7-SC} x 6 fresh markets, with their references; descriptive: headline, C*/S0 |
-| Q2 (descriptive) | the 8 factorial cells x {D2+H3, X7-SC} x 7 markets and the 14 cross-evaluations |
-| Q3 (descriptive) | per core rule (F000, F111, C*): D2+H3, X7-SC, X5-AG/v2, H4 on 7 markets; welfare; coalitions; the diagnostic. If H4 is cut on fresh markets (8.2) or fails to load, the independently authored part of Q3 is reported as not run on those markets, never as "no attack found" |
-| Q4 (confirmatory) | F000 and F111 x D2+H3 x 6 fresh markets, with their references |
+| Q1 (confirmatory) | F111 and C* x {D2+H3, X7-SC} x 6 fresh markets, with their references; checks: those 24 cells; descriptive: headline, C*/S0 |
+| Q2 (descriptive) | the 8 factorial cells x {D2+H3, X7-SC} x 7 markets and the 14 cross-evaluations; checks: the headline factorial cells (16) |
+| Q3 (descriptive) | per core rule (F000, F111, C*): D2+H3, X7-SC, X5-AG/v2, H4 on 7 markets; welfare; coalitions; the diagnostic. If H4 is cut on fresh markets (8.2) or fails to load, the independently authored part of Q3 is reported as not run on those markets, never as "no attack found"; checks: every core-rule profit, welfare, and coalition check of 6.5 |
+| Q4 (confirmatory) | F000 and F111 x D2+H3 x 6 fresh markets, with their references; checks: those 12 cells |
 | Repair | the rho = 1 block |
 | Whole systems (secondary) | B3-t, R3-t, C*-t cells |
 
@@ -452,13 +499,14 @@ decides.
 | Coverage (9.5): 8 profiles x 20,000 seeds x 3 markets = 480,000 episodes (26.9) + bootstrap computation (about 3 core-hours, 10) | 36.9 |
 | **Development total** | **about 177.3 (about 8.0 USD)** |
 | Evaluation cells: 287 + (85 X7-SC + 21 H4) x 1.5 | 446 |
+| Coalition extras (6.3): the second joint twin per rule and c (6) and the G_min archive rescoring (about 4) | 10 |
 | Additional cost of 200 instead of 40 evaluation seeds: 0.16 x 446 | 71.4 |
 | Fixed-attack cross-evaluation: 14 x 56 attack profiles x 200 seeds = 156,800 episodes (9), plus the training-seed matrix for the bank envelope (1) | 10 |
 | Doubling checks: 64 at 1 + 34 X7-SC at 2.5, plus the held-out evaluation of each doubled winner (about 2) | 151 |
 | Diagnostic (6.7): 3 x 200 episodes | about 0 |
-| **Evaluation total** | **about 678 (about 30.5 USD)** |
+| **Evaluation total** | **about 688 (about 31.0 USD)** |
 
-Total about 856 units, about 38.5 USD (draft 6: about 1,103 units, 50 USD). **The author's approval is required for any
+Total about 866 units, about 39.0 USD (draft 6: about 1,103 units, 50 USD). **The author's approval is required for any
 total above 40 USD** (the range quoted when the program was chosen); the caps below do not by themselves authorise
 spending their sum. The table is an estimate; the benchmark decides.
 
@@ -488,8 +536,8 @@ common seeds (the same seeds, salt, and job values for every rule in a market).
 ### 9.2 Intervals and tests
 
 - **Bootstrap.** Studentized (percentile-t) bootstrap over seeds, 9,999 resamples, resample seed fixed in the protocol;
-  `sim/intervals.py` extended to arbitrary tail levels. Before calibration, the smallest confirmatory tail (0.05/8)
-  contains about 62 of the 9,999 resamples; with kappa = 1/4 it contains about 16. This is a precision limit; validation
+  `sim/intervals.py` extended to arbitrary tail levels. Before calibration, the smallest confirmatory tail (0.05/6, Q4)
+  contains about 83 of the 9,999 resamples; with kappa = 1/4 it contains about 21. This is a precision limit; validation
   (9.5) tests the calibrated procedure itself.
 - **p-values.** For a one-sided hypothesis about a mean, the bootstrap p-value is the smallest tail level at which the
   studentized one-sided bound crosses the null value; two-sided p = 2 min(one-sided p's).
@@ -506,7 +554,8 @@ common seeds (the same seeds, salt, and job values for every rule in a market).
   stratified standard error; conditional on the six markets.
 - **G_min** (descriptive). Bounds as the minimum over members of the members' bounds at level 0.05 / c.
 - **Numerical rules (as implemented in `sim/intervals.py`, frozen with the code).** A sample with a nonfinite per-seed
-  value is refused and its cell is reported incomplete. A constant sample (all values exactly equal) has standard error
+  value is refused and its cell is missing (6.5). A nonfinite standard error, bootstrap statistic, bound, or p-value is
+  refused in the same way: the affected decision is withheld ("not decided") and the cell is missing. A constant sample (all values exactly equal) has standard error
   0: its bounds equal its mean, and its one-sided p-value is 0 if the mean is strictly beyond the null and 1 otherwise. A
   resample with zero standard error is studentized by the full-sample standard error. p-values have resolution
   1 / (B + 1) with B = 9,999: p = (count + 1) / (B + 1), where count is the number of resampled statistics at least as
@@ -524,13 +573,15 @@ common seeds (the same seeds, salt, and job values for every rule in a market).
      materially lower gain");
   2. **equivalent**: I lies inside [-0.05, 0.05] (a conservative two one-sided tests procedure); if Holm also rejects
      zero, the label is "equivalent, direction R3 (or C*) lower";
-  3. **ordered, size not established**: Holm rejects zero and I meets the margin boundary;
+  3. **ordered, size not established**: Holm rejects zero, and neither category 1 nor category 2 applies;
   4. **inconclusive**.
   The margin 0.05 is half the registered comparative margin 0.10 and below the headline B3 - R3 difference (0.28).
   **Efficiency condition.** The word "better" for a rule needs category 1 in its favour and, for the same family, the
   pooled paired gross-efficiency difference (that rule minus the other) with a nominal one-sided 97.5 percent lower bound
-  of at least -0.01 (descriptive, not calibrated, stated as such). Otherwise the result is reported as "lower gain at an
-  efficiency cost" or by its category alone. Beside every Q1 result: paired gross and net efficiency, the truthful
+  of at least -0.01 (descriptive, not calibrated). Any combined "better" statement says that its efficiency part is
+  descriptive evidence without a calibrated joint error guarantee. If the lower bound is below -0.01, the result is
+  reported by its gain category with "efficiency non-inferiority unresolved"; only if the nominal one-sided 97.5 percent
+  upper bound is below -0.01 is it reported as "lower gain with an efficiency loss" (descriptive). Beside every Q1 result: paired gross and net efficiency, the truthful
   reference profit, audit spending, refunds from false failures of the focal and the other providers, and the served
   share. Per-market and headline Q1 results are descriptive (the headline market was used in development).
 - **Q2, descriptive.** Per market and family, effect coding over the 8 cells: main effect of P = mean of the 4 cells with
@@ -633,7 +684,8 @@ release, Zenodo DOI); the plan prepares and checks the bundle.
 2. Benchmark on a pod; recompute the cost; the author approves the total if it exceeds 40 USD.
 3. Comparator selection (3.3); whole-system tuning (4) on pods. Every defender is now frozen (defender-freeze commit).
 4. H4: the sealed session, at the defender-freeze commit with the frozen defender source (5.3), writes, checks, and
-   commits the family; the author records the hash without reading it. No defender changes after this step.
+   commits the family; the author records the hash and the timing record without reading the family. No defender changes
+   after this step. The cost table is recomputed with the measured H4 timing (5.3).
 5. Coverage check (9.5).
 6. Protocol v2 with predictions; Sol and Astra review; lock (signed tag, OpenTimestamps proof upgraded, pushed).
 7. Block H; draw; calibrate; load and verify H4.
@@ -684,21 +736,39 @@ the last column says "code".
 
 | Finding | Draft 7 | Where | Code |
 |---|---|---|---|
-| D1 R4 = R3 and C*/S2 = C* at rho = 0.2 (verified: A_tot = 2,500 in every market) | removed from rho = 0.2 blocks; R4, C*/S2 only at rho = 1; R4-t dropped; Q1 2 tests; distinct-rule check | 3.3, 3.4, 3.5, 8.1, 9.3, 9.5 | manifest, coverage fixtures, Q1 |
-| D2 H4 blind to the defence | defence-aware brief after the defender freeze; resource envelope; no defender change after H4 | 5.3, 11 | H4 brief, load check |
+| D1 R4 = R3 and C*/S2 = C* at rho = 0.2 (A_tot in [2,000, 2,500] on the whole generator support) | removed from rho = 0.2 blocks; R4, C*/S2 only at rho = 1; R4-t dropped; Q1 2 tests; distinct-rule check | 3.3, 3.4, 3.5, 8.1, 9.3, 9.5 | manifest and distinct-rule check, tuned-rule lists and tuning orchestration (`promote_v2.SYSTEMS` without R4-t), coverage fixtures and coverage promotion (no `fixture_cstar_s2.json`), parameter construction, Q1 decision, benchmark counts, report |
+| D2 H4 blind to the defence | defence-aware brief after the defender freeze; resource envelope; no defender change after H4 | 5.3, 11 | H4 brief, load check with the envelope, runner budget dispatch and bounded controls for H4 (`revision_v2.controls`), C* in the smoke check, timing record in `h4_check` |
 | D3 X7-SC reset depends only on the horizon | reset-or-wait by age (a_R), exposure gate (e_P), credibility image p_own; 15 knobs | 5.2 | X7-SC family, corner count |
 | D4 no role-asymmetric coalition | X8-DB decoy and beneficiary, c = 2, 6 cells | 5.2, 6.3, 8.1 | new family, manifest |
-| D5 coalition reference menu too narrow | projections and archives of the G_tot searches; G_min after the freeze | 6.3, 6.4 | coalition stage |
+| D5 coalition reference menu too narrow | projections and archives of the G_tot searches; G_min after the freeze | 6.3, 6.4 | coalition objective adapters (G_tot, G_min), the six-step order, shared reference records and their reconstruction, dependency validation, verification |
 | D6 W1 reporting rule | supported, contradicted, unresolved | 6.2 | report |
 | D7 BOINC adaptation | C-boinc replaces C-taper K = 24 | 3.3 | comparator |
 | D8 comparator neutrality wording | reworded; Q1 limited to the fixed pair | 1, 3.3 | none |
-| D9 fixed-attack contrast mixes attacker and reference terms | both terms, efficiency; extra conditional effects | 6.6, 9.3 | cross-evaluation, report |
+| D9 fixed-attack contrast mixes attacker and reference terms | both terms, efficiency; extra conditional effects | 6.6, 9.3 | cross-evaluation records with both terms and efficiency, the added conditional contrasts in `sim/decisions_v2.py`, report |
 | D10 does probation end | honest-replacement diagnostic | 6.7, 8.1 | new stage |
 | D11 statistical versus practical difference | four Q1 categories | 9.3 | Q1 decision |
-| D12 no efficiency condition | "better" needs the efficiency bound; trade-offs reported | 9.3 | report |
+| D12 no efficiency condition | "better" needs the efficiency bound; trade-offs reported | 9.3 | evaluation-record fields and schemas (`GAIN_FIELDS` and the record schema: service share, false-failure refunds, audit spend), Q1 report |
 | D13 multiplicity scope | stated | 9.4 | none |
-| D14 coverage selection and numerical rules | Clopper-Pearson at selection; no fallback; numerical rules stated | 9.2, 9.5 | coverage selection |
+| D14 coverage selection and numerical rules | Clopper-Pearson at selection; no fallback; numerical rules stated | 9.2, 9.5 | coverage selection by the Clopper-Pearson criterion, nonfinite-statistic refusal in `sim/intervals.py` callers |
 | D15 search-quality consequences | incomplete means prescribed-procedure only; held-out doubled winners | 6.5 | doubling stage, report |
-| D16 extrema selected on evaluation data | training selection for the bank envelope and welfare | 6.2, 6.6 | cross-evaluation |
-| D17 question-to-cell map | table; H4 cut reduces Q3's scope | 8.1a, 8.2 | report |
-| D18 budget | recomputed: about 38.5 USD | 8.2 | none |
+| D16 extrema selected on evaluation data | training selection for the bank envelope and welfare | 6.2, 6.6 | training-seed bank matrix and envelope selection, welfare winner selection and freeze records, report |
+| D17 question-to-cell map | table; H4 cut reduces Q3's scope | 8.1a, 8.2 | status propagation (missing versus search-flagged) and question dependencies in verify and report |
+| D18 budget | recomputed: about 39.0 USD (H4 re-priced after its timing, 5.3) | 8.2 | benchmark constants, cost accounting |
+
+Every code change above gets a regression test that fails against the draft-6 code first (TDD), in the plan revision.
+
+### Round 7 (both seats: reject) and its disposition
+
+| Correction | Draft 7 after round 7 | Where |
+|---|---|---|
+| Sol 1 / Astra 1: "A_tot = 2,500 in every market" rested on draws | generator-wide bound: K in [40, 80], A_tot in [2,000, 2,500] at rho = 0.2, [400, 500] at rho = 1; test at both ends | 3.4 |
+| Astra 2: fresh whole systems lost the X7-SC reference searches | same reduced D2+H3 menu for all three secondary systems on fresh markets, labelled | 6.4 |
+| Sol 2 / Astra 3: X8-DB projection changed the decoy | beneficiary clip = 1 only; decoy knobs unchanged | 6.3 |
+| Sol 3: G_min projections excluded | six-step order with a preliminary and a final reference and archive rescoring | 6.3, 6.4 |
+| Sol 4 / Astra 3-4: timing and prose | X8 real n_D, restart after every replacement, gate from the offering identity, call-order independence; X7 voluntary trigger suppressed while waiting; "newest" sentence removed; "fresh multiplier" wording; p_own batch update; both joint twins | 5.2, 6.3 |
+| Sol 5 / Astra 5: H4 cost not bounded | X7-SC bounded controls and budgets for H4; timing record in the check; cost recomputed after H4 | 5.3, 11 |
+| Sol 6 / Astra 6: reporting rules | category 3 as "neither 1 nor 2"; efficiency non-inferiority unresolved versus loss; descriptive label; tail 0.05/6 (83, 21); nonfinite statistics refused | 9.2, 9.3 |
+| Astra 7: missing versus search-flagged | two statuses with separate consequences; checks listed per question | 6.5, 8.1a |
+| Sol 7 / Astra 8: Code column | expanded; regression tests | 14 |
+| Sol 8: section 4.2 wording | "provides additional development selection" | 4.2 |
+
