@@ -309,7 +309,9 @@ def test_pod_plan_bills_the_freeze_bank_matrices():
     """Whole-branch review round 1: the freeze builds each context's training bank matrices serially (8 x 8 profiles on the
     5 dev-train seeds per family, design 6.6); the pod bill carries them as one serial task per context."""
     from scripts.benchmark_v2 import FINAL_SEEDS, TRAIN_SEEDS, eval_pods, pod_plan
-    pods = eval_pods(); mat = 8 * POD["task_seconds"]["cross_item"] * TRAIN_SEEDS / FINAL_SEEDS
+    pods = eval_pods(); ts = POD["task_seconds"]
+    rows = ts["cross_item"] / (8 * FINAL_SEEDS)                       # cross_item: the full 8 x 8 matrix (8 attack rows) on 200 seeds
+    mat = 8 * rows * TRAIN_SEEDS                                      # one family's matrix: 8 rows on the 5 dev-train seeds
     for name, n in (("fresh0", 1), ("headline@rho0.2", 1), ("headline@rho1", 0)):
         assert sum(w == [pytest.approx(2 * mat)] for w in pod_plan(POD, pods[name])) == n, name
 

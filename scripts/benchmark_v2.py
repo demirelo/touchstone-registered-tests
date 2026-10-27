@@ -118,7 +118,7 @@ def pod_plan(timings: dict, jobs: list[dict], h4: float = 1.0) -> list[list[floa
     from scripts import revision_v2 as RV
     from sim import manifest_v2 as MAN
     ts = timings["task_seconds"]; ctxs = {j["context"] for j in jobs}
-    matrix = 8 * ts["cross_item"] * TRAIN_SEEDS / FINAL_SEEDS          # one family's 8 x 8 bank matrix on the dev-train seeds
+    matrix = ts["cross_item"] * TRAIN_SEEDS / FINAL_SEEDS              # cross_item is a full 8 x 8 matrix on 200 seeds; the bank matrix uses 5
     freeze = [[sum(matrix for c, _ in MAN.cross_evaluations() if c == ctx)] for ctx in sorted(ctxs)]   # serial, in the freeze (design 6.6)
     waves = {stage: [[_task(ts, st, i, h4) for i in items] for st, items in RV._waves(stage, jobs, jobs)] for stage in STAGES_BILLED}
     return [w for stage in STAGES_BILLED for w in waves[stage] + ([f for f in freeze if f[0] > 0] if stage == "dependent" else [])]
