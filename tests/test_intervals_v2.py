@@ -109,12 +109,20 @@ def test_g4_nonfinite_or_short_samples_are_refused():
         st = [np.random.default_rng(k).normal(0, 1, 50) for k in range(5)] + [x]
         with pytest.raises(ValueError):
             I.stratified_at(st, "lower", 0.01, 99, 1)
-        with pytest.raises(ValueError):
-            D.q1_family({"a": st}, 1.0)
-        with pytest.raises(ValueError):
+        assert D.q1_family({"a": st}, 1.0)["a"]["category"] == "not decided: numerical refusal"     # withheld per test (draft 7)
+        with pytest.raises(I.NumericalRefusal):
             D.q1_category(st, 1.0, True)
-    with pytest.raises(ValueError):
-        D.q1_family({"a": [np.full(50, np.nan) for _ in range(6)]}, 1.0)          # six all-NaN strata: no decision, an error
+    assert D.q1_family({"a": [np.full(50, np.nan) for _ in range(6)]}, 1.0)["a"]["category"] == "not decided: numerical refusal"
+
+
+def test_nonfinite_statistic_refused(monkeypatch):
+    x = np.random.default_rng(0).normal(0, 1, 50)
+    monkeypatch.setattr(I, "_boot_idx", lambda n, B, seed: np.zeros((B, n), dtype=int))     # every resample constant: zero resample se
+    assert np.isfinite(I.studentized_at(x, "lower", 0.01, 99))
+    with pytest.raises(I.NumericalRefusal):
+        I.studentized_at(np.array([1e308, -1e308, 1e308, -1e308]), "lower", 0.01, 99)       # the variance overflows
+    with pytest.raises(I.NumericalRefusal):
+        I.sample(np.subtract([1e308, 1e308], [-1e308, -1e308]))                            # a paired difference that overflows
     for p in (np.nan, -0.1, 1.5):
         with pytest.raises(ValueError):
             I.calibrated(p, 1.0)

@@ -115,13 +115,25 @@ def _strat_idx(sizes: tuple, resamples: int, seed: int) -> tuple:
     return tuple(out)
 
 
+class NumericalRefusal(ValueError):
+    """Design draft 7, 9.2: a nonfinite or short sample, or a nonfinite standard error, bootstrap statistic, bound, or
+    p-value. The caller withholds the affected decision; it is never a decision."""
+
+
+def _finite(v, what: str):
+    if not np.all(np.isfinite(np.asarray(v, dtype=float))):
+        raise NumericalRefusal(f"nonfinite {what}")
+    return v
+
+
 def sample(x, what: str = "sample") -> np.ndarray:
-    """A finite sample of at least two values; anything else is an error, never a decision."""
-    x = np.asarray(x, dtype=float).ravel()
+    """A finite sample of at least two values; anything else is refused, never a decision."""
+    with np.errstate(over="ignore", invalid="ignore"):
+        x = np.asarray(x, dtype=float).ravel()
     if x.size < 2:
-        raise ValueError(f"{what} has {x.size} value(s); at least two are needed")
+        raise NumericalRefusal(f"{what} has {x.size} value(s); at least two are needed")
     if not np.all(np.isfinite(x)):
-        raise ValueError(f"{what} has nonfinite values")
+        raise NumericalRefusal(f"{what} has nonfinite values")
     return x
 
 
@@ -153,14 +165,17 @@ def studentized_tstats(x, resamples: int, seed: int) -> tuple[float, float, np.n
     """Mean, standard error, and bootstrap-t statistics with studentized_bootstrap's resampling and zero-se rule; a
     constant sample returns its value, se 0, and all-zero statistics."""
     x = sample(x); n = x.size
-    mean, var = _mean_var(x)
-    if var == 0:
-        return mean, 0.0, np.zeros(int(resamples))
-    se = float(np.sqrt(var) / np.sqrt(n))
-    samples = x[_boot_idx(n, int(resamples), int(seed))]
-    m = samples.mean(axis=1); s = samples.std(axis=1, ddof=1) / np.sqrt(n)
-    s = np.where(s > 0, s, se)
-    return mean, se, ((m - mean) / s if se > 0 else np.zeros_like(m))
+    with np.errstate(over="ignore", invalid="ignore"):
+        mean, var = _mean_var(x)
+        _finite(mean, "mean"); _finite(var, "variance")
+        if var == 0:
+            return mean, 0.0, np.zeros(int(resamples))
+        se = float(np.sqrt(var) / np.sqrt(n))
+        samples = x[_boot_idx(n, int(resamples), int(seed))]
+        m = samples.mean(axis=1); s = samples.std(axis=1, ddof=1) / np.sqrt(n)
+        s = np.where(s > 0, s, se)
+        t = (m - mean) / s if se > 0 else np.zeros_like(m)
+    return mean, _finite(se, "standard error"), _finite(t, "bootstrap statistic")
 
 
 def _bound_from(mean: float, se: float, t: np.ndarray, side: str, tail: float) -> float:
@@ -169,9 +184,9 @@ def _bound_from(mean: float, se: float, t: np.ndarray, side: str, tail: float) -
             raise ValueError("side must be 'upper' or 'lower'")
         return float(mean)
     if side == "lower":
-        return float(mean - np.quantile(t, 1.0 - tail) * se)
+        return float(_finite(mean - np.quantile(t, 1.0 - tail) * se, "bound"))
     if side == "upper":
-        return float(mean - np.quantile(t, tail) * se)
+        return float(_finite(mean - np.quantile(t, tail) * se, "bound"))
     raise ValueError("side must be 'upper' or 'lower'")
 
 
@@ -184,10 +199,10 @@ def _pvalue_from(mean: float, se: float, t: np.ndarray, null: float, side: str) 
     if se == 0:
         above = mean > null if side == "lower" else mean < null
         return 0.0 if above else 1.0
-    t_obs = (mean - float(null)) / se
+    t_obs = _finite((mean - float(null)) / se, "test statistic")
     B = t.size
     count = int(np.sum(t >= t_obs)) if side == "lower" else int(np.sum(t <= t_obs))
-    return min(1.0, (count + 1) / (B + 1)) if count < B else 1.0
+    return float(_finite(min(1.0, (count + 1) / (B + 1)) if count < B else 1.0, "p-value"))
 
 
 def bootstrap_pvalue(x, null: float, side: str, resamples: int = 9999, seed: int = V2_RESAMPLE_SEED) -> float:
@@ -229,18 +244,21 @@ def stratified_tstats(strata, resamples: int, seed: int) -> tuple[float, float, 
     st = [sample(s, f"stratum {k}") for k, s in enumerate(strata)]; K = len(st)
     if not K:
         raise ValueError("no strata")
-    mv = [_mean_var(s) for s in st]
-    mean = _combine([m for m, _ in mv])
-    se = float(np.sqrt(sum(v / s.size for (_, v), s in zip(mv, st))) / K)
-    if se == 0:
-        return mean, se, np.zeros(int(resamples))
-    ms, vs = [], []
-    for s, idx in zip(st, _strat_idx(tuple(s.size for s in st), int(resamples), int(seed))):
-        r = s[idx]
-        ms.append(r.mean(axis=1)); vs.append(r.var(axis=1, ddof=1) / s.size)
-    se_b = np.sqrt(np.sum(vs, axis=0)) / K
-    se_b = np.where(se_b > 0, se_b, se)
-    return mean, se, (np.mean(ms, axis=0) - mean) / se_b
+    with np.errstate(over="ignore", invalid="ignore"):
+        mv = [_mean_var(s) for s in st]
+        mean = _combine([m for m, _ in mv])
+        se = float(np.sqrt(sum(v / s.size for (_, v), s in zip(mv, st))) / K)
+        _finite(mean, "mean"); _finite(se, "standard error")
+        if se == 0:
+            return mean, se, np.zeros(int(resamples))
+        ms, vs = [], []
+        for s, idx in zip(st, _strat_idx(tuple(s.size for s in st), int(resamples), int(seed))):
+            r = s[idx]
+            ms.append(r.mean(axis=1)); vs.append(r.var(axis=1, ddof=1) / s.size)
+        se_b = np.sqrt(np.sum(vs, axis=0)) / K
+        se_b = np.where(se_b > 0, se_b, se)
+        t = (np.mean(ms, axis=0) - mean) / se_b
+    return mean, se, _finite(t, "bootstrap statistic")
 
 
 def stratified_at(strata, side: str, tail: float, resamples: int = 9999, seed: int = V2_RESAMPLE_SEED) -> float:
