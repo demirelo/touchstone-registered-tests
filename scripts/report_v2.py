@@ -468,7 +468,8 @@ def markdown(r: dict) -> str:
                                                         for g, v in gs.items()))
         for rule, v in q3["diagnostic"].items():
             L.append(f"- honest replacement {rule}: " + (v if isinstance(v, str) else
-                     "; ".join(f"age {b['age'][0]}-{b['age'][1]} audited {b['audited_share']:.3f}" for b in v["bins"])))
+                     "; ".join(f"age {b['age'][0]}-{b['age'][1]} audited {b['audited_share']:.3f}, profit per round {b['profit_per_round']:.4f}, "
+                               f"false refunds {b['false_refund']:.4f}" for b in v["bins"])))
         L.append("- independently authored family (H4): " + (q3["independent"] if isinstance(q3["independent"], str) else
                  "; ".join(f"{rule}: " + ", ".join(f"{m} {v:.4f}" if not isinstance(v, str) else f"{m} {v}" for m, v in ms.items())
                            for rule, ms in q3["independent"].items())))

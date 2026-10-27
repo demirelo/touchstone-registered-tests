@@ -72,6 +72,12 @@ def envelope_rule(train: dict, rule: str) -> str:
     return best[0]
 
 
+def _profit_flows(result, N: int) -> np.ndarray:
+    """Per round and entity, the canonical profit flows of `Ledger.profit`: released + holdback out - cost - entry."""
+    L = result.ledger
+    return by_entity(result, L.released, N) + by_entity(result, L.holdback_out, N) - by_entity(result, L.cost, N) - by_entity(result, L.entry, N)
+
+
 class _HonestReplacer:
     name = "honest_replacer"
 
@@ -93,7 +99,7 @@ def honest_replacement(cfg, rule_factory, focal: int, seeds, cache: SeedCache, r
         hi = min(lo + int(bin_width), T); rows = slice(lo, hi)
         served = sum(int(np.asarray(r.served)[rows, focal].sum()) for r in res)
         audited = sum(sum(1 for rec in r.history[lo:hi] for au in rec.audits if r.entity_of[au.provider] == int(focal)) for r in res)
-        profit = [float((by_entity(r, r.ledger.funding, cfg.N) - by_entity(r, r.ledger.cost, cfg.N))[rows, focal].sum()) / (r.sstar / cfg.N) for r in res]
+        profit = [float(_profit_flows(r, cfg.N)[rows, focal].sum()) / (r.sstar / cfg.N) for r in res]
         mask = [(np.asarray(r.failures)[rows, focal] > 0) & _truthful(r)[rows, focal] for r in res]
         fr = [float(np.where(m, by_entity(r, r.ledger.refunds, cfg.N)[rows, focal], 0.0).sum()) / (r.sstar / cfg.N) for m, r in zip(mask, res)]
         bins.append({"age": [lo - int(replace_at), hi - int(replace_at)], "audited_share": audited / served if served else 0.0,

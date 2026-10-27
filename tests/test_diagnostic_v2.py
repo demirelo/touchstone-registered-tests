@@ -80,3 +80,22 @@ def test_honest_replacement_bins():
     assert a["bins"][0]["age"] == [0, 10] and len(a["bins"]) == len(b["bins"]) and a["replace_at"] == 50
     assert b["bins"][0]["audited_share"] > a["bins"][0]["audited_share"]   # newest-first targeting audits the replacement more (direction)
     assert all(np.isfinite(x["profit_per_round"]) and x["false_refund"] >= 0 for x in a["bins"])
+
+
+def test_honest_replacement_profit_is_the_ledger_profit():
+    """Whole-branch review round 1: the bins' profit is the canonical ledger profit (released + holdback out - cost - entry),
+    so refunded payments are not counted; with the bins covering every round they add up to the episode's profit."""
+    from sim.cell import SeedCache, run_profile
+    from sim.diagnostic_v2 import _HonestReplacer, honest_replacement
+    from sim.policies.honest import HonestMax
+    from sim.positions import positions
+    from sim.rules_v2 import make_rule
+    from tests._v2_profiles import CFG
+    seeds = list(range(2000, 2010)); focal = positions(CFG)["median"]; rule = lambda: make_rule("F111")
+    d = honest_replacement(CFG, rule, focal, seeds, SeedCache(), replace_at=0, bin_width=10)
+    fs = [HonestMax for _ in range(CFG.N)]; fs[focal] = lambda: _HonestReplacer(0)
+    res = run_profile(CFG, rule, fs, seeds, SeedCache())
+    assert sum(float(r.ledger.refunds.sum()) for r in res) > 0                 # refunds occur, so funding minus cost would differ
+    want = float(np.mean([r.profit[focal] / (r.sstar / CFG.N) for r in res]))
+    got = sum(b["profit_per_round"] * (b["age"][1] - b["age"][0]) for b in d["bins"])
+    assert got == pytest.approx(want, rel=1e-9, abs=1e-9)

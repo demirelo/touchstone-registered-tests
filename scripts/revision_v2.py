@@ -915,21 +915,25 @@ def stage_doubling(job: dict, out: Path, cuts: int = 0, h4_excluded: bool = Fals
     if job["objective"] == "total":
         obj = _coalition_objective(job, "total", np.zeros((len(_members(job)), len(m["seeds_train"]))), cache)
         new = continue_search(obj, fam, st, orig)
-        return {**doubling_report("coalition", {"f": orig.best_f}, {"f": max(new.best_f, orig.best_f)}), "heldout": _coalition_heldout(job, new, out)}
+        return {**doubling_report("coalition", {"f": orig.best_f}, {"f": max(new.best_f, orig.best_f)}),
+                "heldout": _coalition_heldout(job, _desc(job, new.best_knobs), out)}
     ctx, tag = job["context"], _coalition_tag(job)                  # G_min: every score against the final reference (design 6.3)
     ref = np.asarray(read(path_of(out, f"joint_reference/{ctx}/{tag}"))["member_normalized"])
     sel = read(path_of(out, f"coalition_select/{ctx}/{tag}"))["winners"][job["id"]]
     orig = rescore_min(orig, rec["rows"], ref)
     obj = _coalition_objective(job, "min", ref, cache)
     new = continue_search(obj, fam, st, orig)
-    return {**doubling_report("coalition", {"f": sel["score"]}, {"f": max(new.best_f, sel["score"])}), "heldout": _coalition_heldout(job, new, out)}
+    win, f = (_desc(job, new.best_knobs), new.best_f) if new.best_f > sel["score"] else (sel["descriptor"], sel["score"])   # step 6's winner stays in
+    return {**doubling_report("coalition", {"f": sel["score"]}, {"f": f}), "heldout": _coalition_heldout(job, win, out)}
 
 
-def _coalition_heldout(job: dict, new, out: Path) -> dict:
-    """The doubled coalition winner on the evaluation seeds against the final joint reference (design 6.5)."""
+def _coalition_heldout(job: dict, desc: dict, out: Path) -> dict:
+    """The doubled coalition winner (one descriptor, the same one the objective change reports) on the evaluation seeds
+    against the final joint reference (design 6.5)."""
     jrec = read(path_of(out, f"joint_reference/{job['context']}/{_coalition_tag(job)}")); seeds = list(eval_cell(job).seeds); cache = SeedCache()
-    g = _rows_of(job, _desc(job, new.best_knobs), seeds, cache) - _rows_of(job, jrec["descriptor"], seeds, cache)
-    return {"knobs": dict(new.best_knobs), "seeds": seeds, "member_gain": g.tolist(), "total": float(g.mean(axis=1).sum()), "min": float(g.mean(axis=1).min())}
+    g = _rows_of(job, desc, seeds, cache) - _rows_of(job, jrec["descriptor"], seeds, cache)
+    return {"descriptor": desc, "knobs": None if desc["knobs"] is None else dict(desc["knobs"]), "seeds": seeds, "member_gain": g.tolist(),
+            "total": float(g.mean(axis=1).sum()), "min": float(g.mean(axis=1).min())}
 
 
 def rescore_min(orig, rows: list[dict], ref: np.ndarray):

@@ -875,6 +875,11 @@ def test_coalition_six_steps_smoke_and_final_reference_can_win(patched, tmp_path
     RV.coalition_step("coalition_select", item, tmp_path, js)
     w = read(sp)["winners"][gmin["id"]]
     assert w["score"] == 0.0 and w["descriptor"]["knobs"] == k
+    # whole-branch review round 1: the doubling check keeps that frozen winner while every continued point stays below it, and
+    # its held-out diagnostic evaluates the same winner (here the final reference itself, so a zero gain)
+    dbl = RV.stage_doubling(gmin, tmp_path)
+    assert dbl["heldout"]["descriptor"] == w["descriptor"] and dbl["heldout"]["knobs"] == k
+    assert dbl["heldout"]["min"] == 0.0 and dbl["objective_change"] == 0.0
 
 
 # ---- design draft 7, 6.4 exception: the reduced fresh-market menu of the secondary systems (Part A2 Task 6) ----

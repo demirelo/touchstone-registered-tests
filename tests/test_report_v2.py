@@ -348,6 +348,7 @@ def test_report_q3_reduced_after_h4_exclusion_and_diagnostic(tmp_path, monkeypat
     assert r["q3"]["diagnostic"]["F111"]["bins"][0]["audited_share"] == pytest.approx(0.9)
     md = R.markdown(r)
     assert "c2_roles" in md and "honest replacement" in md and "reduced menu (D2+H3)" in md
+    assert "profit per round 0.1000" in md and "false refunds 0.0000" in md                 # review round 1: profit and refunds rendered
 
 
 def test_report_nonfinite_withholds_only_affected(tmp_path, monkeypatch):
