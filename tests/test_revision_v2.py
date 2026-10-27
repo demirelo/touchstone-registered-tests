@@ -96,8 +96,8 @@ def test_bank_group_follows_effective_manifest(monkeypatch):
     from importlib import reload
     M = reload(MAN)
     assert len(M.bank_rules(RV.manifest_ctx("headline@rho1"), "D2+H3")) == 5
-    assert len(M.bank_rules(RV.manifest_ctx("fresh3@rho0.2"), "X7-SC", cuts=4)) == 11
-    assert len(M.bank_rules(RV.manifest_ctx("dev0@rho0.2"), "D2+H3")) == 12
+    assert len(M.bank_rules(RV.manifest_ctx("fresh3@rho0.2"), "X7-SC", cuts=4)) == 9
+    assert len(M.bank_rules(RV.manifest_ctx("dev0@rho0.2"), "D2+H3")) == 10
 
 
 def test_x7_uses_769_controls_and_embedded_incumbent(monkeypatch):

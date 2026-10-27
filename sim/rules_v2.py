@@ -1,4 +1,4 @@
-"""The revision-program rule set (design 3.5): the factorial cells and R4, the credibility comparator C* with its pacing
+"""The revision-program rule set (design draft 7, 3.5): the factorial cells, R4 (rho = 1 only), the credibility comparator C* with its pacing
 variants, the tuned whole systems, and B2 at its registered parameters. Public constants (design 5.1): the horizon T from
 the market configuration (public by spec 4.0) and the ban length L from the rule's describe record."""
 from __future__ import annotations
@@ -12,9 +12,10 @@ from .mechanisms.proposed import Proposed
 from .mechanisms.second_score import SecondScore
 
 ROOT = Path(__file__).resolve().parents[1]
-MATCHED = ["F000", "F001", "F010", "F011", "F100", "F101", "F110", "F111", "C*", "C*/S0", "C*/S2", "R4"]
-CORE = ["F000", "F111", "C*", "R4"]
-TUNED = ["B3-t", "R3-t", "R4-t", "C*-t"]
+MATCHED = ["F000", "F001", "F010", "F011", "F100", "F101", "F110", "F111", "C*", "C*/S0"]
+FIXED = MATCHED + ["C*/S2", "R4"]               # rules at the fixed pair, whatever their block (R4, C*/S2: rho = 1 only)
+CORE = ["F000", "F111", "C*"]
+TUNED = ["B3-t", "R3-t", "C*-t"]
 COMPARATOR_PACING = {"C*": "S1", "C*/S0": "S0", "C*/S2": "S2", "C*-t": "S1"}
 
 
@@ -33,8 +34,6 @@ def make_rule(name: str, tol: float = 0.16, L: int = 10, cred: dict | None = Non
         return SecondScore(tol, L)
     if name == "R3-t":
         return Proposed("A", "T1", tol, L)
-    if name == "R4-t":
-        return make_factorial("R4", tol, L)
     if name == "B2":
         from .tuning import rule_from_params
         return rule_from_params("B2", b2_params if b2_params is not None else registered_b2_params())

@@ -12,7 +12,7 @@ CRED = {"variant": "thr", "K": 6, "M": None}
 
 def test_make_rule_names_and_types():
     from sim.rules_v2 import make_rule, MATCHED
-    for name in MATCHED + ["B3-t", "R3-t", "R4-t", "C*-t", "B2"]:
+    for name in MATCHED + ["R4", "C*/S2", "B3-t", "R3-t", "C*-t", "B2"]:
         r = make_rule(name, cred=CRED)
         assert r.describe()["parameters"]["audit_tolerance"] > 0
     f = make_rule("F111")
@@ -51,8 +51,20 @@ def test_unknown_name_refuses():
 
 def test_matched_and_core_lists():
     from sim.rules_v2 import MATCHED, CORE
-    assert MATCHED == ["F000", "F001", "F010", "F011", "F100", "F101", "F110", "F111", "C*", "C*/S0", "C*/S2", "R4"]
-    assert CORE == ["F000", "F111", "C*", "R4"]
+    from sim.rules_v2 import FIXED, TUNED
+    assert MATCHED == ["F000", "F001", "F010", "F011", "F100", "F101", "F110", "F111", "C*", "C*/S0"]
+    assert CORE == ["F000", "F111", "C*"] and TUNED == ["B3-t", "R3-t", "C*-t"]
+    assert FIXED == MATCHED + ["C*/S2", "R4"]
+
+
+def test_repair_rules_construct():
+    import scripts.revision_v2 as RV
+    from sim.rules_v2 import make_rule
+    params = {"cred": CRED, "tuned": {s: {"tol": 0.12, "L": 20} for s in ("B3-t", "R3-t", "C*-t")}}
+    for rule in ("F000", "F111", "R4", "C*", "C*/S2"):
+        spec = RV.rule_spec(rule, params)
+        assert (spec["tol"], spec["L"]) == (0.16, 10)
+        assert make_rule(rule, spec["tol"], spec["L"], cred=spec.get("cred")) is not None
 
 
 def test_admissibility_inputs():

@@ -41,7 +41,7 @@ from sim.records import cfg_to_dict, search_from_json, search_to_json  # noqa: E
 from sim.records_v2 import read, sha_file, validate, write  # noqa: E402
 from sim.reference import Candidate, evaluate_gain, reference_candidates, select_reference, twin_search  # noqa: E402
 from sim.rng import SALT_ENV, load_identity_salt  # noqa: E402
-from sim.rules_v2 import CORE, MATCHED, make_rule, public_constants, registered_b2_params  # noqa: E402
+from sim.rules_v2 import CORE, FIXED, make_rule, public_constants, registered_b2_params  # noqa: E402
 from sim.search import Objective, SearchSettings, cma_search, settings_from_locked  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -121,7 +121,7 @@ def manifest_ctx(ctx: str) -> str:
 
 def rule_spec(rule: str, params: dict | None) -> dict:
     p = params or {}
-    if rule in MATCHED:
+    if rule in FIXED:
         spec = {"tol": 0.16, "L": 10}
     elif rule == "B2":
         b2 = registered_b2_params(); spec = {"tol": float(b2["tol"]), "L": int(b2["L"]), "b2": b2}
@@ -343,7 +343,7 @@ def menu(job: dict, out: Path, cuts: int = 0, h4_excluded: bool = False) -> tupl
         upstream[rid] = sha_file(path_of(out, rid))
         fam = family_for(fname, T, L)
         bank = []
-        if rule in MATCHED:
+        if rule in FIXED:
             for other in MAN.bank_rules(manifest_ctx(ctx), fname, cuts, h4_excluded):
                 if other == rule:
                     continue
@@ -463,7 +463,7 @@ def expected_upstream(rid: str, catalog: list[dict], cuts: int = 0, h4_excluded:
     kind, ctx, rest = rid.split("/", 2)
     if kind == "reference":
         ids = {_menu_id(ctx, rest, f) for f in MENU}
-        if rest in MATCHED:
+        if rest in FIXED:
             ids |= {_menu_id(ctx, o, f) for f in MENU for o in MAN.bank_rules(manifest_ctx(ctx), f, cuts, h4_excluded) if o != rest}
         return ids
     if kind == "envelope":

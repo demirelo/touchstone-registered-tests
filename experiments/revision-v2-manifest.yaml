@@ -1,17 +1,19 @@
-# Protocol v2 manifest (design 8.1, 6.5, 6.6, 8.2). Focal provider at the median position. Cell ids:
+# Protocol v2 manifest (design draft 7: 8.1, 8.1a, 6.5, 6.6, 6.7, 8.2). Focal provider at the median position. Cell ids:
 # "<market>@rho<rho>|<rule>|<family>|<objective>[|c<c>_<schedule>]".
 markets: [headline, fresh0, fresh1, fresh2, fresh3, fresh4, fresh5]
 blocks:
-  matched: {rules: [F000, F001, F010, F011, F100, F101, F110, F111, "C*", "C*/S0", "C*/S2", R4], families: [D2+H3, X7-SC], markets: all, objective: profit}
-  extras: {rules: [F000, F111, "C*", R4], families: [D2, X5-AG/v2, H4], markets: all, objective: profit}
-  tuned: {rules: [B3-t, R3-t, R4-t, "C*-t"], families: [D2+H3, X7-SC], markets: all, objective: profit}
+  matched: {rules: [F000, F001, F010, F011, F100, F101, F110, F111, "C*", "C*/S0"], families: [D2+H3, X7-SC], markets: all, objective: profit}
+  extras: {rules: [F000, F111, "C*"], families: [D2, X5-AG/v2, H4], markets: all, objective: profit}
+  tuned: {rules: [B3-t, R3-t, "C*-t"], families_by_market: {headline: [D2+H3, X7-SC], fresh: [D2+H3]}, markets: all, objective: profit}
   reference: {rules: [B2], families: [D2, D2+H3, X7-SC], markets: [headline], objective: profit}
-  welfare: {rules: [F000, F111, "C*", R4], families: [D2+H3, X7-SC], markets: [headline], objectives: [W0, W1]}
-  coalition: {rules: [F000, F111, "C*", R4], families: [X6-SE/v2], markets: [headline], c: [2, 5], schedules: [synchronised, staggered], objectives: [total, min]}
+  welfare: {rules: [F000, F111, "C*"], families: [D2+H3, X7-SC], markets: [headline], objectives: [W0, W1]}
+  coalition: {rules: [F000, F111, "C*"], families: [X6-SE/v2], markets: [headline], c: [2, 5], schedules: [synchronised, staggered], objectives: [total, min]}
+  coalition_roles: {rules: [F000, F111, "C*"], families: [X8-DB], markets: [headline], c: [2], schedules: [roles], objectives: [total, min]}
   repair: {rules: [F000, F111, R4, "C*", "C*/S2"], families: [D2, D2+H3, X7-SC], markets: [headline], rho: 1.0, objective: profit}
+  diagnostic: {rules: [F000, F111, "C*"], families: [HR1], markets: [headline], objective: diagnostic}
 doublings:
-  headline: {blocks: [matched], families: [D2+H3, X7-SC], plus_blocks: [welfare, coalition]}
-  fresh: {rules: [F000, F111, "C*", R4, "C*/S2"], families: [D2+H3, X7-SC]}
+  headline: {blocks: [matched], families: [D2+H3, X7-SC], plus_blocks: [welfare, coalition, coalition_roles]}
+  fresh: {rules: [F000, F111, "C*"], families: [D2+H3, X7-SC]}
 cross_evaluation: {rules: [F000, F001, F010, F011, F100, F101, F110, F111], families: [D2+H3, X7-SC], markets: all}
 envelope_families: [D2+H3, X7-SC, X5-AG/v2, H4]
 cut_order:
