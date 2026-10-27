@@ -769,12 +769,22 @@ BASE_FIELDS = GAIN_FIELDS[:9]                       # the GainResult fields of t
 
 
 def gain_fields(cell, fam, knobs: dict, cand, cache: SeedCache) -> dict:
-    """The frozen evaluate_gain's fields plus the draft-7 fields computed from the same episodes (no extra episode): the
-    cache keeps each profile's results, in evaluate_gain's order attack, clipped, reference, honest."""
-    cache.keep = []
-    g = evaluate_gain(cell, fam, dict(knobs), cand, cache)
-    att, ref = cache.keep[0], cache.keep[2]; cache.keep = None
-    return {**{k: [float(v) for v in getattr(g, k)] for k in BASE_FIELDS}, **extras(att, ref, cell.cfg, cell.focal)}
+    """The frozen evaluate_gain's fields plus the draft-7 fields computed from the same episodes (no extra episode).
+    sim/cell.py and sim/reference.py are frozen, so the profiles' results are kept by rebinding the run_focal name that
+    evaluate_gain looks up, for this call only (order attack, clipped, reference, honest); evaluation runs one job per
+    process, never in threads."""
+    import sim.reference as REF
+    kept, orig = [], REF.run_focal
+
+    def keep(c, pf, ca):
+        fr = orig(c, pf, ca); kept.append(fr.results); return fr
+
+    REF.run_focal = keep
+    try:
+        g = evaluate_gain(cell, fam, dict(knobs), cand, cache)
+    finally:
+        REF.run_focal = orig
+    return {**{k: [float(v) for v in getattr(g, k)] for k in BASE_FIELDS}, **extras(kept[0], kept[2], cell.cfg, cell.focal)}
 
 
 def stage_evaluate(job: dict, out: Path) -> dict:

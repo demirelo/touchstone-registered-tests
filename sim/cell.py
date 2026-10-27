@@ -29,7 +29,6 @@ class SeedCache:
         self.hits = 0
         self.misses = 0
         self.runs = 0
-        self.keep: list | None = None       # when a list, run_profile appends each profile's episode results (design draft 7 fields)
 
     def get(self, cfg: MarketConfig, seed: int) -> tuple[Draws, float]:
         key = (market_key(cfg), int(seed))
@@ -75,8 +74,6 @@ def run_profile(cfg: MarketConfig, rule_factory: Callable, factories: list, seed
         pols = [f() for f in factories]
         out.append(run_episode(cfg, rule_factory(), pols, int(seed), draws=d, sstar=sstar))
         cache.runs += 1
-    if cache.keep is not None:
-        cache.keep.append(out)
     return out
 
 

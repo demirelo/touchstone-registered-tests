@@ -714,7 +714,8 @@ def test_k8_real_verify_behind_the_report(fresh_dir, patched, tmp_path):
     inst, cat = _report_inputs(RV, fx)
     proto = {"h4": None, "cuts": 0, "kappa": {"Q1": None, "Q4": None}}; h4 = json.loads(fx["h4"].read_text())
     r = R.build(d, proto, inst, h4, cat)
-    assert r["q1"] == "unanswered" and f"{FRESH}|F111|D2+H3|profit" not in r["missing"] and f"{FRESH}|F000|D2+H3|profit" in r["missing"]
+    assert f"{FRESH}|F111|D2+H3|profit" not in r["missing"] and f"{FRESH}|F000|D2+H3|profit" in r["missing"] and f"{FRESH}|C*|D2+H3|profit" in r["missing"]
+    assert all(t["reject"] is None for t in r["q1"]["tests"].values())   # draft 7: each Q1 slot carries its own status; nothing is decided here
     p = RV.eval_path(d, f"{FRESH}|F111|D2+H3|profit"); rec = json.loads(p.read_text()); rec["gain"] = rec["gain"][:1]; p.write_text(json.dumps(rec))
     with pytest.raises(SystemExit):
         R.build(d, proto, inst, h4, cat)                                  # a malformed record with valid provenance is refused
@@ -932,6 +933,25 @@ def test_gain_fields_draft7_and_resume_rejects_damaged(ctx_dir, patched, tmp_pat
     rec.pop("served_share_attack"); write(p, rec)                                  # current provenance, a draft-7 field missing
     assert RV.run("evaluate", jobs[:1], d, catalog=jobs)[jobs[0]["id"]] == "done"
     assert "served_share_attack" in read(p)
+
+
+def test_gain_fields_from_frozen_evaluate_gain(ctx_dir, patched, monkeypatch):
+    """The draft-7 fields come from evaluate_gain's own four profiles (no extra episode) without a hook in the frozen
+    sim/cell.py, and the frozen module is left as it was, also when the evaluation raises."""
+    import sim.reference as REF
+    from sim.cell import SeedCache
+    from sim.records_v2 import read
+    RV = patched; out, jobs = ctx_dir; job = jobs[0]
+    T, L = RV.constants(job); cell = RV.eval_cell(job); fam = RV.family_for(job["family"], T, L, job.get("h4"))
+    cand, _, _ = RV.reference_of(job, out); knobs = read(RV.path_of(out, job["id"]))["attack"]["best_knobs"]
+    cache = SeedCache(); orig = REF.run_focal
+    f = RV.gain_fields(cell, fam, knobs, cand, cache)
+    assert cache.runs == 4 * len(cell.seeds) and REF.run_focal is orig and not hasattr(cache, "keep")
+    assert all(len(f[k]) == len(cell.seeds) for k in NEW_FIELDS)
+    monkeypatch.setattr(REF, "harm", lambda *a: (_ for _ in ()).throw(RuntimeError("boom")))
+    with pytest.raises(RuntimeError):
+        RV.gain_fields(cell, fam, knobs, cand, SeedCache())
+    assert REF.run_focal is orig
 
 
 def test_doubling_heldout_not_frozen(ctx_dir, patched, monkeypatch, tmp_path):
