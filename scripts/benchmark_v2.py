@@ -112,11 +112,16 @@ def _task(ts: dict, st: str, j: dict, h4: float = 1.0) -> float:
 
 def pod_plan(timings: dict, jobs: list[dict], h4: float = 1.0) -> list[list[float]]:
     """One pod's waves, exactly the runner's dispatch (`revision_v2._waves`) per stage, each task at its measured component
-    time (`task_seconds`): searches, reference menus, W1 searches, coalition prerequisites and objectives, evaluations on
-    200 seeds, cross items, and doublings, every one in its own wave."""
+    time (`task_seconds`): searches, reference menus, W1 searches, coalition prerequisites and objectives, each context's
+    freeze (its training bank matrices, serial), evaluations on 200 seeds, cross items, and doublings, every one in its own
+    wave."""
     from scripts import revision_v2 as RV
-    ts = timings["task_seconds"]
-    return [[_task(ts, st, i, h4) for i in items] for stage in STAGES_BILLED for st, items in RV._waves(stage, jobs, jobs)]
+    from sim import manifest_v2 as MAN
+    ts = timings["task_seconds"]; ctxs = {j["context"] for j in jobs}
+    matrix = 8 * ts["cross_item"] * TRAIN_SEEDS / FINAL_SEEDS          # one family's 8 x 8 bank matrix on the dev-train seeds
+    freeze = [[sum(matrix for c, _ in MAN.cross_evaluations() if c == ctx)] for ctx in sorted(ctxs)]   # serial, in the freeze (design 6.6)
+    waves = {stage: [[_task(ts, st, i, h4) for i in items] for st, items in RV._waves(stage, jobs, jobs)] for stage in STAGES_BILLED}
+    return [w for stage in STAGES_BILLED for w in waves[stage] + ([f for f in freeze if f[0] > 0] if stage == "dependent" else [])]
 
 
 def default_eval_plan(timings: dict, cuts: int = 0, h4_excluded: bool = False, h4: float = 1.0) -> list[list[float]]:

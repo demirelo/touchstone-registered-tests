@@ -300,7 +300,18 @@ def test_default_eval_plan_follows_the_runner_dispatch():
     for name in ("fresh0", "headline@rho0.2"):
         jobs = pods[name]
         want = [len(ids) for st in STAGES_BILLED for ids in RV.dispatch_plan(st, jobs)]
+        k = sum(len(RV.dispatch_plan(st, jobs)) for st in STAGES_BILLED[:3])
+        want = want[:k] + [1] + want[k:]                                   # the context's freeze (bank matrices), one serial task
         assert [len(w) for w in pod_plan(POD, jobs)] == want
+
+
+def test_pod_plan_bills_the_freeze_bank_matrices():
+    """Whole-branch review round 1: the freeze builds each context's training bank matrices serially (8 x 8 profiles on the
+    5 dev-train seeds per family, design 6.6); the pod bill carries them as one serial task per context."""
+    from scripts.benchmark_v2 import FINAL_SEEDS, TRAIN_SEEDS, eval_pods, pod_plan
+    pods = eval_pods(); mat = 8 * POD["task_seconds"]["cross_item"] * TRAIN_SEEDS / FINAL_SEEDS
+    for name, n in (("fresh0", 1), ("headline@rho0.2", 1), ("headline@rho1", 0)):
+        assert sum(w == [pytest.approx(2 * mat)] for w in pod_plan(POD, pods[name])) == n, name
 
 
 
@@ -311,6 +322,8 @@ def test_k10_waves_are_priced_with_their_measured_components():
     ts = dict(POD["task_seconds"], prereqs=100.0, coalition=0.001)
     jobs = eval_pods()["headline@rho0.2"]; plan = pod_plan(dict(POD, task_seconds=ts), jobs)
     calls = [(st, items) for stage in ("search", "reference", "dependent", "evaluate", "cross", "doubling") for st, items in RV._waves(stage, jobs, jobs)]
+    k = sum(len(RV._waves(s, jobs, jobs)) for s in ("search", "reference", "dependent"))
+    plan = plan[:k] + plan[k + 1:]                                        # without the context's freeze wave (its own test)
     assert len(plan) == len(calls)
     for (st, items), wave in zip(calls, plan):
         if st == "joint_twin":
