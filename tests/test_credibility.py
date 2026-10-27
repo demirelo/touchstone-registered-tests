@@ -125,7 +125,30 @@ def test_selection_grid_order_and_size():
     from sim.mechanisms.credibility import SELECTION_GRID
     assert SELECTION_GRID == ([{"variant": "thr", "K": k, "M": None} for k in (2, 6, 12, 24)]
                               + [{"variant": "mem", "K": k, "M": m} for k, m in ((2, 20), (2, 50), (6, 20), (6, 50))]
-                              + [{"variant": "taper", "K": k, "M": None} for k in (2, 6, 12, 24)])
+                              + [{"variant": "taper", "K": k, "M": None} for k in (2, 6, 12)]
+                              + [{"variant": "boinc", "K": 10, "M": None}])
+
+
+def test_boinc_weight():
+    from sim.mechanisms.credibility import boinc_weight
+    assert boinc_weight(0) == 1.0 and boinc_weight(9) == 1.0 and boinc_weight(10) == 0.1 and boinc_weight(20) == 0.05
+
+
+def test_boinc_selection_race():
+    from sim.mechanisms.credibility import boinc_weight, select_credibility
+    p = {1: 0, 2: 12, 3: 30}
+    by = {1: [0, 1], 2: [2, 3], 3: [4]}
+    keys = np.array([0.5, 0.9, 0.2, 0.3, 0.05])
+    w = {0: 1.0, 1: 1.0, 2: 1 / 12, 3: 1 / 12, 4: 1 / 30}
+    race = sorted(range(5), key=lambda j: (-math.log(keys[j]) / w[j], j))
+    assert select_credibility("boinc", by, keys, p, k=3, K=10) == race[:3]
+    assert all(boinc_weight(p[i]) == w[by[i][0]] for i in p)
+
+
+def test_boinc_k_fixed():
+    with pytest.raises(ValueError):
+        C("boinc", 6)
+    assert C("boinc", 10).name == "C-boinc"
 
 
 def test_make_credibility():

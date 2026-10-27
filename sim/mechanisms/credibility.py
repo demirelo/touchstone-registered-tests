@@ -4,7 +4,9 @@ R3 (S1), or R4 (S2). Credibility p_i = passed audits of identity i since its cre
 in `enforce` from the round's audit results (any failure in the batch resets it to zero); selection in round t reads the
 counts at the start of round t. C-thr: identities with p_i < K are unproven and their jobs are audited first; C-mem: as
 C-thr over the passes of the last M rounds; C-taper: no priority phase, weighted sampling without replacement with
-weights K / (p_i + K) by the exponential race on the audit key (a relative weight, not a marginal audit probability)."""
+weights K / (p_i + K) by the exponential race on the audit key (a relative weight, not a marginal audit probability);
+C-boinc (design draft 7): as C-taper with BOINC's documented adaptive-replication rule, weight 1 below 10 consecutive
+passes and 1 / p_i at or above (relative selection weights under a fixed quota, not BOINC's audit probabilities)."""
 from __future__ import annotations
 
 import math
@@ -15,11 +17,13 @@ from .base import AuditRecord, Consequences, Mechanism, Offers, StateView
 from .pacing import ReservePacing, spread_cap, spread_count
 from .second_score import SecondScore
 
-VARIANTS = ("thr", "mem", "taper")
+VARIANTS = ("thr", "mem", "taper", "boinc")
+BOINC_THRESHOLD = 10
 PACINGS = ("S0", "S1", "S2")
 SELECTION_GRID = ([{"variant": "thr", "K": k, "M": None} for k in (2, 6, 12, 24)]
                   + [{"variant": "mem", "K": k, "M": m} for k, m in ((2, 20), (2, 50), (6, 20), (6, 50))]
-                  + [{"variant": "taper", "K": k, "M": None} for k in (2, 6, 12, 24)])
+                  + [{"variant": "taper", "K": k, "M": None} for k in (2, 6, 12)]
+                  + [{"variant": "boinc", "K": BOINC_THRESHOLD, "M": None}])
 
 
 def passes_of(memory: dict, i: int, t: int, M: int | None) -> int:
@@ -33,13 +37,18 @@ def taper_weight(p: int, K: int) -> float:
     return float(K) / (float(p) + float(K))
 
 
+def boinc_weight(p: int) -> float:
+    return 1.0 if int(p) < BOINC_THRESHOLD else 1.0 / float(p)
+
+
 def select_credibility(variant: str, jobs_by_identity: dict, audit_key, p: dict, k: int, K: int) -> list:
     """k audited jobs in order (design 3.3). `p` maps identity to its credibility at the start of the round."""
     remaining = {int(j): int(i) for i, jobs in jobs_by_identity.items() for j in jobs}
     k = max(0, min(int(k), len(remaining)))
     key = lambda j: float(audit_key[j])
-    if variant == "taper":
-        race = lambda j: (-math.log(key(j)) / taper_weight(p.get(remaining[j], 0), K) if key(j) > 0 else math.inf, j)
+    if variant in ("taper", "boinc"):
+        weight = (lambda q: taper_weight(q, K)) if variant == "taper" else boinc_weight
+        race = lambda j: (-math.log(key(j)) / weight(p.get(remaining[j], 0)) if key(j) > 0 else math.inf, j)
         return sorted(remaining, key=race)[:k]
     chosen: list = []
     picks: dict[int, int] = {}
@@ -62,6 +71,8 @@ class Credibility(Mechanism):
             raise ValueError(f"pacing must be one of {PACINGS}")
         if (variant == "mem") != (M is not None):
             raise ValueError("M is required for C-mem and only for C-mem")
+        if variant == "boinc" and int(K) != BOINC_THRESHOLD:
+            raise ValueError(f"C-boinc has the fixed threshold K = {BOINC_THRESHOLD}")
         self.variant, self.K, self.M, self.tol, self.L, self.pacing = variant, int(K), None if M is None else int(M), float(tol), int(L), pacing
         self.name = f"C-{variant}" + ("" if pacing == "S1" else f"/{pacing}")
         self._b3 = SecondScore(self.tol, self.L)
