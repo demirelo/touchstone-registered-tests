@@ -331,8 +331,11 @@ unchanged, since the decoy's claim already equals its effort). Order per rule an
    family can represent it.
 5. Final reference: the same rule over the step-3 menu plus the truthful projections of the step-4 winners and archive
    points, in search order; freeze.
-6. Every archived G_min point (step 4) is rescored against the final reference on the same training seeds, and the
-   G_min winner is the best rescored point; G_tot winners are unchanged (constant reference term). Then evaluation.
+6. Every archived G_min point (step 4) is rescored against the final reference on the same training seeds; the final
+   reference profile itself is added as a candidate wherever the G_min family can represent it (it scores exactly zero
+   against itself); the G_min winner is the best of these candidates. G_tot winners are unchanged (constant reference
+   term). Then evaluation. Required regression test: a final reference taken from a step-5 projection, with every
+   archived point negative against it, selects the reference profile where it is representable.
 
 Claims are gains relative to this coordinated truthful profile; they say nothing about coalition stability or each
 member's best unilateral alternative.
@@ -499,14 +502,14 @@ decides.
 | Coverage (9.5): 8 profiles x 20,000 seeds x 3 markets = 480,000 episodes (26.9) + bootstrap computation (about 3 core-hours, 10) | 36.9 |
 | **Development total** | **about 177.3 (about 8.0 USD)** |
 | Evaluation cells: 287 + (85 X7-SC + 21 H4) x 1.5 | 446 |
-| Coalition extras (6.3): the second joint twin per rule and c (6) and the G_min archive rescoring (about 4) | 10 |
+| Coalition extras (6.3): the second joint twin per rule and c (6); step-3 and step-5 truthful-projection evaluations of archive points (new episodes, since clipping can change trajectories; about 8, benchmarked); step-6 G_min archive rescoring (stored member payoffs where possible, about 4) | 18 |
 | Additional cost of 200 instead of 40 evaluation seeds: 0.16 x 446 | 71.4 |
 | Fixed-attack cross-evaluation: 14 x 56 attack profiles x 200 seeds = 156,800 episodes (9), plus the training-seed matrix for the bank envelope (1) | 10 |
 | Doubling checks: 64 at 1 + 34 X7-SC at 2.5, plus the held-out evaluation of each doubled winner (about 2) | 151 |
 | Diagnostic (6.7): 3 x 200 episodes | about 0 |
-| **Evaluation total** | **about 688 (about 31.0 USD)** |
+| **Evaluation total** | **about 696 (about 31.3 USD)** |
 
-Total about 866 units, about 39.0 USD (draft 6: about 1,103 units, 50 USD). **The author's approval is required for any
+Total about 874 units, about 39.3 USD (draft 6: about 1,103 units, 50 USD). **The author's approval is required for any
 total above 40 USD** (the range quoted when the program was chosen); the caps below do not by themselves authorise
 spending their sum. The table is an estimate; the benchmark decides.
 
@@ -736,11 +739,11 @@ the last column says "code".
 
 | Finding | Draft 7 | Where | Code |
 |---|---|---|---|
-| D1 R4 = R3 and C*/S2 = C* at rho = 0.2 (A_tot in [2,000, 2,500] on the whole generator support) | removed from rho = 0.2 blocks; R4, C*/S2 only at rho = 1; R4-t dropped; Q1 2 tests; distinct-rule check | 3.3, 3.4, 3.5, 8.1, 9.3, 9.5 | manifest and distinct-rule check, tuned-rule lists and tuning orchestration (`promote_v2.SYSTEMS` without R4-t), coverage fixtures and coverage promotion (no `fixture_cstar_s2.json`), parameter construction, Q1 decision, benchmark counts, report |
+| D1 R4 = R3 and C*/S2 = C* at rho = 0.2 (A_tot in [2,000, 2,500] on the whole generator support) | removed from rho = 0.2 blocks; R4, C*/S2 only at rho = 1; R4-t dropped; Q1 2 tests; distinct-rule check | 3.3, 3.4, 3.5, 8.1, 9.3, 9.5 | manifest and distinct-rule check, tuned-rule lists and tuning orchestration (`promote_v2.SYSTEMS` without R4-t), coverage fixtures and coverage promotion (no `fixture_cstar_s2.json`), parameter construction, Q1 decision, benchmark counts, report; context-dependent reference menu for the fresh-market secondary systems (`revision_v2.menu`, `expected_upstream`, freeze verification, report labels), with tests that require D2+H3 alone there and both families elsewhere |
 | D2 H4 blind to the defence | defence-aware brief after the defender freeze; resource envelope; no defender change after H4 | 5.3, 11 | H4 brief, load check with the envelope, runner budget dispatch and bounded controls for H4 (`revision_v2.controls`), C* in the smoke check, timing record in `h4_check` |
 | D3 X7-SC reset depends only on the horizon | reset-or-wait by age (a_R), exposure gate (e_P), credibility image p_own; 15 knobs | 5.2 | X7-SC family, corner count |
 | D4 no role-asymmetric coalition | X8-DB decoy and beneficiary, c = 2, 6 cells | 5.2, 6.3, 8.1 | new family, manifest |
-| D5 coalition reference menu too narrow | projections and archives of the G_tot searches; G_min after the freeze | 6.3, 6.4 | coalition objective adapters (G_tot, G_min), the six-step order, shared reference records and their reconstruction, dependency validation, verification |
+| D5 coalition reference menu too narrow | both objectives' truthful projections; G_tot searches before the reference; G_min search against a preliminary reference; final reference freeze; archive rescoring with the reference as a candidate | 6.3, 6.4 | coalition objective adapters (G_tot, G_min), the six-step order, shared reference records and their reconstruction, dependency validation, verification |
 | D6 W1 reporting rule | supported, contradicted, unresolved | 6.2 | report |
 | D7 BOINC adaptation | C-boinc replaces C-taper K = 24 | 3.3 | comparator |
 | D8 comparator neutrality wording | reworded; Q1 limited to the fixed pair | 1, 3.3 | none |
@@ -753,7 +756,7 @@ the last column says "code".
 | D15 search-quality consequences | incomplete means prescribed-procedure only; held-out doubled winners | 6.5 | doubling stage, report |
 | D16 extrema selected on evaluation data | training selection for the bank envelope and welfare | 6.2, 6.6 | training-seed bank matrix and envelope selection, welfare winner selection and freeze records, report |
 | D17 question-to-cell map | table; H4 cut reduces Q3's scope | 8.1a, 8.2 | status propagation (missing versus search-flagged) and question dependencies in verify and report |
-| D18 budget | recomputed: about 39.0 USD (H4 re-priced after its timing, 5.3) | 8.2 | benchmark constants, cost accounting |
+| D18 budget | recomputed: about 39.3 USD (H4 re-priced after its timing, 5.3) | 8.2 | benchmark constants, cost accounting |
 
 Every code change above gets a regression test that fails against the draft-6 code first (TDD), in the plan revision.
 
@@ -771,4 +774,13 @@ Every code change above gets a regression test that fails against the draft-6 co
 | Astra 7: missing versus search-flagged | two statuses with separate consequences; checks listed per question | 6.5, 8.1a |
 | Sol 7 / Astra 8: Code column | expanded; regression tests | 14 |
 | Sol 8: section 4.2 wording | "provides additional development selection" | 4.2 |
+
+### Round 8 (Sol: reject; Astra: accept-with-caveat) and its disposition
+
+| Correction | Change | Where |
+|---|---|---|
+| Sol 1: the final reference could not be selected as the G_min winner | added as a candidate where representable; regression test | 6.3 |
+| Sol 2 / Astra 1: Code column lacked the reduced fresh menu | added to D1's code entry with tests | 14 |
+| Astra 2: D5 summary described the obsolete order | corrected | 14 |
+| Astra 3: projection evaluations not priced | separate cost item (new episodes), benchmarked | 8.2 |
 
