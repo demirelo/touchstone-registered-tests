@@ -176,7 +176,7 @@ def job(mkt: dict, rule: str, family: str, objective: str = "profit", c: int | N
         smoke: bool = False, params: dict | None = None, h4: dict | None = None, block: str | None = None) -> dict:
     lk = load_locked(); s = lk["search"]
     R, E, n_train, n_eval = SMOKE if (smoke or mkt["smoke"]) else (int(s["restarts"]), int(s["evals_per_restart"]), len(mkt["seeds_train"]), len(mkt["seeds_eval"]))
-    if family == "X7-SC":
+    if family in ("X7-SC", "H4"):                   # H4 is priced and searched as an X7-SC cell (design draft 7, 5.3)
         E *= 2
     spec = rule_spec(rule, params)
     j = {"id": cell_id(mkt["context"], rule, family, objective, c, schedule), "context": mkt["context"], "rule": rule, "family": family,
@@ -237,8 +237,16 @@ def search_family(cell: Cell, family: Family, cache: SeedCache, st: SearchSettin
     return cma_search(Objective(cell, family, cache), family, st, 1, incumbents=inc)
 
 
+BOUNDED_CONTROLS = ("X7-SC", "H4")                # design draft 7, 5.2 and 5.3: Sobol corner controls, never every corner
+
+
 def controls(objective, family: Family) -> list:
-    vecs = corner_vectors(family) if family.name == "X7-SC" else family.corners()
+    if family.name in BOUNDED_CONTROLS:
+        vecs = corner_vectors(family)
+    else:
+        if family.dim > 8:
+            raise AssertionError(f"{family.name}: {family.dim} knobs is too many for exhaustive corners")
+        vecs = family.corners()
     return [(k, float(objective.eval_knobs(k, source="corner"))) for k in vecs]
 
 

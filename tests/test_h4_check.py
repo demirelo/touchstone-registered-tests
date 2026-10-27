@@ -8,21 +8,42 @@ import pytest
 TOY = Path(__file__).resolve().parent / "fixtures" / "h4_toy"
 
 
+CRED = {"cred": {"variant": "thr", "K": 6, "M": None}}
+PAYLOAD = {"defender_commit", "h4_seconds", "x7_seconds", "h4_episodes", "x7_episodes", "knobs", "controls"}
+
+
 def _copy(tmp_path) -> Path:
     d = tmp_path / "sealed2"; shutil.copytree(TOY, d)
     return d
+
+
+def _cred(tmp_path) -> str:
+    p = tmp_path / "comparator.json"; p.write_text(json.dumps(CRED))
+    return str(p)
 
 
 def test_toy_bundle_passes_load_and_hash_round_trip(tmp_path, capsys):
     from scripts.h4_check import main
     from sim.h4_loader import H4Source, bundle_sha, load
     d = _copy(tmp_path)
-    assert main(["--bundle", str(d), "--smoke"]) == 0
-    printed = capsys.readouterr().out.strip().splitlines()[-1]
+    assert main(["--bundle", str(d), "--smoke", "--comparator", _cred(tmp_path), "--defender-commit", "abc123"]) == 0
+    export = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
     chk = json.loads((d / "h4" / "check.json").read_text())
     assert chk["load"]["ok"] is True and chk["load"]["constants"] == [[200, 10], [100, 20]]
-    assert set(chk) >= {"load", "smoke", "scipy", "commit"} and printed == bundle_sha(d)
-    assert isinstance(load(d, printed), H4Source)
+    assert set(chk) >= {"load", "smoke", "scipy", "commit", "timing"} and export["bundle_sha256"] == bundle_sha(d)
+    assert isinstance(load(d, export["bundle_sha256"]), H4Source)
+
+
+def test_h4_check_prints_timing(tmp_path, capsys):
+    from scripts.h4_check import main
+    from sim.h4_loader import bundle_sha
+    d = _copy(tmp_path)
+    main(["--bundle", str(d), "--smoke", "--comparator", _cred(tmp_path), "--defender-commit", "abc123"])
+    export = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    payload = json.loads((d / "h4" / "check.json").read_text())["timing"]
+    assert set(payload) == PAYLOAD and "bundle_sha256" not in payload and payload["defender_commit"] == "abc123"
+    assert export == {"bundle_sha256": bundle_sha(d), "commit": export["commit"], **payload}
+    assert payload["h4_seconds"] > 0 and payload["x7_seconds"] > 0 and payload["h4_episodes"] > 0 and payload["controls"] > 0
 
 
 @pytest.mark.parametrize("src,needle", [
@@ -42,8 +63,8 @@ def test_smoke_touches_development_seeds_only(tmp_path, monkeypatch):
     import sim.instances as INST
     from scripts.h4_check import smoke
     monkeypatch.setattr(INST, "eval_seeds", lambda *a, **k: (_ for _ in ()).throw(AssertionError("reserved evaluation seeds")))
-    r = smoke(_copy(tmp_path))
-    assert set(r) == {f"{rule}|{m}" for rule in ("F000", "F111") for m in ("dev0", "dev1")}
+    r = smoke(_copy(tmp_path), cred=CRED["cred"])
+    assert set(r) == {f"{rule}|{m}" for rule in ("F000", "F111", "C*") for m in ("dev0", "dev1")}
     dev = set(range(1000, 1005)) | set(range(2000, 2020))
     for v in r.values():
         assert set(v["train_seeds"]) | set(v["eval_seeds"]) <= dev and "gain" in v and v["train_seeds"] and v["eval_seeds"]
@@ -52,6 +73,6 @@ def test_smoke_touches_development_seeds_only(tmp_path, monkeypatch):
 def test_check_json_is_inside_the_hash(tmp_path):
     from scripts.h4_check import main
     from sim.h4_loader import bundle_sha
-    d = _copy(tmp_path); main(["--bundle", str(d), "--smoke"])
+    d = _copy(tmp_path); main(["--bundle", str(d), "--smoke", "--comparator", _cred(tmp_path), "--defender-commit", "abc123"])
     before = bundle_sha(d); p = d / "h4" / "check.json"; p.write_text(p.read_text() + " ")
     assert bundle_sha(d) != before

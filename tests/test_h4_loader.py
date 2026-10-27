@@ -78,3 +78,43 @@ def test_h4_binds_constants_and_resumes(tmp_path):
     fam2 = load(d, sha).family(100, 20)                       # reconstruction from the stored constants
     b = run_full(cfg, __import__("sim.rules_v2", fromlist=["x"]).make_rule("F111", L=20), [lambda: fam2.make(k)] + [HonestMax] * 9, 2000)
     assert fingerprint(a) == fingerprint(b)
+
+
+@pytest.mark.parametrize("src,needle", [
+    ("from sim.policies.families import Family\nBINARY = ('clip',)\n"
+     "def make_family(T, L):\n    ks = tuple(f'k{i}' for i in range(16)) + ('clip',)\n"
+     "    return Family('H4', ks, {k: (0.0, 1.0) for k in ks[:-1]}, lambda **k: None)\n", "15 knobs"),
+    ("from sim.policies.families import Family\nBINARY = ('clip',)\nclass F(Family):\n    project = None\n"
+     "def make_family(T, L):\n    return F('H4', ('a', 'clip'), {'a': (0.0, 1.0)}, lambda **k: None)\n", "project"),
+    ("from sim.policies.families import Family\nBINARY = ('clip',)\n"
+     "def make_family(T, L):\n    return Family('H4', ('a', 'clip'), {'a': (0.0, float('inf'))}, lambda **k: None)\n", "finite"),
+])
+def test_h4_outside_envelope_is_excluded(tmp_path, src, needle):
+    from sim.h4_loader import Excluded, load
+    d, sha = bundle(tmp_path, src)
+    r = load(d, sha)
+    assert isinstance(r, Excluded) and needle in r.reason
+
+
+def test_h4_controls_are_bounded():
+    import scripts.revision_v2 as RV
+    from sim.policies.families import Family
+    ks = tuple(f"k{i}" for i in range(14)) + ("clip",)
+    fam = Family("H4", ks, {k: (0.0, 1.0) for k in ks[:-1]}, lambda **k: None)
+    fam_corners = type(fam).corners
+    try:
+        type(fam).corners = lambda self: (_ for _ in ()).throw(AssertionError("Family.corners must not be called for H4"))
+
+        class Stub:
+            def eval_knobs(self, k, source="corner"):
+                return 0.0
+        vecs = RV.controls(Stub(), fam)
+    finally:
+        type(fam).corners = fam_corners
+    assert 0 < len(vecs) <= 2 * 514
+
+
+def test_h4_budget_is_x7():
+    import scripts.revision_v2 as RV
+    mkt = RV.market("dev0", RV.DEV_ROOT, 0.2, dev=True)
+    assert RV.job(mkt, "F111", "H4")["budget"][1] == RV.job(mkt, "F111", "X7-SC")["budget"][1] == 2 * RV.job(mkt, "F111", "D2+H3")["budget"][1]

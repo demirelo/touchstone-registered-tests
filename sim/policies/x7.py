@@ -131,7 +131,7 @@ def _corner(fam: Family, bits) -> dict:
 
 
 def x7_corners(fam: Family) -> list[dict]:
-    """512 scrambled-Sobol corners (bit 1 when a coordinate is >= 0.5), de-duplicated in order, then the all-low and
+    """For any family (X7-SC and H4, design draft 7): 512 scrambled-Sobol corners (bit 1 when a coordinate is >= 0.5), de-duplicated in order, then the all-low and
     all-high corners if absent (a bounded diagnostic, not exhaustive coverage)."""
     pts = qmc.Sobol(d=len(fam.knobs), scramble=True, seed=SOBOL_SEED).random_base2(9)
     out, seen = [], set()

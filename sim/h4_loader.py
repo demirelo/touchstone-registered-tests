@@ -9,10 +9,13 @@ import importlib.util
 from dataclasses import dataclass
 from pathlib import Path
 
+import math
+
 from .policies.families import Family
 
 BUNDLE_FILES = ("h4/family.py", "h4/containment.md", "h4/check.json")
 CHECK_CONSTANTS = ((200, 10), (100, 20))
+MAX_KNOBS = 15                                   # design draft 7, 5.3: the resource envelope
 
 
 def bundle_sha(bundle_dir) -> str:
@@ -42,9 +45,15 @@ def _check(fam, binary) -> str | None:
         return f"family name {fam.name!r} is not H4"
     if not fam.knobs or fam.knobs[-1] != "clip" or "clip" in fam.bounds:
         return "clip must be the last, binary knob"
+    if len(fam.knobs) > MAX_KNOBS:
+        return f"{len(fam.knobs)} knobs: the envelope allows at most {MAX_KNOBS} knobs"
+    if not callable(getattr(fam, "project", None)):
+        return "the family has no callable project (truthful projection)"
     missing = [k for k in fam.knobs if k not in fam.bounds and k not in binary]
     if missing:
         return f"no bounds for non-binary knob(s) {missing}"
+    if any(not (math.isfinite(float(lo)) and math.isfinite(float(hi))) for lo, hi in fam.bounds.values()):
+        return "knob bounds must be finite"
     if any(not (float(lo) < float(hi)) for lo, hi in fam.bounds.values()):
         return "empty knob bounds"
     return None
