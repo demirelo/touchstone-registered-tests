@@ -244,6 +244,7 @@ def test_cross_evaluation_matrix_shape(ctx_dir, patched):
     from sim.records_v2 import write
     RV = patched; out, jobs = ctx_dir
     write(RV.path_of(out, f"bank/{CTX}/D2+H3"), {"stage": "bank", "attacks": {"F111": json.loads(RV.path_of(out, jobs[0]["id"]).read_text())["attack"]["best_knobs"]}})
+    write(RV.path_of(out, f"bank_train/{CTX}/D2+H3"), {"stage": "bank_train", "attacks": ["F111"], "rules": ["F111"], "matrix": [[0.0]]})
     rec = RV.stage_cross(CTX, "D2+H3", jobs, out)
     n = len(rec["rules"])
     assert n == 1 and len(rec["matrix"]) == n and all(len(r) == n for r in rec["matrix"])
@@ -385,6 +386,7 @@ def _banks(RV, out, jobs):
     from sim.records_v2 import write
     for j in jobs:
         write(RV.path_of(out, f"bank/{CTX}/{j['family']}"), {"stage": "bank", "attacks": {"F111": json.loads(RV.path_of(out, j["id"]).read_text())["attack"]["best_knobs"]}})
+        write(RV.path_of(out, f"bank_train/{CTX}/{j['family']}"), {"stage": "bank_train", "attacks": ["F111"], "rules": ["F111"], "matrix": [[0.0]]})
 
 
 def test_g1_cross_resume_validates_the_expected_record(ctx_dir, patched, tmp_path):
@@ -393,7 +395,7 @@ def test_g1_cross_resume_validates_the_expected_record(ctx_dir, patched, tmp_pat
     assert set(RV.run("cross", jobs, d, catalog=jobs).values()) == {"done"}
     assert set(RV.run("cross", jobs, d, catalog=jobs).values()) == {"skipped"}
     p = d / "cross" / CTX / (RV._safe("D2+H3") + ".json"); rec = json.loads(p.read_text())
-    assert set(rec["upstream"]) == {f"freeze/{CTX}", f"bank/{CTX}/D2+H3", f"reference/{CTX}/F111"}
+    assert set(rec["upstream"]) == {f"freeze/{CTX}", f"bank/{CTX}/D2+H3", f"bank_train/{CTX}/D2+H3", f"reference/{CTX}/F111"}
     for bad in ({**rec, "stage": "search"}, {**rec, "upstream": {}}, {**rec, "upstream": {**rec["upstream"], f"reference/{CTX}/F111": "0" * 64}}):
         write(p, bad)
         assert RV.run("cross", jobs, d, catalog=jobs)[f"cross/{CTX}/D2+H3"] == "done"          # stale under the same provenance: recomputed
@@ -687,8 +689,10 @@ def test_k8_schema_problems_for_each_record_kind(patched):
 def test_k8_cross_schema(patched):
     RV = patched; rules = ["F000", "F111"]; n = 2
     rows = {f"{a}>{r}": [0.1, 0.3] for a in rules for r in rules}
-    rec = {"attacks": rules, "rules": rules, "per_seed": rows, "matrix": [[0.2, 0.2], [0.2, 0.2]]}
+    prof = {k: {"profit_attack": [0.4, 0.5], "profit_ref": [0.3, 0.2], "eff_attack": [0.9, 0.9], "net_eff_attack": [0.8, 0.8]} for k in rows}
+    rec = {"attacks": rules, "rules": rules, "per_seed": rows, "matrix": [[0.2, 0.2], [0.2, 0.2]], "profit_rows": prof}
     assert RV._cross_problems(rec, rules, n) is None
+    assert RV._cross_problems({k: v for k, v in rec.items() if k != "profit_rows"}, rules, n)          # draft 7: decomposition rows required
     assert RV._cross_problems({**rec, "per_seed": {k: v for k, v in rows.items() if k != "F111>F000"}}, rules, n)
     assert RV._cross_problems({**rec, "per_seed": {**rows, "F000>F000": [0.1]}}, rules, n)
     assert RV._cross_problems({**rec, "matrix": [[0.2, 0.9], [0.2, 0.2]]}, rules, n)
@@ -764,7 +768,8 @@ def test_l4_development_verify_needs_recorded_inputs(fresh_dir, tmp_path, given)
 def test_m2_cross_rows_and_matrix_must_be_finite_numbers(patched):
     RV = patched; rules = ["F000", "F111"]; n = 2
     rows = {f"{a}>{r}": [0.1, 0.3] for a in rules for r in rules}
-    rec = {"attacks": rules, "rules": rules, "per_seed": rows, "matrix": [[0.2, 0.2], [0.2, 0.2]]}
+    prof = {k: {"profit_attack": [0.4, 0.5], "profit_ref": [0.3, 0.2], "eff_attack": [0.9, 0.9], "net_eff_attack": [0.8, 0.8]} for k in rows}
+    rec = {"attacks": rules, "rules": rules, "per_seed": rows, "matrix": [[0.2, 0.2], [0.2, 0.2]], "profit_rows": prof}
     for bad in ({**rec, "per_seed": {**rows, "F000>F000": [True, True]}, "matrix": [[1.0, 0.2], [0.2, 0.2]]},
                 {**rec, "per_seed": {**rows, "F000>F000": [None, 0.3]}},
                 {**rec, "matrix": [["nan", 0.2], [0.2, 0.2]]},
@@ -906,3 +911,62 @@ def test_fresh_secondary_menu_ignores_x7_records(fresh_secondary, patched):
     for j in jobs:
         rec = read(RV.path_of(out, f"reference/fresh1@rho0.2/{j['rule']}"))
         assert rec["menu_families"] == ["D2+H3"] and set(rec["upstream"]) == {j["id"]}
+
+
+# ---- design draft 7: evaluation fields, held-out doubling, pre-freeze selections, resume schema (Part A2 Task 8) ----
+
+NEW_FIELDS = ("served_share_attack", "served_share_ref", "false_refund_focal_attack", "false_refund_others_attack",
+              "false_refund_focal_ref", "false_refund_others_ref")
+
+
+def test_gain_fields_draft7_and_resume_rejects_damaged(ctx_dir, patched, tmp_path):
+    import shutil
+    from sim.records_v2 import read, write
+    RV = patched; out, jobs = ctx_dir
+    d = tmp_path / "copy"; shutil.copytree(out, d)
+    RV.run("evaluate", jobs, d)
+    p = RV.eval_path(d, jobs[0]["id"]); rec = read(p)
+    assert all(k in RV.GAIN_FIELDS for k in NEW_FIELDS)
+    assert all(len(rec[k]) == len(rec["seeds"]) and all(np.isfinite(rec[k])) for k in NEW_FIELDS)
+    assert RV.run("evaluate", jobs[:1], d, catalog=jobs)[jobs[0]["id"]] == "skipped"
+    rec.pop("served_share_attack"); write(p, rec)                                  # current provenance, a draft-7 field missing
+    assert RV.run("evaluate", jobs[:1], d, catalog=jobs)[jobs[0]["id"]] == "done"
+    assert "served_share_attack" in read(p)
+
+
+def test_doubling_heldout_not_frozen(ctx_dir, patched, monkeypatch, tmp_path):
+    import shutil
+    from sim.records_v2 import read
+    RV = patched; out, jobs = ctx_dir
+    d = tmp_path / "copy"; shutil.copytree(out, d)
+    monkeypatch.setattr(MAN, "doublings", lambda: [j["id"].replace(j["context"], RV.manifest_ctx(j["context"]), 1) for j in jobs])
+    before = _hashes(d)
+    RV.run("doubling", jobs[:1], d, catalog=jobs)
+    after = {k: v for k, v in _hashes(d).items() if not k.startswith("doubling")}
+    assert after == {k: v for k, v in before.items() if not k.startswith("doubling")}
+    rec = read(Path(d) / "doubling" / (RV._safe(jobs[0]["id"]) + ".json"))
+    assert set(RV.GAIN_FIELDS) <= set(rec["heldout"]) and len(rec["heldout"]["gain"]) == len(jobs[0]["mkt"]["seeds_eval"])
+
+
+def test_selections_required_before_freeze():
+    from sim.manifest_v2 import required
+    req = required("headline@rho0.2")
+    assert "bank_train/headline@rho0.2/D2+H3" in req and "envelope_select/headline@rho0.2/F111/X7-SC" in req
+    assert "welfare_select/headline@rho0.2/C*/W1" in req and "welfare_select/headline@rho0.2/F000/W0" in req
+    assert not any(r.startswith("welfare_select/fresh") for r in required("fresh1@rho0.2"))
+
+
+def test_diagnostic_after_freeze(ctx_dir, patched, tmp_path):
+    import shutil
+    from sim.records_v2 import read
+    RV = patched; out, jobs = ctx_dir
+    d = tmp_path / "copy"; shutil.copytree(out, d)
+    mkt = jobs[0]["mkt"]; dj = RV.job(mkt, "F111", "HR1", "diagnostic", smoke=True)
+    assert RV.stage_upstream("evaluate", dj, jobs + [dj], 0, False) == {f"freeze/{CTX}"}
+    RV.run("evaluate", [dj], d, catalog=jobs + [dj])
+    rec = read(RV.eval_path(d, dj["id"]))
+    assert rec["replace_at"] == 50 and rec["bins"] and RV._schema_problems(dj, rec, len(mkt["seeds_eval"])) is None
+    import os
+    os.remove(RV.path_of(d, f"freeze/{CTX}"))
+    with pytest.raises(SystemExit):
+        RV.run("evaluate", [dj], d, catalog=jobs + [dj])

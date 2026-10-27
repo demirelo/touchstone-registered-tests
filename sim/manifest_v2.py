@@ -162,6 +162,11 @@ def required(ctx: str, cuts: int = 0, h4_excluded: bool = False) -> list[str]:
     req += [f"envelope/{ctx}/{r}" for r in env_rules]
     if any(c["block"] == "matched" for c in cs) and ctx in {context(m) for m in doc()["markets"]}:
         req += [f"bank/{ctx}/{f}" for f in MENU_FAMILIES]
+        req += [f"bank_train/{ctx}/{f}" for f in MENU_FAMILIES]                          # design draft 7, 6.6: before the freeze
+        req += [f"envelope_select/{ctx}/{r}/{f}" for f in MENU_FAMILIES for r in FACTORIAL
+                if any(c["rule"] == r and c["family"] == f and c["block"] == "matched" for c in cs)]
+    req += sorted({f"welfare_select/{ctx}/{c['rule']}/{c['objective']}" for c in cs if c["block"] == "welfare"},
+                  key=lambda x: (CORE.index(x.split("/")[2]), x))                         # design draft 7, 6.2
     return req
 
 

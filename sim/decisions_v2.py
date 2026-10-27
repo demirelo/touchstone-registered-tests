@@ -54,3 +54,13 @@ def q4_markets(pa: list, pb: list, kappa: float | None) -> dict:
     p = [max(calibrated(a, kappa), calibrated(b, kappa)) for a, b in zip(pa, pb)]
     rej = holm(p, ALPHA)
     return {"decided": True, "p": p, "pass": rej, "k": int(sum(rej))}
+
+
+def w1_class(lower: float, upper: float) -> str:
+    """Design 6.2 (draft 7): W1 profitability on evaluation seeds from the constraint mean's interval."""
+    if float(lower) >= 0.0:
+        return "supported"
+    if float(upper) < 0.0:
+        return "contradicted"
+    return "unresolved"
+

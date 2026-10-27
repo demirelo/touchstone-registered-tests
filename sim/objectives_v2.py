@@ -174,3 +174,19 @@ def joint_reference(cfg, rule_factory, members, seeds, cache: SeedCache, twin_kn
     rows = {n: _member_rows(cfg, rule_factory, members, seeds, cache, cands[n]) for n in JOINT_ORDER}
     name = pick_joint([(n, float(rows[n].sum(axis=0).mean())) for n in JOINT_ORDER])
     return {"name": name, "scores": {n: float(rows[n].sum(axis=0).mean()) for n in JOINT_ORDER}, "member_normalized": rows[name], "twin_knobs": tw}
+
+
+def select_welfare(records_by_family: dict) -> dict:
+    """Design 6.2 (draft 7): per rule and objective, the family whose training-selected winner has the lower training
+    efficiency, among families with a candidate (a W1 search may find none); ties D2+H3 first."""
+    best = None
+    for fam in ("D2+H3", "X7-SC"):
+        r = records_by_family.get(fam)
+        if r is None or r.get("selected") is None:
+            continue
+        if best is None or float(r["train_eff"]) < best[1]:
+            best = (fam, float(r["train_eff"]))
+    if best is None:
+        return {"family": None, "status": "no feasible candidate found", "train_eff": None}
+    return {"family": best[0], "status": "selected", "train_eff": best[1]}
+

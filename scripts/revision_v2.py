@@ -31,7 +31,8 @@ from sim.cell import Abstain, Cell, SeedCache, run_focal  # noqa: E402
 from sim.h4_loader import Excluded, load as load_h4  # noqa: E402
 from sim.locked import load_locked, market_config_from_locked  # noqa: E402
 from sim.objectives_v2 import (CoalitionObjective, WelfareObjective, gross_efficiency, pick_joint, profile_descriptor, profile_factories,  # noqa: E402
-                               select_w1, _member_rows)
+                               select_w1, select_welfare, _member_rows)
+from sim.diagnostic_v2 import envelope_rule, extras, honest_replacement  # noqa: E402
 from sim.policies.families import D2, Family, exact_key  # noqa: E402
 from sim.policies.honest import HonestMax  # noqa: E402
 from sim.policies.identity import h3_family  # noqa: E402
@@ -593,6 +594,13 @@ def expected_upstream(rid: str, catalog: list[dict], cuts: int = 0, h4_excluded:
         return {f"reference/{ctx}/{rest}"} | {cell_id(ctx, rest, f, "profit") for f in MAN.doc()["envelope_families"] if cell_id(ctx, rest, f, "profit") in by}
     if kind == "bank":
         return {cell_id(ctx, r, rest, "profit") for r in MAN.FACTORIAL if cell_id(ctx, r, rest, "profit") in by}
+    if kind == "bank_train":
+        return {f"bank/{ctx}/{rest}"} | {f"reference/{ctx}/{r}" for r in MAN.FACTORIAL if cell_id(ctx, r, rest, "profit") in by}
+    if kind == "envelope_select":
+        return {f"bank_train/{ctx}/{rest.rsplit('/', 1)[1]}"}
+    if kind == "welfare_select":
+        rule, obj = rest.rsplit("/", 1)
+        return {cell_id(ctx, rule, f, obj) for f in MENU if cell_id(ctx, rule, f, obj) in by}
     if kind in COALITION_STEPS:
         group = _group(_group_job(kind, ctx, rest, catalog), catalog)
         tot = {j["id"] for j in group if j["objective"] == "total"}; mins = {j["id"] for j in group if j["objective"] == "min"}
@@ -624,8 +632,12 @@ def expected_provenance(rid: str, catalog: list[dict]) -> dict:
     any_job = _first(catalog, context=ctx)
     if kind == "envelope":
         return aux_provenance(any_job["mkt"], rule=rest)
-    if kind == "bank":
+    if kind in ("bank", "bank_train"):
         return aux_provenance(any_job["mkt"], family=rest)
+    if kind == "envelope_select":
+        rule, fam = rest.rsplit("/", 1); return aux_provenance(any_job["mkt"], rule=rule, family=fam)
+    if kind == "welfare_select":
+        rule, obj = rest.rsplit("/", 1); return aux_provenance(any_job["mkt"], rule=rule, objective=obj)
     return group_provenance(_group_job(kind, ctx, rest, catalog))
 
 
@@ -655,10 +667,14 @@ def derived_records(ctx: str, catalog: list[dict], out: Path, cuts: int, h4_excl
     any_job = _first(catalog, context=ctx)
     for r in req:
         kind = r.split("/", 1)[0]
-        if kind in ("envelope", "bank"):
-            p = path_of(out, r); old = read(p); prov = aux_provenance(any_job["mkt"], **{"rule" if kind == "envelope" else "family": r.split("/", 2)[2]})
+        if kind in ("envelope", "bank", "bank_train", "envelope_select", "welfare_select"):
+            p = path_of(out, r); old = read(p); prov = expected_provenance(r, catalog)
             if reusable(p, old, prov, lambda: check_record(r, old, catalog, out, cuts, h4_excluded)):
                 continue
+            up = {u: sha_file(path_of(out, u)) for u in sorted(expected_upstream(r, catalog, cuts, h4_excluded)) if path_of(out, u).exists()}
+        if kind in ("bank_train", "envelope_select", "welfare_select"):
+            write(p, {"stage": kind, "provenance": prov, **_selection_body(kind, ctx, r.split("/", 2)[2], catalog, out), "upstream": up})
+            continue
         if kind == "envelope":
             rule = r.split("/", 2)[2]; _, rrec, _ = reference_of({"context": ctx, "rule": rule, "id": r}, out)
             ref_score = float(np.mean(rrec["per_seed_normalized"])); gains, up = {}, {}
@@ -677,6 +693,33 @@ def derived_records(ctx: str, catalog: list[dict], out: Path, cuts: int, h4_excl
                 if rec is not None:
                     attacks[u.split("|")[1]] = rec["attack"]["best_knobs"]; up[u] = sha_file(path_of(out, u))
             write(path_of(out, r), {"stage": "bank", "provenance": aux_provenance(any_job["mkt"], family=fname), "attacks": attacks, "upstream": up})
+
+
+def _selection_body(kind: str, ctx: str, rest: str, catalog: list[dict], out: Path) -> dict:
+    """Training-data selections frozen before any evaluation-seed episode (design draft 7, 6.2 and 6.6)."""
+    if kind == "bank_train":
+        bank = read(path_of(out, f"bank/{ctx}/{rest}")); by_rule, rules = _cross_rules(ctx, rest, catalog, bank); cache = SeedCache(); mat = []
+        for a in rules:
+            row = []
+            for r in rules:
+                j = by_rule[r]; T, L = constants(j); fam = family_for(rest, T, L); cell = train_cell(j)
+                _, rrec, _ = reference_of(j, out)
+                att = run_focal(cell, lambda: fam.make(dict(bank["attacks"][a])), cache)
+                row.append(float(np.mean(att.normalized - np.asarray(rrec["per_seed_normalized"]))))
+            mat.append(row)
+        return {"attacks": rules, "rules": rules, "matrix": mat}
+    if kind == "envelope_select":
+        rule, fam = rest.rsplit("/", 1); train = read(path_of(out, f"bank_train/{ctx}/{fam}"))
+        return {"choice": envelope_rule(train, rule) if rule in train["rules"] else None}
+    rule, obj = rest.rsplit("/", 1); recs = {}
+    for f in MENU:
+        rec = read(path_of(out, cell_id(ctx, rule, f, obj)))
+        if rec is None:
+            continue
+        sel = rec.get("selected")
+        eff = next((e["eff"] for e in rec.get("extras", []) if sel is not None and exact_key(e["knobs"]) == exact_key(sel)), None)
+        recs[f] = {"selected": sel, "train_eff": eff}
+    return select_welfare(recs)
 
 
 def check_complete(ctx: str, catalog: list[dict], out: Path, cuts: int = 0, h4_excluded: bool = False) -> list[str]:
@@ -719,16 +762,29 @@ def accept(ctx: str, catalog: list[dict], out: Path, cuts: int = 0, h4_excluded:
 
 # ---- evaluation --------------------------------------------------------------------------------------------------------
 
-GAIN_FIELDS = ("gain", "eff_attack", "eff_ref", "net_eff_attack", "net_eff_ref", "profit_attack", "profit_ref", "audit_spend_attack", "sstar")
+GAIN_FIELDS = ("gain", "eff_attack", "eff_ref", "net_eff_attack", "net_eff_ref", "profit_attack", "profit_ref", "audit_spend_attack", "sstar",
+               "served_share_attack", "served_share_ref", "false_refund_focal_attack", "false_refund_others_attack",       # design draft 7, 9.3
+               "false_refund_focal_ref", "false_refund_others_ref")
+BASE_FIELDS = GAIN_FIELDS[:9]                       # the GainResult fields of the frozen evaluate_gain
+
+
+def gain_fields(cell, fam, knobs: dict, cand, cache: SeedCache) -> dict:
+    """The frozen evaluate_gain's fields plus the draft-7 fields computed from the same episodes (no extra episode): the
+    cache keeps each profile's results, in evaluate_gain's order attack, clipped, reference, honest."""
+    cache.keep = []
+    g = evaluate_gain(cell, fam, dict(knobs), cand, cache)
+    att, ref = cache.keep[0], cache.keep[2]; cache.keep = None
+    return {**{k: [float(v) for v in getattr(g, k)] for k in BASE_FIELDS}, **extras(att, ref, cell.cfg, cell.focal)}
 
 
 def stage_evaluate(job: dict, out: Path) -> dict:
     T, L = constants(job); cache = SeedCache(); m = job["mkt"]; cell = eval_cell(job)
+    if job["objective"] == "diagnostic":                 # design 6.7: a fixed profile, no search, no reference
+        return {"seeds": list(cell.seeds), **honest_replacement(m["cfg"], rule_factory(job), m["focal"], cell.seeds, cache)}
     rec = read(path_of(out, job["id"]))
     if job["objective"] == "profit":
         fam = family_for(job["family"], T, L, job.get("h4")); cand, _, _ = reference_of(job, out)
-        g = evaluate_gain(cell, fam, rec["attack"]["best_knobs"], cand, cache)
-        return {"seeds": list(cell.seeds), **{k: [float(v) for v in getattr(g, k)] for k in GAIN_FIELDS}}
+        return {"seeds": list(cell.seeds), **gain_fields(cell, fam, rec["attack"]["best_knobs"], cand, cache)}
     if job["objective"] in ("W0", "W1"):
         if rec["selected"] is None:
             return {"seeds": list(cell.seeds), "no_feasible_candidate": True}
@@ -759,13 +815,16 @@ def cross_expected(ctx: str, family: str, catalog: list[dict], out: Path) -> tup
     bank = read(path_of(out, f"bank/{ctx}/{family}"))
     if bank is None:
         raise SystemExit(f"cross {ctx}/{family}: no fixed-attack bank")
+    if read(path_of(out, f"bank_train/{ctx}/{family}")) is None:
+        raise SystemExit(f"cross {ctx}/{family}: no training-seed bank matrix (frozen before the evaluation)")
     _, rules = _cross_rules(ctx, family, catalog, bank)
-    ids = {f"freeze/{ctx}", f"bank/{ctx}/{family}"} | {f"reference/{ctx}/{r}" for r in rules}
+    ids = {f"freeze/{ctx}", f"bank/{ctx}/{family}", f"bank_train/{ctx}/{family}"} | {f"reference/{ctx}/{r}" for r in rules}
+    ids |= {f"envelope_select/{ctx}/{r}/{family}" for r in rules if path_of(out, f"envelope_select/{ctx}/{r}/{family}").exists()}
     return aux_provenance(_first(catalog, context=ctx)["mkt"], family=family), ids
 
 
 def stage_cross(ctx: str, family: str, catalog: list[dict], out: Path) -> dict:
-    bank = read(path_of(out, f"bank/{ctx}/{family}")); by_rule, rules = _cross_rules(ctx, family, catalog, bank); cache = SeedCache(); mat, rows = [], {}
+    bank = read(path_of(out, f"bank/{ctx}/{family}")); by_rule, rules = _cross_rules(ctx, family, catalog, bank); cache = SeedCache(); mat, rows, prof = [], {}, {}
     prov, ids = cross_expected(ctx, family, catalog, out)
     up = {u: sha_file(path_of(out, u)) for u in sorted(ids)}
     for a in rules:
@@ -774,11 +833,20 @@ def stage_cross(ctx: str, family: str, catalog: list[dict], out: Path) -> dict:
             j = by_rule[r]; T, L = constants(j); fam = family_for(family, T, L); cell = eval_cell(j)
             cand, _, _ = reference_of(j, out)
             att = run_focal(cell, lambda: fam.make(dict(bank["attacks"][a])), cache); ref = run_focal(cell, cand.policy_factory, cache)
-            gain = (att.profit - ref.profit) / (np.array([x.sstar for x in att.results]) / cell.cfg.N)
+            scale = np.array([x.sstar for x in att.results]) / cell.cfg.N; gain = (att.profit - ref.profit) / scale
             rows[f"{a}>{r}"] = gain.tolist(); row.append(float(gain.mean()))
+            prof[f"{a}>{r}"] = {"profit_attack": (att.profit / scale).tolist(), "profit_ref": (ref.profit / scale).tolist(),     # design 6.6 terms
+                                "eff_attack": gross_efficiency(att.results).tolist(), "net_eff_attack": [float(x) for x in _net_eff(att.results)]}
         mat.append(row)
-    return {"stage": "cross", "provenance": prov, "upstream": up,
-            "context": ctx, "family": family, "attacks": rules, "rules": rules, "matrix": mat, "per_seed": rows}
+    env = {r: (read(path_of(out, f"envelope_select/{ctx}/{r}/{family}")) or {}).get("choice") for r in rules}
+    return {"stage": "cross", "provenance": prov, "upstream": up, "context": ctx, "family": family, "attacks": rules, "rules": rules,
+            "matrix": mat, "per_seed": rows, "profit_rows": prof, "envelope": env}
+
+
+def _net_eff(results) -> list:
+    """Net efficiency per seed as the frozen reference module computes it."""
+    from sim.reference import _net
+    return list(_net(results))
 
 
 # ---- doubling ----------------------------------------------------------------------------------------------------------
@@ -812,8 +880,11 @@ def stage_doubling(job: dict, out: Path, cuts: int = 0, h4_excluded: bool = Fals
         cands, fams, _ = menu(job, out, cuts, h4_excluded)
         lk = load_locked(); extra = reference_candidates(cell, fam, new, search_from_json(rec["twin"]), [], tuple(lk["reference_order"]))
         newref = select_reference(cell, cands + [c for c in extra if c.knobs is not None], cache)
-        return doubling_report("profit", {"attack_f": orig.best_f, "ref_f": float(np.mean(rrec["per_seed_normalized"]))},
-                               {"attack_f": max(new.best_f, orig.best_f), "ref_f": float(np.mean(newref.per_seed_normalized))})
+        cand, _, _ = reference_of(job, out)                    # held-out diagnostic (design 6.5): the frozen reference, evaluation seeds
+        return {**doubling_report("profit", {"attack_f": orig.best_f, "ref_f": float(np.mean(rrec["per_seed_normalized"]))},
+                                  {"attack_f": max(new.best_f, orig.best_f), "ref_f": float(np.mean(newref.per_seed_normalized))}),
+                "heldout": {"knobs": dict(new.best_knobs), "seeds": list(eval_cell(job).seeds),
+                            **gain_fields(eval_cell(job), fam, new.best_knobs, cand, SeedCache())}}
     if job["objective"] in ("W0", "W1"):
         fam = family_for(job["family"], T, L); orig = search_from_json(rec["welfare"])
         ref = np.asarray(reference_of(job, out)[1]["per_seed_normalized"]) if job["objective"] == "W1" else None
@@ -824,20 +895,31 @@ def stage_doubling(job: dict, out: Path, cuts: int = 0, h4_excluded: bool = Fals
         old_eff = obj.extra[exact_key(sel_old)]["eff"] if sel_old is not None else None
         sel = select_w1(obj) if job["objective"] == "W1" else dict(max(obj.archive.values(), key=lambda e: e.f).knobs)
         new_eff = obj.extra[exact_key(sel)]["eff"] if sel is not None else None
-        return doubling_report("w1" if job["objective"] == "W1" else "welfare", {"eff": old_eff, "feasible": sel_old is not None},
-                               {"eff": new_eff, "feasible": sel is not None})
+        held = None
+        if sel is not None:
+            fr = run_focal(eval_cell(job), lambda: fam.make(dict(sel)), SeedCache())
+            held = {"knobs": dict(sel), "seeds": list(eval_cell(job).seeds), "eff": gross_efficiency(fr.results).tolist()}
+        return {**doubling_report("w1" if job["objective"] == "W1" else "welfare", {"eff": old_eff, "feasible": sel_old is not None},
+                                  {"eff": new_eff, "feasible": sel is not None}), "heldout": held}
     m = job["mkt"]; fam = family_for(job["family"], T, L); orig = search_from_json(rec["coalition"])
     if job["objective"] == "total":
         obj = _coalition_objective(job, "total", np.zeros((len(_members(job)), len(m["seeds_train"]))), cache)
         new = continue_search(obj, fam, st, orig)
-        return doubling_report("coalition", {"f": orig.best_f}, {"f": max(new.best_f, orig.best_f)})
+        return {**doubling_report("coalition", {"f": orig.best_f}, {"f": max(new.best_f, orig.best_f)}), "heldout": _coalition_heldout(job, new, out)}
     ctx, tag = job["context"], _coalition_tag(job)                  # G_min: every score against the final reference (design 6.3)
     ref = np.asarray(read(path_of(out, f"joint_reference/{ctx}/{tag}"))["member_normalized"])
     sel = read(path_of(out, f"coalition_select/{ctx}/{tag}"))["winners"][job["id"]]
     orig = rescore_min(orig, rec["rows"], ref)
     obj = _coalition_objective(job, "min", ref, cache)
     new = continue_search(obj, fam, st, orig)
-    return doubling_report("coalition", {"f": sel["score"]}, {"f": max(new.best_f, sel["score"])})
+    return {**doubling_report("coalition", {"f": sel["score"]}, {"f": max(new.best_f, sel["score"])}), "heldout": _coalition_heldout(job, new, out)}
+
+
+def _coalition_heldout(job: dict, new, out: Path) -> dict:
+    """The doubled coalition winner on the evaluation seeds against the final joint reference (design 6.5)."""
+    jrec = read(path_of(out, f"joint_reference/{job['context']}/{_coalition_tag(job)}")); seeds = list(eval_cell(job).seeds); cache = SeedCache()
+    g = _rows_of(job, _desc(job, new.best_knobs), seeds, cache) - _rows_of(job, jrec["descriptor"], seeds, cache)
+    return {"knobs": dict(new.best_knobs), "seeds": seeds, "member_gain": g.tolist(), "total": float(g.mean(axis=1).sum()), "min": float(g.mean(axis=1).min())}
 
 
 def rescore_min(orig, rows: list[dict], ref: np.ndarray):
@@ -862,8 +944,12 @@ def _stage_record_path(stage: str, job: dict, out: Path) -> Path:
 
 
 def _inputs(job: dict) -> set:
-    """The records an evaluation or a doubling check depends on."""
+    """The records an evaluation or a doubling check depends on (the diagnostic has none but the freeze)."""
+    if job["objective"] == "diagnostic":
+        return set()
     ids = {job["id"]}
+    if job["objective"] in ("W0", "W1"):
+        ids.add(f"welfare_select/{job['context']}/{job['rule']}/{job['objective']}")
     if job["objective"] in ("profit", "W1"):
         ids.add(f"reference/{job['context']}/{job['rule']}")
     if job["objective"] in ("total", "min"):
@@ -955,6 +1041,10 @@ def _run_cross(item: dict, out: Path, catalog: list[dict]) -> str:
         if set(old.get("upstream") or {}) != ids:
             raise ValueError("dependency set")
         validate({"provenance": prov}, "cross", old, {u: path_of(out, u) for u in ids})
+        _, rules = _cross_rules(ctx, fam, catalog, read(path_of(out, f"bank/{ctx}/{fam}")))
+        bad = _cross_problems(old, rules, len(_first(catalog, context=ctx)["mkt"]["seeds_eval"]))
+        if bad:                                                          # a damaged current record is recomputed, not skipped
+            raise ValueError(bad)
     if reusable(p, old, prov, check):
         return "skipped"
     write(p, stage_cross(ctx, fam, catalog, out))
@@ -984,6 +1074,12 @@ def _run_one(stage: str, job: dict, out: str, cuts: int, h4_excluded: bool, cata
         if set(rec.get("upstream") or {}) != want:
             raise ValueError("dependency set")
         validate(job, stage, rec, {u: path_of(out, u) for u in want})
+        if stage == "evaluate":                                         # a damaged current record is recomputed, not skipped
+            bad = _schema_problems(job, rec, len(job["mkt"]["seeds_eval"]))
+            if bad:
+                raise ValueError(bad)
+        if stage == "doubling" and "heldout" not in rec:
+            raise ValueError("doubling record without its held-out diagnostic")
     if reusable(p, rec, job["provenance"], check):
         return "skipped"
     body = {"search": stage_search, "dependent": stage_dependent, "evaluate": stage_evaluate}.get(stage)
@@ -1045,6 +1141,10 @@ def _schema_problems(j: dict, rec: dict, n: int) -> str | None:
     """The evaluate record's complete shape for its objective (stage_evaluate's fields, n seeds, finite numbers only), or
     what is wrong."""
     obj = j["objective"]; ln = lambda k: isinstance(rec.get(k), list) and len(rec[k]) == n and all(_num(x) for x in rec[k])
+    if obj == "diagnostic":
+        bins = rec.get("bins")
+        ok = isinstance(bins, list) and bins and all(all(_num(b.get(k)) for k in ("audited_share", "profit_per_round", "false_refund")) for b in bins)
+        return None if ok and len(rec.get("seeds") or []) == n else "diagnostic bins missing, nonfinite, or of the wrong seed count"
     if obj == "profit":
         bad = [k for k in GAIN_FIELDS if not ln(k)]
         return f"profit fields missing or of the wrong length: {bad}" if bad else None
@@ -1079,6 +1179,10 @@ def _cross_problems(rec: dict, rules: list[str], n: int) -> str | None:
     if len(mat) != len(rules) or any(len(row) != len(rules) for row in mat) or any(
             abs(float(mat[i][k]) - float(np.mean(rows[f"{a}>{r}"]))) > 1e-9 for i, a in enumerate(rules) for k, r in enumerate(rules)):
         return "the matrix differs from the per-seed row means"
+    pr = rec.get("profit_rows") or {}
+    if set(pr) != set(rows) or any(not all(isinstance(v.get(k), list) and len(v[k]) == n and all(_num(x) for x in v[k])
+                                           for k in ("profit_attack", "profit_ref", "eff_attack", "net_eff_attack")) for v in pr.values()):
+        return "profit rows (design 6.6 decomposition) are missing or incomplete"
     return None
 
 
