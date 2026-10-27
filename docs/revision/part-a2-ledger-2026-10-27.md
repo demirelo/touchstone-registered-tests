@@ -76,3 +76,4 @@ Final review round 2 (Sol high, Astra high): both request-changes on one shared 
 Final: fixed the freeze price factor — test_pod_plan_bills_the_freeze_bank_matrices corrected to the row count, RED → GREEN; benchmark suite 43/43.
 Final review round 3 (Sol high, Astra high): both approve-with-caveat — consensus (docs/revision/roster/consensus-a2-final-r3.md).
 Final: Ruling: the core-hour path of benchmark_v2.cost_table (usd_per_core_hour) does not scale H4 cells' eval160 seeds by the H4 ratio (both seats declined to judge it) — no registered decision uses that path (choose and choose_after_h4 use pod billing, which applies the ratio), so it stands — cost if wrong: a design-unit table that under-prices H4 evaluation slightly if someone reads it for a decision.
+Final suite (consensus, 4772625): uv run pytest -q -p no:cacheprovider → 1298 passed, 1947 skipped, 8 warnings in 4566s
