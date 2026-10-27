@@ -226,8 +226,9 @@ def _decide_h4(produced, tmp_path, h4=None):
     return src
 
 
-def test_promote_decision_h4_recomputes(produced, tmp_path):
+def test_promote_decision_h4_recomputes(produced, tmp_path, monkeypatch):
     import scripts.promote_v2 as P
+    monkeypatch.setattr(P, "_h4_identifiers", lambda src, to, what: None)      # identifiers: tests/test_ops_sequence_v2.py
     r, h = produced["root"], produced["head"]; to = _clone_dest(produced, tmp_path)
     P.promote("benchmark", r / "bench", to, ["headline", "dev0"], code_commit=h); P.promote("decision", r / "dec", to, MARKETS, code_commit=h)
     src = _decide_h4(produced, tmp_path)
