@@ -194,7 +194,7 @@ def test_missing_cells_make_dependent_questions_unanswered(tmp_path, monkeypatch
     out, cat = _world(tmp_path, missing=(gone,))
     r = _run(monkeypatch, out, cat, verify={"ok": True, "h4": None, "contexts": {"fresh2@rho0.2": {"status": "ok", "missing": [gone]}}})
     assert r["q1"]["tests"]["C*-F111|D2+H3"]["category"] == "not decided: missing cell" and r["q1"]["tests"]["C*-F111|X7-SC"]["p"] is not None
-    assert r["q2"] == "unanswered" and r["q3"]["envelope"]["F111"]["fresh2"] == "unanswered: missing cell"
+    assert r["q2"]["searched"]["D2+H3"] == "unanswered: missing cell" and r["q3"]["envelope"]["F111"]["fresh2"] == "unanswered: missing cell"
     assert r["q4"]["markets"]["fresh2"] == "not decided" and "generalisation not established" in r["q4"]["wording"] and r["q4"]["k"] is not None
     assert r["secondary"] != "unanswered" and gone in r["missing"] and set(r["unanswered"]) == {"Q1", "Q2", "Q3"}
 
@@ -233,7 +233,9 @@ def test_doubling_label_does_not_change_decisions(tmp_path, monkeypatch):
     a, cat = _world(tmp_path / "a", seed=3); b, _ = _world(tmp_path / "b", seed=3)
     p = b / "doubling" / (_safe(cat[0]["id"]) + ".json"); d = json.loads(p.read_text()); d["incomplete"] = True; write(p, d)
     ra, rb = _run(monkeypatch, a, cat), _run(monkeypatch, b, cat)
-    assert ra["q1"] == rb["q1"] and ra["q4"] == rb["q4"] and ra["q2"] == rb["q2"]
+    assert ra["q1"] == rb["q1"] and ra["q2"] == rb["q2"]
+    assert all(ra["q4"][k] == rb["q4"][k] for k in ("decided", "k", "passing", "failing", "p", "undecided"))   # the decision is unchanged
+    assert "prescribed search procedure on fresh0" in rb["q4"]["wording"] and "prescribed" not in ra["q4"]["wording"]   # only its label
     assert ra["doubling"][cat[0]["id"]]["incomplete"] is False and rb["doubling"][cat[0]["id"]]["incomplete"] is True
 
 
@@ -385,3 +387,95 @@ def test_multiplicity_statement(tmp_path, monkeypatch):
     md = R.markdown(_run(monkeypatch, out, cat))
     assert "Multiplicity is controlled within Q1 and within Q4 only; there is no paper-wide familywise guarantee." in md
 
+
+
+# ---- whole-branch review round 1 (Sol, Astra): statuses, refusals, and Q2 parts ----
+
+FLAG = "about the prescribed search procedure (search flagged)"
+
+
+def _flag(out, rid, incomplete=True):
+    from scripts.revision_v2 import _safe, write
+    write(out / "doubling" / (_safe(rid) + ".json"), {"stage": "doubling", "kind": "profit", "attack_change": 0.02, "reference_change": 0.0,
+                                                      "incomplete": incomplete})
+
+
+def test_complete_run_reports_no_missing_cell(tmp_path, monkeypatch):
+    """A complete run lists no missing cell: cells the schedule does not contain (X7-SC for fresh-market whole systems, a cut
+    family) are not looked up as missing."""
+    out, cat = _world(tmp_path)
+    r = _run(monkeypatch, out, cat)
+    assert r["missing"] == [] and "X7-SC" not in str(r["secondary"]["whole_systems"]["B3-t"]["fresh0"])
+    cut = [j for j in cat if not (j["family"] == "H4" and j["context"] != "headline@rho0.2")]             # cut level 2: H4 on fresh markets
+    r = _run(monkeypatch, out, cut)
+    assert r["missing"] == [] and isinstance(r["q3"]["envelope"]["F111"]["fresh0"], dict)
+
+
+def test_w1_and_coalition_refusals_are_withheld_and_rendered(tmp_path, monkeypatch):
+    import scripts.report_v2 as R
+    from scripts.revision_v2 import cell_id, eval_path, write
+    out, cat = _world(tmp_path)
+    p = eval_path(out, cell_id("headline@rho0.2", "F111", "X7-SC", "W1")); d = json.loads(p.read_text())
+    d["constraint"] = [1e308 * (-1) ** k for k in range(N_SEEDS)]; write(p, d)                      # finite values whose variance overflows
+    p = eval_path(out, cell_id("headline@rho0.2", "F111", "X8-DB", "min", 2, "roles")); d = json.loads(p.read_text())
+    d["member_gain"] = [[1e308 * (-1) ** k for k in range(N_SEEDS)]] * 2; write(p, d)
+    r = _run(monkeypatch, out, cat)
+    w = r["q3"]["welfare"]["F111"]["X7-SC"]["W1"]
+    assert w["w1_class"] == "not decided: numerical refusal" and w["constraint_interval"] == [None, None]
+    assert r["q3"]["welfare"]["F111"]["D2+H3"]["W1"]["w1_class"] in ("supported", "contradicted", "inconclusive")
+    g = r["q3"]["coalition"]["F111"]["c2_roles"]["G_min"]
+    assert g["bounds"] == [None, None] and g["status"] == "not decided: numerical refusal"
+    assert isinstance(r["q3"]["coalition"]["F111"]["c2_synchronised"]["G_min"]["bounds"][0], float)
+    md = R.markdown(r)
+    assert "W1 constraint [withheld: numerical refusal]" in md and "G_min" in md and "Q3" in r["unanswered"]
+
+
+def test_q2_keeps_available_parts_with_per_market_and_headline_results(tmp_path, monkeypatch):
+    import scripts.report_v2 as R
+    from scripts.revision_v2 import _safe, cell_id
+    gone = cell_id("fresh2@rho0.2", "F111", "D2+H3", "profit")
+    out, cat = _world(tmp_path, missing=(gone,))
+    (out / "cross" / "fresh3@rho0.2" / (_safe("X7-SC") + ".json")).unlink()
+    r = _run(monkeypatch, out, cat, verify={"ok": True, "h4": None, "contexts": {"fresh2@rho0.2": {"status": "ok", "missing": [gone]}}})
+    q = r["q2"]
+    assert q["searched"]["D2+H3"] == "unanswered: missing cell" and isinstance(q["searched"]["X7-SC"], dict)
+    assert isinstance(q["fixed"]["D2+H3"], dict) and q["fixed"]["X7-SC"] == "unanswered: missing cross record"
+    assert q["per_market"]["D2+H3"]["fresh2"]["searched"] == "unanswered: missing cell"
+    assert q["per_market"]["X7-SC"]["fresh3"]["fixed"] == "unanswered: missing cross record" and q["envelope"]["X7-SC"]["fresh3"] == "unanswered: missing cross record"
+    head = q["per_market"]["D2+H3"]["headline"]
+    for kind in ("searched", "searched_eff", "searched_net_eff", "fixed", "fixed_attack_term", "fixed_reference_term", "fixed_eff", "fixed_net_eff"):
+        assert head[kind]["P"]["estimate"] is not None and len(head[kind]["P"]["interval"]) == 2, kind
+    assert set(q["envelope"]["D2+H3"]["headline"]) == set(FACT)
+    a, b, g = head["fixed_attack_term"]["G"], head["fixed_reference_term"]["G"], head["fixed"]["G"]
+    assert a["estimate"] - b["estimate"] == pytest.approx(g["estimate"], abs=1e-9)
+    assert isinstance(q["fixed_net_eff"]["D2+H3"]["P"]["estimate"], float) and isinstance(q["searched_net_eff"]["X7-SC"]["P"]["estimate"], float)
+    md = R.markdown(r)
+    assert "fixed_net_eff" in md and "headline" in md and "unanswered: missing cross record" in md
+
+
+def test_search_status_reaches_welfare_coalition_q4_and_missing_checks(tmp_path, monkeypatch):
+    from scripts.revision_v2 import cell_id
+    out, cat = _world(tmp_path)
+    w1 = cell_id("headline@rho0.2", "F111", "X7-SC", "W1"); co = cell_id("headline@rho0.2", "C*", "X8-DB", "min", 2, "roles")
+    q4c = cell_id("fresh3@rho0.2", "F000", "D2+H3", "profit"); nochk = cell_id("fresh0@rho0.2", "F000", "X7-SC", "profit")
+    w0nochk = cell_id("headline@rho0.2", "F000", "D2+H3", "W0")
+    for rid in (w1, co, q4c):
+        _flag(out, rid)
+    r = _run(monkeypatch, out, cat, kappa=(1.0, 1.0), verify={"ok": True, "h4": None, "contexts": {"x": {"status": "ok", "missing": [], "missing_doubling": [nochk, w0nochk]}}})
+    q3 = r["q3"]
+    assert q3["welfare"]["F111"]["X7-SC"]["W1"]["search"] == FLAG and q3["welfare"]["F111"]["X7-SC"]["W1"]["robustness"] == "unanswered (search flagged)"
+    assert q3["welfare"]["F111"]["D2+H3"]["W1"]["robustness"] == "answered"
+    assert q3["welfare"]["F000"]["D2+H3"]["W0"]["robustness"] == "unanswered (scheduled check missing)"
+    assert q3["coalition"]["C*"]["c2_roles"]["robustness"] == "unanswered (search flagged)" and q3["coalition"]["C*"]["c2_staggered"]["robustness"] == "answered"
+    assert q3["robustness"]["F000"]["X7-SC"] == "unanswered (scheduled check missing)" and q3["robustness"]["F000"]["D2+H3"] == "unanswered (search flagged)"
+    assert q3["robustness"]["F111"]["X5-AG/v2"] == "no search-quality claim (no scheduled check)" and q3["robustness"]["C*"]["X7-SC"] == "answered"
+    assert r["q4"]["markets"]["fresh3"]["search"] == FLAG and r["q4"]["markets"]["fresh0"]["search"] is None
+    assert "decisions about the prescribed search procedure on fresh3" in r["q4"]["wording"]
+
+
+def test_missing_cell_makes_robustness_unanswered(tmp_path, monkeypatch):
+    from scripts.revision_v2 import cell_id
+    gone = cell_id("fresh2@rho0.2", "F111", "D2+H3", "profit")
+    out, cat = _world(tmp_path, missing=(gone,))
+    r = _run(monkeypatch, out, cat, verify={"ok": True, "h4": None, "contexts": {"fresh2@rho0.2": {"status": "ok", "missing": [gone]}}})
+    assert r["q3"]["robustness"]["F111"]["D2+H3"] == "unanswered (missing cell)" and r["q3"]["robustness"]["F111"]["X7-SC"] == "answered"

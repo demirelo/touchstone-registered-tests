@@ -41,6 +41,11 @@ REPAIR = ("F000", "F111", "R4", "C*", "C*/S2")
 NOMINAL = 0.025
 NOMINAL_LABEL = "nominal 95 percent, unadjusted"
 NONCONF = "nonconfirmatory (late publication)"
+CHECKED = FAMS                                   # families with scheduled doubling checks for the core rules (design 6.5)
+Q2_KINDS = (("searched", "gain"), ("searched_eff", "eff_attack"), ("searched_net_eff", "net_eff_attack"), ("fixed", None),
+            ("fixed_attack_term", "profit_attack"), ("fixed_reference_term", "profit_ref"), ("fixed_eff", "eff_attack"),
+            ("fixed_net_eff", "net_eff_attack"))
+WITHHELD = "withheld: numerical refusal"
 
 
 def verify_records(out, catalog, instances, protocol, h4, cuts, h4_excluded) -> dict:
@@ -68,6 +73,10 @@ def _strat(st, tail: float = NOMINAL, strict: bool = False) -> dict:
         return {"estimate": None, "interval": [None, None], "status": REFUSED}
 
 
+def _cell(x) -> dict:
+    return {"estimate": _est(x), "interval": _interval(x)}
+
+
 def _est(x) -> float | None:
     with np.errstate(over="ignore", invalid="ignore"):
         v = float(np.mean(np.asarray(x, dtype=float)))
@@ -75,17 +84,35 @@ def _est(x) -> float | None:
 
 
 class Records:
-    def __init__(self, out: Path, catalog: list[dict], missing: set, flagged: set = frozenset()):
-        self.out, self.missing, self.flagged = Path(out), set(missing), set(flagged); self.jobs = {j["id"]: j for j in catalog}
+    """Evaluation records of the scheduled cells. A cell outside the catalog (not scheduled, or removed by a cut) reads as
+    absent without being counted missing; a scheduled cell without a record is missing."""
+    def __init__(self, out: Path, catalog: list[dict], missing: set, flagged: set = frozenset(), no_check: set = frozenset()):
+        self.out, self.missing, self.flagged, self.no_check = Path(out), set(missing), set(flagged), set(no_check)
+        self.jobs = {j["id"]: j for j in catalog}
 
     def get(self, market: str, rule: str, family: str, objective: str = "profit", c=None, schedule=None, rho: str = "rho0.2"):
-        rid = RV.cell_id(f"{market}@{rho}", rule, family, objective, c, schedule)
-        if rid in self.missing:
+        return self.rec(RV.cell_id(f"{market}@{rho}", rule, family, objective, c, schedule))
+
+    def rec(self, rid: str):
+        if rid not in self.jobs or rid in self.missing:
             return None
         rec = read(RV.eval_path(self.out, rid))
         if rec is None:
             self.missing.add(rid)
         return rec
+
+    def scheduled(self, rid: str) -> bool:
+        return rid in self.jobs
+
+    def search_status(self, ids) -> str | None:
+        """Design 6.5: a scheduled check over the threshold, or a scheduled check with no record, leaves the robustness
+        statement unanswered."""
+        ids = [i for i in ids if i in self.jobs]
+        if any(i in self.flagged for i in ids):
+            return "unanswered (search flagged)"
+        if any(i in self.no_check for i in ids):
+            return "unanswered (scheduled check missing)"
+        return None
 
     def aux(self, rid: str):
         return read(RV.path_of(self.out, rid))
@@ -153,6 +180,7 @@ def q4(R: Records, kappa, confirmatory: bool) -> dict:
     pa, pb, markets = [], [], {}; tail = kappa * ALPHA / len(FRESH) if kappa else NOMINAL
     for m in FRESH:
         f0, f1 = R.get(m, "F000", "D2+H3"), R.get(m, "F111", "D2+H3")
+        hit = any(RV.cell_id(f"{m}@rho0.2", r, "D2+H3", "profit") in R.flagged for r in ("F000", "F111"))
         if f0 is None or f1 is None:
             pa.append(None); pb.append(None); markets[m] = "not decided"; continue
         d = np.asarray(f0["gain"]) - np.asarray(f1["gain"]); eff = np.asarray(f1["eff_attack"])
@@ -164,7 +192,7 @@ def q4(R: Records, kappa, confirmatory: bool) -> dict:
         pa.append(p_g); pb.append(p_e)
         markets[m] = {"gain_diff": float(d.mean()), "gain_diff_lower": float(lo_g), "eff": float(eff.mean()),
                       "eff_lower": float(lo_e), "p_gain": float(pa[-1]), "p_eff": float(pb[-1]),
-                      "bound_label": f"calibrated one-sided, tail {tail:.6g}" if kappa else NOMINAL_LABEL}
+                      "bound_label": f"calibrated one-sided, tail {tail:.6g}" if kappa else NOMINAL_LABEL, "search": FLAGGED if hit else None}
     dec = q4_decide(pa, pb, kappa); undecided = [FRESH[i] for i in dec["undecided"]]
     out = {"heading": NONCONF if not confirmatory else "Q4: intersection-union per market, Holm over six markets", "markets": markets, "undecided": undecided,
            "decided": bool(dec["decided"])}
@@ -172,7 +200,9 @@ def q4(R: Records, kappa, confirmatory: bool) -> dict:
         out.update(k=None, passing=[], failing=[], wording=NO_DECISION); return out
     passing = [m for m, ok in zip(FRESH, dec["pass"]) if ok and m not in undecided]
     failing = [m for m, ok in zip(FRESH, dec["pass"]) if not ok and m not in undecided]
-    wording = f"replicated on {len(passing)} of 6 sampled markets" + ("; generalisation not established" if undecided else "")
+    flagged = [m for m in FRESH if isinstance(markets[m], dict) and markets[m]["search"]]
+    wording = (f"replicated on {len(passing)} of 6 sampled markets" + ("; generalisation not established" if undecided else "")
+               + (f"; decisions about the prescribed search procedure on {', '.join(flagged)}" if flagged else ""))
     out.update(k=len(passing), passing=passing, failing=failing, p=[float(p) for p in dec["p"]], wording=wording)
     return out
 
@@ -187,36 +217,41 @@ def _contrast_rows(arr: dict) -> dict:
 
 
 def q2(R: Records):
-    """Searched and fixed-attack contrasts pooled over the fresh markets, per market and headline estimates, the fixed-attack
-    decomposition into attacker-profit and reference terms with efficiency (design 6.6), and the training-selected bank
-    envelope (the frozen envelope choice, evaluated)."""
-    out = {"searched": {}, "fixed": {}, "fixed_attack_term": {}, "fixed_reference_term": {}, "fixed_eff": {}, "per_market": {}, "envelope": {},
-           "label": NOMINAL_LABEL}
+    """Per market and family (the six fresh markets and the headline market) and pooled over the fresh markets (design 6.6,
+    9.3): searched contrasts with gross and net efficiency beside them; fixed-attack contrasts with their attacker-profit and
+    reference terms and gross and net efficiency; the training-selected bank envelope. A missing cell or cross record
+    withholds only the parts that use it."""
+    out = {k: {} for k, _ in Q2_KINDS}; out.update(per_market={}, envelope={}, label=NOMINAL_LABEL)
     for f in FAMS:
-        searched, fixed, at, rt, fe, env, per = {}, {}, {}, {}, {}, {}, {}
+        pooled, gone, per, env = {k: {} for k, _ in Q2_KINDS}, {}, {}, {}
         for m in FRESH + ("headline",):
-            recs = {r: R.get(m, r, f) for r in FACT}; cr = R.cross(m, f)
-            if any(v is None for v in recs.values()) or cr is None:
-                return "unanswered"
-            s_rows = _contrast_rows({r: np.asarray(recs[r]["gain"]) for r in FACT})
-            per[m] = {k: _est(v) for k, v in s_rows.items()}
-            if m == "headline":
-                continue
-            for k, v in s_rows.items():
-                searched.setdefault(k, []).append(v)
-            rows, prof = cr["per_seed"], cr["profit_rows"]
-            for store, src in ((fixed, lambda a, r: rows[f"{a}>{r}"]), (at, lambda a, r: prof[f"{a}>{r}"]["profit_attack"]),
-                               (rt, lambda a, r: prof[f"{a}>{r}"]["profit_ref"]), (fe, lambda a, r: prof[f"{a}>{r}"]["eff_attack"])):
-                per_attack = [_contrast_rows({r: np.asarray(src(a, r)) for r in FACT}) for a in FACT]
-                for k in per_attack[0]:
-                    store.setdefault(k, []).append(np.mean([pa[k] for pa in per_attack], axis=0))
-            env[m] = {r: {"attack": cr["envelope"][r], "estimate": float(np.mean(rows[f"{cr['envelope'][r]}>{r}"])),
-                          "interval": _interval(np.asarray(rows[f"{cr['envelope'][r]}>{r}"]))} for r in FACT}
-        out["searched"][f] = {k: _strat(v) for k, v in searched.items()}
-        out["fixed"][f] = {k: _strat(v) for k, v in fixed.items()}
-        out["fixed_attack_term"][f] = {k: _strat(v) for k, v in at.items()}
-        out["fixed_reference_term"][f] = {k: _strat(v) for k, v in rt.items()}
-        out["fixed_eff"][f] = {k: _strat(v) for k, v in fe.items()}
+            recs = {r: R.get(m, r, f) for r in FACT}; cr = R.cross(m, f); pm = {}
+            for kind, fld in Q2_KINDS:
+                if kind.startswith("searched"):
+                    if any(v is None for v in recs.values()):
+                        pm[kind] = "unanswered: missing cell"; continue
+                    rows = _contrast_rows({r: np.asarray(recs[r][fld], dtype=float) for r in FACT})
+                else:
+                    if cr is None:
+                        pm[kind] = "unanswered: missing cross record"; continue
+                    src = ((lambda a, r: cr["per_seed"][f"{a}>{r}"]) if fld is None else (lambda a, r, fld=fld: cr["profit_rows"][f"{a}>{r}"][fld]))
+                    per_attack = [_contrast_rows({r: np.asarray(src(a, r), dtype=float) for r in FACT}) for a in FACT]
+                    with np.errstate(over="ignore", invalid="ignore"):
+                        rows = {c: np.mean([pa[c] for pa in per_attack], axis=0) for c in per_attack[0]}
+                pm[kind] = {c: _cell(v) for c, v in rows.items()}
+                if m != "headline":
+                    for c, v in rows.items():
+                        pooled[kind].setdefault(c, []).append(v)
+            for kind, v in pm.items():
+                if isinstance(v, str) and m != "headline":
+                    gone[kind] = v
+            per[m] = pm
+            if cr is None:
+                env[m] = "unanswered: missing cross record"; continue
+            rows = cr["per_seed"]
+            env[m] = {r: {"attack": cr["envelope"][r], **_cell(np.asarray(rows[f"{cr['envelope'][r]}>{r}"], dtype=float))} for r in FACT}
+        for kind, _ in Q2_KINDS:
+            out[kind][f] = gone[kind] if kind in gone else {c: _strat(v) for c, v in pooled[kind].items()}
         out["per_market"][f] = per; out["envelope"][f] = env
     return out
 
@@ -227,11 +262,17 @@ def q3(R: Records, h4_loaded: bool):
     for r in CORE:
         out["envelope"][r] = {}; out["robustness"][r] = {}
         for f in fams:
-            hit = any(RV.cell_id(f"{m}@rho0.2", r, f, "profit") in R.flagged for m in FRESH + ("headline",))
-            out["robustness"][r][f] = "unanswered (search flagged)" if hit else "answered"
+            ids = [i for i in (RV.cell_id(f"{m}@rho0.2", r, f, "profit") for m in FRESH + ("headline",)) if R.scheduled(i)]
+            if any(R.rec(i) is None for i in ids):
+                out["robustness"][r][f] = "unanswered (missing cell)"
+            elif f not in CHECKED:
+                out["robustness"][r][f] = "no search-quality claim (no scheduled check)"
+            else:
+                out["robustness"][r][f] = R.search_status(ids) or "answered"
         for m in FRESH + ("headline",):
             env = R.aux(f"envelope/{m}@rho0.2/{r}")
-            if env is None or any(R.get(m, r, f) is None for f in fams):
+            need = [f for f in fams if R.scheduled(RV.cell_id(f"{m}@rho0.2", r, f, "profit"))]
+            if env is None or any(R.get(m, r, f) is None for f in need):
                 out["envelope"][r][m] = "unanswered: missing cell"; continue
             rec = R.get(m, r, env["choice"])
             if rec is None:
@@ -242,12 +283,13 @@ def q3(R: Records, h4_loaded: bool):
         for f in FAMS:
             out["welfare"][r][f] = {}
             for obj in ("W0", "W1"):
-                rec = R.get("headline", r, f, obj)
+                rec = R.get("headline", r, f, obj); st = R.search_status([RV.cell_id("headline@rho0.2", r, f, obj)])
                 if rec is None:
                     out["welfare"][r][f][obj] = "unanswered: missing cell"; continue
                 if rec.get("no_feasible_candidate"):
-                    out["welfare"][r][f][obj] = "no feasible candidate found"; continue
-                eff = np.asarray(rec["eff"]); cell = {"efficiency": float(eff.mean()), "interval": _interval(eff)}
+                    out["welfare"][r][f][obj] = "no feasible candidate found" + (f" by the prescribed search; robustness {st}" if st else ""); continue
+                eff = np.asarray(rec["eff"]); cell = {"efficiency": float(eff.mean()), "interval": _interval(eff),
+                                                      "search": FLAGGED if "flagged" in (st or "") else None, "robustness": st or "answered"}
                 if obj == "W0":
                     pr = R.get("headline", r, "D2+H3")
                     if pr is None:
@@ -255,7 +297,8 @@ def q3(R: Records, h4_loaded: bool):
                     N = R.jobs[RV.cell_id("headline@rho0.2", r, f, obj)]["mkt"]["cfg"].N
                     gain = np.asarray(rec["normalized"]) - np.asarray(pr["profit_ref"]) / (np.asarray(pr["sstar"]) / N)
                 else:
-                    gain = np.asarray(rec["constraint"]); ci = _interval(gain); cell["constraint_interval"] = ci; cell["w1_class"] = w1_class(*ci)
+                    gain = np.asarray(rec["constraint"]); ci = _interval(gain); cell["constraint_interval"] = ci
+                    cell["w1_class"] = REFUSED if None in ci else w1_class(*ci)
                 cell.update(attacker_gain=float(gain.mean()), attacker_gain_interval=_interval(gain)); out["welfare"][r][f][obj] = cell
         for obj in ("W0", "W1"):
             sel = R.aux(f"welfare_select/headline@rho0.2/{r}/{obj}") or {}
@@ -271,8 +314,13 @@ def q3(R: Records, h4_loaded: bool):
             tot, mn = R.get("headline", r, fam, "total", c, sch), R.get("headline", r, fam, "min", c, sch)
             if tot is None or mn is None:
                 out["coalition"][r][f"c{c}_{sch}"] = "unanswered: missing cell"; continue
-            out["coalition"][r][f"c{c}_{sch}"] = {"G_tot": {"estimate": float(tot["total"])},
-                                                  "G_min": {"estimate": float(mn["min"]), "bounds": [float(x) for x in gmin_bounds([np.asarray(v) for v in mn["member_gain"]], 0.05)]}}
+            try:
+                gm = {"estimate": float(mn["min"]), "bounds": [float(x) for x in gmin_bounds([np.asarray(v, dtype=float) for v in mn["member_gain"]], 0.05)]}
+            except NumericalRefusal:
+                gm = {"estimate": float(mn["min"]), "bounds": [None, None], "status": REFUSED}
+            st = R.search_status([RV.cell_id("headline@rho0.2", r, fam, o, c, sch) for o in ("total", "min")])
+            out["coalition"][r][f"c{c}_{sch}"] = {"G_tot": {"estimate": float(tot["total"])}, "G_min": gm, "search": FLAGGED if "flagged" in (st or "") else None,
+                                                  "robustness": st or "answered"}
         dg = R.get("headline", r, "HR1", "diagnostic")
         out["diagnostic"][r] = "unanswered: missing cell" if dg is None else {"replace_at": dg["replace_at"], "bins": dg["bins"]}
     out["independent"] = ("not run (H4 excluded); the independently authored part of Q3 is unanswered" if not h4_loaded else
@@ -315,7 +363,7 @@ def build(out, protocol: dict, instances: dict, h4: dict, catalog: list[dict], c
     missing, no_doubling = set(), set()
     for c in rep.get("contexts", {}).values():
         missing |= set(c.get("missing", [])); no_doubling |= set(c.get("missing_doubling", []))
-    R = Records(out, catalog, missing, _flagged(out, catalog)); conf = bool((instances or {}).get("confirmatory")); kappa = protocol.get("kappa") or {}
+    R = Records(out, catalog, missing, _flagged(out, catalog), no_doubling); conf = bool((instances or {}).get("confirmatory")); kappa = protocol.get("kappa") or {}
     r = {"confirmatory": conf, "q1": q1(R, kappa.get("Q1"), conf), "q2": q2(R), "q3": q3(R, bool(h4.get("loaded"))), "q4": q4(R, kappa.get("Q4"), conf)}
     r["secondary"] = secondary(R); r["doubling"] = doubling(R); r["doubling_missing"] = sorted(no_doubling)
     for j in catalog:
@@ -350,6 +398,14 @@ def _iv(x: dict) -> str:
     return f"{x['estimate']:.4f} [{x['interval'][0]:.4f}, {x['interval'][1]:.4f}]"
 
 
+def _bd(iv) -> str:
+    return f"[{WITHHELD}]" if iv is None or None in iv else f"[{iv[0]:.4f}, {iv[1]:.4f}]"
+
+
+def _cs(cs) -> str:
+    return cs if isinstance(cs, str) else "; ".join(f"{k} {_iv(v)}" for k, v in cs.items())
+
+
 def markdown(r: dict) -> str:
     L = ["# Protocol v2 report", ""]
     if not r["confirmatory"]:
@@ -375,13 +431,15 @@ def markdown(r: dict) -> str:
     if r["q2"] == "unanswered":
         L.append("unanswered: a required cell or cross record is missing")
     else:
-        for kind in ("searched", "fixed", "fixed_attack_term", "fixed_reference_term", "fixed_eff"):
+        for kind, _ in Q2_KINDS:
             for f, cs in r["q2"][kind].items():
-                L.append(f"- {kind}, {f}: " + "; ".join(f"{k} {_iv(v)}" for k, v in cs.items()))
+                L.append(f"- {kind}, pooled over fresh markets, {f}: " + _cs(cs))
         for f, ms in r["q2"]["per_market"].items():
-            L.append(f"- searched per market, {f}: " + "; ".join(f"{m}: " + ", ".join(f"{k} {v:.4f}" for k, v in d.items()) for m, d in ms.items()))
+            for m, pm in ms.items():
+                for kind, cs in pm.items():
+                    L.append(f"- {kind}, {m}, {f}: " + _cs(cs))
         for f, ms in r["q2"]["envelope"].items():
-            L.append(f"- bank envelope (training-selected), {f}: " + "; ".join(f"{m}: " + ", ".join(f"{k} {v['attack']} {_iv(v)}" for k, v in d.items())
+            L.append(f"- bank envelope (training-selected), {f}: " + "; ".join(f"{m}: " + (d if isinstance(d, str) else ", ".join(f"{k} {v['attack']} {_iv(v)}" for k, v in d.items()))
                                                                                for m, d in ms.items()))
     L += ["", "## Q3 attack strength (descriptive)"]
     q3 = r["q3"]
@@ -397,15 +455,16 @@ def markdown(r: dict) -> str:
                 for obj, v in objs.items():
                     if isinstance(v, str):
                         L.append(f"- welfare {rule} {f} {obj}: {v}"); continue
-                    g = v["attacker_gain_interval"]; c = v.get("constraint_interval")
-                    L.append(f"- welfare {rule} {f} {obj}: efficiency {v['efficiency']:.4f} [{v['interval'][0]:.4f}, {v['interval'][1]:.4f}], "
-                             f"attacker gain {v['attacker_gain']:.4f} [{g[0]:.4f}, {g[1]:.4f}]" + (f", W1 constraint [{c[0]:.4f}, {c[1]:.4f}], {v['w1_class']}" if c else ""))
+                    c = v.get("constraint_interval")
+                    L.append(f"- welfare {rule} {f} {obj}: efficiency {v['efficiency']:.4f} {_bd(v['interval'])}, "
+                             f"attacker gain {v['attacker_gain']:.4f} {_bd(v['attacker_gain_interval'])}" + (f", W1 constraint {_bd(c)}, {v['w1_class']}" if c else "")
+                             + f"; robustness {v['robustness']}" + (f"; {v['search']}" if v.get("search") else ""))
         for rule, objs in q3["welfare_selected"].items():
             for obj, v in objs.items():
                 L.append(f"- welfare selected on training, {rule} {obj}: " + (v["status"] if v.get("family") is None else f"{v['family']} (other: {v['other_family']})"))
         for rule, gs in q3["coalition"].items():
             L.append(f"- coalition {rule}: " + "; ".join(f"{g} G_tot {v['G_tot']['estimate']:.4f}, G_min {v['G_min']['estimate']:.4f} "
-                                                        f"[{v['G_min']['bounds'][0]:.4f}, {v['G_min']['bounds'][1]:.4f}]" if isinstance(v, dict) else f"{g} {v}"
+                                                        f"{_bd(v['G_min']['bounds'])}, robustness {v['robustness']}" if isinstance(v, dict) else f"{g} {v}"
                                                         for g, v in gs.items()))
         for rule, v in q3["diagnostic"].items():
             L.append(f"- honest replacement {rule}: " + (v if isinstance(v, str) else
