@@ -63,3 +63,4 @@ Part B of `docs/superpowers/plans/2026-10-25-revision-operations.md`. One entry 
 - Promotions (`promote_v2.py --code-commit 627a2de…`): `experiments/v2/comparator.json` (90560ef2…), `tuned_B3-t.json` (b0ac1369…), `tuned_R3-t.json` (54afe9b5…), `tuned_C*-t.json` (aebf6b41…), `promotion.json` (3e204ab3…).
 - Budget: development spent 9.76 USD (cap 12); no open reservations.
 - Exit of Operation 3: this commit is `defender_commit` (data and ledgers only, on top of `code_commit` 627a2de). Author: sign it and tag it `h4-base`.
+- Signed by the author (rebase over 627a2de): `defender_commit` = c5227a022779959c0b619c94c5ea81a4da9b32c5, signed tag `h4-base` on it (good signature verified). No change under `sim/`, `scripts/`, `tests/` since 627a2de.
