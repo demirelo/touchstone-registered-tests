@@ -11,5 +11,8 @@
    "usd": 2.54
   }
  ],
- "approval": null
+ "approval": {
+  "limit": 52.0,
+  "text": "I approve a revision-program budget of up to 52 USD (development cap 12 USD, evaluation cap 40 USD; estimated total 49.25 USD), \u00d6mer Demirel, 2026-10-28."
+ }
 }

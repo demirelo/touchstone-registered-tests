@@ -32,3 +32,8 @@ Part B of `docs/superpowers/plans/2026-10-25-revision-operations.md`. One entry 
 - Priced alternatives from the same timings: evaluation with H4 reserve, cuts 0 to 4 = 43.88, 43.49, 40.37, 38.08, 37.68 USD; development three20k 12.54 (above the 12 USD cap), two20k 11.17, two10k 10.75 USD.
 - Promotion: `promote_v2.py --kind decision --from results/v2/decision --code-commit 627a2de…` → `experiments/v2/benchmark/decision.json` (sha256 5139813a…5ec14); `experiments/v2/promotion.json` (6a859cf8…ecba8).
 - Exit of Operation 2: waits for the author's written approval, `budget_v2.py --approve <limit> "<sentence>"`.
+
+### 2.4 The author's approval, 2026-10-28
+
+- Command (run by the author): `budget_v2.py --approve 52 "I approve a revision-program budget of up to 52 USD (development cap 12 USD, evaluation cap 40 USD; estimated total 49.25 USD), Ömer Demirel, 2026-10-28."`
+- Ledger: approval limit 52 USD with that sentence (the protocol quotes it verbatim). Exit of Operation 2 reached.

@@ -19,3 +19,4 @@ paper/*.bbl
 paper/*.blg
 paper/*.pdf
 paper/*.zip
+docs/revision/budget-ledger.json.lock
