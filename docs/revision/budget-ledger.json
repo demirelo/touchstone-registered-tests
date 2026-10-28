@@ -9,6 +9,26 @@
    "op": "development",
    "tag": "bench",
    "usd": 2.54
+  },
+  {
+   "op": "development",
+   "tag": "tune-B3-t",
+   "usd": 1.69
+  },
+  {
+   "op": "development",
+   "tag": "tune-R3-t",
+   "usd": 1.75
+  },
+  {
+   "op": "development",
+   "tag": "tune-comparator",
+   "usd": 1.95
+  },
+  {
+   "op": "development",
+   "tag": "tune-C*-t",
+   "usd": 1.83
   }
  ],
  "approval": {

@@ -48,3 +48,18 @@ Part B of `docs/superpowers/plans/2026-10-25-revision-operations.md`. One entry 
 - Launcher `results/pods/tune_pod.sh` (git-ignored copy of `bench_pod.sh`: `SCRIPT=scripts/tune_v2.py`, `ROUT` from the environment, no `--usd-per-pod-hour`); tarball: shallow clone of main at 627a2de with a `COMMIT` file.
 - Attempt 1 (15:36, pods `x8gwzjv71xlogs`, `1hcogylz0fx03j`, `vgimy556rf4d0l`): PREP FAILED on every pod (git "dubious ownership": the tarball carried the laptop user's uid); each pod deleted and verified within about a minute; no run started.
 - Attempt 2 (15:38): tarball rebuilt with `tar --uid 0 --gid 0`; pods comparator (cap 2.50), `qcbt75iongrg16` B3-t (cap 2.56), `ya9hh7igi2qrhr` R3-t (cap 2.56), 16 vCPU, 0.56 USD/h; prep `git=627a2de… tuned=3 env=unset py ok`; runs started 15:38–15:39.
+
+### 3.2 Results and promotions, 2026-10-28
+
+| Run | Pod (attempt 2) | Wall | Spend (both attempts) | Result |
+|---|---|---|---|---|
+| comparator | `qyykuq3zfchhwj` 15:38–19:06 | 3 h 28 min | 1.95 USD | C* = C-mem, K 6, M 20 (recheck objective 0.1032; runner-up C-thr K 12, 0.0975) |
+| B3-t | `qcbt75iongrg16` 15:38–18:38 | 3 h 00 min | 1.69 USD | tol 0.16, L 3 |
+| R3-t | `ya9hh7igi2qrhr` 15:39–18:45 | 3 h 06 min | 1.75 USD | tol 0.16, L 20 |
+| C*-t | `n136mo04xzmicr` 19:11–22:25 | 3 h 14 min | 1.83 USD | tol 0.16, L 3 (C-mem K 6, M 20) |
+
+- Every run `RUN OK`, every pod deleted and verified; markets headline and dev0; episodes 300,712 (comparator) and 320,536 per system.
+- C*-t attempt 1 (19:07, `21mm8cgp2p50tz`): RUN FAILED at start, `comparator.json` missing on the pod (the launcher's seed push targets a remote directory that does not exist before the run). Attempt 2 carried the promoted `comparator.json` (sha256 90560ef2…) inside the tarball at `results/v2/tune_Cstar-t/` (git-ignored path; the code tree and commit unchanged).
+- Promotions (`promote_v2.py --code-commit 627a2de…`): `experiments/v2/comparator.json` (90560ef2…), `tuned_B3-t.json` (b0ac1369…), `tuned_R3-t.json` (54afe9b5…), `tuned_C*-t.json` (aebf6b41…), `promotion.json` (3e204ab3…).
+- Budget: development spent 9.76 USD (cap 12); no open reservations.
+- Exit of Operation 3: this commit is `defender_commit` (data and ledgers only, on top of `code_commit` 627a2de). Author: sign it and tag it `h4-base`.
