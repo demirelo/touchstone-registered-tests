@@ -37,3 +37,14 @@ Part B of `docs/superpowers/plans/2026-10-25-revision-operations.md`. One entry 
 
 - Command (run by the author): `budget_v2.py --approve 52 "I approve a revision-program budget of up to 52 USD (development cap 12 USD, evaluation cap 40 USD; estimated total 49.25 USD), Ömer Demirel, 2026-10-28."`
 - Ledger: approval limit 52 USD with that sentence (the protocol quotes it verbatim). Exit of Operation 2 reached.
+
+## Operation 3: Comparator selection, whole-system tuning, and the defender freeze
+
+### 3.1 Launch, 2026-10-28
+
+- Smoke: `tune_v2.py --select comparator --markets headline,dev0 --smoke --workers 4` at 627a2de, 2 min 55 s locally, `comparator.json` written. No spend.
+- Reservations (development): `tune-comparator` 2.5375 USD (estimate 2.03, the benchmark row), `tune-B3-t` 2.60 (2.08), `tune-R3-t` 2.60 (2.08).
+- Deviation (orchestration only): B3-t and R3-t tune in parallel with the comparator selection (they do not read `comparator.json`); C*-t follows the comparator's promotion. Saves about 4 hours of wall time.
+- Launcher `results/pods/tune_pod.sh` (git-ignored copy of `bench_pod.sh`: `SCRIPT=scripts/tune_v2.py`, `ROUT` from the environment, no `--usd-per-pod-hour`); tarball: shallow clone of main at 627a2de with a `COMMIT` file.
+- Attempt 1 (15:36, pods `x8gwzjv71xlogs`, `1hcogylz0fx03j`, `vgimy556rf4d0l`): PREP FAILED on every pod (git "dubious ownership": the tarball carried the laptop user's uid); each pod deleted and verified within about a minute; no run started.
+- Attempt 2 (15:38): tarball rebuilt with `tar --uid 0 --gid 0`; pods comparator (cap 2.50), `qcbt75iongrg16` B3-t (cap 2.56), `ya9hh7igi2qrhr` R3-t (cap 2.56), 16 vCPU, 0.56 USD/h; prep `git=627a2de… tuned=3 env=unset py ok`; runs started 15:38–15:39.
