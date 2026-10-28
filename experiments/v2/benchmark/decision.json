@@ -1,0 +1,33 @@
+{
+ "decision": {
+  "branch": "two20k",
+  "markets": [
+   "headline",
+   "dev0"
+  ],
+  "cuts": 3,
+  "spent_usd": 2.54,
+  "h4_reserve_usd": 1.0,
+  "stop": null,
+  "development_usd": 11.16679102576515,
+  "evaluation_usd": 38.083776015480794,
+  "total_usd": 49.250567041245944,
+  "approval_required": true
+ },
+ "ledger": {
+  "caps": {
+   "development": 12.0,
+   "evaluation": 40.0
+  },
+  "reservations": [],
+  "spent": [
+   {
+    "op": "development",
+    "tag": "bench",
+    "usd": 2.54
+   }
+  ],
+  "approval": null
+ },
+ "timings_sha256": "0a9ec988b78da1ab89b8482947b19e99de7e7a2637062474cbae35ff371ce2e7"
+}

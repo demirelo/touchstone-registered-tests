@@ -1,0 +1,16 @@
+{
+ "entries": {
+  "benchmark/cost_table.json": "07e0941a4ab4867d7ab57540696f62193185108912fa43a63f5c32f43658ec14",
+  "benchmark/decision.json": "5139813a670cbbdc7d2bd92e0a5efd6c262ddb55fc69c88af192cc3dd5658f39",
+  "benchmark/timings.json": "0a9ec988b78da1ab89b8482947b19e99de7e7a2637062474cbae35ff371ce2e7"
+ },
+ "kinds": {
+  "benchmark": [
+   "benchmark/timings.json",
+   "benchmark/cost_table.json"
+  ],
+  "decision": [
+   "benchmark/decision.json"
+  ]
+ }
+}

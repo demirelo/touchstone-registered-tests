@@ -1,0 +1,15 @@
+{
+ "caps": {
+  "development": 12.0,
+  "evaluation": 40.0
+ },
+ "reservations": [],
+ "spent": [
+  {
+   "op": "development",
+   "tag": "bench",
+   "usd": 2.54
+  }
+ ],
+ "approval": null
+}

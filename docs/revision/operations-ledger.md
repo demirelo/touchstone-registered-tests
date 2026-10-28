@@ -1,0 +1,34 @@
+# Operations ledger, revision program (protocol v2)
+
+Part B of `docs/superpowers/plans/2026-10-25-revision-operations.md`. One entry per operation step: date, commit, command, pod ids, USD, outputs and hashes, deviations. Paid spend is also recorded in `docs/revision/budget-ledger.json` with `budget_v2.py --record`.
+
+`code_commit` = `627a2de9ad6c838e4228893c3107d173118d5d62` (Part A2 merged, signed).
+
+## Operation 2: Benchmark and the cost decision
+
+### 2.1 Smoke benchmark (wiring only), 2026-10-28
+
+- Commit: 627a2de (worktree `claude/vigorous-villani-bbac79`).
+- Command: `uv run python scripts/benchmark_v2.py --run --smoke --out results/v2/benchmark_smoke`
+- Result: exit 0, 4 min 33 s on the laptop (1 worker); `timings.json`, `cost_table.json`, `benchmark_plan.json` written. No spend.
+
+### 2.2 Benchmark pod, 2026-10-28
+
+- Reservation: `budget_v2.py --reserve development bench 2.4` granted 3.00 USD (cap 3 USD).
+- Deviations from the plan's launcher line (no code change; the launcher lives in the git-ignored `results/pods/`):
+  - The tarball is a shallow `git clone --depth 1` of main at 627a2de (ownership root), not `git archive`. Reason: `revision_v2.git_commit` reads `git rev-parse HEAD` only, so a pod without `.git` would record the commit as `"unknown"` and `promote_v2 --kind benchmark` would refuse the timings.
+  - Launcher `results/pods/bench_pod.sh` (a copy of `explore_pod.sh`): 16-vCPU pods only (`create16.py`), refuses a price above 0.56 USD per hour, the prep check requires `git rev-parse HEAD` = 627a2de on the pod, and `--usd-per-pod-hour` is the pod's measured `costPerHr`.
+- Command: `EXPECT=627a2de… MAXCPH=0.56 results/pods/bench_pod.sh <tarball> bench 3.00 results/v2/benchmark "--run"`
+- Pod: `g62pollplcl20a` (16 vCPU, 0.56 USD/h), created 22:25, deleted (verified) 02:57 on 2026-10-28; prep check `git=627a2de… tuned=3 env=unset py ok`; run `RUN OK`, no traceback in `x_run.log`.
+- Spend: 2.54 USD (272 pod minutes x 0.56 USD/h), `budget_v2.py --record bench 2.54`.
+- Output: `timings.json` (smoke false, commit 627a2de, vcpu 16, 0.56 USD/h, wall 4.54 h, markets headline and dev0).
+- Promotion: `promote_v2.py --kind benchmark --from results/v2/benchmark --markets headline,dev0 --code-commit 627a2de…` → `experiments/v2/benchmark/timings.json` (sha256 0a9ec988…ce2e7), `cost_table.json` (07e0941a…8ec14).
+
+### 2.3 Cost decision, 2026-10-28
+
+- Command: `benchmark_v2.py --decide results/v2/benchmark/timings.json --ledger docs/revision/budget-ledger.json --out results/v2/decision/decision.json` (written once).
+- Decision: branch `two20k` (headline and dev0; replacement fixture design of 9.5), cuts 3, development 11.17 USD (2.54 spent), evaluation 38.08 USD (H4 reserve 1 USD included), total 49.25 USD, **approval required** (total above 40 USD), no stop.
+- Cuts 3 (design 8.2, in order): (1) whole-system cells on fresh markets, (2) H4 on fresh markets (Q3's independently authored part is headline only), (3) D2 matched extras on fresh markets.
+- Priced alternatives from the same timings: evaluation with H4 reserve, cuts 0 to 4 = 43.88, 43.49, 40.37, 38.08, 37.68 USD; development three20k 12.54 (above the 12 USD cap), two20k 11.17, two10k 10.75 USD.
+- Promotion: `promote_v2.py --kind decision --from results/v2/decision --code-commit 627a2de…` → `experiments/v2/benchmark/decision.json` (sha256 5139813a…5ec14); `experiments/v2/promotion.json` (6a859cf8…ecba8).
+- Exit of Operation 2: waits for the author's written approval, `budget_v2.py --approve <limit> "<sentence>"`.
