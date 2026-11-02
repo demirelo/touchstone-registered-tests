@@ -64,3 +64,21 @@ Part B of `docs/superpowers/plans/2026-10-25-revision-operations.md`. One entry 
 - Budget: development spent 9.76 USD (cap 12); no open reservations.
 - Exit of Operation 3: this commit is `defender_commit` (data and ledgers only, on top of `code_commit` 627a2de). Author: sign it and tag it `h4-base`.
 - Signed by the author (rebase over 627a2de): `defender_commit` = c5227a022779959c0b619c94c5ea81a4da9b32c5, signed tag `h4-base` on it (good signature verified). No change under `sim/`, `scripts/`, `tests/` since 627a2de.
+
+## Operation 1 (in progress): the sealed H4 session
+
+- 2026-10-28 22:3x: the author started the fresh session (`codex exec -m gpt-6.1-sol`, high, workspace-write) in `~/touchstone-h4` at `h4-base`; it stopped at 23:27 mid-run (machine restart: `/private/tmp` cleared), leaving `sealed2/h4/family.py` only, no check and no commit.
+- 2026-11-02: the executor resumed the same session (`codex exec resume 01a18499-…`, same model and effort, `-o ~/h4-final.txt`) with the author's instruction to finish. Deviation: the plan names the author as the one who runs the session; the executor ran the same command and reads only `~/h4-final.txt` (not the log, not the bundle).
+
+## Correction, 2026-11-02: the data-only rule
+
+- cf53781 (approval) had added a `.gitignore` line, outside `experiments/v2/` and `docs/`; every later commit, including `h4-base`, then failed `promote_v2.same_code` (coverage refused the checkout). 91c80ff restores `.gitignore` to the code commit's version (the lock file moved to `.git/info/exclude`); `same_code(627a2de, HEAD)` is True again. Nothing requires the defender commit itself to be data-only (the H4 decision checks only that it exists and that the promoted files are byte-identical at it).
+- Guard: a pre-commit hook (in `.git/hooks/`, not tracked) refuses staged paths outside the data-only paths on this branch and on a detached HEAD after `h4-base`; both negative tests refused. Lessons: `docs/revision/lessons.md`.
+- The worktree's HEAD had been detached since the ledger commit (unlabelled checkout at 8328706); the branch was fast-forwarded to 91c80ff and reattached.
+
+## Operation 4 (in progress): coverage pools
+
+- Deviation (order): Operation 4's pools run in parallel with Operation 1, before the decision after the H4 timing (the pools do not depend on H4; if that decision stops the program, this spend, about 1.7 USD, is lost).
+- Smoke at bc33bc0: `coverage_v2.py --pools --market dev0 --branch two20k --inputs experiments/v2 --code-commit 627a2de… --pool-size 20 --workers 4`, 14 s, 8 profiles x 20 seeds.
+- Reservations: `coverage-headline` 1.09 USD, `coverage-dev0` 1.09 USD (estimates 0.87 each, half of the benchmark's coverage row); development used 11.94 of 12 USD with these reservations.
+- Pods (launcher `results/pods/cov_pod.sh`, tarball: root-owned shallow clone of the branch at bc33bc0, `EXPECT=bc33bc0…`), one per market of branch two20k, output `results/v2/coverage/pools/<market>.json`.
