@@ -1,0 +1,17 @@
+VERDICT: reject
+
+CORRECTIONS:
+
+1. **`docs/revision/predictions-v2.md:88` — Make Q1-b’s scoring rule match its prediction.** Replace `"equivalent" (either direction label)` with `"equivalent" or "equivalent, direction R3 lower"`. Lines 35–36 allow those two outcomes. The current table also accepts `"equivalent, direction C* lower"`, which the prediction excludes. These are distinct registered labels in `sim/decisions_v2.py::q1_category`.
+
+2. **`docs/revision/predictions-v2.md:89` — Score the omitted “no rule earns better” claim.** Split Q1-c into two scored parts: the existing efficiency point-estimate bounds, and “neither family receives a ‘better’ label under design 9.3.” Apply “not assessed” if the required decision is unavailable. Lines 37–38 predict both outcomes, but the table tests only the first. Efficiency differences within ±0.01 do not prevent a “better” label: `q1_better` requires materially lower gain and the efficiency condition. Thus the current row can pass while its stated prediction fails.
+
+3. **`docs/revision/predictions-v2.md:97` — Remove the coalition denominator restriction.** Replace `G_min / G_tot` with `G_min - 0.5 * G_tot`; require a value **≤ 0** in each available headline cell. Specify X6-SE/v2 at both coalition sizes and both schedules, plus X8-DB’s roles schedule, against F111 and C*. Retain the separately selected policies. Lines 61–62 state an unconditional inequality; the table silently excludes `G_tot ≤ 0`. Zero and negative evaluation gains are possible because selection occurs on training seeds. For example, `G_tot = 0` and `G_min = 0` satisfy the prose but receive no defined score in the table.
+
+4. **`docs/revision/coverage-driver/README.md:21–22` — Correct the description of the driver difference.** Replace “differs only by the position of the `same_code` check” with “adds a `same_code` check before pool construction and retains the final check.” The archived v2 driver contains both checks, at lines 22–24 and 34–36. Both driver hashes match the README. This is a documentation correction; it does not invalidate the recorded equivalence result.
+
+5. **`experiments/protocol-v2.yaml` — Regenerate after the prediction corrections, then repeat `scripts/lock_v2.py --check` before signing, stamping, and tagging.** The present check passed with optional plotting imports disabled. Its prediction hash correctly binds the present text, including the scoring inconsistencies above. Keep the accepted numerical bindings unchanged.
+
+6. **Round-1 closure — No further changes to the other resolved points.** In `docs/revision/predictions-v2.md`, the revised budgets, quoted gains, efficiency ranges, pool contrasts, historical-data description, predecessor citation, evidence labels, absolute interaction bounds, H4 scope, fixed-attack definition, coalition policy selection, welfare selection, unscored diagnostic, and registered Q4 test address the earlier requests. The remaining part of **Sol correction 4 / Astra correction 4** is the scoring consistency identified above. In `docs/revision/operations-ledger.md`, all four departure dispositions are present; actual development spend plus estimated evaluation cost is **49.5055825014347 USD**, consistent with the rounded entry. The archived drivers and equivalence record satisfy the preservation request. H4 custody remains conditional on the permitted records; I did not inspect the prohibited paths. No new numerical binding error or confirmatory-rule change was found.
+
+CONFIDENCE: 0.96

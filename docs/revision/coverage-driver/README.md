@@ -18,8 +18,8 @@ uv run python results/pods/cov_driver.py --market headline --branch two20k --inp
 cmp eqA/pools/headline.json eqB/pools/headline.json
 ```
 
-Result: both exit 0; `cmp` reports no difference (byte-identical pool files). The driver used was v1; v2 differs only by the
-position of the `same_code` check (three added lines at the start of `build`). The promoted pools have 20,000 ordered seeds each and pass
+Result: both exit 0; `cmp` reports no difference (byte-identical pool files). The driver used was v1; v2 adds a `same_code` check
+before pool construction (three lines at the start of `build`) and keeps the final check. The promoted pools have 20,000 ordered seeds each and pass
 `promote_v2.py --kind coverage`.
 
 ## dev0 history rescue

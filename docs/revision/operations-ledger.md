@@ -125,3 +125,12 @@ Both seats found that no departure compromises Q1 or Q4 (`docs/revision/roster/{
 - **(d) Parallel tuning.** B3-t and R3-t do not read the comparator; C*-t started after the comparator's promotion; selection inputs are unchanged.
 - Predictions revised per both reviews (H4 headline only; evidence corrections; conjecture labels; absolute interaction bounds; Q4 defined by the registered Holm test; scoring table with "not assessed" for unavailable targets).
 - The pre-commit hook first refused `experiments/protocol-v2.yaml` (its allowed set copied `promote_v2.ALLOWED` but not `lock_v2.ALLOWED_FILES`); fixed, positive and negative tests passed.
+
+### Protocol review round 2 (Sol high, Astra high: both reject on scoring wording; no numerical or rule error)
+
+Applied in `docs/revision/predictions-v2.md`: (1) Q1-b scores only "equivalent" or "equivalent, direction R3 lower";
+(2) new row Q1-d scores "no rule earns better"; (3) Q3-d uses G_min - 0.5 x G_tot <= 0 with no denominator restriction and
+names its cells; (4) cell-by-cell aggregation (fails if any assessed cell fails; fulfilled only if every required cell is
+assessed and fulfilled; otherwise not assessed); (5) Q4-b strict, a tie fails, not assessed with no eligible market.
+`docs/revision/coverage-driver/README.md`: the v2 driver adds an early `same_code` check and keeps the final one.
+Protocol regenerated; `lock_v2.py --check` ok.

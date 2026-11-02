@@ -35,7 +35,7 @@ Normalised gains (design 6.1) and gross efficiencies at the fixed pair (tol 0.16
 - **Q1-b, X7-SC [evidence]:** primary category **"equivalent"** (with or without "direction R3 lower"; d = +0.027
   headline, +0.006 dev0).
 - **Q1-c, efficiency [evidence]:** the pooled paired gross-efficiency difference (C* minus F111) lies in [-0.01, 0.01] in
-  both families; no rule earns "better".
+  both families (scored as Q1-c); no rule earns "better" (scored separately as Q1-d).
 
 ## Q2 attribution (descriptive; fixed pair; pooled over the six fresh markets)
 
@@ -59,7 +59,8 @@ below are hypotheses.
   cut (cuts 3) and not scored. H4's timing ratio (1.002, `experiments/v2/h4/timing.json`) bears on cost only, not on gain.
 - **Q3-c [conjecture]:** X5-AG/v2's gain is below the D2+H3 gain against F111 and against C*.
 - **Q3-d [conjecture]:** for X6-SE/v2 and X8-DB against F111 and C* at the headline, G_min (from the policy selected for
-  the minimum objective) is at most half of G_tot (from the policy selected for the total objective).
+  the minimum objective) is at most half of G_tot (from the policy selected for the total objective): G_min <= 0.5 x G_tot,
+  also when G_tot <= 0. Cells: X6-SE/v2 at both coalition sizes and both schedules, and X8-DB's roles schedule.
 - **Q3-e [conjecture]:** X8-DB's beneficiary gain (member 0, under the policy selected for the total objective) is larger
   against F111 than against C*.
 - **Q3-f [conjecture]:** at the headline, the gross efficiency of the training-selected welfare attack (per objective W0,
@@ -75,28 +76,32 @@ below are hypotheses.
   about 0.27 (headline) and 0.20 (dev0) with full searches, against the 0.10 threshold; these are not matched fixed-pair
   estimates of the L 10 contrast. F111's gross efficiency is near 0.995, against 0.90.
 - **Q4-b [conjecture]:** where a market does not pass, the limiting component is (a), the gain difference, not (b), the
-  efficiency (judged by which calibrated component p-value is larger); non-rejection does not establish that (a) is false.
+  efficiency: p'_gain > p'_eff, strictly (a tie fails), in every assessed non-passing market; non-rejection does not
+  establish that (a) is false.
 
 ## Scoring table
 
 A target that is cut, missing, excluded, incomplete (design 6.5), or numerically refused is **not assessed**; it counts
-neither as fulfilled nor as failed. Pooled values follow design 9.2 (equal market weights).
+neither as fulfilled nor as failed. Pooled values follow design 9.2 (equal market weights). A prediction over several
+cells (markets, rules, families, coalition cells) is scored cell by cell: it **fails** if any assessed cell fails; it is
+**fulfilled** only if every required cell is assessed and fulfilled; otherwise it is **not assessed**.
 
 | Id | Statistic | Scope | Fulfilled if |
 |---|---|---|---|
 | Q1-a | Q1 category, D2+H3 | pooled fresh | primary: "equivalent, direction R3 lower"; scored separately: the alternative |
-| Q1-b | Q1 category, X7-SC | pooled fresh | "equivalent" (either direction label) |
+| Q1-b | Q1 category, X7-SC | pooled fresh | "equivalent" or "equivalent, direction R3 lower" |
 | Q1-c | paired gross-efficiency difference C* - F111 | pooled fresh, both families | both point estimates in [-0.01, 0.01] |
+| Q1-d | "better" label (design 9.3, `q1_better`) | pooled fresh, both families | neither family gives "R3 better" or "C* better" |
 | Q2-a | main effects G, S, D2+H3, searched | pooled fresh | both point estimates <= -0.05 |
 | Q2-b | main effect P, D2+H3, searched | pooled fresh | point estimate in (-0.03, 0.03) |
 | Q2-c | PG, PS, GS, D2+H3, searched | pooled fresh | \|PG\| < 0.03, \|PS\| < 0.03, GS <= 0 |
 | Q2-d | fixed-attack vs searched contrasts | pooled fresh, P, G, S x D2+H3, X7-SC | \|fixed\| < \|searched\| in all six |
-| Q3-a | gain(X7-SC) - gain(D2+H3) | each market, F111 and C* | below 0.05 in every scored market-rule pair |
+| Q3-a | gain(X7-SC) - gain(D2+H3) | each market, F111 and C* | below 0.05 in every required market-rule pair |
 | Q3-b | gain(H4) - gain(X7-SC), F111 | headline | at most 0.05 |
-| Q3-c | gain(X5-AG/v2) - gain(D2+H3) | each market, F111 and C* | below 0 in every scored market-rule pair |
-| Q3-d | G_min / G_tot (separately selected policies) | headline, X6-SE/v2 and X8-DB, F111 and C* | at most 0.5 in every scored cell with G_tot > 0 |
+| Q3-c | gain(X5-AG/v2) - gain(D2+H3) | each market, F111 and C* | below 0 in every required market-rule pair |
+| Q3-d | G_min - 0.5 x G_tot (separately selected policies) | headline, F111 and C*: X6-SE/v2 at both coalition sizes and both schedules, X8-DB roles schedule | <= 0 in every required cell |
 | Q3-e | X8-DB beneficiary gain (total-objective policy) | headline | F111 > C* |
 | Q3-f | gross efficiency of the training-selected welfare attack | headline, W0 and W1 | >= 0.90 for F111 and C*; F000 < F111 |
 | Q3-g | gain(R3) - gain(R4), D2 | headline, rho = 1 | at least 0.10 |
 | Q4-a | k (Holm on the market p-values) | six fresh markets | k >= 5 |
-| Q4-b | larger calibrated component p-value | each non-passing market | component (a) |
+| Q4-b | calibrated component p-values p'_gain, p'_eff | each assessed non-passing market | p'_gain > p'_eff (strict; a tie fails) in every such market; not assessed if no such market |
