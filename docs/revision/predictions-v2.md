@@ -1,76 +1,102 @@
 # Protocol v2: predictions (design 9.7)
 
-Written in Operation 5 from development results only; no fresh data exists. Reviewed by Sol and Astra with the protocol and
-hashed into `experiments/protocol-v2.yaml` (`predictions_sha256`). Each prediction states a direction and, where the design
-gives one, a threshold. Predictions are scored in the report; they are not decision rules and do not change any.
+Written in Operation 5 from v2 development results and previously published evaluation results; no v2 fresh outcome
+exists. Reviewed by Sol and Astra with the protocol and hashed into `experiments/protocol-v2.yaml` (`predictions_sha256`).
+Predictions are scored in the report with the scoring table at the end; they are not decision rules and change none.
+Each prediction is marked **[evidence]** (a cited development result supports its direction) or **[conjecture]** (an
+untested mechanistic hypothesis: the cited results do not measure that quantity).
 
-## Development evidence used
+## Evidence
 
-All numbers are normalised gains (design 6.1) or gross efficiencies on development seeds, at the fixed pair (tol 0.16,
-L 10) unless stated.
+Normalised gains (design 6.1) and gross efficiencies at the fixed pair (tol 0.16, L 10) unless stated.
 
-- **Full-budget rechecks** (5 restarts x 300 evaluations on dev-train, scored on the 20 dev-val seeds; files
-  `experiments/v2/log/*__recheck.json`, read with the `detail` field):
+- **Full-budget rechecks** (5 restarts x 300 evaluations for D2 and D2+H3, 5 restarts x 600 for X7-SC, on dev-train;
+  scored on the 20 dev-val seeds; `experiments/v2/log/*__recheck.json`, field `detail`):
 
   | Rule | headline D2+H3 / X7-SC | dev0 D2+H3 / X7-SC |
   |---|---|---|
-  | F111 (R3; `R3-t` recheck at L 10) | 0.070 / 0.070 | 0.000 / 0.032 |
-  | C* (C-mem K 6, M 20; comparator recheck) | 0.097 / 0.097 | 0.038 / 0.038 |
-  | B3 structure (`B3-t` recheck at tol 0.16, L 3; no recheck exists at L 10) | 0.342 / 0.352 | 0.197 / 0.201 |
+  | F111 (R3; the `R3-t` recheck at L 10) | 0.070 / 0.070 | 0.000 / 0.032 |
+  | C* (C-mem K 6, M 20; the comparator recheck) | 0.097 / 0.097 | 0.038 / 0.038 |
+  | B3 structure (the `B3-t` recheck at tol 0.16, **L 3**; no recheck exists at L 10) | 0.342 / 0.352 | 0.197 / 0.201 |
 
-  Gross efficiency in these rechecks: F111 0.994 to 0.998, C* 0.994 to 0.997, B3-t 0.968 to 0.977.
+  Gross efficiency in the D2+H3 and X7-SC columns: F111 0.994 to 0.998, C* 0.994 to 0.997, B3-t 0.968 to 0.977.
 - **Coverage pools** (frozen development attacks from the inner searches, 20,000 seeds per market;
-  `results/v2/coverage/pools/<market>.json`, promoted by Operation 4): F000 - F111 under D2+H3 is 0.125 (headline) and
-  0.054 (dev0); F111's gross efficiency is 0.997 and 0.997. The inner-search attacks found no positive gain against F111
-  or C* in three of four market-family cells; they are weaker than the full searches of the evaluation and are not used
-  for directions where a recheck exists.
-- **The first registered evaluation** (`docs/final-evaluation-2026-10-20/`): headline D2+H3 gains B3 0.353, R3 0.071; the
-  killed predecessor (no priority phase) reached development H3 gain 0.073.
+  `experiments/v2/pools/<market>.json`): F000 - F111 under D2+H3 is 0.125 (headline) and 0.054 (dev0); F111's gross
+  efficiency is 0.997 in both. The inner-search attacks found no positive mean gain against F111 or C* in any of the four
+  market-family cells; they are weaker than the evaluation's full searches and are not used where a recheck exists.
+- **Earlier evaluation data reused as development evidence for v2:** the first registered evaluation
+  (`docs/final-evaluation-2026-10-20/`, final-evaluation seeds of that evaluation): headline D2+H3 gains B3 0.353, R3
+  0.071. The killed predecessor without the priority phase reached H3 gain 0.073 (`docs/amendments/2026-10-18-amendment-3.md`).
 
-## Q1 comparator (d = g_C* - g_F111, pooled over the six fresh markets)
+## Q1 comparator (d = g_C* - g_F111, pooled over the six fresh markets; kappa_Q1 0.5)
 
-- **D2+H3:** d positive and below 0.05. Expected category: **"equivalent, direction R3 lower"** (development: d = +0.027
-  headline, +0.038 dev0). If the calibrated interval is wider than predicted, "ordered, size not established" in the same
-  direction is the second most likely outcome. Not expected: "C* materially lower gain".
-- **X7-SC:** d positive and below 0.05. Expected category: **"equivalent"**, with "direction R3 lower" if Holm rejects zero
-  (development: d = +0.027 headline, +0.006 dev0).
-- **Efficiency:** paired gross-efficiency differences within 0.01 in both families; neither rule earns the word "better"
-  (category 1 is not expected).
-- If Operation 4 admits no kappa for Q1, the outcome is "no confirmatory decision"; the directions above then apply to the
-  descriptive estimates.
+- **Q1-a, D2+H3 [evidence]:** primary category **"equivalent, direction R3 lower"** (d = +0.027 headline, +0.038 dev0).
+  Alternative: "ordered, size not established", direction R3 lower. Not expected: "C* materially lower gain".
+- **Q1-b, X7-SC [evidence]:** primary category **"equivalent"** (with or without "direction R3 lower"; d = +0.027
+  headline, +0.006 dev0).
+- **Q1-c, efficiency [evidence]:** the pooled paired gross-efficiency difference (C* minus F111) lies in [-0.01, 0.01] in
+  both families; no rule earns "better".
 
-## Q2 attribution (descriptive, fixed pair, separately searched and fixed attacks)
+## Q2 attribution (descriptive; fixed pair; pooled over the six fresh markets)
 
-- **G (newest-first residual targeting) and S (R3's pacing)** carry most of the reduction from F000 to F111: each main
-  effect negative (lowers the D2+H3 gain), each of size at least 0.05 in the pooled estimate.
-- **P (priority phase)** small: |main effect| below 0.03 (development: the predecessor without P reached 0.073 against
-  R3's 0.070).
-- **Interactions:** G x S of the same sign as the main effects (each component works better with the other); P x G and
-  P x S small (below 0.03).
-- **Fixed-attack contrasts** smaller in magnitude than the separately searched ones (an attack chosen against one cell
-  transfers imperfectly).
+The available evidence does not identify the factorial main effects or interactions: the predecessor comparison (0.073
+against about 0.070) is one conditional comparison under earlier searches and references. The directions and thresholds
+below are hypotheses.
+
+- **Q2-a [conjecture]:** the main effects of G and of S on the D2+H3 gain (separately searched attacks) are each at most
+  -0.05.
+- **Q2-b [conjecture]:** |main effect of P| < 0.03 on the D2+H3 gain.
+- **Q2-c [conjecture]:** |PG| < 0.03 and |PS| < 0.03; GS <= 0 (the same sign as the G and S main effects).
+- **Q2-d [conjecture]:** for each main effect (P, G, S) and each family (D2+H3, X7-SC), the fixed-attack contrast (the
+  equal-weight mean over the eight attack rows, design 6.6) is smaller in absolute value than the separately searched
+  contrast.
 
 ## Q3 attack strength (descriptive)
 
-- **Envelope:** X7-SC raises F111's gain above D2+H3 by less than 0.05 in every market (development: +0.000 headline,
-  +0.032 dev0); the same holds for C*.
-- **H4:** H4's gain against F111 is at most the X7-SC gain plus 0.05 in at least five of the seven markets (H4's timing
-  equals X7-SC's: ratio 1.002, `experiments/v2/h4/timing.json`; no gain data from H4 exists, the bundle is unread).
-- **X5-AG/v2:** below the D2+H3 gain against F111 and C*.
-- **Coalitions:** for X6-SE/v2 and X8-DB, G_min well below G_tot (worst-member gain at most half of the total) against
-  F111 and C*; X8-DB's beneficiary gains more against F111 than against C* (a decoy that refreshes identities exploits
-  age more than credibility).
-- **Welfare (W0, W1):** the lowest gross efficiency found against F111 and C* stays above 0.90 at the headline; F000's is
-  lower than F111's.
-- **Diagnostic (design 6.7):** the honest replacement under F111 keeps a high audit share past age L (Lemma 2b); under C*
-  the share falls as passes accrue.
-- **R4 (rho = 1 repair block):** R4 removes the rho = 1 collapse of R3 (R4's D2 gain at rho = 1 below R3's by at least
-  0.10).
+- **Q3-a [evidence]:** in every market, the X7-SC gain minus the D2+H3 gain is below 0.05 against F111 and against C* (an
+  upper bound only; no sign is predicted; development: +0.000 headline, +0.032 dev0 for F111; +0.000 for C*).
+- **Q3-b [conjecture]:** headline only: H4's gain against F111 is at most the X7-SC gain plus 0.05. H4 on fresh markets is
+  cut (cuts 3) and not scored. H4's timing ratio (1.002, `experiments/v2/h4/timing.json`) bears on cost only, not on gain.
+- **Q3-c [conjecture]:** X5-AG/v2's gain is below the D2+H3 gain against F111 and against C*.
+- **Q3-d [conjecture]:** for X6-SE/v2 and X8-DB against F111 and C* at the headline, G_min (from the policy selected for
+  the minimum objective) is at most half of G_tot (from the policy selected for the total objective).
+- **Q3-e [conjecture]:** X8-DB's beneficiary gain (member 0, under the policy selected for the total objective) is larger
+  against F111 than against C*.
+- **Q3-f [conjecture]:** at the headline, the gross efficiency of the training-selected welfare attack (per objective W0,
+  W1) is at least 0.90 against F111 and C*, and F000's is lower than F111's.
+- **Q3-g [conjecture]:** in the rho = 1 repair block, R4's D2 gain is below R3's by at least 0.10.
+- **Unscored qualitative expectation:** the honest replacement under F111 keeps a high audit share past age L (Lemma 2b);
+  under C* the share falls as passes accrue.
 
-## Q4 replication (per fresh market)
+## Q4 replication (per fresh market; kappa_Q4 0.25)
 
-- Both conditions hold in at least five of the six fresh markets: **k >= 5**. Basis: the B3 - R3 gap in development is
-  about 0.27 (headline) and 0.20 (dev0) with full searches, against the 0.10 threshold; F111's gross efficiency is near
-  0.995, against 0.90.
-- The market most likely to fail is one where the gap is close to dev0's inner-search value (0.054): weak searches there
-  could leave B3's gain low. A failing market fails condition (a), not condition (b).
+- **Q4-a [evidence, by analogy]:** **k >= 5**, where k counts the markets rejected by the registered six-market Holm
+  procedure on the larger of the two calibrated component p-values. Basis: B3-t (L 3) against F111 (L 10) shows gaps of
+  about 0.27 (headline) and 0.20 (dev0) with full searches, against the 0.10 threshold; these are not matched fixed-pair
+  estimates of the L 10 contrast. F111's gross efficiency is near 0.995, against 0.90.
+- **Q4-b [conjecture]:** where a market does not pass, the limiting component is (a), the gain difference, not (b), the
+  efficiency (judged by which calibrated component p-value is larger); non-rejection does not establish that (a) is false.
+
+## Scoring table
+
+A target that is cut, missing, excluded, incomplete (design 6.5), or numerically refused is **not assessed**; it counts
+neither as fulfilled nor as failed. Pooled values follow design 9.2 (equal market weights).
+
+| Id | Statistic | Scope | Fulfilled if |
+|---|---|---|---|
+| Q1-a | Q1 category, D2+H3 | pooled fresh | primary: "equivalent, direction R3 lower"; scored separately: the alternative |
+| Q1-b | Q1 category, X7-SC | pooled fresh | "equivalent" (either direction label) |
+| Q1-c | paired gross-efficiency difference C* - F111 | pooled fresh, both families | both point estimates in [-0.01, 0.01] |
+| Q2-a | main effects G, S, D2+H3, searched | pooled fresh | both point estimates <= -0.05 |
+| Q2-b | main effect P, D2+H3, searched | pooled fresh | point estimate in (-0.03, 0.03) |
+| Q2-c | PG, PS, GS, D2+H3, searched | pooled fresh | \|PG\| < 0.03, \|PS\| < 0.03, GS <= 0 |
+| Q2-d | fixed-attack vs searched contrasts | pooled fresh, P, G, S x D2+H3, X7-SC | \|fixed\| < \|searched\| in all six |
+| Q3-a | gain(X7-SC) - gain(D2+H3) | each market, F111 and C* | below 0.05 in every scored market-rule pair |
+| Q3-b | gain(H4) - gain(X7-SC), F111 | headline | at most 0.05 |
+| Q3-c | gain(X5-AG/v2) - gain(D2+H3) | each market, F111 and C* | below 0 in every scored market-rule pair |
+| Q3-d | G_min / G_tot (separately selected policies) | headline, X6-SE/v2 and X8-DB, F111 and C* | at most 0.5 in every scored cell with G_tot > 0 |
+| Q3-e | X8-DB beneficiary gain (total-objective policy) | headline | F111 > C* |
+| Q3-f | gross efficiency of the training-selected welfare attack | headline, W0 and W1 | >= 0.90 for F111 and C*; F000 < F111 |
+| Q3-g | gain(R3) - gain(R4), D2 | headline, rho = 1 | at least 0.10 |
+| Q4-a | k (Holm on the market p-values) | six fresh markets | k >= 5 |
+| Q4-b | larger calibrated component p-value | each non-passing market | component (a) |

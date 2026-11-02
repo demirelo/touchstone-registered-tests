@@ -1,0 +1,48 @@
+version: 2
+code_commit: 627a2de9ad6c838e4228893c3107d173118d5d62
+manifest_sha256: 326dfcc231042bde38366d97879d810b896f320faa889cce3a43888007e49085
+params_sha256: eef7fbb5ed437a571c11038998f4c85d052f6eeaf47a35d4cd999c06faf8ae73
+promotion_sha256: 602c10213cc0153d15b35feb90e2028cc01f403d465c45a46d01817a1595d5da
+decision_sha256: 8360e437c9979987e76435120691b00ca8c80efebece821d9a856a3bced243b8
+coverage_sha256: 7f3468d4b424aa2b99d30d947c3cf718b9e3d781d53f64dfc56a416e7a9cbb1e
+predictions_sha256: b9cc1a25428a9cc3802671a0cf5322c7839128347724dd4a15c8f3b086bbc943
+cuts: 3
+branch: two20k
+development_markets:
+- headline
+- dev0
+h4:
+  commit: aa28ed40fde184ba888ac7a1545db4a76b7b0d56
+  bundle_sha256: cba512aa6b4138655e5d260dc92aa564d0fd0d37dbc2a5b15c820b5ef93f1e6e
+kappa:
+  Q1: 0.5
+  Q4: 0.25
+cost:
+  development_usd: 11.06946726402436
+  evaluation_usd: 38.0855825014347
+  total_usd: 49.15504976545906
+  spent_usd: 11.42
+approval: "I approve a revision-program budget of up to 52 USD (development cap 12\
+  \ USD, evaluation cap 40 USD; estimated total 49.25 USD), \xD6mer Demirel, 2026-10-28."
+block:
+  rule: H = A + 144
+  depth: 6
+  explorers:
+  - blockstream.info
+  - mempool.space
+seeds:
+  eval_range:
+  - 30000000
+  - 40000000
+  per_market: 200
+markets:
+- headline
+- fresh0
+- fresh1
+- fresh2
+- fresh3
+- fresh4
+- fresh5
+caps:
+  development: 12
+  evaluation: 40

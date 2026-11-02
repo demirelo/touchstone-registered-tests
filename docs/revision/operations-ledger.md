@@ -114,3 +114,14 @@ Part B of `docs/superpowers/plans/2026-10-25-revision-operations.md`. One entry 
 - Result: **Q1 kappa 0.5, Q4 kappa 0.25, both admitted on validation** (Clopper-Pearson at 1 - 0.01 / m_F against every endpoint's allocated tail).
 - Promotions: `promote_v2.py --kind coverage --branch two20k` (`coverage.json`, `pools/headline.json` f6addf71…, `pools/dev0.json` bd3e7155…); `promote_v2.py --final --h4` → `experiments/v2/params.json` (comparator C-mem K 6 M 20; B3-t tol 0.16 L 3; R3-t tol 0.16 L 20; C*-t tol 0.16 L 3).
 - Exit of Operation 4: `kappa_effective` Q1 0.5, Q4 0.25.
+
+## Protocol review round 1 (Sol high, Astra high), 2026-11-02: disposition of the departures
+
+Both seats found that no departure compromises Q1 or Q4 (`docs/revision/roster/{sol,astra}-protocol-r1.md`):
+
+- **(a) H4 custody.** The resumed session is the same separate session; the executor's only actions in the author's clone were `git add`, `git commit`, and a hash computation. Bundle commit aa28ed40fde184ba888ac7a1545db4a76b7b0d56 (bound by the protocol); `timing.json.commit` c5227a0 is the HEAD at check time and the defender commit; the difference is expected and neither replaces the other. H4 concerns descriptive Q3 only.
+- **(b) Coverage before the H4 decision.** The frozen decision estimates 49.15505 USD from the pre-coverage ledger; actual development spend plus the estimated evaluation cost is 49.50558 USD (11.42 + 38.08558). Cut 2 would cost 40.37494 USD for the evaluation, so cut 3 remains the first admissible cut. Both decision records are kept; the protocol's cost fields are the frozen decision's.
+- **(c) Coverage driver and dev0 rescue.** The exact drivers, their hashes, and the equivalence record are archived in `docs/revision/coverage-driver/`. The history rescue changed ancestry evidence, not simulation code.
+- **(d) Parallel tuning.** B3-t and R3-t do not read the comparator; C*-t started after the comparator's promotion; selection inputs are unchanged.
+- Predictions revised per both reviews (H4 headline only; evidence corrections; conjecture labels; absolute interaction bounds; Q4 defined by the registered Holm test; scoring table with "not assessed" for unavailable targets).
+- The pre-commit hook first refused `experiments/protocol-v2.yaml` (its allowed set copied `promote_v2.ALLOWED` but not `lock_v2.ALLOWED_FILES`); fixed, positive and negative tests passed.
