@@ -5,6 +5,7 @@
   "benchmark/decision.json": "5139813a670cbbdc7d2bd92e0a5efd6c262ddb55fc69c88af192cc3dd5658f39",
   "benchmark/timings.json": "0a9ec988b78da1ab89b8482947b19e99de7e7a2637062474cbae35ff371ce2e7",
   "comparator.json": "90560ef28ce4485f12fceea872158d8400115b7640705672c6549a437b1403ef",
+  "coverage.json": "7f3468d4b424aa2b99d30d947c3cf718b9e3d781d53f64dfc56a416e7a9cbb1e",
   "log/B3-t__{\"L\":10,\"tol\":0.08}__inner.json": "229ec0650691b570a2a20e05787df41b91cc86c2139ba01461e5253aa6ae3618",
   "log/B3-t__{\"L\":10,\"tol\":0.12}__inner.json": "7fc5f52801aca109d1c2a00729d41f900daa7dd268fab10c7fb2a4783c0ccf8f",
   "log/B3-t__{\"L\":10,\"tol\":0.14}__inner.json": "3e1b6c8f15c131021db3192ef07e6d7f2e17672ca08eca3e2c86086ba94c3c69",
@@ -73,6 +74,8 @@
   "log/R3-t__{\"L\":50,\"tol\":0.12}__inner.json": "104e08814122611d0bf988526a6b98f813b051ae75aa3c61d7770bc76715229d",
   "log/R3-t__{\"L\":50,\"tol\":0.14}__inner.json": "4fd8dea0d60ee48b6e4fc1abf33d0ba46a243622972439396f68c10440ffe7d7",
   "log/R3-t__{\"L\":50,\"tol\":0.16}__inner.json": "4d201e05b452bd2bd73fc58b662e5ab3ac219317c13f58804f8ba5085349dbd7",
+  "pools/dev0.json": "bd3e71557d3451e8e4c080c987aed2b343b82f81182382d3f1f7e8682fbaa804",
+  "pools/headline.json": "f6addf719d4173034bebd0ba97bb3178a6591de289fc0de8d49915b9c9f8e60f",
   "tuned_B3-t.json": "b0ac136992fc16841ef88e3f3daf4dabb97340a5f0ed844114513d6cb640d801",
   "tuned_C*-t.json": "aebf6b416af376cd5f388c66c4d765fef9dd194696da7424f3645e9c0eb24d37",
   "tuned_R3-t.json": "54afe9b5667a142128b27f296705ae0a7ed6d33b9ae77f49aca7158bc9e81e9a"
@@ -98,6 +101,11 @@
    "log/Cstar__{\"L\":10,\"cred\":{\"K\":6,\"M\":50,\"variant\":\"mem\"},\"tol\":0.16}__inner.json",
    "log/Cstar__{\"L\":10,\"cred\":{\"K\":6,\"M\":null,\"variant\":\"taper\"},\"tol\":0.16}__inner.json",
    "log/Cstar__{\"L\":10,\"cred\":{\"K\":6,\"M\":null,\"variant\":\"thr\"},\"tol\":0.16}__inner.json"
+  ],
+  "coverage": [
+   "coverage.json",
+   "pools/headline.json",
+   "pools/dev0.json"
   ],
   "decision": [
    "benchmark/decision.json"
