@@ -1,0 +1,38 @@
+{
+ "caps": {
+  "development": 12.0,
+  "evaluation": 40.0
+ },
+ "reservations": [],
+ "spent": [
+  {
+   "op": "development",
+   "tag": "bench",
+   "usd": 2.54
+  },
+  {
+   "op": "development",
+   "tag": "tune-B3-t",
+   "usd": 1.69
+  },
+  {
+   "op": "development",
+   "tag": "tune-R3-t",
+   "usd": 1.75
+  },
+  {
+   "op": "development",
+   "tag": "tune-comparator",
+   "usd": 1.95
+  },
+  {
+   "op": "development",
+   "tag": "tune-C*-t",
+   "usd": 1.83
+  }
+ ],
+ "approval": {
+  "limit": 52.0,
+  "text": "I approve a revision-program budget of up to 52 USD (development cap 12 USD, evaluation cap 40 USD; estimated total 49.25 USD), \u00d6mer Demirel, 2026-10-28."
+ }
+}

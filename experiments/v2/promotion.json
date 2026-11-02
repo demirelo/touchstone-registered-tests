@@ -1,6 +1,7 @@
 {
  "entries": {
   "benchmark/cost_table.json": "07e0941a4ab4867d7ab57540696f62193185108912fa43a63f5c32f43658ec14",
+  "benchmark/decision-h4.json": "8360e437c9979987e76435120691b00ca8c80efebece821d9a856a3bced243b8",
   "benchmark/decision.json": "5139813a670cbbdc7d2bd92e0a5efd6c262ddb55fc69c88af192cc3dd5658f39",
   "benchmark/timings.json": "0a9ec988b78da1ab89b8482947b19e99de7e7a2637062474cbae35ff371ce2e7",
   "comparator.json": "90560ef28ce4485f12fceea872158d8400115b7640705672c6549a437b1403ef",
@@ -100,6 +101,9 @@
   ],
   "decision": [
    "benchmark/decision.json"
+  ],
+  "decision_h4": [
+   "benchmark/decision-h4.json"
   ],
   "system": [
    "tuned_B3-t.json",

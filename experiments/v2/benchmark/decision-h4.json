@@ -1,0 +1,69 @@
+{
+ "decision": {
+  "branch": "two20k",
+  "markets": [
+   "headline",
+   "dev0"
+  ],
+  "cuts": 3,
+  "spent_usd": 9.76,
+  "h4_reserve_usd": 1.0,
+  "h4_ratio": 1.0021582258750699,
+  "stop": null,
+  "development_usd": 11.06946726402436,
+  "evaluation_usd": 38.0855825014347,
+  "total_usd": 49.15504976545906,
+  "approval_required": true
+ },
+ "ledger": {
+  "caps": {
+   "development": 12.0,
+   "evaluation": 40.0
+  },
+  "reservations": [],
+  "spent": [
+   {
+    "op": "development",
+    "tag": "bench",
+    "usd": 2.54
+   },
+   {
+    "op": "development",
+    "tag": "tune-B3-t",
+    "usd": 1.69
+   },
+   {
+    "op": "development",
+    "tag": "tune-R3-t",
+    "usd": 1.75
+   },
+   {
+    "op": "development",
+    "tag": "tune-comparator",
+    "usd": 1.95
+   },
+   {
+    "op": "development",
+    "tag": "tune-C*-t",
+    "usd": 1.83
+   }
+  ],
+  "approval": {
+   "limit": 52.0,
+   "text": "I approve a revision-program budget of up to 52 USD (development cap 12 USD, evaluation cap 40 USD; estimated total 49.25 USD), \u00d6mer Demirel, 2026-10-28."
+  }
+ },
+ "h4_timing": {
+  "bundle_sha256": "cba512aa6b4138655e5d260dc92aa564d0fd0d37dbc2a5b15c820b5ef93f1e6e",
+  "commit": "c5227a022779959c0b619c94c5ea81a4da9b32c5",
+  "defender_commit": "c5227a022779959c0b619c94c5ea81a4da9b32c5",
+  "h4_seconds": 3990.021027875133,
+  "x7_seconds": 3981.4282065001316,
+  "h4_episodes": 33875,
+  "x7_episodes": 33875,
+  "knobs": 15,
+  "controls": 771
+ },
+ "timings_sha256": "0a9ec988b78da1ab89b8482947b19e99de7e7a2637062474cbae35ff371ce2e7",
+ "frozen_sha256": "5139813a670cbbdc7d2bd92e0a5efd6c262ddb55fc69c88af192cc3dd5658f39"
+}
