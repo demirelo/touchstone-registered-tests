@@ -90,3 +90,13 @@ Part B of `docs/superpowers/plans/2026-10-25-revision-operations.md`. One entry 
 - Guard: the launchers require `CODE_COMMIT` and run the history guard before creating a pod (negative test on the shallow tarball: refused).
 - Attempt 4 (headline, 20:46): the launcher crashed with a syntax error after creating pod `2s5dfgcrpw9i3s` (the launcher file was edited while it ran); its trap deleted the pod within seconds (verified). Guard: launchers run a private snapshot of themselves.
 - Attempt 5 (headline, 20:4x): `CODE_COMMIT` set, full-clone tarball at 7328b56, snapshot, tarball, and history guards active; cap 0.55 USD.
+
+### 4.1 Pools done, 2026-11-02
+
+| Market | Pod (final attempt) | Run | Spend (all attempts) | Pool |
+|---|---|---|---|---|
+| dev0 | `ha01wlzmuxe0ds` 19:49–20:52 (attempt 3, rescued) | RUN OK | 0.67 USD (71 pod-minutes) | 20,000 seeds x 8 profiles, commit bc33bc0, code 627a2de |
+| headline | `e1na3wvb8bbi5r` 20:47–21:35 (attempt 5) | RUN OK | 0.99 USD (106 pod-minutes) | 20,000 seeds x 8 profiles, commit 7328b56, code 627a2de |
+
+- Development spent 11.42 USD of 12; no open reservations. Failed attempts cost about 0.6 USD in total (lessons: AppleDouble members, memory at full size, shallow history, launcher edited while running).
+- Next: `coverage_v2.py --select` and `--validate` locally, after the H4 session ends (the bootstrap must not compete with the session's timing measurement).

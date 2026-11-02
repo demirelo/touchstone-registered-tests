@@ -29,6 +29,16 @@
    "op": "development",
    "tag": "tune-C*-t",
    "usd": 1.83
+  },
+  {
+   "op": "development",
+   "tag": "coverage-dev0",
+   "usd": 0.67
+  },
+  {
+   "op": "development",
+   "tag": "coverage-headline",
+   "usd": 0.99
   }
  ],
  "approval": {
