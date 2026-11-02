@@ -134,3 +134,9 @@ names its cells; (4) cell-by-cell aggregation (fails if any assessed cell fails;
 assessed and fulfilled; otherwise not assessed); (5) Q4-b strict, a tie fails, not assessed with no eligible market.
 `docs/revision/coverage-driver/README.md`: the v2 driver adds an early `same_code` check and keeps the final one.
 Protocol regenerated; `lock_v2.py --check` ok.
+
+### Protocol review round 3: consensus
+
+Sol high: accept, no corrections, confidence 0.97. Astra high: accept, no corrections, confidence 0.98
+(`docs/revision/roster/{sol,astra}-protocol-r3.md`). Operation 5 waits for the author's signature, OpenTimestamps stamp,
+and the signed tag `protocol-v2`.
