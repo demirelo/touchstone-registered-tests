@@ -74,7 +74,8 @@ registered after development results, passes on D2+H3 with interval admission by
 family against the best of four tested credibility adaptations; Q4 k of six; one descriptive sentence each for Q2 and Q3.
 Scope sentence.
 
-**1 Introduction.** Problem; the restriction (no fees, certification, collateral); serial replacement only. Prior
+**1 Introduction.** Problem (motivation: exact verification of computation now exists but is expensive and post hoc,
+so a buyer with a budget checks a subset; FlashProve as the example); the restriction (no fees, certification, collateral); serial replacement only. Prior
 principle: intensive verification of newcomers (Sarmenta; BOINC adaptive replication as an optional trust-threshold
 policy, T5; customs guidance). The question: does persistent age-ranked targeting do better or worse than
 verified-history targeting at identical allocation, payment, tolerance, ban, pacing, budget, and sanctions? Two
@@ -87,7 +88,12 @@ and a fresh-market replication on instances drawn from a Bitcoin block after the
 attacks overstate robustness), T5 and the BOINC wiki for C-boinc; add Das, Yu, Zhang, AAAI 2026 (optimal committed
 audits against the worst equilibrium versus our searched heuristic), Gatta, Naviglio, Tarantelli, arXiv:2609.02992
 (reputation without persistent identity in agent markets; closest motivation, no verification budget), and Wellman,
-Tuyls, Greenwald, JAIR 2025. Holm 1979 is cited where the decision rules use it, after a direct check of the entry.
+Tuyls, Greenwald, JAIR 2025, and FlashProve (Rinberg et al., Anthropic technical report, November 2026, with the blog post of
+2026-11-02 and the code; the author's request, 2026-11-03): verifiable inference beside TOPLOC-style and TEE approaches.
+Every FlashProve fact is checked against the report before it is cited (proof cost relative to a forward pass,
+post-hoc proving that detects but does not prevent, coverage of exact integer models under greedy or fixed-seed
+sampling, the context limit, the report's own statement that it was AI-generated and not reviewed in detail); it is
+cited as an initial technical report. Holm 1979 is cited where the decision rules use it, after a direct check of the entry.
 Bibliography (R2): DOI or URL on every entry and a style that prints them; Sarmenta CCGrid pages and DOI; Walsh chapter
 DOI (pages only after reading the chapter); Wellman 2006 "(Extended Abstract)" (pages only from the official PDF);
 CrowdEval proceedings URL. The compiled reference list is checked for printed identifiers.
@@ -163,7 +169,10 @@ the supplement; the protocol file is the authority.
 **10 Discussion and limitations.** What the two evaluations support together; what they do not: unilateral benchmark,
 no equilibrium or incentive compatibility; bounded-gain claims (Proposition 1); exposure bounded by the searched
 families and optimiser; coverage conditional on fixtures; six markets from one neighbourhood; internal replication;
-headline used in development. The failure boundary and the tested repair. Open questions.
+headline used in development. The failure boundary and the tested repair. How exact but costly audits (FlashProve)
+map onto the model: verification noise toward zero at a high per-audit cost; the allocation and sanction questions
+remain; if proof overhead fell toward one or two forward passes, the case for sampled audits would weaken. Open
+questions. No registered result or claim changes because of this discussion.
 
 **11 Conclusion.**
 
@@ -192,7 +201,8 @@ per-market bounds. F3 factorial contrasts.
 2. **After the report:** rebuild and verify it (`report_v2.py --check`); generate numbers, tables, figures, and the
    scoring table; write section 9 and the result sentences of the abstract and introduction; `numbers_v2.py --check`;
    prepare the artifact and run `reproduce.py` on a clean clone; compile the draft and check the PDF (references print
-   identifiers; no `??` markers).
+   identifiers; no `??` markers); read every caption, figure note, and result sentence of the PDF against `report.md`
+   (checklist recorded in the review brief).
 3. **Review:** Sol high and Astra high review the draft against the protocol and the report to consensus.
 4. **Copy and recheck:** copy into `paper/`; recompile; rerun every check on the copied sources and the release bundle.
 
@@ -248,3 +258,12 @@ per-market bounds. F3 factorial contrasts.
 | Section keys (S1 / A2) | Every `\section` needs `\label{sec:...}`; `sec:` labels elsewhere refused and ignored; five required keys; tests |
 | Captions (S2 / A1) | Whole captions by brace matching across lines; outside regions no number and no result macro; tests (multiline, macro) |
 | Comments (A3) | Comments removed per file before `\input` expansion, `\\%` handled; tests |
+
+## Disposition of outline review round 6
+
+| Correction (Sol / Astra) | Change |
+|---|---|
+| Pending label across blank lines; space before `\label` (S1 / A2) | Fixed; test |
+| Space before the caption brace; figure notes (S2 / A1) | Fixed; whole figure and table environments outside regions may hold no number or result macro; test |
+| PDF review covers captions and figure notes (A1) | Order of work, step 2 |
+| Author's request (2026-11-03) | FlashProve in sections 1, 2, 10, verified against the report before citing |

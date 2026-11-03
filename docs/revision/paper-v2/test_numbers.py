@@ -283,3 +283,12 @@ def test_escaped_backslash_percent_and_commented_input_hide_sites(tmp_path):
     assert any("unused" in p for p in probs)
     probs = _setup3(tmp_path, _v4(sentence, "% \\input{res}\nNothing."), extra={"res.tex": sentence + "\n"})
     assert any("unused" in p for p in probs)
+
+
+def test_round6_parser_cases(tmp_path):
+    assert any("without a" in p for p in _setup3(tmp_path, _v4("\\section{Model}\\label{sec:model}", "\\section{Model}\n\nText.")))
+    assert _setup3(tmp_path, _v4("\\section{Model}\\label{sec:model}", "\\section{Model} \\label{sec:model}")) == []
+    cap = _v4("\\label{sec:model}", "\\label{sec:model}\n\\caption\n{Replicated on 4 of six markets.}")
+    assert any("caption" in p for p in _setup3(tmp_path, cap))
+    fig = _v4("\\label{sec:model}", "\\label{sec:model}\n\\begin{figure}\nNote: 4 of six markets.\n\\end{figure}")
+    assert any("figure or table" in p for p in _setup3(tmp_path, fig))

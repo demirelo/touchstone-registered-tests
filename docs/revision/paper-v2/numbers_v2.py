@@ -19,7 +19,7 @@ EXEMPT = re.compile(r"\\(?:const|evone)\{[^}]*\}|\\(?:ref|eqref|cite|citep|citet
 USE = re.compile(r"\\rv\{([^}]*)\}")
 USEK = re.compile(r"\\rvk\{(\w+)\}\{([^}]*)\}")
 SITE = re.compile(r"\\site\{([^}]*)\}")
-SECTION = re.compile(r"\\section\*?\{([^}]*)\}(?:\\label\{sec:([^}]*)\})?")
+SECTION = re.compile(r"\\section\*?\s*\{([^}]*)\}(?:\s*\\label\{sec:([^}]*)\})?")
 FULL = ("abstract", "results")       # sections that must lie wholly inside result regions
 NOBARE = REQUIRED = ("abstract", "intro", "results", "discussion", "conclusion")   # no unmarked number outside regions; captions likewise
 LABEL = re.compile(r"\\label\{sec:([^}]*)\}")
@@ -199,12 +199,15 @@ def _scan(tex: str):
         if pending is not None and not m:
             if lab:
                 sec = lab.group(1); lab = None
-            elif s:
+            elif s:                                        # blank lines keep the requirement pending
                 problems.append(f"section without a \\label{{sec:...}}: {pending}"); sec = pending.lower()
-            pending = None if (s or sec != "front") else pending
+            if s:
+                pending = None
         if s.startswith("\\begin{abstract}"):
             sec = "abstract"
         elif m:
+            if pending is not None:
+                problems.append(f"section without a \\label{{sec:...}}: {pending}")
             if m.group(2):
                 sec = m.group(2)
             else:
@@ -235,11 +238,29 @@ def _captions(tex: str) -> list[tuple[bool, str]]:
             r = reg
         return r
     out = []
-    for m in re.finditer(r"\\caption(?:\[[^\]]*\])?\{", tex):
+    for m in re.finditer(r"\\caption\s*(?:\[[^\]]*\]\s*)?\{", tex):
         depth, k = 1, m.end()
         while k < len(tex) and depth:
             depth += {"{": 1, "}": -1}.get(tex[k], 0) if tex[k - 1] != "\\" else 0; k += 1
         out.append((inside(m.start()), tex[m.end():k - 1]))
+    return out
+
+
+def _floats(tex: str) -> list[tuple[bool, str]]:
+    """Whole figure and table environments (captions and figure notes), each with whether it starts inside a region."""
+    out, region, cur, start_region = [], False, None, False
+    for line in tex.splitlines():
+        s = line.strip()
+        if s == "% BEGIN-EV2":
+            region = True; continue
+        if s == "% END-EV2":
+            region = False; continue
+        if cur is None and re.match(r"\\begin\{(figure|table)\*?\}", s):
+            cur, start_region = [], region
+        if cur is not None:
+            cur.append(line)
+            if re.match(r"\\end\{(figure|table)\*?\}", s):
+                out.append((start_region, "\n".join(cur))); cur = None
     return out
 
 
@@ -253,6 +274,9 @@ def _site_checks(tex: str, sites: dict, raw: dict, known: dict, outside: str) ->
     seen = {}; scanned, sp = _scan(tex); problems += sp
     keys = {sec for sec, _, _ in scanned}
     problems += [f"required section {k} (\\label{{sec:{k}}}) not found" for k in REQUIRED if k not in keys]
+    for in_region, body in _floats(tex):
+        if not in_region and (BARE.findall(EXEMPT.sub("", body)) or USE.search(body) or USEK.search(body) or SITE.search(body)):
+            problems.append(f"figure or table outside a result region holds a number or result macro: {' '.join(body.split())[:80]}")
     for in_region, cap in _captions(tex):
         if not in_region and (BARE.findall(EXEMPT.sub("", cap)) or USE.search(cap) or USEK.search(cap) or SITE.search(cap)):
             problems.append(f"caption outside a result region holds a number or result macro: {' '.join(cap.split())[:80]}")
