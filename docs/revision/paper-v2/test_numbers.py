@@ -12,10 +12,16 @@ REPORT = {"q4": {"k": 5, "passing": ["fresh0", "fresh1"], "markets": {"fresh0": 
           "confirmatory": True}
 TEX = r"""\section{Results}
 % BEGIN-EV2
-Replicated on \rv{q4.k} of 6 markets; d is \rv{q1.tests.C*-F111|D2+H3.estimate}.
+Replicated on \rv{q4.k} of six markets; d is \rv{q1.tests.C*-F111|D2+H3.estimate}.
 % END-EV2
 Evaluation 1 gains were 0.570 and 0.353.
 """
+
+
+def _v(old, new):
+    """Edit the fixture; fail if the target text is absent (a silent no-op would make the test pass vacuously)."""
+    assert old in TEX, old
+    return TEX.replace(old, new)
 
 
 def _setup(tmp_path, tex=TEX, report=REPORT):
@@ -41,12 +47,12 @@ def test_check_passes_on_consistent_files(tmp_path):
 
 
 def test_check_fails_on_unknown_path(tmp_path):
-    d = _setup(tmp_path, tex=TEX.replace(r"\rv{q4.k}", r"\rv{q4.kk}"))
+    d = _setup(tmp_path, tex=_v(r"\rv{q4.k}", r"\rv{q4.kk}"))
     assert any("q4.kk" in p for p in N.check(d / "report.json", d / "numbers.tex", d / "main.tex"))
 
 
 def test_check_fails_on_bare_number_in_ev2_block(tmp_path):
-    d = _setup(tmp_path, tex=TEX.replace(r"\rv{q4.k} of 6", r"\rv{q4.k} of 6, gap 0.271"))
+    d = _setup(tmp_path, tex=_v(r"\rv{q4.k} of six", r"\rv{q4.k} of six, gap 0.271"))
     assert any("0.271" in p for p in N.check(d / "report.json", d / "numbers.tex", d / "main.tex"))
 
 
@@ -63,5 +69,25 @@ def test_check_fails_on_stale_numbers_file(tmp_path):
 
 
 def test_check_fails_on_unclosed_block(tmp_path):
-    d = _setup(tmp_path, tex=TEX.replace("% END-EV2\n", ""))
+    d = _setup(tmp_path, tex=_v("% END-EV2\n", ""))
     assert any("unclosed" in p for p in N.check(d / "report.json", d / "numbers.tex", d / "main.tex"))
+
+
+def test_check_fails_on_bare_integer_and_percentage(tmp_path):
+    for bad in ("replicated on 5 of the markets", "a 27% reduction"):
+        d = _setup(tmp_path, tex=_v(r"Replicated on \rv{q4.k} of six markets", bad))
+        assert any("bare number" in p for p in N.check(d / "report.json", d / "numbers.tex", d / "main.tex")), bad
+
+
+def test_check_ignores_identifiers_constants_and_references(tmp_path):
+    ok = (r"F111 and X7-SC and D2+H3 under H4, Q1, W0, C-mem at \const{$\rho = 1$} (Table~\ref{tab:q4}, \cite{holm1979}, "
+          r"\label{sec:r2}) with \includegraphics[width=0.8\linewidth]{f1.png} of six markets")
+    d = _setup(tmp_path, tex=_v(r"Replicated on \rv{q4.k} of six markets", r"Replicated on \rv{q4.k}; " + ok))
+    assert N.check(d / "report.json", d / "numbers.tex", d / "main.tex") == []
+
+
+def test_render_refuses_nonfinite_values():
+    import pytest
+    for bad in (float("nan"), float("inf")):
+        with pytest.raises(ValueError):
+            N.render({"q4": {"x": bad}})
