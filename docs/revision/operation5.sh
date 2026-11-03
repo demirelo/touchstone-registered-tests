@@ -8,12 +8,15 @@ P=experiments/protocol-v2.yaml
 OTS=(uvx --from opentimestamps-client ots)  # the form in docs/lock-runbook.md; no global install needed
 cd "$W"
 die() { echo "refused: $*" >&2; exit 1; }
+# Signing or stamping after the tag rewrites the registered history; once the tag exists, every step refuses.
+git rev-parse -q --verify refs/tags/protocol-v2 >/dev/null && die "Operation 5 is finished: tag protocol-v2 exists ($(git rev-parse --short 'protocol-v2^{commit}'))"
 [ "$(git branch --show-current)" = "$B" ] || die "the worktree is not on $B"
 [ -z "$(git status --porcelain --untracked-files=no -- . ":!$P.ots")" ] || die "tracked changes other than $P.ots"
 unsigned() { git log --format='%G? %h %s' h4-base..HEAD | grep -v '^G' || true; }
 attested() { "${OTS[@]}" info "$P.ots" 2>/dev/null | grep -qi 'BitcoinBlockHeaderAttestation'; }
 case "${1:-}" in
   sign)
+    [ -n "$(unsigned)" ] || die "nothing to sign: every commit after h4-base is signed"
     git rebase --exec 'git commit --amend --no-edit -S' h4-base "$B"
     [ -z "$(unsigned)" ] || die "still unsigned: $(unsigned)"
     echo "ok: every commit after h4-base is signed" ;;
