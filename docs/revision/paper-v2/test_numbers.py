@@ -207,3 +207,36 @@ def test_unknown_site_and_bad_manifest_path_fail(tmp_path):
     sites = dict(SITES, extra={"path": "q9.x", "kind": "gain", "section": "results"})
     probs = _setup3(tmp_path, _v3(r"d is \site{q1-d2h3-d}.", r"d is \site{q1-d2h3-d} \site{extra} \site{nope}."), sites)
     assert any("q9.x" in p for p in probs) and any("nope" in p for p in probs)
+
+
+def test_results_label_on_its_own_line_and_missing_results_section(tmp_path):
+    ok = _v3("\\section{The second test: results}\\label{sec:results}", "\\section{The second test: results}\n\\label{sec:results}")
+    assert _setup3(tmp_path, ok) == []
+    bad = _v3("\\label{sec:results}", "")
+    assert any("results section" in p for p in _setup3(tmp_path, bad))
+
+
+def test_unmarked_integer_in_a_caption_or_discussion_fails(tmp_path):
+    for add in ("\\caption{Replicated on 4 of six markets.}", "Replicated on 4 of six markets."):
+        bad = _v3("\\section{Discussion}", "\\section{Discussion}\\label{sec:discussion}\n" + add)
+        assert any("unmarked number" in p for p in _setup3(tmp_path, bad)), add
+    cap = _v3("\\section{Model}", "\\section{Model}\n\\input{cap}")
+    assert any("unmarked number" in p for p in _setup3(tmp_path, cap, extra={"cap.tex": "\\caption{Replicated on 4 of six markets.}\n"}))
+
+
+def test_model_section_integers_are_allowed(tmp_path):
+    assert _setup3(tmp_path, _v3("Ten providers", "There are 10 providers and 50 jobs;")) == []
+
+
+def test_site_only_in_a_comment_is_unused(tmp_path):
+    bad = _v3(r"Replicated on \site{q4-count} of six markets; d is \site{q1-d2h3-d}.",
+              r"% Replicated on \site{q4-count} of six markets; d is \site{q1-d2h3-d}." + "\nNothing here.")
+    assert any("unused" in p for p in _setup3(tmp_path, bad))
+
+
+def test_documented_limit_swap_of_two_sites_within_one_section_passes(tmp_path):
+    """Stated limit (outline, Result sites): a swap of any two sites inside one section is not detected; the final read
+    of the PDF against report.md covers it. This test pins the limit so a change to it is visible."""
+    sw = _v3(r"Replicated on \site{q4-count} of six markets; d is \site{q1-d2h3-d}.",
+             r"Replicated on \site{q1-d2h3-d} of six markets; d is \site{q4-count}.")
+    assert _setup3(tmp_path, sw) == []

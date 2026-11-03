@@ -21,9 +21,11 @@ Working files: `docs/revision/paper-v2/main.tex` (draft), `numbers.tex` and `tab
   - **Result sites.** `sites.json` names every result sentence's statistic: site name -> exact report path (question,
     family or market, statistic), kind, and section; it is written from this outline before the report exists and
     reviewed with it. Result regions use only `\site{name}`; raw report paths are refused there. The check requires each
-    site exactly once, inside a region, in its declared section; the abstract and the results section wholly inside
-    regions; and no unmarked number with three or more decimals anywhere outside the regions (evaluation-1 values in
-    `\evone{}`, constants in `\const{}`). Stated limit: a swap of two sites of the same kind within one section passes
+    site exactly once outside comments, inside a region, in its declared section (sections keyed by `\label{sec:...}`;
+    the check fails without `sec:results`); the abstract and the results section wholly inside regions; no unmarked
+    number of any form outside the regions in the abstract, introduction, results, discussion, and conclusion, or in any
+    caption; and no unmarked number with three or more decimals anywhere (evaluation-1 values in `\evone{}`, constants in
+    `\const{}`). Stated limit, pinned by a test: a swap of any two sites within one section passes
     the check; the final read of the compiled PDF against `report.md` (step 2) covers it. Tables print p-values with the
     same formatter as prose.
   - Prose outside the manifest uses `\rvk{<kind>}{<report path>}` (kinds: count, p, gain, eff, label); the check
@@ -227,3 +229,12 @@ per-market bounds. F3 factorial contrasts.
 | Site-to-path binding, same-kind swaps (S1 / A1) | `sites.json` manifest; `\site{}` only in regions; each site once, in its section; tests for wrong section, double use, unused, unknown site, bad manifest path; residual limit stated |
 | Coverage of unmarked results (S2 / A2) | Abstract and results section wholly in regions; every unmarked three-decimal number outside regions flagged, including included captions; tests |
 | Table p-values (S3 / A3) | Tables use `_fmt_p`; test for small p in the Q1 and Q4 tables |
+
+## Disposition of outline review round 4
+
+| Correction (Sol / Astra) | Change |
+|---|---|
+| Results key (S1) | Section keys from `\label{sec:...}` on any line; the check fails without `sec:results`; test |
+| Unmarked counts in captions and other sections (S2 / A2) | No unmarked number in abstract, introduction, results, discussion, conclusion, or any caption; tests (caption in an included file, discussion sentence) |
+| Limit wording (A1) | "any two sites within one section", pinned by a test that the swap passes |
+| Commented sites (A3) | Comments stripped before counting; test: a site only in a comment is unused |

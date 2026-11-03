@@ -21,6 +21,9 @@ USEK = re.compile(r"\\rvk\{(\w+)\}\{([^}]*)\}")
 SITE = re.compile(r"\\site\{([^}]*)\}")
 SECTION = re.compile(r"\\section\*?\{([^}]*)\}(?:\\label\{sec:([^}]*)\})?")
 FULL = ("abstract", "results")       # sections that must lie wholly inside result regions
+NOBARE = ("abstract", "intro", "results", "discussion", "conclusion")   # no unmarked number outside regions; captions likewise
+LABEL = re.compile(r"\\label\{sec:([^}]*)\}")
+COMMENT = re.compile(r"(?<!\\)%.*")
 INPUT = re.compile(r"\\(?:input|include)\{([^}]*)\}")
 P_LEAVES = {"p", "p_gain", "p_eff"}
 # Kinds for prose in result regions: the field name and the value type must fit the sentence's statistic.
@@ -167,16 +170,20 @@ def _scan(tex: str):
     """Per line: (section key, inside a result region, text). Section keys: 'abstract', the sec: label, or the title."""
     sec, region, out = "front", False, []
     for line in tex.splitlines():
-        s = line.strip(); m = SECTION.search(s)
-        if s.startswith("\\begin{abstract}"):
+        s = line.strip()
+        if s == "% BEGIN-EV2":
+            region = True; continue
+        if s == "% END-EV2":
+            region = False; continue
+        code = COMMENT.sub("", line)                       # commented text is not in the PDF
+        m = SECTION.search(code); lab = LABEL.search(code)
+        if code.strip().startswith("\\begin{abstract}"):
             sec = "abstract"
         elif m:
             sec = m.group(2) or m.group(1).strip().lower()
-        if s == "% BEGIN-EV2":
-            region = True
-        elif s == "% END-EV2":
-            region = False
-        out.append((sec, region, line))
+        if lab:                                            # a section label on its own line names the current section
+            sec = lab.group(1)
+        out.append((sec, region, code))
     return out
 
 
@@ -187,8 +194,10 @@ def _site_checks(tex: str, sites: dict, raw: dict, known: dict, outside: str) ->
             problems.append(f"site {n}: report path {d.get('path')} not in the report")
         elif d.get("kind") not in KINDS or not KINDS[d["kind"]](d["path"].split(".")[-1], raw[d["path"]]):
             problems.append(f"site {n}: kind {d.get('kind')} does not fit {d['path']}")
-    seen = {}
-    for sec, region, line in _scan(tex):
+    seen = {}; scanned = _scan(tex)
+    if "results" not in {sec for sec, _, _ in scanned}:
+        problems.append("results section (\\label{sec:results}) not found")
+    for sec, region, line in scanned:
         for n in SITE.findall(line):
             seen.setdefault(n, []).append(sec)
             if n not in sites:
@@ -203,6 +212,9 @@ def _site_checks(tex: str, sites: dict, raw: dict, known: dict, outside: str) ->
         if sec in FULL and not region and s and not s.startswith("%") and not SECTION.search(s) \
                 and not re.fullmatch(r"\\(begin|end)\{abstract\}|\\label\{[^}]*\}", s):
             problems.append(f"text outside a result region in section {sec}: {s[:80]}")
+        if not region and (sec in NOBARE or "\\caption" in line):
+            problems += [f"unmarked number outside the result regions in section {sec} (use \\site, \\evone, or \\const): {x}"
+                         for x in BARE.findall(EXEMPT.sub("", line))]
     problems += [f"site {n} used twice ({len(v)} times)" for n, v in sorted(seen.items()) if len(v) > 1 and n in sites]
     problems += [f"site {n} unused" for n in sorted(sites) if n not in seen]
     for x in BARE.findall(EXEMPT.sub("", outside)):
