@@ -31,3 +31,12 @@ def test_family_table_knob_counts_match_the_code():
         f = RV.family_for(fam, 200, 10)
         k = getattr(f, "knobs", None) or getattr(f, "bounds", None) or getattr(f, "space", None)
         assert len(k) == n, (fam, n, len(k))
+
+
+def test_every_bibliography_entry_has_a_doi_or_url():
+    """Outline R2: every entry carries an identifier that the style prints."""
+    t = (Path(__file__).resolve().parent / "refs.bib").read_text()
+    starts = [m.start() for m in re.finditer(r"^@\w+\{", t, re.M)]
+    ents = [t[a:b] for a, b in zip(starts, starts[1:] + [len(t)])]
+    missing = [re.match(r"@\w+\{([^,]+)", e).group(1) for e in ents if not re.search(r"\b(doi|url)\s*=", e)]
+    assert len(ents) >= 30 and not missing, missing
