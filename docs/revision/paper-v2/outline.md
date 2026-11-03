@@ -63,7 +63,8 @@ Working files: `docs/revision/paper-v2/main.tex` (draft), `numbers.tex` and `tab
 
 **Titles (the author's request, 2026-11-03): easy to understand.** The paper title and every section and subsection title
 say plainly what the part is about, in everyday words; codes (Q1, F111, X7-SC) go in parentheses after the plain words,
-never alone. Paper title options (author's choice): "Auditing New Identities When Sellers Can Change Names Freely";
+never alone. Paper title (the author chose on the work board, 2026-11-03): "Checking Newcomers When Identities Are Free: Two
+Registered Tests of an Audit Rule". Options offered were: "Auditing New Identities When Sellers Can Change Names Freely";
 "Which Sellers Should a Buyer Check? Auditing Newcomers under Free Identity Replacement"; "Checking Newcomers When
 Identities Are Free: Two Registered Tests of an Audit Rule". Section titles, in order: Introduction; Related work; The
 market model; The audit rules we compare; What the theory shows; The attacks we test against; The first test (October
