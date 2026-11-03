@@ -177,7 +177,7 @@ def check(report_path, numbers_path, tex_path) -> list[str]:
     for b in blocks:
         outside = outside.replace(b, "")
     if sites is not None:
-        return problems + _site_checks(tex, sites, raw, known, outside)
+        return problems + _site_checks(tex, sites, raw, known, outside, tex_path)
     vals = _report_numbers(raw)
     for x in BARE.findall(EXEMPT.sub("", USEK.sub("", USE.sub("", outside)))):
         if re.fullmatch(r"-?\d*\.\d{3,}", x) and f"{float(x):.3f}" in vals:
@@ -246,25 +246,37 @@ def _captions(tex: str) -> list[tuple[bool, str]]:
     return out
 
 
-def _floats(tex: str) -> list[tuple[bool, str]]:
-    """Whole figure and table environments (captions and figure notes), each with whether it starts inside a region."""
-    out, region, cur, start_region = [], False, None, False
+def _floats(tex: str) -> list[dict]:
+    """Figure and table environments, line by line: each float's labels, its lines outside result regions, and whether
+    it lies wholly inside one region. Works for one-line floats and for regions that end inside a float."""
+    out, region, cur = [], False, None
     for line in tex.splitlines():
         s = line.strip()
         if s == "% BEGIN-EV2":
             region = True; continue
         if s == "% END-EV2":
-            region = False; continue
-        if cur is None and re.match(r"\\begin\{(figure|table)\*?\}", s):
-            cur, start_region = [], region
+            region = False
+            if cur is not None:
+                cur["whole"] = False
+            continue
+        if cur is None and re.search(r"\\begin\{(figure|table)\*?\}", line):
+            cur = {"labels": [], "outside": [], "whole": region}
         if cur is not None:
-            cur.append(line)
-            if re.match(r"\\end\{(figure|table)\*?\}", s):
-                out.append((start_region, "\n".join(cur))); cur = None
+            cur["labels"] += re.findall(r"\\label\{([^}]*)\}", line)
+            if not region:
+                cur["outside"].append(line); cur["whole"] = False
+            if re.search(r"\\end\{(figure|table)\*?\}", line):
+                out.append(cur); cur = None
     return out
 
 
-def _site_checks(tex: str, sites: dict, raw: dict, known: dict, outside: str) -> list[str]:
+def _float_list(path) -> list | None:
+    """floats.json beside the paper: the labels of every evaluation-2 table and figure (the source coverage list)."""
+    f = Path(path).parent / "floats.json" if path else None
+    return json.loads(f.read_text()) if f and f.exists() else None
+
+
+def _site_checks(tex: str, sites: dict, raw: dict, known: dict, outside: str, tex_path_hint=None) -> list[str]:
     problems = []
     for n, d in sorted(sites.items()):
         if d.get("path") not in known:
@@ -274,9 +286,17 @@ def _site_checks(tex: str, sites: dict, raw: dict, known: dict, outside: str) ->
     seen = {}; scanned, sp = _scan(tex); problems += sp
     keys = {sec for sec, _, _ in scanned}
     problems += [f"required section {k} (\\label{{sec:{k}}}) not found" for k in REQUIRED if k not in keys]
-    for in_region, body in _floats(tex):
-        if not in_region and (BARE.findall(EXEMPT.sub("", body)) or USE.search(body) or USEK.search(body) or SITE.search(body)):
+    floats = _floats(tex); listed = _float_list(tex_path_hint)
+    for f in floats:
+        body = "\n".join(f["outside"])
+        if BARE.findall(EXEMPT.sub("", body)) or USE.search(body) or USEK.search(body) or SITE.search(body):
             problems.append(f"figure or table outside a result region holds a number or result macro: {' '.join(body.split())[:80]}")
+    by_label = {lab: f for f in floats for lab in f["labels"]}
+    for lab in listed or []:
+        if lab not in by_label:
+            problems.append(f"listed evaluation-2 float {lab} not found")
+        elif not by_label[lab]["whole"]:
+            problems.append(f"listed evaluation-2 float {lab} does not lie wholly inside one result region")
     for in_region, cap in _captions(tex):
         if not in_region and (BARE.findall(EXEMPT.sub("", cap)) or USE.search(cap) or USEK.search(cap) or SITE.search(cap)):
             problems.append(f"caption outside a result region holds a number or result macro: {' '.join(cap.split())[:80]}")
@@ -316,6 +336,8 @@ def main(argv=None) -> int:
     problems = check(a.report, a.numbers, a.check)
     if _sites(a.check) is None:
         problems.insert(0, "sites.json (the result-site manifest) is required beside the paper source")
+    if _float_list(a.check) is None:
+        problems.insert(0, "floats.json (the list of evaluation-2 tables and figures) is required beside the paper source")
     print("\n".join(problems) or "ok")
     return 1 if problems else 0
 

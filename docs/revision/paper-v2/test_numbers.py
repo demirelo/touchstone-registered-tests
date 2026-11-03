@@ -292,3 +292,27 @@ def test_round6_parser_cases(tmp_path):
     assert any("caption" in p for p in _setup3(tmp_path, cap))
     fig = _v4("\\label{sec:model}", "\\label{sec:model}\n\\begin{figure}\nNote: 4 of six markets.\n\\end{figure}")
     assert any("figure or table" in p for p in _setup3(tmp_path, fig))
+
+
+def _setup5(tmp_path, tex, floats):
+    (tmp_path / "floats.json").write_text(json.dumps(floats))
+    return _setup3(tmp_path, tex)
+
+
+RES_FLOAT = "\\begin{table}\n\\caption{Replicated on \\site{q4-count} of six markets.}\\label{tab:q4}\n\\end{table}\n"
+
+
+def test_listed_float_must_lie_wholly_in_a_region(tmp_path):
+    inside = _v4("d is \\site{q1-d2h3-d}.", "d is \\site{q1-d2h3-d}.\n" + RES_FLOAT).replace(
+        "Replicated on \\site{q4-count} of six markets; d", "D")
+    assert _setup5(tmp_path, inside, ["tab:q4"]) == []
+    assert any("tab:q9" in p for p in _setup5(tmp_path, inside, ["tab:q4", "tab:q9"]))
+    half = inside.replace("\\label{tab:q4}\n\\end{table}", "\\label{tab:q4}\n% END-EV2\nNote.\n% BEGIN-EV2\n\\end{table}")
+    assert any("tab:q4" in p and "wholly" in p for p in _setup5(tmp_path, half, ["tab:q4"]))
+
+
+def test_float_lines_after_a_region_end_and_one_line_floats_are_scanned(tmp_path):
+    one = _v4("\\label{sec:model}", "\\label{sec:model}\n\\begin{figure}Note: 4 of six markets.\\end{figure}")
+    assert any("figure or table" in p for p in _setup3(tmp_path, one))
+    split = _v4("\\label{sec:model}", "\\label{sec:model}\n% BEGIN-EV2\n\\begin{figure}\n% END-EV2\nNote: 4 of six markets.\n\\end{figure}")
+    assert any("figure or table" in p for p in _setup3(tmp_path, split))

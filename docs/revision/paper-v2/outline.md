@@ -30,6 +30,9 @@ Working files: `docs/revision/paper-v2/main.tex` (draft), `numbers.tex` and `tab
     `\const{}`). Stated limit, pinned by a test: a swap of any two sites within one section passes
     the check; the final read of the compiled PDF against `report.md` (step 2) covers it. Tables print p-values with the
     same formatter as prose.
+  - **Source coverage list.** `floats.json` lists the label of every evaluation-2 table and figure; each listed float
+    must lie wholly inside one result region, and every float line outside a region may hold no number or result
+    macro (one-line floats and regions ending inside a float included). The final PDF review checks the list.
   - Prose outside the manifest uses `\rvk{<kind>}{<report path>}` (kinds: count, p, gain, eff, label); the check
     verifies that the field name and the value type fit the kind, so a gain cannot stand where a count belongs. Plain
     `\rv` is refused inside result regions. The check inlines every `\input` file (generated tables excepted, checked by
@@ -90,10 +93,12 @@ audits against the worst equilibrium versus our searched heuristic), Gatta, Navi
 (reputation without persistent identity in agent markets; closest motivation, no verification budget), and Wellman,
 Tuyls, Greenwald, JAIR 2025, and FlashProve (Rinberg et al., Anthropic technical report, November 2026, with the blog post of
 2026-11-02 and the code; the author's request, 2026-11-03): verifiable inference beside TOPLOC-style and TEE approaches.
-Every FlashProve fact is checked against the report before it is cited (proof cost relative to a forward pass,
-post-hoc proving that detects but does not prevent, coverage of exact integer models under greedy or fixed-seed
-sampling, the context limit, the report's own statement that it was AI-generated and not reviewed in detail); it is
-cited as an initial technical report. Holm 1979 is cited where the decision rules use it, after a direct check of the entry.
+Every FlashProve fact is checked against the report before it is cited, and only what the report establishes is
+stated: the prover's cost relative to a forward pass (GPU, borne by whoever generates proofs) separately from the
+verifier's cost (CPU, borne by the checking party); post-hoc proving that detects but does not prevent; coverage of an
+exact integer model under greedy decoding (any further sampling mode only if the report states it); the context limit;
+that the Lean proofs cover the protocol and the equivalence of the fast executable code is not proved; the report's
+own statement that it was AI-generated and not reviewed in detail. It is cited as an initial technical report. Holm 1979 is cited where the decision rules use it, after a direct check of the entry.
 Bibliography (R2): DOI or URL on every entry and a style that prints them; Sarmenta CCGrid pages and DOI; Walsh chapter
 DOI (pages only after reading the chapter); Wellman 2006 "(Extended Abstract)" (pages only from the official PDF);
 CrowdEval proceedings URL. The compiled reference list is checked for printed identifiers.
@@ -169,9 +174,10 @@ the supplement; the protocol file is the authority.
 **10 Discussion and limitations.** What the two evaluations support together; what they do not: unilateral benchmark,
 no equilibrium or incentive compatibility; bounded-gain claims (Proposition 1); exposure bounded by the searched
 families and optimiser; coverage conditional on fixtures; six markets from one neighbourhood; internal replication;
-headline used in development. The failure boundary and the tested repair. How exact but costly audits (FlashProve)
-map onto the model: verification noise toward zero at a high per-audit cost; the allocation and sanction questions
-remain; if proof overhead fell toward one or two forward passes, the case for sampled audits would weaken. Open
+headline used in development. The failure boundary and the tested repair. A conditional, hypothetical mapping of exact but costly
+audits (FlashProve) onto the model: if proofs were generated for audited jobs only, the model's audit cost would carry
+the proving cost (whoever bears it) plus the verifier's cost, and verification noise would approach zero within the
+proof's coverage; the allocation and sanction questions would remain; if proof overhead fell toward one or two forward passes, the case for sampled audits would weaken. Open
 questions. No registered result or claim changes because of this discussion.
 
 **11 Conclusion.**
@@ -267,3 +273,11 @@ per-market bounds. F3 factorial contrasts.
 | Space before the caption brace; figure notes (S2 / A1) | Fixed; whole figure and table environments outside regions may hold no number or result macro; test |
 | PDF review covers captions and figure notes (A1) | Order of work, step 2 |
 | Author's request (2026-11-03) | FlashProve in sections 1, 2, 10, verified against the report before citing |
+
+## Disposition of outline review round 7
+
+| Correction (Sol / Astra) | Change |
+|---|---|
+| Source coverage list (S1 / A1) | `floats.json`; listed floats wholly inside one region; required by the CLI; checked in the PDF review |
+| Float lines after a region end; one-line floats (S2 / A2) | Line-by-line float scan; tests |
+| FlashProve wording (S3 / A3) | Prover versus verifier cost and who bears each; greedy decoding only unless the report states more; protocol proofs versus executable code; mapping conditional and hypothetical |
