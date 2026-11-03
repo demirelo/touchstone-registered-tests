@@ -11,7 +11,7 @@ Working files: `docs/revision/paper-v2/main.tex` (draft), `docs/revision/paper-v
 
 ## Rules for the text
 
-- **Every evaluation-2 number comes from `report.json`** through `numbers.py` (writes `numbers.tex` macros; `--check`
+- **Every evaluation-2 number comes from `report.json`** through `numbers_v2.py` (writes `numbers.tex` macros; `--check`
   fails when a macro differs from the report or the text holds a bare number where a macro exists). No hand-copied result.
 - Every claim carries the scope of design 9.4: the six sampled markets, the stated neighbourhood, the fixed pair, the
   searched families, the frozen searches. No population claim; Q4 is an internal replication, not an independent team's.
@@ -104,7 +104,7 @@ Draft 8's figures 1 and 2 move to the supplement.
 
 ## Order of work
 
-1. Now (no results needed): sections 1 to 8 except result sentences; bibliography fixes; `numbers.py` with a synthetic
+1. Now (no results needed): sections 1 to 8 except result sentences; bibliography fixes; `numbers_v2.py` with a synthetic
    `report.json` test (positive and negative cases).
-2. After the report: section 9, abstract and introduction result sentences, figures; `numbers.py --check`.
+2. After the report: section 9, abstract and introduction result sentences, figures; `numbers_v2.py --check`.
 3. Sol high and Astra high review the draft against the protocol and the report to consensus; then copy into `paper/`.
