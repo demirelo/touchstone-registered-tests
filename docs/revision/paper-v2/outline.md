@@ -201,6 +201,27 @@ T1 rule set (factorial, comparator, R4, tuned). T2 attacker families. T3 evaluat
 decision rules. T5 Q1. T6 Q4. T7 Q2. T8 Q3 envelope, welfare, coalitions. T9 predictions scoring. F1 Q1 intervals. F2 Q4
 per-market bounds. F3 factorial contrasts.
 
+## Evaluation-2 float coverage (companion to `floats.json`)
+
+Every float below lies wholly inside one `% BEGIN-EV2` ... `% END-EV2` region in section 9 (`sec:results`); its caption
+and any note are inside the float, so the same region covers them. The table body is generated (`tables_v2.py`) or the
+figure is drawn by script; caption numbers use `\site{}`.
+
+| Label | Caption (planned) | Note | Region |
+|---|---|---|---|
+| tab:q1 | Q1 categories per family, pooled over six markets, with interval and efficiency label | interval type and kappa | sec:results, Q1 |
+| tab:q1-side | Side evidence beside Q1 (efficiency, reference profit, audit spend, refunds, served share) | none | sec:results, Q1 |
+| fig:q1 | Pooled intervals of d against the margin | none | sec:results, Q1 |
+| tab:q4 | Q4 per market: gain difference, efficiency, calibrated p-values, Holm decision | failing and undecided markets named | sec:results, Q4 |
+| fig:q4 | Per-market lower bounds against the thresholds | none | sec:results, Q4 |
+| tab:q2 | Q2 contrasts, searched and fixed-attack, with attack and reference terms | descriptive, nominal intervals | sec:results, Q2 |
+| fig:q2 | Factorial contrasts | none | sec:results, Q2 |
+| tab:q3-envelope | Attack envelope per core rule and market | H4 at the headline only (cut on fresh markets) | sec:results, Q3 |
+| tab:q3-welfare | Training-selected welfare attacks and W1 class | none | sec:results, Q3 |
+| tab:q3-coalitions | Coalition G_tot and G_min | no coalition-stability claim | sec:results, Q3 |
+| tab:q3-repair | rho = 1 repair block, R3 versus R4 | none | sec:results, Q3 |
+| tab:predictions | Prediction scoring: fulfilled, failed, not assessed | none | sec:results, predictions |
+
 ## Order of work
 
 1. **Now (no results needed):** sections 1 to 8 except result sentences; bibliography fixes and checks; T6 in the theory
@@ -293,3 +314,8 @@ per-market bounds. F3 factorial contrasts.
 | Several float commands on one line (S2) | Refused ("one float command per line"); test, seen failing first |
 | FlashProve cost (S3 / A1) | Operator-funded proving and verification as the stated condition; provider-funded proving needs separate accounting; section 1 carries the protocol-versus-code limit |
 | FlashProve and noise (A2) | Corrected: the model's audit is already exact; an execution proof checks a different object and does not remove delivery noise |
+
+## Disposition of outline review round 9
+
+Sol: accept. Astra: one correction, applied: the float coverage table above (caption, note, region per float; floats
+without a note marked "none").
