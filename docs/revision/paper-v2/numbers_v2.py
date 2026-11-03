@@ -259,6 +259,8 @@ def _floats(tex: str) -> list[dict]:
             if cur is not None:
                 cur["whole"] = False
             continue
+        if len(re.findall(r"\\(?:begin|end)\{(?:figure|table)\*?\}", line)) > 1:
+            out.append({"labels": [], "outside": [], "whole": False, "layout": line.strip()[:80]})
         if cur is None and re.search(r"\\begin\{(figure|table)\*?\}", line):
             cur = {"labels": [], "outside": [], "whole": region}
         if cur is not None:
@@ -288,6 +290,8 @@ def _site_checks(tex: str, sites: dict, raw: dict, known: dict, outside: str, te
     problems += [f"required section {k} (\\label{{sec:{k}}}) not found" for k in REQUIRED if k not in keys]
     floats = _floats(tex); listed = _float_list(tex_path_hint)
     for f in floats:
+        if f.get("layout"):
+            problems.append(f"one float command per line (begin and end on separate lines): {f['layout']}"); continue
         body = "\n".join(f["outside"])
         if BARE.findall(EXEMPT.sub("", body)) or USE.search(body) or USEK.search(body) or SITE.search(body):
             problems.append(f"figure or table outside a result region holds a number or result macro: {' '.join(body.split())[:80]}")

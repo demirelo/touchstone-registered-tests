@@ -77,8 +77,9 @@ registered after development results, passes on D2+H3 with interval admission by
 family against the best of four tested credibility adaptations; Q4 k of six; one descriptive sentence each for Q2 and Q3.
 Scope sentence.
 
-**1 Introduction.** Problem (motivation: exact verification of computation now exists but is expensive and post hoc,
-so a buyer with a budget checks a subset; FlashProve as the example); the restriction (no fees, certification, collateral); serial replacement only. Prior
+**1 Introduction.** Problem (motivation: exact checks of computation now exist but are expensive and run after the
+response is served; FlashProve proves that a committed integer model produced given tokens, with its proofs covering
+the protocol and not the fast executable code; if the checking party funds the checks, a budget forces a sample); the restriction (no fees, certification, collateral); serial replacement only. Prior
 principle: intensive verification of newcomers (Sarmenta; BOINC adaptive replication as an optional trust-threshold
 policy, T5; customs guidance). The question: does persistent age-ranked targeting do better or worse than
 verified-history targeting at identical allocation, payment, tolerance, ban, pacing, budget, and sanctions? Two
@@ -174,10 +175,12 @@ the supplement; the protocol file is the authority.
 **10 Discussion and limitations.** What the two evaluations support together; what they do not: unilateral benchmark,
 no equilibrium or incentive compatibility; bounded-gain claims (Proposition 1); exposure bounded by the searched
 families and optimiser; coverage conditional on fixtures; six markets from one neighbourhood; internal replication;
-headline used in development. The failure boundary and the tested repair. A conditional, hypothetical mapping of exact but costly
-audits (FlashProve) onto the model: if proofs were generated for audited jobs only, the model's audit cost would carry
-the proving cost (whoever bears it) plus the verifier's cost, and verification noise would approach zero within the
-proof's coverage; the allocation and sanction questions would remain; if proof overhead fell toward one or two forward passes, the case for sampled audits would weaken. Open
+headline used in development. The failure boundary and the tested repair. A conditional, hypothetical mapping (outside the registered
+evaluations): the model's audit already reveals delivered quality exactly, at a cost charged to the operator's
+budget; an execution proof such as FlashProve is an exact, costly, after-the-fact check of a different object (that a
+committed computation was run), not of output quality, and it does not remove delivery noise. It fits the model's
+audit cost only if the operator funds both proving and verification; provider-funded proving would need separate
+incentive accounting. The allocation and sanction questions remain; if proof overhead fell toward one or two forward passes, the case for sampled audits would weaken. Open
 questions. No registered result or claim changes because of this discussion.
 
 **11 Conclusion.**
@@ -281,3 +284,12 @@ per-market bounds. F3 factorial contrasts.
 | Source coverage list (S1 / A1) | `floats.json`; listed floats wholly inside one region; required by the CLI; checked in the PDF review |
 | Float lines after a region end; one-line floats (S2 / A2) | Line-by-line float scan; tests |
 | FlashProve wording (S3 / A3) | Prover versus verifier cost and who bears each; greedy decoding only unless the report states more; protocol proofs versus executable code; mapping conditional and hypothetical |
+
+## Disposition of outline review round 8
+
+| Correction (Sol / Astra) | Change |
+|---|---|
+| The list itself (S1) | `docs/revision/paper-v2/floats.json` with the twelve planned evaluation-2 tables and figures |
+| Several float commands on one line (S2) | Refused ("one float command per line"); test, seen failing first |
+| FlashProve cost (S3 / A1) | Operator-funded proving and verification as the stated condition; provider-funded proving needs separate accounting; section 1 carries the protocol-versus-code limit |
+| FlashProve and noise (A2) | Corrected: the model's audit is already exact; an execution proof checks a different object and does not remove delivery noise |

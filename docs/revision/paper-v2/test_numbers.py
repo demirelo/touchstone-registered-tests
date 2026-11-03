@@ -316,3 +316,8 @@ def test_float_lines_after_a_region_end_and_one_line_floats_are_scanned(tmp_path
     assert any("figure or table" in p for p in _setup3(tmp_path, one))
     split = _v4("\\label{sec:model}", "\\label{sec:model}\n% BEGIN-EV2\n\\begin{figure}\n% END-EV2\nNote: 4 of six markets.\n\\end{figure}")
     assert any("figure or table" in p for p in _setup3(tmp_path, split))
+
+
+def test_two_float_commands_on_one_line_refused(tmp_path):
+    bad = _v4("\\label{sec:model}", "\\label{sec:model}\n\\begin{figure}\\end{figure}\\begin{figure}\nNote: 4 of six markets.\n\\end{figure}")
+    assert any("one float command per line" in p for p in _setup3(tmp_path, bad))
