@@ -140,3 +140,19 @@ Protocol regenerated; `lock_v2.py --check` ok.
 Sol high: accept, no corrections, confidence 0.97. Astra high: accept, no corrections, confidence 0.98
 (`docs/revision/roster/{sol,astra}-protocol-r3.md`). Operation 5 waits for the author's signature, OpenTimestamps stamp,
 and the signed tag `protocol-v2`.
+
+### Operation 7 preparation (2026-11-03): launcher, schedule, and memory (orchestration only; design 9.6)
+
+- Launcher `results/pods/eval_pod.sh` (git-ignored): snapshot, tarball, and history guards; the history guard runs
+  `lock_v2.py --check-commit` in the unpacked tarball; on the pod: `--check-commit` with the author's public
+  `allowed_signers`, the `h4.json` hash, the bundle only for headline@rho0.2, the cgroup memory limit (at least 28 GiB).
+  Guard tests `results/pods/test_eval_guards.sh`: 5 pass (real tarball passes; shallow, laptop-uid, H4DIR without H4SHA,
+  missing h4.json refused).
+- Schedule: wave 1 headline@rho0.2 and five fresh markets; wave 2 the sixth fresh market and headline@rho1 when spend
+  frees reservations; about 21 h wall-clock against about 26 h sequential. Larger pods do not help (32 vCPU: 67 USD for
+  about 2 h less; `benchmark_v2.pod_plan`).
+- Memory: smoke stages peak at 176 MB per process; a full-size search 183 MB (2,611 s); one 200-seed evaluation 1.3 GB;
+  an evaluate or profit-doubling task keeps four 200-seed profiles, 2.5 GB (`/usr/bin/time -l` and `ru_maxrss`, local).
+  At 16 workers that is about 40 GB, above a 32 GB pod; evaluate and doubling therefore run with 10 workers (`WEVAL`),
+  other stages with 16. Cost: +53 min on headline@rho0.2, +7 min per fresh pod, about +0.9 USD; evaluation estimate
+  about 38.0 USD, 39.0 USD with the H4 reserve, under the 40 USD cap.
