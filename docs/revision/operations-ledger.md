@@ -156,3 +156,11 @@ and the signed tag `protocol-v2`.
   At 16 workers that is about 40 GB, above a 32 GB pod; evaluate and doubling therefore run with 10 workers (`WEVAL`),
   other stages with 16. Cost: +53 min on headline@rho0.2, +7 min per fresh pod, about +0.9 USD; evaluation estimate
   about 38.0 USD, 39.0 USD with the H4 reserve, under the 40 USD cap.
+
+### Paper draft 9, sections 1-8: review consensus (2026-11-03)
+
+Round 1: both reject (first-test conditions, rule mechanics, attack information, search statuses, registration facts,
+decision rules, FlashProve limits, citations); applied (fd1c94d, edd6bef). Round 2: Sol accept-with-caveat, Astra reject
+(market coverage, search-flag definition, efficiency labels, identifiers); applied (39828b8, 2211d28). Round 3: Sol and
+Astra accept-with-caveat; the one caveat (Holm citation) is resolved in 06c75e9 from the scanned original
+(Scand J Statist 6: 65-70, 1979). Section 9 and the evaluation-2 result sentences follow the report.
