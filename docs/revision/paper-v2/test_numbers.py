@@ -328,3 +328,15 @@ def test_digit_subscripts_are_identifiers_not_numbers(tmp_path):
     assert _setup3(tmp_path, ok) == []
     bad = _v4("\\label{sec:model}", "\\label{sec:model}\n\\begin{table}\nGap \\textbf{0.271}.\n\\end{table}")
     assert any("figure or table" in p for p in _setup3(tmp_path, bad))
+
+
+def test_extra_sources_merge_under_their_names(tmp_path):
+    (tmp_path / "scoring.json").write_text(json.dumps({"Q4-a": {"status": "fulfilled"}}))
+    sites = dict(SITES, **{"q4-pred": {"path": "scoring.Q4-a.status", "kind": "label", "section": "results"}})
+    tex = _v4(r"d is \site{q1-d2h3-d}.", r"d is \site{q1-d2h3-d}; prediction \site{q4-pred}.")
+    (tmp_path / "sites.json").write_text(json.dumps(sites)); (tmp_path / "report.json").write_text(json.dumps(R2))
+    (tmp_path / "main.tex").write_text(tex)
+    extra = {"scoring": tmp_path / "scoring.json"}
+    N.write(tmp_path / "report.json", tmp_path / "numbers.tex", extra)
+    assert N.check(tmp_path / "report.json", tmp_path / "numbers.tex", tmp_path / "main.tex", extra) == []
+    assert "fulfilled" in (tmp_path / "numbers.tex").read_text()

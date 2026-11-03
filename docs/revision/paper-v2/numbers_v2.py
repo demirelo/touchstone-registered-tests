@@ -96,8 +96,18 @@ def _sites(path) -> dict | None:
     return json.loads(f.read_text()) if f.exists() else None
 
 
-def write(report_path, numbers_path) -> None:
-    Path(numbers_path).write_text(render(json.loads(Path(report_path).read_text()), _sites(numbers_path)))
+def load(report_path, extra: dict | None = None) -> dict:
+    """report.json at the top level; each extra source (name -> path: cells.json, scoring.json) under its own name."""
+    data = json.loads(Path(report_path).read_text())
+    for name, path in (extra or {}).items():
+        if name in data:
+            raise ValueError(f"extra source name {name} collides with a report key")
+        data[name] = json.loads(Path(path).read_text())
+    return data
+
+
+def write(report_path, numbers_path, extra: dict | None = None) -> None:
+    Path(numbers_path).write_text(render(load(report_path, extra), _sites(numbers_path)))
 
 
 def _blocks(tex: str) -> tuple[list[str], list[str]]:
@@ -155,8 +165,8 @@ def _report_numbers(raw: dict) -> set:
     return {f"{v:.3f}" for v in raw.values() if isinstance(v, float) and not isinstance(v, bool) and math.isfinite(v)}
 
 
-def check(report_path, numbers_path, tex_path) -> list[str]:
-    report = json.loads(Path(report_path).read_text()); known = macros(report); raw = flat(report)
+def check(report_path, numbers_path, tex_path, extra: dict | None = None) -> list[str]:
+    report = load(report_path, extra); known = macros(report); raw = flat(report)
     tex = sources(tex_path, numbers_path); problems = []
     sites = _sites(tex_path)
     if not Path(numbers_path).exists() or Path(numbers_path).read_text() != render(report, sites):
@@ -333,11 +343,12 @@ def _site_checks(tex: str, sites: dict, raw: dict, known: dict, outside: str, te
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--report", required=True); ap.add_argument("--numbers", required=True)
+    ap.add_argument("--extra", action="append", default=[], metavar="NAME=PATH", help="cells=cells.json, scoring=scoring.json")
     g = ap.add_mutually_exclusive_group(required=True); g.add_argument("--write", action="store_true"); g.add_argument("--check", metavar="TEX")
-    a = ap.parse_args(argv)
+    a = ap.parse_args(argv); extra = dict(x.split("=", 1) for x in a.extra)
     if a.write:
-        write(a.report, a.numbers); return 0
-    problems = check(a.report, a.numbers, a.check)
+        write(a.report, a.numbers, extra); return 0
+    problems = check(a.report, a.numbers, a.check, extra)
     if _sites(a.check) is None:
         problems.insert(0, "sites.json (the result-site manifest) is required beside the paper source")
     if _float_list(a.check) is None:
