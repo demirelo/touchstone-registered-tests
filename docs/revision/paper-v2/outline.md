@@ -18,13 +18,19 @@ Working files: `docs/revision/paper-v2/main.tex` (draft), `numbers.tex` and `tab
 - **Numbers.** Every evaluation-2 number comes from `report.json`:
   - Tables are **generated whole** by `tables_v2.py` from named row specifications (statistic, report path, row label);
     the text never fills a result table by hand. Tests: swapped labels, missing cells, refused cells, nonfinite values.
-  - Prose uses `\rv{<report path>}` macros from `numbers_v2.py`. `--check` fails on an unknown path, a stale
+  - Prose in result regions uses `\rvk{<kind>}{<report path>}` (kinds: count, p, gain, eff, label); the check
+    verifies that the field name and the value type fit the kind, so a gain cannot stand where a count belongs. Plain
+    `\rv` is refused inside result regions. The check inlines every `\input` file (generated tables excepted, checked by
+    `tables_v2.py --check`) and flags any number with three or more decimals outside the regions that equals a report
+    value (evaluation-1 values that coincide are wrapped in `\evone{}`).
+  - `numbers_v2.py` writes the macros. `--check` fails on an unknown path, a stale
     `numbers.tex`, a nonfinite value, or any bare number (decimal, integer, or percentage, not part of an identifier
     such as F111 or X7-SC) inside a `% BEGIN-EV2` ... `% END-EV2` region. Every evaluation-2 result sentence, the
     abstract's and introduction's result sentences, captions, and figure notes sit inside such regions; counts in prose
     are written as words only when they are protocol constants ("six markets").
   - Figures are drawn from `report.json` by a script; figure data are written beside the figure and checked.
-  - Rounding: three decimals for gains and efficiencies, p-values as reported with four significant digits.
+  - Rounding: three decimals for gains and efficiencies; p-values with four significant digits (small values in
+    scientific form, never `0.000`).
 - **Scope (design 9.4), in the main text:** the six sampled markets from the stated neighbourhood; the fixed pair for Q1,
   Q2, Q4; the searched families and frozen searches. No population claim. Q4 replicates the B3-R3 comparison under D2+H3
   and R3's efficiency condition, **not the complete amended PASS predicate**. Multiplicity is controlled within Q1 and
@@ -40,8 +46,15 @@ Working files: `docs/revision/paper-v2/main.tex` (draft), `numbers.tex` and `tab
 
 ## Sections
 
-**Title (author's choice).** Keep "Audit Dues", or "Age or Evidence? Persistent Age-Ranked Audit Targeting under Free
-Identity Replacement" (the subtitle carries the T1 qualification).
+**Titles (the author's request, 2026-11-03): easy to understand.** The paper title and every section and subsection title
+say plainly what the part is about, in everyday words; codes (Q1, F111, X7-SC) go in parentheses after the plain words,
+never alone. Paper title options (author's choice): "Auditing New Identities When Sellers Can Change Names Freely";
+"Which Sellers Should a Buyer Check? Auditing Newcomers under Free Identity Replacement"; "Checking Newcomers When
+Identities Are Free: Two Registered Tests of an Audit Rule". Section titles, in order: Introduction; Related work; The
+market model; The audit rules we compare; What the theory shows; The attacks we test against; The first test (October
+2026); The second test: design and registration; The second test: results; What the results show and what they do not;
+Conclusion. Result subsections: Age-ranked versus history-based checking (Q1); Which parts of R3 matter (Q2); Stronger
+attacks and where R3 fails (Q3); Repeating the comparison on six new markets (Q4).
 
 **Abstract.** Problem and mechanism class (draft 8). R3 as a priority window plus persistent newest-first targeting
 (T1). Evaluation 1 in one sentence with its conditions (original claim fails against the sealed family; amended claim,
@@ -98,12 +111,13 @@ requires the H2 rule clause and admission of the comparison bounds; admission by
 selected R3 not established), material errata, H1's exploratory and inconclusive status, and the robustness failure
 modes in one paragraph. Detailed chronology and the robustness table go to the supplement.
 
-**8 Evaluation 2 (protocol v2).** What was completed, in order, and what was planned: development on headline and dev0
+**8 Evaluation 2 (protocol v2).** What was completed, in order, and what was planned: development on headline and dev0 (branch `two20k`)
 (benchmark, comparator selection, tuning, defender freeze, the sealed H4 session, coverage with admitted
 kappa Q1 = 0.5 and Q4 = 0.25, predictions), cuts 3, the budget. The lock: signed tag `protocol-v2`, the OpenTimestamps
 proof with the earliest Bitcoin attestation at block 974307, publication before the target block (the push height and
-the condition of design 7.3), and the trust assumption that the chain both explorers serve at the final read is the
-accepted chain. The draw: H = A + 144 = 974451 at depth 6; six fresh markets from the stated neighbourhood; 200
+the condition of design 7.3), and the trust assumptions: the chain both explorers serve at the final read is the
+accepted chain; no miner selects the target block to influence this evaluation; a later reorganisation deeper than six
+blocks is not handled and would be reported. The draw: H = A + 144 = 974451 at depth 6; six fresh markets from the stated neighbourhood; 200
 evaluation seeds each. Decision rules table: Q1 direction by Holm on calibrated two-sided p-values (tails 0.05/4, 0.05/2)
 and size by the calibrated Bonferroni interval against the margin 0.05, the four exclusive categories, the "better" gate
 (category 1 plus a nominal one-sided 97.5 percent gross-efficiency lower bound of at least -0.01, descriptive, no
@@ -187,3 +201,13 @@ per-market bounds. F3 factorial contrasts.
 | Citations, T6 (S9 / A8) | Section 2; section 5 |
 | Numbers pipeline (S10 / A10) | Generated tables, integer and percentage checks, nonfinite values, figure data, scoring script |
 | Order of work (S11 / A10) | Four steps, with rebuild, reproduction, compile, and recheck after copying |
+
+## Disposition of outline review round 2
+
+| Correction (Sol / Astra) | Change |
+|---|---|
+| Prose path mapping (S1 / A1) | `\rvk{kind}{path}` with field-name and type checks; plain `\rv` refused in regions; tests: a gain used as a count fails |
+| Coverage across included files (S2 / A1) | Inlined `\input` files; report-valued numbers outside regions flagged; tests |
+| p-value rounding (S3 / A2) | Four significant digits, scientific form for small values; test with 0.0001 and 3e-05 |
+| Branch and chain assumptions (S4 / A3) | Section 8: `two20k`, no miner selection, deeper reorganisation unhandled and reported |
+| Author's note (2026-11-03) | Plain-language titles throughout |
