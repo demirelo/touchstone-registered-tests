@@ -1,0 +1,207 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,booktabs,graphicx,hyperref}
+\newtheorem{theorem}{Theorem}\newtheorem{lemma}{Lemma}\newtheorem{corollary}{Corollary}\newtheorem{proposition}{Proposition}
+\input{numbers.tex}
+% Draft 9, built from docs/revision/paper-v2/outline.md (consensus: Sol round 9, Astra round 10).
+% Evaluation-2 numbers enter only through \site{} (sites.json) inside % BEGIN-EV2 ... % END-EV2 regions; evaluation-1
+% numbers in result-bearing sections are wrapped in \evone{}; protocol constants in \const{}. Check:
+% uv run python docs/revision/paper-v2/numbers_v2.py --report <report.json> --numbers numbers.tex --check main.tex
+\title{Checking Newcomers When Identities Are Free:\\Two Registered Tests of an Audit Rule}
+\author{Ömer Demirel}
+\date{Draft 9, November 2026}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+% BEGIN-EV2
+A buyer of computation often cannot see the quality of delivered work and can afford to check only a sample of it. We study a repeated procurement market with noisy delivery, costly exact audits, and free identity replacement, in a mechanism class without entry fees, identity certification, or collateral before receipts; a failed audit refunds the job's escrow and bans the serving identity for a finite number of rounds. Under uniform auditing, immediate free replacement makes the ban costless. The rule we study, R3, checks every job of a new identity while the round's audits allow it, and after that window keeps targeting the newest identities, so a replacement can stay under heavy inspection: persistent age-ranked targeting rather than release by age. We report two registered tests. In the first, the original claim failed against a sealed attacker family, and an amended claim, registered after development results were seen, passed on the public identity-replacement family, with interval procedures admitted by proxy. The second test compares R3 with the best of four tested adaptations of verified-history targeting at identical budget, payment, tolerance, ban, pacing, and sanctions, decomposes R3 into its three parts, adds stronger attacks, and repeats the first test's comparison on six market instances drawn after the lock from a Bitcoin block.
+% TODO after the report: one sentence each with \site{} for the Q1 categories, the Q4 count, Q2, and Q3.
+All claims are conditional on the sampled markets, the stated neighbourhood, the fixed rule parameters, and the searched attacker families.
+% END-EV2
+\end{abstract}
+
+\section{Introduction}\label{sec:intro}
+A buyer of computation pays for work whose quality it cannot see. It can check a few jobs at a cost and sanction a provider whose check fails. Exact checks of computation now exist, but they are expensive and run after the response is served.
+% TODO-VERIFY (FlashProve report, before any figure is written): proving cost relative to one forward pass (prover side,
+% GPU) and verification cost (verifier side, CPU); post hoc; coverage (exact integer model, greedy decoding; any other
+% decoding mode only if the report states it); the Lean proofs cover the protocol, not the fast executable code; the
+% report's own statement that it was AI-generated and not reviewed in detail.
+FlashProve, for example, proves that a committed integer model produced given output tokens~\cite{rinberg2026flashprove}; its proofs are generated after the response is served, so they detect a substituted computation but do not prevent it. If the checking party funds such checks, a budget forces a sample, and the questions become which jobs to check and how to sanction a provider whose check fails.
+
+We study what checking alone can do when the usual remedies against cheap identities are unavailable. The mechanism class excludes entry fees, identity certification, and collateral before receipts, and a sanctioned provider may re-enter at once under a fresh identity. The rules refund the escrow of a failed job and exclude the serving identity for a finite number of rounds. The population is a fixed set of providers, each with one active identity at a time; concurrent aliases, pre-aged reserve identities, and additional entrants (Sybil attacks~\cite{douceur2002sybil}) are outside the model.
+
+\paragraph{Checking newcomers is an old idea.} Intensive verification until an identity has earned credibility is established: credibility-based spot-checking analyses rejoining under new identities~\cite{sarmenta2001ccgrid,sarmenta2001sabotage}; BOINC offers an optional adaptive-replication policy that replicates a host's jobs until the host passes a trust threshold of consecutive valid results~\cite{anderson2009diversity,boincwiki}; customs guidance recommends checking all declarations of new importers for a period~\cite{walsh2003postrelease}. The question we ask is narrower: under a hard audit budget, does R3's persistent age-ranked targeting do better or worse than targeting by verified history, when everything else is held equal?
+
+\paragraph{The rule.} Under uniform auditing, immediate free replacement preserves the distribution of all payoff-relevant future states up to identity relabelling, so a ban adds no continuation cost; refunds still apply (Corollary~\ref{cor:uniform}). R3 gives audit priority to the jobs of identities in their first $L$ rounds, auditing all of them when the round's quota covers them, and spends half of the remaining audits on the newest established identities. Its priority window expires, but the newest-first targeting does not: a replacement that stays the newest identity keeps receiving most of the residual audits (Lemma~\ref{lem:coverage} and the remark after it). We call the resulting charge on newcomers \emph{audit dues}.
+
+\paragraph{Two registered tests.} Both tests used staged registration: a protocol locked and timestamped before the evaluated outcomes existed, and changes recorded in signed, timestamped amendments. The first test (October \const{2026}) locked its claim before the rule was implemented; development results then informed an amended claim and a successor rule, and both claims are reported. The second test (protocol v2) was locked with a Bitcoin timestamp before six fresh market instances and their seeds were drawn from a later block; it adds a matched comparator, a factorial decomposition, stronger attackers, and a replication of the first test's comparison.
+
+\paragraph{Contributions.} (i) A conditional analysis of when free replacement makes a ban costless. (ii) A matched comparison of persistent age-ranked targeting with verified-history targeting, and a factorial attribution of R3's three parts. (iii) Measured attack strength and failure boundaries: stronger and independently authored attackers, welfare attacks and coalitions, the terminal-reserve collapse and a tested repair. (iv) Two registered tests whose original failure, amendments, and fresh-market replication are documented in a public record.
+% BEGIN-EV2
+% TODO after the report: one result sentence each for Q1 to Q4 with \site{}.
+% END-EV2
+
+\section{Related work}\label{sec:related}
+\paragraph{Verification-based probation.} Credibility-based spot-checking accepts results according to a worker's verified history and analyses rejoining under new identities~\cite{sarmenta2001ccgrid,sarmenta2001sabotage}; follow-on work treats imperfect checks~\cite{watanabe2010generalized}. BOINC's adaptive replication keeps a consecutive-valid count per host and trusts a host above a threshold~\cite{anderson2009diversity,boincwiki}. CrowdEval screens workers with gold tasks before balancing gold and peer evaluation~\cite{qiu2018crowdeval}. Customs guidance recommends checking all declarations of new importers for a period~\cite{walsh2003postrelease}, and a field experiment found no overall compliance gain from close supervision of new firms~\cite{gangl2014supervision}. In a model with adverse selection and moral hazard, optimal long-term contracts screen and then put high types on probation with monitoring that declines with the track record~\cite{bhaskar2025screening}. Our comparator family adapts the credibility and BOINC rules to a fixed audit quota (Section~\ref{sec:rules}).
+
+\paragraph{Cheap pseudonyms.} With cheap pseudonyms, unfavourable treatment of newcomers is the price of cooperation~\cite{friedman2001social}; whitewashing degrades peer-to-peer systems when turnover is high~\cite{feldman2006free}; without a central authority one attacker can create many identities~\cite{douceur2002sybil}. Reputation without persistent identity in markets of AI agents, with a one-time cash-out deviation, is studied in~\cite{gatta2026tempting}; that model has no verification budget.
+
+\paragraph{Costly verification and audits.} Costly state verification goes back to~\cite{townsend1979optimal}; allocation with costly verification~\cite{benporath2014optimal}, limited punishments~\cite{li2020mechanism}, financially constrained agents~\cite{li2021financially}, and ex post verification with limited penalties~\cite{mylovanov2017optimal} assume persistent agents. Recursive inspection games spend a finite stock of inspections~\cite{vonstengel2016recursive}; audit games optimise randomised inspection against a best-responding attacker~\cite{blocki2013audit}; targeted and untargeted inspection under fixed capacity~\cite{liu2013enforcement} and dynamic monitoring under resource constraints~\cite{solan2021dynamic} are also studied; optimal committed audit policies against the worst equilibrium of the audited agents, with budgeted variants, are derived in~\cite{das2026optimally}. Our rules are searched and tuned heuristics, not optima of these models. Paid computation with verification by recomputation and colluding workers is analysed in~\cite{fernandezanta2015algorithmic}.
+
+\paragraph{Verifiable computation.} Proofs that a computation was executed as committed now reach large language models: FlashProve proves inference of a committed integer model after the fact~\cite{rinberg2026flashprove}.
+% TODO-VERIFY: add TOPLOC-style locality-sensitive checks and trusted execution environments with citations checked
+% against primary sources; state FlashProve's limits as the report states them.
+Such proofs check that a committed computation ran; they do not check the quality of an output, which is what our audits observe.
+
+\paragraph{Evaluation method.} Simulation-based strategic analysis has an established method~\cite{wellman2006methods,wellman2025egta}. Weak or incomplete attacks overstate robustness, and adaptive evaluations must be tailored to each defence~\cite{carlini2019evaluating,tramer2020adaptive}. Preregistration separates generating a hypothesis from testing it on new observations~\cite{nosek2018preregistration}. Our staged registration applies these tools.
+
+\section{The market model}\label{sec:model}
+\paragraph{Market.} Time is discrete, $t = 1, \dots, T$ with $T = 200$. In each round $J = 50$ unit jobs arrive; job $j$ has value $v_j$ per unit of delivered quality, drawn independently and uniformly on $[v_{\min}, v_{\max}]$. There are $N = 10$ providers; provider $i$ has a quality ceiling $q^{\max}_i$, a per-job cost $a_i + b_i q$ at effort $q$, a capacity of $k_i$ jobs per round, and an outside option of zero. The provider population and the market parameters of each test are stated in Sections~\ref{sec:eval1} and~\ref{sec:design}.
+
+\paragraph{Offers, effort, delivery.} In each round an active provider privately chooses an effort $q_i \in [0, q^{\max}_i]$ for all its jobs and submits a public offer: a claim $c_i \in [0,1]$ (a promise that expected delivered quality is at least $c_i$) and a per-unit bid. A served job delivers $y = q_i + \varepsilon$ with $\varepsilon \sim N(0,\sigma^2)$, independently across jobs; the buyer's value is $v_j y$. Delivering below the claim is shading.
+
+\paragraph{Rounds and audits.} The rule allocates jobs and computes payments, which buyers fund into escrow. After delivery the rule selects jobs to audit; an audit reveals $y$ exactly at cost $\alpha$. A job fails if $y < c_i - \tau$, with $\tau$ the rule's tolerance. The rule imposes consequences, and escrow is settled.
+
+\paragraph{Audit budget.} Let $\hat S$ be the expected honest first-best surplus over $T$ rounds and $m = \hat S / n_{\mathrm{FB}}$ the mean surplus per first-best served job. The operator's audit budget is $B = \beta \hat S$ and the audit cost $\alpha = \rho m$, so the allowance is $B/\alpha = (\beta/\rho)\, n_{\mathrm{FB}}$ audits; unspent budget carries over.
+
+\paragraph{Identities.} Each provider acts through a current identity. In any round it may retire the identity and re-enter under a fresh one at entry cost $e \ge 0$ ($e = 0$ in both tests). Rules see identities only as opaque tokens, must be invariant to relabelling them, and cannot link a fresh identity to its provider.
+
+\paragraph{Admissible rules.} A rule reads only the current offers and job values, the audit results it bought, its own memory, and the configuration. Payments are funded by buyer escrow. The only consequences are a refund of up to the escrow of an audited job that failed; a ban of the identity for at most 50 rounds; holding back up to three rounds of an identity's receipts as a bond; and allocation priority and audit selection as functions of the allowed inputs. There are no entry fees, no collateral before receipts, no identity certification, and no consequences for unaudited jobs.
+
+\paragraph{Benchmark and metrics.} One focal provider deviates while the others play honestly at full effort with truthful claims; this is a unilateral deviation, not an equilibrium. For a seed with first-best surplus $S^*$, the focal provider's \emph{gain} is its profit under the attack minus its profit under a selected truthful reference, divided by $S^*/N$. \emph{Gross efficiency} is $(W + \text{audit cost})/S^*$, with $W$ the realised social surplus net of audit cost; net efficiency is $W/S^*$. Gain is a difference of two searched values, so search error can bias it either way. The second test adds two objectives at its headline market: welfare attacks that minimise gross efficiency, with (W1) or without (W0) the constraint that the attacker gains at least its reference profit; and coalitions of two or five providers, scored by the total gain $G_{\mathrm{tot}}$ and by the worst member's mean gain $G_{\min}$, both against a coordinated truthful reference. Coalition results say nothing about coalition stability.
+
+\section{The audit rules we compare}\label{sec:rules}
+\paragraph{Baselines.} B2 posts prices for three claim tiers and audits uniformly; B3 allocates each job, in descending order of value, to the offer with the highest nonnegative score $v_j c_i - \mathrm{bid}_i$, pays $v_j c_i - s_{2,j}$ with $s_{2,j}$ the next-highest score, and audits uniformly at random among served jobs, spread over the rounds. Both refund a failed job and ban its identity for $L$ rounds.
+
+\paragraph{R3.} R3 keeps B3's allocation, payment, tolerance, and enforcement and changes only which jobs it audits and when. \emph{Pacing:} with allowance $A$, R3 reserves $\min(JL, A)$ audits for the last $L$ rounds, in which it audits every served job while audits remain, and spends the rest evenly over the earlier rounds, carrying unspent quota forward. \emph{Selection:} it first audits the served jobs of identities younger than $L$ rounds, newest first; it then spends half of the remaining audits, rounded up, on the newest established identities and the rest uniformly at random.
+
+\paragraph{The factorial (second test).} Every rule of the second test uses B3's allocation and payment, refund-and-ban enforcement, no bond, and the fixed pair $\tau = 0.16$, $L = 10$, which the registered tuning of B3 and of R3 had each chosen. Rules differ in three parts: a priority phase P (served jobs of identities younger than $L$ first, newest first), newest-first residual targeting G (half the residual audits to the newest identities), and pacing S (R3's terminal reserve and even early quota, against B3's spread schedule). The eight rules $F_{PGS}$ include $F_{000} = $ B3 and $F_{111} = $ R3.
+
+\paragraph{Verified-history targeting (second test).} The comparator family adapts credibility-based spot-checking and BOINC's adaptive replication to a fixed audit quota. An identity's credibility is its number of passed audits since its creation or its last failure; a replacement starts at zero. C-thr($K$) treats an identity as unproven while its credibility is below $K$, audits unproven identities first in ascending credibility, and targets half the residual audits by ascending credibility. C-mem($K$, $M$) counts only the passes of the last $M$ rounds, so scrutiny returns to identities that are not audited. C-taper($K$) and C-boinc audit by weighted sampling, with weights that fall as credibility grows (C-boinc's weight follows BOINC's trust threshold of 10). Twelve configurations were compared in development at the fixed pair and R3's pacing; the selected comparator is C$^* = $ C-mem($K = 6$, $M = 20$). C$^*$ is the best of four tested adaptations; it is not the strongest possible credibility rule, and R3 embodies earlier development choices that the comparison does not equalise.
+
+\paragraph{The repair R4 and tuned variants.} R4 is R3 with the terminal reserve capped at $\min(JL, \lfloor A/2 \rfloor)$. It differs from R3 only when $JL > \lfloor A/2 \rfloor$: it equals R3 in the second test's blocks at $\rho = \const{0.2}$ and differs in its repair block at $\rho = \const{1}$, where R3's reserve consumes the whole allowance. Separately tuned versions of B3, R3, and C$^*$ over a common grid of \const{16} tolerance and ban-length pairs are a secondary comparison.
+
+\section{What the theory shows}\label{sec:theory}
+We fix a provider facing honest opponents and an offer with claim $0 < c \le q^{\max}$, and compare truthful effort $c$ with effort $c - \Delta$, $0 \le \Delta \le c$, at the unchanged offer. We condition on the pre-delivery state, rival outcomes, and the audit set, all independent of the focal delivery noise, and assume that focal audit outcomes affect continuation value only through whether any focal job fails, with the same conditional values under both effort levels. Shading saves $g = b\Delta$ per served job and raises the per-audit failure probability from $d_0 = \Phi(-\tau/\sigma)$ to $d = \Phi((\Delta - \tau)/\sigma)$. Let $s$ be the provider's served jobs in the round, $U$ the audited subset with $K = |U|$ and escrows $M_j$, and $C_U$ the difference between the best continuation values after no focal failure and after at least one.
+
+\begin{lemma}[local identity]\label{lem:local}
+Under these assumptions, the expected profit of shading by $\Delta$ relative to truthful effort is
+\[ A(\Delta) = s g - \mathbb{E}\Big[(d - d_0)\textstyle\sum_{j \in U} M_j + \big((1-d_0)^K - (1-d)^K\big) C_U\Big]. \]
+\end{lemma}
+
+\begin{corollary}[uniform auditing under replacement]\label{cor:uniform}
+If, after an immediate replacement at $e = 0$, the distribution of all payoff-relevant future states equals that after no failure up to identity relabelling (as for B2 and B3 with refund-and-ban enforcement and no bonds), then $C_U = 0$, and shading pays whenever $sg > (d - d_0)\,\mathbb{E}\sum_{j \in U} M_j$, whatever the ban length.
+\end{corollary}
+
+\begin{lemma}[coverage]\label{lem:coverage}
+R3 audits every served job of identities younger than $L$ rounds whenever the round's audit count covers them. Under overload, age groups are served newest first; within the focal identity's group of $n$ jobs, of which $s$ are its own, the number audited is hypergeometric with $k' = \min\{n, \max(0, k - H)\}$ draws, $H$ being the fresh jobs of strictly newer identities.
+\end{lemma}
+
+After its fresh window, a replacement identity is newer than every initial identity; while it is uniquely the newest established identity, it receives at least $\min(s, \lceil r/2 \rceil)$ of the $r$ residual audits. In a fixed population, a provider that keeps replacing can stay the newest identity, so R3's targeting of replacements persists beyond the window.
+
+\begin{theorem}[conditional renewal bound]\label{thm:renewal}
+Consider immediate-replacement plans whose play decomposes into independent, identically distributed cycles of an established spell followed by a recovery. Conditional on survival, each established round has expected profit $r_E$ and failure probability $q_E > 0$; the recovery has duration $D \ge L$ with $\mathbb{E}D < \infty$, profit $R_F$, and $N_R$ replacements, with integrable rewards and charges. The long-run profit per round is $\bar\Pi = (r_E/q_E + \mathbb{E}R_F - e\,\mathbb{E}N_R)/(1/q_E + \mathbb{E}D)$. If, in addition, truthful play earns a common rate $h$ in both states and, on every recovery history, every permitted fresh action earns a conditional expected surplus of at most $\epsilon \ge 0$ over $h$, then with $e = 0$
+\[ \bar\Pi - h \le \epsilon + \frac{(r_E - h - \epsilon)_+}{1 + q_E L}. \]
+\end{theorem}
+
+The factor $1/(1 + q_E L)$ is a bound for regenerative policies that satisfy the theorem's assumptions; we do not establish those assumptions for the implemented, finite-horizon R3 process, and the theorem covers neither the adaptive attacker families nor coalitions.
+
+\begin{proposition}[terminal shading]\label{prop:terminal}
+In a round with zero continuation loss, a served provider starting from a positive truthful effort gains from small same-offer shading whenever $b > v_{\max}\,\phi(\tau/\sigma)/\sigma$.
+\end{proposition}
+
+At the first test's parameters the right-hand side is below $\const{0.067}$ and every provider has $b \ge \const{0.22}$, so no studied rule eliminates gain; all claims are bounded-gain claims. Proofs are in Appendix~\ref{app:proofs}; the theory checks of the first test are in the supplement.
+
+\section{The attacks we test against}\label{sec:attacks}
+Every attacker family reads only the provider's own history across its identities, the round, its own parameters, and the rule's public constants $T$ and $L$; it does not observe the remaining global budget or other identities' ranks. For each parametrised family a registered search (CMA-ES with restarts on training seeds) finds the attack, and a truthful reference is selected last from a fixed menu; gains are evaluated on fresh seeds.
+
+\begin{table}[t]\centering\small
+\begin{tabular}{@{}lp{\const{0.62}\linewidth}l@{}}\toprule
+Family & What it does & Where \\\midrule
+D2 & Adaptive claim markup that falls after a failed audit and recovers otherwise & both tests \\
+D2+H3 & D2 with a searched option to replace the identity after a failed audit & both tests \\
+H2 & Sealed family written in a separate session (first test) & first test \\
+X7-SC & State-conditioned: fresh, established, and terminal phases from the provider's own audit exposure and pass count; reset or wait out a ban; voluntary exit & second test \\
+X5-AG/v2 & Age-gated shading with the public constants & second test \\
+H4 & Sealed, defence-aware, written after every defender was frozen; loaded once after the draw & second test, headline \\
+W0, W1 & Welfare attacks on the D2+H3 and X7-SC knob spaces & second test, headline \\
+X6-SE/v2, X8-DB & Coalitions: shared knobs with member schedules; a decoy and a beneficiary & second test, headline \\\bottomrule
+\end{tabular}
+\caption{Attacker families.}\label{tab:families}
+\end{table}
+
+Search quality is checked by doubling: the registered search continues with as many restarts again, and a change of the attack or reference beyond a threshold flags the cell. A cell that did not complete is \emph{missing} and removes every decision that uses it; a \emph{search-flagged} cell keeps its decision, labelled as a decision about the prescribed search procedure. The search bounds exposure to the searched families and optimiser; it does not certify robustness.
+
+\section{The first test (October 2026)}\label{sec:eval1}
+\paragraph{Claims.} The original claim, locked on 17 October 2026 before the rule was implemented, had a rule clause (for each confirmatory family, R3's gross-efficiency lower bound at least 0.90, gain upper bound at most 0.30, audit cost within budget) and a baseline clause (for each of B2 and B3, a family in which an inflation-caused efficiency loss or the baseline's gain exceeded a threshold). Amendment 1, registered after the baselines' development results showed that the baseline clause was unlikely to pass, added an amended claim on the public identity-replacement family D2+H3: an absolute part and paired gain reductions of at least 0.10 against B2 and B3. After a development test killed the first rule, Amendment 3 registered one successor, R3, before its implementation.
+
+\paragraph{Result.} The original claim failed against the sealed family H2: R3 passed the rule clause (gross-efficiency lower bound \evone{0.9942}, gain upper bound \evone{0.0436}), but neither audited baseline met either baseline criterion. The amended claim passed: on 40 fresh seeds the mean gains under D2+H3 were \evone{0.570} for B2, \evone{0.353} for B3, and \evone{0.071} for R3, with R3's gross-efficiency lower bound at \evone{0.9980}. The amended pass also required the H2 rule clause and admission of the comparison bounds; those bounds used interval procedures admitted on development distributions with B3 as proxy, so nominal coverage for the selected R3 is not established. A language-model attacker was exploratory, and its R3 result inconclusive by the registered rule.
+
+\paragraph{Failure modes.} Exploratory robustness cells on reused development seeds found three: at high audit cost ($\rho = 1$) R3's terminal reserve consumes the whole allowance and R3 audits nothing early; high noise lowers every audited rule's efficiency; and coalitions of entrants overload the newcomer priority. The full timeline, the verdict table, and the robustness table are in the supplement; the record and its claims are unchanged.
+
+\section{The second test: design and registration}\label{sec:design}
+\paragraph{Questions.} Q1: does R3 ($F_{111}$) leave a lower or higher identity-replacement gain than C$^*$, at the fixed pair? Q2: what do the priority phase, the residual targeting, and the pacing contribute, alone and together? Q3: do the results hold against X7-SC, X5-AG/v2, the defence-aware sealed family H4, welfare attacks, and coalitions, and does R4 repair the reserve collapse? Q4: does the first test's comparison of B3 and R3 under D2+H3 replicate on fresh markets? Q1 and Q4 are confirmatory; Q2 and Q3 are descriptive.
+
+\paragraph{Development.} All choices before the draw were development, on the headline market and the development instance dev0 (branch \texttt{two20k}): a benchmark priced every cell; the comparator was selected and the tuned variants were tuned; the defenders were frozen at a signed commit; a separate session wrote H4 against the frozen defenders and committed only its hash; a coverage check on frozen development attacks admitted calibration multipliers for the Q1 and Q4 interval procedures; and the predictions were written and hashed. The evaluation budget forced three registered cuts: the tuned variants, H4, and the D2 extras run on the headline market only.
+
+\paragraph{Lock and draw.} The protocol file binds the code commit, the rules, families, tuned files, manifest, decision rules, predictions, budget, and calibration multipliers. It was signed and tagged \texttt{protocol-v2}, stamped with OpenTimestamps, and pushed before the target block; the earliest Bitcoin attestation of the proof is at block $A = \const{974307}$, and the draw block is $H = A + \const{144} = \const{974451}$, read once both explorers reported at least six blocks above it with the same hash. We assume that the chain both explorers served at that read is the accepted chain and that no miner chose the block at $H$ to influence this evaluation; a later reorganisation deeper than six blocks is not handled and would be reported.
+
+\paragraph{Fresh markets.} The block hash seeds a generator of market instances around the headline market: fixed scale, noise, budget ratio, audit cost, and cost-quality association, with provider ceilings, costs, capacities, and the top job value drawn per instance. Six instances and 200 evaluation seeds per market were drawn from it. The claims concern this neighbourhood, not markets in general.
+
+\paragraph{Decision rules.} Table~\ref{tab:rules-v2} summarises them; the protocol file is the authority.
+
+\begin{table}[t]\centering\small
+\begin{tabular}{@{}lp{\const{0.78}\linewidth}@{}}\toprule
+Question & Rule \\\midrule
+Q1 & $d = g_{C^*} - g_{F_{111}}$, pooled over the six markets, for D2+H3 and X7-SC. Direction: Holm on calibrated two-sided $p$-values. Size: a calibrated Bonferroni interval against the margin \const{0.05}. Categories, in order: materially lower; equivalent (with a direction label when Holm rejects); ordered, size not established; inconclusive. ``Better'' also needs a nominal one-sided gross-efficiency lower bound of at least $\const{-0.01}$ (descriptive; no calibrated joint guarantee). \\
+Q4 & Per market, an intersection-union test of $g_{F_{000}} - g_{F_{111}} > \const{0.10}$ under D2+H3 and $F_{111}$'s gross efficiency $> \const{0.90}$; Holm over the six markets; reported as $k$ of six, with failing markets named and undecided markets marked ``generalisation not established''. \\
+Q2, Q3 & Descriptive, with nominal intervals; every extremum selected on training data. \\\bottomrule
+\end{tabular}
+\caption{Decision rules of the second test.}\label{tab:rules-v2}
+\end{table}
+
+Q4 replicates the B3--R3 comparison and R3's efficiency condition, not the complete amended claim of the first test. Multiplicity is controlled within Q1 and within Q4 separately; there is no paper-wide five percent guarantee. ``Confirmatory'' means specified before the draw; coverage admission rests on development fixtures and does not establish nominal coverage on the fresh, selected-rule distributions. Q4 is an internal replication, not an independent team's.
+
+\section{The second test: results}\label{sec:results}
+% BEGIN-EV2
+% Written after the report, from report.json through sites.json, tables/*.tex, and the figure scripts:
+% Age-ranked versus history-based checking (Q1); Which parts of R3 matter (Q2); Stronger attacks and where R3 fails
+% (Q3); Repeating the comparison on six new markets (Q4); the secondary comparison; search quality; predictions.
+% END-EV2
+
+\section{What the results show and what they do not}\label{sec:discussion}
+% BEGIN-EV2
+% Written after the report.
+% END-EV2
+\paragraph{Exact but costly checks.} The model's audit already reveals delivered quality exactly, at a cost charged to the operator's budget. An execution proof such as FlashProve checks a different object, that a committed computation ran, and does not remove delivery noise. It fits the model's audit cost only if the operator funds both proving and verification; provider-funded proving would need separate incentive accounting. Either way, which jobs to check and how to sanction remain the questions; if the cost of a proof fell close to that of the computation itself, the case for sampled audits would weaken. This discussion is outside the registered tests and changes none of their claims.
+
+\paragraph{Limits.} The benchmark is a unilateral deviation against honest opponents; we claim neither equilibrium nor incentive compatibility, and small shading inside the tolerance is profitable under every studied rule (Proposition~\ref{prop:terminal}). Exposure is bounded by the searched families and the optimiser. The fresh markets come from one stated neighbourhood, and the headline market was used in development.
+
+\section{Conclusion}\label{sec:conclusion}
+% BEGIN-EV2
+% Written after the report.
+% END-EV2
+
+\paragraph{Availability.} The public release at the report commit contains the code, the tuned files, all records of both tests (including incomplete, failed, and cut cells), the market generator, the block headers, the paper sources, and a one-command reproduction of every table.
+% TODO at submission: release and DOI status as it is then.
+
+\appendix
+\section{Parameters and definitions}\label{sec:app-params}\label{app:params}
+First test and headline market: providers $i = 1, \dots, 10$ have $q^{\max}_i = (0.60, 0.65, \dots, 1.00, 1.00)$, $b_i = (0.40, 0.38, \dots, 0.22)$, $a_i = 0.02$, $k_i = 6$, $[v_{\min}, v_{\max}] = [0.6, 1.4]$, $\sigma = 0.05$, $\beta = 0.05$, $\rho = 0.2$. Fresh markets of the second test: $N$, $J$, $T$, $\sigma$, $\beta$, $\rho$, and $v_{\min}$ as at the headline; $q^{\max}$ ten sorted draws from $U[0.55, 1.0]$; $b_i$ falling linearly in the quality rank between $b_{\mathrm{hi}} \sim U[0.34, 0.46]$ and $b_{\mathrm{lo}} \sim U[0.18, 0.26]$ with noise $U[-0.02, 0.02]$; $a_i \sim U[0, 0.05]$; $k_i$ uniform in $\{4, \dots, 8\}$; $v_{\max} \sim U[1.2, 1.6]$. The focal provider is at the median position. The first-best surplus $S^*$ of a seed is the sum over rounds of the maximum-weight assignment of jobs to capacity slots at full effort.
+
+\section{Proofs}\label{sec:app-proofs}\label{app:proofs}
+\paragraph{Lemma~\ref{lem:local}.} Shading saves $sg$. Each audited escrow is refunded with probability $d$ instead of $d_0$. Given $K$, independence of delivery noise gives the probabilities $1 - (1-d)^K$ and $1 - (1-d_0)^K$ of at least one failure; the continuation loss is incurred once. Taking expectations over $U$ gives the identity.
+
+\paragraph{Corollary~\ref{cor:uniform}.} A fresh identity faces the same distribution of payoff-relevant future states, up to relabelling, as the surviving identity without a failure; immediate free replacement attains it, so $C_U = 0$.
+
+\paragraph{Lemma~\ref{lem:coverage}.} R3's priority list is ordered by age group, newest first. Within a group, independent continuous audit keys make the selected subset uniform among the group's jobs; delivery noise is independent of selection.
+
+\paragraph{Theorem~\ref{thm:renewal}.} The spell length is geometric with mean $1/q_E$; since survival to round $t$ is determined by earlier rounds, the expected spell profit is $r_E/q_E$. Adding the recovery's rewards and entry charges and dividing by the expected cycle length gives $\bar\Pi$ by the renewal-reward theorem~\cite{vlasiou2014renewal}. A cycle's surplus is at most $(r_E - h)/q_E + \epsilon\,\mathbb{E}D$; dividing by $1/q_E + \mathbb{E}D$ and using $\mathbb{E}D \ge L$ gives the bound.
+
+\paragraph{Proposition~\ref{prop:terminal}.} With $C_U = 0$, $A'(0) = s b - \phi(\tau/\sigma)\,\sigma^{-1}\,\mathbb{E}\sum_{j \in U} M_j \ge s\,(b - v_{\max}\phi(\tau/\sigma)/\sigma)$, since $M_j \le v_{\max}$ and $K \le s$.
+
+\bibliographystyle{plainurl}
+\bibliography{refs}
+\end{document}

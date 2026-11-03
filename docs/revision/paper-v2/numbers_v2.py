@@ -15,7 +15,7 @@ from pathlib import Path
 DIGITS = 3
 BARE = re.compile(r"(?<![A-Za-z0-9_.])-?(?:\d+(?:\.\d+)?|\.\d+)%?")       # decimals, integers, percentages; not F111, X7-SC, D2+H3
 # Stripped before the bare-number scan: \const{} (protocol constants, marked explicitly) and arguments of references.
-EXEMPT = re.compile(r"\\(?:const|evone)\{[^}]*\}|\\(?:ref|eqref|cite|citep|citet|label|input|include|includegraphics|url|href)(?:\[[^\]]*\])?\{[^}]*\}")
+EXEMPT = re.compile(r"_\{[0-9]+\}|_[0-9]|\\(?:const|evone)\{[^}]*\}|\\(?:ref|eqref|cite|citep|citet|label|input|include|includegraphics|url|href)(?:\[[^\]]*\])?\{[^}]*\}")
 USE = re.compile(r"\\rv\{([^}]*)\}")
 USEK = re.compile(r"\\rvk\{(\w+)\}\{([^}]*)\}")
 SITE = re.compile(r"\\site\{([^}]*)\}")

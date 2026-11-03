@@ -321,3 +321,10 @@ def test_float_lines_after_a_region_end_and_one_line_floats_are_scanned(tmp_path
 def test_two_float_commands_on_one_line_refused(tmp_path):
     bad = _v4("\\label{sec:model}", "\\label{sec:model}\n\\begin{figure}\\end{figure}\\begin{figure}\nNote: 4 of six markets.\n\\end{figure}")
     assert any("one float command per line" in p for p in _setup3(tmp_path, bad))
+
+
+def test_digit_subscripts_are_identifiers_not_numbers(tmp_path):
+    ok = _v4("\\label{sec:model}", "\\label{sec:model}\n\\begin{table}\nRule $F_{111}$ and $g_{F_{000}}$ and $x_1$.\n\\end{table}")
+    assert _setup3(tmp_path, ok) == []
+    bad = _v4("\\label{sec:model}", "\\label{sec:model}\n\\begin{table}\nGap \\textbf{0.271}.\n\\end{table}")
+    assert any("figure or table" in p for p in _setup3(tmp_path, bad))
