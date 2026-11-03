@@ -25,7 +25,8 @@ case "${1:-}" in
     [ ! -e "$P.ots" ] || die "$P.ots exists already"
     uv run python scripts/lock_v2.py --check
     "${OTS[@]}" stamp "$P"
-    git add "$P.ots" && git commit -S -m "Operation 5: OpenTimestamps proof (pending)"
+    git add "$P.ots"
+    git commit -S -m "Operation 5: OpenTimestamps proof (pending)"
     echo "ok: stamped; next: push" ;;
   push)
     [ -z "$(unsigned)" ] || die "sign first; unsigned: $(unsigned)"
@@ -42,7 +43,8 @@ case "${1:-}" in
     git diff --cached --quiet || git commit -S -m "Operation 5: OpenTimestamps proof (Bitcoin attested)"
     [ -z "$(unsigned)" ] || die "unsigned: $(unsigned)"
     uv run python scripts/lock_v2.py --check
-    git tag -s protocol-v2 -m "Protocol v2" && git push origin "$B" protocol-v2
+    git tag -s protocol-v2 -m "Protocol v2"
+    git push origin "$B" protocol-v2
     echo "ok: tagged and pushed; tell Claude 'done'" ;;
   *) die "usage: operation5.sh sign|stamp|push|upgrade|tag" ;;
 esac
