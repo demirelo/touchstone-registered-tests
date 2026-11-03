@@ -147,13 +147,16 @@ TEX3 = r"""\begin{abstract}
 Replicated on \site{abs-q4-count} of six markets.
 % END-EV2
 \end{abstract}
-\section{Model}
+\section{Introduction}\label{sec:intro}
+Intro.
+\section{Model}\label{sec:model}
 Ten providers at \const{0.050} noise; evaluation 1 gave \evone{0.353}.
 \section{The second test: results}\label{sec:results}
 % BEGIN-EV2
 Replicated on \site{q4-count} of six markets; d is \site{q1-d2h3-d}.
 % END-EV2
-\section{Discussion}
+\section{Discussion}\label{sec:discussion}
+\section{Conclusion}\label{sec:conclusion}
 """
 
 
@@ -194,12 +197,12 @@ def test_results_section_must_be_fully_marked(tmp_path):
 
 
 def test_unmarked_decimal_outside_regions_fails_even_if_not_a_report_value(tmp_path):
-    bad = _v3(r"\section{Discussion}", "\\section{Discussion}\nThe gap was 0.999.")
+    bad = _v3("\\label{sec:discussion}", "\\label{sec:discussion}\nThe gap was 0.999.")
     assert any("0.999" in p for p in _setup3(tmp_path, bad))
 
 
 def test_unmarked_decimal_in_included_caption_fails(tmp_path):
-    bad = _v3(r"\section{Discussion}", "\\section{Discussion}\n\\input{cap}")
+    bad = _v3("\\label{sec:discussion}", "\\label{sec:discussion}\n\\input{cap}")
     assert any("0.999" in p for p in _setup3(tmp_path, bad, extra={"cap.tex": "Caption: gain 0.999.\n"}))
 
 
@@ -213,15 +216,15 @@ def test_results_label_on_its_own_line_and_missing_results_section(tmp_path):
     ok = _v3("\\section{The second test: results}\\label{sec:results}", "\\section{The second test: results}\n\\label{sec:results}")
     assert _setup3(tmp_path, ok) == []
     bad = _v3("\\label{sec:results}", "")
-    assert any("results section" in p for p in _setup3(tmp_path, bad))
+    assert any("required section results" in p for p in _setup3(tmp_path, bad))
 
 
 def test_unmarked_integer_in_a_caption_or_discussion_fails(tmp_path):
     for add in ("\\caption{Replicated on 4 of six markets.}", "Replicated on 4 of six markets."):
-        bad = _v3("\\section{Discussion}", "\\section{Discussion}\\label{sec:discussion}\n" + add)
+        bad = _v3("\\label{sec:discussion}", "\\label{sec:discussion}\n" + add)
         assert any("unmarked number" in p for p in _setup3(tmp_path, bad)), add
-    cap = _v3("\\section{Model}", "\\section{Model}\n\\input{cap}")
-    assert any("unmarked number" in p for p in _setup3(tmp_path, cap, extra={"cap.tex": "\\caption{Replicated on 4 of six markets.}\n"}))
+    cap = _v3("\\label{sec:model}", "\\label{sec:model}\n\\input{cap}")
+    assert any("caption outside a result region" in p for p in _setup3(tmp_path, cap, extra={"cap.tex": "\\caption{Replicated on 4 of six markets.}\n"}))
 
 
 def test_model_section_integers_are_allowed(tmp_path):
@@ -240,3 +243,43 @@ def test_documented_limit_swap_of_two_sites_within_one_section_passes(tmp_path):
     sw = _v3(r"Replicated on \site{q4-count} of six markets; d is \site{q1-d2h3-d}.",
              r"Replicated on \site{q1-d2h3-d} of six markets; d is \site{q4-count}.")
     assert _setup3(tmp_path, sw) == []
+
+
+TEX4 = TEX3
+
+
+def _v4(old, new):
+    assert old in TEX4, old
+    return TEX4.replace(old, new)
+
+
+def test_full_labelled_paper_passes(tmp_path):
+    assert _setup3(tmp_path, TEX4) == []
+
+
+def test_unlabelled_section_fails(tmp_path):
+    assert any("label" in p for p in _setup3(tmp_path, _v4("\\section{Model}\\label{sec:model}", "\\section{Model}")))
+
+
+def test_subsection_sec_label_fails_and_keeps_parent(tmp_path):
+    bad = _v4("% END-EV2\n\\section{Discussion}", "% END-EV2\n\\subsection{More}\\label{sec:more}\nReplicated on 4 of six markets.\n\\section{Discussion}")
+    probs = _setup3(tmp_path, bad)
+    assert any("sec: label" in p for p in probs) and any("results" in p and "4" in p for p in probs)
+
+
+def test_introduction_count_fails(tmp_path):
+    assert any("intro" in p for p in _setup3(tmp_path, _v4("Intro.", "Replicated on 4 of six markets.")))
+
+
+def test_multiline_caption_and_macro_caption_outside_regions_fail(tmp_path):
+    for cap in ("\\caption{\nReplicated on 4 of six markets.\n}\n", "\\caption{Count \\rvk{count}{q4.k}.}\n"):
+        probs = _setup3(tmp_path, _v4("\\section{Model}\\label{sec:model}", "\\section{Model}\\label{sec:model}\n\\input{cap}"), extra={"cap.tex": cap})
+        assert any("caption" in p for p in probs), cap
+
+
+def test_escaped_backslash_percent_and_commented_input_hide_sites(tmp_path):
+    sentence = r"Replicated on \site{q4-count} of six markets; d is \site{q1-d2h3-d}."
+    probs = _setup3(tmp_path, _v4(sentence, r"Line break \\% " + sentence[13:]))
+    assert any("unused" in p for p in probs)
+    probs = _setup3(tmp_path, _v4(sentence, "% \\input{res}\nNothing."), extra={"res.tex": sentence + "\n"})
+    assert any("unused" in p for p in probs)

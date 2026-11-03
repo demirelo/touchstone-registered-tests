@@ -21,8 +21,10 @@ Working files: `docs/revision/paper-v2/main.tex` (draft), `numbers.tex` and `tab
   - **Result sites.** `sites.json` names every result sentence's statistic: site name -> exact report path (question,
     family or market, statistic), kind, and section; it is written from this outline before the report exists and
     reviewed with it. Result regions use only `\site{name}`; raw report paths are refused there. The check requires each
-    site exactly once outside comments, inside a region, in its declared section (sections keyed by `\label{sec:...}`;
-    the check fails without `sec:results`); the abstract and the results section wholly inside regions; no unmarked
+    site exactly once outside comments (comments removed before `\input` files are expanded), inside a region, in its
+    declared section (every `\section` carries `\label{sec:...}`; `sec:` labels only on sections; the keys abstract,
+    intro, results, discussion, and conclusion must exist); every caption read whole and, outside a region, free of
+    numbers and result macros; the abstract and the results section wholly inside regions; no unmarked
     number of any form outside the regions in the abstract, introduction, results, discussion, and conclusion, or in any
     caption; and no unmarked number with three or more decimals anywhere (evaluation-1 values in `\evone{}`, constants in
     `\const{}`). Stated limit, pinned by a test: a swap of any two sites within one section passes
@@ -238,3 +240,11 @@ per-market bounds. F3 factorial contrasts.
 | Unmarked counts in captions and other sections (S2 / A2) | No unmarked number in abstract, introduction, results, discussion, conclusion, or any caption; tests (caption in an included file, discussion sentence) |
 | Limit wording (A1) | "any two sites within one section", pinned by a test that the swap passes |
 | Commented sites (A3) | Comments stripped before counting; test: a site only in a comment is unused |
+
+## Disposition of outline review round 5
+
+| Correction (Sol / Astra) | Change |
+|---|---|
+| Section keys (S1 / A2) | Every `\section` needs `\label{sec:...}`; `sec:` labels elsewhere refused and ignored; five required keys; tests |
+| Captions (S2 / A1) | Whole captions by brace matching across lines; outside regions no number and no result macro; tests (multiline, macro) |
+| Comments (A3) | Comments removed per file before `\input` expansion, `\\%` handled; tests |

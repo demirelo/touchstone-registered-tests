@@ -21,7 +21,7 @@ USEK = re.compile(r"\\rvk\{(\w+)\}\{([^}]*)\}")
 SITE = re.compile(r"\\site\{([^}]*)\}")
 SECTION = re.compile(r"\\section\*?\{([^}]*)\}(?:\\label\{sec:([^}]*)\})?")
 FULL = ("abstract", "results")       # sections that must lie wholly inside result regions
-NOBARE = ("abstract", "intro", "results", "discussion", "conclusion")   # no unmarked number outside regions; captions likewise
+NOBARE = REQUIRED = ("abstract", "intro", "results", "discussion", "conclusion")   # no unmarked number outside regions; captions likewise
 LABEL = re.compile(r"\\label\{sec:([^}]*)\}")
 COMMENT = re.compile(r"(?<!\\)%.*")
 INPUT = re.compile(r"\\(?:input|include)\{([^}]*)\}")
@@ -120,6 +120,25 @@ def _blocks(tex: str) -> tuple[list[str], list[str]]:
     return blocks, problems
 
 
+def strip_comments(text: str) -> str:
+    """Remove LaTeX comments (a % after an even number of backslashes), keeping the region marker lines."""
+    out = []
+    for line in text.splitlines():
+        if line.strip() in ("% BEGIN-EV2", "% END-EV2"):
+            out.append(line.strip()); continue
+        cut, i = len(line), 0
+        while i < len(line):
+            if line[i] == "%":
+                k = i
+                while k > 0 and line[k - 1] == "\\":
+                    k -= 1
+                if (i - k) % 2 == 0:
+                    cut = i; break
+            i += 1
+        out.append(line[:cut])
+    return "\n".join(out) + "\n"
+
+
 def sources(tex_path, numbers_path=None) -> str:
     """The text with every \\input or \\include file inlined, except the generated numbers file and generated tables
     (checked by tables_v2.py --check)."""
@@ -129,7 +148,7 @@ def sources(tex_path, numbers_path=None) -> str:
         if f.name in skip or name.startswith("tables/") or not f.exists():
             return m.group(0)
         return sources(f, numbers_path)
-    return INPUT.sub(inline, Path(tex_path).read_text())
+    return INPUT.sub(inline, strip_comments(Path(tex_path).read_text()))      # comments first: a commented \\input is not followed
 
 
 def _report_numbers(raw: dict) -> set:
@@ -167,23 +186,60 @@ def check(report_path, numbers_path, tex_path) -> list[str]:
 
 
 def _scan(tex: str):
-    """Per line: (section key, inside a result region, text). Section keys: 'abstract', the sec: label, or the title."""
-    sec, region, out = "front", False, []
+    """Per line of comment-free text: (section key, inside a result region, text), and problems. Every \\section needs
+    a \\label{sec:...} on its line or the next; sec: labels elsewhere are refused and do not change the section."""
+    sec, region, out, problems, pending = "front", False, [], [], None
     for line in tex.splitlines():
         s = line.strip()
         if s == "% BEGIN-EV2":
             region = True; continue
         if s == "% END-EV2":
             region = False; continue
-        code = COMMENT.sub("", line)                       # commented text is not in the PDF
-        m = SECTION.search(code); lab = LABEL.search(code)
-        if code.strip().startswith("\\begin{abstract}"):
+        m = SECTION.search(line); lab = LABEL.search(line)
+        if pending is not None and not m:
+            if lab:
+                sec = lab.group(1); lab = None
+            elif s:
+                problems.append(f"section without a \\label{{sec:...}}: {pending}"); sec = pending.lower()
+            pending = None if (s or sec != "front") else pending
+        if s.startswith("\\begin{abstract}"):
             sec = "abstract"
         elif m:
-            sec = m.group(2) or m.group(1).strip().lower()
-        if lab:                                            # a section label on its own line names the current section
-            sec = lab.group(1)
-        out.append((sec, region, code))
+            if m.group(2):
+                sec = m.group(2)
+            else:
+                pending = m.group(1).strip(); sec = pending.lower()
+        elif lab:
+            problems.append(f"sec: label outside a section heading: {lab.group(1)}")
+        out.append((sec, region, line))
+    if pending is not None:
+        problems.append(f"section without a \\label{{sec:...}}: {pending}")
+    return out, problems
+
+
+def _captions(tex: str) -> list[tuple[bool, str]]:
+    """Whole \\caption arguments (brace-matched across lines), each with whether it starts inside a result region."""
+    region, spans, pos = False, [], 0
+    for line in tex.splitlines(keepends=True):
+        s = line.strip()
+        if s == "% BEGIN-EV2":
+            region = True
+        elif s == "% END-EV2":
+            region = False
+        spans.append((pos, region)); pos += len(line)
+    def inside(off):
+        r = False
+        for start, reg in spans:
+            if start > off:
+                break
+            r = reg
+        return r
+    out = []
+    for m in re.finditer(r"\\caption(?:\[[^\]]*\])?\{", tex):
+        depth, k = 1, m.end()
+        while k < len(tex) and depth:
+            depth += {"{": 1, "}": -1}.get(tex[k], 0) if tex[k - 1] != "\\" else 0; k += 1
+        out.append((inside(m.start()), tex[m.end():k - 1]))
     return out
 
 
@@ -194,9 +250,12 @@ def _site_checks(tex: str, sites: dict, raw: dict, known: dict, outside: str) ->
             problems.append(f"site {n}: report path {d.get('path')} not in the report")
         elif d.get("kind") not in KINDS or not KINDS[d["kind"]](d["path"].split(".")[-1], raw[d["path"]]):
             problems.append(f"site {n}: kind {d.get('kind')} does not fit {d['path']}")
-    seen = {}; scanned = _scan(tex)
-    if "results" not in {sec for sec, _, _ in scanned}:
-        problems.append("results section (\\label{sec:results}) not found")
+    seen = {}; scanned, sp = _scan(tex); problems += sp
+    keys = {sec for sec, _, _ in scanned}
+    problems += [f"required section {k} (\\label{{sec:{k}}}) not found" for k in REQUIRED if k not in keys]
+    for in_region, cap in _captions(tex):
+        if not in_region and (BARE.findall(EXEMPT.sub("", cap)) or USE.search(cap) or USEK.search(cap) or SITE.search(cap)):
+            problems.append(f"caption outside a result region holds a number or result macro: {' '.join(cap.split())[:80]}")
     for sec, region, line in scanned:
         for n in SITE.findall(line):
             seen.setdefault(n, []).append(sec)
@@ -212,7 +271,7 @@ def _site_checks(tex: str, sites: dict, raw: dict, known: dict, outside: str) ->
         if sec in FULL and not region and s and not s.startswith("%") and not SECTION.search(s) \
                 and not re.fullmatch(r"\\(begin|end)\{abstract\}|\\label\{[^}]*\}", s):
             problems.append(f"text outside a result region in section {sec}: {s[:80]}")
-        if not region and (sec in NOBARE or "\\caption" in line):
+        if not region and sec in NOBARE:
             problems += [f"unmarked number outside the result regions in section {sec} (use \\site, \\evone, or \\const): {x}"
                          for x in BARE.findall(EXEMPT.sub("", line))]
     problems += [f"site {n} used twice ({len(v)} times)" for n, v in sorted(seen.items()) if len(v) > 1 and n in sites]
