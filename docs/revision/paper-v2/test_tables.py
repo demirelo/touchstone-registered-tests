@@ -70,3 +70,12 @@ def test_all_tables_compile(report, tmp_path):
     (tmp_path / "t.tex").write_text("\\documentclass{article}\\usepackage{booktabs}\\begin{document}\n" + tex + "\n\\end{document}\n")
     r = subprocess.run(["pdflatex", "-interaction=nonstopmode", "-halt-on-error", "t.tex"], cwd=tmp_path, capture_output=True, text=True)
     assert r.returncode == 0, r.stdout[-1500:]
+
+
+def test_small_p_values_keep_digits_in_tables(report):
+    report["q1"]["tests"]["C*-F111|D2+H3"]["p"] = 0.0001
+    for m in W.FRESH:
+        if isinstance(report["q4"]["markets"][m], dict):
+            report["q4"]["markets"][m]["p_gain"] = 0.00003
+    assert "0.0001" in _row(T.q1(report), "D2+H3")
+    assert "3\\times10^{-5}" in _row(T.q4(report), "fresh0")

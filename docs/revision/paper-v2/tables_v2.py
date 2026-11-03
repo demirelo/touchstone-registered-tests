@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from numbers_v2 import _fmt  # noqa: E402
+from numbers_v2 import _fmt, _fmt_p  # noqa: E402
 
 FRESH = tuple(f"fresh{i}" for i in range(6))
 FAMS = ("D2+H3", "X7-SC")
@@ -47,7 +47,7 @@ def q1(r: dict) -> str:
     rows = []
     for f in FAMS:
         t = r["q1"]["tests"][f"C*-F111|{f}"]
-        rows.append((f, [num(t.get("estimate")), iv(t.get("interval")), esc(t.get("category")), num(t.get("p")),
+        rows.append((f, [num(t.get("estimate")), iv(t.get("interval")), esc(t.get("category")), _fmt_p(t.get("p")),
                          esc(t.get("efficiency") or "n/a"), esc(t.get("better") or "none")]))
     return tabular("lrllrll", ["Family", "$d$", "Interval", "Category", "$p$", "Efficiency", "Better"], rows)
 
@@ -68,8 +68,8 @@ def q4(r: dict) -> str:
         if isinstance(x, str):
             rows.append((m, x)); continue
         dec = "pass" if m in q.get("passing", []) else "fail" if m in q.get("failing", []) else "not decided"
-        rows.append((m, [num(x["gain_diff"]), num(x["gain_diff_lower"]), num(x["eff"]), num(x["eff_lower"]), num(x["p_gain"]),
-                         num(x["p_eff"]), dec + (" (search flagged)" if x.get("search") else "")]))
+        rows.append((m, [num(x["gain_diff"]), num(x["gain_diff_lower"]), num(x["eff"]), num(x["eff_lower"]), _fmt_p(x["p_gain"]),
+                         _fmt_p(x["p_eff"]), dec + (" (search flagged)" if x.get("search") else "")]))
     return tabular("lrrrrrrl", ["Market", "F000$-$F111", "Lower", "F111 eff.", "Lower", "$p'_{\\mathrm{gain}}$", "$p'_{\\mathrm{eff}}$",
                                 "Holm"], rows)
 

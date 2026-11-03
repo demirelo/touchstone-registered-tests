@@ -18,7 +18,15 @@ Working files: `docs/revision/paper-v2/main.tex` (draft), `numbers.tex` and `tab
 - **Numbers.** Every evaluation-2 number comes from `report.json`:
   - Tables are **generated whole** by `tables_v2.py` from named row specifications (statistic, report path, row label);
     the text never fills a result table by hand. Tests: swapped labels, missing cells, refused cells, nonfinite values.
-  - Prose in result regions uses `\rvk{<kind>}{<report path>}` (kinds: count, p, gain, eff, label); the check
+  - **Result sites.** `sites.json` names every result sentence's statistic: site name -> exact report path (question,
+    family or market, statistic), kind, and section; it is written from this outline before the report exists and
+    reviewed with it. Result regions use only `\site{name}`; raw report paths are refused there. The check requires each
+    site exactly once, inside a region, in its declared section; the abstract and the results section wholly inside
+    regions; and no unmarked number with three or more decimals anywhere outside the regions (evaluation-1 values in
+    `\evone{}`, constants in `\const{}`). Stated limit: a swap of two sites of the same kind within one section passes
+    the check; the final read of the compiled PDF against `report.md` (step 2) covers it. Tables print p-values with the
+    same formatter as prose.
+  - Prose outside the manifest uses `\rvk{<kind>}{<report path>}` (kinds: count, p, gain, eff, label); the check
     verifies that the field name and the value type fit the kind, so a gain cannot stand where a count belongs. Plain
     `\rv` is refused inside result regions. The check inlines every `\input` file (generated tables excepted, checked by
     `tables_v2.py --check`) and flags any number with three or more decimals outside the regions that equals a report
@@ -211,3 +219,11 @@ per-market bounds. F3 factorial contrasts.
 | p-value rounding (S3 / A2) | Four significant digits, scientific form for small values; test with 0.0001 and 3e-05 |
 | Branch and chain assumptions (S4 / A3) | Section 8: `two20k`, no miner selection, deeper reorganisation unhandled and reported |
 | Author's note (2026-11-03) | Plain-language titles throughout |
+
+## Disposition of outline review round 3
+
+| Correction (Sol / Astra) | Change |
+|---|---|
+| Site-to-path binding, same-kind swaps (S1 / A1) | `sites.json` manifest; `\site{}` only in regions; each site once, in its section; tests for wrong section, double use, unused, unknown site, bad manifest path; residual limit stated |
+| Coverage of unmarked results (S2 / A2) | Abstract and results section wholly in regions; every unmarked three-decimal number outside regions flagged, including included captions; tests |
+| Table p-values (S3 / A3) | Tables use `_fmt_p`; test for small p in the Q1 and Q4 tables |

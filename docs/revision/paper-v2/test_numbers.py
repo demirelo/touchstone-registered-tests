@@ -137,3 +137,73 @@ def test_small_p_values_keep_four_significant_digits():
     m = N.macros(R2)
     assert m["q4.p.0"] == "0.0001" and m["q4.markets.fresh0.p_gain"] == r"\ensuremath{3\times10^{-5}}"
     assert m["q1.tests.C*-F111|D2+H3.p"] == "0.0004" and m["q4.p.1"] == "0.2"
+
+
+SITES = {"q4-count": {"path": "q4.k", "kind": "count", "section": "results"},
+         "q1-d2h3-d": {"path": "q1.tests.C*-F111|D2+H3.estimate", "kind": "gain", "section": "results"},
+         "abs-q4-count": {"path": "q4.k", "kind": "count", "section": "abstract"}}
+TEX3 = r"""\begin{abstract}
+% BEGIN-EV2
+Replicated on \site{abs-q4-count} of six markets.
+% END-EV2
+\end{abstract}
+\section{Model}
+Ten providers at \const{0.050} noise; evaluation 1 gave \evone{0.353}.
+\section{The second test: results}\label{sec:results}
+% BEGIN-EV2
+Replicated on \site{q4-count} of six markets; d is \site{q1-d2h3-d}.
+% END-EV2
+\section{Discussion}
+"""
+
+
+def _setup3(tmp_path, tex, sites=SITES, extra=None):
+    (tmp_path / "sites.json").write_text(json.dumps(sites))
+    return _setup2(tmp_path, tex, extra)
+
+
+def _v3(old, new):
+    assert old in TEX3, old
+    return TEX3.replace(old, new)
+
+
+def test_sites_pass_when_consistent(tmp_path):
+    assert _setup3(tmp_path, TEX3) == []
+
+
+def test_site_in_the_wrong_section_fails(tmp_path):
+    bad = _v3(r"Replicated on \site{q4-count} of six markets; d is \site{q1-d2h3-d}.", r"d is \site{q1-d2h3-d}.").replace(
+        r"Replicated on \site{abs-q4-count} of six markets.", r"Replicated on \site{q4-count} and \site{abs-q4-count}.")
+    assert any("section" in p for p in _setup3(tmp_path, bad))
+
+
+def test_site_used_twice_or_unused_fails(tmp_path):
+    bad = _v3(r"d is \site{q1-d2h3-d}.", r"d is \site{q4-count}.")
+    probs = _setup3(tmp_path, bad)
+    assert any("twice" in p for p in probs) and any("unused" in p for p in probs)
+
+
+def test_raw_path_macros_refused_in_regions(tmp_path):
+    bad = _v3(r"d is \site{q1-d2h3-d}.", r"d is \site{q1-d2h3-d}, bound \rvk{gain}{q4.markets.fresh0.gain_diff}.")
+    assert any("\\site" in p for p in _setup3(tmp_path, bad))
+
+
+def test_results_section_must_be_fully_marked(tmp_path):
+    bad = _v3("% END-EV2\n\\section{Discussion}", "% END-EV2\nReplicated on 4 of six markets.\n\\section{Discussion}")
+    assert any("outside a result region" in p for p in _setup3(tmp_path, bad))
+
+
+def test_unmarked_decimal_outside_regions_fails_even_if_not_a_report_value(tmp_path):
+    bad = _v3(r"\section{Discussion}", "\\section{Discussion}\nThe gap was 0.999.")
+    assert any("0.999" in p for p in _setup3(tmp_path, bad))
+
+
+def test_unmarked_decimal_in_included_caption_fails(tmp_path):
+    bad = _v3(r"\section{Discussion}", "\\section{Discussion}\n\\input{cap}")
+    assert any("0.999" in p for p in _setup3(tmp_path, bad, extra={"cap.tex": "Caption: gain 0.999.\n"}))
+
+
+def test_unknown_site_and_bad_manifest_path_fail(tmp_path):
+    sites = dict(SITES, extra={"path": "q9.x", "kind": "gain", "section": "results"})
+    probs = _setup3(tmp_path, _v3(r"d is \site{q1-d2h3-d}.", r"d is \site{q1-d2h3-d} \site{extra} \site{nope}."), sites)
+    assert any("q9.x" in p for p in probs) and any("nope" in p for p in probs)
