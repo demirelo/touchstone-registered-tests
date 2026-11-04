@@ -187,3 +187,11 @@ Astra accept-with-caveat; the one caveat (Holm citation) is resolved in 06c75e9 
 - fresh5: the launcher now refuses a pod whose config hash differs from the container hash (EXPECT_CFG). Attempt 1 failed prep on an unreachable pod ssh (0.073 USD, pod deleted); attempt 2 (tag fresh5-r2) launched.
 
 - 2026-11-04 17:24: fresh5 (attempt 4, pod dn2ktdxwqkupsj) RUN OK, pod deleted, 3.878 USD recorded (`budget_v2.py --record fresh5-r4 3.878`). Config guard held (pod cfgh = container hash bf562902...). 1-ulp check (`cfg_ulp.py --markets fresh5`, results/v2/deviation/cfg_ulp_fresh5.json): 1 differing value, max 1 ulp, verify exit 0. Paper range now 1 to 6 differing values over the six fresh markets.
+
+## Operation 7 exit and Operation 8 start (2026-11-04)
+
+- headline-rho1 (pod 0ubduktzwcgbpl) RUN OK, 1.129 USD; headline-rho02 (pod x9m6inn74tvs08) RUN OK, 10.814 USD. All eight evaluation pods done and deleted. Evaluation spend 39.39 USD of the 43 USD cap (sum of `budget-ledger.json` evaluation spends).
+- `results/pods/post_eval.sh` (log `results/v2/post_eval.log`): POST-EVAL OK. Headline strict verify ok at both rho; all six fresh markets within 1 ulp (2, 2, 6, 4, 2, 1 differing values) and verify ok with the container configs; merge 866 files from 873 (7 identical salt.hex); `report_v2.py --check` ok; paper inputs written.
+- Step 2 used a stale `cfg_linux.json` because the container failed without network and a pipe hid the exit code; a rerun at 21:07 gave the same hash f78bd5fe, so the report stands. Guard: `cfg_linux.sh` pipefail and fresh-output check, `test_cfg_linux.sh` (lessons.md).
+- Report: Q1 both tests "equivalent, direction R3 lower"; Q4 replicated on 3 of 6 markets (failing fresh0, fresh2, fresh5); no missing cells. Predictions (`results/v2/paper/scoring.json`): 10 fulfilled, 8 failed.
+- Operation 8 review round 1 started 21:07: Sol high and Astra high on `docs/revision/roster/brief-report-r1.md`.

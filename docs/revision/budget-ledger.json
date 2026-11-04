@@ -3,13 +3,7 @@
   "development": 12.0,
   "evaluation": 43.0
  },
- "reservations": [
-  {
-   "op": "evaluation",
-   "tag": "headline-rho02",
-   "cap": 13.425
-  }
- ],
+ "reservations": [],
  "spent": [
   {
    "op": "development",
@@ -110,6 +104,16 @@
    "op": "evaluation",
    "tag": "fresh5-r4",
    "usd": 3.878
+  },
+  {
+   "op": "evaluation",
+   "tag": "headline-rho1",
+   "usd": 1.129
+  },
+  {
+   "op": "evaluation",
+   "tag": "headline-rho02",
+   "usd": 10.814
   }
  ],
  "approval": {
