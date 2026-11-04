@@ -1,7 +1,8 @@
 \documentclass[11pt]{article}
 \usepackage[T1]{fontenc}
 \usepackage[margin=1in]{geometry}
-\usepackage{amsmath,amssymb,amsthm,booktabs,graphicx,hyperref}
+\usepackage{amsmath,amssymb,amsthm,booktabs,graphicx,hyperref,adjustbox}
+\emergencystretch=2em
 \newtheorem{theorem}{Theorem}\newtheorem{lemma}{Lemma}\newtheorem{corollary}{Corollary}\newtheorem{proposition}{Proposition}
 \input{numbers.tex}
 % Draft 9, built from docs/revision/paper-v2/outline.md (consensus: Sol round 9, Astra round 10).
@@ -34,7 +35,7 @@ We study what checking alone can do when the usual remedies against cheap identi
 
 \paragraph{Two registered tests.} Both tests used staged registration: a protocol locked and timestamped before the evaluated outcomes existed, and changes recorded in signed, timestamped amendments. The first test (October \const{2026}) locked its claim before the rule was implemented; development results then informed an amended claim and a successor rule, and both claims are reported. The second test (protocol v2) was locked with a Bitcoin timestamp before six fresh market instances and their seeds were drawn from a later block; it adds a matched comparator, a factorial decomposition, stronger attackers, and a replication of the first test's comparison.
 
-\paragraph{Contributions.} (i) A conditional analysis of when free replacement makes a ban costless. (ii) A matched comparison of persistent age-ranked targeting with verified-history targeting, and a factorial attribution of R3's three parts. (iii) Measured attack strength and failure boundaries: stronger and independently authored attackers, welfare attacks and coalitions, the terminal-reserve collapse and a tested repair. (iv) Two registered tests whose original failure, amendments, and fresh-market replication are documented in a public record.
+\paragraph{Contributions.} (i) A conditional analysis of when free replacement makes a ban costless. (ii) A matched comparison of persistent age-ranked targeting with verified-history targeting, and a factorial attribution of R3's three parts. (iii) Measured attack strength and failure boundaries: stronger and independently authored attackers, welfare attacks and coalitions, the terminal-reserve collapse and a tested repair. (iv) Two registered tests whose original failure, amendments, and fresh-market replication are documented in a record released with the paper.
 % BEGIN-EV2
 \paragraph{Results in brief.} Q1: R3 and the best tested verified-history comparator are ``\site{int_q1_cat}'' under X7-SC, and likewise under D2+H3, so persistent age-ranked targeting is not materially better than a credibility rule at the same budget. Q2: the priority phase and newest-first targeting each lower the replacement gain (main effects \site{int_q2_p} and \site{int_q2_g}), but either one alone does most of the work. Q3: stronger and independently authored attackers stay below the replacement gain that B3 allows, while an unconstrained welfare attack lowers R3's gross efficiency to \site{int_q3_w0}. Q4: the first test's B3--R3 comparison replicates on \site{int_q4_k} of six fresh markets; where it fails, R3 still leads, by less than the registered threshold.
 % END-EV2
@@ -111,7 +112,7 @@ At the first test's parameters the right-hand side is below $\const{0.067}$ and 
 Every unilateral attacker family reads only the provider's own history across its identities, the round, its own parameters, and the rule's public constants $T$ and $L$; it does not observe the remaining global budget or other identities' ranks. Coalition members may share their members' own histories. For each parametrised family a registered search (CMA-ES with restarts on training seeds) finds the attack. A rule's truthful reference is then selected on training seeds from one menu built from its D2+H3 and X7-SC searches and frozen; the W1 welfare searches, which need that reference, run after the freeze; coalitions use their own staged joint truthful reference; and no evaluation-seed episode of a market runs before all of its choices are frozen.
 
 \begin{table}[t]\centering\small
-\begin{tabular}{@{}lp{\const{0.5}\linewidth}ll@{}}\toprule
+\begin{tabular}{@{}lp{\const{0.46}\linewidth}lp{\const{0.22}\linewidth}@{}}\toprule
 Family & What it does and observes & Knobs & Where \\\midrule
 D2 & Adaptive claim markup that falls after a failed audit and recovers otherwise; own history & \const{7} & both tests; second test: headline only \\
 D2+H3 & D2 with a searched option to replace the identity after a failed audit & \const{8} & both tests; second test: all seven markets \\
@@ -190,12 +191,12 @@ All values below come from the report that the tagged code wrote; the addendum b
 \paragraph{Age-ranked versus history-based checking (Q1).} Pooled over the six fresh markets, C$^*$ leaves the identity-replacement attacker a gain higher than R3's by \site{r_q1_d_est} under D2+H3 and by \site{r_q1_x_est} under X7-SC. Holm's procedure rejects $d = \const{0}$ (D2+H3: $p = $ \site{r_q1_d_p}), so the sign is established, but both intervals lie inside the equivalence margin: the categories are ``\site{r_q1_d_cat}'' (D2+H3) and ``\site{r_q1_x_cat}'' (X7-SC), and the efficiency label is ``\site{r_q1_d_eff}''. R3 is not materially better than the best tested adaptation of verified-history targeting. The difference changes sign across markets: per market (descriptive), it ranges from \site{r_q1_f3_d} on fresh3 to \site{r_q1_f1_d} on fresh1 under D2+H3. Both decisions are about the prescribed search procedure: the D2+H3 test uses search-flagged cells, and the X7-SC test uses them through its references (addendum). The side evidence (Table~\ref{tab:q1-side}) shows near-equal efficiency, audit spending, refunds, and served share; the two rules differ mainly in the attacker's truthful reference profit.
 
 \begin{table}[t]\centering\small
-\input{tables/q1.tex}
+\adjustbox{max width=\linewidth}{\input{tables/q1.tex}}
 \caption{Q1: pooled difference in attacker gain, C$^*$ minus R3, per family, with interval, category, Holm $p$-value, and efficiency label.}\label{tab:q1}
 \end{table}
 
 \begin{table}[t]\centering\small
-\input{tables/q1_side.tex}
+\adjustbox{max width=\linewidth}{\input{tables/q1_side.tex}}
 \caption{Q1 side evidence, R3 minus C$^*$, pooled over the fresh markets (descriptive).}\label{tab:q1-side}
 \end{table}
 
@@ -207,8 +208,8 @@ All values below come from the report that the tagged code wrote; the addendum b
 \paragraph{Repeating the comparison on six new markets (Q4).} The first test's comparison, B3 against R3 under D2+H3 with R3's efficiency condition, replicates on \site{r_q4_k} of the six markets (Table~\ref{tab:q4}). On every market R3 leaves a lower gain than B3 and keeps its efficiency condition; where the replication fails, the gain difference is smaller than the registered threshold, not reversed: \site{r_q4_f0} on fresh0, \site{r_q4_f2} on fresh2, and \site{r_q4_f5} on fresh5, against \site{r_q4_f1} on fresh1. R3's efficiency on fresh2, the lowest, is \site{r_q4_f2_eff}. The decisions on fresh0, fresh1, fresh3, and fresh4 are about the prescribed search procedure (fresh0 and fresh3 through their references; addendum). The registered prediction of at least five passing markets failed. Generalisation of the full first-test claim to this neighbourhood is therefore not established.
 
 \begin{table}[t]\centering\small
-\input{tables/q4.tex}
-\caption{Q4 per market: B3 minus R3 gain difference and its calibrated lower bound, R3's efficiency and lower bound, the two calibrated $p$-values, and the Holm decision.}\label{tab:q4}
+\adjustbox{max width=\linewidth}{\input{tables/q4.tex}}
+\caption{Q4 per market: B3 minus R3 gain difference and its calibrated lower bound, R3's efficiency and lower bound, the two calibrated $p$-values, and the Holm decision. The decisions on fresh0, fresh1, fresh3, and fresh4 are about the prescribed search procedure; the table marks the direct flags (fresh1, fresh4), and fresh0 and fresh3 depend on flagged cells through their references (addendum).}\label{tab:q4}
 \end{table}
 
 \begin{figure}[t]\centering
@@ -219,12 +220,12 @@ All values below come from the report that the tagged code wrote; the addendum b
 \paragraph{Which parts of R3 matter (Q2).} Under separately searched D2+H3 attacks, pooled over the fresh markets, the main effects on the gain are \site{r_q2_p} for the priority phase P and \site{r_q2_g} for newest-first residual targeting G, both reductions, and \site{r_q2_s} for pacing S. The two targeting parts are substitutes: their interaction is \site{r_q2_pg}, and G changes the gain by \site{r_q2_g_p0} without the priority phase but by only \site{r_q2_g_p1} with it. Either form of age-ranked targeting removes most of the replacement gain; adding the other adds little. The pattern also appears in the fixed-attack contrasts averaged over the eight selected attacks (P: \site{r_q2_fixed_p}). Our registered conjectures (P negligible, the targeting parts additive, S helpful) failed (Table~\ref{tab:predictions}). X7-SC agrees (Table~\ref{tab:q2-x7sc}).
 
 \begin{table}[t]\centering\small
-\input{tables/q2_d2h3.tex}
+\adjustbox{max width=\linewidth}{\input{tables/q2_d2h3.tex}}
 \caption{Q2 under D2+H3: factorial contrasts, searched and fixed attacks, with attack and reference terms and efficiency (descriptive, nominal intervals).}\label{tab:q2}
 \end{table}
 
 \begin{table}[t]\centering\small
-\input{tables/q2_x7sc.tex}
+\adjustbox{max width=\linewidth}{\input{tables/q2_x7sc.tex}}
 \caption{Q2 under X7-SC, as in Table~\ref{tab:q2}.}\label{tab:q2-x7sc}
 \end{table}
 
@@ -236,22 +237,22 @@ All values below come from the report that the tagged code wrote; the addendum b
 \paragraph{Stronger attacks and where R3 fails (Q3).} Table~\ref{tab:q3-envelope} gives each core rule's attack envelope, the family with the highest training gain, evaluated unchanged. Against B3 the envelope reaches \site{r_q3_f000_f1} on fresh1; against R3 it stays at \site{r_q3_f111_f1} there, and against C$^*$ at \site{r_q3_cs_f1}, from \site{r_q3_cs_f1_fam}. The independently authored, defence-aware family H4, run at the headline market only, gains \site{r_q3_f111_h4} against R3 and \site{r_q3_f000_h4} against B3. Robustness against D2+H3 is unanswered for every core rule because of search flags, and so is R3's robustness against X7-SC; X5-AG/v2 and H4 carry no search-quality claim. Welfare attacks are the clearest weakness: the training-selected attack without an attacker-profit constraint (W0) lowers R3's gross efficiency to \site{r_q3_w0}, as it does for the other core rules, while with the constraint (W1) efficiency stays at \site{r_q3_w1} (Table~\ref{tab:q3-welfare}). Coalitions gain far more against B3 (two synchronised members: \site{r_q3_coal_f000}) than against R3 (five synchronised members: \site{r_q3_coal_f111}); we make no coalition-stability claim (Table~\ref{tab:q3-coalitions}). At $\rho = \const{1}$, where R3's terminal reserve collapses, R3 leaves \site{r_rep_f111}; the repair R4 lowers this to \site{r_rep_r4} and C$^*$ with the capped schedule (C$^*$/S2) to \site{r_rep_cs2} (Table~\ref{tab:q3-repair}).
 
 \begin{table}[t]\centering\small
-\input{tables/envelope.tex}
+\adjustbox{max width=\linewidth}{\input{tables/envelope.tex}}
 \caption{Q3 attack envelope per core rule and market; H4 at the headline market only.}\label{tab:q3-envelope}
 \end{table}
 
 \begin{table}[t]\centering\small
-\input{tables/welfare.tex}
+\adjustbox{max width=\linewidth}{\input{tables/welfare.tex}}
 \caption{Q3 training-selected welfare attacks under W0 and W1, with W1's profitability class.}\label{tab:q3-welfare}
 \end{table}
 
 \begin{table}[t]\centering\small
-\input{tables/coalitions.tex}
+\adjustbox{max width=\linewidth}{\input{tables/coalitions.tex}}
 \caption{Q3 coalitions: total and minimum member gain against the coordinated truthful reference.}\label{tab:q3-coalitions}
 \end{table}
 
 \begin{table}[t]\centering\small
-\input{tables/repair.tex}
+\adjustbox{max width=\linewidth}{\input{tables/repair.tex}}
 \caption{Q3 repair block at high audit cost, R3 against R4 and the other rules.}\label{tab:q3-repair}
 \end{table}
 
@@ -262,9 +263,10 @@ All values below come from the report that the tagged code wrote; the addendum b
 \paragraph{Predictions.} Table~\ref{tab:predictions} scores every registered prediction from the report. The failures are informative: we expected the priority phase to matter little, the replication to hold on at least five markets, X5-AG/v2 to stay below D2+H3, and the unconstrained welfare attack to leave R3's and C$^*$'s efficiency at the registered level, and none of these held.
 
 \begin{table}[t]\centering\small
-\input{tables/predictions.tex}
-\caption{Registered predictions, scored from the report.}\label{tab:predictions}
+\adjustbox{max width=\linewidth}{\input{tables/predictions.tex}}
+\caption{Registered predictions, scored from the report. Identifiers and statements as in the registered predictions file (supplement); a pair of values gives two statistics of the scored cell, as labelled, not an interval.}\label{tab:predictions}
 \end{table}
+\clearpage
 % END-EV2
 
 \section{What the results show and what they do not}\label{sec:discussion}
@@ -279,10 +281,10 @@ All values below come from the report that the tagged code wrote; the addendum b
 
 \section{Conclusion}\label{sec:conclusion}
 % BEGIN-EV2
-Free identity replacement makes a ban costless under uniform audits, and in our tests directing audits at new or unverified identities reduces the measured replacement gain. Two registered tests, the second on fresh markets drawn after the lock, show that this holds in sign across the sampled markets but not with the margin first claimed, that a verified-history rule matches the age-ranked rule we proposed, and that neither protects efficiency against loss-accepting welfare attacks. The record of both tests, including the original failure, the amendments, the deviations, and the failed predictions, is public.
+Free identity replacement makes a ban costless under uniform audits, and in our tests directing audits at new or unverified identities reduces the measured replacement gain. Two registered tests, the second on fresh markets drawn after the lock, show that this holds in sign across the sampled markets but not with the margin first claimed, that a verified-history rule matches the age-ranked rule we proposed, and that neither protects efficiency against loss-accepting welfare attacks. The record of both tests, including the original failure, the amendments, the deviations, and the failed predictions, is released with the paper.
 % END-EV2
 
-\paragraph{Availability.} The public release at the report commit contains the code, the tuned files, all records of both tests (including incomplete, failed, and cut cells), the market generator, the block headers, the released H4 bundle, the deviation evidence and the decision-stability re-evaluation, the paper sources, and a one-command reproduction of every table under the disclosed configuration substitution.
+\paragraph{Availability.} The release, at the report commit and signed tag \texttt{protocol-v2}, will contain the code, the tuned files, all records of both tests (including incomplete, failed, and cut cells), the market generator, the block headers, the released H4 bundle, the deviation evidence and the decision-stability re-evaluation, and the paper sources. One command (\texttt{docs/revision/deviation/reproduce\_deviation.py}) checks the artifact against the tag and reproduces the second test's report under the disclosed configuration substitution; the second test's tables and figures are regenerated from that report by the scripts in \texttt{docs/revision/paper-v2}, and the first test's records and verdict are in the release as recorded in October~\const{2026}.
 % TODO at submission: release and DOI status as it is then.
 
 \appendix

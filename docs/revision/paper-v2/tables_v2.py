@@ -132,13 +132,23 @@ def repair(r: dict) -> str:
     return tabular("lrl", ["Rule, family ($\\rho = 1$)", "Gain", "Interval"], rows or [("all", "no records")])
 
 
+PAIR_LABELS = {"Q2-d": ("fixed", "searched"), "Q3-d": ("G_min", "G_tot")}     # score_v2.py's pair order
+
+
+def _pval(pid: str, v) -> str:
+    if isinstance(v, (list, tuple)):
+        labels = PAIR_LABELS.get(pid, tuple(f"value {i + 1}" for i in range(len(v))))
+        return ", ".join(f"{esc(lab)} {num(float(x)) if x is not None else 'n/a'}" for lab, x in zip(labels, v))
+    return esc(v) if isinstance(v, str) else num(v)
+
+
 def predictions(sc: dict) -> str:
-    """The prediction scoring table (score_v2.py): overall status, then each scored cell with its value and status."""
+    """The prediction scoring table (score_v2.py): overall status, then each scored cell with its value and status; paired
+    values carry their labels (they are two statistics, not an interval)."""
     rows = []
     for pid in sorted(sc):
         v = sc[pid]
-        cells = "; ".join(f"{esc(c['cell'])} {num(c['value']) if not isinstance(c['value'], str) else esc(c['value'])} {esc(c['status'])}"
-                          for c in v.get("cells", [])) or "none scored"
+        cells = "; ".join(f"{esc(c['cell'])} {_pval(pid, c['value'])} {esc(c['status'])}" for c in v.get("cells", [])) or "none scored"
         rows.append((pid, [esc(v["status"]), cells]))
     return tabular("llp{0.62\\linewidth}", ["Prediction", "Status", "Scored cells"], rows)
 

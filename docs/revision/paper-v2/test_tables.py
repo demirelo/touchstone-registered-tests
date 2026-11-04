@@ -91,3 +91,12 @@ def test_predictions_rows_carry_their_own_status_and_cells():
     r = _row(tex, "Q2-a")
     assert r.split("&")[1].strip() == "failed" and "S 0.004 failed" in r and "-0.095" in r.replace("\\ensuremath{", "").replace("}", "")
     assert "not assessed" in _row(tex, "Q4-b")
+
+
+def test_prediction_pairs_are_labelled_and_rounded():
+    sc = {"Q2-d": {"status": "failed", "cells": [{"cell": "P D2+H3", "status": "failed", "value": [-0.08739750289482723, -0.0831087194]}]},
+          "Q3-d": {"status": "fulfilled", "cells": [{"cell": "F111 c2_staggered", "status": "fulfilled", "value": [-0.0019989738, 0.07708038]}]}}
+    tex = T.predictions(sc).replace("\\ensuremath{", "").replace("}", "")
+    assert "fixed -0.087, searched -0.083" in _row(tex, "Q2-d")
+    assert "G_min -0.002, G_tot 0.077" in _row(tex, "Q3-d").replace("\\_", "_")
+    assert "0.0873" not in tex and "[" not in tex.split("midrule")[1]
