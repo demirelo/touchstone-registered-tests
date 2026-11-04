@@ -886,3 +886,3092 @@ hook: PostToolUse
 hook: PostToolUse Completed
 hook: PostToolUse Completed
 hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "nl -ba docs/superpowers/specs/2026-10-22-revision-program-design.md | sed -n '532,617p'" in /Users/oemer.demirel/Projects/touchstone
+exec
+/bin/zsh -lc 'nl -ba experiments/protocol-v2.yaml; nl -ba docs/revision/deviation/cfg_ulp.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc "python - <<'PY'
+import json
+from pathlib import Path
+b=Path('/Users/oemer.demirel/Projects/touchstone')
+for p in ['results/v2/report/report.json','results/v2/deviation/cfg_ulp_all.json','results/v2/deviation/instances_container_configs.json','results/v2/draw/instances.json']:
+ d=json.loads((b/p).read_text());print(p, type(d).__name__);print([(k,type(v).__name__,len(v) if isinstance(v,(list,dict,str)) else v) for k,v in d.items()] if isinstance(d,dict) else len(d))
+PY" in /Users/oemer.demirel/Projects/touchstone
+exec
+/bin/zsh -lc 'head -90 results/v2/post_eval.log; nl -ba results/pods/post_eval.sh | head -160; nl -ba scripts/report_v2.py | head -160' in /Users/oemer.demirel/Projects/touchstone
+ succeeded in 347ms:
+   532	## 9. Protocol v2: estimands and decision rules
+   533	
+   534	### 9.1 Estimands
+   535	
+   536	For a cell: the expected gain of the frozen attack (selected on dev-train) against the frozen reference, over the seed
+   537	distribution of that market, conditional on the frozen searches. Contrasts between rules use per-seed differences on
+   538	common seeds (the same seeds, salt, and job values for every rule in a market).
+   539	
+   540	### 9.2 Intervals and tests
+   541	
+   542	- **Bootstrap.** Studentized (percentile-t) bootstrap over seeds, 9,999 resamples, resample seed fixed in the protocol;
+   543	  `sim/intervals.py` extended to arbitrary tail levels. Before calibration, the smallest confirmatory tail (0.05/6, Q4)
+   544	  contains about 83 of the 9,999 resamples; with kappa = 1/4 it contains about 21. This is a precision limit; validation
+   545	  (9.5) tests the calibrated procedure itself.
+   546	- **p-values.** For a one-sided hypothesis about a mean, the bootstrap p-value is the smallest tail level at which the
+   547	  studentized one-sided bound crosses the null value; two-sided p = 2 min(one-sided p's).
+   548	- **Calibrated p-values.** Each confirmatory family F has one multiplier kappa_F in {1, 1/2, 1/4}, frozen by 9.5 before
+   549	  the lock. The calibrated p-value is p' = min(1, p / kappa_F) (one-sided), and for a two-sided test
+   550	  p' = min(1, 2 min(p_lower, p_upper) / kappa_F). The map is the same for every test of the family, so Holm's ordering
+   551	  and nesting are preserved.
+   552	- **Decisions** use Holm's step-down procedure on the calibrated p-values within each confirmatory family. **Reported
+   553	  intervals** for confirmatory families are Bonferroni simultaneous intervals at the calibrated nominal level (tail
+   554	  kappa_F times the Bonferroni tail); they are a separate procedure and can contain the null despite a Holm rejection.
+   555	  Descriptive intervals are nominal 95 percent, labelled unadjusted.
+   556	- **Pooled mean over the six fresh markets.** The equal-weight mean of the market means; stratified bootstrap (seeds
+   557	  resampled independently within each market, since seed streams are independent across markets), studentized by the
+   558	  stratified standard error; conditional on the six markets.
+   559	- **G_min** (descriptive). Bounds as the minimum over members of the members' bounds at level 0.05 / c.
+   560	- **Numerical rules (as implemented in `sim/intervals.py`, frozen with the code).** A sample with a nonfinite per-seed
+   561	  value is refused and its cell is missing (6.5). A nonfinite standard error, bootstrap statistic, bound, or p-value is
+   562	  refused in the same way: the affected decision is withheld ("not decided") and the cell is missing. A constant sample (all values exactly equal) has standard error
+   563	  0: its bounds equal its mean, and its one-sided p-value is 0 if the mean is strictly beyond the null and 1 otherwise. A
+   564	  resample with zero standard error is studentized by the full-sample standard error. p-values have resolution
+   565	  1 / (B + 1) with B = 9,999: p = (count + 1) / (B + 1), where count is the number of resampled statistics at least as
+   566	  extreme (ties count as extreme), and p = 1 if every resample is at least as extreme. Quantiles use numpy's default
+   567	  (linear) interpolation. A search that returns no finite candidate leaves its cell incomplete.
+   568	
+   569	### 9.3 Decision rules
+   570	
+   571	- **Q1, confirmatory on the pooled fresh markets.** Family of 2 tests: F111 vs C*, families D2+H3 and X7-SC, each on
+   572	  the pooled mean d = g_C* - g_F111 of the per-seed differences over the six fresh markets. Statistical direction and
+   573	  practical size are reported separately. Holm on the calibrated two-sided p-values for H0: d = 0 (one-sided tails
+   574	  0.05/4, 0.05/2) decides the direction; the calibrated Bonferroni interval I (two-sided 0.05/2 times kappa_Q1) decides
+   575	  the size against the margin 0.05. Exclusive categories, in order:
+   576	  1. **materially lower**: I lies entirely above 0.05 ("R3 materially lower gain") or entirely below -0.05 ("C*
+   577	     materially lower gain");
+   578	  2. **equivalent**: I lies inside [-0.05, 0.05] (a conservative two one-sided tests procedure); if Holm also rejects
+   579	     zero, the label is "equivalent, direction R3 (or C*) lower";
+   580	  3. **ordered, size not established**: Holm rejects zero, and neither category 1 nor category 2 applies;
+   581	  4. **inconclusive**.
+   582	  The margin 0.05 is half the registered comparative margin 0.10 and below the headline B3 - R3 difference (0.28).
+   583	  **Efficiency condition.** The word "better" for a rule needs category 1 in its favour and, for the same family, the
+   584	  pooled paired gross-efficiency difference (that rule minus the other) with a nominal one-sided 97.5 percent lower bound
+   585	  of at least -0.01 (descriptive, not calibrated). Any combined "better" statement says that its efficiency part is
+   586	  descriptive evidence without a calibrated joint error guarantee. If the lower bound is below -0.01, the result is
+   587	  reported by its gain category with "efficiency non-inferiority unresolved"; only if the nominal one-sided 97.5 percent
+   588	  upper bound is below -0.01 is it reported as "lower gain with an efficiency loss" (descriptive). Beside every Q1 result: paired gross and net efficiency, the truthful
+   589	  reference profit, audit spending, refunds from false failures of the focal and the other providers, and the served
+   590	  share. Per-market and headline Q1 results are descriptive (the headline market was used in development).
+   591	- **Q2, descriptive.** Per market and family, effect coding over the 8 cells: main effect of P = mean of the 4 cells with
+   592	  P = 1 minus the mean of the 4 with P = 0 (likewise G, S); two-way interaction PG = (mean of cells with P = G) minus
+   593	  (mean with P != G), likewise PS, GS; three-way PGS = (mean of cells with an odd number of 1s) minus (mean with an even
+   594	  number); conditional effects G at P = 0 and P = 1, P at S = 0 and S = 1, P at G = 0 and G = 1, and G at S = 0 and
+   595	  S = 1. Both versions: separately searched attacks (diagonal) and fixed attacks (6.6, with the attacker-profit and
+   596	  reference terms and efficiency beside each contrast). Pooled over the 6 fresh markets as in 9.2. Nominal 95 percent
+   597	  intervals, no decisions. Every factorial cell uses the fixed pair; no factorial cell is tuned separately.
+   598	- **Q3, descriptive.** Per core rule (F000, F111, C*), the attack envelope: the family among {D2+H3, X7-SC, X5-AG/v2,
+   599	  H4} with the highest training gain, evaluated unchanged; the training-selected lowest efficiency under W0 and W1 (6.2)
+   600	  with the W1 classification; coalition G_tot and G_min for X6-SE/v2 and X8-DB; the diagnostic (6.7). An incomplete
+   601	  scheduled check makes that rule's statement for that family unanswered (6.5).
+   602	- **Q4, confirmatory on sampled markets.** Per fresh market, an intersection-union test: (a) H0: g_F000 - g_F111 <= 0.10
+   603	  under D2+H3 and (b) H0: F111's gross efficiency <= 0.90, each one-sided; the market's p-value is the larger of the two
+   604	  calibrated component p-values. A market passes if Holm across the 6 market p-values rejects it (one-sided tails 0.05/6 down to
+   605	  0.05/1). Reported: k of 6 markets passing, and the markets. Wording: "replicated on k of 6 sampled markets"; failing
+   606	  markets are named; "generalisation not established" when a market is not decided. No population claim.
+   607	
+   608	### 9.4 Claim scope
+   609	
+   610	All claims are conditional on the six sampled markets, the stated neighbourhood, the fixed pair (Q1, Q2, Q4), the searched
+   611	families, and the frozen searches. Q4 replicates the B3 - R3 comparison under D2+H3 and R3's efficiency condition, not the
+   612	complete amended PASS predicate of the first evaluation. Multiplicity is controlled within Q1 and within Q4 separately;
+   613	there is no paper-wide 5 percent familywise guarantee across all confirmatory statements, and the paper does not claim
+   614	one. "Confirmatory" means specified before the fresh draw; it does not mean exact nominal error control on the fresh,
+   615	selected-policy distributions (9.5). Q4 is an internal replication on fresh instances, not an independent-team
+   616	replication.
+   617	
+
+hook: PostToolUse
+ exited 1 in 282ms:
+zsh:1: can't create temp file for here document: operation not permitted
+
+hook: PostToolUse
+ succeeded in 298ms:
+     1	version: 2
+     2	code_commit: 627a2de9ad6c838e4228893c3107d173118d5d62
+     3	manifest_sha256: 326dfcc231042bde38366d97879d810b896f320faa889cce3a43888007e49085
+     4	params_sha256: eef7fbb5ed437a571c11038998f4c85d052f6eeaf47a35d4cd999c06faf8ae73
+     5	promotion_sha256: 602c10213cc0153d15b35feb90e2028cc01f403d465c45a46d01817a1595d5da
+     6	decision_sha256: 8360e437c9979987e76435120691b00ca8c80efebece821d9a856a3bced243b8
+     7	coverage_sha256: 7f3468d4b424aa2b99d30d947c3cf718b9e3d781d53f64dfc56a416e7a9cbb1e
+     8	predictions_sha256: 2e46f6c766671eba9d369269db034691abf90846861534d9139806aeeeaaf2b2
+     9	cuts: 3
+    10	branch: two20k
+    11	development_markets:
+    12	- headline
+    13	- dev0
+    14	h4:
+    15	  commit: aa28ed40fde184ba888ac7a1545db4a76b7b0d56
+    16	  bundle_sha256: cba512aa6b4138655e5d260dc92aa564d0fd0d37dbc2a5b15c820b5ef93f1e6e
+    17	kappa:
+    18	  Q1: 0.5
+    19	  Q4: 0.25
+    20	cost:
+    21	  development_usd: 11.06946726402436
+    22	  evaluation_usd: 38.0855825014347
+    23	  total_usd: 49.15504976545906
+    24	  spent_usd: 11.42
+    25	approval: "I approve a revision-program budget of up to 52 USD (development cap 12\
+    26	  \ USD, evaluation cap 40 USD; estimated total 49.25 USD), \xD6mer Demirel, 2026-10-28."
+    27	block:
+    28	  rule: H = A + 144
+    29	  depth: 6
+    30	  explorers:
+    31	  - blockstream.info
+    32	  - mempool.space
+    33	seeds:
+    34	  eval_range:
+    35	  - 30000000
+    36	  - 40000000
+    37	  per_market: 200
+    38	markets:
+    39	- headline
+    40	- fresh0
+    41	- fresh1
+    42	- fresh2
+    43	- fresh3
+    44	- fresh4
+    45	- fresh5
+    46	caps:
+    47	  development: 12
+    48	  evaluation: 40
+     1	"""The check behind the 2026-11-04 deviation (1-ulp fresh-market configs). The run mode recalibrates each fresh market on
+     2	the pod (Linux x86); instances.json holds the configs computed on the Mac (arm64). For each market this checks that
+     3	(1) every evaluation record carries one config hash, equal to the hash of the config a Linux amd64 container recomputes,
+     4	(2) that config differs from the recorded one only in float values, each by at most one unit in the last place, and
+     5	(3) the runner's own verify passes on the records when given the container's configs. Writes nothing in the record
+     6	directories; the verify input with the container's configs goes to --work and is never the recorded instances.json."""
+     7	from __future__ import annotations
+     8	
+     9	import argparse
+    10	import glob
+    11	import hashlib
+    12	import json
+    13	import struct
+    14	import subprocess
+    15	import sys
+    16	from pathlib import Path
+    17	
+    18	
+    19	def _ord(x: float) -> int:
+    20	    i = struct.unpack("<q", struct.pack("<d", float(x)))[0]
+    21	    return i if i >= 0 else -(1 << 63) - i
+    22	
+    23	
+    24	def diffs(rec, lin, path: str = "") -> list[tuple[str, object, object, int | None]]:
+    25	    """(path, recorded, recomputed, ulps); ulps is None for any difference that is not between two floats."""
+    26	    if isinstance(rec, dict) and isinstance(lin, dict):
+    27	        return [d for k in sorted(set(rec) | set(lin)) for d in diffs(rec.get(k, KeyError), lin.get(k, KeyError), f"{path}.{k}")]
+    28	    if isinstance(rec, list) and isinstance(lin, list):
+    29	        if len(rec) != len(lin):
+    30	            return [(path, len(rec), len(lin), None)]
+    31	        return [d for i, (a, b) in enumerate(zip(rec, lin)) for d in diffs(a, b, f"{path}[{i}]")]
+    32	    if rec == lin and type(rec) is type(lin):
+    33	        return []
+    34	    if type(rec) is float and type(lin) is float:
+    35	        return [(path, rec, lin, abs(_ord(rec) - _ord(lin)))]
+    36	    return [(path, rec, lin, None)]
+    37	
+    38	
+    39	def within(ds, max_ulps: int) -> bool:
+    40	    return all(u is not None and u <= max_ulps for *_, u in ds)
+    41	
+    42	
+    43	def pod_hash_ok(pod_hashes: set, container_hash: str) -> bool:
+    44	    return pod_hashes == {container_hash}
+    45	
+    46	
+    47	def sha_json(obj) -> str:
+    48	    return hashlib.sha256(json.dumps(obj, sort_keys=True, default=float).encode()).hexdigest()
+    49	
+    50	
+    51	def main(argv=None) -> int:
+    52	    ap = argparse.ArgumentParser()
+    53	    ap.add_argument("--instances", required=True); ap.add_argument("--linux", required=True); ap.add_argument("--eval", required=True)
+    54	    ap.add_argument("--markets", required=True); ap.add_argument("--verify", required=True, help="results/pods/verify_market.sh")
+    55	    ap.add_argument("--work", required=True); ap.add_argument("--out", required=True)
+    56	    a = ap.parse_args(argv)
+    57	    inst = json.loads(Path(a.instances).read_text()); lin = json.loads(Path(a.linux).read_text()); work = Path(a.work); work.mkdir(parents=True, exist_ok=True)
+    58	    alt = json.loads(json.dumps(inst)); markets = a.markets.split(",")
+    59	    for m in markets:
+    60	        alt["markets"][m]["calibrated_cfg"] = lin[m]
+    61	    alt_path = work / "instances_container_configs.json"; alt_path.write_text(json.dumps(alt))
+    62	    rep = {"instances_sha256": hashlib.sha256(Path(a.instances).read_bytes()).hexdigest(), "linux_sha256": hashlib.sha256(Path(a.linux).read_bytes()).hexdigest(), "markets": {}}
+    63	    for m in markets:
+    64	        ds = diffs(inst["markets"][m]["calibrated_cfg"], lin[m])
+    65	        pods = {json.loads(Path(f).read_text())["provenance"]["cfg_sha256"] for f in glob.glob(f"{a.eval}/{m}/evaluate/*.json")}
+    66	        v = subprocess.run(["bash", a.verify, m, m], env={"PATH": "/usr/bin:/bin:/usr/local/bin:" + str(Path.home() / ".local/bin"), "HOME": str(Path.home()),
+    67	                           "INSTANCES": str(alt_path)}, capture_output=True, text=True)
+    68	        r = {"container_hash": sha_json(lin[m]), "pod_hashes": sorted(pods), "pod_hash_ok": pod_hash_ok(pods, sha_json(lin[m])),
+    69	             "recorded_hash": sha_json(inst["markets"][m]["calibrated_cfg"]), "differences": [[p, x, y, u] for p, x, y, u in ds],
+    70	             "within_one_ulp": within(ds, 1), "verify_exit": v.returncode, "verify": v.stdout.strip()[-300:]}
+    71	        r["ok"] = r["pod_hash_ok"] and r["within_one_ulp"] and v.returncode == 0
+    72	        rep["markets"][m] = r
+    73	        print(m, "ok" if r["ok"] else "NOT OK", f"pod_hash_ok={r['pod_hash_ok']} diffs={len(ds)} max_ulps={max([u or 0 for *_, u in ds], default=0)} verify_exit={v.returncode}")
+    74	    rep["ok"] = all(r["ok"] for r in rep["markets"].values())
+    75	    Path(a.out).write_text(json.dumps(rep, indent=1)); return 0 if rep["ok"] else 1
+    76	
+    77	
+    78	if __name__ == "__main__":
+    79	    sys.exit(main())
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+ succeeded in 412ms:
+== 1. headline markets, strict verify
+ok {'headline@rho0.2': 'ok', 'headline@rho1': 'unavailable'}
+ok {'headline@rho0.2': 'unavailable', 'headline@rho1': 'ok'}
+== 2. fresh markets: container configs and the 1-ulp check (also verify with those configs)
+W: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/focal/InRelease  Temporary failure resolving 'archive.ubuntu.com'
+W: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/focal-updates/InRelease  Temporary failure resolving 'archive.ubuntu.com'
+W: Failed to fetch http://security.ubuntu.com/ubuntu/dists/focal-security/InRelease  Temporary failure resolving 'security.ubuntu.com'
+W: Some index files failed to download. They have been ignored, or old ones used instead.
+bash: uv: command not found
+-rw-r--r--  1 oemer.demirel  staff  5112 Nov  4 10:16 /Users/oemer.demirel/Projects/touchstone/results/v2/deviation/cfg_linux.json
+fresh0 ok pod_hash_ok=True diffs=2 max_ulps=1 verify_exit=0
+fresh1 ok pod_hash_ok=True diffs=2 max_ulps=1 verify_exit=0
+fresh2 ok pod_hash_ok=True diffs=6 max_ulps=1 verify_exit=0
+fresh3 ok pod_hash_ok=True diffs=4 max_ulps=1 verify_exit=0
+fresh4 ok pod_hash_ok=True diffs=2 max_ulps=1 verify_exit=0
+fresh5 ok pod_hash_ok=True diffs=1 max_ulps=1 verify_exit=0
+== 3. merged output folder (hard links; salt.hex is identical everywhere)
+merged      866 files from      873
+== 4. report and its check
+ok
+== 5. paper inputs
+POST-EVAL OK
+     1	#!/bin/bash
+     2	# Operation 8 inputs, after the last evaluation pod: per-market checks, the 1-ulp deviation check on all six fresh
+     3	# markets, one merged output folder, report.json (with the container configs, per the author's deviation decision of
+     4	# 2026-11-04), its --check, and the paper's result inputs. Stops at the first failure. Usage: post_eval.sh
+     5	set -euo pipefail
+     6	B=/Users/oemer.demirel/Projects/touchstone/results/v2; P=/Users/oemer.demirel/Projects/touchstone/results/pods
+     7	W=/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79; PV=$W/docs/revision/paper-v2
+     8	FRESH=fresh0,fresh1,fresh2,fresh3,fresh4,fresh5; TAGS="fresh0 fresh1 fresh2 fresh3 fresh4 fresh5 headline-rho02 headline-rho1"
+     9	for t in $TAGS; do [ -d $B/eval/$t/evaluate ] || { echo "missing records: $B/eval/$t"; exit 1; }; done
+    10	[ -e $B/eval/all ] && { echo "$B/eval/all exists; move it to the Trash first"; exit 1; }
+    11	echo "== 1. headline markets, strict verify"
+    12	bash $P/verify_market.sh headline-rho02 headline; bash $P/verify_market.sh headline-rho1 headline
+    13	echo "== 2. fresh markets: container configs and the 1-ulp check (also verify with those configs)"
+    14	bash $P/cfg_linux.sh
+    15	(cd $W && uv run --frozen python docs/revision/deviation/cfg_ulp.py --instances $B/draw/instances.json --linux $B/deviation/cfg_linux.json \
+    16	  --eval $B/eval --markets $FRESH --verify $P/verify_market.sh --work $B/deviation --out $B/deviation/cfg_ulp_all.json)
+    17	echo "== 3. merged output folder (hard links; salt.hex is identical everywhere)"
+    18	mkdir $B/eval/all; for t in $TAGS; do cp -aln $B/eval/$t/. $B/eval/all/ 2>/dev/null || true; done
+    19	n=$(find $B/eval/all -type f | wc -l); s=$(for t in $TAGS; do find $B/eval/$t -type f; done | wc -l); echo "merged $n files from $s"
+    20	[ $((s - n)) -eq 7 ] || { echo "merge lost or clashed files (expected 7 duplicate salt.hex)"; exit 1; }
+    21	echo "== 4. report and its check"
+    22	cd $B/eval-checkout; C=$(git rev-parse 'protocol-v2^{commit}')
+    23	uv run --frozen python scripts/report_v2.py --out ../eval/all --protocol experiments/protocol-v2.yaml --instances ../deviation/instances_container_configs.json \
+    24	  --h4 ../draw/h4.json --report ../report --commit $C
+    25	uv run --frozen python scripts/report_v2.py --out ../eval/all --protocol experiments/protocol-v2.yaml --instances ../deviation/instances_container_configs.json \
+    26	  --h4 ../draw/h4.json --report ../report --commit $C --check
+    27	echo "== 5. paper inputs"
+    28	cd $PV; R=$B/report/report.json; mkdir -p $B/paper
+    29	uv run --frozen python cells_v2.py --out $B/eval/all --write $B/paper/cells.json
+    30	uv run --frozen python score_v2.py --report $R --cells $B/paper/cells.json --write $B/paper/scoring.json
+    31	uv run --frozen python tables_v2.py --report $R --dir tables --write
+    32	uv run --frozen python figures_v2.py --report $R --dir figures --write
+    33	uv run --frozen python numbers_v2.py --report $R --numbers numbers.tex --extra cells=$B/paper/cells.json --extra scoring=$B/paper/scoring.json --write
+    34	echo "POST-EVAL OK"
+     1	"""The protocol-v2 report (design draft 7, 6.5, 8.1a, 9.2, 9.3, 9.4). It first runs the read-only verify stage and refuses on
+     2	any stale, foreign, or erroneous record; missing cells and unavailable contexts count as missing. Two cell statuses (design
+     3	6.5): a missing cell withholds every confirmatory test that uses it ("not decided: missing cell") and makes that part of its
+     4	question unanswered; a search-flagged cell (its scheduled doubling check over the threshold) keeps its decision, labelled as
+     5	about the prescribed search procedure, and makes the Q3 robustness statement for that rule and family unanswered. Q1 and Q4
+     6	are confirmatory (calibrated, Holm with fixed slots) unless the family has no admitted kappa or the draw is nonconfirmatory;
+     7	a numerical refusal withholds only the affected test. Q2, Q3, the secondary comparisons, and the doubling diagnostics are
+     8	descriptive; every extremum is selected on training data (frozen selection records). Multiplicity is controlled within Q1
+     9	and within Q4 only."""
+    10	from __future__ import annotations
+    11	
+    12	import argparse
+    13	import json
+    14	import sys
+    15	from pathlib import Path
+    16	
+    17	import numpy as np
+    18	
+    19	sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    20	
+    21	from scripts import revision_v2 as RV  # noqa: E402
+    22	from sim.decisions_v2 import ALPHA, MISSING, NO_DECISION, REFUSED, q1_better, q1_efficiency, q1_family, q2_contrasts, q4_markets, w1_class  # noqa: E402
+    23	from sim.diagnostic_v2 import decompose  # noqa: E402
+    24	from sim.intervals import (NumericalRefusal, bootstrap_pvalue, calibrated, gmin_bounds, stratified_at, stratified_mean,  # noqa: E402
+    25	                           studentized_at)
+    26	from sim.records_v2 import read  # noqa: E402
+    27	
+    28	FRESH = tuple(f"fresh{i}" for i in range(6))
+    29	FACT = tuple(f"F{p}{g}{s}" for p in "01" for g in "01" for s in "01")
+    30	PAIRS = (("F111", "C*"),)
+    31	FAMS = ("D2+H3", "X7-SC")
+    32	CORE = ("F000", "F111", "C*")
+    33	WHOLE = ("B3-t", "R3-t", "C*-t")
+    34	FLAGGED = "about the prescribed search procedure (search flagged)"
+    35	MULTIPLICITY = "Multiplicity is controlled within Q1 and within Q4 only; there is no paper-wide familywise guarantee."
+    36	REDUCED = "reduced menu (D2+H3)"
+    37	SIDE = {"gross_eff_diff": "eff_attack", "net_eff_diff": "net_eff_attack", "ref_profit_diff": "profit_ref", "audit_spend_diff": "audit_spend_attack",
+    38	        "false_refund_focal_diff": "false_refund_focal_attack", "false_refund_others_diff": "false_refund_others_attack",
+    39	        "served_share_diff": "served_share_attack"}
+    40	REPAIR = ("F000", "F111", "R4", "C*", "C*/S2")
+    41	NOMINAL = 0.025
+    42	NOMINAL_LABEL = "nominal 95 percent, unadjusted"
+    43	NONCONF = "nonconfirmatory (late publication)"
+    44	CHECKED = FAMS                                   # families with scheduled doubling checks for the core rules (design 6.5)
+    45	Q2_KINDS = (("searched", "gain"), ("searched_eff", "eff_attack"), ("searched_net_eff", "net_eff_attack"), ("fixed", None),
+    46	            ("fixed_attack_term", "profit_attack"), ("fixed_reference_term", "profit_ref"), ("fixed_eff", "eff_attack"),
+    47	            ("fixed_net_eff", "net_eff_attack"))
+    48	WITHHELD = "withheld: numerical refusal"
+    49	
+    50	
+    51	def verify_records(out, catalog, instances, protocol, h4, cuts, h4_excluded) -> dict:
+    52	    return RV.verify(Path(out), catalog, catalog, instances, protocol, h4, cuts, h4_excluded)
+    53	
+    54	
+    55	def _f(x) -> float | None:
+    56	    return None if x is None else float(x)
+    57	
+    58	
+    59	def _interval(x, tail: float = NOMINAL) -> list:
+    60	    """A descriptive interval; a numerical refusal withholds it (design 9.2) instead of stopping the report."""
+    61	    try:
+    62	        return [float(studentized_at(x, "lower", tail)), float(studentized_at(x, "upper", tail))]
+    63	    except NumericalRefusal:
+    64	        return [None, None]
+    65	
+    66	
+    67	def _strat(st, tail: float = NOMINAL, strict: bool = False) -> dict:
+    68	    try:
+    69	        return {"estimate": float(stratified_mean(st)), "interval": [float(stratified_at(st, "lower", tail)), float(stratified_at(st, "upper", tail))]}
+    70	    except NumericalRefusal:
+    71	        if strict:
+    72	            raise
+    73	        return {"estimate": None, "interval": [None, None], "status": REFUSED}
+    74	
+    75	
+    76	def _cell(x) -> dict:
+    77	    return {"estimate": _est(x), "interval": _interval(x)}
+    78	
+    79	
+    80	def _est(x) -> float | None:
+    81	    with np.errstate(over="ignore", invalid="ignore"):
+    82	        v = float(np.mean(np.asarray(x, dtype=float)))
+    83	    return v if np.isfinite(v) else None
+    84	
+    85	
+    86	class Records:
+    87	    """Evaluation records of the scheduled cells. A cell outside the catalog (not scheduled, or removed by a cut) reads as
+    88	    absent without being counted missing; a scheduled cell without a record is missing."""
+    89	    def __init__(self, out: Path, catalog: list[dict], missing: set, flagged: set = frozenset(), no_check: set = frozenset()):
+    90	        self.out, self.missing, self.flagged, self.no_check = Path(out), set(missing), set(flagged), set(no_check)
+    91	        self.jobs = {j["id"]: j for j in catalog}
+    92	
+    93	    def get(self, market: str, rule: str, family: str, objective: str = "profit", c=None, schedule=None, rho: str = "rho0.2"):
+    94	        return self.rec(RV.cell_id(f"{market}@{rho}", rule, family, objective, c, schedule))
+    95	
+    96	    def rec(self, rid: str):
+    97	        if rid not in self.jobs or rid in self.missing:
+    98	            return None
+    99	        rec = read(RV.eval_path(self.out, rid))
+   100	        if rec is None:
+   101	            self.missing.add(rid)
+   102	        return rec
+   103	
+   104	    def scheduled(self, rid: str) -> bool:
+   105	        return rid in self.jobs
+   106	
+   107	    def search_status(self, ids) -> str | None:
+   108	        """Design 6.5: a scheduled check over the threshold, or a scheduled check with no record, leaves the robustness
+   109	        statement unanswered."""
+   110	        ids = [i for i in ids if i in self.jobs]
+   111	        if any(i in self.flagged for i in ids):
+   112	            return "unanswered (search flagged)"
+   113	        if any(i in self.no_check for i in ids):
+   114	            return "unanswered (scheduled check missing)"
+   115	        return None
+   116	
+   117	    def aux(self, rid: str):
+   118	        return read(RV.path_of(self.out, rid))
+   119	
+   120	    def cross(self, market: str, family: str):
+   121	        return read(self.out / "cross" / f"{market}@rho0.2" / (RV._safe(family) + ".json"))
+   122	
+   123	
+   124	def q1(R: Records, kappa, confirmatory: bool):
+   125	    """d = g_C* - g_F111 per seed, pooled over the six fresh markets (design 9.3), two fixed Holm slots."""
+   126	    tests, effs, sides, flags = {}, {}, {}, {}
+   127	    for a, b in PAIRS:
+   128	        for f in FAMS:
+   129	            name = f"{b}-{a}|{f}"; st, ef, sd, miss = [], [], {k: [] for k in SIDE}, False
+   130	            for m in FRESH:
+   131	                ra, rb = R.get(m, a, f), R.get(m, b, f)
+   132	                if ra is None or rb is None:
+   133	                    miss = True; break
+   134	                with np.errstate(over="ignore", invalid="ignore"):
+   135	                    st.append(np.asarray(rb["gain"], dtype=float) - np.asarray(ra["gain"], dtype=float))
+   136	                ef.append((np.asarray(ra["eff_attack"]), np.asarray(rb["eff_attack"])))
+   137	                for k, fld in SIDE.items():
+   138	                    sd[k].append(np.asarray(ra[fld], dtype=float) - np.asarray(rb[fld], dtype=float))
+   139	            tests[name] = None if miss else st; effs[name] = ef; sides[name] = sd
+   140	            flags[name] = any(RV.cell_id(f"{m}@rho0.2", r, f, "profit") in R.flagged for m in FRESH for r in (a, b))
+   141	    fam = q1_family(tests, kappa); tail = kappa * ALPHA / (2 * len(tests)) if kappa else NOMINAL
+   142	    out = {"heading": NONCONF if not confirmatory else "Q1: Holm on calibrated two-sided p-values (two slots), pooled over the six fresh markets",
+   143	           "tests": {}, "descriptive": {}}
+   144	    for name, st in tests.items():
+   145	        cat = fam[name]["category"]; t = {"p": _f(fam[name]["p"]), "reject": fam[name]["reject"], "category": cat,
+   146	                                          "search": FLAGGED if flags[name] and st is not None else None}
+   147	        if st is not None:
+   148	            try:
+   149	                t.update(_strat(st, tail, strict=True), interval_label=f"calibrated simultaneous, one-sided tails {tail:.6g}" if kappa else NOMINAL_LABEL)
+   150	                favoured_r3 = cat.startswith("R3") or (cat not in ("C* materially lower",) and float(stratified_mean(st)) >= 0)
+   151	                eff = [(x - y) if favoured_r3 else (y - x) for x, y in effs[name]]
+   152	                t["efficiency"] = q1_efficiency(eff); t["better"] = q1_better(cat, t["efficiency"])
+   153	                t["side"] = {k: float(stratified_mean(v)) for k, v in sides[name].items()}
+   154	            except NumericalRefusal:
+   155	                t.update(category=REFUSED, p=None, reject=None, estimate=None, interval=None, interval_label=NOMINAL_LABEL)
+   156	        else:
+   157	            t.update(estimate=None, interval=None, interval_label=NOMINAL_LABEL)
+   158	        out["tests"][name] = t
+   159	    for m in FRESH + ("headline",):
+   160	        d = {}
+
+hook: PostToolUse Completed
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+The Q1 and Q4 interval levels match the registered kappa values. The log also records strict verification for all six substituted configs. I will now check cell coverage, dependency labels, and whether the deviation records show that decisions stay the same.
+
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "nl -ba scripts/report_v2.py | sed -n '380,680p'" in /Users/oemer.demirel/Projects/touchstone/results/v2/eval-checkout
+exec
+/bin/zsh -lc "python -c 'import json; from pathlib import Path; b=Path(\".\"); paths=[\"results/v2/report/report.json\",\"results/v2/deviation/cfg_ulp_all.json\",\"results/v2/deviation/instances_container_configs.json\",\"results/v2/draw/instances.json\"]; [(print(p),print([(k,type(v).__name__,len(v) if isinstance(v,(list,dict,str)) else v) for k,v in json.loads((b/p).read_text()).items()])) for p in paths]' " in /Users/oemer.demirel/Projects/touchstone
+exec
+/bin/zsh -lc "rg -n 'deviation|ulp|cap|43|manifest|scope|kappa|unavailable|nominal|conditional|search.flag' results/v2/report/report.md docs/revision/deviation docs/revision/budget-ledger.json -g '*.md' -g '*.json'; nl -ba experiments/revision-v2-manifest.yaml | head -180" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc "nl -ba scripts/report_v2.py | sed -n '160,380p'" in /Users/oemer.demirel/Projects/touchstone/results/v2/eval-checkout
+ succeeded in 484ms:
+   380	    for p in sorted(d.glob("*.json")) if d.exists() else []:
+   381	        rec = read(p)
+   382	        if rec is not None and rec.get("incomplete") is True and p.stem in by:
+   383	            got.add(by[p.stem])
+   384	    return got
+   385	
+   386	
+   387	def _unanswered(q) -> bool:
+   388	    """A question with any unanswered or undecided part (design 8.1a)."""
+   389	    if q == "unanswered":
+   390	        return True
+   391	    text = json.dumps(q, default=float)
+   392	    return any(k in text for k in ("unanswered", MISSING, REFUSED, "not decided"))
+   393	
+   394	
+   395	def _iv(x: dict) -> str:
+   396	    if x.get("estimate") is None or None in (x.get("interval") or [None]):
+   397	        return f"{x.get('estimate') if x.get('estimate') is not None else '-'} (interval withheld: numerical refusal)"
+   398	    return f"{x['estimate']:.4f} [{x['interval'][0]:.4f}, {x['interval'][1]:.4f}]"
+   399	
+   400	
+   401	def _bd(iv) -> str:
+   402	    return f"[{WITHHELD}]" if iv is None or None in iv else f"[{iv[0]:.4f}, {iv[1]:.4f}]"
+   403	
+   404	
+   405	def _cs(cs) -> str:
+   406	    return cs if isinstance(cs, str) else "; ".join(f"{k} {_iv(v)}" for k, v in cs.items())
+   407	
+   408	
+   409	def markdown(r: dict) -> str:
+   410	    L = ["# Protocol v2 report", ""]
+   411	    if not r["confirmatory"]:
+   412	        L += [f"All Q1 and Q4 results are descriptive: {NONCONF}.", ""]
+   413	    L += [r.get("multiplicity", MULTIPLICITY), ""]
+   414	    L.append("## Q1 comparator (d = gain of C* minus gain of F111)")
+   415	    if r["q1"] == "unanswered":
+   416	        L.append("unanswered: a required cell is missing")
+   417	    else:
+   418	        L += [f"_{r['q1']['heading']}_", "| test | estimate [interval] | interval kind | category | efficiency | better | search |", "|---|---|---|---|---|---|---|"]
+   419	        for k, t in r["q1"]["tests"].items():
+   420	            iv = _iv(t) if t.get("estimate") is not None else "not available"
+   421	            L.append(f"| {k} | {iv} | {t['interval_label']} | {t['category']} | {t.get('efficiency', '-')} | {t.get('better') or '-'} | {t.get('search') or '-'} |")
+   422	            if t.get("side"):
+   423	                L.append(f"- {k} side fields (descriptive, F111 minus C*): " + "; ".join(f"{n} {v:.4f}" for n, v in t["side"].items()))
+   424	        for m, d in r["q1"]["descriptive"].items():
+   425	            L += [f"- {m} (descriptive, {NOMINAL_LABEL}): " + "; ".join(f"{k} {_iv(v) if isinstance(v, dict) else v}" for k, v in d.items())]
+   426	    L += ["", "## Q4 replication", f"_{r['q4']['heading']}_", r["q4"]["wording"] + (f"; failing: {', '.join(r['q4']['failing'])}" if r["q4"].get("failing") else "")]
+   427	    for m, v in r["q4"]["markets"].items():
+   428	        L.append(f"- {m}: {v}" if isinstance(v, str) else
+   429	                 f"- {m}: gain difference {v['gain_diff']:.4f} (lower {v['gain_diff_lower']:.4f}), efficiency {v['eff']:.4f} (lower {v['eff_lower']:.4f}); {v['bound_label']}")
+   430	    L += ["", "## Q2 attribution (descriptive)"]
+   431	    if r["q2"] == "unanswered":
+   432	        L.append("unanswered: a required cell or cross record is missing")
+   433	    else:
+   434	        for kind, _ in Q2_KINDS:
+   435	            for f, cs in r["q2"][kind].items():
+   436	                L.append(f"- {kind}, pooled over fresh markets, {f}: " + _cs(cs))
+   437	        for f, ms in r["q2"]["per_market"].items():
+   438	            for m, pm in ms.items():
+   439	                for kind, cs in pm.items():
+   440	                    L.append(f"- {kind}, {m}, {f}: " + _cs(cs))
+   441	        for f, ms in r["q2"]["envelope"].items():
+   442	            L.append(f"- bank envelope (training-selected), {f}: " + "; ".join(f"{m}: " + (d if isinstance(d, str) else ", ".join(f"{k} {v['attack']} {_iv(v)}" for k, v in d.items()))
+   443	                                                                               for m, d in ms.items()))
+   444	    L += ["", "## Q3 attack strength (descriptive)"]
+   445	    q3 = r["q3"]
+   446	    if q3 == "unanswered":
+   447	        L.append("unanswered: a required cell is missing")
+   448	    else:
+   449	        for rule, ms in q3["envelope"].items():
+   450	            L.append(f"- envelope {rule}: " + "; ".join(f"{m} {v['family']} {_iv(v)}" if isinstance(v, dict) else f"{m} {v}" for m, v in ms.items()))
+   451	        for rule, fs in q3["robustness"].items():
+   452	            L.append(f"- robustness {rule}: " + ", ".join(f"{f} {v}" for f, v in fs.items()))
+   453	        for rule, fs in q3["welfare"].items():
+   454	            for f, objs in fs.items():
+   455	                for obj, v in objs.items():
+   456	                    if isinstance(v, str):
+   457	                        L.append(f"- welfare {rule} {f} {obj}: {v}"); continue
+   458	                    c = v.get("constraint_interval")
+   459	                    L.append(f"- welfare {rule} {f} {obj}: efficiency {v['efficiency']:.4f} {_bd(v['interval'])}, "
+   460	                             f"attacker gain {v['attacker_gain']:.4f} {_bd(v['attacker_gain_interval'])}" + (f", W1 constraint {_bd(c)}, {v['w1_class']}" if c else "")
+   461	                             + f"; robustness {v['robustness']}" + (f"; {v['search']}" if v.get("search") else ""))
+   462	        for rule, objs in q3["welfare_selected"].items():
+   463	            for obj, v in objs.items():
+   464	                L.append(f"- welfare selected on training, {rule} {obj}: " + (v["status"] if v.get("family") is None else f"{v['family']} (other: {v['other_family']})"))
+   465	        for rule, gs in q3["coalition"].items():
+   466	            L.append(f"- coalition {rule}: " + "; ".join(f"{g} G_tot {v['G_tot']['estimate']:.4f}, G_min {v['G_min']['estimate']:.4f} "
+   467	                                                        f"{_bd(v['G_min']['bounds'])}, robustness {v['robustness']}" if isinstance(v, dict) else f"{g} {v}"
+   468	                                                        for g, v in gs.items()))
+   469	        for rule, v in q3["diagnostic"].items():
+   470	            L.append(f"- honest replacement {rule}: " + (v if isinstance(v, str) else
+   471	                     "; ".join(f"age {b['age'][0]}-{b['age'][1]} audited {b['audited_share']:.3f}, profit per round {b['profit_per_round']:.4f}, "
+   472	                               f"false refunds {b['false_refund']:.4f}" for b in v["bins"])))
+   473	        L.append("- independently authored family (H4): " + (q3["independent"] if isinstance(q3["independent"], str) else
+   474	                 "; ".join(f"{rule}: " + ", ".join(f"{m} {v:.4f}" if not isinstance(v, str) else f"{m} {v}" for m, v in ms.items())
+   475	                           for rule, ms in q3["independent"].items())))
+   476	    L += ["", f"## Secondary (descriptive, {NOMINAL_LABEL})"]
+   477	    for part in ("whole_systems", "repair_rho1"):
+   478	        for rule, d in r["secondary"][part].items():
+   479	            L.append(f"- {part} {rule}: " + "; ".join(f"{k}: " + ", ".join(f"{f} {_iv(x)}" + (f" {x['menu']}" if x.get("menu") else "") for f, x in v.items())
+   480	                                                 if isinstance(v, dict) and "estimate" not in v else f"{k} {_iv(v)}" for k, v in d.items()))
+   481	    L += ["", "## Doubling diagnostics (labels beside the estimates; they change no decision)"]
+   482	    L += [f"- {rid}: " + ", ".join(f"{k} {v}" for k, v in sorted(d.items())) for rid, d in r["doubling"].items()]
+   483	    L += [f"- no doubling record: {rid}" for rid in r.get("doubling_missing", [])]
+   484	    L += ["", "## Missing cells", ", ".join(r["missing"]) or "none", "", "## Search-flagged cells", ", ".join(r.get("search_flagged", [])) or "none", ""]
+   485	    return "\n".join(L)
+   486	
+   487	
+   488	def save(r: dict, report_dir) -> None:
+   489	    d = Path(report_dir); d.mkdir(parents=True, exist_ok=True)
+   490	    (d / "report.json").write_text(json.dumps(r, indent=1, sort_keys=True)); (d / "report.md").write_text(markdown(r))
+   491	
+   492	
+   493	def _diff(a, b, path="") -> list[str]:
+   494	    if isinstance(a, dict) and isinstance(b, dict):
+   495	        return [x for k in sorted(set(a) | set(b)) for x in (_diff(a.get(k), b.get(k), f"{path}/{k}") if k in a and k in b else [f"{path}/{k}: present on one side"])]
+   496	    if isinstance(a, list) and isinstance(b, list):
+   497	        return [f"{path}: lengths differ"] if len(a) != len(b) else [x for i, (u, v) in enumerate(zip(a, b)) for x in _diff(u, v, f"{path}[{i}]")]
+   498	    if isinstance(a, float) or isinstance(b, float):
+   499	        try:
+   500	            return [] if abs(float(a) - float(b)) <= 1e-12 * max(1.0, abs(float(a))) else [f"{path}: {a} != {b}"]
+   501	        except (TypeError, ValueError):
+   502	            return [f"{path}: {a} != {b}"]
+   503	    return [] if a == b else [f"{path}: {a} != {b}"]
+   504	
+   505	
+   506	def check(r: dict, report_dir) -> list[str]:
+   507	    d = Path(report_dir); out = _diff(r, json.loads((d / "report.json").read_text()))
+   508	    if (d / "report.md").read_text() != markdown(r):
+   509	        out.append("report.md differs from the report rebuilt from the records")
+   510	    return out
+   511	
+   512	
+   513	def main(argv=None) -> int:
+   514	    import yaml
+   515	    ap = argparse.ArgumentParser()
+   516	    ap.add_argument("--out", required=True); ap.add_argument("--protocol", required=True); ap.add_argument("--instances", required=True)
+   517	    ap.add_argument("--h4", required=True); ap.add_argument("--report", required=True); ap.add_argument("--check", action="store_true")
+   518	    ap.add_argument("--params", default=str(RV.ROOT / "experiments" / "v2" / "params.json")); ap.add_argument("--commit", default=None)
+   519	    ap.add_argument("--markets", default=None); ap.add_argument("--smoke", action="store_true")
+   520	    a = ap.parse_args(argv)
+   521	    protocol = yaml.safe_load(Path(a.protocol).read_text()); inst = json.loads(Path(a.instances).read_text()); h4 = json.loads(Path(a.h4).read_text())
+   522	    from sim.records import cfg_from_dict
+   523	    cfgs = {k: cfg_from_dict(v["calibrated_cfg"]) for k, v in inst.get("markets", {}).items()}
+   524	    h4job = {"dir": None, "sha": h4["bundle_sha256"]} if h4.get("loaded") else None
+   525	    markets = (a.markets or ",".join(RV.MAN.doc()["markets"])).split(",")
+   526	    catalog = RV.build_jobs(markets, inst["root"], False, a.smoke, json.loads(Path(a.params).read_text()), int(protocol.get("cuts", 0)), h4job,
+   527	                            not h4.get("loaded"), cfgs, a.commit or RV.git_commit(), inst["salt_sha256"])
+   528	    r = build(a.out, protocol, inst, h4, catalog)
+   529	    if a.check:
+   530	        diffs = check(r, a.report)
+   531	        print("\n".join(diffs[:50]) or "ok")
+   532	        return 1 if diffs else 0
+   533	    save(r, a.report)
+   534	    return 0
+   535	
+   536	
+   537	if __name__ == "__main__":
+   538	    sys.exit(main())
+
+hook: PostToolUse
+hook: PostToolUse Completed
+ succeeded in 541ms:
+rg: results/v2/report/report.md: No such file or directory (os error 2)
+docs/revision/budget-ledger.json:2: "caps": {
+docs/revision/budget-ledger.json:4:  "evaluation": 43.0
+docs/revision/budget-ledger.json:121:  "text": "Raise caps, start fresh5 now: evaluation cap 43 USD, program limit 55 USD (development cap 12 USD unchanged), \u00d6mer Demirel, 2026-11-04, chosen in the Claude Code session after the wave-1 overrun (fresh pods 4.65-4.80 USD against 4.26)."
+     1	# Protocol v2 manifest (design draft 7: 8.1, 8.1a, 6.5, 6.6, 6.7, 8.2). Focal provider at the median position. Cell ids:
+     2	# "<market>@rho<rho>|<rule>|<family>|<objective>[|c<c>_<schedule>]".
+     3	markets: [headline, fresh0, fresh1, fresh2, fresh3, fresh4, fresh5]
+     4	blocks:
+     5	  matched: {rules: [F000, F001, F010, F011, F100, F101, F110, F111, "C*", "C*/S0"], families: [D2+H3, X7-SC], markets: all, objective: profit}
+     6	  extras: {rules: [F000, F111, "C*"], families: [D2, X5-AG/v2, H4], markets: all, objective: profit}
+     7	  tuned: {rules: [B3-t, R3-t, "C*-t"], families_by_market: {headline: [D2+H3, X7-SC], fresh: [D2+H3]}, markets: all, objective: profit}
+     8	  reference: {rules: [B2], families: [D2, D2+H3, X7-SC], markets: [headline], objective: profit}
+     9	  welfare: {rules: [F000, F111, "C*"], families: [D2+H3, X7-SC], markets: [headline], objectives: [W0, W1]}
+    10	  coalition: {rules: [F000, F111, "C*"], families: [X6-SE/v2], markets: [headline], c: [2, 5], schedules: [synchronised, staggered], objectives: [total, min]}
+    11	  coalition_roles: {rules: [F000, F111, "C*"], families: [X8-DB], markets: [headline], c: [2], schedules: [roles], objectives: [total, min]}
+    12	  repair: {rules: [F000, F111, R4, "C*", "C*/S2"], families: [D2, D2+H3, X7-SC], markets: [headline], rho: 1.0, objective: profit}
+    13	  diagnostic: {rules: [F000, F111, "C*"], families: [HR1], markets: [headline], objective: diagnostic}
+    14	doublings:
+    15	  headline: {blocks: [matched], families: [D2+H3, X7-SC], plus_blocks: [welfare, coalition, coalition_roles]}
+    16	  fresh: {rules: [F000, F111, "C*"], families: [D2+H3, X7-SC]}
+    17	cross_evaluation: {rules: [F000, F001, F010, F011, F100, F101, F110, F111], families: [D2+H3, X7-SC], markets: all}
+    18	envelope_families: [D2+H3, X7-SC, X5-AG/v2, H4]
+    19	cut_order:
+    20	  - {block: tuned, markets: fresh}
+    21	  - {family: H4, markets: fresh}
+    22	  - {block: extras, family: D2, markets: fresh}
+    23	  - {rule: "C*/S0", markets: fresh}
+
+hook: PostToolUse
+ succeeded in 615ms:
+   160	        d = {}
+   161	        for a, b in PAIRS:
+   162	            for f in FAMS:
+   163	                ra, rb = R.get(m, a, f), R.get(m, b, f)
+   164	                if ra is not None and rb is not None:
+   165	                    with np.errstate(over="ignore", invalid="ignore"):
+   166	                        x = np.asarray(rb["gain"], dtype=float) - np.asarray(ra["gain"], dtype=float)
+   167	                    d[f"{b}-{a}|{f}"] = {"estimate": _est(x), "interval": _interval(x)}
+   168	        out["descriptive"][m] = d
+   169	    return out
+   170	
+   171	
+   172	def q4_decide(pa: list, pb: list, kappa) -> dict:
+   173	    """Holm over all six market slots (design 9.3): a market with a missing cell enters with p = 1 and is not decided."""
+   174	    fa, fb = [1.0 if p is None else p for p in pa], [1.0 if p is None else p for p in pb]
+   175	    res = dict(q4_markets(fa, fb, kappa)); res["undecided"] = [i for i, p in enumerate(pa) if p is None]
+   176	    return res
+   177	
+   178	
+   179	def q4(R: Records, kappa, confirmatory: bool) -> dict:
+   180	    pa, pb, markets = [], [], {}; tail = kappa * ALPHA / len(FRESH) if kappa else NOMINAL
+   181	    for m in FRESH:
+   182	        f0, f1 = R.get(m, "F000", "D2+H3"), R.get(m, "F111", "D2+H3")
+   183	        hit = any(RV.cell_id(f"{m}@rho0.2", r, "D2+H3", "profit") in R.flagged for r in ("F000", "F111"))
+   184	        if f0 is None or f1 is None:
+   185	            pa.append(None); pb.append(None); markets[m] = "not decided"; continue
+   186	        d = np.asarray(f0["gain"]) - np.asarray(f1["gain"]); eff = np.asarray(f1["eff_attack"])
+   187	        try:
+   188	            p_g, p_e = bootstrap_pvalue(d, 0.10, "lower"), bootstrap_pvalue(eff, 0.90, "lower")
+   189	            lo_g, lo_e = studentized_at(d, "lower", tail), studentized_at(eff, "lower", tail)
+   190	        except NumericalRefusal:
+   191	            pa.append(None); pb.append(None); markets[m] = "not decided: numerical refusal"; continue
+   192	        pa.append(p_g); pb.append(p_e)
+   193	        markets[m] = {"gain_diff": float(d.mean()), "gain_diff_lower": float(lo_g), "eff": float(eff.mean()),
+   194	                      "eff_lower": float(lo_e), "p_gain": float(pa[-1]), "p_eff": float(pb[-1]),
+   195	                      "bound_label": f"calibrated one-sided, tail {tail:.6g}" if kappa else NOMINAL_LABEL, "search": FLAGGED if hit else None}
+   196	    dec = q4_decide(pa, pb, kappa); undecided = [FRESH[i] for i in dec["undecided"]]
+   197	    out = {"heading": NONCONF if not confirmatory else "Q4: intersection-union per market, Holm over six markets", "markets": markets, "undecided": undecided,
+   198	           "decided": bool(dec["decided"])}
+   199	    if not dec["decided"]:
+   200	        out.update(k=None, passing=[], failing=[], wording=NO_DECISION); return out
+   201	    passing = [m for m, ok in zip(FRESH, dec["pass"]) if ok and m not in undecided]
+   202	    failing = [m for m, ok in zip(FRESH, dec["pass"]) if not ok and m not in undecided]
+   203	    flagged = [m for m in FRESH if isinstance(markets[m], dict) and markets[m]["search"]]
+   204	    wording = (f"replicated on {len(passing)} of 6 sampled markets" + ("; generalisation not established" if undecided else "")
+   205	               + (f"; decisions about the prescribed search procedure on {', '.join(flagged)}" if flagged else ""))
+   206	    out.update(k=len(passing), passing=passing, failing=failing, p=[float(p) for p in dec["p"]], wording=wording)
+   207	    return out
+   208	
+   209	
+   210	def _contrasts(arr: dict) -> dict:
+   211	    return _contrast_rows(arr)
+   212	
+   213	
+   214	def _contrast_rows(arr: dict) -> dict:
+   215	    n = len(next(iter(arr.values()))); rows = [q2_contrasts({r: arr[r][s] for r in FACT}) for s in range(n)]
+   216	    return {k: np.asarray([row[k] for row in rows]) for k in rows[0]}
+   217	
+   218	
+   219	def q2(R: Records):
+   220	    """Per market and family (the six fresh markets and the headline market) and pooled over the fresh markets (design 6.6,
+   221	    9.3): searched contrasts with gross and net efficiency beside them; fixed-attack contrasts with their attacker-profit and
+   222	    reference terms and gross and net efficiency; the training-selected bank envelope. A missing cell or cross record
+   223	    withholds only the parts that use it."""
+   224	    out = {k: {} for k, _ in Q2_KINDS}; out.update(per_market={}, envelope={}, label=NOMINAL_LABEL)
+   225	    for f in FAMS:
+   226	        pooled, gone, per, env = {k: {} for k, _ in Q2_KINDS}, {}, {}, {}
+   227	        for m in FRESH + ("headline",):
+   228	            recs = {r: R.get(m, r, f) for r in FACT}; cr = R.cross(m, f); pm = {}
+   229	            for kind, fld in Q2_KINDS:
+   230	                if kind.startswith("searched"):
+   231	                    if any(v is None for v in recs.values()):
+   232	                        pm[kind] = "unanswered: missing cell"; continue
+   233	                    rows = _contrast_rows({r: np.asarray(recs[r][fld], dtype=float) for r in FACT})
+   234	                else:
+   235	                    if cr is None:
+   236	                        pm[kind] = "unanswered: missing cross record"; continue
+   237	                    src = ((lambda a, r: cr["per_seed"][f"{a}>{r}"]) if fld is None else (lambda a, r, fld=fld: cr["profit_rows"][f"{a}>{r}"][fld]))
+   238	                    per_attack = [_contrast_rows({r: np.asarray(src(a, r), dtype=float) for r in FACT}) for a in FACT]
+   239	                    with np.errstate(over="ignore", invalid="ignore"):
+   240	                        rows = {c: np.mean([pa[c] for pa in per_attack], axis=0) for c in per_attack[0]}
+   241	                pm[kind] = {c: _cell(v) for c, v in rows.items()}
+   242	                if m != "headline":
+   243	                    for c, v in rows.items():
+   244	                        pooled[kind].setdefault(c, []).append(v)
+   245	            for kind, v in pm.items():
+   246	                if isinstance(v, str) and m != "headline":
+   247	                    gone[kind] = v
+   248	            per[m] = pm
+   249	            if cr is None:
+   250	                env[m] = "unanswered: missing cross record"; continue
+   251	            rows = cr["per_seed"]
+   252	            env[m] = {r: {"attack": cr["envelope"][r], **_cell(np.asarray(rows[f"{cr['envelope'][r]}>{r}"], dtype=float))} for r in FACT}
+   253	        for kind, _ in Q2_KINDS:
+   254	            out[kind][f] = gone[kind] if kind in gone else {c: _strat(v) for c, v in pooled[kind].items()}
+   255	        out["per_market"][f] = per; out["envelope"][f] = env
+   256	    return out
+   257	
+   258	
+   259	def q3(R: Records, h4_loaded: bool):
+   260	    fams = ("D2+H3", "X7-SC", "X5-AG/v2") + (("H4",) if h4_loaded else ())
+   261	    out = {"envelope": {}, "welfare": {}, "welfare_selected": {}, "coalition": {}, "diagnostic": {}, "robustness": {}, "label": NOMINAL_LABEL}
+   262	    for r in CORE:
+   263	        out["envelope"][r] = {}; out["robustness"][r] = {}
+   264	        for f in fams:
+   265	            ids = [i for i in (RV.cell_id(f"{m}@rho0.2", r, f, "profit") for m in FRESH + ("headline",)) if R.scheduled(i)]
+   266	            if any(R.rec(i) is None for i in ids):
+   267	                out["robustness"][r][f] = "unanswered (missing cell)"
+   268	            elif f not in CHECKED:
+   269	                out["robustness"][r][f] = "no search-quality claim (no scheduled check)"
+   270	            else:
+   271	                out["robustness"][r][f] = R.search_status(ids) or "answered"
+   272	        for m in FRESH + ("headline",):
+   273	            env = R.aux(f"envelope/{m}@rho0.2/{r}")
+   274	            need = [f for f in fams if R.scheduled(RV.cell_id(f"{m}@rho0.2", r, f, "profit"))]
+   275	            if env is None or any(R.get(m, r, f) is None for f in need):
+   276	                out["envelope"][r][m] = "unanswered: missing cell"; continue
+   277	            rec = R.get(m, r, env["choice"])
+   278	            if rec is None:
+   279	                out["envelope"][r][m] = "unanswered: missing cell"; continue
+   280	            g = np.asarray(rec["gain"]); out["envelope"][r][m] = {"family": env["choice"], "estimate": _est(g), "interval": _interval(g)}
+   281	    for r in CORE:
+   282	        out["welfare"][r] = {}; out["welfare_selected"][r] = {}
+   283	        for f in FAMS:
+   284	            out["welfare"][r][f] = {}
+   285	            for obj in ("W0", "W1"):
+   286	                rec = R.get("headline", r, f, obj); st = R.search_status([RV.cell_id("headline@rho0.2", r, f, obj)])
+   287	                if rec is None:
+   288	                    out["welfare"][r][f][obj] = "unanswered: missing cell"; continue
+   289	                if rec.get("no_feasible_candidate"):
+   290	                    out["welfare"][r][f][obj] = "no feasible candidate found" + (f" by the prescribed search; robustness {st}" if st else ""); continue
+   291	                eff = np.asarray(rec["eff"]); cell = {"efficiency": float(eff.mean()), "interval": _interval(eff),
+   292	                                                      "search": FLAGGED if "flagged" in (st or "") else None, "robustness": st or "answered"}
+   293	                if obj == "W0":
+   294	                    pr = R.get("headline", r, "D2+H3")
+   295	                    if pr is None:
+   296	                        out["welfare"][r][f][obj] = "unanswered: missing cell"; continue
+   297	                    N = R.jobs[RV.cell_id("headline@rho0.2", r, f, obj)]["mkt"]["cfg"].N
+   298	                    gain = np.asarray(rec["normalized"]) - np.asarray(pr["profit_ref"]) / (np.asarray(pr["sstar"]) / N)
+   299	                else:
+   300	                    gain = np.asarray(rec["constraint"]); ci = _interval(gain); cell["constraint_interval"] = ci
+   301	                    cell["w1_class"] = REFUSED if None in ci else w1_class(*ci)
+   302	                cell.update(attacker_gain=float(gain.mean()), attacker_gain_interval=_interval(gain)); out["welfare"][r][f][obj] = cell
+   303	        for obj in ("W0", "W1"):
+   304	            sel = R.aux(f"welfare_select/headline@rho0.2/{r}/{obj}") or {}
+   305	            if sel.get("family") is None:
+   306	                out["welfare_selected"][r][obj] = {"family": None, "status": sel.get("status", "unanswered: missing selection")}
+   307	            else:
+   308	                other = "X7-SC" if sel["family"] == "D2+H3" else "D2+H3"
+   309	                out["welfare_selected"][r][obj] = {"family": sel["family"], "other_family": other, "result": out["welfare"][r][sel["family"]][obj],
+   310	                                                   "other_result": out["welfare"][r][other][obj]}
+   311	        out["coalition"][r] = {}
+   312	        groups = [(c, sch, "X6-SE/v2") for c in (2, 5) for sch in ("synchronised", "staggered")] + [(2, "roles", "X8-DB")]
+   313	        for c, sch, fam in groups:
+   314	            tot, mn = R.get("headline", r, fam, "total", c, sch), R.get("headline", r, fam, "min", c, sch)
+   315	            if tot is None or mn is None:
+   316	                out["coalition"][r][f"c{c}_{sch}"] = "unanswered: missing cell"; continue
+   317	            try:
+   318	                gm = {"estimate": float(mn["min"]), "bounds": [float(x) for x in gmin_bounds([np.asarray(v, dtype=float) for v in mn["member_gain"]], 0.05)]}
+   319	            except NumericalRefusal:
+   320	                gm = {"estimate": float(mn["min"]), "bounds": [None, None], "status": REFUSED}
+   321	            st = R.search_status([RV.cell_id("headline@rho0.2", r, fam, o, c, sch) for o in ("total", "min")])
+   322	            out["coalition"][r][f"c{c}_{sch}"] = {"G_tot": {"estimate": float(tot["total"])}, "G_min": gm, "search": FLAGGED if "flagged" in (st or "") else None,
+   323	                                                  "robustness": st or "answered"}
+   324	        dg = R.get("headline", r, "HR1", "diagnostic")
+   325	        out["diagnostic"][r] = "unanswered: missing cell" if dg is None else {"replace_at": dg["replace_at"], "bins": dg["bins"]}
+   326	    out["independent"] = ("not run (H4 excluded); the independently authored part of Q3 is unanswered" if not h4_loaded else
+   327	                          {r: {m: (float(np.mean(R.get(m, r, "H4")["gain"])) if R.get(m, r, "H4") is not None else "not run (cut or missing)")
+   328	                               for m in FRESH + ("headline",)} for r in CORE})
+   329	    return out
+   330	
+   331	
+   332	def secondary(R: Records) -> dict:
+   333	    out = {"whole_systems": {}, "repair_rho1": {}, "label": NOMINAL_LABEL}
+   334	    for r in WHOLE:
+   335	        for m in FRESH + ("headline",):
+   336	            for f in FAMS:
+   337	                rec = R.get(m, r, f)
+   338	                if rec is not None:
+   339	                    g = np.asarray(rec["gain"]); out["whole_systems"].setdefault(r, {}).setdefault(m, {})[f] = {"estimate": float(g.mean()), "interval": _interval(g),
+   340	                                                                                                            **({"menu": REDUCED} if m != "headline" else {})}
+   341	    for r in REPAIR:
+   342	        for f in ("D2", "D2+H3", "X7-SC"):
+   343	            rec = R.get("headline", r, f, rho="rho1")
+   344	            if rec is not None:
+   345	                g = np.asarray(rec["gain"]); out["repair_rho1"].setdefault(r, {})[f] = {"estimate": float(g.mean()), "interval": _interval(g)}
+   346	    return out
+   347	
+   348	
+   349	def doubling(R: Records) -> dict:
+   350	    by = {RV._safe(rid): rid for rid in R.jobs}; out = {}
+   351	    for p in sorted((R.out / "doubling").glob("*.json")) if (R.out / "doubling").exists() else []:
+   352	        rec = read(p)
+   353	        if rec is not None and p.stem in by:
+   354	            out[by[p.stem]] = {k: v for k, v in rec.items() if k not in ("provenance", "upstream", "stage", "id")}
+   355	    return out
+   356	
+   357	
+   358	def build(out, protocol: dict, instances: dict, h4: dict, catalog: list[dict], cuts: int | None = None) -> dict:
+   359	    h4 = h4 or {}; cuts = int(protocol.get("cuts", 0) if cuts is None else cuts)
+   360	    rep = verify_records(out, catalog, instances, protocol, h4, cuts, not h4.get("loaded"))
+   361	    if not rep.get("ok"):
+   362	        raise SystemExit(f"verify found stale, foreign, or erroneous records; the report is refused: {json.dumps(rep)[:600]}")
+   363	    missing, no_doubling = set(), set()
+   364	    for c in rep.get("contexts", {}).values():
+   365	        missing |= set(c.get("missing", [])); no_doubling |= set(c.get("missing_doubling", []))
+   366	    R = Records(out, catalog, missing, _flagged(out, catalog), no_doubling); conf = bool((instances or {}).get("confirmatory")); kappa = protocol.get("kappa") or {}
+   367	    r = {"confirmatory": conf, "q1": q1(R, kappa.get("Q1"), conf), "q2": q2(R), "q3": q3(R, bool(h4.get("loaded"))), "q4": q4(R, kappa.get("Q4"), conf)}
+   368	    r["secondary"] = secondary(R); r["doubling"] = doubling(R); r["doubling_missing"] = sorted(no_doubling)
+   369	    for j in catalog:
+   370	        if read(RV.eval_path(R.out, j["id"])) is None:
+   371	            R.missing.add(j["id"])
+   372	    r["missing"] = sorted(R.missing); r["search_flagged"] = sorted(R.flagged); r["multiplicity"] = MULTIPLICITY
+   373	    r["unanswered"] = [q.upper() for q in ("q1", "q2", "q3") if _unanswered(r[q])] + (["Q4"] if r["q4"] == "unanswered" else [])
+   374	    return json.loads(json.dumps(r, default=float))
+   375	
+   376	
+   377	def _flagged(out, catalog: list[dict]) -> set:
+   378	    """Cells whose scheduled doubling check exceeded the threshold (design 6.5 'search-flagged')."""
+   379	    by = {RV._safe(j["id"]): j["id"] for j in catalog}; d = Path(out) / "doubling"; got = set()
+   380	    for p in sorted(d.glob("*.json")) if d.exists() else []:
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+ succeeded in 2998ms:
+results/v2/report/report.json
+[('confirmatory', 'bool', True), ('doubling', 'dict', 98), ('doubling_missing', 'list', 0), ('missing', 'list', 0), ('multiplicity', 'str', 101), ('q1', 'dict', 3), ('q2', 'dict', 11), ('q3', 'dict', 8), ('q4', 'dict', 9), ('search_flagged', 'list', 21), ('secondary', 'dict', 3), ('unanswered', 'list', 1)]
+results/v2/deviation/cfg_ulp_all.json
+[('instances_sha256', 'str', 64), ('linux_sha256', 'str', 64), ('markets', 'dict', 6), ('ok', 'bool', True)]
+results/v2/deviation/instances_container_configs.json
+[('root', 'str', 64), ('height', 'int', 974451), ('markets', 'dict', 6), ('seeds', 'dict', 7), ('salt_sha256', 'str', 64), ('confirmatory', 'bool', True), ('published_height', 'int', 974379)]
+results/v2/draw/instances.json
+[('root', 'str', 64), ('height', 'int', 974451), ('markets', 'dict', 6), ('seeds', 'dict', 7), ('salt_sha256', 'str', 64), ('confirmatory', 'bool', True), ('published_height', 'int', 974379)]
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "python -c 'import json; from pathlib import Path; d=json.loads(Path(\"results/v2/report/report.json\").read_text()); print(\"Q1\",json.dumps(d[\"q1\"][\"tests\"],indent=1)); print(\"Q4\",json.dumps(d[\"q4\"],indent=1)); print(\"unanswered\",d[\"unanswered\"]); print(\"Q2/Q3 labels\",d[\"q2\"][\"label\"],d[\"q3\"][\"label\"]); print(\"deviation\",Path(\"results/v2/deviation/cfg_ulp_all.json\").read_text())'" in /Users/oemer.demirel/Projects/touchstone
+exec
+/bin/zsh -lc "rg --files -g 'pyvenv.cfg' -g 'python*' -g 'AGENTS.md' -g '"'!sealed/**'"' -g '"'!sealed2/**'"' -g '"'!.git/**'"' .venv; nl -ba docs/revision/deviation/README.md" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc 'nl -ba sim/decisions_v2.py | head -220; nl -ba sim/manifest_v2.py | head -220' in /Users/oemer.demirel/Projects/touchstone/results/v2/eval-checkout
+exec
+/bin/zsh -lc "rg -n '"'^def |''^ROOT|''^MAN|sealed|h4-session|touchstone-h4|read_text|subprocess'"' scripts/revision_v2.py sim/manifest_v2.py sim/intervals.py sim/records_v2.py; nl -ba results/pods/verify_market.sh | head -150; rg --files docs/revision/deviation" in /Users/oemer.demirel/Projects/touchstone
+ succeeded in 517ms:
+     1	"""Decision rules of protocol v2 (design draft 7, 9.3). Q1: two pooled tests (F111 vs C*, families D2+H3 and X7-SC) on
+     2	d = g_C* - g_F111 over the six fresh markets; Holm on calibrated two-sided p-values decides the direction and the calibrated
+     3	Bonferroni interval decides the size against the margin 0.05, in four exclusive categories; two fixed Holm slots (an
+     4	unavailable test enters with p = 1 and is not decided); a descriptive efficiency condition for the word "better". Q2:
+     5	effect-coded factorial contrasts and conditional effects (descriptive). Q4: per market, an intersection-union test (the
+     6	larger calibrated component p-value), then Holm across six fixed market slots. A family without an admitted multiplier
+     7	(kappa None) gets no confirmatory decision. A numerical refusal withholds only the affected test."""
+     8	from __future__ import annotations
+     9	
+    10	import numpy as np
+    11	
+    12	from .intervals import NumericalRefusal, calibrated, holm, stratified_at, stratified_mean, stratified_two_sided
+    13	
+    14	MARGIN = 0.05
+    15	ALPHA = 0.05
+    16	NO_DECISION = "no confirmatory decision"
+    17	MISSING = "not decided: missing cell"
+    18	REFUSED = "not decided: numerical refusal"
+    19	Q1_SLOTS, Q4_SLOTS = 2, 6
+    20	EFF_MARGIN = 0.01
+    21	
+    22	
+    23	def q1_category(strata_diffs, kappa: float | None, holm_reject: bool, m: int = Q1_SLOTS) -> str:
+    24	    """d = g_C* - g_F111 (positive: R3 lower gain). Categories in order: materially lower, equivalent, ordered but size not
+    25	    established, inconclusive (design 9.3)."""
+    26	    if kappa is None:
+    27	        return NO_DECISION
+    28	    mean = stratified_mean(strata_diffs)                       # refuses nonfinite or short strata
+    29	    tail = ALPHA / (2 * m) * kappa
+    30	    lo, hi = stratified_at(strata_diffs, "lower", tail), stratified_at(strata_diffs, "upper", tail)
+    31	    if lo > MARGIN:
+    32	        return "R3 materially lower"
+    33	    if hi < -MARGIN:
+    34	        return "C* materially lower"
+    35	    if lo >= -MARGIN and hi <= MARGIN:
+    36	        return ("equivalent, direction R3 lower" if mean > 0 else "equivalent, direction C* lower") if holm_reject else "equivalent"
+    37	    return "ordered, size not established" if holm_reject else "inconclusive"
+    38	
+    39	
+    40	def q1_family(tests: dict, kappa: float | None, slots: int = Q1_SLOTS) -> dict:
+    41	    """Holm over the fixed slots; a test whose strata are None (a missing cell) or refused enters with p = 1, undecided."""
+    42	    names = list(tests)
+    43	    if kappa is None:
+    44	        return {n: {"p": None, "reject": None, "category": NO_DECISION} for n in names}
+    45	    p, why = [], {}
+    46	    for n in names:
+    47	        if tests[n] is None:
+    48	            p.append(1.0); why[n] = MISSING; continue
+    49	        try:
+    50	            p.append(calibrated(stratified_two_sided(tests[n], 0.0), kappa))
+    51	        except NumericalRefusal:
+    52	            p.append(1.0); why[n] = REFUSED
+    53	    p += [1.0] * max(0, int(slots) - len(p))
+    54	    rej = holm(p, ALPHA); out = {}
+    55	    for i, n in enumerate(names):
+    56	        if n in why:
+    57	            out[n] = {"p": None, "reject": None, "category": why[n]}; continue
+    58	        try:
+    59	            out[n] = {"p": p[i], "reject": rej[i], "category": q1_category(tests[n], kappa, rej[i], m=int(slots))}
+    60	        except NumericalRefusal:
+    61	            out[n] = {"p": None, "reject": None, "category": REFUSED}
+    62	    return out
+    63	
+    64	
+    65	def q1_efficiency(eff_strata, tail: float = 0.025) -> str:
+    66	    """The pooled paired gross-efficiency difference (the favoured rule minus the other): nominal one-sided 97.5 percent
+    67	    bounds against -0.01 (descriptive, not calibrated)."""
+    68	    lo, hi = stratified_at(eff_strata, "lower", tail), stratified_at(eff_strata, "upper", tail)
+    69	    if lo >= -EFF_MARGIN:
+    70	        return "efficiency condition met"
+    71	    if hi < -EFF_MARGIN:
+    72	        return "efficiency loss"
+    73	    return "efficiency non-inferiority unresolved"
+    74	
+    75	
+    76	def q1_better(category: str, efficiency: str) -> str | None:
+    77	    """'Better' needs category 1 in the rule's favour and the efficiency condition; labelled descriptive (design 9.3)."""
+    78	    if efficiency != "efficiency condition met":
+    79	        return None
+    80	    return {"R3 materially lower": "R3 better (efficiency evidence descriptive)",
+    81	            "C* materially lower": "C* better (efficiency evidence descriptive)"}.get(category)
+    82	
+    83	
+    84	def q2_contrasts(cell_means: dict) -> dict:
+    85	    cells = {(int(c[1]), int(c[2]), int(c[3])): float(v) for c, v in cell_means.items()}
+    86	    mean = lambda pred: float(np.mean([v for k, v in cells.items() if pred(*k)]))
+    87	    diff = lambda a, b: mean(a) - mean(b)
+    88	    return {"P": diff(lambda p, g, s: p == 1, lambda p, g, s: p == 0), "G": diff(lambda p, g, s: g == 1, lambda p, g, s: g == 0),
+    89	            "S": diff(lambda p, g, s: s == 1, lambda p, g, s: s == 0),
+    90	            "PG": diff(lambda p, g, s: p == g, lambda p, g, s: p != g), "PS": diff(lambda p, g, s: p == s, lambda p, g, s: p != s),
+    91	            "GS": diff(lambda p, g, s: g == s, lambda p, g, s: g != s),
+    92	            "PGS": diff(lambda p, g, s: (p + g + s) % 2 == 1, lambda p, g, s: (p + g + s) % 2 == 0),
+    93	            "G|P=0": diff(lambda p, g, s: p == 0 and g == 1, lambda p, g, s: p == 0 and g == 0),
+    94	            "G|P=1": diff(lambda p, g, s: p == 1 and g == 1, lambda p, g, s: p == 1 and g == 0),
+    95	            "P|S=0": diff(lambda p, g, s: s == 0 and p == 1, lambda p, g, s: s == 0 and p == 0),
+    96	            "P|S=1": diff(lambda p, g, s: s == 1 and p == 1, lambda p, g, s: s == 1 and p == 0),
+    97	            "P|G=0": diff(lambda p, g, s: g == 0 and p == 1, lambda p, g, s: g == 0 and p == 0),
+    98	            "P|G=1": diff(lambda p, g, s: g == 1 and p == 1, lambda p, g, s: g == 1 and p == 0),
+    99	            "G|S=0": diff(lambda p, g, s: s == 0 and g == 1, lambda p, g, s: s == 0 and g == 0),
+   100	            "G|S=1": diff(lambda p, g, s: s == 1 and g == 1, lambda p, g, s: s == 1 and g == 0)}
+   101	
+   102	
+   103	def q4_markets(pa: list, pb: list, kappa: float | None) -> dict:
+   104	    if kappa is None:
+   105	        return {"decided": False, "p": None, "pass": None, "k": None}
+   106	    p = [max(calibrated(a, kappa), calibrated(b, kappa)) for a, b in zip(pa, pb)]
+   107	    rej = holm(p, ALPHA)
+   108	    return {"decided": True, "p": p, "pass": rej, "k": int(sum(rej))}
+   109	
+   110	
+   111	def w1_class(lower: float, upper: float) -> str:
+   112	    """Design 6.2 (draft 7): W1 profitability on evaluation seeds from the constraint mean's interval."""
+   113	    if float(lower) >= 0.0:
+   114	        return "supported"
+   115	    if float(upper) < 0.0:
+   116	        return "contradicted"
+   117	    return "unresolved"
+   118	
+     1	"""The protocol-v2 manifest (design draft 7: 8.1, 8.1a, 8.2, 6.5, 6.6, 6.7), read from experiments/revision-v2-manifest.yaml:
+     2	the 287 search cells and 3 diagnostic cells, the 98 doubling checks, the 14 fixed-attack cross-evaluations, the execution
+     3	priority, the pre-stated cut order, per context the records a final freeze requires and the reference-bank rules, the
+     4	distinct-rule check (design 3.4), and the question-to-cell map (design 8.1a)."""
+     5	from __future__ import annotations
+     6	
+     7	from functools import lru_cache
+     8	from pathlib import Path
+     9	
+    10	import json
+    11	import math
+    12	
+    13	import yaml
+    14	
+    15	ROOT = Path(__file__).resolve().parents[1]
+    16	PATH = ROOT / "experiments/revision-v2-manifest.yaml"
+    17	Q1_Q4_RULES = ("F000", "F111", "C*")
+    18	FACTORIAL = ("F000", "F001", "F010", "F011", "F100", "F101", "F110", "F111")
+    19	MATCHED = ("F000", "F001", "F010", "F011", "F100", "F101", "F110", "F111", "C*", "C*/S0")
+    20	FIXED = MATCHED + ("C*/S2", "R4")                    # rules at the fixed pair (R4 and C*/S2 only in the rho = 1 repair block)
+    21	MENU_FAMILIES = ("D2+H3", "X7-SC")
+    22	SECONDARY = ("B3-t", "R3-t", "C*-t")
+    23	CORE = ("F000", "F111", "C*")
+    24	J, L_FIXED = 50, 10
+    25	
+    26	
+    27	@lru_cache(maxsize=1)
+    28	def doc() -> dict:
+    29	    return yaml.safe_load(PATH.read_text())
+    30	
+    31	
+    32	CUT_ORDER = tuple(doc()["cut_order"])
+    33	
+    34	
+    35	def context(market: str, rho: float = 0.2) -> str:
+    36	    return f"{market}@rho{rho:g}" if rho != 0.2 else f"{market}@rho0.2"
+    37	
+    38	
+    39	def _cell(block, market, rho, rule, family, objective, c=None, schedule=None) -> dict:
+    40	    ctx = context(market, rho)
+    41	    cid = f"{ctx}|{rule}|{family}|{objective}" + (f"|c{c}_{schedule}" if c is not None else "")
+    42	    return {"id": cid, "block": block, "market": market, "context": ctx, "rho": rho, "rule": rule, "family": family, "objective": objective,
+    43	            "c": c, "schedule": schedule}
+    44	
+    45	
+    46	def _families(b: dict, market: str) -> list:
+    47	    if "families_by_market" in b:
+    48	        return b["families_by_market"]["headline" if market == "headline" else "fresh"]
+    49	    return b["families"]
+    50	
+    51	
+    52	def headline_a_tot(rho: float) -> int:
+    53	    """A_tot = floor(beta S_hat / (rho m)) = floor((beta / rho) n_FB) on the headline calibration (design 3.4)."""
+    54	    n_fb = float(json.loads((ROOT / "experiments/calibration.json").read_text())["n_FB"])
+    55	    return int(math.floor(0.05 / float(rho) * n_fb + 1e-12))
+    56	
+    57	
+    58	def _descriptor(rule: str, a_tot: int) -> tuple:
+    59	    """(selection, pacing schedule) of a rule at the fixed pair; rules with their own parameters are unique."""
+    60	    if rule in FACTORIAL:
+    61	        pacing = ("reserve", min(J * L_FIXED, a_tot)) if rule[3] == "1" else ("spread",)
+    62	        return (("factorial", rule[1], rule[2]), pacing)
+    63	    if rule == "R4":
+    64	        return (("factorial", "1", "1"), ("reserve", min(J * L_FIXED, a_tot // 2)))
+    65	    if rule in ("C*", "C*/S0", "C*/S2"):
+    66	        pacing = {"C*": ("reserve", min(J * L_FIXED, a_tot)), "C*/S0": ("spread",), "C*/S2": ("reserve", min(J * L_FIXED, a_tot // 2))}[rule]
+    67	        return (("credibility",), pacing)
+    68	    return (("own", rule), ("own", rule))
+    69	
+    70	
+    71	def distinct_rule_problems(cs: list[dict], a_tot: dict) -> list[str]:
+    72	    """Design 3.4: no two rules compared in one block and context may have the same selection and pacing schedule."""
+    73	    seen: dict = {}; out = []
+    74	    for c in cs:
+    75	        key = (c["block"], c["context"], _descriptor(c["rule"], int(a_tot[c["context"]])))
+    76	        other = seen.setdefault(key, c["rule"])
+    77	        if other != c["rule"]:
+    78	            out.append(f"{c['block']} {c['context']}: {other} and {c['rule']} have the same selection and pacing")
+    79	    return sorted(set(out))
+    80	
+    81	
+    82	def cells() -> list[dict]:
+    83	    d = doc(); out = []
+    84	    for name, b in d["blocks"].items():
+    85	        markets = d["markets"] if b["markets"] == "all" else b["markets"]
+    86	        rho = float(b.get("rho", 0.2))
+    87	        objectives = b.get("objectives", [b.get("objective")])
+    88	        for m in markets:
+    89	            for r in b["rules"]:
+    90	                for f in _families(b, m):
+    91	                    for o in objectives:
+    92	                        if "c" in b:
+    93	                            out.extend(_cell(name, m, rho, r, f, o, c, s) for c in b["c"] for s in b["schedules"])
+    94	                        else:
+    95	                            out.append(_cell(name, m, rho, r, f, o))
+    96	    problems = distinct_rule_problems(out, {c["context"]: headline_a_tot(c["rho"]) for c in out})
+    97	    if problems:
+    98	        raise ValueError(f"manifest refused: {problems}")
+    99	    return out
+   100	
+   101	
+   102	def menu_families(ctx: str, rule: str) -> tuple[str, ...]:
+   103	    """Design 6.4: the secondary whole systems on fresh markets have the reduced D2+H3 menu; every other reference both."""
+   104	    return ("D2+H3",) if rule in SECONDARY and ctx.startswith("fresh") else MENU_FAMILIES
+   105	
+   106	
+   107	def _cut(cell: dict, spec: dict) -> bool:
+   108	    if spec.get("markets") == "fresh" and not cell["market"].startswith("fresh"):
+   109	        return False
+   110	    return all(cell[k] == v for k, v in (("block", spec.get("block")), ("family", spec.get("family")), ("rule", spec.get("rule"))) if v is not None)
+   111	
+   112	
+   113	def effective(cuts: int = 0, h4_excluded: bool = False) -> list[dict]:
+   114	    out = cells()
+   115	    for spec in CUT_ORDER[: int(cuts)]:
+   116	        out = [c for c in out if not _cut(c, spec)]
+   117	    if h4_excluded:
+   118	        out = [c for c in out if c["family"] != "H4"]
+   119	    return out
+   120	
+   121	
+   122	def doublings() -> list[str]:
+   123	    out = []
+   124	    for c in cells():
+   125	        if c["market"] == "headline" and c["rho"] == 0.2 and c["block"] in ("matched", "welfare", "coalition", "coalition_roles"):
+   126	            out.append(c["id"])
+   127	        elif c["market"].startswith("fresh") and c["block"] == "matched" and c["rule"] in Q1_Q4_RULES:
+   128	            out.append(c["id"])
+   129	    return out
+   130	
+   131	
+   132	def cross_evaluations() -> list[tuple[str, str]]:
+   133	    return [(context(m), f) for m in doc()["markets"] for f in MENU_FAMILIES]
+   134	
+   135	
+   136	def priority(cell: dict) -> int:
+   137	    if cell["block"] == "matched":
+   138	        return 0 if cell["rule"] in Q1_Q4_RULES else 1
+   139	    if cell["block"] in ("welfare", "coalition", "coalition_roles", "diagnostic") or (cell["block"] == "extras" and cell["family"] in ("X5-AG/v2", "H4")):
+   140	        return 2
+   141	    return 3
+   142	
+   143	
+   144	def bank_rules(ctx: str, family: str, cuts: int = 0, h4_excluded: bool = False) -> list[str]:
+   145	    present = {c["rule"] for c in effective(cuts, h4_excluded) if c["context"] == ctx and c["family"] == family and c["objective"] == "profit"}
+   146	    return [r for r in FIXED if r in present]
+   147	
+   148	
+   149	def required(ctx: str, cuts: int = 0, h4_excluded: bool = False) -> list[str]:
+   150	    cs = [c for c in effective(cuts, h4_excluded) if c["context"] == ctx and c["block"] != "diagnostic"]   # diagnostics run after the freeze
+   151	    req = [c["id"] for c in cs]
+   152	    rules = sorted({c["rule"] for c in cs if c["objective"] != "coalition"}, key=lambda r: (r not in FIXED, r))
+   153	    req += [f"reference/{ctx}/{r}" for r in rules]
+   154	    groups: dict = {}
+   155	    for c in cs:
+   156	        if c["objective"] in ("total", "min"):
+   157	            groups.setdefault(f"{c['rule']}_c{c['c']}", set()).add(c["schedule"] if c["family"] == "X6-SE/v2" else None)
+   158	    for tag, schedules in groups.items():                  # design draft 7, 6.3: one coalition group per rule and c
+   159	        req += [f"joint_twin/{ctx}/{tag}_{s}" for s in ("synchronised", "staggered") if s in schedules]
+   160	        req += [f"{kind}/{ctx}/{tag}" for kind in ("joint_reference_pre", "joint_reference", "coalition_select")]
+   161	    env_rules = sorted({c["rule"] for c in cs if c["block"] == "extras"})
+   162	    req += [f"envelope/{ctx}/{r}" for r in env_rules]
+   163	    if any(c["block"] == "matched" for c in cs) and ctx in {context(m) for m in doc()["markets"]}:
+   164	        req += [f"bank/{ctx}/{f}" for f in MENU_FAMILIES]
+   165	        req += [f"bank_train/{ctx}/{f}" for f in MENU_FAMILIES]                          # design draft 7, 6.6: before the freeze
+   166	        req += [f"envelope_select/{ctx}/{r}/{f}" for f in MENU_FAMILIES for r in FACTORIAL
+   167	                if any(c["rule"] == r and c["family"] == f and c["block"] == "matched" for c in cs)]
+   168	    req += sorted({f"welfare_select/{ctx}/{c['rule']}/{c['objective']}" for c in cs if c["block"] == "welfare"},
+   169	                  key=lambda x: (CORE.index(x.split("/")[2]), x))                         # design draft 7, 6.2
+   170	    return req
+   171	
+   172	
+   173	def _ids(pred, cuts: int = 0, h4_excluded: bool = False) -> list[str]:
+   174	    return [c["id"] for c in effective(cuts, h4_excluded) if pred(c)]
+   175	
+   176	
+   177	def _fresh(c: dict) -> bool:
+   178	    return c["market"].startswith("fresh")
+   179	
+   180	
+   181	QUESTIONS = {
+   182	    "Q1": {"cells": lambda c: _fresh(c) and c["block"] == "matched" and c["rule"] in ("F111", "C*") and c["family"] in MENU_FAMILIES,
+   183	           "checks": lambda c: _fresh(c) and c["block"] == "matched" and c["rule"] in ("F111", "C*") and c["family"] in MENU_FAMILIES},
+   184	    "Q2": {"cells": lambda c: c["block"] == "matched" and c["rule"] in FACTORIAL and c["rho"] == 0.2,
+   185	           "checks": lambda c: c["market"] == "headline" and c["block"] == "matched" and c["rule"] in FACTORIAL},
+   186	    "Q3": {"cells": lambda c: c["rho"] == 0.2 and c["rule"] in CORE and (c["block"] in ("welfare", "coalition", "coalition_roles", "diagnostic")
+   187	                                                                         or c["family"] in ("D2+H3", "X7-SC", "X5-AG/v2", "H4") and c["block"] in ("matched", "extras")),
+   188	           "checks": lambda c: c["rule"] in CORE and c["rho"] == 0.2 and (c["block"] in ("welfare", "coalition", "coalition_roles") or c["block"] == "matched")},
+   189	    "Q4": {"cells": lambda c: _fresh(c) and c["block"] == "matched" and c["rule"] in ("F000", "F111") and c["family"] == "D2+H3",
+   190	           "checks": lambda c: _fresh(c) and c["block"] == "matched" and c["rule"] in ("F000", "F111") and c["family"] == "D2+H3"},
+   191	    "repair": {"cells": lambda c: c["block"] == "repair", "checks": lambda c: False},
+   192	    "whole": {"cells": lambda c: c["block"] == "tuned", "checks": lambda c: False},
+   193	}
+   194	
+   195	
+   196	def question_cells(name: str, cuts: int = 0, h4_excluded: bool = False) -> dict:
+   197	    """Design 8.1a: the cells a question needs and the scheduled doubling checks it depends on (cross-evaluations for Q2)."""
+   198	    q = QUESTIONS[name]; dbl = set(doublings())
+   199	    out = {"cells": _ids(q["cells"], cuts, h4_excluded), "checks": [i for i in _ids(q["checks"], cuts, h4_excluded) if i in dbl]}
+   200	    if name == "Q2":
+   201	        out["cross"] = [f"cross/{ctx}/{f}" for ctx, f in cross_evaluations()]
+   202	    return out
+   203	
+
+hook: PostToolUse
+ exited 1 in 589ms:
+.venv/pyvenv.cfg
+nl: docs/revision/deviation/README.md: No such file or directory
+
+hook: PostToolUse
+hook: PostToolUse Completed
+ exited 2 in 598ms:
+sim/manifest_v2.py:15:ROOT = Path(__file__).resolve().parents[1]
+sim/manifest_v2.py:28:def doc() -> dict:
+sim/manifest_v2.py:29:    return yaml.safe_load(PATH.read_text())
+sim/manifest_v2.py:35:def context(market: str, rho: float = 0.2) -> str:
+sim/manifest_v2.py:39:def _cell(block, market, rho, rule, family, objective, c=None, schedule=None) -> dict:
+sim/manifest_v2.py:46:def _families(b: dict, market: str) -> list:
+sim/manifest_v2.py:52:def headline_a_tot(rho: float) -> int:
+sim/manifest_v2.py:54:    n_fb = float(json.loads((ROOT / "experiments/calibration.json").read_text())["n_FB"])
+sim/manifest_v2.py:58:def _descriptor(rule: str, a_tot: int) -> tuple:
+sim/manifest_v2.py:71:def distinct_rule_problems(cs: list[dict], a_tot: dict) -> list[str]:
+sim/manifest_v2.py:82:def cells() -> list[dict]:
+sim/manifest_v2.py:102:def menu_families(ctx: str, rule: str) -> tuple[str, ...]:
+sim/manifest_v2.py:107:def _cut(cell: dict, spec: dict) -> bool:
+sim/manifest_v2.py:113:def effective(cuts: int = 0, h4_excluded: bool = False) -> list[dict]:
+sim/manifest_v2.py:122:def doublings() -> list[str]:
+sim/manifest_v2.py:132:def cross_evaluations() -> list[tuple[str, str]]:
+sim/manifest_v2.py:136:def priority(cell: dict) -> int:
+sim/manifest_v2.py:144:def bank_rules(ctx: str, family: str, cuts: int = 0, h4_excluded: bool = False) -> list[str]:
+sim/manifest_v2.py:149:def required(ctx: str, cuts: int = 0, h4_excluded: bool = False) -> list[str]:
+sim/manifest_v2.py:173:def _ids(pred, cuts: int = 0, h4_excluded: bool = False) -> list[str]:
+sim/manifest_v2.py:177:def _fresh(c: dict) -> bool:
+sim/manifest_v2.py:196:def question_cells(name: str, cuts: int = 0, h4_excluded: bool = False) -> dict:
+sim/intervals.py:21:def _check(x: np.ndarray, side: str, level: float) -> np.ndarray:
+sim/intervals.py:32:def percentile_bootstrap(x, side: str, level: float, resamples: int, seed: int) -> Bound:
+sim/intervals.py:44:def studentized_bootstrap(x, side: str, level: float, resamples: int, seed: int) -> Bound:
+sim/intervals.py:62:def t_bound(x, side: str, level: float) -> Bound:
+sim/intervals.py:72:def exact_t_bound_with_critical(x, side: str, critical: float) -> float:
+sim/intervals.py:79:def t_interval(x, level: float = 0.95) -> tuple[float, float]:
+sim/intervals.py:87:def bound(method: str, x, side: str, level: float, settings: dict) -> Bound:
+sim/intervals.py:103:def _boot_idx(n: int, resamples: int, seed: int) -> np.ndarray:
+sim/intervals.py:111:def _strat_idx(sizes: tuple, resamples: int, seed: int) -> tuple:
+sim/intervals.py:123:def _finite(v, what: str):
+sim/intervals.py:129:def sample(x, what: str = "sample") -> np.ndarray:
+sim/intervals.py:140:def _mean_var(x: np.ndarray) -> tuple[float, float]:
+sim/intervals.py:147:def sample_mean(x) -> float:
+sim/intervals.py:151:def _combine(means: list) -> float:
+sim/intervals.py:156:def stratified_mean(strata) -> float:
+sim/intervals.py:164:def studentized_tstats(x, resamples: int, seed: int) -> tuple[float, float, np.ndarray]:
+sim/intervals.py:181:def _bound_from(mean: float, se: float, t: np.ndarray, side: str, tail: float) -> float:
+sim/intervals.py:193:def studentized_at(x, side: str, tail: float, resamples: int = 9999, seed: int = V2_RESAMPLE_SEED) -> float:
+sim/intervals.py:197:def _pvalue_from(mean: float, se: float, t: np.ndarray, null: float, side: str) -> float:
+sim/intervals.py:208:def bootstrap_pvalue(x, null: float, side: str, resamples: int = 9999, seed: int = V2_RESAMPLE_SEED) -> float:
+sim/intervals.py:213:def two_sided_pvalue(x, null: float, resamples: int = 9999, seed: int = V2_RESAMPLE_SEED) -> float:
+sim/intervals.py:217:def _p(p) -> float:
+sim/intervals.py:224:def calibrated(p: float, kappa: float) -> float:
+sim/intervals.py:230:def holm(pvalues, alpha: float = 0.05) -> list[bool]:
+sim/intervals.py:240:def stratified_tstats(strata, resamples: int, seed: int) -> tuple[float, float, np.ndarray]:
+sim/intervals.py:264:def stratified_at(strata, side: str, tail: float, resamples: int = 9999, seed: int = V2_RESAMPLE_SEED) -> float:
+sim/intervals.py:268:def stratified_pvalue(strata, null: float, side: str, resamples: int = 9999, seed: int = V2_RESAMPLE_SEED) -> float:
+sim/intervals.py:272:def stratified_two_sided(strata, null: float, resamples: int = 9999, seed: int = V2_RESAMPLE_SEED) -> float:
+sim/intervals.py:277:def gmin_bounds(member_rows, tail: float, resamples: int = 9999, seed: int = V2_RESAMPLE_SEED) -> tuple[float, float]:
+sim/intervals.py:284:def clopper_pearson_upper(x: int, n: int, confidence: float) -> float:
+sim/records_v2.py:12:def write(path, rec: dict) -> None:
+sim/records_v2.py:20:def read(path) -> dict | None:
+sim/records_v2.py:22:        return json.loads(Path(path).read_text())
+sim/records_v2.py:27:def sha_file(path) -> str:
+sim/records_v2.py:31:def validate(job: dict, stage: str, rec: dict, upstream: dict) -> None:
+scripts/revision_v2.py:15:import subprocess
+scripts/revision_v2.py:49:ROOT = Path(__file__).resolve().parents[1]
+scripts/revision_v2.py:60:def git_commit() -> str:
+scripts/revision_v2.py:62:        return subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
+scripts/revision_v2.py:67:def _sha(b: bytes) -> str:
+scripts/revision_v2.py:71:def _sha_json(obj) -> str:
+scripts/revision_v2.py:75:def install_salt(root: str, out: Path) -> Path:
+scripts/revision_v2.py:83:def _fresh(root: str) -> tuple:
+scripts/revision_v2.py:88:def _market_cfg(label: str, root: str, rho: float):
+scripts/revision_v2.py:100:def market(label: str, root: str, rho: float = 0.2, dev: bool = False, smoke: bool = False, cfg=None, commit: str | None = None,
+scripts/revision_v2.py:118:def manifest_ctx(ctx: str) -> str:
+scripts/revision_v2.py:124:def rule_spec(rule: str, params: dict | None) -> dict:
+scripts/revision_v2.py:142:def rule_factory(job: dict):
+scripts/revision_v2.py:147:def constants(job: dict) -> tuple[int, int]:
+scripts/revision_v2.py:154:def _h4(path: str, sha: str):
+scripts/revision_v2.py:158:def family_for(name: str, T: int, L: int, h4: dict | None = None) -> Family:
+scripts/revision_v2.py:167:def cell_id(ctx: str, rule: str, family: str, objective: str, c=None, schedule=None) -> str:
+scripts/revision_v2.py:172:def _cells_by_id() -> dict:
+scripts/revision_v2.py:176:def job(mkt: dict, rule: str, family: str, objective: str = "profit", c: int | None = None, schedule: str | None = None,
+scripts/revision_v2.py:194:def context_provenance(mkt: dict) -> dict:
+scripts/revision_v2.py:200:def settings(job: dict) -> SearchSettings:
+scripts/revision_v2.py:205:def train_cell(job: dict, others: tuple = ()) -> Cell:
+scripts/revision_v2.py:210:def eval_cell(job: dict) -> Cell:
+scripts/revision_v2.py:216:def _safe(s: str) -> str:
+scripts/revision_v2.py:220:def path_of(out: Path, rid: str) -> Path:
+scripts/revision_v2.py:230:def eval_path(out: Path, rid: str) -> Path:
+scripts/revision_v2.py:236:def search_family(cell: Cell, family: Family, cache: SeedCache, st: SearchSettings, twin, extra_incumbents: dict | None = None):
+scripts/revision_v2.py:244:def controls(objective, family: Family) -> list:
+scripts/revision_v2.py:254:def continue_search(objective, family: Family, st: SearchSettings, original, seed: int = 1):
+scripts/revision_v2.py:263:def _menu_id(ctx, rule, fam):
+scripts/revision_v2.py:267:def aux_provenance(mkt: dict, **extra) -> dict:
+scripts/revision_v2.py:271:def group_provenance(job: dict) -> dict:
+scripts/revision_v2.py:275:def reusable(p: Path, rec: dict | None, prov: dict, check) -> bool:
+scripts/revision_v2.py:290:def _welfare_extra(job: dict, out: Path, T: int) -> tuple[dict, dict]:
+scripts/revision_v2.py:301:def _welfare_record(obj, res, selected, up, T, L) -> dict:
+scripts/revision_v2.py:306:def stage_search(job: dict, out: Path) -> dict:
+scripts/revision_v2.py:335:def cand_to_json(c: Candidate, family: str | None, T: int, L: int) -> dict:
+scripts/revision_v2.py:339:def cand_from_json(d: dict, h4: dict | None = None) -> Candidate:
+scripts/revision_v2.py:345:def menu(job: dict, out: Path, cuts: int = 0, h4_excluded: bool = False) -> tuple[list, list, dict]:
+scripts/revision_v2.py:373:def merge_menu(groups: dict, family_order) -> tuple[list, list]:
+scripts/revision_v2.py:387:def stage_reference(job: dict, out: Path, cuts: int = 0, h4_excluded: bool = False) -> dict:
+scripts/revision_v2.py:396:def reference_provenance(job: dict) -> dict:
+scripts/revision_v2.py:400:def reference_of(job: dict, out: Path) -> tuple[Candidate, dict, Path]:
+scripts/revision_v2.py:407:def _coalition_tag(job):
+scripts/revision_v2.py:412:def _twin_id(ctx: str, tag: str, schedule: str) -> str:
+scripts/revision_v2.py:420:def _group(job: dict, catalog: list[dict]) -> list[dict]:
+scripts/revision_v2.py:424:def _x6_schedules(group: list[dict]) -> list[str]:
+scripts/revision_v2.py:429:def _members(job: dict) -> tuple:
+scripts/revision_v2.py:433:def _desc(job: dict, knobs: dict) -> dict:
+scripts/revision_v2.py:437:def _desc_key(d: dict) -> tuple:
+scripts/revision_v2.py:441:def _project_desc(job: dict, knobs: dict) -> dict:
+scripts/revision_v2.py:447:def _representable(job: dict, desc: dict) -> bool:
+scripts/revision_v2.py:451:def _rows_of(job: dict, desc: dict, seeds, cache) -> np.ndarray:
+scripts/revision_v2.py:456:def _coalition_objective(job: dict, kind: str, ref, cache) -> CoalitionObjective:
+scripts/revision_v2.py:462:def _coalition_record(job: dict, obj, res, upstream: dict) -> dict:
+scripts/revision_v2.py:469:def _menu_extension(group: list[dict], objective: str, out: Path) -> list[tuple[str, dict]]:
+scripts/revision_v2.py:479:def _joint_menu(group: list[dict], out: Path, final: bool) -> list[tuple[str, dict]]:
+scripts/revision_v2.py:495:def coalition_step(kind: str, item: dict, out: Path, catalog: list[dict]) -> str:
+scripts/revision_v2.py:532:def stage_dependent(job: dict, out: Path) -> dict:
+scripts/revision_v2.py:565:def _by_id(catalog: list[dict]) -> dict:
+scripts/revision_v2.py:569:def _first(catalog, **kw):
+scripts/revision_v2.py:573:def expected_upstream(rid: str, catalog: list[dict], cuts: int = 0, h4_excluded: bool = False) -> set:
+scripts/revision_v2.py:617:def _group_job(kind: str, ctx: str, rest: str, catalog: list[dict]) -> dict:
+scripts/revision_v2.py:625:def expected_provenance(rid: str, catalog: list[dict]) -> dict:
+scripts/revision_v2.py:644:def check_record(rid: str, rec: dict | None, catalog: list[dict], out: Path, cuts: int = 0, h4_excluded: bool = False) -> None:
+scripts/revision_v2.py:663:def derived_records(ctx: str, catalog: list[dict], out: Path, cuts: int, h4_excluded: bool) -> None:
+scripts/revision_v2.py:698:def _selection_body(kind: str, ctx: str, rest: str, catalog: list[dict], out: Path) -> dict:
+scripts/revision_v2.py:725:def check_complete(ctx: str, catalog: list[dict], out: Path, cuts: int = 0, h4_excluded: bool = False) -> list[str]:
+scripts/revision_v2.py:736:def stage_freeze(ctx: str, catalog: list[dict], out: Path, cuts: int = 0, h4_excluded: bool = False) -> dict:
+scripts/revision_v2.py:747:def accept(ctx: str, catalog: list[dict], out: Path, cuts: int = 0, h4_excluded: bool = False) -> dict:
+scripts/revision_v2.py:771:def gain_fields(cell, fam, knobs: dict, cand, cache: SeedCache) -> dict:
+scripts/revision_v2.py:790:def stage_evaluate(job: dict, out: Path) -> dict:
+scripts/revision_v2.py:818:def _cross_rules(ctx: str, family: str, catalog: list[dict], bank: dict) -> tuple[dict, list]:
+scripts/revision_v2.py:823:def cross_expected(ctx: str, family: str, catalog: list[dict], out: Path) -> tuple[dict, set]:
+scripts/revision_v2.py:836:def stage_cross(ctx: str, family: str, catalog: list[dict], out: Path) -> dict:
+scripts/revision_v2.py:856:def _net_eff(results) -> list:
+scripts/revision_v2.py:864:def doubling_report(kind: str, old: dict, new: dict) -> dict:
+scripts/revision_v2.py:884:def stage_doubling(job: dict, out: Path, cuts: int = 0, h4_excluded: bool = False) -> dict:
+scripts/revision_v2.py:930:def _coalition_heldout(job: dict, desc: dict, out: Path) -> dict:
+scripts/revision_v2.py:939:def rescore_min(orig, rows: list[dict], ref: np.ndarray):
+scripts/revision_v2.py:952:def _stage_record_path(stage: str, job: dict, out: Path) -> Path:
+scripts/revision_v2.py:960:def _inputs(job: dict) -> set:
+scripts/revision_v2.py:976:def stage_upstream(stage: str, job: dict, catalog: list[dict], cuts: int, h4_excluded: bool) -> set:
+scripts/revision_v2.py:985:def _tiers(items: list) -> list[list]:
+scripts/revision_v2.py:989:def _menu_items(jobs: list[dict]) -> list[dict]:
+scripts/revision_v2.py:1001:def _cross_items(jobs: list[dict]) -> list[dict]:
+scripts/revision_v2.py:1007:def _waves(stage: str, jobs: list[dict], catalog: list[dict]) -> list[tuple[str, list]]:
+scripts/revision_v2.py:1045:def dispatch_plan(stage: str, jobs: list[dict], catalog: list[dict] | None = None) -> list[list[str]]:
+scripts/revision_v2.py:1050:def _run_cross(item: dict, out: Path, catalog: list[dict]) -> str:
+scripts/revision_v2.py:1068:def _run_reference(item: dict, out: Path, cuts: int, h4_excluded: bool, catalog: list[dict]) -> str:
+scripts/revision_v2.py:1077:def _run_one(stage: str, job: dict, out: str, cuts: int, h4_excluded: bool, catalog: list | None = None) -> str:
+scripts/revision_v2.py:1108:def _pool(stage, jobs, out, workers, cuts, h4_excluded, catalog=None) -> list:
+scripts/revision_v2.py:1116:def run(stage: str, jobs: list[dict], out: Path, workers: int = 1, cuts: int = 0, h4_excluded: bool = False, catalog: list | None = None) -> dict:
+scripts/revision_v2.py:1138:def _numbers_ok(v) -> bool:
+scripts/revision_v2.py:1150:def _num(x) -> bool:
+scripts/revision_v2.py:1154:def _schema_problems(j: dict, rec: dict, n: int) -> str | None:
+scripts/revision_v2.py:1181:def _cross_problems(rec: dict, rules: list[str], n: int) -> str | None:
+scripts/revision_v2.py:1203:def _check_evaluate(j: dict, rec: dict, out: Path, catalog: list[dict], cuts: int, h4_excluded: bool, seeds: list | None) -> None:
+scripts/revision_v2.py:1218:def verify(out: Path, catalog: list[dict], selected: list[dict], instances: dict | None, protocol: dict | None, h4: dict | None,
+scripts/revision_v2.py:1295:def resolve_h4(decision: dict, h4_dir: str | None, h4_sha: str | None) -> tuple[dict | None, bool]:
+scripts/revision_v2.py:1306:def build_jobs(markets: list[str], root: str, dev: bool, smoke: bool, params: dict | None, cuts: int, h4: dict | None, h4_excluded: bool,
+scripts/revision_v2.py:1322:def main(argv=None) -> int:
+scripts/revision_v2.py:1340:    decision = json.loads(Path(a.h4_decision).read_text()) if a.h4_decision else None
+scripts/revision_v2.py:1342:        reg = ((__import__("yaml").safe_load(Path(a.protocol).read_text()) or {}).get("h4") or {}).get("bundle_sha256")
+scripts/revision_v2.py:1345:    params = json.loads(Path(a.params).read_text()) if a.params else None
+scripts/revision_v2.py:1360:            inst = json.loads(Path(a.instances).read_text()); salt = inst["salt_sha256"]
+scripts/revision_v2.py:1389:        protocol = __import__("yaml").safe_load(Path(a.protocol).read_text()) if a.protocol else None
+     1	#!/bin/bash
+     2	# Per-market verify of pulled evaluation records. Usage: verify_market.sh <tag> <markets>
+     3	# The root comes from the draw record's "hash" field and must be 64 hex digits; the command refuses anything else
+     4	# (2026-11-04: a hand-typed lookup passed a Python list as --root and verify reported false provenance errors).
+     5	set -u
+     6	TAG=${1:?tag}; MKTS=${2:?markets}; B=/Users/oemer.demirel/Projects/touchstone/results/v2; DRAW=${DRAW:-$B/draw/draw.json}; INST=${INSTANCES:-$B/draw/instances.json}
+     7	# With INSTANCES set (the deviation check), the report goes to verify_<tag>.alt.json and never replaces the strict one.
+     8	VOUT=$B/eval/verify_$TAG$([ -n "${INSTANCES:-}" ] && echo .alt).json
+     9	R=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['hash'])" "$DRAW")
+    10	[[ "$R" =~ ^[0-9a-f]{64}$ ]] || { echo "root refused: not 64 hex digits"; exit 2; }
+    11	[ -d "$B/eval/$TAG/freeze" ] || { echo "no records at $B/eval/$TAG"; exit 2; }
+    12	cd $B/eval-checkout || exit 2
+    13	uv run --frozen python scripts/revision_v2.py --stage verify --select '*' --root "$R" --markets "$MKTS" \
+    14	  --params experiments/v2/params.json --cuts 3 --protocol experiments/protocol-v2.yaml --h4-decision ../draw/h4.json \
+    15	  --instances "$INST" --commit "$(git rev-parse 'protocol-v2^{commit}')" --out ../eval/$TAG > "$VOUT" 2>&1
+    16	rc=$?; python3 -c "import json,sys;d=json.loads(open(sys.argv[1]).read()[open(sys.argv[1]).read().index('{'):]);print('ok' if d.get('ok') else 'NOT OK', {k:v['status'] for k,v in d['contexts'].items()})" "$VOUT" || tail -c 600 "$VOUT"
+    17	exit $rc
+rg: docs/revision/deviation: IO error for operation on docs/revision/deviation: No such file or directory (os error 2)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+ succeeded in 2357ms:
+Q1 {
+ "C*-F111|D2+H3": {
+  "better": null,
+  "category": "equivalent, direction R3 lower",
+  "efficiency": "efficiency condition met",
+  "estimate": 0.02072000551319045,
+  "interval": [
+   0.019810563212799056,
+   0.021622430046334597
+  ],
+  "interval_label": "calibrated simultaneous, one-sided tails 0.00625",
+  "p": 0.0004,
+  "reject": true,
+  "search": "about the prescribed search procedure (search flagged)",
+  "side": {
+   "audit_spend_diff": 4.592404223503748e-06,
+   "false_refund_focal_diff": 0.0,
+   "false_refund_others_diff": -0.0002079038689454739,
+   "gross_eff_diff": 0.0008663256932591425,
+   "net_eff_diff": 0.0008617332890356377,
+   "ref_profit_diff": 1.0192785304435628,
+   "served_share_diff": 0.0002739166666666663
+  }
+ },
+ "C*-F111|X7-SC": {
+  "better": null,
+  "category": "equivalent, direction R3 lower",
+  "efficiency": "efficiency condition met",
+  "estimate": 0.024318963497430204,
+  "interval": [
+   0.023467842949185615,
+   0.02514554239048095
+  ],
+  "interval_label": "calibrated simultaneous, one-sided tails 0.00625",
+  "p": 0.0004,
+  "reject": true,
+  "search": null,
+  "side": {
+   "audit_spend_diff": -2.413517692017073e-05,
+   "false_refund_focal_diff": 0.0,
+   "false_refund_others_diff": -0.00017808407851801502,
+   "gross_eff_diff": 0.0008980675634837175,
+   "net_eff_diff": 0.0009222027404038865,
+   "ref_profit_diff": 1.0192785304435628,
+   "served_share_diff": 0.00016333333333333274
+  }
+ }
+}
+Q4 {
+ "decided": true,
+ "failing": [
+  "fresh0",
+  "fresh2",
+  "fresh5"
+ ],
+ "heading": "Q4: intersection-union per market, Holm over six markets",
+ "k": 3,
+ "markets": {
+  "fresh0": {
+   "bound_label": "calibrated one-sided, tail 0.00208333",
+   "eff": 0.9972112075235253,
+   "eff_lower": 0.9967394393768593,
+   "gain_diff": 0.04144271507592087,
+   "gain_diff_lower": 0.03937515164276598,
+   "p_eff": 0.0001,
+   "p_gain": 1.0,
+   "search": null
+  },
+  "fresh1": {
+   "bound_label": "calibrated one-sided, tail 0.00208333",
+   "eff": 0.9984168725250109,
+   "eff_lower": 0.9979963198634668,
+   "gain_diff": 0.4690626900515456,
+   "gain_diff_lower": 0.46510156437983907,
+   "p_eff": 0.0001,
+   "p_gain": 0.0001,
+   "search": "about the prescribed search procedure (search flagged)"
+  },
+  "fresh2": {
+   "bound_label": "calibrated one-sided, tail 0.00208333",
+   "eff": 0.9852763789517723,
+   "eff_lower": 0.984623470780023,
+   "gain_diff": 0.056810283555962966,
+   "gain_diff_lower": 0.052724187453575315,
+   "p_eff": 0.0001,
+   "p_gain": 1.0,
+   "search": null
+  },
+  "fresh3": {
+   "bound_label": "calibrated one-sided, tail 0.00208333",
+   "eff": 0.9979766341492813,
+   "eff_lower": 0.9974204999301648,
+   "gain_diff": 0.2625905586494956,
+   "gain_diff_lower": 0.2600150621892636,
+   "p_eff": 0.0001,
+   "p_gain": 0.0001,
+   "search": null
+  },
+  "fresh4": {
+   "bound_label": "calibrated one-sided, tail 0.00208333",
+   "eff": 0.9874909900785758,
+   "eff_lower": 0.9866892414074927,
+   "gain_diff": 0.18339043852718015,
+   "gain_diff_lower": 0.1752815908546011,
+   "p_eff": 0.0001,
+   "p_gain": 0.0001,
+   "search": "about the prescribed search procedure (search flagged)"
+  },
+  "fresh5": {
+   "bound_label": "calibrated one-sided, tail 0.00208333",
+   "eff": 0.9959339576700745,
+   "eff_lower": 0.9952269499807532,
+   "gain_diff": 0.027073049880174248,
+   "gain_diff_lower": 0.025117299604411697,
+   "p_eff": 0.0001,
+   "p_gain": 1.0,
+   "search": null
+  }
+ },
+ "p": [
+  1.0,
+  0.0004,
+  1.0,
+  0.0004,
+  0.0004,
+  1.0
+ ],
+ "passing": [
+  "fresh1",
+  "fresh3",
+  "fresh4"
+ ],
+ "undecided": [],
+ "wording": "replicated on 3 of 6 sampled markets; decisions about the prescribed search procedure on fresh1, fresh4"
+}
+unanswered ['Q3']
+Q2/Q3 labels nominal 95 percent, unadjusted nominal 95 percent, unadjusted
+deviation {
+ "instances_sha256": "16df49fd5a0693eb8dde62de41afc47dde4dc88ef6d2fe01357f4033a9a03542",
+ "linux_sha256": "f78bd5fe6c244b0549362787f93cce75c0724b34be112eb4a3953d0a307ffbda",
+ "markets": {
+  "fresh0": {
+   "container_hash": "65b364cea67db322d69f6c907d622c898e43166480267b3e761ed3ba2c580315",
+   "pod_hashes": [
+    "65b364cea67db322d69f6c907d622c898e43166480267b3e761ed3ba2c580315"
+   ],
+   "pod_hash_ok": true,
+   "recorded_hash": "a756dbc6c75b3cbe2fd9750b7eb4b0f016c1b5c18736c0c09866c3cb99cbfe58",
+   "differences": [
+    [
+     ".providers[0][2]",
+     0.37955120905497375,
+     0.3795512090549737,
+     1
+    ],
+    [
+     ".providers[8][0]",
+     0.9577067943381498,
+     0.9577067943381499,
+     1
+    ]
+   ],
+   "within_one_ulp": true,
+   "verify_exit": 0,
+   "verify": "ok {'fresh0@rho0.2': 'ok'}",
+   "ok": true
+  },
+  "fresh1": {
+   "container_hash": "44b4fc926421c5750356de965bb1160b7c35cf72dc41a4b40df4dad9883a8ba9",
+   "pod_hashes": [
+    "44b4fc926421c5750356de965bb1160b7c35cf72dc41a4b40df4dad9883a8ba9"
+   ],
+   "pod_hash_ok": true,
+   "recorded_hash": "ea43dd87f879d881fdc925402df633fb71f565418e74080a16ad3a4bb40c3724",
+   "differences": [
+    [
+     ".providers[0][2]",
+     0.4461948910398329,
+     0.44619489103983295,
+     1
+    ],
+    [
+     ".providers[1][2]",
+     0.4282015480729639,
+     0.42820154807296396,
+     1
+    ]
+   ],
+   "within_one_ulp": true,
+   "verify_exit": 0,
+   "verify": "ok {'fresh1@rho0.2': 'ok'}",
+   "ok": true
+  },
+  "fresh2": {
+   "container_hash": "3e40be96cf9e1fb8c8f5c71375dc333338591805677145e21aa81f612ca7d8c8",
+   "pod_hashes": [
+    "3e40be96cf9e1fb8c8f5c71375dc333338591805677145e21aa81f612ca7d8c8"
+   ],
+   "pod_hash_ok": true,
+   "recorded_hash": "1c0ab9b255cd54ffb175cdaaa703aae65c41478fe20170c5914564e2322f98ad",
+   "differences": [
+    [
+     ".providers[4][2]",
+     0.3573112468393869,
+     0.35731124683938686,
+     1
+    ],
+    [
+     ".providers[5][2]",
+     0.3435185202633721,
+     0.34351852026337204,
+     1
+    ],
+    [
+     ".providers[6][2]",
+     0.32207926468476344,
+     0.3220792646847634,
+     1
+    ],
+    [
+     ".providers[7][2]",
+     0.29529971147053075,
+     0.2952997114705307,
+     1
+    ],
+    [
+     ".providers[8][2]",
+     0.27653720160576795,
+     0.2765372016057679,
+     1
+    ],
+    [
+     ".providers[9][2]",
+     0.2735490659576536,
+     0.27354906595765355,
+     1
+    ]
+   ],
+   "within_one_ulp": true,
+   "verify_exit": 0,
+   "verify": "ok {'fresh2@rho0.2': 'ok'}",
+   "ok": true
+  },
+  "fresh3": {
+   "container_hash": "f5c1cd00ec2f0a85aca0e42efa102f5c0a6dcfbb0c9b349c8a2861816b0e961b",
+   "pod_hashes": [
+    "f5c1cd00ec2f0a85aca0e42efa102f5c0a6dcfbb0c9b349c8a2861816b0e961b"
+   ],
+   "pod_hash_ok": true,
+   "recorded_hash": "e02867f81ee4783f9d85fb8e7aa8b9a28fa513ccf62179bd60caaad5681fabeb",
+   "differences": [
+    [
+     ".providers[2][2]",
+     0.32419323716693327,
+     0.3241932371669332,
+     1
+    ],
+    [
+     ".providers[5][0]",
+     0.924248466047977,
+     0.9242484660479768,
+     1
+    ],
+    [
+     ".providers[7][0]",
+     0.9356680229553128,
+     0.9356680229553129,
+     1
+    ],
+    [
+     ".providers[8][0]",
+     0.9528193059395801,
+     0.95281930593958,
+     1
+    ]
+   ],
+   "within_one_ulp": true,
+   "verify_exit": 0,
+   "verify": "ok {'fresh3@rho0.2': 'ok'}",
+   "ok": true
+  },
+  "fresh4": {
+   "container_hash": "112608c64b4c1b8558985dd951b6bd6b614fc5618d4da93e03b0642e94344d82",
+   "pod_hashes": [
+    "112608c64b4c1b8558985dd951b6bd6b614fc5618d4da93e03b0642e94344d82"
+   ],
+   "pod_hash_ok": true,
+   "recorded_hash": "3b8eab881fe3ba1b8f2ddf8d7b60d7f0cdf4aa7036d7ae8cc07b5a8787b415b4",
+   "differences": [
+    [
+     ".providers[8][2]",
+     0.24615683760716764,
+     0.2461568376071676,
+     1
+    ],
+    [
+     ".providers[9][2]",
+     0.22803427398155254,
+     0.22803427398155252,
+     1
+    ]
+   ],
+   "within_one_ulp": true,
+   "verify_exit": 0,
+   "verify": "ok {'fresh4@rho0.2': 'ok'}",
+   "ok": true
+  },
+  "fresh5": {
+   "container_hash": "bf562902ff492ab31c992c537d4e89c841e157e4b9f09bb83c217948fc81038d",
+   "pod_hashes": [
+    "bf562902ff492ab31c992c537d4e89c841e157e4b9f09bb83c217948fc81038d"
+   ],
+   "pod_hash_ok": true,
+   "recorded_hash": "cfa2b612da5de7e4878e984428ce73b0a4054deb380e42a0b53b5783dc55f2bf",
+   "differences": [
+    [
+     ".providers[6][0]",
+     0.8803597423299071,
+     0.8803597423299072,
+     1
+    ]
+   ],
+   "within_one_ulp": true,
+   "verify_exit": 0,
+   "verify": "ok {'fresh5@rho0.2': 'ok'}",
+   "ok": true
+  }
+ },
+ "ok": true
+}
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc ".venv/bin/python -B -c 'import yaml,numpy; print(\"dependencies available\")'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc "python -c 'import ast,json,re,collections; from pathlib import Path; p=Path(\"results/v2/eval-checkout/scripts/report_v2.py\"); tree=ast.parse(p.read_text()); keep={\"_iv\",\"_bd\",\"_cs\",\"markdown\"}; nodes=[n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name in keep or isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id in {\"NOMINAL_LABEL\",\"NONCONF\",\"WITHHELD\",\"MULTIPLICITY\",\"Q2_KINDS\"} for t in n.targets)]; ns={}; exec(compile(ast.Module(body=nodes,type_ignores=[]),str(p),\"exec\"),ns); r=json.loads(Path(\"results/v2/report/report.json\").read_text()); actual=Path(\"results/v2/report/report.md\").read_text(); rebuilt=ns[\"markdown\"](r); split=lambda s:collections.Counter(x.strip() for x in re.split(\"[;\\\\n]\",s) if x.strip()); a,b=split(actual),split(rebuilt); print(\"Fragments in MD only\",list((a-b).items())[:12]); print(\"Fragments in JSON rendering only\",list((b-a).items())[:12]); print(\"identical numeric token counts\",collections.Counter(re.findall(r\"(?<"'![A-Za-z])[-+]?'"\\\\d+(?:\\\\.\\\\d+)?(?:e[-+]?\\\\d+)?\",actual))==collections.Counter(re.findall(r\"(?<"'![A-Za-z])[-+]?'"\\\\d+(?:\\\\.\\\\d+)?(?:e[-+]?\\\\d+)?\",rebuilt)))'" in /Users/oemer.demirel/Projects/touchstone
+exec
+/bin/zsh -lc "sed -n '1,115p' scripts/revision_v2.py; sed -n '1218,1294p' scripts/revision_v2.py; sed -n '1306,1321p' scripts/revision_v2.py" in /Users/oemer.demirel/Projects/touchstone/results/v2/eval-checkout
+exec
+/bin/zsh -lc "rg --files docs/revision/deviation; rg -n 'deviation|ulp|x86|arm64|invar|sensitivity|43 USD' docs/revision/deviation docs/revision/paper-v2 -g '*.md' -g '*.py' -g '*.tex' -g '"'!figures/**'"' -g '"'!tables/**'"'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 141ms:
+"""The protocol-v2 runner (design 5 to 9; plan docs/superpowers/plans/2026-10-22-revision-build.md Task 11). Stages, in
+order: search (profit and W0 searches; X7-SC after the same rule's D2+H3 search, with its embedding as an incumbent),
+reference (one menu per rule and context from its D2+H3 and X7-SC searches), dependent (W1 after the reference; the
+coalition joint twin, joint reference, then the total and minimum searches), freeze (envelope choices and the fixed-attack
+bank, then a complete freeze of the context), then evaluate, cross, and doubling (continued searches, diagnostic only),
+each only after the freeze is accepted again. Every record carries provenance and upstream hashes; outputs stay under
+--out. Development markets (dev0, dev1) run the fresh0 template of the manifest."""
+from __future__ import annotations
+
+import argparse
+import fnmatch
+import hashlib
+import json
+import os
+import subprocess
+import sys
+from concurrent.futures import ProcessPoolExecutor
+from dataclasses import replace
+from functools import lru_cache
+from pathlib import Path
+
+import numpy as np
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from sim import instances as INST  # noqa: E402
+from sim import families_v2 as FV2  # noqa: E402
+from sim import manifest_v2 as MAN  # noqa: E402
+from sim.calibrate import cell_config, load_calibration  # noqa: E402
+from sim.cell import Abstain, Cell, SeedCache, run_focal  # noqa: E402
+from sim.h4_loader import Excluded, load as load_h4  # noqa: E402
+from sim.locked import load_locked, market_config_from_locked  # noqa: E402
+from sim.objectives_v2 import (CoalitionObjective, WelfareObjective, gross_efficiency, pick_joint, profile_descriptor, profile_factories,  # noqa: E402
+                               select_w1, select_welfare, _member_rows)
+from sim.diagnostic_v2 import envelope_rule, extras, honest_replacement  # noqa: E402
+from sim.policies.families import D2, Family, exact_key  # noqa: E402
+from sim.policies.honest import HonestMax  # noqa: E402
+from sim.policies.identity import h3_family  # noqa: E402
+from sim.policies.v2 import x5v2_family, x6v2_family, x6v2_member, x6v2_members  # noqa: E402
+from sim.policies.x7 import corner_vectors, embed_h3, x7_family  # noqa: E402
+from sim.positions import positions  # noqa: E402
+from sim.records import cfg_to_dict, search_from_json, search_to_json  # noqa: E402
+from sim.records_v2 import read, sha_file, validate, write  # noqa: E402
+from sim.reference import Candidate, evaluate_gain, reference_candidates, select_reference, twin_search  # noqa: E402
+from sim.rng import SALT_ENV, load_identity_salt  # noqa: E402
+from sim.rules_v2 import CORE, FIXED, make_rule, public_constants, registered_b2_params  # noqa: E402
+from sim.search import Objective, SearchSettings, cma_search, settings_from_locked  # noqa: E402
+
+ROOT = Path(__file__).resolve().parents[1]
+STAGES = ("search", "reference", "dependent", "freeze", "evaluate", "cross", "doubling", "verify")
+CATEGORIES = ("abstain", "honest_max", "twin_search", "attack_projection", "archive_clip1", "archive_truthful_clip0", "bank")
+MENU = ("D2+H3", "X7-SC")
+SMOKE = (1, 16, 1, 2)
+DEV_ROOT = INST.DEV_ROOT
+THRESHOLD = 0.005
+
+
+# ---- context ---------------------------------------------------------------------------------------------------------
+
+def git_commit() -> str:
+    try:
+        return subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
+    except Exception:
+        return "unknown"
+
+
+def _sha(b: bytes) -> str:
+    return hashlib.sha256(b).hexdigest()
+
+
+def _sha_json(obj) -> str:
+    return _sha(json.dumps(obj, sort_keys=True, default=float).encode())
+
+
+def install_salt(root: str, out: Path) -> Path:
+    """Write the fresh root's identity salt under --out and point the harness at it before any episode."""
+    p = Path(out) / "salt.hex"; p.parent.mkdir(parents=True, exist_ok=True); p.write_text(INST.identity_salt_hex(root))
+    os.environ[SALT_ENV] = str(p)
+    return p
+
+
+@lru_cache(maxsize=4)
+def _fresh(root: str) -> tuple:
+    return tuple(m["cfg"] for m in INST.markets(root, 6))
+
+
+@lru_cache(maxsize=32)
+def _market_cfg(label: str, root: str, rho: float):
+    if label == "headline":
+        return cell_config(market_config_from_locked(load_locked()), load_calibration(ROOT / "experiments/calibration.json"), rho=rho, beta=0.05)
+    if label.startswith("dev"):
+        base = INST.dev_markets()[int(label[3:])]["cfg"]
+    elif label.startswith("fresh"):
+        base = _fresh(root)[int(label[5:])]
+    else:
+        raise ValueError(f"unknown market {label!r}")
+    return INST.calibrated(base, rho=rho)
+
+
+def market(label: str, root: str, rho: float = 0.2, dev: bool = False, smoke: bool = False, cfg=None, commit: str | None = None,
+           salt_sha256: str | None = None) -> dict:
+    """`cfg`, `commit`, and `salt_sha256` come from recorded inputs when given (the verify stage), so no calibration
+    episode, git process, or salt read happens."""
+    cfg = cfg if cfg is not None else _market_cfg(label, root, float(rho))
+    train, val = list(range(1000, 1005)), list(range(2000, 2020))
+    ev = val if dev else INST.eval_seeds(root, label)
+    if smoke:
+        train, ev = train[: SMOKE[2]], ev[: SMOKE[3]]
+    out = {"label": label, "root": root, "rho": float(rho), "dev": bool(dev), "smoke": bool(smoke), "cfg": cfg, "focal": int(positions(cfg)["median"]),
+           "seeds_train": train, "seeds_val": val, "seeds_eval": list(ev), "context": MAN.context(label, float(rho))}
+    if commit is not None:
+        out["commit"] = str(commit)
+    if salt_sha256 is not None:
+        out["salt_sha256"] = str(salt_sha256)
+    return out
+def verify(out: Path, catalog: list[dict], selected: list[dict], instances: dict | None, protocol: dict | None, h4: dict | None,
+           cuts: int = 0, h4_excluded: bool = False) -> dict:
+    """Read-only: per context of the selection, `unavailable` without a freeze; else `accept`, then every evaluate record
+    (stage, provenance, dependencies and their hashes, seeds equal to the instance's, lengths, finiteness), the cross
+    records, and the doubling records. Starts no episode, imports no H4 bundle, writes nothing."""
+    out = Path(out); rep = {"contexts": {}, "h4": None}
+    reg = (protocol or {}).get("h4"); h4 = h4 or {}
+    if h4.get("loaded") and (not reg or h4.get("bundle_sha256") != reg.get("bundle_sha256")):
+        rep["h4"] = "the decision's bundle hash differs from the protocol's"
+    seeds_of = lambda ctx: ((instances or {}).get("seeds") or {}).get(ctx.split("@", 1)[0])
+    for ctx in sorted({j["context"] for j in selected}):
+        sel = [j for j in selected if j["context"] == ctx]
+        c = {"status": "ok", "missing": [], "stale": [], "foreign": [], "missing_doubling": [], "error": None}; rep["contexts"][ctx] = c
+        if not path_of(out, f"freeze/{ctx}").exists():
+            c["status"] = "unavailable"; c["missing"] = [j["id"] for j in sel]; continue
+        try:
+            accept(ctx, catalog, out, cuts, h4_excluded)
+        except SystemExit as e:
+            c["status"] = "error"; c["error"] = str(e); continue
+        for j in sel:
+            if j["family"] == "H4" and h4.get("loaded"):
+                srec = read(path_of(out, j["id"])) or {}
+                if (srec.get("provenance") or {}).get("h4_sha256") != h4.get("bundle_sha256"):
+                    c["foreign"].append(j["id"]); continue
+            rec = read(eval_path(out, j["id"]))
+            if rec is None:
+                c["missing"].append(j["id"]); continue
+            if rec.get("provenance") != j["provenance"]:
+                c["foreign"].append(j["id"]); continue
+            try:
+                _check_evaluate(j, rec, out, catalog, cuts, h4_excluded, seeds_of(ctx))
+            except (ValueError, KeyError, TypeError):
+                c["stale"].append(j["id"])
+        sel_ids = {j["id"] for j in sel}
+        for item in _cross_items(sel):
+            fam = item["family"]; facts = [j["id"] for j in catalog if j["context"] == ctx and j["family"] == fam and j["objective"] == "profit" and j["rule"] in MAN.FACTORIAL]
+            p = Path(out) / "cross" / ctx / (_safe(fam) + ".json"); old = read(p)
+            if old is None:
+                if facts and set(facts) <= sel_ids:
+                    c["missing"].append(item["id"])
+                continue
+            try:
+                prov, ids = cross_expected(ctx, fam, catalog, out)
+                if old.get("provenance") != prov:
+                    c["foreign"].append(item["id"]); continue
+                if set(old.get("upstream") or {}) != ids:
+                    raise ValueError("dependency set")
+                validate({"provenance": prov}, "cross", old, {u: path_of(out, u) for u in ids})
+                bank = read(path_of(out, f"bank/{ctx}/{fam}")) or {"attacks": {}}
+                _, rules = _cross_rules(ctx, fam, catalog, bank); n = len(next(j for j in catalog if j["context"] == ctx)["mkt"]["seeds_eval"])
+                problem = _cross_problems(old, rules, n)
+                if problem or not _numbers_ok(old):
+                    raise ValueError(problem or "nonfinite values")
+            except (ValueError, KeyError, TypeError, SystemExit, StopIteration):
+                c["stale"].append(item["id"])
+        for _, items in _waves("doubling", sel, catalog):
+            for j in items:
+                p = _stage_record_path("doubling", j, out); rec = read(p)
+                if rec is None:
+                    c["missing_doubling"].append(j["id"]); continue
+                if rec.get("provenance") != j["provenance"]:
+                    c["foreign"].append(p.name); continue
+                want = stage_upstream("doubling", j, catalog, cuts, h4_excluded)
+                try:
+                    if rec.get("stage") != "doubling" or set(rec.get("upstream") or {}) != want:
+                        raise ValueError("stage or dependency set")
+                    validate(j, "doubling", rec, {u: path_of(out, u) for u in want})
+                    if not _numbers_ok(rec):
+                        raise ValueError("nonfinite values")
+                except (ValueError, KeyError, TypeError):
+                    c["stale"].append(p.name)
+        if c["stale"] or c["foreign"]:
+            c["status"] = "error"
+    rep["ok"] = rep["h4"] is None and all(c["status"] != "error" for c in rep["contexts"].values())
+    return rep
+
+
+def build_jobs(markets: list[str], root: str, dev: bool, smoke: bool, params: dict | None, cuts: int, h4: dict | None, h4_excluded: bool,
+               cfgs: dict | None = None, commit: str | None = None, salt_sha256: str | None = None) -> list[dict]:
+    jobs = []
+    for label in markets:
+        for rho in sorted({c["rho"] for c in MAN.effective(cuts, h4_excluded)}):
+            mctx = MAN.context("fresh0" if label.startswith("dev") else label, rho)
+            cs = [c for c in MAN.effective(cuts, h4_excluded) if c["context"] == mctx]
+            if not cs:
+                continue
+            cfg = (cfgs or {}).get(label) if rho == 0.2 else None
+            mkt = market(label, root, rho, dev=dev, smoke=smoke, cfg=cfg, commit=commit, salt_sha256=salt_sha256)
+            for c in cs:
+                jobs.append(job(mkt, c["rule"], c["family"], c["objective"], c["c"], c["schedule"], smoke, params, h4, block=c["block"]))
+    return jobs
+
+
+
+hook: PostToolUse
+ succeeded in 156ms:
+docs/revision/deviation/test_cfg_ulp.py
+docs/revision/deviation/cfg_ulp.py
+docs/revision/deviation/test_cfg_ulp.py:1:"""Tests for cfg_ulp.py, the check behind the 2026-11-04 deviation: the pods recalibrated the fresh-market configs on
+docs/revision/deviation/test_cfg_ulp.py:2:Linux x86 and a few values differ from instances.json (computed on the Mac) by one unit in the last place."""
+docs/revision/deviation/test_cfg_ulp.py:8:import cfg_ulp as U  # noqa: E402
+docs/revision/deviation/test_cfg_ulp.py:23:def test_one_ulp_difference_is_found_and_counted():
+docs/revision/deviation/test_cfg_ulp.py:30:def test_two_ulp_difference_fails_the_one_ulp_bound():
+docs/revision/deviation/cfg_ulp.py:1:"""The check behind the 2026-11-04 deviation (1-ulp fresh-market configs). The run mode recalibrates each fresh market on
+docs/revision/deviation/cfg_ulp.py:2:the pod (Linux x86); instances.json holds the configs computed on the Mac (arm64). For each market this checks that
+docs/revision/deviation/cfg_ulp.py:25:    """(path, recorded, recomputed, ulps); ulps is None for any difference that is not between two floats."""
+docs/revision/deviation/cfg_ulp.py:39:def within(ds, max_ulps: int) -> bool:
+docs/revision/deviation/cfg_ulp.py:40:    return all(u is not None and u <= max_ulps for *_, u in ds)
+docs/revision/deviation/cfg_ulp.py:70:             "within_one_ulp": within(ds, 1), "verify_exit": v.returncode, "verify": v.stdout.strip()[-300:]}
+docs/revision/deviation/cfg_ulp.py:71:        r["ok"] = r["pod_hash_ok"] and r["within_one_ulp"] and v.returncode == 0
+docs/revision/deviation/cfg_ulp.py:73:        print(m, "ok" if r["ok"] else "NOT OK", f"pod_hash_ok={r['pod_hash_ok']} diffs={len(ds)} max_ulps={max([u or 0 for *_, u in ds], default=0)} verify_exit={v.returncode}")
+docs/revision/paper-v2/main.tex:45:\paragraph{Cheap pseudonyms.} With cheap pseudonyms, unfavourable treatment of newcomers is the price of cooperation~\cite{friedman2001social}; whitewashing degrades peer-to-peer systems when turnover is high~\cite{feldman2006free}; without a central authority one attacker can create many identities~\cite{douceur2002sybil}. Reputation without persistent identity in markets of AI agents, with a one-time cash-out deviation, is studied in~\cite{gatta2026tempting}; that model has no verification budget.
+docs/revision/paper-v2/main.tex:62:\paragraph{Identities.} Each provider acts through a current identity. In any round it may retire the identity and re-enter under a fresh one at entry cost $e \ge 0$ ($e = 0$ in both tests). Rules see identities only as opaque tokens, must be invariant to relabelling them, and cannot link a fresh identity to its provider.
+docs/revision/paper-v2/main.tex:66:\paragraph{Benchmark and metrics.} One focal provider deviates while the others play honestly at full effort with truthful claims; this is a unilateral deviation, not an equilibrium. For a seed with first-best surplus $S^*$, the focal provider's \emph{gain} is its profit under the attack minus its profit under a selected truthful reference, divided by $S^*/N$. \emph{Gross efficiency} is $(W + \text{audit cost})/S^*$, with $W$ the realised social surplus net of audit cost; net efficiency is $W/S^*$. Gain is a difference of two searched values, so search error can bias it either way. The second test adds two objectives at its headline market: welfare attacks that minimise gross efficiency, without a constraint (W0) or subject to a nonnegative mean normalised gain over the attacker's reference on the training seeds (W1), whose profitability is then called supported only if its nominal 95\% lower bound on the evaluation seeds is nonnegative; and coalitions of two or five providers, scored by the total gain $G_{\mathrm{tot}}$ and by the worst member's mean gain $G_{\min}$, both against a coordinated truthful reference. Coalition results say nothing about coalition stability.
+docs/revision/paper-v2/main.tex:182:\paragraph{Deviations from the protocol.} Two arose during the evaluation. First, the runner recalibrates each fresh market where it runs, and the evaluation ran on Linux x86 machines, while the registered instance file holds the calibration computed on the author's arm64 machine. In each fresh market, between \const{1} and \const{6} provider parameters differ between the two in the last binary digit (one unit in the last place, a relative difference near $10^{\const{-16}}$); the headline market is unaffected. The runner's verification compares configuration hashes exactly and refuses these records. We kept them: a container on the evaluation platform reproduces each run's configuration hash, every differing value is within one unit in the last place of the registered one, and verification passes on every other check when given the reproduced configuration. The check is a script in the artifact. Second, the fresh-market runs cost about ten percent more than estimated, and the author raised the evaluation cap from \const{40} to \const{43} USD and the written authorisation from \const{52} to \const{55} USD so that every registered cell could run; no analysis changed.
+docs/revision/paper-v2/main.tex:197:\paragraph{Limits.} The benchmark is a unilateral deviation against honest opponents; we claim neither equilibrium nor incentive compatibility, and small shading inside the tolerance is profitable under every studied rule (Proposition~\ref{prop:terminal}). Exposure is bounded by the searched families and the optimiser. The fresh markets come from one stated neighbourhood, and the headline market was used in development.
+
+hook: PostToolUse
+ succeeded in 240ms:
+dependencies available
+
+hook: PostToolUse Completed
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+ succeeded in 1967ms:
+Fragments in MD only [('- C*-F111|D2+H3 side fields (descriptive, F111 minus C*): gross_eff_diff 0.0009', 1), ('audit_spend_diff 0.0000', 1), ('- C*-F111|X7-SC side fields (descriptive, F111 minus C*): gross_eff_diff 0.0009', 1), ('audit_spend_diff -0.0000', 1), ('- searched, pooled over fresh markets, D2+H3: P -0.0831 [-0.0836, -0.0826]', 1), ('G -0.0952 [-0.0959, -0.0946]', 1), ('- searched, pooled over fresh markets, X7-SC: P -0.0846 [-0.0851, -0.0841]', 1), ('G -0.0943 [-0.0948, -0.0937]', 1), ('- searched_eff, pooled over fresh markets, D2+H3: P 0.0167 [0.0167, 0.0168]', 1), ('G 0.0162 [0.0162, 0.0163]', 2), ('- searched_eff, pooled over fresh markets, X7-SC: P 0.0168 [0.0167, 0.0169]', 1), ('G 0.0166 [0.0165, 0.0167]', 2)]
+Fragments in JSON rendering only [('- C*-F111|D2+H3 side fields (descriptive, F111 minus C*): audit_spend_diff 0.0000', 1), ('gross_eff_diff 0.0009', 2), ('- C*-F111|X7-SC side fields (descriptive, F111 minus C*): audit_spend_diff -0.0000', 1), ('- searched, pooled over fresh markets, D2+H3: G -0.0952 [-0.0959, -0.0946]', 1), ('P -0.0831 [-0.0836, -0.0826]', 1), ('- searched, pooled over fresh markets, X7-SC: G -0.0943 [-0.0948, -0.0937]', 1), ('P -0.0846 [-0.0851, -0.0841]', 1), ('- searched_eff, pooled over fresh markets, D2+H3: G 0.0162 [0.0162, 0.0163]', 1), ('P 0.0167 [0.0167, 0.0168]', 2), ('- searched_eff, pooled over fresh markets, X7-SC: G 0.0166 [0.0165, 0.0167]', 1), ('P 0.0168 [0.0167, 0.0169]', 2), ('- searched_net_eff, pooled over fresh markets, D2+H3: G 0.0162 [0.0162, 0.0163]', 1)]
+identical numeric token counts True
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+I found two reporting gaps: the Markdown omits the Q2 and Q3 interval labels and does not disclose the config substitution. The 1-ulp check confirms the config differences and record provenance. It does not test whether those differences can change simulation paths or decisions.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc ".venv/bin/python -B -c 'import sys,json,yaml,subprocess; from pathlib import Path; e=Path(\"/Users/oemer.demirel/Projects/touchstone/results/v2/eval-checkout\"); sys.path.insert(0,str(e)); from scripts import revision_v2 as R; from sim.records import cfg_from_dict; b=e.parent; p=yaml.safe_load((e/\"experiments/protocol-v2.yaml\").read_text()); i=json.loads((b/\"deviation/instances_container_configs.json\").read_text()); h=json.loads((b/\"draw/h4.json\").read_text()); c=subprocess.check_output([\"git\",\"rev-parse\",\"protocol-v2"'^{commit}"],cwd=e,text=True).strip(); jobs=R.build_jobs(R.MAN.doc()["markets"],i["root"],False,False,json.loads((e/"experiments/v2/params.json").read_text()),p["cuts"],{"dir":None,"sha":h["bundle_sha256"]},False,{k:cfg_from_dict(v["calibrated_cfg"]) for k,v in i["markets"].items()},c,i["salt_sha256"]); print("registered tag",c,"effective cells",len(jobs)); rep=R.verify(b/"eval/all",jobs,jobs,i,p,h,p["cuts"],False); print(json.dumps(rep)); print("evaluation count",len(list((b/"eval/all/evaluate").glob("*.json")))); print("doubling count",len(list((b/"eval/all/doubling").glob("*.json")))); print("cross count",len(list((b/"eval/all/cross").glob("*/*.json"))))'"'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ exited 1 in 2195ms:
+/Users/oemer.demirel/.matplotlib is not a writable directory
+Traceback (most recent call last):
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/matplotlib/__init__.py", line 587, in _get_config_or_cache_dir
+    tmpdir = tempfile.mkdtemp(prefix="matplotlib-")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 373, in mkdtemp
+    prefix, suffix, dir, output_type = _sanitize_params(prefix, suffix, dir)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 126, in _sanitize_params
+    dir = gettempdir()
+          ^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 315, in gettempdir
+    return _os.fsdecode(_gettempdir())
+                        ^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 308, in _gettempdir
+    tempdir = _get_default_tempdir()
+              ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 223, in _get_default_tempdir
+    raise FileNotFoundError(_errno.ENOENT,
+FileNotFoundError: [Errno 2] No usable temporary directory found in ['/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/', '/tmp', '/var/tmp', '/usr/tmp', '/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79']
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/Users/oemer.demirel/Projects/touchstone/results/v2/eval-checkout/scripts/revision_v2.py", line 27, in <module>
+    from sim import families_v2 as FV2  # noqa: E402
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/results/v2/eval-checkout/sim/families_v2.py", line 11, in <module>
+    from .reference import Candidate
+  File "/Users/oemer.demirel/Projects/touchstone/results/v2/eval-checkout/sim/reference.py", line 12, in <module>
+    from .search import Objective, SearchResult, SearchSettings, best_archived, cma_search
+  File "/Users/oemer.demirel/Projects/touchstone/results/v2/eval-checkout/sim/search.py", line 10, in <module>
+    import cma
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/cma/__init__.py", line 128, in <module>
+    from . import s
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/cma/s.py", line 14, in <module>
+    try: from matplotlib import pyplot as _pyplot  # like this it doesn't show up in the interface
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/matplotlib/__init__.py", line 1002, in <module>
+    rcParams._update_raw(_rc_params_in_file(matplotlib_fname()))
+                                            ^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/matplotlib/__init__.py", line 680, in matplotlib_fname
+    for fname in gen_candidates():
+                 ^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/matplotlib/__init__.py", line 677, in gen_candidates
+    yield os.path.join(get_configdir(), 'matplotlibrc')
+                       ^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/matplotlib/__init__.py", line 345, in wrapper
+    ret = func(**kwargs)
+          ^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/matplotlib/__init__.py", line 622, in get_configdir
+    return _get_config_or_cache_dir(_get_xdg_config_dir)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/matplotlib/__init__.py", line 589, in _get_config_or_cache_dir
+    raise OSError(
+OSError: Matplotlib requires access to a writable cache directory, but there was an issue with the default path (/Users/oemer.demirel/.matplotlib), and a temporary directory could not be created; set the MPLCONFIGDIR environment variable to a writable directory
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "python -c 'import ast,json,re,collections; from pathlib import Path; p=Path(\"results/v2/eval-checkout/scripts/report_v2.py\"); tree=ast.parse(p.read_text()); keep={\"_iv\",\"_bd\",\"_cs\",\"markdown\"}; nodes=[n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name in keep or isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id in {\"NOMINAL_LABEL\",\"NONCONF\",\"WITHHELD\",\"MULTIPLICITY\",\"Q2_KINDS\"} for t in n.targets)]; ns={}; exec(compile(ast.Module(body=nodes,type_ignores=[]),str(p),\"exec\"),ns); r=json.loads(Path(\"results/v2/report/report.json\").read_text()); a=Path(\"results/v2/report/report.md\").read_text(); b=ns[\"markdown\"](r); num=re.compile(r\"[-+]?[0-9]+(?:[.][0-9]+)?(?:e[-+]?[0-9]+)?\"); key=lambda s:s.partition(\": \")[0] if \": \" in s else s.split(\" | \")[0:2].__repr__() if s.startswith(\"| \") else num.sub(\"#\",s); rows=lambda s:{key(l):collections.Counter(num.findall(l)) for l in s.splitlines() if num.search(l)}; aa,bb=rows(a),rows(b); bad=[(k,aa.get(k),bb.get(k)) for k in set(aa)|set(bb) if aa.get(k)"'!=bb.get(k)]; print("checked numeric rows",len(aa),"tokens",sum(map(int,[len(num.findall(a))]))); print("numeric row mismatches",bad[:4])'"'" in /Users/oemer.demirel/Projects/touchstone
+ succeeded in 3227ms:
+checked numeric rows 295 tokens 219924
+numeric row mismatches []
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "python -c 'import json,hashlib,struct; from pathlib import Path; b=Path(\"results/v2\"); orig=json.loads((b/\"draw/instances.json\").read_text()); alt=json.loads((b/\"deviation/instances_container_configs.json\").read_text()); rep=json.loads((b/\"deviation/cfg_ulp_all.json\").read_text()); print(\"registered file hash matches\",hashlib.sha256((b/\"draw/instances.json\").read_bytes()).hexdigest()==rep[\"instances_sha256\"]); print(\"Linux file hash matches\",hashlib.sha256((b/\"deviation/cfg_linux.json\").read_bytes()).hexdigest()==rep[\"linux_sha256\"]); sha=lambda o:hashlib.sha256(json.dumps(o,sort_keys=True,default=float).encode()).hexdigest(); print(\"reproduced hash matches\",all(sha(alt[\"markets\"][m][\"calibrated_cfg\"])==d[\"container_hash\"] for m,d in rep[\"markets\"].items())); [(print(m,len(d[\"differences\"]),all(abs(struct.unpack(\"<q\",struct.pack(\"<d\",x))[0]-struct.unpack(\"<q\",struct.pack(\"<d\",y))[0])==u==1 for _,x,y,u in d[\"differences\"]))) for m,d in rep[\"markets\"].items()]; [(v.pop(\"calibrated_cfg\")) for v in orig[\"markets\"].values()]; [(v.pop(\"calibrated_cfg\")) for v in alt[\"markets\"].values()]; print(\"all other draw data unchanged\",orig==alt)'" in /Users/oemer.demirel/Projects/touchstone
+exec
+/bin/zsh -lc "nl -ba sim/intervals.py | head -80; nl -ba sim/instances.py | sed -n '20,100p'; nl -ba sim/market.py | sed -n '55,110p'; nl -ba sim/allocation.py | head -100" in /Users/oemer.demirel/Projects/touchstone/results/v2/eval-checkout
+exec
+/bin/zsh -lc ".venv/bin/python -B -c 'import sys,json,collections,hashlib; from pathlib import Path; e=Path(\"/Users/oemer.demirel/Projects/touchstone/results/v2/eval-checkout\"); sys.path.insert(0,str(e)); from sim import manifest_v2 as M; b=e.parent; want={x[\"id\"] for x in M.effective(3,False)}; rows=[json.loads(p.read_text()) for p in (b/\"eval/all/evaluate\").glob(\"*.json\")]; got={r[\"id\"] for r in rows}; print(\"expected\",len(want),\"records\",len(rows),\"missing\",sorted(want-got),\"extra\",sorted(got-want)); print(\"cross\",len(list((b/\"eval/all/cross\").glob(\"*/*.json\"))),\"doubling\",len(list((b/\"eval/all/doubling\").glob(\"*.json\")))); print(\"contexts\",dict(collections.Counter(r[\"id\"].split(\"|\")[0] for r in rows))); print(\"duplicates\",len(rows)-len(got)); print(\"manifest sha\",hashlib.sha256((e/\"experiments/revision-v2-manifest.yaml\").read_bytes()).hexdigest()); print(\"cut counts\",[len(M.effective(i,False)) for i in range(4)])' " in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 904ms:
+     1	"""The locked interval algorithms of spec 8. Every function is a pure function of its inputs and the seed."""
+     2	from __future__ import annotations
+     3	
+     4	from dataclasses import dataclass
+     5	from functools import lru_cache
+     6	
+     7	import numpy as np
+     8	from scipy import stats
+     9	
+    10	
+    11	@dataclass(frozen=True)
+    12	class Bound:
+    13	    value: float
+    14	    side: str
+    15	    level: float
+    16	    method: str
+    17	    degenerate: bool
+    18	    n: int
+    19	
+    20	
+    21	def _check(x: np.ndarray, side: str, level: float) -> np.ndarray:
+    22	    x = np.asarray(x, dtype=float).ravel()
+    23	    if x.size < 2 or not np.all(np.isfinite(x)):
+    24	        raise ValueError("need at least two finite per-seed values")
+    25	    if side not in ("upper", "lower"):
+    26	        raise ValueError("side must be 'upper' or 'lower'")
+    27	    if not (0.5 < level < 1.0):
+    28	        raise ValueError("level must be in (0.5, 1)")
+    29	    return x
+    30	
+    31	
+    32	def percentile_bootstrap(x, side: str, level: float, resamples: int, seed: int) -> Bound:
+    33	    """One-sided percentile bootstrap of the mean; the seed is the resampling unit (spec 8)."""
+    34	    x = _check(x, side, level); n = x.size
+    35	    if np.all(x == x[0]):
+    36	        return Bound(float(x[0]), side, level, "percentile", True, n)
+    37	    rng = np.random.default_rng(int(seed))
+    38	    idx = rng.integers(0, n, size=(int(resamples), n))
+    39	    means = x[idx].mean(axis=1)
+    40	    q = level if side == "upper" else 1.0 - level
+    41	    return Bound(float(np.quantile(means, q)), side, level, "percentile", False, n)
+    42	
+    43	
+    44	def studentized_bootstrap(x, side: str, level: float, resamples: int, seed: int) -> Bound:
+    45	    """Bootstrap-t: each resample studentized by its own standard error; a zero-standard-error resample
+    46	    uses the full-sample standard error (spec 8)."""
+    47	    x = _check(x, side, level); n = x.size
+    48	    mean = x.mean(); se = x.std(ddof=1) / np.sqrt(n)
+    49	    if np.all(x == x[0]):                                        # exact constancy, not std == 0: ten copies of 1/3 have a nonzero float std
+    50	        return Bound(float(x[0]), side, level, "studentized", True, n)
+    51	    rng = np.random.default_rng(int(seed))
+    52	    idx = rng.integers(0, n, size=(int(resamples), n))
+    53	    samples = x[idx]
+    54	    m = samples.mean(axis=1); s = samples.std(axis=1, ddof=1) / np.sqrt(n)
+    55	    s = np.where(s > 0, s, se)
+    56	    tstat = (m - mean) / s
+    57	    if side == "upper":
+    58	        return Bound(float(mean - np.quantile(tstat, 1.0 - level) * se), side, level, "studentized", False, n)
+    59	    return Bound(float(mean - np.quantile(tstat, level) * se), side, level, "studentized", False, n)
+    60	
+    61	
+    62	def t_bound(x, side: str, level: float) -> Bound:
+    63	    """One-sided Student t bound on the mean (H1's 10 repetitions, spec 8)."""
+    64	    x = _check(x, side, level); n = x.size
+    65	    se = x.std(ddof=1) / np.sqrt(n)
+    66	    crit = stats.t.ppf(level, n - 1)
+    67	    degenerate = bool(np.all(x == x[0]))
+    68	    value = float(x[0]) if degenerate else (x.mean() + crit * se if side == "upper" else x.mean() - crit * se)
+    69	    return Bound(float(value), side, level, "t", degenerate, n)
+    70	
+    71	
+    72	def exact_t_bound_with_critical(x, side: str, critical: float) -> float:
+    73	    """A one-sided t-type bound at an arbitrary critical value (the coverage study's negative control)."""
+    74	    x = np.asarray(x, dtype=float).ravel(); n = x.size
+    75	    se = x.std(ddof=1) / np.sqrt(n)
+    76	    return float(x.mean() + critical * se if side == "upper" else x.mean() - critical * se)
+    77	
+    78	
+    79	def t_interval(x, level: float = 0.95) -> tuple[float, float]:
+    80	    """Two-sided t interval on the mean (the reference-mean interval of the coverage study)."""
+    20	LIMIT = 10_000
+    21	
+    22	
+    23	class InstanceLimit(RuntimeError):
+    24	    pass
+    25	
+    26	
+    27	def digest(root: str, domain: str, n: int) -> bytes:
+    28	    return hashlib.sha256(f"{root}|touchstone-v2|{domain}|{int(n)}".encode("ascii")).digest()
+    29	
+    30	
+    31	def stream(root: str, i: int) -> np.random.Generator:
+    32	    return np.random.Generator(np.random.PCG64(int.from_bytes(digest(root, "instance", i)[:16], "big")))
+    33	
+    34	
+    35	def draw_instance(rng: np.random.Generator, limit: int = LIMIT) -> tuple[MarketConfig, int]:
+    36	    for rejections in range(int(limit)):
+    37	        q = np.sort(rng.uniform(0.55, 1.0, 10)); b_lo = rng.uniform(0.18, 0.26); b_hi = rng.uniform(0.34, 0.46)
+    38	        noise = rng.uniform(-0.02, 0.02, 10); a = rng.uniform(0.0, 0.05, 10); k = rng.integers(4, 9, size=10); v_max = rng.uniform(1.2, 1.6)
+    39	        b = [b_hi - (b_hi - b_lo) * r / 9 + noise[r] for r in range(10)]
+    40	        providers = tuple(ProviderParams(q_max=float(q[r]), a=float(a[r]), b=float(b[r]), k=int(k[r])) for r in range(10))
+    41	        cfg = MarketConfig(N=10, J=50, T=200, sigma=0.05, e=0.0, v_min=0.6, v_max=float(v_max), providers=providers, alpha=0.05, budget=0.0)
+    42	        try:
+    43	            cfg.validate()
+    44	        except ValueError:
+    45	            continue
+    46	        return cfg, rejections
+    47	    raise InstanceLimit(f"no valid instance in {limit} draws")
+    48	
+    49	
+    50	def _draw_stream(root: str, i: int, limit: int) -> tuple[MarketConfig, int]:
+    51	    return draw_instance(stream(root, i), limit)
+    52	
+    53	
+    54	def markets(root: str, count: int, prefix: str = "fresh", limit: int = LIMIT) -> list[dict]:
+    55	    """Label <prefix><i> uses stream i; a stream that hits the limit gives its label the next unused index >= count."""
+    56	    out, spare = [], int(count)
+    57	    for i in range(int(count)):
+    58	        idx = i
+    59	        while True:
+    60	            try:
+    61	                cfg, rej = _draw_stream(root, idx, limit); break
+    62	            except InstanceLimit:
+    63	                idx, spare = spare, spare + 1
+    64	        out.append({"label": f"{prefix}{i}", "stream_index": idx, "cfg": cfg, "rejections": rej})
+    65	    return out
+    66	
+    67	
+    68	def dev_markets() -> list[dict]:
+    69	    return markets(DEV_ROOT, 2, prefix="dev")
+    70	
+    71	
+    72	def calibrated(cfg: MarketConfig, rho: float = 0.2, beta: float = 0.05) -> MarketConfig:
+    73	    return cell_config(cfg, calibrate(cfg, list(CALIBRATION_SEEDS)), rho=rho, beta=beta)
+    74	
+    75	
+    76	def _seeds(root: str, domain: str, n: int, lo: int, width: int) -> list[int]:
+    77	    out, seen, c = [], set(), 0
+    78	    while len(out) < int(n):
+    79	        v = lo + int.from_bytes(digest(root, domain, c)[:8], "big") % width; c += 1
+    80	        if v not in seen:
+    81	            seen.add(v); out.append(v)
+    82	    return out
+    83	
+    84	
+    85	def eval_seeds(root: str, label: str, n: int = 200) -> list[int]:
+    86	    return _seeds(root, "seeds/" + label, n, EVAL_RANGE[0], EVAL_RANGE[1] - EVAL_RANGE[0])
+    87	
+    88	
+    89	def coverage_pool(label: str, n: int = 20_000) -> list[int]:
+    90	    return _seeds(DEV_ROOT, "coverage/" + label, n, COVERAGE_RANGE[0], COVERAGE_RANGE[1] - COVERAGE_RANGE[0])
+    91	
+    92	
+    93	def identity_salt_hex(root: str) -> str:
+    94	    return digest(root, "salt", 0).hex()
+    55	    rule.bind(cfg)
+    56	    N, T, J, alpha = cfg.N, cfg.T, cfg.J, cfg.alpha
+    57	    allowance = int(np.floor(cfg.budget / alpha + 1e-12)) if alpha > 0 else 0
+    58	    ledger = Ledger(N, T)
+    59	    caps_entity = np.array([p.k for p in cfg.providers], dtype=np.int64)
+    60	    a_arr = np.array([p.a for p in cfg.providers]); b_arr = np.array([p.b for p in cfg.providers])
+    61	    # identity bookkeeping; the arrays below are per identity. `alive` is harness-private and never reaches a rule.
+    62	    entity_of: list[int] = list(range(N))
+    63	    identity_of: list[int] = list(range(N))
+    64	    identity_round: list[int] = [0] * N
+    65	    generation: list[int] = [0] * N
+    66	    gen_of_entity = [0] * N
+    67	    alive: list[bool] = [True] * N
+    68	    banned_until = np.zeros(N, dtype=np.int64)
+    69	    caps_id = caps_entity.copy()
+    70	    histories = [ProviderHistory() for _ in range(N)]
+    71	    posted = getattr(rule, "prices", None)
+    72	    memory: dict = {}
+    73	    records_all: list[RoundRecord] = []
+    74	    served = np.zeros((T, N), dtype=np.int64); audits = np.zeros(T, dtype=np.int64)
+    75	    failures = np.zeros((T, N), dtype=np.int64); claims = np.full((T, N), np.nan); efforts = np.zeros((T, N))
+    76	    value_total = 0.0
+    77	    tol = rule.tol
+    78	
+    79	    for t in range(T):
+    80	        values_t = d.values[t].copy()
+    81	        offers: dict[int, Offer] = {}
+    82	        effort_e = np.zeros(N)
+    83	        actions = []
+    84	        for e in range(N):   # pass 1: every entity acts under its current identity
+    85	            act = policies[e].act(ProviderView(i=e, params=cfg.providers[e], t=t, posted_prices=posted,
+    86	                                               history=histories[e], policy_seed=int(d.policy_seed[t, e]), identity=identity_of[e]))
+    87	            validate_action(act, cfg.providers[e])
+    88	            actions.append(act)
+    89	            effort_e[e] = float(act.effort); efforts[t, e] = effort_e[e]
+    90	        exiting = [e for e in range(N) if actions[e].exit]
+    91	        if exiting:   # pass 2: exits in the order of a salted per-entity rank, so same-round entrants' ids carry no entity information
+    92	            for e in sorted(exiting, key=lambda e: entrant_rank(salt, seed, t, int(d.fresh_seed[t, e]))):
+    93	                # retire the current identity now; the fresh identity makes this round's offer and pays e now
+    94	                alive[identity_of[e]] = False
+    95	                new = len(entity_of)
+    96	                gen_of_entity[e] += 1
+    97	                entity_of.append(e); identity_of[e] = new; identity_round.append(t); generation.append(gen_of_entity[e]); alive.append(True)
+    98	                caps_id = np.append(caps_id, caps_entity[e]); banned_until = np.append(banned_until, 0)
+    99	                ledger.grow(new + 1)
+   100	                ledger.charge_entry(t, new, cfg.e)
+   101	        for e in range(N):   # pass 3: offers under the current identity
+   102	            ident = identity_of[e]; act = actions[e]
+   103	            if t < banned_until[ident] or act.offer is None:
+   104	                continue
+   105	            offers[ident] = Offer(claim=float(act.offer.claim), bid=float(act.offer.bid))
+   106	            claims[t, e] = offers[ident].claim
+   107	        offers = dict(sorted(offers.items()))    # id order, never entity order: a rule must not learn which entity a new id belongs to
+   108	        M = len(entity_of)
+   109	        ent_arr = np.array(entity_of, dtype=np.int64)
+   110	        if M == N:
+nl: sim/allocation.py: No such file or directory
+
+hook: PostToolUse
+ succeeded in 926ms:
+expected 236 records 236 missing [] extra []
+cross 14 doubling 98
+contexts {'fresh5@rho0.2': 23, 'fresh2@rho0.2': 23, 'headline@rho0.2': 83, 'fresh3@rho0.2': 23, 'fresh1@rho0.2': 23, 'headline@rho1': 15, 'fresh4@rho0.2': 23, 'fresh0@rho0.2': 23}
+duplicates 0
+manifest sha 326dfcc231042bde38366d97879d810b896f320faa889cce3a43888007e49085
+cut counts [290, 272, 254, 236]
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+ succeeded in 3181ms:
+registered file hash matches True
+Linux file hash matches True
+reproduced hash matches True
+fresh0 2 True
+fresh1 2 True
+fresh2 6 True
+fresh3 4 True
+fresh4 2 True
+fresh5 1 True
+all other draw data unchanged True
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "nl -ba docs/superpowers/specs/2026-10-22-revision-program-design.md | sed -n '314,384p'; nl -ba docs/superpowers/specs/2026-10-22-revision-program-design.md | sed -n '477,507p'; git rev-parse 'protocol-v2"'^{commit}'"'" in /Users/oemer.demirel/Projects/touchstone/results/v2/eval-checkout
+exec
+/bin/zsh -lc ".venv/bin/python -B -c 'import sys,json,numpy as np; from pathlib import Path; e=Path(\"/Users/oemer.demirel/Projects/touchstone/results/v2/eval-checkout\"); sys.path.insert(0,str(e)); from sim.decisions_v2 import q1_family,q4_markets; from sim.intervals import bootstrap_pvalue; b=e.parent; d=json.loads((b/\"report/report.json\").read_text()); rows={r[\"id\"]:r for p in (b/\"eval/all/evaluate\").glob(\"*.json\") for r in [json.loads(p.read_text())]}; get=lambda m,r,f:rows[f\"{m}@rho0.2|{r}|{f}|profit\"]; tests={f\"C*-F111|{f}\":[np.array(get(f\"fresh{i}\",\"C*\",f)[\"gain\"])-np.array(get(f\"fresh{i}\",\"F111\",f)[\"gain\"]) for i in range(6)] for f in [\"D2+H3\",\"X7-SC\"]}; res=q1_family(tests,.5);print(\"Q1\",res); pa,pb=[],[]; [(pa.append(bootstrap_pvalue(np.array(get(f\"fresh{i}\",\"F000\",\"D2+H3\")[\"gain\"])-np.array(get(f\"fresh{i}\",\"F111\",\"D2+H3\")[\"gain\"]),.1,\"lower\")),pb.append(bootstrap_pvalue(get(f\"fresh{i}\",\"F111\",\"D2+H3\")[\"eff_attack\"],.9,\"lower\"))) for i in range(6)]; print(\"Q4\",q4_markets(pa,pb,.25)); print(\"paired seeds\",all(get(f\"fresh{i}\",\"C*\",f)[\"seeds\"]==get(f\"fresh{i}\",\"F111\",f)[\"seeds\"]==get(f\"fresh{i}\",\"F000\",f)[\"seeds\"] for i in range(6) for f in [\"D2+H3\",\"X7-SC\"]))'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 620ms:
+   314	provider) gets schedule index j. Members play shared knobs with member schedules (X6-SE/v2) or the decoy and beneficiary
+   315	roles (X8-DB, c = 2); non-members play honest-max. Member gain
+   316	g_j = (pi_j - pi_j^0) / (S*/N), where pi_j^0 is member j's profit under the frozen joint truthful reference of that
+   317	coalition (one per rule, market, and c). Objectives: total G_tot = sum_j E[g_j] and worst member G_min = min_j E[g_j]
+   318	(not E[min_j g_j]).
+   319	
+   320	Because G_tot's reference term is a constant, the G_tot searches do not need the reference; G_min's do. Truthful
+   321	projection of a coalition profile (spec 5.2, `Family.project`): every member's claim is clipped to its effort
+   322	(clip = 1 for X6-SE/v2 members; for X8-DB the beneficiary's clip = 1 and every decoy knob, including u_D, n_D, and w_D,
+   323	unchanged, since the decoy's claim already equals its effort). Order per rule and c, all on dev-train seeds:
+   324	
+   325	1. The joint twins: the registered search (5 restarts x 300) over the X6-SE/v2 knobs with clip = 1 forced for every
+   326	   member, maximising sum_j (pi_j / (S*/N)), once with the synchronised and once with the staggered schedule.
+   327	2. The G_tot searches (X6-SE/v2 synchronised and staggered; X8-DB at c = 2).
+   328	3. Preliminary reference: the candidate with the highest training mean of sum_j (pi_j / (S*/N)) among, in this tie
+   329	   order: all members honest-max, all members abstain, the synchronised twin, the staggered twin, then the truthful
+   330	   projections of the step-2 winners and of every point in their archives, in search order.
+   331	4. The G_min searches against the preliminary reference, with the reference profile inserted as an incumbent where the
+   332	   family can represent it.
+   333	5. Final reference: the same rule over the step-3 menu plus the truthful projections of the step-4 winners and archive
+   334	   points, in search order; freeze.
+   335	6. Every archived G_min point (step 4) is rescored against the final reference on the same training seeds; the final
+   336	   reference profile itself is added as a candidate wherever the G_min family can represent it (it scores exactly zero
+   337	   against itself); the G_min winner is the best of these candidates. G_tot winners are unchanged (constant reference
+   338	   term). Then evaluation. Required regression test: a final reference taken from a step-5 projection, with every
+   339	   archived point negative against it, selects the reference profile where it is representable.
+   340	
+   341	Claims are gains relative to this coordinated truthful profile; they say nothing about coalition stability or each
+   342	member's best unilateral alternative.
+   343	
+   344	### 6.4 References and freeze order
+   345	
+   346	- **Menu.** A rule's truthful reference is selected on training seeds by the registered order (spec 5.2) from one menu:
+   347	  abstain, honest-max, and the twin, projection, and archive candidates of its D2+H3 and X7-SC searches. Every rule in the
+   348	  evaluation, including B2 and the rho = 1 repair cells, has exactly these two searches at the same budget (8.1), so
+   349	  matched pairs have equivalent menus. **Exception:** the secondary whole systems (B3-t, R3-t, C*-t) on fresh markets
+   350	  have no X7-SC cell (8.1); their fresh-market reference menu is abstain, honest-max, and the D2+H3 candidates, the same
+   351	  reduced menu for all three systems, and their fresh-market results are labelled accordingly. Its D2, X5-AG/v2, H4, and welfare gains use the same frozen reference; no other
+   352	  family adds candidates. Coalitions use their own joint reference (6.3).
+   353	- **Development reference** (tuning, comparator selection): the same construction with the tuning objective's families
+   354	  (D2, D2+H3, X7-SC) on the tuning markets. H4 is never available in development.
+   355	- **Dependency and freeze order per market.** (1) Profit attack and twin searches and banks; (2) reference selection and
+   356	  freeze; (3) the searches that need a frozen reference (W1) and the coalition steps 1 to 6 of 6.3 in their order; (4) envelope
+   357	  family choices (9.3 Q3), the fixed-attack bank and its training-seed matrix (6.6); (5) final freeze. Only then may any
+   358	  evaluation-seed episode of that market run; the evaluation stage refuses to run otherwise. Doubling results never enter
+   359	  the frozen candidates (6.5 says how they are used).
+   360	
+   361	### 6.5 Search-quality checks
+   362	
+   363	A doubling check continues the registered search with as many additional restarts as the registered budget (new restart
+   364	seeds), so the total budget doubles; it is reported as a diagnostic. Scheduled checks (fixed in the manifest):
+   365	
+   366	- headline: the 10 matched rules (F000 to F111, C*, C*/S0) x {D2+H3, X7-SC} (20), the 12 welfare cells, and the 30
+   367	  coalition cells (24 X6-SE/v2, 6 X8-DB);
+   368	- fresh markets: the Q1 and Q4 rules (F000, F111, C*) x {D2+H3, X7-SC} x 6 (36).
+   369	
+   370	98 checks. Units and threshold 0.005: gain (normalised by S*/N) for profit; G_tot and G_min (each normalised) for
+   371	coalitions; gross efficiency (a share of the first best) for welfare. Attack-profit and reference-profit changes are
+   372	reported separately. A W1 check that finds a feasible point where the original found none, or a feasible point with
+   373	efficiency lower by at least 0.005, labels the cell incomplete. Cells without a scheduled check (factorial cells on fresh
+   374	markets, whole systems, X5, H4, D2 extras) carry no search-quality claim.
+   375	
+   376	**Two statuses.** A cell is **missing** if it did not run to completion or is invalid: not run (cap stop or cut), a
+   377	refused sample, a nonfinite statistic (9.2), a search with no finite candidate, or a failed load (H4). A cell is
+   378	**search-flagged** if it ran to completion but its scheduled doubling check exceeded the threshold above ("incomplete" in
+   379	the check's own wording). Consequences: a missing cell removes every confirmatory decision that uses it (the test is
+   380	reported "not decided: missing cell") and makes that part of its question unanswered (8.1a). A search-flagged cell keeps
+   381	its estimate as the estimate of the prescribed (frozen) search procedure; a confirmatory decision that uses it is still
+   382	made and is reported as a decision about the prescribed search procedure only; the robustness statement for that rule
+   383	and family (Q3) is reported unanswered ("search flagged"), never as "no attack found". **Held-out diagnostic:** for every scheduled check, the doubled search's winner (selected on its training
+   384	seeds) is evaluated unchanged on the cell's evaluation seeds against the same frozen reference, and reported beside the
+   477	it); a search-flagged cell keeps confirmatory decisions (labelled as about the prescribed search procedure) and makes the
+   478	Q3 robustness statement for that rule and family unanswered. Scheduled doubling checks (6.5) are listed with their
+   479	question.
+   480	
+   481	| Question | Required cells, and scheduled checks |
+   482	|---|---|
+   483	| Q1 (confirmatory) | F111 and C* x {D2+H3, X7-SC} x 6 fresh markets, with their references; checks: those 24 cells; descriptive: headline, C*/S0 |
+   484	| Q2 (descriptive) | the 8 factorial cells x {D2+H3, X7-SC} x 7 markets and the 14 cross-evaluations; checks: the headline factorial cells (16) |
+   485	| Q3 (descriptive) | per core rule (F000, F111, C*): D2+H3, X7-SC, X5-AG/v2, H4 on 7 markets; welfare; coalitions; the diagnostic. If H4 is cut on fresh markets (8.2) or fails to load, the independently authored part of Q3 is reported as not run on those markets, never as "no attack found"; checks: every core-rule profit, welfare, and coalition check of 6.5 |
+   486	| Q4 (confirmatory) | F000 and F111 x D2+H3 x 6 fresh markets, with their references; checks: those 12 cells |
+   487	| Repair | the rho = 1 block |
+   488	| Whole systems (secondary) | B3-t, R3-t, C*-t cells |
+   489	
+   490	### 8.2 Cost
+   491	
+   492	Unit: one headline D2+H3 cell (search, bank, reference, 40-seed evaluation) at the registered budget, about 25
+   493	core-minutes, about 18,000 episodes, and about 0.045 USD on pods (robustness: 322 cell-equivalents, 14 USD). X7-SC
+   494	multiplier 2.5 (double evaluations, about 770 corner-control vectors; the build records the exact count for 15 knobs); a doubling check 1 unit (X7-SC 2.5); inner tuning
+   495	searches 0.04 (X7-SC 0.1). The additional cost of increasing the evaluation from 40 to 200 seeds (the unit already
+   496	includes 40) is priced conservatively at 16 percent of a cell; episode-based estimates are lower and the benchmark
+   497	decides.
+   498	
+   499	| Item | Units |
+   500	|---|---|
+   501	| Comparator selection: 108 inner (6.5) + top 2 rechecked x 3 families x 3 markets (27) | 33.5 |
+   502	| Whole-system tuning: 432 inner (25.9) + 3 systems x 2 rechecks x 3 families x 3 markets (81) | 106.9 |
+   503	| Coverage (9.5): 8 profiles x 20,000 seeds x 3 markets = 480,000 episodes (26.9) + bootstrap computation (about 3 core-hours, 10) | 36.9 |
+   504	| **Development total** | **about 177.3 (about 8.0 USD)** |
+   505	| Evaluation cells: 287 + (85 X7-SC + 21 H4) x 1.5 | 446 |
+   506	| Coalition extras (6.3): the second joint twin per rule and c (6); step-3 and step-5 truthful-projection evaluations of archive points (new episodes, since clipping can change trajectories; about 8, benchmarked); step-6 G_min archive rescoring (stored member payoffs where possible, about 4) | 18 |
+   507	| Additional cost of 200 instead of 40 evaluation seeds: 0.16 x 446 | 71.4 |
+d5e602e2bac44248c352985a5f1c647929252d0d
+
+hook: PostToolUse
+hook: PostToolUse Completed
+ succeeded in 2962ms:
+Q1 {'C*-F111|D2+H3': {'p': 0.0004, 'reject': True, 'category': 'equivalent, direction R3 lower'}, 'C*-F111|X7-SC': {'p': 0.0004, 'reject': True, 'category': 'equivalent, direction R3 lower'}}
+Q4 {'decided': True, 'p': [1.0, 0.0004, 1.0, 0.0004, 0.0004, 1.0], 'pass': [False, True, False, True, True, False], 'k': 3}
+paired seeds True
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "python -c 'import json; from pathlib import Path; b=Path(\"results/v2/eval/all\"); rows={r[\"id\"]:r for p in (b/\"evaluate\").glob(\"*.json\") for r in [json.loads(p.read_text())]}; r=rows[\"fresh1@rho0.2|C*|X7-SC|profit\"]; print(\"X7 dependencies\",r[\"upstream\"]); refs=list((b/\"reference/fresh1@rho0.2\").glob(\"*.json\")); print(\"reference files\",[str(p) for p in refs]); [(print(p.name,json.dumps(json.loads(p.read_text()),indent=1)[:5500])) for p in refs if \"C\" in p.name]'" in /Users/oemer.demirel/Projects/touchstone
+ succeeded in 2720ms:
+X7 dependencies {'freeze/fresh1@rho0.2': '516d5ff7abe1699658f99b5e73dac39e16d094f8ac22dceb1b29bdea9c041252', 'fresh1@rho0.2|C*|X7-SC|profit': 'c134e48e3d4abbbf2a2587d8dfde2e3157ac4dea1e621c686df1298de3533c9c', 'reference/fresh1@rho0.2/C*': '4f1a9b1e63aa8caa5023261bc77b75af9ab412d0d201e24c68590b39f8440590'}
+reference files ['results/v2/eval/all/reference/fresh1@rho0.2/Cstar~S0.json', 'results/v2/eval/all/reference/fresh1@rho0.2/F000.json', 'results/v2/eval/all/reference/fresh1@rho0.2/F001.json', 'results/v2/eval/all/reference/fresh1@rho0.2/F010.json', 'results/v2/eval/all/reference/fresh1@rho0.2/F011.json', 'results/v2/eval/all/reference/fresh1@rho0.2/F100.json', 'results/v2/eval/all/reference/fresh1@rho0.2/F101.json', 'results/v2/eval/all/reference/fresh1@rho0.2/F110.json', 'results/v2/eval/all/reference/fresh1@rho0.2/F111.json', 'results/v2/eval/all/reference/fresh1@rho0.2/Cstar.json']
+Cstar~S0.json {
+ "stage": "reference",
+ "provenance": {
+  "git_commit": "d5e602e2bac44248c352985a5f1c647929252d0d",
+  "runner_sha256": "afe7c26e810ef855288b8dc8211c7b32ac6b18461b2b9f722fc5e9d1a4ee35fd",
+  "cfg_sha256": "44b4fc926421c5750356de965bb1160b7c35cf72dc41a4b40df4dad9883a8ba9",
+  "salt_sha256": "c245f8900fc17efc60cb2fe23a7da364d1b959485ec9bfc1ed5cb6f7f73ce300",
+  "root": "00000000000000000000942ae8d55e64fab0faacd2c292687bb278af461d9d58",
+  "seeds_train": [
+   1000,
+   1001,
+   1002,
+   1003,
+   1004
+  ],
+  "seeds_val": [
+   2000,
+   2001,
+   2002,
+   2003,
+   2004,
+   2005,
+   2006,
+   2007,
+   2008,
+   2009,
+   2010,
+   2011,
+   2012,
+   2013,
+   2014,
+   2015,
+   2016,
+   2017,
+   2018,
+   2019
+  ],
+  "seeds_eval": [
+   38790052,
+   37249023,
+   33026255,
+   34468405,
+   31640353,
+   33627213,
+   31875087,
+   35992278,
+   37922345,
+   30993662,
+   36010842,
+   32229880,
+   33793832,
+   39502887,
+   31754990,
+   35634672,
+   33931013,
+   31755568,
+   35493163,
+   37912001,
+   38390292,
+   35498971,
+   37721291,
+   34562666,
+   36450405,
+   34001677,
+   37464440,
+   39899380,
+   37390186,
+   37682895,
+   34393764,
+   39258964,
+   30835697,
+   36920434,
+   38436818,
+   39445395,
+   34599350,
+   38268437,
+   32111068,
+   36771254,
+   33393843,
+   34205344,
+   38467353,
+   36980378,
+   39117932,
+   35001738,
+   35069592,
+   30876591,
+   38266838,
+   34401506,
+   35987875,
+   36275672,
+   36213375,
+   34375430,
+   32494266,
+   32202797,
+   34932631,
+   30059385,
+   38580745,
+   35633548,
+   34158948,
+   31469918,
+   33674450,
+   32114219,
+   35117881,
+   37110503,
+   35334175,
+   30633692,
+   33838880,
+   32765881,
+   34282113,
+   36759106,
+   35408235,
+   38463984,
+   33288879,
+   32671980,
+   38458313,
+   33621478,
+   35259270,
+   37882410,
+   33482458,
+   34325155,
+   38846847,
+   37290612,
+   39217804,
+   39883438,
+   30539354,
+   31133057,
+   32029894,
+   34458284,
+   37336987,
+   33742981,
+   37567075,
+   33425365,
+   35065109,
+   36147039,
+   38153761,
+   38874713,
+   37969108,
+   39239651,
+   30535989,
+   34253853,
+   34689549,
+   35413946,
+   35665355,
+   39016778,
+   38869017,
+   38406951,
+   36370125,
+   33272318,
+   34712740,
+   31523007,
+   31752354,
+   32443200,
+   39788205,
+   39562161,
+   31184982,
+   36819778,
+   38549236,
+   30450573,
+   34207604,
+   34921710,
+   35871444,
+   30101026,
+   30612522,
+   36256562,
+   33175718,
+   32307084,
+   35925972,
+   36803542,
+   37969783,
+   35446350,
+   34283326,
+   31990111,
+   34247156,
+   39085972,
+   39365973,
+   37100117,
+   36235270,
+   37938850,
+   34837172,
+   36741665,
+   36513860,
+   32750217,
+   37831280,
+   34054545,
+   39543674,
+   30716536,
+   39190937,
+   30210920,
+   36062210,
+   30983615,
+   30483185,
+   33948909,
+   39937095,
+   34751248,
+   37410051,
+   32215344,
+   36895118,
+   34122301,
+   34344828,
+   35550275,
+   36457327,
+   39267838,
+   32670019,
+   35303983,
+   30517042,
+   30078083,
+   37118378,
+   35969611,
+   31733903,
+   32834267,
+   33273361,
+   36630339,
+   33038887,
+   33331815,
+   35088012,
+   34636081,
+   39515029,
+   30761665,
+   35126812,
+   34760043,
+   31384892,
+   37432139,
+   30565641,
+   34942172,
+   30561417,
+   35156009,
+   33372707,
+   33244018,
+   32724457,
+   34546707,
+   34315616,
+   31917700,
+   37666549,
+   36232209,
+   31656822,
+   37681170,
+   38233353,
+   31661029
+  ],
+  "context": "fresh1@rho0.2",
+  "rule": "C*/S0",
+  "rule_params_sha256": "3925c6501c66cdd8bea4b34b2e65ea612fe5d884c9afcc818302f9b60978db46"
+ },
+ "upstream": {
+  "fresh1@rho0.2|C*/S0|D2+H3|profit": "084e72517046641e4419c5a9440505ce4e2b9323c50f9df424b0c91540723638",
+  "fresh1@rho0.2|F000|D2+H3|profit": "c24ce723289594eb0b2d71266bdc894513a91d4e83808ad7d55082ceb8cab355",
+  "fresh1@rho0.2|F001|D2+H3|profit": "d5304150d3c75d5aabf67cc26a590bbd25aaaba3d8339cf0395557ace73e26d5",
+  "fresh1@rho0.2|F010|D2+H3|profit": "629ca476e4f5bdd90119621cfd6d34d63cac81c167f688228bb87405b23ccc12",
+  "fresh1@rho0.2|F011|D2+H3|profit": "edd92f8bfdb123e8ec6fba90d1fb4aad94a51291366fc78abf53d486586e490a",
+  "fresh1@rho0.2|F100|D2+H3|profit": "e4c9b6816f92cde85f160d325adbede12f24107eaa8bd5dc950a4215f89e92bd",
+  "fresh1@rho0.2|F101|D2+H3|profit": "886ff2db7b150858f8cfad59f708741dcff80d2906b271640f3065b327fff835",
+  "fresh1@rho0.2|F110|D2+H3|profit": "17b15909cc317234f34d7f65b4248ab9ece0e189a6b6dd33a5982dc6ed995b1a",
+  "fresh1@rho0.2|F111|D2+H3|profit": "0918bdaee2a2d6af12798369e2ddceb23da4384f66c3e30e9172d64b36133eaa",
+  "fresh1@rho0.2|C*|D2+H3|profit": "761e1065440fa8a18b13baac6a7c56ee1e97013e0bb0d27ce179642fe757b791",
+  "fresh1@rho0.2|C*/S0|X7-SC|profit": "7e409c2a66f4655434c2721b023b570ed1163b7254a95af79b85638604c9f81b",
+  "fresh1@rho0.2|F000|X7-SC|profit": "4a43cfed05e5e73f2ea61a49bfd068278eef4b24ad49d6e6ef52a0b5c474e5cf",
+  "fresh1@rho0.2|F001|X7-SC|profit": "c3d4774ac6ee5fb91f4b64632eb1150aebef1c63e80ff60152b38125bbd74914",
+  "fresh1@rho0.2|F010|X7-SC|profit": "b3d3083247119ce517908e12474acd79ae7898dd7cb927b9e81072553e279a26",
+  "fresh1@rho0.2|F011|X7-SC|profit": "b2aea3f3712a3703139810ae22f67ac6565b6642d9dc1d8550d2fcc670e8ea8b",
+  "fresh1@rho0.2|F100|X7-SC|profit": "9e58b65bfd7252c590ad5d6bbc12bf71a329a803a62b42cb0245c681b80fd463",
+  "fresh1@rho0.2|F101|X7-SC|profit": "e9274735c29aa7ab11c3ad9924f63a4d84d29dd8498dfc0f3d9d63f78d7d6388",
+  "fresh1@rho0.2|F110|X7-SC|profit": "bd59822f1978bb955c91a574c1af6fcca4332c750096285be82d43f4e2210506",
+  "fresh1@rho0.2|F111|X7-SC|profit": "8dea9edb3c8d87b246abfea3071b60753a283d25526f9c895e369a06c5480576",
+  "fresh1@rho0.2|C*
+Cstar.json {
+ "stage": "reference",
+ "provenance": {
+  "git_commit": "d5e602e2bac44248c352985a5f1c647929252d0d",
+  "runner_sha256": "afe7c26e810ef855288b8dc8211c7b32ac6b18461b2b9f722fc5e9d1a4ee35fd",
+  "cfg_sha256": "44b4fc926421c5750356de965bb1160b7c35cf72dc41a4b40df4dad9883a8ba9",
+  "salt_sha256": "c245f8900fc17efc60cb2fe23a7da364d1b959485ec9bfc1ed5cb6f7f73ce300",
+  "root": "00000000000000000000942ae8d55e64fab0faacd2c292687bb278af461d9d58",
+  "seeds_train": [
+   1000,
+   1001,
+   1002,
+   1003,
+   1004
+  ],
+  "seeds_val": [
+   2000,
+   2001,
+   2002,
+   2003,
+   2004,
+   2005,
+   2006,
+   2007,
+   2008,
+   2009,
+   2010,
+   2011,
+   2012,
+   2013,
+   2014,
+   2015,
+   2016,
+   2017,
+   2018,
+   2019
+  ],
+  "seeds_eval": [
+   38790052,
+   37249023,
+   33026255,
+   34468405,
+   31640353,
+   33627213,
+   31875087,
+   35992278,
+   37922345,
+   30993662,
+   36010842,
+   32229880,
+   33793832,
+   39502887,
+   31754990,
+   35634672,
+   33931013,
+   31755568,
+   35493163,
+   37912001,
+   38390292,
+   35498971,
+   37721291,
+   34562666,
+   36450405,
+   34001677,
+   37464440,
+   39899380,
+   37390186,
+   37682895,
+   34393764,
+   39258964,
+   30835697,
+   36920434,
+   38436818,
+   39445395,
+   34599350,
+   38268437,
+   32111068,
+   36771254,
+   33393843,
+   34205344,
+   38467353,
+   36980378,
+   39117932,
+   35001738,
+   35069592,
+   30876591,
+   38266838,
+   34401506,
+   35987875,
+   36275672,
+   36213375,
+   34375430,
+   32494266,
+   32202797,
+   34932631,
+   30059385,
+   38580745,
+   35633548,
+   34158948,
+   31469918,
+   33674450,
+   32114219,
+   35117881,
+   37110503,
+   35334175,
+   30633692,
+   33838880,
+   32765881,
+   34282113,
+   36759106,
+   35408235,
+   38463984,
+   33288879,
+   32671980,
+   38458313,
+   33621478,
+   35259270,
+   37882410,
+   33482458,
+   34325155,
+   38846847,
+   37290612,
+   39217804,
+   39883438,
+   30539354,
+   31133057,
+   32029894,
+   34458284,
+   37336987,
+   33742981,
+   37567075,
+   33425365,
+   35065109,
+   36147039,
+   38153761,
+   38874713,
+   37969108,
+   39239651,
+   30535989,
+   34253853,
+   34689549,
+   35413946,
+   35665355,
+   39016778,
+   38869017,
+   38406951,
+   36370125,
+   33272318,
+   34712740,
+   31523007,
+   31752354,
+   32443200,
+   39788205,
+   39562161,
+   31184982,
+   36819778,
+   38549236,
+   30450573,
+   34207604,
+   34921710,
+   35871444,
+   30101026,
+   30612522,
+   36256562,
+   33175718,
+   32307084,
+   35925972,
+   36803542,
+   37969783,
+   35446350,
+   34283326,
+   31990111,
+   34247156,
+   39085972,
+   39365973,
+   37100117,
+   36235270,
+   37938850,
+   34837172,
+   36741665,
+   36513860,
+   32750217,
+   37831280,
+   34054545,
+   39543674,
+   30716536,
+   39190937,
+   30210920,
+   36062210,
+   30983615,
+   30483185,
+   33948909,
+   39937095,
+   34751248,
+   37410051,
+   32215344,
+   36895118,
+   34122301,
+   34344828,
+   35550275,
+   36457327,
+   39267838,
+   32670019,
+   35303983,
+   30517042,
+   30078083,
+   37118378,
+   35969611,
+   31733903,
+   32834267,
+   33273361,
+   36630339,
+   33038887,
+   33331815,
+   35088012,
+   34636081,
+   39515029,
+   30761665,
+   35126812,
+   34760043,
+   31384892,
+   37432139,
+   30565641,
+   34942172,
+   30561417,
+   35156009,
+   33372707,
+   33244018,
+   32724457,
+   34546707,
+   34315616,
+   31917700,
+   37666549,
+   36232209,
+   31656822,
+   37681170,
+   38233353,
+   31661029
+  ],
+  "context": "fresh1@rho0.2",
+  "rule": "C*",
+  "rule_params_sha256": "3925c6501c66cdd8bea4b34b2e65ea612fe5d884c9afcc818302f9b60978db46"
+ },
+ "upstream": {
+  "fresh1@rho0.2|C*|D2+H3|profit": "761e1065440fa8a18b13baac6a7c56ee1e97013e0bb0d27ce179642fe757b791",
+  "fresh1@rho0.2|F000|D2+H3|profit": "c24ce723289594eb0b2d71266bdc894513a91d4e83808ad7d55082ceb8cab355",
+  "fresh1@rho0.2|F001|D2+H3|profit": "d5304150d3c75d5aabf67cc26a590bbd25aaaba3d8339cf0395557ace73e26d5",
+  "fresh1@rho0.2|F010|D2+H3|profit": "629ca476e4f5bdd90119621cfd6d34d63cac81c167f688228bb87405b23ccc12",
+  "fresh1@rho0.2|F011|D2+H3|profit": "edd92f8bfdb123e8ec6fba90d1fb4aad94a51291366fc78abf53d486586e490a",
+  "fresh1@rho0.2|F100|D2+H3|profit": "e4c9b6816f92cde85f160d325adbede12f24107eaa8bd5dc950a4215f89e92bd",
+  "fresh1@rho0.2|F101|D2+H3|profit": "886ff2db7b150858f8cfad59f708741dcff80d2906b271640f3065b327fff835",
+  "fresh1@rho0.2|F110|D2+H3|profit": "17b15909cc317234f34d7f65b4248ab9ece0e189a6b6dd33a5982dc6ed995b1a",
+  "fresh1@rho0.2|F111|D2+H3|profit": "0918bdaee2a2d6af12798369e2ddceb23da4384f66c3e30e9172d64b36133eaa",
+  "fresh1@rho0.2|C*/S0|D2+H3|profit": "084e72517046641e4419c5a9440505ce4e2b9323c50f9df424b0c91540723638",
+  "fresh1@rho0.2|C*|X7-SC|profit": "c134e48e3d4abbbf2a2587d8dfde2e3157ac4dea1e621c686df1298de3533c9c",
+  "fresh1@rho0.2|F000|X7-SC|profit": "4a43cfed05e5e73f2ea61a49bfd068278eef4b24ad49d6e6ef52a0b5c474e5cf",
+  "fresh1@rho0.2|F001|X7-SC|profit": "c3d4774ac6ee5fb91f4b64632eb1150aebef1c63e80ff60152b38125bbd74914",
+  "fresh1@rho0.2|F010|X7-SC|profit": "b3d3083247119ce517908e12474acd79ae7898dd7cb927b9e81072553e279a26",
+  "fresh1@rho0.2|F011|X7-SC|profit": "b2aea3f3712a3703139810ae22f67ac6565b6642d9dc1d8550d2fcc670e8ea8b",
+  "fresh1@rho0.2|F100|X7-SC|profit": "9e58b65bfd7252c590ad5d6bbc12bf71a329a803a62b42cb0245c681b80fd463",
+  "fresh1@rho0.2|F101|X7-SC|profit": "e9274735c29aa7ab11c3ad9924f63a4d84d29dd8498dfc0f3d9d63f78d7d6388",
+  "fresh1@rho0.2|F110|X7-SC|profit": "bd59822f1978bb955c91a574c1af6fcca4332c750096285be82d43f4e2210506",
+  "fresh1@rho0.2|F111|X7-SC|profit": "8dea9edb3c8d87b246abfea3071b60753a283d25526f9c895e369a06c5480576",
+  "fresh1@rho0.2|C*/S0|X7
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "python -c 'import json; from pathlib import Path; b=Path(\"results/v2/eval/all\"); print(\"reference summary\"); d=json.loads((b/\"reference/fresh1@rho0.2/Cstar.json\").read_text()); print({k:v for k,v in d.items() if k not in [\"provenance\",\"upstream\",\"candidates\",\"archive\",\"seeds\"]}); print(\"upstream flagged\",[k for k in d[\"upstream\"] if k in json.loads(Path(\"results/v2/report/report.json\").read_text())[\"search_flagged\"]]); print(\"shared hash\",json.loads((b/\"reference/fresh1@rho0.2/F111.json\").read_text()).get(\"choice\"))'" in /Users/oemer.demirel/Projects/touchstone
+ succeeded in 3831ms:
+reference summary
+{'stage': 'reference', 'choice': 2, 'scores': {'abstain': 0.0, 'honest_max': 0.11392740715483707, 'twin_search': 0.1200642823828755, 'attack_projection': 0.11809228475007405, 'archive_clip1': 0.1200642823828755, 'archive_truthful_clip0': 0.11392740715483707, 'bank_0': 0.0, 'bank_1': 0.0, 'bank_2': 0.08521312160358852, 'bank_3': 0.11687860266812462, 'bank_4': 0.12005504763618417, 'bank_5': 0.11784908343072557, 'bank_8': 0.11757851039993754, 'bank_6': 0.10046846564744501}, 'per_seed_normalized': [0.11844040611588921, 0.12710842550629953, 0.11892158042769681, 0.11794777955481256, 0.1179032203096794], 'T': 200, 'L': 10, 'menu_families': ['D2+H3', 'X7-SC']}
+upstream flagged ['fresh1@rho0.2|C*|D2+H3|profit', 'fresh1@rho0.2|F111|D2+H3|profit']
+shared hash 2
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+All 236 cells required after the three registered cuts are present, with all 98 doubling checks and 14 cross-evaluations. I reproduced both Q1 decisions and the Q4 result of 3 passing markets. I found no numeric mismatch between the Markdown and JSON. I am checking reference dependencies for the final label correction.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "python -c 'import json; from pathlib import Path; b=Path(\"results/v2/eval/all/doubling\"); rs=[json.loads(p.read_text()) for p in b.glob(\"*.json\")]; print([(r.get(\"id\"),{k:v for k,v in r.items() if k not in [\"provenance\",\"upstream\",\"id\",\"heldout\"]}) for r in rs if r.get(\"id\") in [\"fresh1@rho0.2|C*|D2+H3|profit\",\"fresh1@rho0.2|F111|D2+H3|profit\",\"fresh0@rho0.2|C*|D2+H3|profit\"]])'" in /Users/oemer.demirel/Projects/touchstone
+ succeeded in 2926ms:
+[('fresh1@rho0.2|C*|D2+H3|profit', {'stage': 'doubling', 'kind': 'profit', 'attack_change': 0.016189550319338553, 'reference_change': 0.0, 'incomplete': True}), ('fresh1@rho0.2|F111|D2+H3|profit', {'stage': 'doubling', 'kind': 'profit', 'attack_change': 0.009605007863985854, 'reference_change': 0.0, 'incomplete': True}), ('fresh0@rho0.2|C*|D2+H3|profit', {'stage': 'doubling', 'kind': 'profit', 'attack_change': 0.00812054716890337, 'reference_change': 0.00041386445216640144, 'incomplete': True})]
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+VERDICT: reject
+
+CORRECTIONS:
+1. `results/v2/report/report.md:31`, `:163`: Add “nominal 95 percent, unadjusted” to Q2 and Q3. The JSON contains these labels, but the Markdown omits them. At `:9` and `:11`, label the efficiency condition as descriptive, using nominal one-sided 97.5 percent bounds.
+2. `results/v2/report/report.json:$.q1.tests["C*-F111|X7-SC"].search`: Check label propagation through reference and bank dependencies. This field is null although the references depend on search-flagged D2+H3 records. For example, fresh0 C* has a nonzero reference change in its doubling diagnostic. Apply the prescribed-search qualification to affected decisions.
+3. `results/v2/report/report.md:1`; `report.json:$`: Disclose both deviations in the report: the substituted Linux configs and the author-approved evaluation cap increase from USD 40 to 43. Include the original and substituted config hashes and link the verification evidence.
+4. `docs/revision/deviation/cfg_ulp.py:64`: Distinguish config verification from decision stability. The checks establish matching pod hashes, differences within 1 ulp, and successful verification with substituted configs. They do not establish unchanged simulation paths or decisions under the registered configs. Compare frozen-policy results under both configs, or explicitly state that decision stability remains unverified; discrete branches can amplify small input differences.
+5. `results/v2/report/report.md:3`: Add the registered claim scope: conditional on the sampled markets, stated neighbourhood, fixed pair, attack families, and frozen searches. State that Q4 is an internal replication of the comparative gain and efficiency conditions.
+
+CONFIDENCE: 0.93.
+hook: Stop
+hook: Stop Completed
+tokens used
+119'858
+VERDICT: reject
+
+CORRECTIONS:
+1. `results/v2/report/report.md:31`, `:163`: Add “nominal 95 percent, unadjusted” to Q2 and Q3. The JSON contains these labels, but the Markdown omits them. At `:9` and `:11`, label the efficiency condition as descriptive, using nominal one-sided 97.5 percent bounds.
+2. `results/v2/report/report.json:$.q1.tests["C*-F111|X7-SC"].search`: Check label propagation through reference and bank dependencies. This field is null although the references depend on search-flagged D2+H3 records. For example, fresh0 C* has a nonzero reference change in its doubling diagnostic. Apply the prescribed-search qualification to affected decisions.
+3. `results/v2/report/report.md:1`; `report.json:$`: Disclose both deviations in the report: the substituted Linux configs and the author-approved evaluation cap increase from USD 40 to 43. Include the original and substituted config hashes and link the verification evidence.
+4. `docs/revision/deviation/cfg_ulp.py:64`: Distinguish config verification from decision stability. The checks establish matching pod hashes, differences within 1 ulp, and successful verification with substituted configs. They do not establish unchanged simulation paths or decisions under the registered configs. Compare frozen-policy results under both configs, or explicitly state that decision stability remains unverified; discrete branches can amplify small input differences.
+5. `results/v2/report/report.md:3`: Add the registered claim scope: conditional on the sampled markets, stated neighbourhood, fixed pair, attack families, and frozen searches. State that Q4 is an internal replication of the comparative gain and efficiency conditions.
+
+CONFIDENCE: 0.93.
+sol exit 0
