@@ -164,3 +164,16 @@ decision rules, FlashProve limits, citations); applied (fd1c94d, edd6bef). Round
 (market coverage, search-flag definition, efficiency labels, identifiers); applied (39828b8, 2211d28). Round 3: Sol and
 Astra accept-with-caveat; the one caveat (Holm citation) is resolved in 06c75e9 from the scanned original
 (Scand J Statist 6: 65-70, 1979). Section 9 and the evaluation-2 result sentences follow the report.
+
+### Operation 6 (2026-11-04): draw, instances, H4 decision
+
+- Draw: block H = 974451, hash 00000000000000000000942ae8d55e64fab0faacd2c292687bb278af461d9d58, final at a tip of at
+  least H + 6 on both explorers (`results/v2/draw/draw.json`, sha256 0dc29007f656bc5e…).
+- Publication height 974379 (tip at the push of the signed tag, 10:11 UTC on 2026-11-03; mempool.space); 72 blocks
+  before H, so `confirmatory: true`.
+- Instances: `draw_v2.py --instances` in the clean evaluation checkout at d5e602e: fresh0 to fresh5 from streams 0 to 5,
+  zero rejections, calibrated; salt sha256 c245f890…; 7 s (`results/v2/draw/instances.json`, sha256 16df49fd5a0693eb…).
+- H4 decision: the bundle packed from the custody clone's commit aa28ed4 (`git archive`, never listed; local hash equal to
+  the registered cba512aa…), loaded once on a pod: `loaded: true` (`results/v2/draw/h4.json`, sha256 9aaa52db5860a461…).
+  Four pod runs, 0.06 USD in all: three failed at preparation before any load (a launcher quoting bug, then the pod's
+  git 2.25, which cannot verify SSH-signed tags; the launchers now install git >= 2.34 when older) and one succeeded.

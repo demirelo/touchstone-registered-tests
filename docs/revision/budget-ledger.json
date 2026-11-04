@@ -39,6 +39,26 @@
    "op": "development",
    "tag": "coverage-headline",
    "usd": 0.99
+  },
+  {
+   "op": "evaluation",
+   "tag": "h4-decision",
+   "usd": 0.006
+  },
+  {
+   "op": "evaluation",
+   "tag": "h4-decision-2",
+   "usd": 0.008
+  },
+  {
+   "op": "evaluation",
+   "tag": "h4-decision-3",
+   "usd": 0.015
+  },
+  {
+   "op": "evaluation",
+   "tag": "h4-decision-4",
+   "usd": 0.031
   }
  ],
  "approval": {
