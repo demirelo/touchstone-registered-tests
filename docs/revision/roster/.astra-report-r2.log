@@ -1,0 +1,1928 @@
+OpenAI Codex v0.162.1
+--------
+workdir: /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+model: gpt-6-astra
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1a836-a3fb-7760-994e-951783b081b2
+--------
+user
+# Operation 8: report review round 2 (read-only; no paid APIs; do not read `sealed/`, `sealed2/`, `~/touchstone-h4`, or `~/h4-session.out`; reasoning effort high; under 300 words)
+
+Round 1 (`docs/revision/roster/{sol,astra}-report-r1.md`; both reject) asked for labels, disclosures, claim scope, per-market side fields, and search-flag propagation. Ruling: the report stays exactly as `scripts/report_v2.py` at tag protocol-v2 wrote it (reproducible from the tag); a separate addendum, `/Users/oemer.demirel/Projects/touchstone/results/v2/report/addendum.{md,json}`, written by `docs/revision/report-addendum/addendum_v2.py` (tests in `test_addendum_v2.py`), states what round 1 asked for and changes no estimate or decision:
+- interval and decision labels for Q1 (Holm decisions; calibrated Bonferroni intervals; descriptive efficiency condition at nominal one-sided 97.5 percent), Q2, Q3 (G_min at 0.05/c per member), Q4;
+- design 9.4's claim scope;
+- both deviations: per-market registered and reproduced config hashes, differing-value counts, the evidence file's sha256, an explicit statement that decision stability under the registered configs is not verified; the cap change 40 to 43 USD with the recorded approval;
+- search-flag dependencies traced through the upstream links of evaluate, reference, search and bank records (freeze records excluded as integrity anchors): Q1 C*-F111|X7-SC and Q4 fresh0 and fresh3 are newly qualified as about the prescribed search procedure;
+- Q1 side fields per market and for the headline market.
+
+Check only: (1) each round-1 correction is resolved by the addendum; (2) whether keeping the tagged report unchanged and adding the addendum is acceptable; (3) the dependency tracing rule (freeze excluded) and its results; (4) new errors.
+
+Output exactly:
+VERDICT: accept | accept-with-caveat | reject
+CORRECTIONS: numbered, or "none".
+CONFIDENCE: 0 to 1.
+
+hook: SessionStart
+hook: SessionStart Completed
+codex
+I will check both round-1 reviews, the addendum, and the dependency tracing. I will keep all checks read-only and avoid the excluded paths.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg -n 'touchstone|report-addendum|report-r1' /Users/oemer.demirel/.codex/memories/MEMORY.md" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 489ms:
+1:# Task Group: anthropic-residency-application-writing-and-touchstone-research
+10:- rollout_summaries/2026-11-03T12-32-03-zdzn-anthropic_residency_writing_touchstone_research_plan.md (cwd=/Users/oemer.demirel/Documents/Codex/2026-11-03/why-anthropic-anthropic-sets-the-frontier, rollout_path=/Users/oemer.demirel/.codex/sessions/2026/11/03/rollout-2026-11-03T13-32-03-01a1a165-260e-7180-9d34-c9dc6bf34b4d.jsonl, updated_at=2026-11-03T13:02:09+00:00, thread_id=01a1a165-260e-7180-9d34-c9dc6bf34b4d, success; application answers finalized)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "pwd; git status --short; rg --files -g AGENTS.md -g '*report-r1.md' -g '*addendum*' -g '*design*' -g '"'!sealed/**'"' -g '"'!sealed2/**'"' docs scripts" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 590ms:
+/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+?? docs/revision/roster/.astra-report-r2.log
+?? docs/revision/roster/.sol-report-r2.log
+docs/revision/report-addendum/addendum_v2.py
+docs/revision/report-addendum/addendum-r1.md
+docs/revision/report-addendum/test_addendum_v2.py
+docs/revision/roster/astra-design-r1.md
+docs/revision/roster/brief-design-r8.md
+docs/revision/roster/astra-design-r5.md
+docs/revision/roster/brief-design-r9.md
+docs/revision/roster/astra-design-r4.md
+docs/revision/roster/brief-design-r6.md
+docs/revision/roster/brief-report-r1.md
+docs/revision/roster/sol-design-r1.md
+docs/revision/roster/brief-design-r2.md
+docs/revision/roster/sol-design-r5.md
+docs/revision/roster/brief-design-r3.md
+docs/revision/roster/sol-design-r4.md
+docs/revision/roster/consensus-design.md
+docs/revision/roster/brief-design-r7.md
+docs/revision/roster/consensus-design-r9.md
+docs/revision/roster/sol-design-r7.md
+docs/revision/roster/astra-design-r9.md
+docs/revision/roster/brief-design-r4.md
+docs/revision/roster/sol-design-r3.md
+docs/revision/roster/astra-design-r8.md
+docs/revision/roster/brief-design-r5.md
+docs/revision/roster/sol-design-r2.md
+docs/revision/roster/brief-design-r1.md
+docs/revision/roster/sol-report-r1.md
+docs/revision/roster/sol-design-r6.md
+docs/revision/roster/astra-design-r7.md
+docs/revision/roster/sol-design-r9.md
+docs/revision/roster/astra-design-r3.md
+docs/revision/roster/sol-design-r8.md
+docs/revision/roster/astra-design-r2.md
+docs/revision/roster/astra-report-r1.md
+docs/revision/roster/astra-design-r6.md
+docs/superpowers/specs/2026-10-14-touchstone-simulator-design.md
+docs/superpowers/specs/2026-10-22-revision-program-design.md
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg --files -g AGENTS.md -g '"'!sealed/**'"' -g '"'!sealed2/**'"' .; rg -n '9\\.4|claim scope|search.flag|G_min|97.5|Holm|Bonferroni' docs/superpowers/specs/2026-10-22-revision-program-design.md scripts/report_v2.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc 'cat docs/revision/roster/sol-report-r1.md docs/revision/roster/astra-report-r1.md docs/revision/report-addendum/addendum-r1.md; cat docs/revision/report-addendum/addendum_v2.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc 'cat docs/revision/report-addendum/test_addendum_v2.py; cat /Users/oemer.demirel/Projects/touchstone/results/v2/report/addendum.md; cat /Users/oemer.demirel/Projects/touchstone/results/v2/report/addendum.json' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 402ms:
+scripts/report_v2.py:1:"""The protocol-v2 report (design draft 7, 6.5, 8.1a, 9.2, 9.3, 9.4). It first runs the read-only verify stage and refuses on
+scripts/report_v2.py:4:question unanswered; a search-flagged cell (its scheduled doubling check over the threshold) keeps its decision, labelled as
+scripts/report_v2.py:6:are confirmatory (calibrated, Holm with fixed slots) unless the family has no admitted kappa or the draw is nonconfirmatory;
+scripts/report_v2.py:34:FLAGGED = "about the prescribed search procedure (search flagged)"
+scripts/report_v2.py:112:            return "unanswered (search flagged)"
+scripts/report_v2.py:125:    """d = g_C* - g_F111 per seed, pooled over the six fresh markets (design 9.3), two fixed Holm slots."""
+scripts/report_v2.py:142:    out = {"heading": NONCONF if not confirmatory else "Q1: Holm on calibrated two-sided p-values (two slots), pooled over the six fresh markets",
+scripts/report_v2.py:173:    """Holm over all six market slots (design 9.3): a market with a missing cell enters with p = 1 and is not decided."""
+scripts/report_v2.py:197:    out = {"heading": NONCONF if not confirmatory else "Q4: intersection-union per market, Holm over six markets", "markets": markets, "undecided": undecided,
+scripts/report_v2.py:322:            out["coalition"][r][f"c{c}_{sch}"] = {"G_tot": {"estimate": float(tot["total"])}, "G_min": gm, "search": FLAGGED if "flagged" in (st or "") else None,
+scripts/report_v2.py:372:    r["missing"] = sorted(R.missing); r["search_flagged"] = sorted(R.flagged); r["multiplicity"] = MULTIPLICITY
+scripts/report_v2.py:378:    """Cells whose scheduled doubling check exceeded the threshold (design 6.5 'search-flagged')."""
+scripts/report_v2.py:466:            L.append(f"- coalition {rule}: " + "; ".join(f"{g} G_tot {v['G_tot']['estimate']:.4f}, G_min {v['G_min']['estimate']:.4f} "
+scripts/report_v2.py:467:                                                        f"{_bd(v['G_min']['bounds'])}, robustness {v['robustness']}" if isinstance(v, dict) else f"{g} {v}"
+scripts/report_v2.py:484:    L += ["", "## Missing cells", ", ".join(r["missing"]) or "none", "", "## Search-flagged cells", ", ".join(r.get("search_flagged", [])) or "none", ""]
+docs/superpowers/specs/2026-10-22-revision-program-design.md:38:population-level claim about all markets (section 9.4).
+docs/superpowers/specs/2026-10-22-revision-program-design.md:254:result does not depend on the order in which the harness calls the members' policies. Objectives G_tot and G_min (6.3).
+docs/superpowers/specs/2026-10-22-revision-program-design.md:317:coalition (one per rule, market, and c). Objectives: total G_tot = sum_j E[g_j] and worst member G_min = min_j E[g_j]
+docs/superpowers/specs/2026-10-22-revision-program-design.md:320:Because G_tot's reference term is a constant, the G_tot searches do not need the reference; G_min's do. Truthful
+docs/superpowers/specs/2026-10-22-revision-program-design.md:331:4. The G_min searches against the preliminary reference, with the reference profile inserted as an incumbent where the
+docs/superpowers/specs/2026-10-22-revision-program-design.md:335:6. Every archived G_min point (step 4) is rescored against the final reference on the same training seeds; the final
+docs/superpowers/specs/2026-10-22-revision-program-design.md:336:   reference profile itself is added as a candidate wherever the G_min family can represent it (it scores exactly zero
+docs/superpowers/specs/2026-10-22-revision-program-design.md:337:   against itself); the G_min winner is the best of these candidates. G_tot winners are unchanged (constant reference
+docs/superpowers/specs/2026-10-22-revision-program-design.md:370:98 checks. Units and threshold 0.005: gain (normalised by S*/N) for profit; G_tot and G_min (each normalised) for
+docs/superpowers/specs/2026-10-22-revision-program-design.md:378:**search-flagged** if it ran to completion but its scheduled doubling check exceeded the threshold above ("incomplete" in
+docs/superpowers/specs/2026-10-22-revision-program-design.md:380:reported "not decided: missing cell") and makes that part of its question unanswered (8.1a). A search-flagged cell keeps
+docs/superpowers/specs/2026-10-22-revision-program-design.md:383:and family (Q3) is reported unanswered ("search flagged"), never as "no attack found". **Held-out diagnostic:** for every scheduled check, the doubled search's winner (selected on its training
+docs/superpowers/specs/2026-10-22-revision-program-design.md:477:it); a search-flagged cell keeps confirmatory decisions (labelled as about the prescribed search procedure) and makes the
+docs/superpowers/specs/2026-10-22-revision-program-design.md:506:| Coalition extras (6.3): the second joint twin per rule and c (6); step-3 and step-5 truthful-projection evaluations of archive points (new episodes, since clipping can change trajectories; about 8, benchmarked); step-6 G_min archive rescoring (stored member payoffs where possible, about 4) | 18 |
+docs/superpowers/specs/2026-10-22-revision-program-design.md:550:  p' = min(1, 2 min(p_lower, p_upper) / kappa_F). The map is the same for every test of the family, so Holm's ordering
+docs/superpowers/specs/2026-10-22-revision-program-design.md:552:- **Decisions** use Holm's step-down procedure on the calibrated p-values within each confirmatory family. **Reported
+docs/superpowers/specs/2026-10-22-revision-program-design.md:553:  intervals** for confirmatory families are Bonferroni simultaneous intervals at the calibrated nominal level (tail
+docs/superpowers/specs/2026-10-22-revision-program-design.md:554:  kappa_F times the Bonferroni tail); they are a separate procedure and can contain the null despite a Holm rejection.
+docs/superpowers/specs/2026-10-22-revision-program-design.md:559:- **G_min** (descriptive). Bounds as the minimum over members of the members' bounds at level 0.05 / c.
+docs/superpowers/specs/2026-10-22-revision-program-design.md:573:  practical size are reported separately. Holm on the calibrated two-sided p-values for H0: d = 0 (one-sided tails
+docs/superpowers/specs/2026-10-22-revision-program-design.md:574:  0.05/4, 0.05/2) decides the direction; the calibrated Bonferroni interval I (two-sided 0.05/2 times kappa_Q1) decides
+docs/superpowers/specs/2026-10-22-revision-program-design.md:578:  2. **equivalent**: I lies inside [-0.05, 0.05] (a conservative two one-sided tests procedure); if Holm also rejects
+docs/superpowers/specs/2026-10-22-revision-program-design.md:580:  3. **ordered, size not established**: Holm rejects zero, and neither category 1 nor category 2 applies;
+docs/superpowers/specs/2026-10-22-revision-program-design.md:584:  pooled paired gross-efficiency difference (that rule minus the other) with a nominal one-sided 97.5 percent lower bound
+docs/superpowers/specs/2026-10-22-revision-program-design.md:587:  reported by its gain category with "efficiency non-inferiority unresolved"; only if the nominal one-sided 97.5 percent
+docs/superpowers/specs/2026-10-22-revision-program-design.md:600:  with the W1 classification; coalition G_tot and G_min for X6-SE/v2 and X8-DB; the diagnostic (6.7). An incomplete
+docs/superpowers/specs/2026-10-22-revision-program-design.md:604:  calibrated component p-values. A market passes if Holm across the 6 market p-values rejects it (one-sided tails 0.05/6 down to
+docs/superpowers/specs/2026-10-22-revision-program-design.md:608:### 9.4 Claim scope
+docs/superpowers/specs/2026-10-22-revision-program-design.md:633:- **Endpoints.** Q1: both sides of the two pooled differences at the Holm tails 0.05/4 and 0.05/2 (8 endpoints; the
+docs/superpowers/specs/2026-10-22-revision-program-design.md:634:  Bonferroni interval of 9.3 uses tail 0.05/4, which is among them). Q4: the one-sided lower bounds of the gain difference
+docs/superpowers/specs/2026-10-22-revision-program-design.md:643:  1 - 0.01 / m_F is at most alpha_e (m_F = 8 for Q1, 36 for Q4; Bonferroni over the family's endpoints, so the
+docs/superpowers/specs/2026-10-22-revision-program-design.md:671:smaller than searched ones; Q3: X7-SC raises R3's gain above D2+H3 by less than 0.05; coalition G_min well below G_tot; the
+docs/superpowers/specs/2026-10-22-revision-program-design.md:703:   Bonferroni-adjusted Clopper-Pearson bounds at the allocated tails, the same criterion at selection) acceptable?
+docs/superpowers/specs/2026-10-22-revision-program-design.md:717:| Round 3, Sol 4 / Astra 3: Holm versus Bonferroni | decisions by Holm only; Bonferroni intervals labelled as a separate procedure; Q4 by Holm on the market p-values | 9.2, 9.3 |
+docs/superpowers/specs/2026-10-22-revision-program-design.md:719:| Round 3, Sol 6 / Astra 5: coverage fixtures | pool-resampling fixtures with common random numbers, six pooled strata, all Holm-step endpoints; Q2 and Q3 descriptive | 9.5 |
+docs/superpowers/specs/2026-10-22-revision-program-design.md:723:| Round 4 (both seats): round-3 corrections on references, dependency order, coalition membership, publication, Holm versus Bonferroni | resolved (both seats, round 4) | 6.3, 6.4, 7.3, 9.2 |
+docs/superpowers/specs/2026-10-22-revision-program-design.md:725:| Round 4, Sol 3-4 / Astra 3: calibration selection and mapping | one multiplier per family; calibrated p-values before Holm; Q4 maximum of calibrated components; selection then independent validation with Bonferroni Clopper-Pearson bounds; transfer from three fixtures stated | 9.2, 9.3, 9.5 |
+docs/superpowers/specs/2026-10-22-revision-program-design.md:729:| Round 4, Astra answer 1: Q4 is not the complete amended PASS predicate | stated | 9.4 |
+docs/superpowers/specs/2026-10-22-revision-program-design.md:747:| D5 coalition reference menu too narrow | both objectives' truthful projections; G_tot searches before the reference; G_min search against a preliminary reference; final reference freeze; archive rescoring with the reference as a candidate | 6.3, 6.4 | coalition objective adapters (G_tot, G_min), the six-step order, shared reference records and their reconstruction, dependency validation, verification |
+docs/superpowers/specs/2026-10-22-revision-program-design.md:755:| D13 multiplicity scope | stated | 9.4 | none |
+docs/superpowers/specs/2026-10-22-revision-program-design.md:759:| D17 question-to-cell map | table; H4 cut reduces Q3's scope | 8.1a, 8.2 | status propagation (missing versus search-flagged) and question dependencies in verify and report |
+docs/superpowers/specs/2026-10-22-revision-program-design.md:771:| Sol 3: G_min projections excluded | six-step order with a preliminary and a final reference and archive rescoring | 6.3, 6.4 |
+docs/superpowers/specs/2026-10-22-revision-program-design.md:775:| Astra 7: missing versus search-flagged | two statuses with separate consequences; checks listed per question | 6.5, 8.1a |
+docs/superpowers/specs/2026-10-22-revision-program-design.md:783:| Sol 1: the final reference could not be selected as the G_min winner | added as a candidate where representable; regression test | 6.3 |
+
+hook: PostToolUse
+ succeeded in 498ms:
+VERDICT: reject
+
+CORRECTIONS:
+1. `results/v2/report/report.md:31`, `:163`: Add “nominal 95 percent, unadjusted” to Q2 and Q3. The JSON contains these labels, but the Markdown omits them. At `:9` and `:11`, label the efficiency condition as descriptive, using nominal one-sided 97.5 percent bounds.
+2. `results/v2/report/report.json:$.q1.tests["C*-F111|X7-SC"].search`: Check label propagation through reference and bank dependencies. This field is null although the references depend on search-flagged D2+H3 records. For example, fresh0 C* has a nonzero reference change in its doubling diagnostic. Apply the prescribed-search qualification to affected decisions.
+3. `results/v2/report/report.md:1`; `report.json:$`: Disclose both deviations in the report: the substituted Linux configs and the author-approved evaluation cap increase from USD 40 to 43. Include the original and substituted config hashes and link the verification evidence.
+4. `docs/revision/deviation/cfg_ulp.py:64`: Distinguish config verification from decision stability. The checks establish matching pod hashes, differences within 1 ulp, and successful verification with substituted configs. They do not establish unchanged simulation paths or decisions under the registered configs. Compare frozen-policy results under both configs, or explicitly state that decision stability remains unverified; discrete branches can amplify small input differences.
+5. `results/v2/report/report.md:3`: Add the registered claim scope: conditional on the sampled markets, stated neighbourhood, fixed pair, attack families, and frozen searches. State that Q4 is an internal replication of the comparative gain and efficiency conditions.
+
+CONFIDENCE: 0.93.VERDICT: reject
+
+CORRECTIONS:
+
+1. `results/v2/report/report.md:3`; `report.json:$`: Disclose the Linux configuration substitution and the author-approved budget increase from USD 40 to 43. The 17 changed values are each within one ulp, and the substituted hashes match the pods. However, `docs/revision/deviation/cfg_ulp.py:64` checks configurations and record integrity, not decision sensitivity. State that unchanged decisions under the original configurations remain unverified; small input differences alone do not prove this.
+
+2. `results/v2/report/report.md:9`, `:31`, `:163`: Label Q1’s efficiency condition as descriptive, using nominal one-sided 97.5% bounds. Label Q2 and the ordinary Q3 intervals “nominal 95%, unadjusted.” Label G_min separately with its registered member-bound tails of 0.05/c. Identify confirmatory intervals as calibrated Bonferroni intervals, separate from Holm decisions.
+
+3. `report.json:$.q1.descriptive`; `results/v2/report/report.md:13`: Add the required side fields beside each per-market and headline Q1 result: paired gross/net efficiency, reference profit, audit spending, focal/other false-failure refunds, and served share. These currently appear only for pooled results.
+
+4. `results/v2/report/report.md:3`; `report.json:$`: Add section 9.4’s claim limits: results depend on the sampled neighbourhood, fixed parameters, searched families, and frozen searches. Q4 is an internal replication of the comparative and efficiency conditions, not the complete earlier PASS predicate. Registration does not establish exact nominal error control on fresh selected-policy distributions.
+
+CONFIDENCE: 0.97.# Protocol v2 report: addendum (Operation 8, review round 1)
+
+This addendum accompanies `report.md` and `report.json`, which `scripts/report_v2.py` at tag protocol-v2 wrote. It changes no estimate and no decision.
+
+## Interval and decision labels
+- Q1 decisions: Holm over the two tests on calibrated two-sided p-values.
+- Q1 intervals: calibrated Bonferroni simultaneous intervals (one-sided tails kappa x 0.05 / 4), reported beside the Holm decisions and separate from them.
+- Q1 efficiency condition: descriptive: nominal one-sided 97.5 percent bounds on the paired gross-efficiency difference against -0.01; not calibrated.
+- Q1 per-market and headline rows: descriptive, nominal 95 percent, unadjusted.
+- Q2: descriptive, nominal 95 percent, unadjusted.
+- Q3: descriptive, nominal 95 percent, unadjusted; G_min bounds are simultaneous over the c members, each member bound at tail 0.05/c.
+- Q4: intersection-union per market, Holm over six markets (a missing market counts p = 1); bounds are calibrated one-sided at tail kappa x 0.05 / 6.
+
+## Claim scope
+All claims are conditional on the six sampled markets, the stated neighbourhood, the fixed pair (Q1, Q2, Q4), the searched families, and the frozen searches. Q4 replicates the B3 - R3 comparison under D2+H3 and R3's efficiency condition, not the complete amended PASS predicate of the first evaluation. Multiplicity is controlled within Q1 and within Q4 separately; there is no paper-wide 5 percent familywise guarantee. "Confirmatory" means specified before the fresh draw; it does not mean exact nominal error control on the fresh, selected-policy distributions. Q4 is an internal replication on fresh instances, not an independent-team replication. (Design 9.4.)
+
+## Deviations from the protocol
+
+1. Fresh-market configurations. The pods (Linux x86) recalibrated each fresh market; `instances.json` holds the arm64 calibration. The report used the configurations a Linux container reproduces (`results/v2/deviation/instances_container_configs.json`); the headline market uses the registered ones.
+
+| market | registered config hash | reproduced config hash | pod hashes match | differing values | max ulps | verify |
+|---|---|---|---|---|---|---|
+| fresh0 | a756dbc6c75b3cbe2fd9750b7eb4b0f016c1b5c18736c0c09866c3cb99cbfe58 | 65b364cea67db322d69f6c907d622c898e43166480267b3e761ed3ba2c580315 | True | 2 | 1 | ok |
+| fresh1 | ea43dd87f879d881fdc925402df633fb71f565418e74080a16ad3a4bb40c3724 | 44b4fc926421c5750356de965bb1160b7c35cf72dc41a4b40df4dad9883a8ba9 | True | 2 | 1 | ok |
+| fresh2 | 1c0ab9b255cd54ffb175cdaaa703aae65c41478fe20170c5914564e2322f98ad | 3e40be96cf9e1fb8c8f5c71375dc333338591805677145e21aa81f612ca7d8c8 | True | 6 | 1 | ok |
+| fresh3 | e02867f81ee4783f9d85fb8e7aa8b9a28fa513ccf62179bd60caaad5681fabeb | f5c1cd00ec2f0a85aca0e42efa102f5c0a6dcfbb0c9b349c8a2861816b0e961b | True | 4 | 1 | ok |
+| fresh4 | 3b8eab881fe3ba1b8f2ddf8d7b60d7f0cdf4aa7036d7ae8cc07b5a8787b415b4 | 112608c64b4c1b8558985dd951b6bd6b614fc5618d4da93e03b0642e94344d82 | True | 2 | 1 | ok |
+| fresh5 | cfa2b612da5de7e4878e984428ce73b0a4054deb380e42a0b53b5783dc55f2bf | bf562902ff492ab31c992c537d4e89c841e157e4b9f09bb83c217948fc81038d | True | 1 | 1 | ok |
+
+Evidence: `results/v2/deviation/cfg_ulp_all.json` (sha256 e41a598f01f279e79a5a47ad1114c1d3650b051da053a6fbfea6fc5bfe6ef07e), written by `docs/revision/deviation/cfg_ulp.py`. These checks establish matching pod hashes, differences within one unit in the last place, and verification with the reproduced configurations. That the decisions would be unchanged under the registered configurations is not verified: small input differences can change discrete simulation branches.
+
+2. Evaluation cap. The author raised the evaluation cap from 40 to 43 USD after the first fresh pods cost about ten percent more than estimated (recorded approval: "Raise caps, start fresh5 now: evaluation cap 43 USD, program limit 55 USD (development cap 12 USD unchanged), Ömer Demirel, 2026-11-04, chosen in the Claude Code session after the wave-1 overrun (fresh pods 4.65-4.80 USD against 4.26)."). Evaluation spend: 39.449 USD. No analysis changed.
+
+## Search-flag dependencies
+
+Design 6.5 labels a confirmatory decision that uses a search-flagged cell as a decision about the prescribed search procedure. A cell's reference is built from the search records of every family on its menu and, for fixed rules, from other rules' searches (the bank), so a decision can use a flagged cell's search through its references. Traced through the upstream links of the evaluate, reference, search and bank records (freeze records excluded):
+
+- Q1 C*-F111|D2+H3: already labelled in the report (depends on fresh0@rho0.2|C*|D2+H3|profit, fresh1@rho0.2|C*|D2+H3|profit, fresh1@rho0.2|F111|D2+H3|profit, fresh3@rho0.2|C*|D2+H3|profit, fresh4@rho0.2|F111|D2+H3|profit)
+- Q1 C*-F111|X7-SC: newly qualified: about the prescribed search procedure (depends on fresh0@rho0.2|C*|D2+H3|profit, fresh1@rho0.2|C*|D2+H3|profit, fresh1@rho0.2|F111|D2+H3|profit, fresh3@rho0.2|C*|D2+H3|profit, fresh4@rho0.2|F111|D2+H3|profit)
+- Q4 fresh0: newly qualified: about the prescribed search procedure (depends on fresh0@rho0.2|C*|D2+H3|profit)
+- Q4 fresh1: already labelled in the report (depends on fresh1@rho0.2|C*|D2+H3|profit, fresh1@rho0.2|F111|D2+H3|profit)
+- Q4 fresh2: no flagged dependency
+- Q4 fresh3: newly qualified: about the prescribed search procedure (depends on fresh3@rho0.2|C*|D2+H3|profit)
+- Q4 fresh4: already labelled in the report (depends on fresh4@rho0.2|F111|D2+H3|profit)
+- Q4 fresh5: no flagged dependency
+
+## Q1 side fields per market (descriptive, means, F111 minus C*)
+- fresh0 C*-F111|D2+H3: gross_eff_diff 0.0009; net_eff_diff 0.0009; ref_profit_diff 0.2186; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0002; served_share_diff 0.0001
+- fresh0 C*-F111|X7-SC: gross_eff_diff 0.0009; net_eff_diff 0.0009; ref_profit_diff 0.2186; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0002; served_share_diff 0.0001
+- fresh1 C*-F111|D2+H3: gross_eff_diff 0.0013; net_eff_diff 0.0013; ref_profit_diff 0.0204; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0004; served_share_diff 0.0000
+- fresh1 C*-F111|X7-SC: gross_eff_diff 0.0013; net_eff_diff 0.0013; ref_profit_diff 0.0204; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0004; served_share_diff 0.0000
+- fresh2 C*-F111|D2+H3: gross_eff_diff 0.0030; net_eff_diff 0.0030; ref_profit_diff 0.3009; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0002; served_share_diff 0.0011
+- fresh2 C*-F111|X7-SC: gross_eff_diff 0.0030; net_eff_diff 0.0030; ref_profit_diff 0.3009; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0002; served_share_diff 0.0011
+- fresh3 C*-F111|D2+H3: gross_eff_diff 0.0020; net_eff_diff 0.0020; ref_profit_diff 0.2054; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0002; served_share_diff 0.0000
+- fresh3 C*-F111|X7-SC: gross_eff_diff -0.0003; net_eff_diff -0.0003; ref_profit_diff 0.2054; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff 0.0000; served_share_diff 0.0000
+- fresh4 C*-F111|D2+H3: gross_eff_diff -0.0025; net_eff_diff -0.0025; ref_profit_diff 4.6513; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0001; served_share_diff 0.0005
+- fresh4 C*-F111|X7-SC: gross_eff_diff 0.0000; net_eff_diff 0.0002; ref_profit_diff 4.6513; audit_spend_diff -0.0002; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0001; served_share_diff -0.0001
+- fresh5 C*-F111|D2+H3: gross_eff_diff 0.0005; net_eff_diff 0.0005; ref_profit_diff 0.7191; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0001; served_share_diff -0.0000
+- fresh5 C*-F111|X7-SC: gross_eff_diff 0.0005; net_eff_diff 0.0005; ref_profit_diff 0.7191; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0001; served_share_diff -0.0000
+- headline C*-F111|D2+H3: gross_eff_diff 0.0008; net_eff_diff 0.0008; ref_profit_diff -0.2219; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0002; served_share_diff 0.0000
+- headline C*-F111|X7-SC: gross_eff_diff 0.0008; net_eff_diff 0.0008; ref_profit_diff -0.2219; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0002; served_share_diff 0.0000
+"""Operation 8 addendum beside the tagged report (review round 1, 2026-11-04). The report itself stays as `report_v2.py`
+at tag protocol-v2 wrote it; this file adds what the reviewers asked to be stated: interval labels, the claim scope of
+design 9.4, both deviations with their evidence, the search-flag dependencies traced through reference and bank records,
+and per-market Q1 side fields. It changes no estimate and no decision.
+
+Usage: addendum_v2.py --report R/report.json --cfg-ulp D/cfg_ulp_all.json --ledger budget-ledger.json --records EVAL/all
+       --eval-checkout CHECKOUT --write R
+"""
+import argparse
+import hashlib
+import json
+import sys
+from pathlib import Path
+
+import numpy as np
+
+FRESH = tuple(f"fresh{i}" for i in range(6))
+FAMS = ("D2+H3", "X7-SC")
+PAIR = ("F111", "C*")                 # Q1: d = gain of C* minus gain of F111
+Q4_RULES = ("F000", "F111")           # Q4: B3 - R3 under D2+H3
+OLD_CAP = 40.0
+SCOPE = ("All claims are conditional on the six sampled markets, the stated neighbourhood, the fixed pair (Q1, Q2, Q4), "
+         "the searched families, and the frozen searches. Q4 replicates the B3 - R3 comparison under D2+H3 and R3's "
+         "efficiency condition, not the complete amended PASS predicate of the first evaluation. Multiplicity is controlled "
+         "within Q1 and within Q4 separately; there is no paper-wide 5 percent familywise guarantee. \"Confirmatory\" means "
+         "specified before the fresh draw; it does not mean exact nominal error control on the fresh, selected-policy "
+         "distributions. Q4 is an internal replication on fresh instances, not an independent-team replication. (Design 9.4.)")
+LABELS = [
+    ("Q1 decisions", "Holm over the two tests on calibrated two-sided p-values."),
+    ("Q1 intervals", "calibrated Bonferroni simultaneous intervals (one-sided tails kappa x 0.05 / 4), reported beside the "
+                     "Holm decisions and separate from them."),
+    ("Q1 efficiency condition", "descriptive: nominal one-sided 97.5 percent bounds on the paired gross-efficiency "
+                                "difference against -0.01; not calibrated."),
+    ("Q1 per-market and headline rows", "descriptive, nominal 95 percent, unadjusted."),
+    ("Q2", "descriptive, nominal 95 percent, unadjusted."),
+    ("Q3", "descriptive, nominal 95 percent, unadjusted; G_min bounds are simultaneous over the c members, each member "
+           "bound at tail 0.05/c."),
+    ("Q4", "intersection-union per market, Holm over six markets (a missing market counts p = 1); bounds are calibrated "
+           "one-sided at tail kappa x 0.05 / 6."),
+]
+
+
+def safe(rid: str) -> str:
+    return rid.replace("|", "__").replace("/", "~").replace("*", "star")      # revision_v2._safe
+
+
+def _read(p: Path):
+    try:
+        return json.loads(p.read_text())
+    except (OSError, ValueError):
+        return None
+
+
+def flag_dependencies(out: Path, cells, flagged: set, path_of) -> dict:
+    """For each evaluated cell, the flagged cells it depends on: itself, and every record reached through the upstream
+    links of its evaluate record (search, reference, bank and twin records). Freeze records list everything of a market
+    as an integrity anchor, not as a computational input, so they are not followed."""
+    memo: dict = {}
+
+    def closure(rid: str) -> set:
+        if rid in memo:
+            return memo[rid]
+        rec = _read(path_of(out, rid))
+        if rec is None:
+            raise SystemExit(f"addendum: unresolvable upstream record {rid}")
+        memo[rid] = set()                                   # cycle guard
+        acc = set()
+        for u in rec.get("upstream") or {}:
+            if not u.startswith("freeze/"):
+                acc |= {u} | closure(u)
+        memo[rid] = acc
+        return acc
+
+    got = {}
+    for cell in cells:
+        ev = _read(Path(out) / "evaluate" / (safe(cell) + ".json"))
+        if ev is None:
+            raise SystemExit(f"addendum: no evaluate record for {cell}")
+        acc = {cell}
+        for u in ev.get("upstream") or {}:
+            if not u.startswith("freeze/"):
+                acc |= {u} | closure(u)
+        got[cell] = sorted(acc & set(flagged))
+    return got
+
+
+def side_fields(out: Path, markets, pair, fams, side: dict) -> dict:
+    """Per-market means of the Q1 side fields, first rule minus second (the report's pooled convention)."""
+    a, b = pair; res = {}
+    for m in markets:
+        row = {}
+        for f in fams:
+            ra = _read(Path(out) / "evaluate" / (safe(f"{m}@rho0.2|{a}|{f}|profit") + ".json"))
+            rb = _read(Path(out) / "evaluate" / (safe(f"{m}@rho0.2|{b}|{f}|profit") + ".json"))
+            if ra is None or rb is None:
+                continue
+            row[f"{b}-{a}|{f}"] = {k: float(np.mean(np.asarray(ra[fld], dtype=float) - np.asarray(rb[fld], dtype=float)))
+                                   for k, fld in side.items()}
+        res[m] = row
+    return res
+
+
+def build(report: dict, cfg: dict, cfg_sha: str, ledger: dict, deps: dict, sides: dict) -> dict:
+    if not cfg.get("ok"):
+        raise SystemExit("addendum: the deviation check (cfg_ulp_all.json) did not pass")
+    conf = {}
+    for m, v in sorted(cfg["markets"].items()):
+        conf[m] = {"recorded_hash": v["recorded_hash"], "container_hash": v["container_hash"],
+                   "pod_hashes_match": all(h == v["container_hash"] for h in v["pod_hashes"]),
+                   "differing_values": len(v["differences"]), "max_ulps": max((d[3] for d in v["differences"]), default=0),
+                   "verify_with_container_configs": "ok" if v["verify_exit"] == 0 else "failed"}
+    spent = sum(s["usd"] for s in ledger["spent"] if s["op"] == "evaluation")
+    sd = {"q1": {}, "q4": {}}
+    for name, hit in deps["q1"].items():
+        sd["q1"][name] = {"depends_on_flagged": hit, "new_qualification": bool(hit) and not report["q1"]["tests"][name].get("search")}
+    for m, hit in deps["q4"].items():
+        mk = report["q4"]["markets"].get(m)
+        sd["q4"][m] = {"depends_on_flagged": hit, "new_qualification": bool(hit) and not (isinstance(mk, dict) and mk.get("search"))}
+    return {"labels": LABELS, "scope": SCOPE,
+            "deviations": {"configs": conf, "evidence_sha256": cfg_sha, "decision_stability": "not verified",
+                           "cap": {"old": OLD_CAP, "new": ledger["caps"]["evaluation"], "approval": ledger["approval"]["text"],
+                                   "evaluation_spent": round(spent, 3)}},
+            "search_dependencies": sd, "q1_side_fields": sides}
+
+
+def render(add: dict) -> str:
+    L = ["# Protocol v2 report: addendum (Operation 8, review round 1)", "",
+         "This addendum accompanies `report.md` and `report.json`, which `scripts/report_v2.py` at tag protocol-v2 wrote. "
+         "It changes no estimate and no decision.", "", "## Interval and decision labels"]
+    L += [f"- {k}: {v}" for k, v in add["labels"]]
+    L += ["", "## Claim scope", add["scope"], "", "## Deviations from the protocol", "",
+          "1. Fresh-market configurations. The pods (Linux x86) recalibrated each fresh market; `instances.json` holds the "
+          "arm64 calibration. The report used the configurations a Linux container reproduces "
+          "(`results/v2/deviation/instances_container_configs.json`); the headline market uses the registered ones.", "",
+          "| market | registered config hash | reproduced config hash | pod hashes match | differing values | max ulps | verify |",
+          "|---|---|---|---|---|---|---|"]
+    for m, v in add["deviations"]["configs"].items():
+        L.append(f"| {m} | {v['recorded_hash']} | {v['container_hash']} | {v['pod_hashes_match']} | {v['differing_values']} "
+                 f"| {v['max_ulps']} | {v['verify_with_container_configs']} |")
+    c = add["deviations"]["cap"]
+    L += ["", f"Evidence: `results/v2/deviation/cfg_ulp_all.json` (sha256 {add['deviations']['evidence_sha256']}), written by "
+          "`docs/revision/deviation/cfg_ulp.py`. These checks establish matching pod hashes, differences within one unit in the "
+          "last place, and verification with the reproduced configurations. That the decisions would be unchanged under the "
+          "registered configurations is not verified: small input differences can change discrete simulation branches.", "",
+          f"2. Evaluation cap. The author raised the evaluation cap from {c['old']:g} to {c['new']:g} USD after the first fresh "
+          f"pods cost about ten percent more than estimated (recorded approval: \"{c['approval']}\"). Evaluation spend: "
+          f"{c['evaluation_spent']:g} USD. No analysis changed.", "",
+          "## Search-flag dependencies", "",
+          "Design 6.5 labels a confirmatory decision that uses a search-flagged cell as a decision about the prescribed search "
+          "procedure. A cell's reference is built from the search records of every family on its menu and, for fixed rules, "
+          "from other rules' searches (the bank), so a decision can use a flagged cell's search through its references. "
+          "Traced through the upstream links of the evaluate, reference, search and bank records (freeze records excluded):", ""]
+    for q, rows in (("Q1", add["search_dependencies"]["q1"]), ("Q4", add["search_dependencies"]["q4"])):
+        for k, v in rows.items():
+            tag = "newly qualified: about the prescribed search procedure" if v["new_qualification"] else (
+                "already labelled in the report" if v["depends_on_flagged"] else "no flagged dependency")
+            L.append(f"- {q} {k}: {tag}" + (f" (depends on {', '.join(v['depends_on_flagged'])})" if v["depends_on_flagged"] else ""))
+    L += ["", "## Q1 side fields per market (descriptive, means, F111 minus C*)"]
+    for m, row in add["q1_side_fields"].items():
+        for t, flds in row.items():
+            L.append(f"- {m} {t}: " + "; ".join(f"{k} {v:.4f}" for k, v in flds.items()))
+    return "\n".join(L) + "\n"
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser()
+    for a in ("--report", "--cfg-ulp", "--ledger", "--records", "--eval-checkout", "--write"):
+        ap.add_argument(a, required=True)
+    a = ap.parse_args(argv)
+    co = Path(a.eval_checkout).resolve(); sys.path[:0] = [str(co / "scripts"), str(co)]
+    import report_v2 as RP  # noqa: E402  (the tagged report's own field map)
+    import revision_v2 as RV  # noqa: E402
+    report = json.loads(Path(a.report).read_text()); cfgp = Path(a.cfg_ulp); out = Path(a.records)
+    flagged = set(report["search_flagged"])
+    q1c = {f"{PAIR[1]}-{PAIR[0]}|{f}": [f"{m}@rho0.2|{r}|{f}|profit" for m in FRESH for r in PAIR] for f in FAMS}
+    q4c = {m: [f"{m}@rho0.2|{r}|D2+H3|profit" for r in Q4_RULES] for m in FRESH}
+    allc = sorted({c for v in list(q1c.values()) + list(q4c.values()) for c in v})
+    per = flag_dependencies(out, allc, flagged, RV.path_of)
+    deps = {"q1": {k: sorted({h for c in v for h in per[c]}) for k, v in q1c.items()},
+            "q4": {k: sorted({h for c in v for h in per[c]}) for k, v in q4c.items()}}
+    sides = side_fields(out, FRESH + ("headline",), PAIR, FAMS, RP.SIDE)
+    add = build(report, json.loads(cfgp.read_text()), hashlib.sha256(cfgp.read_bytes()).hexdigest(),
+                json.loads(Path(a.ledger).read_text()), deps, sides)
+    w = Path(a.write); (w / "addendum.json").write_text(json.dumps(add, indent=1, default=float) + "\n")
+    (w / "addendum.md").write_text(render(add))
+    print(f"addendum written: {w / 'addendum.md'}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+ succeeded in 612ms:
+"""Tests for addendum_v2.py: the Operation 8 addendum beside the tagged report (labels, claim scope, deviations,
+search-flag dependencies traced through reference and bank records, per-market Q1 side fields)."""
+import json
+import sys
+from pathlib import Path
+
+import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import addendum_v2 as A  # noqa: E402
+
+
+def _path_of(out: Path, rid: str) -> Path:
+    return out / "rec" / (rid.replace("|", "__").replace("/", "~").replace("*", "star") + ".json")
+
+
+def _put(out, rid, upstream, **fields):
+    p = _path_of(out, rid); p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps({"upstream": {u: "0" * 64 for u in upstream}, **fields}))
+
+
+def _ev(out, rid, upstream, **fields):
+    p = out / "evaluate" / (A.safe(rid) + ".json"); p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps({"upstream": {u: "0" * 64 for u in upstream}, **fields}))
+
+
+@pytest.fixture
+def chain(tmp_path):
+    # C* X7-SC evaluate -> reference C* -> bank source F111 D2+H3 (flagged); freeze links everything and is skipped.
+    _put(tmp_path, "freeze/m0", ["m0|F111|D2+H3|profit", "m0|C*|X7-SC|profit"])
+    _put(tmp_path, "m0|F111|D2+H3|profit", [])
+    _put(tmp_path, "m0|C*|X7-SC|profit", [])
+    _put(tmp_path, "reference/m0/C*", ["m0|C*|X7-SC|profit", "m0|F111|D2+H3|profit"])
+    _put(tmp_path, "reference/m0/F000", ["m0|F000|D2+H3|profit"])
+    _put(tmp_path, "m0|F000|D2+H3|profit", [])
+    _ev(tmp_path, "m0|C*|X7-SC|profit", ["freeze/m0", "m0|C*|X7-SC|profit", "reference/m0/C*"])
+    _ev(tmp_path, "m0|F000|D2+H3|profit", ["freeze/m0", "m0|F000|D2+H3|profit", "reference/m0/F000"])
+    return tmp_path
+
+
+def test_dependencies_follow_reference_and_bank_but_not_freeze(chain):
+    got = A.flag_dependencies(chain, ["m0|C*|X7-SC|profit", "m0|F000|D2+H3|profit"], {"m0|F111|D2+H3|profit"}, _path_of)
+    assert got["m0|C*|X7-SC|profit"] == ["m0|F111|D2+H3|profit"]
+    assert got["m0|F000|D2+H3|profit"] == []     # reachable only through freeze, which is not a computational input
+
+
+def test_a_flagged_cell_depends_on_itself(chain):
+    got = A.flag_dependencies(chain, ["m0|F000|D2+H3|profit"], {"m0|F000|D2+H3|profit"}, _path_of)
+    assert got["m0|F000|D2+H3|profit"] == ["m0|F000|D2+H3|profit"]
+
+
+def test_unresolvable_upstream_refuses(chain):
+    _ev(chain, "m0|F111|X7-SC|profit", ["reference/m0/GONE"])
+    with pytest.raises(SystemExit, match="GONE"):
+        A.flag_dependencies(chain, ["m0|F111|X7-SC|profit"], set(), _path_of)
+
+
+def test_side_fields_are_per_market_means_of_a_minus_b(tmp_path):
+    side = {"gross_eff_diff": "eff_attack", "ref_profit_diff": "profit_ref"}
+    _ev(tmp_path, "m0@rho0.2|F111|D2+H3|profit", [], eff_attack=[0.9, 0.7], profit_ref=[2.0, 4.0])
+    _ev(tmp_path, "m0@rho0.2|C*|D2+H3|profit", [], eff_attack=[0.8, 0.6], profit_ref=[1.0, 1.0])
+    got = A.side_fields(tmp_path, ["m0"], ("F111", "C*"), ["D2+H3"], side)
+    assert got["m0"]["C*-F111|D2+H3"] == pytest.approx({"gross_eff_diff": 0.1, "ref_profit_diff": 2.0})
+
+
+def _inputs():
+    report = {"q1": {"tests": {"C*-F111|D2+H3": {"category": "equivalent", "search": "flag"},
+                               "C*-F111|X7-SC": {"category": "equivalent", "search": None}}},
+              "q4": {"markets": {"fresh0": {"search": None}, "fresh1": {"search": "flag"}}}}
+    cfg = {"ok": True, "markets": {"fresh0": {"recorded_hash": "a" * 64, "container_hash": "b" * 64, "pod_hashes": ["b" * 64],
+                                              "differences": [["p", 1.0, 1.0, 1]], "within_one_ulp": True, "verify_exit": 0, "ok": True}}}
+    ledger = {"caps": {"evaluation": 43.0}, "approval": {"text": "Raise caps ... 43 USD, program limit 55 USD"},
+              "spent": [{"op": "evaluation", "tag": "x", "usd": 1.5}]}
+    deps = {"q1": {"C*-F111|X7-SC": ["fresh0@rho0.2|C*|D2+H3|profit"], "C*-F111|D2+H3": ["fresh0@rho0.2|C*|D2+H3|profit"]}, "q4": {"fresh0": ["fresh0@rho0.2|C*|D2+H3|profit"], "fresh1": []}}
+    return report, cfg, ledger, deps
+
+
+def test_render_states_labels_scope_deviations_and_dependencies():
+    report, cfg, ledger, deps = _inputs()
+    md = A.render(A.build(report, cfg, "c" * 64, ledger, deps, {"fresh0": {}}))
+    for s in ("nominal 95 percent, unadjusted", "nominal one-sided 97.5 percent", "0.05/c", "Bonferroni", "Holm",
+              "six sampled markets", "internal replication", "not the complete amended PASS predicate",
+              "a" * 64, "b" * 64, "c" * 64, "40", "43", "not verified", "C*-F111|X7-SC", "fresh0@rho0.2|C*|D2+H3|profit"):
+        assert s in md, s
+
+
+def test_build_marks_new_qualifications_only_where_the_report_has_none():
+    report, cfg, ledger, deps = _inputs()
+    add = A.build(report, cfg, "c" * 64, ledger, deps, {})
+    assert add["search_dependencies"]["q1"]["C*-F111|X7-SC"]["new_qualification"] is True
+    assert add["search_dependencies"]["q1"]["C*-F111|D2+H3"]["new_qualification"] is False   # already labelled
+    assert add["search_dependencies"]["q4"]["fresh0"]["new_qualification"] is True
+    assert add["search_dependencies"]["q4"]["fresh1"]["new_qualification"] is False   # already labelled by the report
+
+
+def test_build_refuses_a_failed_deviation_check():
+    report, cfg, ledger, deps = _inputs()
+    cfg["ok"] = False
+    with pytest.raises(SystemExit, match="deviation check"):
+        A.build(report, cfg, "c" * 64, ledger, deps, {})
+# Protocol v2 report: addendum (Operation 8, review round 1)
+
+This addendum accompanies `report.md` and `report.json`, which `scripts/report_v2.py` at tag protocol-v2 wrote. It changes no estimate and no decision.
+
+## Interval and decision labels
+- Q1 decisions: Holm over the two tests on calibrated two-sided p-values.
+- Q1 intervals: calibrated Bonferroni simultaneous intervals (one-sided tails kappa x 0.05 / 4), reported beside the Holm decisions and separate from them.
+- Q1 efficiency condition: descriptive: nominal one-sided 97.5 percent bounds on the paired gross-efficiency difference against -0.01; not calibrated.
+- Q1 per-market and headline rows: descriptive, nominal 95 percent, unadjusted.
+- Q2: descriptive, nominal 95 percent, unadjusted.
+- Q3: descriptive, nominal 95 percent, unadjusted; G_min bounds are simultaneous over the c members, each member bound at tail 0.05/c.
+- Q4: intersection-union per market, Holm over six markets (a missing market counts p = 1); bounds are calibrated one-sided at tail kappa x 0.05 / 6.
+
+## Claim scope
+All claims are conditional on the six sampled markets, the stated neighbourhood, the fixed pair (Q1, Q2, Q4), the searched families, and the frozen searches. Q4 replicates the B3 - R3 comparison under D2+H3 and R3's efficiency condition, not the complete amended PASS predicate of the first evaluation. Multiplicity is controlled within Q1 and within Q4 separately; there is no paper-wide 5 percent familywise guarantee. "Confirmatory" means specified before the fresh draw; it does not mean exact nominal error control on the fresh, selected-policy distributions. Q4 is an internal replication on fresh instances, not an independent-team replication. (Design 9.4.)
+
+## Deviations from the protocol
+
+1. Fresh-market configurations. The pods (Linux x86) recalibrated each fresh market; `instances.json` holds the arm64 calibration. The report used the configurations a Linux container reproduces (`results/v2/deviation/instances_container_configs.json`); the headline market uses the registered ones.
+
+| market | registered config hash | reproduced config hash | pod hashes match | differing values | max ulps | verify |
+|---|---|---|---|---|---|---|
+| fresh0 | a756dbc6c75b3cbe2fd9750b7eb4b0f016c1b5c18736c0c09866c3cb99cbfe58 | 65b364cea67db322d69f6c907d622c898e43166480267b3e761ed3ba2c580315 | True | 2 | 1 | ok |
+| fresh1 | ea43dd87f879d881fdc925402df633fb71f565418e74080a16ad3a4bb40c3724 | 44b4fc926421c5750356de965bb1160b7c35cf72dc41a4b40df4dad9883a8ba9 | True | 2 | 1 | ok |
+| fresh2 | 1c0ab9b255cd54ffb175cdaaa703aae65c41478fe20170c5914564e2322f98ad | 3e40be96cf9e1fb8c8f5c71375dc333338591805677145e21aa81f612ca7d8c8 | True | 6 | 1 | ok |
+| fresh3 | e02867f81ee4783f9d85fb8e7aa8b9a28fa513ccf62179bd60caaad5681fabeb | f5c1cd00ec2f0a85aca0e42efa102f5c0a6dcfbb0c9b349c8a2861816b0e961b | True | 4 | 1 | ok |
+| fresh4 | 3b8eab881fe3ba1b8f2ddf8d7b60d7f0cdf4aa7036d7ae8cc07b5a8787b415b4 | 112608c64b4c1b8558985dd951b6bd6b614fc5618d4da93e03b0642e94344d82 | True | 2 | 1 | ok |
+| fresh5 | cfa2b612da5de7e4878e984428ce73b0a4054deb380e42a0b53b5783dc55f2bf | bf562902ff492ab31c992c537d4e89c841e157e4b9f09bb83c217948fc81038d | True | 1 | 1 | ok |
+
+Evidence: `results/v2/deviation/cfg_ulp_all.json` (sha256 e41a598f01f279e79a5a47ad1114c1d3650b051da053a6fbfea6fc5bfe6ef07e), written by `docs/revision/deviation/cfg_ulp.py`. These checks establish matching pod hashes, differences within one unit in the last place, and verification with the reproduced configurations. That the decisions would be unchanged under the registered configurations is not verified: small input differences can change discrete simulation branches.
+
+2. Evaluation cap. The author raised the evaluation cap from 40 to 43 USD after the first fresh pods cost about ten percent more than estimated (recorded approval: "Raise caps, start fresh5 now: evaluation cap 43 USD, program limit 55 USD (development cap 12 USD unchanged), Ömer Demirel, 2026-11-04, chosen in the Claude Code session after the wave-1 overrun (fresh pods 4.65-4.80 USD against 4.26)."). Evaluation spend: 39.449 USD. No analysis changed.
+
+## Search-flag dependencies
+
+Design 6.5 labels a confirmatory decision that uses a search-flagged cell as a decision about the prescribed search procedure. A cell's reference is built from the search records of every family on its menu and, for fixed rules, from other rules' searches (the bank), so a decision can use a flagged cell's search through its references. Traced through the upstream links of the evaluate, reference, search and bank records (freeze records excluded):
+
+- Q1 C*-F111|D2+H3: already labelled in the report (depends on fresh0@rho0.2|C*|D2+H3|profit, fresh1@rho0.2|C*|D2+H3|profit, fresh1@rho0.2|F111|D2+H3|profit, fresh3@rho0.2|C*|D2+H3|profit, fresh4@rho0.2|F111|D2+H3|profit)
+- Q1 C*-F111|X7-SC: newly qualified: about the prescribed search procedure (depends on fresh0@rho0.2|C*|D2+H3|profit, fresh1@rho0.2|C*|D2+H3|profit, fresh1@rho0.2|F111|D2+H3|profit, fresh3@rho0.2|C*|D2+H3|profit, fresh4@rho0.2|F111|D2+H3|profit)
+- Q4 fresh0: newly qualified: about the prescribed search procedure (depends on fresh0@rho0.2|C*|D2+H3|profit)
+- Q4 fresh1: already labelled in the report (depends on fresh1@rho0.2|C*|D2+H3|profit, fresh1@rho0.2|F111|D2+H3|profit)
+- Q4 fresh2: no flagged dependency
+- Q4 fresh3: newly qualified: about the prescribed search procedure (depends on fresh3@rho0.2|C*|D2+H3|profit)
+- Q4 fresh4: already labelled in the report (depends on fresh4@rho0.2|F111|D2+H3|profit)
+- Q4 fresh5: no flagged dependency
+
+## Q1 side fields per market (descriptive, means, F111 minus C*)
+- fresh0 C*-F111|D2+H3: gross_eff_diff 0.0009; net_eff_diff 0.0009; ref_profit_diff 0.2186; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0002; served_share_diff 0.0001
+- fresh0 C*-F111|X7-SC: gross_eff_diff 0.0009; net_eff_diff 0.0009; ref_profit_diff 0.2186; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0002; served_share_diff 0.0001
+- fresh1 C*-F111|D2+H3: gross_eff_diff 0.0013; net_eff_diff 0.0013; ref_profit_diff 0.0204; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0004; served_share_diff 0.0000
+- fresh1 C*-F111|X7-SC: gross_eff_diff 0.0013; net_eff_diff 0.0013; ref_profit_diff 0.0204; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0004; served_share_diff 0.0000
+- fresh2 C*-F111|D2+H3: gross_eff_diff 0.0030; net_eff_diff 0.0030; ref_profit_diff 0.3009; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0002; served_share_diff 0.0011
+- fresh2 C*-F111|X7-SC: gross_eff_diff 0.0030; net_eff_diff 0.0030; ref_profit_diff 0.3009; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0002; served_share_diff 0.0011
+- fresh3 C*-F111|D2+H3: gross_eff_diff 0.0020; net_eff_diff 0.0020; ref_profit_diff 0.2054; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0002; served_share_diff 0.0000
+- fresh3 C*-F111|X7-SC: gross_eff_diff -0.0003; net_eff_diff -0.0003; ref_profit_diff 0.2054; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff 0.0000; served_share_diff 0.0000
+- fresh4 C*-F111|D2+H3: gross_eff_diff -0.0025; net_eff_diff -0.0025; ref_profit_diff 4.6513; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0001; served_share_diff 0.0005
+- fresh4 C*-F111|X7-SC: gross_eff_diff 0.0000; net_eff_diff 0.0002; ref_profit_diff 4.6513; audit_spend_diff -0.0002; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0001; served_share_diff -0.0001
+- fresh5 C*-F111|D2+H3: gross_eff_diff 0.0005; net_eff_diff 0.0005; ref_profit_diff 0.7191; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0001; served_share_diff -0.0000
+- fresh5 C*-F111|X7-SC: gross_eff_diff 0.0005; net_eff_diff 0.0005; ref_profit_diff 0.7191; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0001; served_share_diff -0.0000
+- headline C*-F111|D2+H3: gross_eff_diff 0.0008; net_eff_diff 0.0008; ref_profit_diff -0.2219; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0002; served_share_diff 0.0000
+- headline C*-F111|X7-SC: gross_eff_diff 0.0008; net_eff_diff 0.0008; ref_profit_diff -0.2219; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0002; served_share_diff 0.0000
+{
+ "labels": [
+  [
+   "Q1 decisions",
+   "Holm over the two tests on calibrated two-sided p-values."
+  ],
+  [
+   "Q1 intervals",
+   "calibrated Bonferroni simultaneous intervals (one-sided tails kappa x 0.05 / 4), reported beside the Holm decisions and separate from them."
+  ],
+  [
+   "Q1 efficiency condition",
+   "descriptive: nominal one-sided 97.5 percent bounds on the paired gross-efficiency difference against -0.01; not calibrated."
+  ],
+  [
+   "Q1 per-market and headline rows",
+   "descriptive, nominal 95 percent, unadjusted."
+  ],
+  [
+   "Q2",
+   "descriptive, nominal 95 percent, unadjusted."
+  ],
+  [
+   "Q3",
+   "descriptive, nominal 95 percent, unadjusted; G_min bounds are simultaneous over the c members, each member bound at tail 0.05/c."
+  ],
+  [
+   "Q4",
+   "intersection-union per market, Holm over six markets (a missing market counts p = 1); bounds are calibrated one-sided at tail kappa x 0.05 / 6."
+  ]
+ ],
+ "scope": "All claims are conditional on the six sampled markets, the stated neighbourhood, the fixed pair (Q1, Q2, Q4), the searched families, and the frozen searches. Q4 replicates the B3 - R3 comparison under D2+H3 and R3's efficiency condition, not the complete amended PASS predicate of the first evaluation. Multiplicity is controlled within Q1 and within Q4 separately; there is no paper-wide 5 percent familywise guarantee. \"Confirmatory\" means specified before the fresh draw; it does not mean exact nominal error control on the fresh, selected-policy distributions. Q4 is an internal replication on fresh instances, not an independent-team replication. (Design 9.4.)",
+ "deviations": {
+  "configs": {
+   "fresh0": {
+    "recorded_hash": "a756dbc6c75b3cbe2fd9750b7eb4b0f016c1b5c18736c0c09866c3cb99cbfe58",
+    "container_hash": "65b364cea67db322d69f6c907d622c898e43166480267b3e761ed3ba2c580315",
+    "pod_hashes_match": true,
+    "differing_values": 2,
+    "max_ulps": 1,
+    "verify_with_container_configs": "ok"
+   },
+   "fresh1": {
+    "recorded_hash": "ea43dd87f879d881fdc925402df633fb71f565418e74080a16ad3a4bb40c3724",
+    "container_hash": "44b4fc926421c5750356de965bb1160b7c35cf72dc41a4b40df4dad9883a8ba9",
+    "pod_hashes_match": true,
+    "differing_values": 2,
+    "max_ulps": 1,
+    "verify_with_container_configs": "ok"
+   },
+   "fresh2": {
+    "recorded_hash": "1c0ab9b255cd54ffb175cdaaa703aae65c41478fe20170c5914564e2322f98ad",
+    "container_hash": "3e40be96cf9e1fb8c8f5c71375dc333338591805677145e21aa81f612ca7d8c8",
+    "pod_hashes_match": true,
+    "differing_values": 6,
+    "max_ulps": 1,
+    "verify_with_container_configs": "ok"
+   },
+   "fresh3": {
+    "recorded_hash": "e02867f81ee4783f9d85fb8e7aa8b9a28fa513ccf62179bd60caaad5681fabeb",
+    "container_hash": "f5c1cd00ec2f0a85aca0e42efa102f5c0a6dcfbb0c9b349c8a2861816b0e961b",
+    "pod_hashes_match": true,
+    "differing_values": 4,
+    "max_ulps": 1,
+    "verify_with_container_configs": "ok"
+   },
+   "fresh4": {
+    "recorded_hash": "3b8eab881fe3ba1b8f2ddf8d7b60d7f0cdf4aa7036d7ae8cc07b5a8787b415b4",
+    "container_hash": "112608c64b4c1b8558985dd951b6bd6b614fc5618d4da93e03b0642e94344d82",
+    "pod_hashes_match": true,
+    "differing_values": 2,
+    "max_ulps": 1,
+    "verify_with_container_configs": "ok"
+   },
+   "fresh5": {
+    "recorded_hash": "cfa2b612da5de7e4878e984428ce73b0a4054deb380e42a0b53b5783dc55f2bf",
+    "container_hash": "bf562902ff492ab31c992c537d4e89c841e157e4b9f09bb83c217948fc81038d",
+    "pod_hashes_match": true,
+    "differing_values": 1,
+    "max_ulps": 1,
+    "verify_with_container_configs": "ok"
+   }
+  },
+  "evidence_sha256": "e41a598f01f279e79a5a47ad1114c1d3650b051da053a6fbfea6fc5bfe6ef07e",
+  "decision_stability": "not verified",
+  "cap": {
+   "old": 40.0,
+   "new": 43.0,
+   "approval": "Raise caps, start fresh5 now: evaluation cap 43 USD, program limit 55 USD (development cap 12 USD unchanged), \u00d6mer Demirel, 2026-11-04, chosen in the Claude Code session after the wave-1 overrun (fresh pods 4.65-4.80 USD against 4.26).",
+   "evaluation_spent": 39.449
+  }
+ },
+ "search_dependencies": {
+  "q1": {
+   "C*-F111|D2+H3": {
+    "depends_on_flagged": [
+     "fresh0@rho0.2|C*|D2+H3|profit",
+     "fresh1@rho0.2|C*|D2+H3|profit",
+     "fresh1@rho0.2|F111|D2+H3|profit",
+     "fresh3@rho0.2|C*|D2+H3|profit",
+     "fresh4@rho0.2|F111|D2+H3|profit"
+    ],
+    "new_qualification": false
+   },
+   "C*-F111|X7-SC": {
+    "depends_on_flagged": [
+     "fresh0@rho0.2|C*|D2+H3|profit",
+     "fresh1@rho0.2|C*|D2+H3|profit",
+     "fresh1@rho0.2|F111|D2+H3|profit",
+     "fresh3@rho0.2|C*|D2+H3|profit",
+     "fresh4@rho0.2|F111|D2+H3|profit"
+    ],
+    "new_qualification": true
+   }
+  },
+  "q4": {
+   "fresh0": {
+    "depends_on_flagged": [
+     "fresh0@rho0.2|C*|D2+H3|profit"
+    ],
+    "new_qualification": true
+   },
+   "fresh1": {
+    "depends_on_flagged": [
+     "fresh1@rho0.2|C*|D2+H3|profit",
+     "fresh1@rho0.2|F111|D2+H3|profit"
+    ],
+    "new_qualification": false
+   },
+   "fresh2": {
+    "depends_on_flagged": [],
+    "new_qualification": false
+   },
+   "fresh3": {
+    "depends_on_flagged": [
+     "fresh3@rho0.2|C*|D2+H3|profit"
+    ],
+    "new_qualification": true
+   },
+   "fresh4": {
+    "depends_on_flagged": [
+     "fresh4@rho0.2|F111|D2+H3|profit"
+    ],
+    "new_qualification": false
+   },
+   "fresh5": {
+    "depends_on_flagged": [],
+    "new_qualification": false
+   }
+  }
+ },
+ "q1_side_fields": {
+  "fresh0": {
+   "C*-F111|D2+H3": {
+    "gross_eff_diff": 0.0008932676544444912,
+    "net_eff_diff": 0.0008932676544444989,
+    "ref_profit_diff": 0.2186043413939163,
+    "audit_spend_diff": 0.0,
+    "false_refund_focal_diff": 0.0,
+    "false_refund_others_diff": -0.00021974950252238505,
+    "served_share_diff": 5.1499999999999876e-05
+   },
+   "C*-F111|X7-SC": {
+    "gross_eff_diff": 0.0008932676544444912,
+    "net_eff_diff": 0.0008932676544444989,
+    "ref_profit_diff": 0.2186043413939163,
+    "audit_spend_diff": 0.0,
+    "false_refund_focal_diff": 0.0,
+    "false_refund_others_diff": -0.00021974950252238505,
+    "served_share_diff": 5.1499999999999876e-05
+   }
+  },
+  "fresh1": {
+   "C*-F111|D2+H3": {
+    "gross_eff_diff": 0.0012604457626718818,
+    "net_eff_diff": 0.001260445762671878,
+    "ref_profit_diff": 0.020379947777611703,
+    "audit_spend_diff": 0.0,
+    "false_refund_focal_diff": 0.0,
+    "false_refund_others_diff": -0.0003952634514436464,
+    "served_share_diff": 0.0
+   },
+   "C*-F111|X7-SC": {
+    "gross_eff_diff": 0.0012604457626718818,
+    "net_eff_diff": 0.001260445762671878,
+    "ref_profit_diff": 0.020379947777611703,
+    "audit_spend_diff": 0.0,
+    "false_refund_focal_diff": 0.0,
+    "false_refund_others_diff": -0.0003952634514436464,
+    "served_share_diff": 0.0
+   }
+  },
+  "fresh2": {
+   "C*-F111|D2+H3": {
+    "gross_eff_diff": 0.00300294985094337,
+    "net_eff_diff": 0.0029915682045873675,
+    "ref_profit_diff": 0.300889672753745,
+    "audit_spend_diff": 1.138164635600375e-05,
+    "false_refund_focal_diff": 0.0,
+    "false_refund_others_diff": -0.00024186540220138918,
+    "served_share_diff": 0.0010710000000000003
+   },
+   "C*-F111|X7-SC": {
+    "gross_eff_diff": 0.00300294985094337,
+    "net_eff_diff": 0.0029915682045873675,
+    "ref_profit_diff": 0.300889672753745,
+    "audit_spend_diff": 1.138164635600375e-05,
+    "false_refund_focal_diff": 0.0,
+    "false_refund_others_diff": -0.00024186540220138918,
+    "served_share_diff": 0.0010710000000000003
+   }
+  },
+  "fresh3": {
+   "C*-F111|D2+H3": {
+    "gross_eff_diff": 0.0019566888999904015,
+    "net_eff_diff": 0.0019560887291694934,
+    "ref_profit_diff": 0.2054041245567599,
+    "audit_spend_diff": 6.001708209017048e-07,
+    "false_refund_focal_diff": 0.0,
+    "false_refund_others_diff": -0.00021270124548285584,
+    "served_share_diff": 9.49999999999951e-06
+   },
+   "C*-F111|X7-SC": {
+    "gross_eff_diff": -0.00032711654980016494,
+    "net_eff_diff": -0.00032711654980017155,
+    "ref_profit_diff": 0.2054041245567599,
+    "audit_spend_diff": 0.0,
+    "false_refund_focal_diff": 0.0,
+    "false_refund_others_diff": 3.996399922884603e-05,
+    "served_share_diff": 0.0
+   }
+  },
+  "fresh4": {
+   "C*-F111|D2+H3": {
+    "gross_eff_diff": -0.0024573074090654345,
+    "net_eff_diff": -0.0024726814550600482,
+    "ref_profit_diff": 4.6513322302821924,
+    "audit_spend_diff": 1.5374045994606295e-05,
+    "false_refund_focal_diff": 0.0,
+    "false_refund_others_diff": -5.01847073602398e-05,
+    "served_share_diff": 0.0005414999999999975
+   },
+   "C*-F111|X7-SC": {
+    "gross_eff_diff": 1.6949262072581962e-05,
+    "net_eff_diff": 0.0001733405321191106,
+    "ref_profit_diff": 4.6513322302821924,
+    "audit_spend_diff": -0.00015639127004653884,
+    "false_refund_focal_diff": 0.0,
+    "false_refund_others_diff": -0.00012393120950718848,
+    "served_share_diff": -0.00011250000000000427
+   }
+  },
+  "fresh5": {
+   "C*-F111|D2+H3": {
+    "gross_eff_diff": 0.0005419094005701447,
+    "net_eff_diff": 0.0005417108384006364,
+    "ref_profit_diff": 0.719060865897151,
+    "audit_spend_diff": 1.9856216951073814e-07,
+    "false_refund_focal_diff": 0.0,
+    "false_refund_others_diff": -0.00012765890466232712,
+    "served_share_diff": -2.9999999999999472e-05
+   },
+   "C*-F111|X7-SC": {
+    "gross_eff_diff": 0.0005419094005701447,
+    "net_eff_diff": 0.0005417108384006364,
+    "ref_profit_diff": 0.719060865897151,
+    "audit_spend_diff": 1.9856216951073814e-07,
+    "false_refund_focal_diff": 0.0,
+    "false_refund_others_diff": -0.00012765890466232712,
+    "served_share_diff": -2.9999999999999472e-05
+   }
+  },
+  "headline": {
+   "C*-F111|D2+H3": {
+    "gross_eff_diff": 0.0007618036260558925,
+    "net_eff_diff": 0.0007614031065821059,
+    "ref_profit_diff": -0.22187541265078817,
+    "audit_spend_diff": 4.005194737875806e-07,
+    "false_refund_focal_diff": 0.0,
+    "false_refund_others_diff": -0.0002102093188146826,
+    "served_share_diff": 3.6999999999998704e-05
+   },
+   "C*-F111|X7-SC": {
+    "gross_eff_diff": 0.0007618036260558925,
+    "net_eff_diff": 0.0007614031065821059,
+    "ref_profit_diff": -0.22187541265078817,
+    "audit_spend_diff": 4.005194737875806e-07,
+    "false_refund_focal_diff": 0.0,
+    "false_refund_others_diff": -0.0002102093188146826,
+    "served_share_diff": 3.6999999999998704e-05
+   }
+  }
+ }
+}
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '125,260p' docs/revision/report-addendum/addendum_v2.py; cat docs/revision/report-addendum/test_addendum_v2.py; sed -n '608,626p' docs/superpowers/specs/2026-10-22-revision-program-design.md; sed -n '1,125p' scripts/report_v2.py; sed -n '490,565p' scripts/report_v2.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 977ms:
+
+def render(add: dict) -> str:
+    L = ["# Protocol v2 report: addendum (Operation 8, review round 1)", "",
+         "This addendum accompanies `report.md` and `report.json`, which `scripts/report_v2.py` at tag protocol-v2 wrote. "
+         "It changes no estimate and no decision.", "", "## Interval and decision labels"]
+    L += [f"- {k}: {v}" for k, v in add["labels"]]
+    L += ["", "## Claim scope", add["scope"], "", "## Deviations from the protocol", "",
+          "1. Fresh-market configurations. The pods (Linux x86) recalibrated each fresh market; `instances.json` holds the "
+          "arm64 calibration. The report used the configurations a Linux container reproduces "
+          "(`results/v2/deviation/instances_container_configs.json`); the headline market uses the registered ones.", "",
+          "| market | registered config hash | reproduced config hash | pod hashes match | differing values | max ulps | verify |",
+          "|---|---|---|---|---|---|---|"]
+    for m, v in add["deviations"]["configs"].items():
+        L.append(f"| {m} | {v['recorded_hash']} | {v['container_hash']} | {v['pod_hashes_match']} | {v['differing_values']} "
+                 f"| {v['max_ulps']} | {v['verify_with_container_configs']} |")
+    c = add["deviations"]["cap"]
+    L += ["", f"Evidence: `results/v2/deviation/cfg_ulp_all.json` (sha256 {add['deviations']['evidence_sha256']}), written by "
+          "`docs/revision/deviation/cfg_ulp.py`. These checks establish matching pod hashes, differences within one unit in the "
+          "last place, and verification with the reproduced configurations. That the decisions would be unchanged under the "
+          "registered configurations is not verified: small input differences can change discrete simulation branches.", "",
+          f"2. Evaluation cap. The author raised the evaluation cap from {c['old']:g} to {c['new']:g} USD after the first fresh "
+          f"pods cost about ten percent more than estimated (recorded approval: \"{c['approval']}\"). Evaluation spend: "
+          f"{c['evaluation_spent']:g} USD. No analysis changed.", "",
+          "## Search-flag dependencies", "",
+          "Design 6.5 labels a confirmatory decision that uses a search-flagged cell as a decision about the prescribed search "
+          "procedure. A cell's reference is built from the search records of every family on its menu and, for fixed rules, "
+          "from other rules' searches (the bank), so a decision can use a flagged cell's search through its references. "
+          "Traced through the upstream links of the evaluate, reference, search and bank records (freeze records excluded):", ""]
+    for q, rows in (("Q1", add["search_dependencies"]["q1"]), ("Q4", add["search_dependencies"]["q4"])):
+        for k, v in rows.items():
+            tag = "newly qualified: about the prescribed search procedure" if v["new_qualification"] else (
+                "already labelled in the report" if v["depends_on_flagged"] else "no flagged dependency")
+            L.append(f"- {q} {k}: {tag}" + (f" (depends on {', '.join(v['depends_on_flagged'])})" if v["depends_on_flagged"] else ""))
+    L += ["", "## Q1 side fields per market (descriptive, means, F111 minus C*)"]
+    for m, row in add["q1_side_fields"].items():
+        for t, flds in row.items():
+            L.append(f"- {m} {t}: " + "; ".join(f"{k} {v:.4f}" for k, v in flds.items()))
+    return "\n".join(L) + "\n"
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser()
+    for a in ("--report", "--cfg-ulp", "--ledger", "--records", "--eval-checkout", "--write"):
+        ap.add_argument(a, required=True)
+    a = ap.parse_args(argv)
+    co = Path(a.eval_checkout).resolve(); sys.path[:0] = [str(co / "scripts"), str(co)]
+    import report_v2 as RP  # noqa: E402  (the tagged report's own field map)
+    import revision_v2 as RV  # noqa: E402
+    report = json.loads(Path(a.report).read_text()); cfgp = Path(a.cfg_ulp); out = Path(a.records)
+    flagged = set(report["search_flagged"])
+    q1c = {f"{PAIR[1]}-{PAIR[0]}|{f}": [f"{m}@rho0.2|{r}|{f}|profit" for m in FRESH for r in PAIR] for f in FAMS}
+    q4c = {m: [f"{m}@rho0.2|{r}|D2+H3|profit" for r in Q4_RULES] for m in FRESH}
+    allc = sorted({c for v in list(q1c.values()) + list(q4c.values()) for c in v})
+    per = flag_dependencies(out, allc, flagged, RV.path_of)
+    deps = {"q1": {k: sorted({h for c in v for h in per[c]}) for k, v in q1c.items()},
+            "q4": {k: sorted({h for c in v for h in per[c]}) for k, v in q4c.items()}}
+    sides = side_fields(out, FRESH + ("headline",), PAIR, FAMS, RP.SIDE)
+    add = build(report, json.loads(cfgp.read_text()), hashlib.sha256(cfgp.read_bytes()).hexdigest(),
+                json.loads(Path(a.ledger).read_text()), deps, sides)
+    w = Path(a.write); (w / "addendum.json").write_text(json.dumps(add, indent=1, default=float) + "\n")
+    (w / "addendum.md").write_text(render(add))
+    print(f"addendum written: {w / 'addendum.md'}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+"""Tests for addendum_v2.py: the Operation 8 addendum beside the tagged report (labels, claim scope, deviations,
+search-flag dependencies traced through reference and bank records, per-market Q1 side fields)."""
+import json
+import sys
+from pathlib import Path
+
+import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import addendum_v2 as A  # noqa: E402
+
+
+def _path_of(out: Path, rid: str) -> Path:
+    return out / "rec" / (rid.replace("|", "__").replace("/", "~").replace("*", "star") + ".json")
+
+
+def _put(out, rid, upstream, **fields):
+    p = _path_of(out, rid); p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps({"upstream": {u: "0" * 64 for u in upstream}, **fields}))
+
+
+def _ev(out, rid, upstream, **fields):
+    p = out / "evaluate" / (A.safe(rid) + ".json"); p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps({"upstream": {u: "0" * 64 for u in upstream}, **fields}))
+
+
+@pytest.fixture
+def chain(tmp_path):
+    # C* X7-SC evaluate -> reference C* -> bank source F111 D2+H3 (flagged); freeze links everything and is skipped.
+    _put(tmp_path, "freeze/m0", ["m0|F111|D2+H3|profit", "m0|C*|X7-SC|profit"])
+    _put(tmp_path, "m0|F111|D2+H3|profit", [])
+    _put(tmp_path, "m0|C*|X7-SC|profit", [])
+    _put(tmp_path, "reference/m0/C*", ["m0|C*|X7-SC|profit", "m0|F111|D2+H3|profit"])
+    _put(tmp_path, "reference/m0/F000", ["m0|F000|D2+H3|profit"])
+    _put(tmp_path, "m0|F000|D2+H3|profit", [])
+    _ev(tmp_path, "m0|C*|X7-SC|profit", ["freeze/m0", "m0|C*|X7-SC|profit", "reference/m0/C*"])
+    _ev(tmp_path, "m0|F000|D2+H3|profit", ["freeze/m0", "m0|F000|D2+H3|profit", "reference/m0/F000"])
+    return tmp_path
+
+
+def test_dependencies_follow_reference_and_bank_but_not_freeze(chain):
+    got = A.flag_dependencies(chain, ["m0|C*|X7-SC|profit", "m0|F000|D2+H3|profit"], {"m0|F111|D2+H3|profit"}, _path_of)
+    assert got["m0|C*|X7-SC|profit"] == ["m0|F111|D2+H3|profit"]
+    assert got["m0|F000|D2+H3|profit"] == []     # reachable only through freeze, which is not a computational input
+
+
+def test_a_flagged_cell_depends_on_itself(chain):
+    got = A.flag_dependencies(chain, ["m0|F000|D2+H3|profit"], {"m0|F000|D2+H3|profit"}, _path_of)
+    assert got["m0|F000|D2+H3|profit"] == ["m0|F000|D2+H3|profit"]
+
+
+def test_unresolvable_upstream_refuses(chain):
+    _ev(chain, "m0|F111|X7-SC|profit", ["reference/m0/GONE"])
+    with pytest.raises(SystemExit, match="GONE"):
+        A.flag_dependencies(chain, ["m0|F111|X7-SC|profit"], set(), _path_of)
+
+
+def test_side_fields_are_per_market_means_of_a_minus_b(tmp_path):
+    side = {"gross_eff_diff": "eff_attack", "ref_profit_diff": "profit_ref"}
+    _ev(tmp_path, "m0@rho0.2|F111|D2+H3|profit", [], eff_attack=[0.9, 0.7], profit_ref=[2.0, 4.0])
+    _ev(tmp_path, "m0@rho0.2|C*|D2+H3|profit", [], eff_attack=[0.8, 0.6], profit_ref=[1.0, 1.0])
+    got = A.side_fields(tmp_path, ["m0"], ("F111", "C*"), ["D2+H3"], side)
+    assert got["m0"]["C*-F111|D2+H3"] == pytest.approx({"gross_eff_diff": 0.1, "ref_profit_diff": 2.0})
+
+
+def _inputs():
+    report = {"q1": {"tests": {"C*-F111|D2+H3": {"category": "equivalent", "search": "flag"},
+                               "C*-F111|X7-SC": {"category": "equivalent", "search": None}}},
+              "q4": {"markets": {"fresh0": {"search": None}, "fresh1": {"search": "flag"}}}}
+    cfg = {"ok": True, "markets": {"fresh0": {"recorded_hash": "a" * 64, "container_hash": "b" * 64, "pod_hashes": ["b" * 64],
+                                              "differences": [["p", 1.0, 1.0, 1]], "within_one_ulp": True, "verify_exit": 0, "ok": True}}}
+    ledger = {"caps": {"evaluation": 43.0}, "approval": {"text": "Raise caps ... 43 USD, program limit 55 USD"},
+              "spent": [{"op": "evaluation", "tag": "x", "usd": 1.5}]}
+    deps = {"q1": {"C*-F111|X7-SC": ["fresh0@rho0.2|C*|D2+H3|profit"], "C*-F111|D2+H3": ["fresh0@rho0.2|C*|D2+H3|profit"]}, "q4": {"fresh0": ["fresh0@rho0.2|C*|D2+H3|profit"], "fresh1": []}}
+    return report, cfg, ledger, deps
+
+
+def test_render_states_labels_scope_deviations_and_dependencies():
+    report, cfg, ledger, deps = _inputs()
+    md = A.render(A.build(report, cfg, "c" * 64, ledger, deps, {"fresh0": {}}))
+    for s in ("nominal 95 percent, unadjusted", "nominal one-sided 97.5 percent", "0.05/c", "Bonferroni", "Holm",
+              "six sampled markets", "internal replication", "not the complete amended PASS predicate",
+              "a" * 64, "b" * 64, "c" * 64, "40", "43", "not verified", "C*-F111|X7-SC", "fresh0@rho0.2|C*|D2+H3|profit"):
+        assert s in md, s
+
+
+def test_build_marks_new_qualifications_only_where_the_report_has_none():
+    report, cfg, ledger, deps = _inputs()
+    add = A.build(report, cfg, "c" * 64, ledger, deps, {})
+    assert add["search_dependencies"]["q1"]["C*-F111|X7-SC"]["new_qualification"] is True
+    assert add["search_dependencies"]["q1"]["C*-F111|D2+H3"]["new_qualification"] is False   # already labelled
+    assert add["search_dependencies"]["q4"]["fresh0"]["new_qualification"] is True
+    assert add["search_dependencies"]["q4"]["fresh1"]["new_qualification"] is False   # already labelled by the report
+
+
+def test_build_refuses_a_failed_deviation_check():
+    report, cfg, ledger, deps = _inputs()
+    cfg["ok"] = False
+    with pytest.raises(SystemExit, match="deviation check"):
+        A.build(report, cfg, "c" * 64, ledger, deps, {})
+### 9.4 Claim scope
+
+All claims are conditional on the six sampled markets, the stated neighbourhood, the fixed pair (Q1, Q2, Q4), the searched
+families, and the frozen searches. Q4 replicates the B3 - R3 comparison under D2+H3 and R3's efficiency condition, not the
+complete amended PASS predicate of the first evaluation. Multiplicity is controlled within Q1 and within Q4 separately;
+there is no paper-wide 5 percent familywise guarantee across all confirmatory statements, and the paper does not claim
+one. "Confirmatory" means specified before the fresh draw; it does not mean exact nominal error control on the fresh,
+selected-policy distributions (9.5). Q4 is an internal replication on fresh instances, not an independent-team
+replication.
+
+### 9.5 Coverage check and calibration (before the lock)
+
+- **Fixtures.** On the headline market, `dev0`, and `dev1`, frozen development attacks (the inner searches at the fixed
+  pair from tuning and comparator selection) and development references (6.4) are run on pools of 20,000 seeds per market
+  in the new range [40,000,000, 60,000,000). Profiles per seed (8): F000's D2+H3 attack (its X7-SC attack is not needed
+  for any confirmatory statistic and is omitted), the D2+H3 and X7-SC attacks of F111 and C*, and the three rules'
+  references (one reference profile per rule; the two references of a rule's families are the same frozen reference, 6.4,
+  so a family-specific reference profile is not needed). Every profile of a seed uses that seed's common random numbers,
+  so per-seed differences keep their dependence.
+"""The protocol-v2 report (design draft 7, 6.5, 8.1a, 9.2, 9.3, 9.4). It first runs the read-only verify stage and refuses on
+any stale, foreign, or erroneous record; missing cells and unavailable contexts count as missing. Two cell statuses (design
+6.5): a missing cell withholds every confirmatory test that uses it ("not decided: missing cell") and makes that part of its
+question unanswered; a search-flagged cell (its scheduled doubling check over the threshold) keeps its decision, labelled as
+about the prescribed search procedure, and makes the Q3 robustness statement for that rule and family unanswered. Q1 and Q4
+are confirmatory (calibrated, Holm with fixed slots) unless the family has no admitted kappa or the draw is nonconfirmatory;
+a numerical refusal withholds only the affected test. Q2, Q3, the secondary comparisons, and the doubling diagnostics are
+descriptive; every extremum is selected on training data (frozen selection records). Multiplicity is controlled within Q1
+and within Q4 only."""
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+import numpy as np
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from scripts import revision_v2 as RV  # noqa: E402
+from sim.decisions_v2 import ALPHA, MISSING, NO_DECISION, REFUSED, q1_better, q1_efficiency, q1_family, q2_contrasts, q4_markets, w1_class  # noqa: E402
+from sim.diagnostic_v2 import decompose  # noqa: E402
+from sim.intervals import (NumericalRefusal, bootstrap_pvalue, calibrated, gmin_bounds, stratified_at, stratified_mean,  # noqa: E402
+                           studentized_at)
+from sim.records_v2 import read  # noqa: E402
+
+FRESH = tuple(f"fresh{i}" for i in range(6))
+FACT = tuple(f"F{p}{g}{s}" for p in "01" for g in "01" for s in "01")
+PAIRS = (("F111", "C*"),)
+FAMS = ("D2+H3", "X7-SC")
+CORE = ("F000", "F111", "C*")
+WHOLE = ("B3-t", "R3-t", "C*-t")
+FLAGGED = "about the prescribed search procedure (search flagged)"
+MULTIPLICITY = "Multiplicity is controlled within Q1 and within Q4 only; there is no paper-wide familywise guarantee."
+REDUCED = "reduced menu (D2+H3)"
+SIDE = {"gross_eff_diff": "eff_attack", "net_eff_diff": "net_eff_attack", "ref_profit_diff": "profit_ref", "audit_spend_diff": "audit_spend_attack",
+        "false_refund_focal_diff": "false_refund_focal_attack", "false_refund_others_diff": "false_refund_others_attack",
+        "served_share_diff": "served_share_attack"}
+REPAIR = ("F000", "F111", "R4", "C*", "C*/S2")
+NOMINAL = 0.025
+NOMINAL_LABEL = "nominal 95 percent, unadjusted"
+NONCONF = "nonconfirmatory (late publication)"
+CHECKED = FAMS                                   # families with scheduled doubling checks for the core rules (design 6.5)
+Q2_KINDS = (("searched", "gain"), ("searched_eff", "eff_attack"), ("searched_net_eff", "net_eff_attack"), ("fixed", None),
+            ("fixed_attack_term", "profit_attack"), ("fixed_reference_term", "profit_ref"), ("fixed_eff", "eff_attack"),
+            ("fixed_net_eff", "net_eff_attack"))
+WITHHELD = "withheld: numerical refusal"
+
+
+def verify_records(out, catalog, instances, protocol, h4, cuts, h4_excluded) -> dict:
+    return RV.verify(Path(out), catalog, catalog, instances, protocol, h4, cuts, h4_excluded)
+
+
+def _f(x) -> float | None:
+    return None if x is None else float(x)
+
+
+def _interval(x, tail: float = NOMINAL) -> list:
+    """A descriptive interval; a numerical refusal withholds it (design 9.2) instead of stopping the report."""
+    try:
+        return [float(studentized_at(x, "lower", tail)), float(studentized_at(x, "upper", tail))]
+    except NumericalRefusal:
+        return [None, None]
+
+
+def _strat(st, tail: float = NOMINAL, strict: bool = False) -> dict:
+    try:
+        return {"estimate": float(stratified_mean(st)), "interval": [float(stratified_at(st, "lower", tail)), float(stratified_at(st, "upper", tail))]}
+    except NumericalRefusal:
+        if strict:
+            raise
+        return {"estimate": None, "interval": [None, None], "status": REFUSED}
+
+
+def _cell(x) -> dict:
+    return {"estimate": _est(x), "interval": _interval(x)}
+
+
+def _est(x) -> float | None:
+    with np.errstate(over="ignore", invalid="ignore"):
+        v = float(np.mean(np.asarray(x, dtype=float)))
+    return v if np.isfinite(v) else None
+
+
+class Records:
+    """Evaluation records of the scheduled cells. A cell outside the catalog (not scheduled, or removed by a cut) reads as
+    absent without being counted missing; a scheduled cell without a record is missing."""
+    def __init__(self, out: Path, catalog: list[dict], missing: set, flagged: set = frozenset(), no_check: set = frozenset()):
+        self.out, self.missing, self.flagged, self.no_check = Path(out), set(missing), set(flagged), set(no_check)
+        self.jobs = {j["id"]: j for j in catalog}
+
+    def get(self, market: str, rule: str, family: str, objective: str = "profit", c=None, schedule=None, rho: str = "rho0.2"):
+        return self.rec(RV.cell_id(f"{market}@{rho}", rule, family, objective, c, schedule))
+
+    def rec(self, rid: str):
+        if rid not in self.jobs or rid in self.missing:
+            return None
+        rec = read(RV.eval_path(self.out, rid))
+        if rec is None:
+            self.missing.add(rid)
+        return rec
+
+    def scheduled(self, rid: str) -> bool:
+        return rid in self.jobs
+
+    def search_status(self, ids) -> str | None:
+        """Design 6.5: a scheduled check over the threshold, or a scheduled check with no record, leaves the robustness
+        statement unanswered."""
+        ids = [i for i in ids if i in self.jobs]
+        if any(i in self.flagged for i in ids):
+            return "unanswered (search flagged)"
+        if any(i in self.no_check for i in ids):
+            return "unanswered (scheduled check missing)"
+        return None
+
+    def aux(self, rid: str):
+        return read(RV.path_of(self.out, rid))
+
+    def cross(self, market: str, family: str):
+        return read(self.out / "cross" / f"{market}@rho0.2" / (RV._safe(family) + ".json"))
+
+
+def q1(R: Records, kappa, confirmatory: bool):
+    """d = g_C* - g_F111 per seed, pooled over the six fresh markets (design 9.3), two fixed Holm slots."""
+    (d / "report.json").write_text(json.dumps(r, indent=1, sort_keys=True)); (d / "report.md").write_text(markdown(r))
+
+
+def _diff(a, b, path="") -> list[str]:
+    if isinstance(a, dict) and isinstance(b, dict):
+        return [x for k in sorted(set(a) | set(b)) for x in (_diff(a.get(k), b.get(k), f"{path}/{k}") if k in a and k in b else [f"{path}/{k}: present on one side"])]
+    if isinstance(a, list) and isinstance(b, list):
+        return [f"{path}: lengths differ"] if len(a) != len(b) else [x for i, (u, v) in enumerate(zip(a, b)) for x in _diff(u, v, f"{path}[{i}]")]
+    if isinstance(a, float) or isinstance(b, float):
+        try:
+            return [] if abs(float(a) - float(b)) <= 1e-12 * max(1.0, abs(float(a))) else [f"{path}: {a} != {b}"]
+        except (TypeError, ValueError):
+            return [f"{path}: {a} != {b}"]
+    return [] if a == b else [f"{path}: {a} != {b}"]
+
+
+def check(r: dict, report_dir) -> list[str]:
+    d = Path(report_dir); out = _diff(r, json.loads((d / "report.json").read_text()))
+    if (d / "report.md").read_text() != markdown(r):
+        out.append("report.md differs from the report rebuilt from the records")
+    return out
+
+
+def main(argv=None) -> int:
+    import yaml
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--out", required=True); ap.add_argument("--protocol", required=True); ap.add_argument("--instances", required=True)
+    ap.add_argument("--h4", required=True); ap.add_argument("--report", required=True); ap.add_argument("--check", action="store_true")
+    ap.add_argument("--params", default=str(RV.ROOT / "experiments" / "v2" / "params.json")); ap.add_argument("--commit", default=None)
+    ap.add_argument("--markets", default=None); ap.add_argument("--smoke", action="store_true")
+    a = ap.parse_args(argv)
+    protocol = yaml.safe_load(Path(a.protocol).read_text()); inst = json.loads(Path(a.instances).read_text()); h4 = json.loads(Path(a.h4).read_text())
+    from sim.records import cfg_from_dict
+    cfgs = {k: cfg_from_dict(v["calibrated_cfg"]) for k, v in inst.get("markets", {}).items()}
+    h4job = {"dir": None, "sha": h4["bundle_sha256"]} if h4.get("loaded") else None
+    markets = (a.markets or ",".join(RV.MAN.doc()["markets"])).split(",")
+    catalog = RV.build_jobs(markets, inst["root"], False, a.smoke, json.loads(Path(a.params).read_text()), int(protocol.get("cuts", 0)), h4job,
+                            not h4.get("loaded"), cfgs, a.commit or RV.git_commit(), inst["salt_sha256"])
+    r = build(a.out, protocol, inst, h4, catalog)
+    if a.check:
+        diffs = check(r, a.report)
+        print("\n".join(diffs[:50]) or "ok")
+        return 1 if diffs else 0
+    save(r, a.report)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg -n 'addendum_v2|eval-checkout|--records|report_v2.py|EVAL/all|budget-ledger' docs/revision/report-addendum docs/revision/deviation docs/revision/roster/brief-report-r1.md; sed -n '1,155p' docs/revision/deviation/cfg_ulp.py; rg -n 'def path_of|freeze/|bank/' scripts/revision_v2.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 719ms:
+docs/revision/roster/brief-report-r1.md:3:The eight evaluation pods ran at tag `protocol-v2` (d5e602e, draw block 974451). `results/pods/post_eval.sh` merged their records into `/Users/oemer.demirel/Projects/touchstone/results/v2/eval/all`, built `/Users/oemer.demirel/Projects/touchstone/results/v2/report/report.{json,md}` with `scripts/report_v2.py`, and ran its `--check` (exit 0). Its log is `/Users/oemer.demirel/Projects/touchstone/results/v2/post_eval.log`.
+docs/revision/roster/brief-report-r1.md:5:One deviation, chosen by the author: the six fresh markets were recalibrated on Linux x86 pods, while `results/v2/draw/instances.json` holds the arm64 calibration. Between 1 and 6 provider values per fresh market differ by one unit in the last place. The report therefore reads `results/v2/deviation/instances_container_configs.json`, which `docs/revision/deviation/cfg_ulp.py` writes after it checks that (a) a Linux container reproduces each pod's config hash, (b) every differing value is within 1 ulp of the registered one, and (c) strict verify passes with the reproduced configs (`results/v2/deviation/cfg_ulp_all.json`). The headline market uses the registered configs and passes strict verify. A second change: the author raised the evaluation cap from 40 to 43 USD (`docs/revision/budget-ledger.json`); no analysis changed.
+docs/revision/report-addendum/addendum_v2.py:1:"""Operation 8 addendum beside the tagged report (review round 1, 2026-11-04). The report itself stays as `report_v2.py`
+docs/revision/report-addendum/addendum_v2.py:6:Usage: addendum_v2.py --report R/report.json --cfg-ulp D/cfg_ulp_all.json --ledger budget-ledger.json --records EVAL/all
+docs/revision/report-addendum/addendum_v2.py:7:       --eval-checkout CHECKOUT --write R
+docs/revision/report-addendum/addendum_v2.py:128:         "This addendum accompanies `report.md` and `report.json`, which `scripts/report_v2.py` at tag protocol-v2 wrote. "
+docs/revision/report-addendum/addendum_v2.py:167:    for a in ("--report", "--cfg-ulp", "--ledger", "--records", "--eval-checkout", "--write"):
+docs/revision/report-addendum/addendum-r1.md:3:This addendum accompanies `report.md` and `report.json`, which `scripts/report_v2.py` at tag protocol-v2 wrote. It changes no estimate and no decision.
+docs/revision/report-addendum/test_addendum_v2.py:1:"""Tests for addendum_v2.py: the Operation 8 addendum beside the tagged report (labels, claim scope, deviations,
+docs/revision/report-addendum/test_addendum_v2.py:10:import addendum_v2 as A  # noqa: E402
+"""The check behind the 2026-11-04 deviation (1-ulp fresh-market configs). The run mode recalibrates each fresh market on
+the pod (Linux x86); instances.json holds the configs computed on the Mac (arm64). For each market this checks that
+(1) every evaluation record carries one config hash, equal to the hash of the config a Linux amd64 container recomputes,
+(2) that config differs from the recorded one only in float values, each by at most one unit in the last place, and
+(3) the runner's own verify passes on the records when given the container's configs. Writes nothing in the record
+directories; the verify input with the container's configs goes to --work and is never the recorded instances.json."""
+from __future__ import annotations
+
+import argparse
+import glob
+import hashlib
+import json
+import struct
+import subprocess
+import sys
+from pathlib import Path
+
+
+def _ord(x: float) -> int:
+    i = struct.unpack("<q", struct.pack("<d", float(x)))[0]
+    return i if i >= 0 else -(1 << 63) - i
+
+
+def diffs(rec, lin, path: str = "") -> list[tuple[str, object, object, int | None]]:
+    """(path, recorded, recomputed, ulps); ulps is None for any difference that is not between two floats."""
+    if isinstance(rec, dict) and isinstance(lin, dict):
+        return [d for k in sorted(set(rec) | set(lin)) for d in diffs(rec.get(k, KeyError), lin.get(k, KeyError), f"{path}.{k}")]
+    if isinstance(rec, list) and isinstance(lin, list):
+        if len(rec) != len(lin):
+            return [(path, len(rec), len(lin), None)]
+        return [d for i, (a, b) in enumerate(zip(rec, lin)) for d in diffs(a, b, f"{path}[{i}]")]
+    if rec == lin and type(rec) is type(lin):
+        return []
+    if type(rec) is float and type(lin) is float:
+        return [(path, rec, lin, abs(_ord(rec) - _ord(lin)))]
+    return [(path, rec, lin, None)]
+
+
+def within(ds, max_ulps: int) -> bool:
+    return all(u is not None and u <= max_ulps for *_, u in ds)
+
+
+def pod_hash_ok(pod_hashes: set, container_hash: str) -> bool:
+    return pod_hashes == {container_hash}
+
+
+def sha_json(obj) -> str:
+    return hashlib.sha256(json.dumps(obj, sort_keys=True, default=float).encode()).hexdigest()
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--instances", required=True); ap.add_argument("--linux", required=True); ap.add_argument("--eval", required=True)
+    ap.add_argument("--markets", required=True); ap.add_argument("--verify", required=True, help="results/pods/verify_market.sh")
+    ap.add_argument("--work", required=True); ap.add_argument("--out", required=True)
+    a = ap.parse_args(argv)
+    inst = json.loads(Path(a.instances).read_text()); lin = json.loads(Path(a.linux).read_text()); work = Path(a.work); work.mkdir(parents=True, exist_ok=True)
+    alt = json.loads(json.dumps(inst)); markets = a.markets.split(",")
+    for m in markets:
+        alt["markets"][m]["calibrated_cfg"] = lin[m]
+    alt_path = work / "instances_container_configs.json"; alt_path.write_text(json.dumps(alt))
+    rep = {"instances_sha256": hashlib.sha256(Path(a.instances).read_bytes()).hexdigest(), "linux_sha256": hashlib.sha256(Path(a.linux).read_bytes()).hexdigest(), "markets": {}}
+    for m in markets:
+        ds = diffs(inst["markets"][m]["calibrated_cfg"], lin[m])
+        pods = {json.loads(Path(f).read_text())["provenance"]["cfg_sha256"] for f in glob.glob(f"{a.eval}/{m}/evaluate/*.json")}
+        v = subprocess.run(["bash", a.verify, m, m], env={"PATH": "/usr/bin:/bin:/usr/local/bin:" + str(Path.home() / ".local/bin"), "HOME": str(Path.home()),
+                           "INSTANCES": str(alt_path)}, capture_output=True, text=True)
+        r = {"container_hash": sha_json(lin[m]), "pod_hashes": sorted(pods), "pod_hash_ok": pod_hash_ok(pods, sha_json(lin[m])),
+             "recorded_hash": sha_json(inst["markets"][m]["calibrated_cfg"]), "differences": [[p, x, y, u] for p, x, y, u in ds],
+             "within_one_ulp": within(ds, 1), "verify_exit": v.returncode, "verify": v.stdout.strip()[-300:]}
+        r["ok"] = r["pod_hash_ok"] and r["within_one_ulp"] and v.returncode == 0
+        rep["markets"][m] = r
+        print(m, "ok" if r["ok"] else "NOT OK", f"pod_hash_ok={r['pod_hash_ok']} diffs={len(ds)} max_ulps={max([u or 0 for *_, u in ds], default=0)} verify_exit={v.returncode}")
+    rep["ok"] = all(r["ok"] for r in rep["markets"].values())
+    Path(a.out).write_text(json.dumps(rep, indent=1)); return 0 if rep["ok"] else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+220:def path_of(out: Path, rid: str) -> Path:
+221:    if rid.startswith("freeze/"):
+598:        return {f"bank/{ctx}/{rest}"} | {f"reference/{ctx}/{r}" for r in MAN.FACTORIAL if cell_id(ctx, r, rest, "profit") in by}
+701:        bank = read(path_of(out, f"bank/{ctx}/{rest}")); by_rule, rules = _cross_rules(ctx, rest, catalog, bank); cache = SeedCache(); mat = []
+743:    write(path_of(out, f"freeze/{ctx}"), rec)
+748:    fr = read(path_of(out, f"freeze/{ctx}"))
+825:    bank = read(path_of(out, f"bank/{ctx}/{family}"))
+831:    ids = {f"freeze/{ctx}", f"bank/{ctx}/{family}", f"bank_train/{ctx}/{family}"} | {f"reference/{ctx}/{r}" for r in rules}
+837:    bank = read(path_of(out, f"bank/{ctx}/{family}")); by_rule, rules = _cross_rules(ctx, family, catalog, bank); cache = SeedCache(); mat, rows, prof = [], {}, {}
+979:    ids = _inputs(job) | {f"freeze/{job['context']}"}
+1058:        _, rules = _cross_rules(ctx, fam, catalog, read(path_of(out, f"bank/{ctx}/{fam}")))
+1231:        if not path_of(out, f"freeze/{ctx}").exists():
+1266:                bank = read(path_of(out, f"bank/{ctx}/{fam}")) or {"attacks": {}}
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "ls -ld /Users/oemer.demirel/Projects/touchstone/results/v2/*; git diff protocol-v2 -- scripts/report_v2.py scripts/revision_v2.py; sed -n '1,35p' /Users/oemer.demirel/Projects/touchstone/results/v2/deviation/cfg_ulp_all.json" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 700ms:
+drwxr-xr-x@ 10 oemer.demirel  staff   320 Nov  4 21:07 /Users/oemer.demirel/Projects/touchstone/results/v2/deviation
+drwxr-xr-x@  8 oemer.demirel  staff   256 Nov  4 01:29 /Users/oemer.demirel/Projects/touchstone/results/v2/draw
+drwxr-xr-x@ 22 oemer.demirel  staff   704 Nov  4 20:52 /Users/oemer.demirel/Projects/touchstone/results/v2/eval
+drwxr-xr-x@ 15 oemer.demirel  staff   480 Nov  3 11:11 /Users/oemer.demirel/Projects/touchstone/results/v2/eval-checkout
+drwxr-xr-x@  3 oemer.demirel  staff    96 Nov  4 01:27 /Users/oemer.demirel/Projects/touchstone/results/v2/h4pod
+drwxr-xr-x@  4 oemer.demirel  staff   128 Nov  4 21:01 /Users/oemer.demirel/Projects/touchstone/results/v2/paper
+-rw-r--r--@  1 oemer.demirel  staff  1424 Nov  4 21:01 /Users/oemer.demirel/Projects/touchstone/results/v2/post_eval.log
+drwxr-xr-x@  6 oemer.demirel  staff   192 Nov  4 21:18 /Users/oemer.demirel/Projects/touchstone/results/v2/report
+{
+ "instances_sha256": "16df49fd5a0693eb8dde62de41afc47dde4dc88ef6d2fe01357f4033a9a03542",
+ "linux_sha256": "f78bd5fe6c244b0549362787f93cce75c0724b34be112eb4a3953d0a307ffbda",
+ "markets": {
+  "fresh0": {
+   "container_hash": "65b364cea67db322d69f6c907d622c898e43166480267b3e761ed3ba2c580315",
+   "pod_hashes": [
+    "65b364cea67db322d69f6c907d622c898e43166480267b3e761ed3ba2c580315"
+   ],
+   "pod_hash_ok": true,
+   "recorded_hash": "a756dbc6c75b3cbe2fd9750b7eb4b0f016c1b5c18736c0c09866c3cb99cbfe58",
+   "differences": [
+    [
+     ".providers[0][2]",
+     0.37955120905497375,
+     0.3795512090549737,
+     1
+    ],
+    [
+     ".providers[8][0]",
+     0.9577067943381498,
+     0.9577067943381499,
+     1
+    ]
+   ],
+   "within_one_ulp": true,
+   "verify_exit": 0,
+   "verify": "ok {'fresh0@rho0.2': 'ok'}",
+   "ok": true
+  },
+  "fresh1": {
+   "container_hash": "44b4fc926421c5750356de965bb1160b7c35cf72dc41a4b40df4dad9883a8ba9",
+   "pod_hashes": [
+    "44b4fc926421c5750356de965bb1160b7c35cf72dc41a4b40df4dad9883a8ba9"
+   ],
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+The addendum contains the requested labels, disclosures, claim limits, and side fields. I will now compare its values and search qualifications with the saved records.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '200,235p' scripts/revision_v2.py; sed -n '570,610p' scripts/revision_v2.py; sed -n '715,760p' scripts/revision_v2.py; sed -n '945,990p' scripts/revision_v2.py; cat /Users/oemer.demirel/Projects/touchstone/results/v2/post_eval.log; sed -n '125,174p' scripts/report_v2.py; sed -n '1,70p' /Users/oemer.demirel/Projects/touchstone/results/v2/report/report.md" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+def settings(job: dict) -> SearchSettings:
+    R, E, _, _ = job["budget"]
+    return replace(settings_from_locked(load_locked()), restarts=int(R), evals_per_restart=int(E))
+
+
+def train_cell(job: dict, others: tuple = ()) -> Cell:
+    m = job["mkt"]
+    return Cell(cfg=m["cfg"], rule_factory=rule_factory(job), focal=m["focal"], seeds=tuple(m["seeds_train"]), name=job["id"], others=others)
+
+
+def eval_cell(job: dict) -> Cell:
+    return replace(train_cell(job), seeds=tuple(job["mkt"]["seeds_eval"]))
+
+
+# ---- record paths ------------------------------------------------------------------------------------------------------
+
+def _safe(s: str) -> str:
+    return s.replace("|", "__").replace("/", "~").replace("*", "star")
+
+
+def path_of(out: Path, rid: str) -> Path:
+    if rid.startswith("freeze/"):
+        return Path(out) / "freeze" / (rid.split("/", 1)[1] + ".json")
+    if "|" in rid:
+        objective = rid.split("|")[3]
+        return Path(out) / ("dependent" if objective in ("W1", "total", "min") else "search") / (_safe(rid) + ".json")
+    kind, ctx, rest = rid.split("/", 2)
+    return Path(out) / kind / ctx / (_safe(rest) + ".json")
+
+
+def eval_path(out: Path, rid: str) -> Path:
+    return Path(out) / "evaluate" / (_safe(rid) + ".json")
+
+
+# ---- search adapters ---------------------------------------------------------------------------------------------------
+
+    return next((j for j in catalog if all(j.get(k) == v for k, v in kw.items())), None)
+
+
+def expected_upstream(rid: str, catalog: list[dict], cuts: int = 0, h4_excluded: bool = False) -> set:
+    """The dependency ids a record must list (design 6.4 order), derived independently of the record."""
+    by = _by_id(catalog)
+    if "|" in rid:
+        j = by[rid]; ctx, rule, fam, obj = j["context"], j["rule"], j["family"], j["objective"]
+        if obj == "profit":
+            return {_menu_id(ctx, rule, "D2+H3")} if fam == "X7-SC" else set()
+        if obj == "W0":
+            return {cell_id(ctx, rule, "D2+H3", "W0")} if fam == "X7-SC" else set()
+        if obj == "W1":
+            return {f"reference/{ctx}/{rule}"} | ({cell_id(ctx, rule, "D2+H3", "W1")} if fam == "X7-SC" else set())
+        if obj == "total":
+            return {_twin_id(ctx, _coalition_tag(j), j["schedule"])} if fam == "X6-SE/v2" else set()
+        return {f"joint_reference_pre/{ctx}/{_coalition_tag(j)}"}
+    kind, ctx, rest = rid.split("/", 2)
+    if kind == "reference":
+        ids = {_menu_id(ctx, rest, f) for f in MAN.menu_families(manifest_ctx(ctx), rest)}
+        if rest in FIXED:
+            ids |= {_menu_id(ctx, o, f) for f in MENU for o in MAN.bank_rules(manifest_ctx(ctx), f, cuts, h4_excluded) if o != rest}
+        return ids
+    if kind == "envelope":
+        return {f"reference/{ctx}/{rest}"} | {cell_id(ctx, rest, f, "profit") for f in MAN.doc()["envelope_families"] if cell_id(ctx, rest, f, "profit") in by}
+    if kind == "bank":
+        return {cell_id(ctx, r, rest, "profit") for r in MAN.FACTORIAL if cell_id(ctx, r, rest, "profit") in by}
+    if kind == "bank_train":
+        return {f"bank/{ctx}/{rest}"} | {f"reference/{ctx}/{r}" for r in MAN.FACTORIAL if cell_id(ctx, r, rest, "profit") in by}
+    if kind == "envelope_select":
+        return {f"bank_train/{ctx}/{rest.rsplit('/', 1)[1]}"}
+    if kind == "welfare_select":
+        rule, obj = rest.rsplit("/", 1)
+        return {cell_id(ctx, rule, f, obj) for f in MENU if cell_id(ctx, rule, f, obj) in by}
+    if kind in COALITION_STEPS:
+        group = _group(_group_job(kind, ctx, rest, catalog), catalog)
+        tot = {j["id"] for j in group if j["objective"] == "total"}; mins = {j["id"] for j in group if j["objective"] == "min"}
+        if kind == "joint_twin":
+            return set()
+        if kind == "joint_reference_pre":
+            return {_twin_id(ctx, rest, s) for s in _x6_schedules(group)} | tot
+    for f in MENU:
+        rec = read(path_of(out, cell_id(ctx, rule, f, obj)))
+        if rec is None:
+            continue
+        sel = rec.get("selected")
+        eff = next((e["eff"] for e in rec.get("extras", []) if sel is not None and exact_key(e["knobs"]) == exact_key(sel)), None)
+        recs[f] = {"selected": sel, "train_eff": eff}
+    return select_welfare(recs)
+
+
+def check_complete(ctx: str, catalog: list[dict], out: Path, cuts: int = 0, h4_excluded: bool = False) -> list[str]:
+    problems = []
+    for r in MAN.required(manifest_ctx(ctx), cuts, h4_excluded):
+        r = r.replace(manifest_ctx(ctx), ctx, 1)
+        try:
+            check_record(r, read(path_of(out, r)), catalog, out, cuts, h4_excluded)
+        except (ValueError, KeyError, StopIteration, TypeError) as e:
+            problems.append(f"{r}: {e}")
+    return problems
+
+
+def stage_freeze(ctx: str, catalog: list[dict], out: Path, cuts: int = 0, h4_excluded: bool = False) -> dict:
+    derived_records(ctx, catalog, out, cuts, h4_excluded)
+    problems = check_complete(ctx, catalog, out, cuts, h4_excluded)
+    if problems:
+        raise SystemExit(f"freeze {ctx} refused: {problems[:5]}{' ...' if len(problems) > 5 else ''}")
+    recs = [r.replace(manifest_ctx(ctx), ctx, 1) for r in MAN.required(manifest_ctx(ctx), cuts, h4_excluded)]
+    rec = {"stage": "freeze", "context": ctx, "cuts": cuts, "h4_excluded": h4_excluded, "records": {r: sha_file(path_of(out, r)) for r in recs}}
+    write(path_of(out, f"freeze/{ctx}"), rec)
+    return rec
+
+
+def accept(ctx: str, catalog: list[dict], out: Path, cuts: int = 0, h4_excluded: bool = False) -> dict:
+    fr = read(path_of(out, f"freeze/{ctx}"))
+    if fr is None:
+        raise SystemExit(f"{ctx}: no freeze; evaluation refused")
+    for r, sha in fr["records"].items():
+        p = path_of(out, r)
+        if not p.exists() or sha_file(p) != sha:
+            raise SystemExit(f"{ctx}: {r} differs from the freeze; evaluation refused")
+    problems = check_complete(ctx, catalog, out, cuts, h4_excluded)
+    missing = [r.replace(manifest_ctx(ctx), ctx, 1) for r in MAN.required(manifest_ctx(ctx), cuts, h4_excluded)
+               if r.replace(manifest_ctx(ctx), ctx, 1) not in fr["records"]]
+    if problems or missing:
+        raise SystemExit(f"{ctx}: freeze incomplete or stale; evaluation refused: {(problems + missing)[:5]}")
+    return fr
+        arch[k] = replace(e, f=f)
+    best = max(arch.values(), key=lambda e: e.f)
+    return replace(orig, archive=arch, best_knobs=dict(best.knobs), best_f=best.f)
+
+
+# ---- orchestration -----------------------------------------------------------------------------------------------------
+
+def _stage_record_path(stage: str, job: dict, out: Path) -> Path:
+    if stage in ("search", "dependent"):
+        return path_of(out, job["id"])
+    if stage == "evaluate":
+        return eval_path(out, job["id"])
+    return Path(out) / "doubling" / (_safe(job["id"]) + ".json")
+
+
+def _inputs(job: dict) -> set:
+    """The records an evaluation or a doubling check depends on (the diagnostic has none but the freeze)."""
+    if job["objective"] == "diagnostic":
+        return set()
+    ids = {job["id"]}
+    if job["objective"] in ("W0", "W1"):
+        ids.add(f"welfare_select/{job['context']}/{job['rule']}/{job['objective']}")
+    if job["objective"] in ("profit", "W1"):
+        ids.add(f"reference/{job['context']}/{job['rule']}")
+    if job["objective"] in ("total", "min"):
+        ids.add(f"joint_reference/{job['context']}/{_coalition_tag(job)}")
+    if job["objective"] == "min":
+        ids.add(f"coalition_select/{job['context']}/{_coalition_tag(job)}")
+    return ids
+
+
+def stage_upstream(stage: str, job: dict, catalog: list[dict], cuts: int, h4_excluded: bool) -> set:
+    if stage in ("search", "dependent"):
+        return expected_upstream(job["id"], catalog, cuts, h4_excluded)
+    ids = _inputs(job) | {f"freeze/{job['context']}"}
+    if stage == "doubling" and job["objective"] == "profit":                  # the profit check reselects from the rule's menu
+        ids |= expected_upstream(f"reference/{job['context']}/{job['rule']}", catalog, cuts, h4_excluded)
+    return ids
+
+
+def _tiers(items: list) -> list[list]:
+    return [[i for i in items if i.get("priority", 3) == t] for t in range(4)]
+
+
+def _menu_items(jobs: list[dict]) -> list[dict]:
+    menus = {}
+== 1. headline markets, strict verify
+ok {'headline@rho0.2': 'ok', 'headline@rho1': 'unavailable'}
+ok {'headline@rho0.2': 'unavailable', 'headline@rho1': 'ok'}
+== 2. fresh markets: container configs and the 1-ulp check (also verify with those configs)
+W: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/focal/InRelease  Temporary failure resolving 'archive.ubuntu.com'
+W: Failed to fetch http://archive.ubuntu.com/ubuntu/dists/focal-updates/InRelease  Temporary failure resolving 'archive.ubuntu.com'
+W: Failed to fetch http://security.ubuntu.com/ubuntu/dists/focal-security/InRelease  Temporary failure resolving 'security.ubuntu.com'
+W: Some index files failed to download. They have been ignored, or old ones used instead.
+bash: uv: command not found
+-rw-r--r--  1 oemer.demirel  staff  5112 Nov  4 10:16 /Users/oemer.demirel/Projects/touchstone/results/v2/deviation/cfg_linux.json
+fresh0 ok pod_hash_ok=True diffs=2 max_ulps=1 verify_exit=0
+fresh1 ok pod_hash_ok=True diffs=2 max_ulps=1 verify_exit=0
+fresh2 ok pod_hash_ok=True diffs=6 max_ulps=1 verify_exit=0
+fresh3 ok pod_hash_ok=True diffs=4 max_ulps=1 verify_exit=0
+fresh4 ok pod_hash_ok=True diffs=2 max_ulps=1 verify_exit=0
+fresh5 ok pod_hash_ok=True diffs=1 max_ulps=1 verify_exit=0
+== 3. merged output folder (hard links; salt.hex is identical everywhere)
+merged      866 files from      873
+== 4. report and its check
+ok
+== 5. paper inputs
+POST-EVAL OK
+    """d = g_C* - g_F111 per seed, pooled over the six fresh markets (design 9.3), two fixed Holm slots."""
+    tests, effs, sides, flags = {}, {}, {}, {}
+    for a, b in PAIRS:
+        for f in FAMS:
+            name = f"{b}-{a}|{f}"; st, ef, sd, miss = [], [], {k: [] for k in SIDE}, False
+            for m in FRESH:
+                ra, rb = R.get(m, a, f), R.get(m, b, f)
+                if ra is None or rb is None:
+                    miss = True; break
+                with np.errstate(over="ignore", invalid="ignore"):
+                    st.append(np.asarray(rb["gain"], dtype=float) - np.asarray(ra["gain"], dtype=float))
+                ef.append((np.asarray(ra["eff_attack"]), np.asarray(rb["eff_attack"])))
+                for k, fld in SIDE.items():
+                    sd[k].append(np.asarray(ra[fld], dtype=float) - np.asarray(rb[fld], dtype=float))
+            tests[name] = None if miss else st; effs[name] = ef; sides[name] = sd
+            flags[name] = any(RV.cell_id(f"{m}@rho0.2", r, f, "profit") in R.flagged for m in FRESH for r in (a, b))
+    fam = q1_family(tests, kappa); tail = kappa * ALPHA / (2 * len(tests)) if kappa else NOMINAL
+    out = {"heading": NONCONF if not confirmatory else "Q1: Holm on calibrated two-sided p-values (two slots), pooled over the six fresh markets",
+           "tests": {}, "descriptive": {}}
+    for name, st in tests.items():
+        cat = fam[name]["category"]; t = {"p": _f(fam[name]["p"]), "reject": fam[name]["reject"], "category": cat,
+                                          "search": FLAGGED if flags[name] and st is not None else None}
+        if st is not None:
+            try:
+                t.update(_strat(st, tail, strict=True), interval_label=f"calibrated simultaneous, one-sided tails {tail:.6g}" if kappa else NOMINAL_LABEL)
+                favoured_r3 = cat.startswith("R3") or (cat not in ("C* materially lower",) and float(stratified_mean(st)) >= 0)
+                eff = [(x - y) if favoured_r3 else (y - x) for x, y in effs[name]]
+                t["efficiency"] = q1_efficiency(eff); t["better"] = q1_better(cat, t["efficiency"])
+                t["side"] = {k: float(stratified_mean(v)) for k, v in sides[name].items()}
+            except NumericalRefusal:
+                t.update(category=REFUSED, p=None, reject=None, estimate=None, interval=None, interval_label=NOMINAL_LABEL)
+        else:
+            t.update(estimate=None, interval=None, interval_label=NOMINAL_LABEL)
+        out["tests"][name] = t
+    for m in FRESH + ("headline",):
+        d = {}
+        for a, b in PAIRS:
+            for f in FAMS:
+                ra, rb = R.get(m, a, f), R.get(m, b, f)
+                if ra is not None and rb is not None:
+                    with np.errstate(over="ignore", invalid="ignore"):
+                        x = np.asarray(rb["gain"], dtype=float) - np.asarray(ra["gain"], dtype=float)
+                    d[f"{b}-{a}|{f}"] = {"estimate": _est(x), "interval": _interval(x)}
+        out["descriptive"][m] = d
+    return out
+
+
+def q4_decide(pa: list, pb: list, kappa) -> dict:
+    """Holm over all six market slots (design 9.3): a market with a missing cell enters with p = 1 and is not decided."""
+    fa, fb = [1.0 if p is None else p for p in pa], [1.0 if p is None else p for p in pb]
+# Protocol v2 report
+
+Multiplicity is controlled within Q1 and within Q4 only; there is no paper-wide familywise guarantee.
+
+## Q1 comparator (d = gain of C* minus gain of F111)
+_Q1: Holm on calibrated two-sided p-values (two slots), pooled over the six fresh markets_
+| test | estimate [interval] | interval kind | category | efficiency | better | search |
+|---|---|---|---|---|---|---|
+| C*-F111|D2+H3 | 0.0207 [0.0198, 0.0216] | calibrated simultaneous, one-sided tails 0.00625 | equivalent, direction R3 lower | efficiency condition met | - | about the prescribed search procedure (search flagged) |
+- C*-F111|D2+H3 side fields (descriptive, F111 minus C*): gross_eff_diff 0.0009; net_eff_diff 0.0009; ref_profit_diff 1.0193; audit_spend_diff 0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0002; served_share_diff 0.0003
+| C*-F111|X7-SC | 0.0243 [0.0235, 0.0251] | calibrated simultaneous, one-sided tails 0.00625 | equivalent, direction R3 lower | efficiency condition met | - | - |
+- C*-F111|X7-SC side fields (descriptive, F111 minus C*): gross_eff_diff 0.0009; net_eff_diff 0.0009; ref_profit_diff 1.0193; audit_spend_diff -0.0000; false_refund_focal_diff 0.0000; false_refund_others_diff -0.0002; served_share_diff 0.0002
+- fresh0 (descriptive, nominal 95 percent, unadjusted): C*-F111|D2+H3 0.0211 [0.0195, 0.0227]; C*-F111|X7-SC 0.0211 [0.0195, 0.0227]
+- fresh1 (descriptive, nominal 95 percent, unadjusted): C*-F111|D2+H3 0.0525 [0.0507, 0.0543]; C*-F111|X7-SC 0.0525 [0.0507, 0.0543]
+- fresh2 (descriptive, nominal 95 percent, unadjusted): C*-F111|D2+H3 0.0285 [0.0267, 0.0303]; C*-F111|X7-SC 0.0285 [0.0267, 0.0303]
+- fresh3 (descriptive, nominal 95 percent, unadjusted): C*-F111|D2+H3 -0.0382 [-0.0399, -0.0366]; C*-F111|X7-SC -0.0043 [-0.0050, -0.0035]
+- fresh4 (descriptive, nominal 95 percent, unadjusted): C*-F111|D2+H3 0.0438 [0.0420, 0.0457]; C*-F111|X7-SC 0.0315 [0.0294, 0.0336]
+- fresh5 (descriptive, nominal 95 percent, unadjusted): C*-F111|D2+H3 0.0165 [0.0146, 0.0184]; C*-F111|X7-SC 0.0165 [0.0146, 0.0184]
+- headline (descriptive, nominal 95 percent, unadjusted): C*-F111|D2+H3 0.0387 [0.0381, 0.0392]; C*-F111|X7-SC 0.0387 [0.0381, 0.0392]
+
+## Q4 replication
+_Q4: intersection-union per market, Holm over six markets_
+replicated on 3 of 6 sampled markets; decisions about the prescribed search procedure on fresh1, fresh4; failing: fresh0, fresh2, fresh5
+- fresh0: gain difference 0.0414 (lower 0.0394), efficiency 0.9972 (lower 0.9967); calibrated one-sided, tail 0.00208333
+- fresh1: gain difference 0.4691 (lower 0.4651), efficiency 0.9984 (lower 0.9980); calibrated one-sided, tail 0.00208333
+- fresh2: gain difference 0.0568 (lower 0.0527), efficiency 0.9853 (lower 0.9846); calibrated one-sided, tail 0.00208333
+- fresh3: gain difference 0.2626 (lower 0.2600), efficiency 0.9980 (lower 0.9974); calibrated one-sided, tail 0.00208333
+- fresh4: gain difference 0.1834 (lower 0.1753), efficiency 0.9875 (lower 0.9867); calibrated one-sided, tail 0.00208333
+- fresh5: gain difference 0.0271 (lower 0.0251), efficiency 0.9959 (lower 0.9952); calibrated one-sided, tail 0.00208333
+
+## Q2 attribution (descriptive)
+- searched, pooled over fresh markets, D2+H3: P -0.0831 [-0.0836, -0.0826]; G -0.0952 [-0.0959, -0.0946]; S 0.0039 [0.0034, 0.0045]; PG 0.0817 [0.0812, 0.0822]; PS -0.0024 [-0.0028, -0.0021]; GS 0.0112 [0.0106, 0.0117]; PGS 0.0010 [0.0006, 0.0013]; G|P=0 -0.1769 [-0.1779, -0.1759]; G|P=1 -0.0135 [-0.0141, -0.0130]; P|S=0 -0.0807 [-0.0814, -0.0800]; P|S=1 -0.0856 [-0.0860, -0.0851]; P|G=0 -0.1648 [-0.1658, -0.1638]; P|G=1 -0.0014 [-0.0015, -0.0013]; G|S=0 -0.1064 [-0.1075, -0.1054]; G|S=1 -0.0841 [-0.0846, -0.0835]
+- searched, pooled over fresh markets, X7-SC: P -0.0846 [-0.0851, -0.0841]; G -0.0943 [-0.0948, -0.0937]; S 0.0050 [0.0045, 0.0055]; PG 0.0807 [0.0802, 0.0812]; PS -0.0014 [-0.0017, -0.0010]; GS 0.0049 [0.0044, 0.0054]; PGS 0.0024 [0.0021, 0.0027]; G|P=0 -0.1749 [-0.1759, -0.1740]; G|P=1 -0.0136 [-0.0141, -0.0131]; P|S=0 -0.0832 [-0.0839, -0.0825]; P|S=1 -0.0860 [-0.0864, -0.0855]; P|G=0 -0.1652 [-0.1662, -0.1643]; P|G=1 -0.0039 [-0.0040, -0.0038]; G|S=0 -0.0991 [-0.1001, -0.0982]; G|S=1 -0.0894 [-0.0900, -0.0888]
+- searched_eff, pooled over fresh markets, D2+H3: P 0.0167 [0.0167, 0.0168]; G 0.0162 [0.0162, 0.0163]; S 0.0013 [0.0012, 0.0014]; PG -0.0167 [-0.0167, -0.0166]; PS -0.0002 [-0.0003, -0.0002]; GS 0.0014 [0.0013, 0.0014]; PGS 0.0003 [0.0003, 0.0003]; G|P=0 0.0329 [0.0328, 0.0330]; G|P=1 -0.0004 [-0.0005, -0.0004]; P|S=0 0.0170 [0.0169, 0.0170]; P|S=1 0.0165 [0.0165, 0.0166]; P|G=0 0.0334 [0.0333, 0.0335]; P|G=1 0.0001 [0.0001, 0.0001]; G|S=0 0.0149 [0.0148, 0.0150]; G|S=1 0.0176 [0.0175, 0.0177]
+- searched_eff, pooled over fresh markets, X7-SC: P 0.0168 [0.0167, 0.0169]; G 0.0166 [0.0165, 0.0167]; S 0.0013 [0.0012, 0.0014]; PG -0.0166 [-0.0167, -0.0166]; PS -0.0002 [-0.0003, -0.0002]; GS 0.0008 [0.0007, 0.0008]; PGS 0.0002 [0.0002, 0.0002]; G|P=0 0.0332 [0.0331, 0.0334]; G|P=1 -0.0001 [-0.0001, 0.0000]; P|S=0 0.0170 [0.0170, 0.0171]; P|S=1 0.0166 [0.0165, 0.0167]; P|G=0 0.0334 [0.0333, 0.0336]; P|G=1 0.0002 [0.0001, 0.0002]; G|S=0 0.0158 [0.0157, 0.0159]; G|S=1 0.0174 [0.0173, 0.0175]
+- searched_net_eff, pooled over fresh markets, D2+H3: P 0.0167 [0.0167, 0.0168]; G 0.0162 [0.0162, 0.0163]; S 0.0013 [0.0013, 0.0014]; PG -0.0167 [-0.0167, -0.0166]; PS -0.0002 [-0.0003, -0.0002]; GS 0.0014 [0.0013, 0.0014]; PGS 0.0003 [0.0003, 0.0003]; G|P=0 0.0329 [0.0328, 0.0330]; G|P=1 -0.0004 [-0.0005, -0.0004]; P|S=0 0.0170 [0.0169, 0.0170]; P|S=1 0.0165 [0.0165, 0.0166]; P|G=0 0.0334 [0.0333, 0.0335]; P|G=1 0.0001 [0.0001, 0.0001]; G|S=0 0.0149 [0.0148, 0.0150]; G|S=1 0.0176 [0.0175, 0.0177]
+- searched_net_eff, pooled over fresh markets, X7-SC: P 0.0168 [0.0167, 0.0169]; G 0.0166 [0.0165, 0.0167]; S 0.0014 [0.0013, 0.0015]; PG -0.0166 [-0.0167, -0.0166]; PS -0.0002 [-0.0003, -0.0002]; GS 0.0008 [0.0007, 0.0008]; PGS 0.0002 [0.0002, 0.0002]; G|P=0 0.0332 [0.0331, 0.0334]; G|P=1 -0.0000 [-0.0001, 0.0000]; P|S=0 0.0170 [0.0170, 0.0171]; P|S=1 0.0166 [0.0165, 0.0167]; P|G=0 0.0334 [0.0333, 0.0336]; P|G=1 0.0002 [0.0001, 0.0002]; G|S=0 0.0158 [0.0157, 0.0159]; G|S=1 0.0174 [0.0173, 0.0175]
+- fixed, pooled over fresh markets, D2+H3: P -0.0874 [-0.0878, -0.0871]; G -0.0763 [-0.0767, -0.0759]; S 0.0022 [0.0018, 0.0025]; PG 0.0699 [0.0696, 0.0703]; PS -0.0017 [-0.0020, -0.0014]; GS 0.0030 [0.0027, 0.0034]; PGS -0.0033 [-0.0036, -0.0030]; G|P=0 -0.1462 [-0.1469, -0.1456]; G|P=1 -0.0064 [-0.0067, -0.0061]; P|S=0 -0.0857 [-0.0864, -0.0852]; P|S=1 -0.0891 [-0.0893, -0.0889]; P|G=0 -0.1573 [-0.1580, -0.1567]; P|G=1 -0.0175 [-0.0175, -0.0174]; G|S=0 -0.0793 [-0.0800, -0.0787]; G|S=1 -0.0733 [-0.0735, -0.0730]
+- fixed, pooled over fresh markets, X7-SC: P -0.0882 [-0.0886, -0.0879]; G -0.0753 [-0.0757, -0.0750]; S 0.0025 [0.0021, 0.0028]; PG 0.0704 [0.0701, 0.0707]; PS -0.0024 [-0.0027, -0.0021]; GS 0.0027 [0.0024, 0.0030]; PGS -0.0029 [-0.0033, -0.0027]; G|P=0 -0.1457 [-0.1464, -0.1451]; G|P=1 -0.0050 [-0.0053, -0.0047]; P|S=0 -0.0858 [-0.0865, -0.0853]; P|S=1 -0.0907 [-0.0909, -0.0905]; P|G=0 -0.1586 [-0.1593, -0.1580]; P|G=1 -0.0179 [-0.0179, -0.0178]; G|S=0 -0.0780 [-0.0787, -0.0774]; G|S=1 -0.0727 [-0.0729, -0.0724]
+- fixed_attack_term, pooled over fresh markets, D2+H3: P -0.0866 [-0.0867, -0.0864]; G -0.0758 [-0.0761, -0.0756]; S 0.0031 [0.0030, 0.0033]; PG 0.0692 [0.0690, 0.0693]; PS -0.0022 [-0.0023, -0.0021]; GS 0.0026 [0.0025, 0.0027]; PGS -0.0027 [-0.0027, -0.0026]; G|P=0 -0.1450 [-0.1453, -0.1447]; G|P=1 -0.0066 [-0.0069, -0.0064]; P|S=0 -0.0844 [-0.0845, -0.0842]; P|S=1 -0.0888 [-0.0890, -0.0886]; P|G=0 -0.1557 [-0.1561, -0.1554]; P|G=1 -0.0174 [-0.0174, -0.0173]; G|S=0 -0.0784 [-0.0787, -0.0782]; G|S=1 -0.0732 [-0.0735, -0.0729]
+- fixed_attack_term, pooled over fresh markets, X7-SC: P -0.0874 [-0.0876, -0.0872]; G -0.0749 [-0.0751, -0.0746]; S 0.0035 [0.0033, 0.0036]; PG 0.0696 [0.0695, 0.0698]; PS -0.0029 [-0.0030, -0.0029]; GS 0.0023 [0.0022, 0.0023]; PGS -0.0023 [-0.0024, -0.0023]; G|P=0 -0.1445 [-0.1448, -0.1442]; G|P=1 -0.0052 [-0.0055, -0.0050]; P|S=0 -0.0845 [-0.0846, -0.0843]; P|S=1 -0.0903 [-0.0905, -0.0902]; P|G=0 -0.1570 [-0.1573, -0.1567]; P|G=1 -0.0178 [-0.0178, -0.0177]; G|S=0 -0.0771 [-0.0774, -0.0769]; G|S=1 -0.0726 [-0.0729, -0.0724]
+- fixed_reference_term, pooled over fresh markets, D2+H3: P 0.0008 [0.0006, 0.0012]; G 0.0005 [0.0002, 0.0008]; S 0.0010 [0.0006, 0.0014]; PG -0.0007 [-0.0011, -0.0005]; PS -0.0005 [-0.0008, -0.0002]; GS -0.0004 [-0.0007, -0.0001]; PGS 0.0006 [0.0004, 0.0009]; G|P=0 0.0012 [0.0007, 0.0019]; G|P=1 -0.0003 [-0.0004, -0.0001]; P|S=0 0.0013 [0.0008, 0.0020]; P|S=1 0.0003 [0.0003, 0.0004]; P|G=0 0.0016 [0.0011, 0.0022]; P|G=1 0.0001 [0.0001, 0.0001]; G|S=0 0.0009 [0.0003, 0.0016]; G|S=1 0.0001 [-0.0000, 0.0002]
+- fixed_reference_term, pooled over fresh markets, X7-SC: P 0.0008 [0.0006, 0.0012]; G 0.0005 [0.0002, 0.0008]; S 0.0010 [0.0006, 0.0014]; PG -0.0007 [-0.0011, -0.0005]; PS -0.0005 [-0.0008, -0.0002]; GS -0.0004 [-0.0007, -0.0001]; PGS 0.0006 [0.0004, 0.0009]; G|P=0 0.0012 [0.0007, 0.0019]; G|P=1 -0.0003 [-0.0004, -0.0001]; P|S=0 0.0013 [0.0008, 0.0020]; P|S=1 0.0003 [0.0003, 0.0004]; P|G=0 0.0016 [0.0011, 0.0022]; P|G=1 0.0001 [0.0001, 0.0001]; G|S=0 0.0009 [0.0003, 0.0016]; G|S=1 0.0001 [-0.0000, 0.0002]
+- fixed_eff, pooled over fresh markets, D2+H3: P 0.0004 [0.0004, 0.0005]; G 0.0005 [0.0004, 0.0005]; S 0.0004 [0.0003, 0.0005]; PG -0.0003 [-0.0004, -0.0003]; PS 0.0000 [-0.0000, 0.0000]; GS -0.0000 [-0.0000, 0.0000]; PGS 0.0000 [-0.0000, 0.0000]; G|P=0 0.0008 [0.0007, 0.0009]; G|P=1 0.0001 [0.0001, 0.0002]; P|S=0 0.0004 [0.0004, 0.0005]; P|S=1 0.0004 [0.0004, 0.0005]; P|G=0 0.0008 [0.0007, 0.0008]; P|G=1 0.0001 [0.0001, 0.0001]; G|S=0 0.0005 [0.0004, 0.0005]; G|S=1 0.0005 [0.0004, 0.0005]
+- fixed_eff, pooled over fresh markets, X7-SC: P 0.0005 [0.0005, 0.0006]; G 0.0005 [0.0005, 0.0006]; S 0.0004 [0.0003, 0.0004]; PG -0.0004 [-0.0004, -0.0004]; PS 0.0000 [-0.0000, 0.0001]; GS -0.0000 [-0.0000, 0.0000]; PGS 0.0000 [-0.0000, 0.0000]; G|P=0 0.0009 [0.0008, 0.0010]; G|P=1 0.0001 [0.0001, 0.0001]; P|S=0 0.0005 [0.0004, 0.0005]; P|S=1 0.0005 [0.0005, 0.0006]; P|G=0 0.0009 [0.0008, 0.0010]; P|G=1 0.0001 [0.0001, 0.0001]; G|S=0 0.0005 [0.0005, 0.0006]; G|S=1 0.0005 [0.0004, 0.0006]
+- fixed_net_eff, pooled over fresh markets, D2+H3: P 0.0004 [0.0004, 0.0005]; G 0.0005 [0.0004, 0.0005]; S 0.0004 [0.0004, 0.0005]; PG -0.0003 [-0.0004, -0.0003]; PS 0.0000 [-0.0000, 0.0000]; GS -0.0000 [-0.0000, 0.0000]; PGS 0.0000 [-0.0000, 0.0000]; G|P=0 0.0008 [0.0007, 0.0009]; G|P=1 0.0001 [0.0001, 0.0002]; P|S=0 0.0004 [0.0004, 0.0005]; P|S=1 0.0004 [0.0004, 0.0005]; P|G=0 0.0008 [0.0007, 0.0008]; P|G=1 0.0001 [0.0001, 0.0001]; G|S=0 0.0005 [0.0004, 0.0005]; G|S=1 0.0005 [0.0004, 0.0005]
+- fixed_net_eff, pooled over fresh markets, X7-SC: P 0.0005 [0.0005, 0.0006]; G 0.0005 [0.0005, 0.0006]; S 0.0004 [0.0004, 0.0005]; PG -0.0004 [-0.0004, -0.0004]; PS 0.0000 [0.0000, 0.0001]; GS -0.0000 [-0.0000, 0.0000]; PGS 0.0000 [-0.0000, 0.0000]; G|P=0 0.0009 [0.0008, 0.0010]; G|P=1 0.0001 [0.0001, 0.0001]; P|S=0 0.0005 [0.0004, 0.0005]; P|S=1 0.0005 [0.0005, 0.0006]; P|G=0 0.0009 [0.0008, 0.0010]; P|G=1 0.0001 [0.0001, 0.0001]; G|S=0 0.0005 [0.0005, 0.0006]; G|S=1 0.0005 [0.0004, 0.0006]
+- searched, fresh0, D2+H3: P -0.0169 [-0.0175, -0.0164]; G -0.0239 [-0.0247, -0.0230]; S -0.0014 [-0.0023, -0.0005]; PG 0.0169 [0.0164, 0.0175]; PS -0.0007 [-0.0012, -0.0003]; GS 0.0001 [-0.0007, 0.0008]; PGS 0.0007 [0.0003, 0.0012]; G|P=0 -0.0408 [-0.0418, -0.0398]; G|P=1 -0.0069 [-0.0079, -0.0060]; P|S=0 -0.0162 [-0.0169, -0.0155]; P|S=1 -0.0177 [-0.0184, -0.0170]; P|G=0 -0.0339 [-0.0350, -0.0328]; P|G=1 0.0000 [0.0000, 0.0000]; G|S=0 -0.0239 [-0.0248, -0.0230]; G|S=1 -0.0238 [-0.0251, -0.0226]
+- searched_eff, fresh0, D2+H3: P 0.0007 [0.0006, 0.0007]; G 0.0009 [0.0008, 0.0010]; S 0.0002 [0.0001, 0.0004]; PG -0.0007 [-0.0007, -0.0006]; PS 0.0001 [0.0001, 0.0002]; GS 0.0002 [0.0002, 0.0003]; PGS -0.0001 [-0.0002, -0.0001]; G|P=0 0.0016 [0.0014, 0.0018]; G|P=1 0.0002 [0.0002, 0.0003]; P|S=0 0.0006 [0.0005, 0.0006]; P|S=1 0.0008 [0.0007, 0.0009]; P|G=0 0.0013 [0.0012, 0.0015]; P|G=1 0.0000 [0.0000, 0.0000]; G|S=0 0.0007 [0.0006, 0.0008]; G|S=1 0.0011 [0.0010, 0.0013]
+- searched_net_eff, fresh0, D2+H3: P 0.0007 [0.0006, 0.0007]; G 0.0009 [0.0008, 0.0010]; S 0.0002 [0.0001, 0.0004]; PG -0.0007 [-0.0007, -0.0006]; PS 0.0001 [0.0001, 0.0002]; GS 0.0002 [0.0002, 0.0003]; PGS -0.0001 [-0.0002, -0.0001]; G|P=0 0.0016 [0.0014, 0.0018]; G|P=1 0.0002 [0.0002, 0.0003]; P|S=0 0.0006 [0.0005, 0.0006]; P|S=1 0.0008 [0.0007, 0.0009]; P|G=0 0.0013 [0.0012, 0.0015]; P|G=1 0.0000 [0.0000, 0.0000]; G|S=0 0.0007 [0.0006, 0.0008]; G|S=1 0.0011 [0.0010, 0.0013]
+- fixed, fresh0, D2+H3: P -0.0179 [-0.0184, -0.0175]; G -0.0242 [-0.0247, -0.0237]; S 0.0005 [0.0000, 0.0009]; PG 0.0179 [0.0175, 0.0184]; PS -0.0001 [-0.0004, 0.0001]; GS -0.0001 [-0.0004, 0.0001]; PGS 0.0001 [-0.0001, 0.0004]; G|P=0 -0.0421 [-0.0429, -0.0413]; G|P=1 -0.0063 [-0.0069, -0.0057]; P|S=0 -0.0178 [-0.0183, -0.0173]; P|S=1 -0.0180 [-0.0186, -0.0175]; P|G=0 -0.0358 [-0.0368, -0.0349]; P|G=1 0.0000 [0.0000, 0.0000]; G|S=0 -0.0241 [-0.0247, -0.0235]; G|S=1 -0.0243 [-0.0249, -0.0237]
+- fixed_attack_term, fresh0, D2+H3: P -0.0178 [-0.0182, -0.0174]; G -0.0240 [-0.0245, -0.0235]; S 0.0006 [0.0003, 0.0010]; PG 0.0178 [0.0174, 0.0182]; PS 0.0002 [0.0001, 0.0004]; GS 0.0001 [-0.0001, 0.0003]; PGS -0.0002 [-0.0004, -0.0001]; G|P=0 -0.0418 [-0.0425, -0.0411]; G|P=1 -0.0062 [-0.0068, -0.0056]; P|S=0 -0.0180 [-0.0185, -0.0176]; P|S=1 -0.0176 [-0.0180, -0.0171]; P|G=0 -0.0356 [-0.0364, -0.0347]; P|G=1 0.0000 [0.0000, 0.0000]; G|S=0 -0.0241 [-0.0246, -0.0236]; G|S=1 -0.0239 [-0.0244, -0.0233]
+- fixed_reference_term, fresh0, D2+H3: P 0.0001 [-0.0001, 0.0003]; G 0.0002 [0.0001, 0.0004]; S 0.0001 [-0.0001, 0.0005]; PG -0.0001 [-0.0003, 0.0001]; PS 0.0003 [0.0002, 0.0006]; GS 0.0002 [0.0000, 0.0004]; PGS -0.0003 [-0.0006, -0.0002]; G|P=0 0.0004 [0.0000, 0.0007]; G|P=1 0.0001 [0.0000, 0.0009]; P|S=0 -0.0002 [-0.0005, 0.0000]; P|S=1 0.0005 [0.0002, 0.0008]; P|G=0 0.0003 [-0.0001, 0.0007]; P|G=1 0.0000 [0.0000, 0.0000]; G|S=0 0.0000 [-0.0002, 0.0003]; G|S=1 0.0004 [0.0002, 0.0008]
+- fixed_eff, fresh0, D2+H3: P 0.0002 [0.0002, 0.0003]; G 0.0004 [0.0003, 0.0005]; S 0.0003 [0.0002, 0.0005]; PG -0.0002 [-0.0003, -0.0002]; PS 0.0000 [0.0000, 0.0001]; GS 0.0001 [0.0000, 0.0001]; PGS -0.0000 [-0.0001, -0.0000]; G|P=0 0.0006 [0.0004, 0.0008]; G|P=1 0.0001 [0.0001, 0.0002]; P|S=0 0.0002 [0.0001, 0.0003]; P|S=1 0.0003 [0.0002, 0.0004]; P|G=0 0.0005 [0.0004, 0.0007]; P|G=1 0.0000 [0.0000, 0.0000]; G|S=0 0.0003 [0.0002, 0.0004]; G|S=1 0.0004 [0.0003, 0.0006]
+- fixed_net_eff, fresh0, D2+H3: P 0.0002 [0.0002, 0.0003]; G 0.0004 [0.0003, 0.0005]; S 0.0003 [0.0002, 0.0005]; PG -0.0002 [-0.0003, -0.0002]; PS 0.0000 [0.0000, 0.0001]; GS 0.0001 [0.0000, 0.0001]; PGS -0.0000 [-0.0001, -0.0000]; G|P=0 0.0006 [0.0004, 0.0008]; G|P=1 0.0001 [0.0001, 0.0002]; P|S=0 0.0002 [0.0001, 0.0003]; P|S=1 0.0003 [0.0002, 0.0004]; P|G=0 0.0005 [0.0004, 0.0007]; P|G=1 0.0000 [0.0000, 0.0000]; G|S=0 0.0003 [0.0002, 0.0004]; G|S=1 0.0004 [0.0003, 0.0006]
+- searched, fresh1, D2+H3: P -0.2416 [-0.2427, -0.2403]; G -0.2611 [-0.2633, -0.2590]; S 0.0256 [0.0238, 0.0273]; PG 0.2342 [0.2330, 0.2354]; PS -0.0154 [-0.0161, -0.0147]; GS 0.0491 [0.0473, 0.0509]; PGS 0.0080 [0.0073, 0.0088]; G|P=0 -0.4953 [-0.4982, -0.4926]; G|P=1 -0.0269 [-0.0289, -0.0248]; P|S=0 -0.2262 [-0.2274, -0.2249]; P|S=1 -0.2570 [-0.2585, -0.2554]; P|G=0 -0.4758 [-0.4781, -0.4734]; P|G=1 -0.0074 [-0.0079, -0.0068]; G|S=0 -0.3102 [-0.3137, -0.3068]; G|S=1 -0.2120 [-0.2140, -0.2101]
+- searched_eff, fresh1, D2+H3: P 0.0325 [0.0324, 0.0327]; G 0.0305 [0.0303, 0.0307]; S 0.0028 [0.0025, 0.0031]; PG -0.0321 [-0.0322, -0.0320]; PS -0.0007 [-0.0008, -0.0006]; GS 0.0042 [0.0040, 0.0045]; PGS 0.0011 [0.0011, 0.0012]; G|P=0 0.0626 [0.0623, 0.0628]; G|P=1 -0.0016 [-0.0018, -0.0015]; P|S=0 0.0333 [0.0331, 0.0334]; P|S=1 0.0318 [0.0316, 0.0320]; P|G=0 0.0646 [0.0643, 0.0649]; P|G=1 0.0004 [0.0003, 0.0005]; G|S=0 0.0262 [0.0259, 0.0265]; G|S=1 0.0347 [0.0344, 0.0350]
+- searched_net_eff, fresh1, D2+H3: P 0.0325 [0.0324, 0.0327]; G 0.0305 [0.0303, 0.0307]; S 0.0028 [0.0025, 0.0031]; PG -0.0321 [-0.0322, -0.0320]; PS -0.0007 [-0.0008, -0.0006]; GS 0.0042 [0.0040, 0.0045]; PGS 0.0011 [0.0011, 0.0012]; G|P=0 0.0626 [0.0623, 0.0628]; G|P=1 -0.0016 [-0.0018, -0.0015]; P|S=0 0.0333 [0.0331, 0.0334]; P|S=1 0.0318 [0.0316, 0.0320]; P|G=0 0.0646 [0.0643, 0.0649]; P|G=1 0.0004 [0.0003, 0.0005]; G|S=0 0.0262 [0.0259, 0.0265]; G|S=1 0.0347 [0.0344, 0.0350]
+- fixed, fresh1, D2+H3: P -0.1998 [-0.2002, -0.1994]; G -0.1088 [-0.1092, -0.1083]; S 0.0138 [0.0131, 0.0147]; PG 0.1033 [0.1030, 0.1037]; PS -0.0106 [-0.0107, -0.0105]; GS 0.0111 [0.0108, 0.0113]; PGS -0.0108 [-0.0109, -0.0107]; G|P=0 -0.2121 [-0.2127, -0.2114]; G|P=1 -0.0054 [-0.0059, -0.0051]; P|S=0 -0.1892 [-0.1896, -0.1888]; P|S=1 -0.2104 [-0.2108, -0.2100]; P|G=0 -0.3031 [-0.3038, -0.3024]; P|G=1 -0.0965 [-0.0968, -0.0962]; G|S=0 -0.1198 [-0.1203, -0.1193]; G|S=1 -0.0977 [-0.0982, -0.0972]
+- fixed_attack_term, fresh1, D2+H3: P -0.1998 [-0.2002, -0.1994]; G -0.1090 [-0.1094, -0.1086]; S 0.0130 [0.0125, 0.0136]; PG 0.1033 [0.1030, 0.1037]; PS -0.0106 [-0.0107, -0.0105]; GS 0.0111 [0.0109, 0.0113]; PGS -0.0108 [-0.0109, -0.0107]; G|P=0 -0.2123 [-0.2130, -0.2116]; G|P=1 -0.0056 [-0.0060, -0.0053]; P|S=0 -0.1892 [-0.1896, -0.1888]; P|S=1 -0.2104 [-0.2108, -0.2100]; P|G=0 -0.3031 [-0.3038, -0.3024]; P|G=1 -0.0965 [-0.0968, -0.0962]; G|S=0 -0.1201 [-0.1205, -0.1196]; G|S=1 -0.0979 [-0.0983, -0.0974]
+- fixed_reference_term, fresh1, D2+H3: P -0.0000 [-718749.3377, -0.0000]; G -0.0002 [-0.0004, -0.0001]; S -0.0008 [-0.0015, -0.0003]; PG 0.0000 [0.0000, 718825.0552]; PS 0.0000 [0.0000, 718702.4066]; GS 0.0000 [-0.0001, 0.0002]; PGS -0.0000 [-718582.4997, -0.0000]; G|P=0 -0.0002 [-0.0004, -0.0001]; G|P=1 -0.0002 [-0.0004, -0.0001]; P|S=0 -0.0000 [-1436831.4611, -0.0000]; P|S=1 0.0000 [0.0000, 0.0000]; P|G=0 -0.0000 [-1437092.3070, -0.0000]; P|G=1 0.0000 [0.0000, 0.0000]; G|S=0 -0.0002 [-0.0006, -0.0001]; G|S=1 -0.0002 [-0.0005, -0.0000]
+- fixed_eff, fresh1, D2+H3: P 0.0007 [0.0006, 0.0009]; G 0.0003 [0.0002, 0.0004]; S 0.0005 [0.0003, 0.0006]; PG -0.0003 [-0.0004, -0.0003]; PS 0.0001 [0.0000, 0.0002]; GS -0.0000 [-0.0001, -0.0000]; PGS 0.0000 [0.0000, 0.0001]; G|P=0 0.0006 [0.0005, 0.0008]; G|P=1 -0.0000 [-0.0000, 0.0000]; P|S=0 0.0006 [0.0005, 0.0008]; P|S=1 0.0008 [0.0007, 0.0010]; P|G=0 0.0011 [0.0009, 0.0013]; P|G=1 0.0004 [0.0003, 0.0005]; G|S=0 0.0004 [0.0003, 0.0005]; G|S=1 0.0003 [0.0002, 0.0004]
+- fixed_net_eff, fresh1, D2+H3: P 0.0007 [0.0006, 0.0009]; G 0.0003 [0.0002, 0.0004]; S 0.0005 [0.0003, 0.0006]; PG -0.0003 [-0.0004, -0.0003]; PS 0.0001 [0.0000, 0.0002]; GS -0.0000 [-0.0001, -0.0000]; PGS 0.0000 [0.0000, 0.0001]; G|P=0 0.0006 [0.0005, 0.0008]; G|P=1 -0.0000 [-0.0000, 0.0000]; P|S=0 0.0006 [0.0005, 0.0008]; P|S=1 0.0008 [0.0007, 0.0010]; P|G=0 0.0011 [0.0009, 0.0013]; P|G=1 0.0004 [0.0003, 0.0005]; G|S=0 0.0004 [0.0003, 0.0005]; G|S=1 0.0003 [0.0002, 0.0004]
+- searched, fresh2, D2+H3: P -0.0251 [-0.0264, -0.0239]; G -0.0349 [-0.0365, -0.0331]; S 0.0057 [0.0043, 0.0070]; PG 0.0251 [0.0239, 0.0264]; PS 0.0024 [0.0018, 0.0031]; GS 0.0044 [0.0029, 0.0058]; PGS -0.0024 [-0.0031, -0.0018]; G|P=0 -0.0600 [-0.0624, -0.0575]; G|P=1 -0.0097 [-0.0113, -0.0080]; P|S=0 -0.0276 [-0.0290, -0.0261]; P|S=1 -0.0227 [-0.0240, -0.0213]; P|G=0 -0.0503 [-0.0527, -0.0477]; P|G=1 0.0000 [0.0000, 0.0000]; G|S=0 -0.0393 [-0.0418, -0.0365]; G|S=1 -0.0305 [-0.0322, -0.0287]
+- searched_eff, fresh2, D2+H3: P 0.0475 [0.0473, 0.0477]; G 0.0471 [0.0469, 0.0474]; S 0.0042 [0.0040, 0.0044]; PG -0.0475 [-0.0477, -0.0473]; PS -0.0002 [-0.0003, -0.0001]; GS 0.0038 [0.0036, 0.0039]; PGS 0.0002 [0.0001, 0.0003]; G|P=0 0.0946 [0.0943, 0.0951]; G|P=1 -0.0004 [-0.0006, -0.0002]; P|S=0 0.0478 [0.0475, 0.0480]; P|S=1 0.0473 [0.0471, 0.0475]; P|G=0 0.0951 [0.0947, 0.0955]; P|G=1 0.0000 [0.0000, 0.0000]; G|S=0 0.0434 [0.0430, 0.0437]; G|S=1 0.0509 [0.0506, 0.0511]
+- searched_net_eff, fresh2, D2+H3: P 0.0475 [0.0473, 0.0477]; G 0.0471 [0.0469, 0.0473]; S 0.0043 [0.0041, 0.0045]; PG -0.0475 [-0.0477, -0.0473]; PS -0.0002 [-0.0003, -0.0001]; GS 0.0038 [0.0036, 0.0039]; PGS 0.0002 [0.0001, 0.0003]; G|P=0 0.0946 [0.0942, 0.0951]; G|P=1 -0.0004 [-0.0006, -0.0002]; P|S=0 0.0478 [0.0475, 0.0480]; P|S=1 0.0473 [0.0471, 0.0475]; P|G=0 0.0951 [0.0947, 0.0955]; P|G=1 0.0000 [0.0000, 0.0000]; G|S=0 0.0434 [0.0430, 0.0437]; G|S=1 0.0509 [0.0506, 0.0511]
+- fixed, fresh2, D2+H3: P -0.1090 [-0.1096, -0.1085]; G -0.1167 [-0.1177, -0.1156]; S -0.0018 [-0.0027, -0.0010]; PG 0.1090 [0.1085, 0.1096]; PS 0.0009 [0.0006, 0.0013]; GS -0.0007 [-0.0016, 0.0001]; PGS -0.0009 [-0.0013, -0.0006]; G|P=0 -0.2257 [-0.2270, -0.2243]; G|P=1 -0.0077 [-0.0086, -0.0066]; P|S=0 -0.1100 [-0.1108, -0.1093]; P|S=1 -0.1081 [-0.1085, -0.1076]; P|G=0 -0.2180 [-0.2191, -0.2170]; P|G=1 0.0000 [0.0000, 0.0000]; G|S=0 -0.1160 [-0.1176, -0.1141]; G|S=1 -0.1174 [-0.1181, -0.1166]
+- fixed_attack_term, fresh2, D2+H3: P -0.1085 [-0.1089, -0.1080]; G -0.1176 [-0.1183, -0.1169]; S 0.0009 [0.0006, 0.0013]; PG 0.1085 [0.1080, 0.1089]; PS 0.0004 [0.0002, 0.0005]; GS 0.0001 [-0.0001, 0.0003]; PGS -0.0004 [-0.0005, -0.0002]; G|P=0 -0.2260 [-0.2270, -0.2251]; G|P=1 -0.0091 [-0.0098, -0.0085]; P|S=0 -0.1088 [-0.1093, -0.1084]; P|S=1 -0.1081 [-0.1085, -0.1076]; P|G=0 -0.2169 [-0.2178, -0.2160]; P|G=1 0.0000 [0.0000, 0.0000]; G|S=0 -0.1177 [-0.1184, -0.1171]; G|S=1 -0.1175 [-0.1182, -0.1167]
+- fixed_reference_term, fresh2, D2+H3: P 0.0006 [0.0003, 0.0009]; G -0.0009 [-0.0019, -0.0002]; S 0.0027 [0.0020, 0.0035]; PG -0.0006 [-0.0009, -0.0003]; PS -0.0006 [-0.0009, -0.0003]; GS 0.0008 [0.0001, 0.0017]; PGS 0.0006 [0.0003, 0.0009]; G|P=0 -0.0003 [-0.0014, 0.0006]; G|P=1 -0.0015 [-0.0024, -0.0008]; P|S=0 0.0011 [0.0006, 0.0018]; P|S=1 0.0000 [0.0000, 0.0000]; P|G=0 0.0011 [0.0006, 0.0018]; P|G=1 0.0000 [0.0000, 0.0000]; G|S=0 -0.0017 [-0.0035, -0.0003]; G|S=1 -0.0001 [-0.0003, -0.0000]
+- fixed_eff, fresh2, D2+H3: P 0.0002 [0.0001, 0.0003]; G 0.0002 [0.0001, 0.0003]; S 0.0004 [0.0003, 0.0006]; PG -0.0002 [-0.0003, -0.0001]; PS 0.0000 [-0.0000, 0.0000]; GS -0.0000 [-0.0001, 0.0001]; PGS -0.0000 [-0.0000, 0.0000]; G|P=0 0.0004 [0.0002, 0.0006]; G|P=1 -0.0000 [-0.0001, 0.0000]; P|S=0 0.0002 [0.0001, 0.0003]; P|S=1 0.0002 [0.0001, 0.0003]; P|G=0 0.0004 [0.0003, 0.0006]; P|G=1 0.0000 [0.0000, 0.0000]; G|S=0 0.0002 [0.0000, 0.0004]; G|S=1 0.0002 [0.0000, 0.0003]
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "python3 -B -c 'import json, hashlib, math, ast
+from pathlib import Path
+v=Path('\\''/Users/oemer.demirel/Projects/touchstone/results/v2'\\''); out=v/'\\''eval/all'\\''
+load=lambda p:json.loads(p.read_text())
+a=load(v/'\\''report/addendum.json'\\''); r=load(v/'\\''report/report.json'\\''); cfg=load(v/'\\''deviation/cfg_ulp_all.json'\\'')
+assert hashlib.sha256((v/'\\''deviation/cfg_ulp_all.json'\\'').read_bytes()).hexdigest()==a['\\''deviations'\\'']['\\''evidence_sha256'\\'']
+for m,c in cfg['\\''markets'\\''].items():
+ d=a['\\''deviations'\\'']['\\''configs'\\''][m]
+ assert d['\\''recorded_hash'\\'']==c['\\''recorded_hash'\\''] and d['\\''container_hash'\\'']==c['\\''container_hash'\\'']
+ assert d['\\''differing_values'\\'']==len(c['\\''differences'\\'']) and d['\\''max_ulps'\\'']==max(x[3] for x in c['\\''differences'\\''])
+ assert set(c['\\''pod_hashes'\\''])=={c['\\''container_hash'\\'']} and c['\\''verify_exit'\\'']==0
+ledger=load(Path('\\''docs/revision/budget-ledger.json'\\''))
+assert a['\\''deviations'\\'']['\\''cap'\\'']['\\''approval'\\'']==ledger['\\''approval'\\'']['\\''text'\\'']
+assert a['\\''deviations'\\'']['\\''cap'\\'']['\\''new'\\'']==ledger['\\''caps'\\'']['\\''evaluation'\\'']
+assert a['\\''deviations'\\'']['\\''cap'\\'']['\\''evaluation_spent'\\'']==round(sum(x['\\''usd'\\''] for x in ledger['\\''spent'\\''] if x['\\''op'\\'']=='\\''evaluation'\\''),3)
+def safe(s):return s.replace('\\''|'\\'','\\''__'\\'').replace('\\''/'\\'','\\''~'\\'').replace('\\''*'\\'','\\''star'\\'')
+def path(rid):
+ assert not rid.startswith('\\''freeze/'\\'')
+ if '\\''|'\\'' in rid:return out/('\\''dependent'\\'' if rid.split('\\''|'\\'')[3] in ('\\''W1'\\'','\\''total'\\'','\\''min'\\'') else '\\''search'\\'')/(safe(rid)+'\\''.json'\\'')
+ kind,ctx,rest=rid.split('\\''/'\\'',2)
+ assert kind in ('\\''reference'\\'','\\''bank'\\'','\\''joint_twin'\\''),kind
+ return out/kind/ctx/(safe(rest)+'\\''.json'\\'')
+flagged=set(r['\\''search_flagged'\\'']); visited=set()
+def walk(cell):
+ stack=list(load(out/'\\''evaluate'\\''/(safe(cell)+'\\''.json'\\''))['\\''upstream'\\'']); seen=set(); hit={cell}&flagged
+ while stack:
+  rid=stack.pop()
+  if rid.startswith('\\''freeze/'\\'') or rid in seen:continue
+  seen.add(rid); visited.add(rid)
+  rec=load(path(rid))
+  if rid in flagged:hit.add(rid)
+  stack.extend(rec.get('\\''upstream'\\'',{}))
+ return hit
+for q,rows in a['\\''search_dependencies'\\''].items():
+ for name,d in rows.items():
+  if q=='\\''q1'\\'':
+   fam=name.split('\\''|'\\'')[1]; cells=[f'\\''fresh{i}@rho0.2|{rule}|{fam}|profit'\\'' for i in range(6) for rule in ('\\''F111'\\'','\\''C*'\\'')]
+   old=r[q]['\\''tests'\\''][name].get('\\''search'\\'')
+  else:
+   cells=[f'\\''{name}@rho0.2|{rule}|D2+H3|profit'\\'' for rule in ('\\''F000'\\'','\\''F111'\\'')];old=r[q]['\\''markets'\\''][name].get('\\''search'\\'')
+  hit=set().union(*(walk(c) for c in cells))
+  assert sorted(hit)==d['\\''depends_on_flagged'\\''],(q,name,hit)
+  assert d['\\''new_qualification'\\'']==(bool(hit) and not bool(old))
+print('\\''Independent traversal matches all eight dependency summaries; records:'\\'',len(visited))
+source=ast.parse(Path('\\''scripts/report_v2.py'\\'').read_text())
+side=next(ast.literal_eval(n.value) for n in source.body if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='\\''SIDE'\\'' for t in n.targets))
+n=0
+for m,rows in a['\\''q1_side_fields'\\''].items():
+ for name,fields in rows.items():
+  fam=name.split('\\''|'\\'')[1]
+  x,y=[load(out/'\\''evaluate'\\''/(safe(f'\\''{m}@rho0.2|{rule}|{fam}|profit'\\'')+'\\''.json'\\'')) for rule in ('\\''F111'\\'','\\''C*'\\'')]
+  assert set(fields)==set(side)
+  for key,fld in side.items():
+   assert len(x[fld])==len(y[fld])
+   val=math.fsum(u-v for u,v in zip(x[fld],y[fld]))/len(x[fld])
+   assert math.isclose(val,fields[key],rel_tol=1e-12,abs_tol=1e-14),(m,name,key)
+   n+=1
+print('\\''Independent means match:'\\'',n,'\\''side fields; config evidence and budget disclosures match'\\'')
+module=ast.parse(Path('\\''docs/revision/report-addendum/addendum_v2.py'\\'').read_text())
+render=next(n for n in module.body if isinstance(n,ast.FunctionDef) and n.name=='\\''render'\\'')
+ns={};exec(compile(ast.Module(body=[render],type_ignores=[]),'\\''<render>'\\'','\\''exec'\\''),ns)
+assert ns['\\''render'\\''](a)==(v/'\\''report/addendum.md'\\'').read_text()
+print('\\''Markdown exactly matches JSON render'\\'')
+'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "git -C /Users/oemer.demirel/Projects/touchstone/results/v2/eval-checkout rev-parse HEAD; git rev-parse protocol-v2; sed -n '150,174p' scripts/report_v2.py; sed -n '173,205p' scripts/report_v2.py; sed -n '553,560p' docs/superpowers/specs/2026-10-22-revision-program-design.md" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+d5e602e2bac44248c352985a5f1c647929252d0d
+9016e854a8bce7d5b9779d10a8f1eae2546c5e5a
+                favoured_r3 = cat.startswith("R3") or (cat not in ("C* materially lower",) and float(stratified_mean(st)) >= 0)
+                eff = [(x - y) if favoured_r3 else (y - x) for x, y in effs[name]]
+                t["efficiency"] = q1_efficiency(eff); t["better"] = q1_better(cat, t["efficiency"])
+                t["side"] = {k: float(stratified_mean(v)) for k, v in sides[name].items()}
+            except NumericalRefusal:
+                t.update(category=REFUSED, p=None, reject=None, estimate=None, interval=None, interval_label=NOMINAL_LABEL)
+        else:
+            t.update(estimate=None, interval=None, interval_label=NOMINAL_LABEL)
+        out["tests"][name] = t
+    for m in FRESH + ("headline",):
+        d = {}
+        for a, b in PAIRS:
+            for f in FAMS:
+                ra, rb = R.get(m, a, f), R.get(m, b, f)
+                if ra is not None and rb is not None:
+                    with np.errstate(over="ignore", invalid="ignore"):
+                        x = np.asarray(rb["gain"], dtype=float) - np.asarray(ra["gain"], dtype=float)
+                    d[f"{b}-{a}|{f}"] = {"estimate": _est(x), "interval": _interval(x)}
+        out["descriptive"][m] = d
+    return out
+
+
+def q4_decide(pa: list, pb: list, kappa) -> dict:
+    """Holm over all six market slots (design 9.3): a market with a missing cell enters with p = 1 and is not decided."""
+    fa, fb = [1.0 if p is None else p for p in pa], [1.0 if p is None else p for p in pb]
+    """Holm over all six market slots (design 9.3): a market with a missing cell enters with p = 1 and is not decided."""
+    fa, fb = [1.0 if p is None else p for p in pa], [1.0 if p is None else p for p in pb]
+    res = dict(q4_markets(fa, fb, kappa)); res["undecided"] = [i for i, p in enumerate(pa) if p is None]
+    return res
+
+
+def q4(R: Records, kappa, confirmatory: bool) -> dict:
+    pa, pb, markets = [], [], {}; tail = kappa * ALPHA / len(FRESH) if kappa else NOMINAL
+    for m in FRESH:
+        f0, f1 = R.get(m, "F000", "D2+H3"), R.get(m, "F111", "D2+H3")
+        hit = any(RV.cell_id(f"{m}@rho0.2", r, "D2+H3", "profit") in R.flagged for r in ("F000", "F111"))
+        if f0 is None or f1 is None:
+            pa.append(None); pb.append(None); markets[m] = "not decided"; continue
+        d = np.asarray(f0["gain"]) - np.asarray(f1["gain"]); eff = np.asarray(f1["eff_attack"])
+        try:
+            p_g, p_e = bootstrap_pvalue(d, 0.10, "lower"), bootstrap_pvalue(eff, 0.90, "lower")
+            lo_g, lo_e = studentized_at(d, "lower", tail), studentized_at(eff, "lower", tail)
+        except NumericalRefusal:
+            pa.append(None); pb.append(None); markets[m] = "not decided: numerical refusal"; continue
+        pa.append(p_g); pb.append(p_e)
+        markets[m] = {"gain_diff": float(d.mean()), "gain_diff_lower": float(lo_g), "eff": float(eff.mean()),
+                      "eff_lower": float(lo_e), "p_gain": float(pa[-1]), "p_eff": float(pb[-1]),
+                      "bound_label": f"calibrated one-sided, tail {tail:.6g}" if kappa else NOMINAL_LABEL, "search": FLAGGED if hit else None}
+    dec = q4_decide(pa, pb, kappa); undecided = [FRESH[i] for i in dec["undecided"]]
+    out = {"heading": NONCONF if not confirmatory else "Q4: intersection-union per market, Holm over six markets", "markets": markets, "undecided": undecided,
+           "decided": bool(dec["decided"])}
+    if not dec["decided"]:
+        out.update(k=None, passing=[], failing=[], wording=NO_DECISION); return out
+    passing = [m for m, ok in zip(FRESH, dec["pass"]) if ok and m not in undecided]
+    failing = [m for m, ok in zip(FRESH, dec["pass"]) if not ok and m not in undecided]
+    flagged = [m for m in FRESH if isinstance(markets[m], dict) and markets[m]["search"]]
+    wording = (f"replicated on {len(passing)} of 6 sampled markets" + ("; generalisation not established" if undecided else "")
+               + (f"; decisions about the prescribed search procedure on {', '.join(flagged)}" if flagged else ""))
+  intervals** for confirmatory families are Bonferroni simultaneous intervals at the calibrated nominal level (tail
+  kappa_F times the Bonferroni tail); they are a separate procedure and can contain the null despite a Holm rejection.
+  Descriptive intervals are nominal 95 percent, labelled unadjusted.
+- **Pooled mean over the six fresh markets.** The equal-weight mean of the market means; stratified bootstrap (seeds
+  resampled independently within each market, since seed streams are independent across markets), studentized by the
+  stratified standard error; conditional on the six markets.
+- **G_min** (descriptive). Bounds as the minimum over members of the members' bounds at level 0.05 / c.
+- **Numerical rules (as implemented in `sim/intervals.py`, frozen with the code).** A sample with a nonfinite per-seed
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "git rev-parse 'protocol-v2"'^{}'"'; git -C /Users/oemer.demirel/Projects/touchstone/results/v2/eval-checkout diff --stat HEAD -- scripts/report_v2.py scripts/revision_v2.py; ls -lh /Users/oemer.demirel/Projects/touchstone/results/v2/eval/all/search/fresh0@rho0.2__Cstar__D2+H3__profit.json" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+d5e602e2bac44248c352985a5f1c647929252d0d
+-rw-r--r--@ 3 oemer.demirel  staff   2.3M Nov  4 02:05 /Users/oemer.demirel/Projects/touchstone/results/v2/eval/all/search/fresh0@rho0.2__Cstar__D2+H3__profit.json
+
+hook: PostToolUse
+hook: PostToolUse Completed
+ succeeded in 30487ms:
+Independent traversal matches all eight dependency summaries; records: 138
+Independent means match: 98 side fields; config evidence and budget disclosures match
+Markdown exactly matches JSON render
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+VERDICT: accept
+CORRECTIONS: none.
+CONFIDENCE: 0.96.
+hook: Stop
+hook: Stop Completed
+tokens used
+53'747
+VERDICT: accept
+CORRECTIONS: none.
+CONFIDENCE: 0.96.
