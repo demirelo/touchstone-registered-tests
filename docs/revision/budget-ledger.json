@@ -8,11 +8,6 @@
    "op": "evaluation",
    "tag": "headline-rho02",
    "cap": 13.425
-  },
-  {
-   "op": "evaluation",
-   "tag": "fresh5-r2",
-   "cap": 5.325
   }
  ],
  "spent": [
@@ -100,6 +95,21 @@
    "op": "evaluation",
    "tag": "fresh5",
    "usd": 0.073
+  },
+  {
+   "op": "evaluation",
+   "tag": "fresh5-r2",
+   "usd": 0.039
+  },
+  {
+   "op": "evaluation",
+   "tag": "fresh5-r3",
+   "usd": 0.014
+  },
+  {
+   "op": "evaluation",
+   "tag": "fresh5-r4",
+   "usd": 3.878
   }
  ],
  "approval": {
