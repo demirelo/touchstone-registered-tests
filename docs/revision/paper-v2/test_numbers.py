@@ -340,3 +340,16 @@ def test_extra_sources_merge_under_their_names(tmp_path):
     N.write(tmp_path / "report.json", tmp_path / "numbers.tex", extra)
     assert N.check(tmp_path / "report.json", tmp_path / "numbers.tex", tmp_path / "main.tex", extra) == []
     assert "fulfilled" in (tmp_path / "numbers.tex").read_text()
+
+
+def test_with_sites_the_numbers_file_holds_only_site_macros():
+    sites = {"k": {"path": "q4.k", "kind": "count", "section": "results"}}
+    out = N.render(REPORT, sites)
+    assert "site@k" in out and "csname rv@q4" not in out          # 219k report paths made pdfLaTeX overflow (2026-11-05)
+
+
+def test_with_sites_a_plain_report_macro_is_refused(tmp_path):
+    (tmp_path / "sites.json").write_text(json.dumps({"k": {"path": "q4.k", "kind": "count", "section": "results"}}))
+    tex = "\\section{Results}\\label{sec:results}\n% BEGIN-EV2\nk is \\site{k}.\n% END-EV2\nAlso \\rv{q4.k}.\n"
+    _setup(tmp_path, tex)
+    assert any("\\rv" in p and "sites" in p for p in N.check(tmp_path / "report.json", tmp_path / "numbers.tex", tmp_path / "main.tex"))

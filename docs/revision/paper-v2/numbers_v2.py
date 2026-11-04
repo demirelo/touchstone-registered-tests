@@ -85,7 +85,9 @@ def macros(report: dict) -> dict:
 
 def render(report: dict, sites: dict | None = None) -> str:
     m = macros(report)
-    lines = [f"\\expandafter\\def\\csname rv@{p}\\endcsname{{{v}}}" for p, v in sorted(m.items())]
+    # With a site manifest the text uses only \\site{}, so only site macros are written (the full path list ran to
+    # 219k lines and overflowed pdfLaTeX's string pool, 2026-11-05).
+    lines = [] if sites is not None else [f"\\expandafter\\def\\csname rv@{p}\\endcsname{{{v}}}" for p, v in sorted(m.items())]
     lines += [f"\\expandafter\\def\\csname site@{n}\\endcsname{{{m.get(d['path'], '??' + n)}}}" for n, d in sorted((sites or {}).items())]
     return HEADER + PREAMBLE + "\n".join(lines) + "\n"
 
@@ -187,6 +189,8 @@ def check(report_path, numbers_path, tex_path, extra: dict | None = None) -> lis
     for b in blocks:
         outside = outside.replace(b, "")
     if sites is not None:
+        problems += [f"\\rv{{{p}}} used with a site manifest (sites.json): use \\site{{}}" for p in USE.findall(tex)]
+        problems += [f"\\rv{{{p}}} used with a site manifest (sites.json): use \\site{{}}" for _, p in USEK.findall(tex)]
         return problems + _site_checks(tex, sites, raw, known, outside, tex_path)
     vals = _report_numbers(raw)
     for x in BARE.findall(EXEMPT.sub("", USEK.sub("", USE.sub("", outside)))):
