@@ -100,7 +100,35 @@ def side_fields(out: Path, markets, pair, fams, side: dict) -> dict:
     return res
 
 
-def build(report: dict, cfg: dict, cfg_sha: str, ledger: dict, deps: dict, sides: dict) -> dict:
+def _stability(stab):
+    if stab is None:
+        return "not verified"
+    return "verified: every Q1 and Q4 decision unchanged" if stab["decisions_unchanged"] else "checked: decisions changed"
+
+
+def _stab_detail(stab, sha):
+    if stab is None:
+        return None
+    cells = stab.get("cells", {})
+    return {"sha256": sha, "diffs": list(stab["decision_diffs"]), "cells": len(cells),
+            "cells_with_seed_changes": sum(1 for c in cells.values() if c["seeds_changed"]),
+            "max_mean_shift": max((abs(c["mean_new"] - c["mean_old"]) for c in cells.values()), default=0.0)}
+
+
+def _stab_text(dev: dict) -> str:
+    d = dev["stability"]
+    if d is None:
+        return "That the decisions would be unchanged under the registered configurations is not verified."
+    head = (f"A re-evaluation of the frozen policies of the {d['cells']} fresh-market cells that Q1 and Q4 use, on the registration "
+            f"platform with the registered configurations (`results/v2/deviation/stability.json`, sha256 {d['sha256']}), changes "
+            f"per-seed gains in {d['cells_with_seed_changes']} cells and cell means by at most {d['max_mean_shift']:.3f}; ")
+    if not d["diffs"]:
+        return head + "every Q1 and Q4 decision is unchanged."
+    return head + "these decisions changed: " + "; ".join(d["diffs"]) + "."
+
+
+def build(report: dict, cfg: dict, cfg_sha: str, ledger: dict, deps: dict, sides: dict, stab: dict | None = None,
+          stab_sha: str | None = None) -> dict:
     if not cfg.get("ok"):
         raise SystemExit("addendum: the deviation check (cfg_ulp_all.json) did not pass")
     conf = {}
@@ -117,7 +145,7 @@ def build(report: dict, cfg: dict, cfg_sha: str, ledger: dict, deps: dict, sides
         mk = report["q4"]["markets"].get(m)
         sd["q4"][m] = {"depends_on_flagged": hit, "new_qualification": bool(hit) and not (isinstance(mk, dict) and mk.get("search"))}
     return {"labels": LABELS, "scope": SCOPE,
-            "deviations": {"configs": conf, "evidence_sha256": cfg_sha, "decision_stability": "not verified",
+            "deviations": {"configs": conf, "evidence_sha256": cfg_sha, "decision_stability": _stability(stab), "stability": _stab_detail(stab, stab_sha),
                            "cap": {"old": OLD_CAP, "new": ledger["caps"]["evaluation"], "approval": ledger["approval"]["text"],
                                    "evaluation_spent": round(spent, 3)}},
             "search_dependencies": sd, "q1_side_fields": sides}
@@ -140,8 +168,8 @@ def render(add: dict) -> str:
     c = add["deviations"]["cap"]
     L += ["", f"Evidence: `results/v2/deviation/cfg_ulp_all.json` (sha256 {add['deviations']['evidence_sha256']}), written by "
           "`docs/revision/deviation/cfg_ulp.py`. These checks establish matching pod hashes, differences within one unit in the "
-          "last place, and verification with the reproduced configurations. That the decisions would be unchanged under the "
-          "registered configurations is not verified: small input differences can change discrete simulation branches.", "",
+          "last place, and verification with the reproduced configurations; they do not show that the decisions are unchanged, "
+          "since small input differences can change discrete simulation branches. " + _stab_text(add["deviations"]), "",
           f"2. Evaluation cap. The author raised the evaluation cap from {c['old']:g} to {c['new']:g} USD after the first fresh "
           f"pods cost about ten percent more than estimated (recorded approval: \"{c['approval']}\"). Evaluation spend: "
           f"{c['evaluation_spent']:g} USD. No analysis changed.", "",
@@ -166,6 +194,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     for a in ("--report", "--cfg-ulp", "--ledger", "--records", "--eval-checkout", "--write"):
         ap.add_argument(a, required=True)
+    ap.add_argument("--stability", help="stability.py output")
     a = ap.parse_args(argv)
     co = Path(a.eval_checkout).resolve(); sys.path[:0] = [str(co / "scripts"), str(co)]
     import report_v2 as RP  # noqa: E402  (the tagged report's own field map)
@@ -180,7 +209,9 @@ def main(argv=None) -> int:
             "q4": {k: sorted({h for c in v for h in per[c]}) for k, v in q4c.items()}}
     sides = side_fields(out, FRESH + ("headline",), PAIR, FAMS, RP.SIDE)
     add = build(report, json.loads(cfgp.read_text()), hashlib.sha256(cfgp.read_bytes()).hexdigest(),
-                json.loads(Path(a.ledger).read_text()), deps, sides)
+                json.loads(Path(a.ledger).read_text()), deps, sides,
+                json.loads(Path(a.stability).read_text()) if a.stability else None,
+                hashlib.sha256(Path(a.stability).read_bytes()).hexdigest() if a.stability else None)
     w = Path(a.write); (w / "addendum.json").write_text(json.dumps(add, indent=1, default=float) + "\n")
     (w / "addendum.md").write_text(render(add))
     print(f"addendum written: {w / 'addendum.md'}")

@@ -98,3 +98,19 @@ def test_build_refuses_a_failed_deviation_check():
     cfg["ok"] = False
     with pytest.raises(SystemExit, match="deviation check"):
         A.build(report, cfg, "c" * 64, ledger, deps, {})
+
+
+def test_a_passed_stability_check_replaces_not_verified():
+    report, cfg, ledger, deps = _inputs()
+    stab = {"decisions_unchanged": True, "decision_diffs": [], "cells": {"a": {"seeds_changed": 5, "mean_old": 0.1, "mean_new": 0.104}}}
+    add = A.build(report, cfg, "c" * 64, ledger, deps, {}, stab, "d" * 64)
+    md = A.render(add)
+    assert add["deviations"]["decision_stability"] == "verified: every Q1 and Q4 decision unchanged"
+    assert "not verified" not in md and "d" * 64 in md and "0.004" in md
+
+
+def test_a_failed_stability_check_lists_the_changed_decisions():
+    report, cfg, ledger, deps = _inputs()
+    stab = {"decisions_unchanged": False, "decision_diffs": ["q4 k: 3 -> 4"], "cells": {}}
+    md = A.render(A.build(report, cfg, "c" * 64, ledger, deps, {}, stab, "d" * 64))
+    assert "q4 k: 3 -> 4" in md and "changed" in md
