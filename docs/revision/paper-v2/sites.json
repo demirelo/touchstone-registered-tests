@@ -1,1 +1,237 @@
-{}
+{
+ "abs_q1_cat": {
+  "path": "q1.tests.C*-F111|D2+H3.category",
+  "kind": "label",
+  "section": "abstract"
+ },
+ "abs_q1_est": {
+  "path": "q1.tests.C*-F111|D2+H3.estimate",
+  "kind": "gain",
+  "section": "abstract"
+ },
+ "abs_q4_k": {
+  "path": "q4.k",
+  "kind": "count",
+  "section": "abstract"
+ },
+ "abs_q2_pg": {
+  "path": "q2.searched.D2+H3.PG.estimate",
+  "kind": "gain",
+  "section": "abstract"
+ },
+ "abs_q3_f111_h4": {
+  "path": "q3.envelope.F111.headline.estimate",
+  "kind": "gain",
+  "section": "abstract"
+ },
+ "int_q1_cat": {
+  "path": "q1.tests.C*-F111|X7-SC.category",
+  "kind": "label",
+  "section": "intro"
+ },
+ "int_q4_k": {
+  "path": "q4.k",
+  "kind": "count",
+  "section": "intro"
+ },
+ "int_q2_p": {
+  "path": "q2.searched.D2+H3.P.estimate",
+  "kind": "gain",
+  "section": "intro"
+ },
+ "int_q2_g": {
+  "path": "q2.searched.D2+H3.G.estimate",
+  "kind": "gain",
+  "section": "intro"
+ },
+ "int_q3_w0": {
+  "path": "q3.welfare.F111.D2+H3.W0.efficiency",
+  "kind": "eff",
+  "section": "intro"
+ },
+ "r_q1_d_est": {
+  "path": "q1.tests.C*-F111|D2+H3.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q1_d_cat": {
+  "path": "q1.tests.C*-F111|D2+H3.category",
+  "kind": "label",
+  "section": "results"
+ },
+ "r_q1_d_p": {
+  "path": "q1.tests.C*-F111|D2+H3.p",
+  "kind": "p",
+  "section": "results"
+ },
+ "r_q1_d_eff": {
+  "path": "q1.tests.C*-F111|D2+H3.efficiency",
+  "kind": "label",
+  "section": "results"
+ },
+ "r_q1_x_est": {
+  "path": "q1.tests.C*-F111|X7-SC.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q1_x_cat": {
+  "path": "q1.tests.C*-F111|X7-SC.category",
+  "kind": "label",
+  "section": "results"
+ },
+ "r_q1_f3_d": {
+  "path": "q1.descriptive.fresh3.C*-F111|D2+H3.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q1_f1_d": {
+  "path": "q1.descriptive.fresh1.C*-F111|D2+H3.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q4_k": {
+  "path": "q4.k",
+  "kind": "count",
+  "section": "results"
+ },
+ "r_q4_f0": {
+  "path": "q4.markets.fresh0.gain_diff",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q4_f2": {
+  "path": "q4.markets.fresh2.gain_diff",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q4_f5": {
+  "path": "q4.markets.fresh5.gain_diff",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q4_f2_eff": {
+  "path": "q4.markets.fresh2.eff",
+  "kind": "eff",
+  "section": "results"
+ },
+ "r_q4_f1": {
+  "path": "q4.markets.fresh1.gain_diff",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q2_p": {
+  "path": "q2.searched.D2+H3.P.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q2_g": {
+  "path": "q2.searched.D2+H3.G.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q2_s": {
+  "path": "q2.searched.D2+H3.S.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q2_pg": {
+  "path": "q2.searched.D2+H3.PG.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q2_g_p0": {
+  "path": "q2.searched.D2+H3.G|P=0.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q2_g_p1": {
+  "path": "q2.searched.D2+H3.G|P=1.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q2_fixed_p": {
+  "path": "q2.fixed.D2+H3.P.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q3_f000_f1": {
+  "path": "q3.envelope.F000.fresh1.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q3_f111_f1": {
+  "path": "q3.envelope.F111.fresh1.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q3_cs_f1": {
+  "path": "q3.envelope.C*.fresh1.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q3_cs_f1_fam": {
+  "path": "q3.envelope.C*.fresh1.family",
+  "kind": "label",
+  "section": "results"
+ },
+ "r_q3_f000_h4": {
+  "path": "q3.envelope.F000.headline.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q3_f111_h4": {
+  "path": "q3.envelope.F111.headline.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q3_w0": {
+  "path": "q3.welfare.F111.D2+H3.W0.efficiency",
+  "kind": "eff",
+  "section": "results"
+ },
+ "r_q3_w1": {
+  "path": "q3.welfare.F111.D2+H3.W1.efficiency",
+  "kind": "eff",
+  "section": "results"
+ },
+ "r_q3_coal_f000": {
+  "path": "q3.coalition.F000.c2_synchronised.G_tot.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q3_coal_f111": {
+  "path": "q3.coalition.F111.c5_synchronised.G_tot.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_rep_f111": {
+  "path": "secondary.repair_rho1.F111.D2+H3.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_rep_r4": {
+  "path": "secondary.repair_rho1.R4.D2+H3.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_rep_cs2": {
+  "path": "secondary.repair_rho1.C*/S2.D2+H3.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_sec_b3t": {
+  "path": "secondary.whole_systems.B3-t.headline.D2+H3.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_sec_r3t": {
+  "path": "secondary.whole_systems.R3-t.headline.D2+H3.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_sec_cst": {
+  "path": "secondary.whole_systems.C*-t.headline.D2+H3.estimate",
+  "kind": "gain",
+  "section": "results"
+ }
+}

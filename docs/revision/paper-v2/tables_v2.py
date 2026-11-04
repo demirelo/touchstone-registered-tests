@@ -132,6 +132,17 @@ def repair(r: dict) -> str:
     return tabular("lrl", ["Rule, family ($\\rho = 1$)", "Gain", "Interval"], rows or [("all", "no records")])
 
 
+def predictions(sc: dict) -> str:
+    """The prediction scoring table (score_v2.py): overall status, then each scored cell with its value and status."""
+    rows = []
+    for pid in sorted(sc):
+        v = sc[pid]
+        cells = "; ".join(f"{esc(c['cell'])} {num(c['value']) if not isinstance(c['value'], str) else esc(c['value'])} {esc(c['status'])}"
+                          for c in v.get("cells", [])) or "none scored"
+        rows.append((pid, [esc(v["status"]), cells]))
+    return tabular("llp{0.62\\linewidth}", ["Prediction", "Status", "Scored cells"], rows)
+
+
 def all_tables(r: dict) -> dict:
     return {"q1": q1(r), "q1_side": q1_side(r), "q4": q4(r), "q2_d2h3": q2(r, "D2+H3"), "q2_x7sc": q2(r, "X7-SC"), "envelope": envelope(r),
             "welfare": welfare(r), "coalitions": coalitions(r), "repair": repair(r)}
@@ -141,7 +152,10 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--report", required=True); ap.add_argument("--dir", required=True)
     g = ap.add_mutually_exclusive_group(required=True); g.add_argument("--write", action="store_true"); g.add_argument("--check", action="store_true")
+    ap.add_argument("--scoring", help="score_v2.py output; adds tables/predictions.tex")
     a = ap.parse_args(argv); tabs = all_tables(json.loads(Path(a.report).read_text())); d = Path(a.dir)
+    if a.scoring:
+        tabs["predictions"] = predictions(json.loads(Path(a.scoring).read_text()))
     if a.write:
         d.mkdir(parents=True, exist_ok=True)
         for k, v in tabs.items():

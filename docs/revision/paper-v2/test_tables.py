@@ -79,3 +79,15 @@ def test_small_p_values_keep_digits_in_tables(report):
             report["q4"]["markets"][m]["p_gain"] = 0.00003
     assert "0.0001" in _row(T.q1(report), "D2+H3")
     assert "3\\times10^{-5}" in _row(T.q4(report), "fresh0")
+
+
+def test_predictions_rows_carry_their_own_status_and_cells():
+    sc = {"Q1-a": {"status": "fulfilled", "cells": [{"cell": "D2+H3", "status": "fulfilled", "value": "equivalent"}]},
+          "Q2-a": {"status": "failed", "cells": [{"cell": "G", "status": "fulfilled", "value": -0.0952},
+                                                 {"cell": "S", "status": "failed", "value": 0.0039}]},
+          "Q4-b": {"status": "not assessed", "cells": []}}
+    tex = T.predictions(sc)
+    assert "fulfilled" in _row(tex, "Q1-a") and "equivalent" in _row(tex, "Q1-a")
+    r = _row(tex, "Q2-a")
+    assert r.split("&")[1].strip() == "failed" and "S 0.004 failed" in r and "-0.095" in r.replace("\\ensuremath{", "").replace("}", "")
+    assert "not assessed" in _row(tex, "Q4-b")
