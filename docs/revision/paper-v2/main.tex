@@ -126,6 +126,8 @@ X8-DB & Coalition of two: a decoy that replaces its identity on a schedule and a
 \caption{Attacker families. Knob counts as registered; the supplement gives every bound.}\label{tab:families}
 \end{table}
 
+H4's code was committed only by its hash before the lock and released after the report review; it is in \texttt{sealed2/h4/} of the release (bundle SHA-256 \texttt{cba512aa\ldots}), with its author's note on which families it contains as special cases.
+
 \paragraph{Search quality.} Scheduled cells get a doubling check: the registered search continues with as many restarts again, and the cell is flagged if the doubled search improves the attacker's normalised profit or the reference's normalised profit (profit cells), the welfare attack's efficiency (welfare cells), or the coalition objective by at least \const{0.005}, or if a W1 search finds a feasible candidate where the original found none. A doubled search's winner is reported beside the cell and never replaces its frozen estimate. Cells without a scheduled check carry no search-quality claim. A cell is \emph{missing} if it did not complete or is invalid: not run (a cap stop or a cut), a refused sample, a nonfinite statistic, a search with no finite candidate, or a failed load of H4; a missing cell removes every decision that uses it. A \emph{search-flagged} cell keeps its decision, labelled as a decision about the prescribed search procedure, and leaves that rule's robustness statement for that family unanswered. The search bounds exposure to the searched families and optimiser; it does not certify robustness.
 
 \section{The first test (October 2026)}\label{sec:eval1}
@@ -280,7 +282,7 @@ All values below come from the report that the tagged code wrote; the addendum b
 Free identity replacement makes a ban costless under uniform audits, and in our tests directing audits at new or unverified identities reduces the measured replacement gain. Two registered tests, the second on fresh markets drawn after the lock, show that this holds in sign across the sampled markets but not with the margin first claimed, that a verified-history rule matches the age-ranked rule we proposed, and that neither protects efficiency against loss-accepting welfare attacks. The record of both tests, including the original failure, the amendments, the deviations, and the failed predictions, is public.
 % END-EV2
 
-\paragraph{Availability.} The public release at the report commit contains the code, the tuned files, all records of both tests (including incomplete, failed, and cut cells), the market generator, the block headers, the paper sources, and a one-command reproduction of every table.
+\paragraph{Availability.} The public release at the report commit contains the code, the tuned files, all records of both tests (including incomplete, failed, and cut cells), the market generator, the block headers, the released H4 bundle, the deviation evidence and the decision-stability re-evaluation, the paper sources, and a one-command reproduction of every table under the disclosed configuration substitution.
 % TODO at submission: release and DOI status as it is then.
 
 \appendix
