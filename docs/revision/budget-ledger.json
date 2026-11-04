@@ -1,9 +1,20 @@
 {
  "caps": {
   "development": 12.0,
-  "evaluation": 40.0
+  "evaluation": 43.0
  },
- "reservations": [],
+ "reservations": [
+  {
+   "op": "evaluation",
+   "tag": "headline-rho02",
+   "cap": 13.425
+  },
+  {
+   "op": "evaluation",
+   "tag": "fresh5-r2",
+   "cap": 5.325
+  }
+ ],
  "spent": [
   {
    "op": "development",
@@ -59,10 +70,40 @@
    "op": "evaluation",
    "tag": "h4-decision-4",
    "usd": 0.031
+  },
+  {
+   "op": "evaluation",
+   "tag": "fresh1",
+   "usd": 4.648
+  },
+  {
+   "op": "evaluation",
+   "tag": "fresh3",
+   "usd": 4.66
+  },
+  {
+   "op": "evaluation",
+   "tag": "fresh4",
+   "usd": 4.653
+  },
+  {
+   "op": "evaluation",
+   "tag": "fresh0",
+   "usd": 4.681
+  },
+  {
+   "op": "evaluation",
+   "tag": "fresh2",
+   "usd": 4.8
+  },
+  {
+   "op": "evaluation",
+   "tag": "fresh5",
+   "usd": 0.073
   }
  ],
  "approval": {
-  "limit": 52.0,
-  "text": "I approve a revision-program budget of up to 52 USD (development cap 12 USD, evaluation cap 40 USD; estimated total 49.25 USD), \u00d6mer Demirel, 2026-10-28."
+  "limit": 55.0,
+  "text": "Raise caps, start fresh5 now: evaluation cap 43 USD, program limit 55 USD (development cap 12 USD unchanged), \u00d6mer Demirel, 2026-11-04, chosen in the Claude Code session after the wave-1 overrun (fresh pods 4.65-4.80 USD against 4.26)."
  }
 }

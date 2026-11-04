@@ -177,3 +177,11 @@ Astra accept-with-caveat; the one caveat (Holm citation) is resolved in 06c75e9 
   the registered cba512aa…), loaded once on a pod: `loaded: true` (`results/v2/draw/h4.json`, sha256 9aaa52db5860a461…).
   Four pod runs, 0.06 USD in all: three failed at preparation before any load (a launcher quoting bug, then the pod's
   git 2.25, which cannot verify SSH-signed tags; the launchers now install git >= 2.34 when older) and one succeeded.
+
+## Operation 7, wave 1 and the 1-ulp deviation (2026-11-04)
+
+- fresh0 to fresh4 ended RUN OK; pods deleted and verified. Spend (launcher spend lines, recorded with `budget_v2.py --record`): fresh0 4.681, fresh1 4.648, fresh2 4.800, fresh3 4.660, fresh4 4.653 USD.
+- Strict verify (`results/pods/verify_market.sh`) refused all five: `cfg_sha256` differs. Cause: the run mode recalibrates each fresh market on the pod (Linux x86); `instances.json` holds the Mac (arm64) calibration. A Linux amd64 container (`results/pods/cfg_linux.sh`) reproduces every pod hash exactly. Headline is not affected (same hash on both platforms).
+- Deviation (the author's decision, 2026-11-04: "Keep runs, record deviation"): the fresh-market records stand. `docs/revision/deviation/cfg_ulp.py` checks per market that the pod hash equals the container hash, that the container config differs from the record only in float values by at most 1 ulp, and that verify passes with the container configs. Result for fresh0 to fresh4 (`results/v2/deviation/cfg_ulp_wave1.json`): all ok; 2, 2, 6, 4, 2 differing values, max 1 ulp, verify exit 0.
+- Budget (the author's decision, 2026-11-04: "Raise caps, start fresh5 now"): evaluation cap 43 USD, program limit 55 USD, recorded with `budget_v2.py --approve`.
+- fresh5: the launcher now refuses a pod whose config hash differs from the container hash (EXPECT_CFG). Attempt 1 failed prep on an unreachable pod ssh (0.073 USD, pod deleted); attempt 2 (tag fresh5-r2) launched.
