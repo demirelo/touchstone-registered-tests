@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -142,15 +143,28 @@ def _pval(pid: str, v) -> str:
     return esc(v) if isinstance(v, str) else num(v)
 
 
-def predictions(sc: dict) -> str:
-    """The prediction scoring table (score_v2.py): overall status, then each scored cell with its value and status; paired
-    values carry their labels (they are two statistics, not an interval)."""
+def statements(md: str) -> dict:
+    """Prediction id -> 'statistic (scope): fulfilled if', from the registered scoring table of predictions-v2.md."""
+    out = {}
+    for line in md.splitlines():
+        cells = [c.strip() for c in re.split(r"(?<!\\)\|", line.strip())[1:-1]]
+        if len(cells) == 4 and re.fullmatch(r"Q\d-[a-z](-alt)?", cells[0]):
+            out[cells[0]] = f"{cells[1]} ({cells[2]}): {cells[3]}".replace("\\|", "|")
+    alt = re.search(r"\*\*Q1-a,[^\n]*\n\s*Alternative: ([^.]*)\.", md)          # the alternative is registered in the prose list
+    if alt and "Q1-a" in out:
+        out["Q1-a-alt"] = f"Q1 category, D2+H3 (pooled fresh), alternative to Q1-a: {alt.group(1)}"
+    return out
+
+
+def predictions(sc: dict, st: dict | None = None) -> str:
+    """The prediction scoring table (score_v2.py): the registered statement, the overall status, then each scored cell with
+    its value and status; paired values carry their labels (they are two statistics, not an interval)."""
     rows = []
     for pid in sorted(sc):
         v = sc[pid]
         cells = "; ".join(f"{esc(c['cell'])} {_pval(pid, c['value'])} {esc(c['status'])}" for c in v.get("cells", [])) or "none scored"
-        rows.append((pid, [esc(v["status"]), cells]))
-    return tabular("llp{0.62\\linewidth}", ["Prediction", "Status", "Scored cells"], rows)
+        rows.append((pid, [esc((st or {}).get(pid, "")), esc(v["status"]), cells]))
+    return tabular("lp{0.36\\linewidth}lp{0.34\\linewidth}", ["Prediction", "Registered statement", "Status", "Scored cells"], rows)
 
 
 def all_tables(r: dict) -> dict:
@@ -164,8 +178,9 @@ def main(argv=None) -> int:
     g = ap.add_mutually_exclusive_group(required=True); g.add_argument("--write", action="store_true"); g.add_argument("--check", action="store_true")
     ap.add_argument("--scoring", help="score_v2.py output; adds tables/predictions.tex")
     a = ap.parse_args(argv); tabs = all_tables(json.loads(Path(a.report).read_text())); d = Path(a.dir)
+    ap_md = Path(__file__).resolve().parent.parent / "predictions-v2.md"
     if a.scoring:
-        tabs["predictions"] = predictions(json.loads(Path(a.scoring).read_text()))
+        tabs["predictions"] = predictions(json.loads(Path(a.scoring).read_text()), statements(ap_md.read_text()) if ap_md.exists() else None)
     if a.write:
         d.mkdir(parents=True, exist_ok=True)
         for k, v in tabs.items():

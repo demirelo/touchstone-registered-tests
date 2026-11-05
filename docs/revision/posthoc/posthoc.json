@@ -1,0 +1,321 @@
+{
+ "label": "exploratory, after the report; not registered",
+ "q1_split": {
+  "D2+H3": {
+   "markets": {
+    "fresh0": {
+     "estimate": 0.021141253469674638,
+     "attacked": 0.020738104191605683,
+     "reference": 0.0004031492780689475
+    },
+    "fresh1": {
+     "estimate": 0.05252177188565417,
+     "attacked": 0.05248105807385626,
+     "reference": 4.071381179790827e-05
+    },
+    "fresh2": {
+     "estimate": 0.02854009991622823,
+     "attacked": 0.02791715601294379,
+     "reference": 0.0006229439032844392
+    },
+    "fresh3": {
+     "estimate": -0.03820729077136014,
+     "attacked": -0.038527597772648386,
+     "reference": 0.00032030700128824933
+    },
+    "fresh4": {
+     "estimate": 0.04384136831493004,
+     "attacked": 0.035401084058390216,
+     "reference": 0.00844028425653982
+    },
+    "fresh5": {
+     "estimate": 0.016482830264015785,
+     "attacked": 0.015115977502775171,
+     "reference": 0.0013668527612406168
+    }
+   },
+   "pooled": {
+    "estimate": 0.02072000551319046,
+    "attacked": 0.018854297011153785,
+    "reference": 0.0018657085020366635
+   }
+  },
+  "X7-SC": {
+   "markets": {
+    "fresh0": {
+     "estimate": 0.021141253469674638,
+     "attacked": 0.020738104191605683,
+     "reference": 0.0004031492780689475
+    },
+    "fresh1": {
+     "estimate": 0.05252177188565417,
+     "attacked": 0.05248105807385626,
+     "reference": 4.071381179790827e-05
+    },
+    "fresh2": {
+     "estimate": 0.02854009991622823,
+     "attacked": 0.02791715601294379,
+     "reference": 0.0006229439032844392
+    },
+    "fresh3": {
+     "estimate": -0.0042565245034226155,
+     "attacked": -0.004576831504710864,
+     "reference": 0.00032030700128824933
+    },
+    "fresh4": {
+     "estimate": 0.03148434995243102,
+     "attacked": 0.0230440656958912,
+     "reference": 0.00844028425653982
+    },
+    "fresh5": {
+     "estimate": 0.016482830264015785,
+     "attacked": 0.015115977502775171,
+     "reference": 0.0013668527612406168
+    }
+   },
+   "pooled": {
+    "estimate": 0.024318963497430204,
+    "attacked": 0.02245325499539354,
+    "reference": 0.0018657085020366635
+   }
+  }
+ },
+ "welfare": {
+  "F000": {
+   "w0": {
+    "estimate": 0.25363451509467383,
+    "efficiency": 0.838654868743493
+   },
+   "w1": {
+    "estimate": 0.25363451509467383,
+    "efficiency": 0.838654868743493
+   },
+   "mixtures": {
+    "D2+H3": {
+     "weight": 1.0,
+     "estimate": 0.25363451509467383,
+     "lower": 0.25290013285976376,
+     "efficiency": 0.838654868743493,
+     "weight_label": "100 percent"
+    },
+    "X7-SC": {
+     "weight": 1.0,
+     "estimate": 0.25363451509467383,
+     "lower": 0.25290013285976376,
+     "efficiency": 0.838654868743493,
+     "weight_label": "100 percent"
+    },
+    "X5-AG/v2": {
+     "weight": 1.0,
+     "estimate": 0.25363451509467383,
+     "lower": 0.25290013285976376,
+     "efficiency": 0.838654868743493,
+     "weight_label": "100 percent"
+    },
+    "H4": {
+     "weight": 1.0,
+     "estimate": 0.25363451509467383,
+     "lower": 0.25290013285976376,
+     "efficiency": 0.838654868743493,
+     "weight_label": "100 percent"
+    },
+    "D2": {
+     "weight": 1.0,
+     "estimate": 0.25363451509467383,
+     "lower": 0.25290013285976376,
+     "efficiency": 0.838654868743493,
+     "weight_label": "100 percent"
+    }
+   },
+   "best": {
+    "family": "D2+H3",
+    "weight": 1.0,
+    "estimate": 0.25363451509467383,
+    "lower": 0.25290013285976376,
+    "efficiency": 0.838654868743493,
+    "weight_label": "100 percent"
+   }
+  },
+  "F111": {
+   "w0": {
+    "estimate": -0.09392814865617197,
+    "efficiency": 0.840331977655579
+   },
+   "w1": {
+    "estimate": 0.0,
+    "efficiency": 0.9973198536184276
+   },
+   "mixtures": {
+    "D2+H3": {
+     "weight": 0.339,
+     "estimate": 0.0002528525162339668,
+     "lower": 6.876599495205679e-05,
+     "efficiency": 0.9445101108199223,
+     "weight_label": "34 percent"
+    },
+    "X7-SC": {
+     "weight": 0.339,
+     "estimate": 0.0002528525162339668,
+     "lower": 6.876599495205679e-05,
+     "efficiency": 0.9445101108199223,
+     "weight_label": "34 percent"
+    },
+    "X5-AG/v2": {
+     "weight": 0.3155,
+     "estimate": 0.0009151568817489391,
+     "lower": 1.6963374835405275e-05,
+     "efficiency": 0.9463787530958935,
+     "weight_label": "32 percent"
+    },
+    "H4": {
+     "weight": 0.4195,
+     "estimate": 0.0003742630846593885,
+     "lower": 2.7899627637386465e-05,
+     "efficiency": 0.9319558344912628,
+     "weight_label": "42 percent"
+    },
+    "D2": {
+     "weight": 0.269,
+     "estimate": 0.0011569697789569726,
+     "lower": 3.1866754529484e-05,
+     "efficiency": 0.9530933469960934,
+     "weight_label": "27 percent"
+    }
+   },
+   "best": {
+    "family": "H4",
+    "weight": 0.4195,
+    "estimate": 0.0003742630846593885,
+    "lower": 2.7899627637386465e-05,
+    "efficiency": 0.9319558344912628,
+    "weight_label": "42 percent"
+   }
+  },
+  "C*": {
+   "w0": {
+    "estimate": -0.09386846678968062,
+    "efficiency": 0.840249650416469
+   },
+   "w1": {
+    "estimate": 0.0,
+    "efficiency": 0.997068923650973
+   },
+   "mixtures": {
+    "D2+H3": {
+     "weight": 0.48,
+     "estimate": 0.0002971500510672793,
+     "lower": 6.676869246777033e-05,
+     "efficiency": 0.9218518888759811,
+     "weight_label": "48 percent"
+    },
+    "X7-SC": {
+     "weight": 0.48,
+     "estimate": 0.0002971500510672793,
+     "lower": 6.676869246777033e-05,
+     "efficiency": 0.9218518888759811,
+     "weight_label": "48 percent"
+    },
+    "X5-AG/v2": {
+     "weight": 0.303,
+     "estimate": 0.001134580589544886,
+     "lower": 5.8435520436711215e-05,
+     "efficiency": 0.9484945762819834,
+     "weight_label": "30 percent"
+    },
+    "H4": {
+     "weight": 0.4845,
+     "estimate": 0.0004560289652853301,
+     "lower": 7.178727527591672e-05,
+     "efficiency": 0.9211677557713308,
+     "weight_label": "48 percent"
+    },
+    "D2": {
+     "weight": 0.309,
+     "estimate": 0.0009195789614791392,
+     "lower": 5.832009207805899e-05,
+     "efficiency": 0.9478536012514411,
+     "weight_label": "31 percent"
+    }
+   },
+   "best": {
+    "family": "H4",
+    "weight": 0.4845,
+    "estimate": 0.0004560289652853301,
+    "lower": 7.178727527591672e-05,
+    "efficiency": 0.9211677557713308,
+    "weight_label": "48 percent"
+   }
+  }
+ },
+ "q4_diag": {
+  "fresh0": {
+   "estimate": 0.04144271507592087,
+   "attacked": 0.041295057968739037,
+   "reference": 0.0001476571071818386,
+   "audit_spend": 0.04999405637248052,
+   "served_share": 0.9999515,
+   "efficiency": 0.9972112075235253
+  },
+  "fresh1": {
+   "estimate": 0.4690626900515457,
+   "attacked": 0.47010782000782597,
+   "reference": -0.001045129956280354,
+   "audit_spend": 0.04997945205408503,
+   "served_share": 0.9999979999999999,
+   "efficiency": 0.9984168725250109
+  },
+  "fresh2": {
+   "estimate": 0.056810283555962966,
+   "attacked": 0.053918148974215076,
+   "reference": 0.0028921345817478792,
+   "audit_spend": 0.04991652948521037,
+   "served_share": 0.9965090000000001,
+   "efficiency": 0.9852763789517723
+  },
+  "fresh3": {
+   "estimate": 0.2625905586494956,
+   "attacked": 0.26180548288948097,
+   "reference": 0.0007850757600146752,
+   "audit_spend": 0.04999376052284205,
+   "served_share": 1.0,
+   "efficiency": 0.9979766341492813
+  },
+  "fresh4": {
+   "estimate": 0.18339043852718018,
+   "attacked": 0.1704411685621332,
+   "reference": 0.012949269965046955,
+   "audit_spend": 0.04985127849928883,
+   "served_share": 0.9956050000000001,
+   "efficiency": 0.9874909900785758
+  },
+  "fresh5": {
+   "estimate": 0.027073049880174244,
+   "attacked": 0.025525649908381555,
+   "reference": 0.0015473999717926926,
+   "audit_spend": 0.0499790105611363,
+   "served_share": 0.999847,
+   "efficiency": 0.9959339576700745
+  }
+ },
+ "stability": {
+  "q1": {
+   "C*-F111|D2+H3": {
+    "estimate_report": 0.02072000551319045,
+    "estimate_registered_cfg": 0.020917299549697094,
+    "category_report": "equivalent, direction R3 lower",
+    "category_registered_cfg": "equivalent, direction R3 lower"
+   },
+   "C*-F111|X7-SC": {
+    "estimate_report": 0.024318963497430204,
+    "estimate_registered_cfg": 0.02446631687501732,
+    "category_report": "equivalent, direction R3 lower",
+    "category_registered_cfg": "equivalent, direction R3 lower"
+   }
+  },
+  "q4_k_report": 3,
+  "q4_k_registered_cfg": 3,
+  "cells": 36,
+  "max_mean_shift": 0.007372580557210351,
+  "decisions_unchanged": true
+ }
+}

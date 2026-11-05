@@ -89,7 +89,7 @@ def test_predictions_rows_carry_their_own_status_and_cells():
     tex = T.predictions(sc)
     assert "fulfilled" in _row(tex, "Q1-a") and "equivalent" in _row(tex, "Q1-a")
     r = _row(tex, "Q2-a")
-    assert r.split("&")[1].strip() == "failed" and "S 0.004 failed" in r and "-0.095" in r.replace("\\ensuremath{", "").replace("}", "")
+    assert r.split("&")[2].strip() == "failed" and "S 0.004 failed" in r and "-0.095" in r.replace("\\ensuremath{", "").replace("}", "")
     assert "not assessed" in _row(tex, "Q4-b")
 
 
@@ -100,3 +100,11 @@ def test_prediction_pairs_are_labelled_and_rounded():
     assert "fixed -0.087, searched -0.083" in _row(tex, "Q2-d")
     assert "G_min -0.002, G_tot 0.077" in _row(tex, "Q3-d").replace("\\_", "_")
     assert "0.0873" not in tex and "[" not in tex.split("midrule")[1]
+
+
+def test_prediction_statements_come_from_the_registered_table():
+    md = "| ID | Quantity | Where | Condition |\n|---|---|---|---|\n| Q1-a | category, D2+H3 | pooled fresh | \\| x \\| < 0.05 |\n"
+    st = T.statements(md)
+    assert st == {"Q1-a": "category, D2+H3 (pooled fresh): | x | < 0.05"}
+    tex = T.predictions({"Q1-a": {"status": "fulfilled", "cells": []}}, st)
+    assert "category, D2+H3" in _row(tex, "Q1-a")
