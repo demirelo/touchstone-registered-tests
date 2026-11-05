@@ -313,5 +313,10 @@
   "path": "q3.coalition.F111.c2_roles.G_tot.estimate",
   "kind": "gain",
   "section": "results"
+ },
+ "r_ph_w_cs": {
+  "path": "posthoc.welfare.C*.best.weight_label",
+  "kind": "label",
+  "section": "results"
  }
 }

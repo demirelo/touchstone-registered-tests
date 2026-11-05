@@ -133,13 +133,22 @@ def repair(r: dict) -> str:
     return tabular("lrl", ["Rule, family ($\\rho = 1$)", "Gain", "Interval"], rows or [("all", "no records")])
 
 
-PAIR_LABELS = {"Q2-d": ("fixed", "searched"), "Q3-d": ("G_min", "G_tot")}     # score_v2.py's pair order
+PAIR_LABELS = {"Q2-d": ("fixed", "searched"), "Q3-d": ("G_min", "G_tot"), "Q3-e": ("F111", "C*"), "Q3-g": ("R3", "R4"),
+               "Q4-b": ("p'_gain", "p'_eff")}     # score_v2.py's pair order
+
+
+def _p4(x) -> str:
+    """Paired values at four decimals, so that close pairs stay distinguishable."""
+    if x is None:
+        return "n/a"
+    t = f"{float(x):.4f}"
+    return f"\\ensuremath{{{t}}}" if t.startswith("-") else t
 
 
 def _pval(pid: str, v) -> str:
     if isinstance(v, (list, tuple)):
         labels = PAIR_LABELS.get(pid, tuple(f"value {i + 1}" for i in range(len(v))))
-        return ", ".join(f"{esc(lab)} {num(float(x)) if x is not None else 'n/a'}" for lab, x in zip(labels, v))
+        return ", ".join(f"{esc(lab)} {_p4(x)}" for lab, x in zip(labels, v))
     return esc(v) if isinstance(v, str) else num(v)
 
 
@@ -156,11 +165,13 @@ def statements(md: str) -> dict:
     return out
 
 
-def predictions(sc: dict, st: dict | None = None) -> str:
+def predictions(sc: dict, st: dict | None = None, ids: tuple | None = None) -> str:
     """The prediction scoring table (score_v2.py): the registered statement, the overall status, then each scored cell with
     its value and status; paired values carry their labels (they are two statistics, not an interval)."""
     rows = []
     for pid in sorted(sc):
+        if ids and not pid.startswith(tuple(f"{q}-" for q in ids)):
+            continue
         v = sc[pid]
         cells = "; ".join(f"{esc(c['cell'])} {_pval(pid, c['value'])} {esc(c['status'])}" for c in v.get("cells", [])) or "none scored"
         rows.append((pid, [esc((st or {}).get(pid, "")), esc(v["status"]), cells]))
@@ -180,7 +191,9 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv); tabs = all_tables(json.loads(Path(a.report).read_text())); d = Path(a.dir)
     ap_md = Path(__file__).resolve().parent.parent / "predictions-v2.md"
     if a.scoring:
-        tabs["predictions"] = predictions(json.loads(Path(a.scoring).read_text()), statements(ap_md.read_text()) if ap_md.exists() else None)
+        sc, st = json.loads(Path(a.scoring).read_text()), (statements(ap_md.read_text()) if ap_md.exists() else None)
+        tabs["predictions"] = predictions(sc, st, ids=("Q1", "Q2"))          # two tables: one does not fit a page
+        tabs["predictions_b"] = predictions(sc, st, ids=("Q3", "Q4"))
     if a.write:
         d.mkdir(parents=True, exist_ok=True)
         for k, v in tabs.items():

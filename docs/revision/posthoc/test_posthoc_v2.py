@@ -39,3 +39,10 @@ def test_mixture_weight_is_the_largest_with_a_nonnegative_lower_bound():
 def test_no_mixture_when_the_profitable_policy_is_not_profitable():
     z = np.zeros(200)
     assert P.mixture(z - 0.1, z + 0.84, z - 0.01, z + 1.0)["weight"] == 0.0
+
+
+def test_weight_label_and_stability_table_keep_the_needed_precision():
+    assert P.weight_label(0.4195) == "41.95 percent"            # a rounded 0.42 flips the sign of the lower bound
+    res = {"q1_split": {}, "welfare": {}, "q4_diag": {},
+           "stability": {"q1": {"C*-F111|D2+H3": {"estimate_report": 0.020720, "estimate_registered_cfg": 0.020917, "category_registered_cfg": "eq"}}}}
+    assert "0.0207" in P.tables(res)["stability"] and "0.0209" in P.tables(res)["stability"]

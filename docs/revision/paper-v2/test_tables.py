@@ -97,9 +97,9 @@ def test_prediction_pairs_are_labelled_and_rounded():
     sc = {"Q2-d": {"status": "failed", "cells": [{"cell": "P D2+H3", "status": "failed", "value": [-0.08739750289482723, -0.0831087194]}]},
           "Q3-d": {"status": "fulfilled", "cells": [{"cell": "F111 c2_staggered", "status": "fulfilled", "value": [-0.0019989738, 0.07708038]}]}}
     tex = T.predictions(sc).replace("\\ensuremath{", "").replace("}", "")
-    assert "fixed -0.087, searched -0.083" in _row(tex, "Q2-d")
-    assert "G_min -0.002, G_tot 0.077" in _row(tex, "Q3-d").replace("\\_", "_")
-    assert "0.0873" not in tex and "[" not in tex.split("midrule")[1]
+    assert "fixed -0.0874, searched -0.0831" in _row(tex, "Q2-d")
+    assert "G_min -0.0020, G_tot 0.0771" in _row(tex, "Q3-d").replace("\\_", "_")
+    assert "0.08739" not in tex and "[" not in tex.split("midrule")[1]
 
 
 def test_prediction_statements_come_from_the_registered_table():
@@ -108,3 +108,17 @@ def test_prediction_statements_come_from_the_registered_table():
     assert st == {"Q1-a": "category, D2+H3 (pooled fresh): | x | < 0.05"}
     tex = T.predictions({"Q1-a": {"status": "fulfilled", "cells": []}}, st)
     assert "category, D2+H3" in _row(tex, "Q1-a")
+
+
+def test_all_prediction_pairs_are_named_and_precise():
+    sc = {"Q3-e": {"status": "fulfilled", "cells": [{"cell": "headline", "status": "fulfilled", "value": [0.04312, 0.04301]}]},
+          "Q4-b": {"status": "fulfilled", "cells": [{"cell": "fresh0", "status": "fulfilled", "value": [1.0, 0.0001]}]}}
+    tex = T.predictions(sc).replace("\\ensuremath{", "").replace("}", "")
+    assert "F111 0.0431, C* 0.0430" in _row(tex, "Q3-e").replace("C$^*$", "C*")
+    assert "value 1" not in tex and "p'" in _row(tex, "Q4-b")
+
+
+def test_predictions_split_into_two_tables_by_question():
+    sc = {k: {"status": "fulfilled", "cells": []} for k in ("Q1-a", "Q2-a", "Q3-a", "Q4-a")}
+    a, b = T.predictions(sc, ids=("Q1", "Q2")), T.predictions(sc, ids=("Q3", "Q4"))
+    assert "Q1-a" in a and "Q3-a" not in a and "Q4-a" in b and "Q2-a" not in b

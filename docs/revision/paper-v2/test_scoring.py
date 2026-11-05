@@ -92,3 +92,10 @@ def test_q4a_needs_a_decision(world):
     assert S.score(rep, C.extract(out))["Q4-a"]["status"] == "not assessed"
     rep["q4"]["k"] = 5
     assert S.score(rep, C.extract(out))["Q4-a"]["status"] == "fulfilled"
+
+
+def test_q1c_reports_c_star_minus_f111_as_registered(world):
+    out, rep = world
+    rep["q1"]["tests"]["C*-F111|D2+H3"]["side"]["gross_eff_diff"] = 0.004          # the report's side fields are F111 minus C*
+    cell = [c for c in S.score(rep, C.extract(out))["Q1-c"]["cells"] if c["cell"] == "D2+H3"][0]
+    assert cell["value"] == -0.004

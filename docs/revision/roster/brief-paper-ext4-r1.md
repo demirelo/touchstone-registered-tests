@@ -1,0 +1,10 @@
+# Paper revision after external review round 4: internal review round 1 (read-only; no paid APIs; do not read `sealed/`, `~/touchstone-h4`, or `~/h4-session.out`; `sealed2/h4/` may be read; reasoning effort high; under 500 words)
+
+An external referee reviewed draft 9 (verdict: AAMAS 2/5, WEIS 3/5, EC 1/5); the author asked to apply all changes. Commits 059fd9f and 77cd54b revise `docs/revision/paper-v2/main.tex` (PDF: `/private/tmp/claude-502/-Users-oemer-demirel-Projects-touchstone/a48c0006-982d-4d16-9bac-5ae26e145fac/scratchpad/pdf7/main.pdf`). The response letter `docs/paper/response-to-review-r4.md` lists each referee point and the change. New exploratory analyses: `docs/revision/posthoc/posthoc_v2.py` (tests in `test_posthoc_v2.py`), output `docs/revision/posthoc/posthoc.json` and `docs/revision/paper-v2/tables/posthoc_*.tex`. Inputs: `/Users/oemer.demirel/Projects/touchstone/results/v2/report/{report.md,addendum.md}`, `/Users/oemer.demirel/Projects/touchstone/results/v2/eval/all/evaluate/` (records), `docs/revision/deviation/stability-result.json`, `sealed2/h4/containment.md`, `docs/revision/predictions-v2.md`, design section 9. `numbers_v2.py --check` passes; paper tests pass; four new references were verified from publisher PDFs and Crossref.
+
+Check: (1) the posthoc analyses are correct and fairly presented: the Q1 split (gain = (attacked - reference profit)/(S*/N), N = 10), the welfare lottery (same frozen reference for W0, W1, and the profit cells; weight chosen on evaluation seeds, stated), the Q4 diagnostics, the stability table; (2) every revised sentence matches the report, addendum, and posthoc output, with no new overclaim and no sign or category error; (3) the response letter describes the changes truthfully; (4) the calibration paragraph in section 8 matches design 9.5 and `experiments/v2/coverage.json`; (5) new errors, including in the PDF.
+
+Output exactly:
+VERDICT: accept | accept-with-caveat | reject
+CORRECTIONS: numbered, each with main.tex line, file, or site name, or "none".
+CONFIDENCE: 0 to 1.

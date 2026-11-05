@@ -96,35 +96,35 @@
      "estimate": 0.25363451509467383,
      "lower": 0.25290013285976376,
      "efficiency": 0.838654868743493,
-     "weight_label": "100 percent"
+     "weight_label": "100.00 percent"
     },
     "X7-SC": {
      "weight": 1.0,
      "estimate": 0.25363451509467383,
      "lower": 0.25290013285976376,
      "efficiency": 0.838654868743493,
-     "weight_label": "100 percent"
+     "weight_label": "100.00 percent"
     },
     "X5-AG/v2": {
      "weight": 1.0,
      "estimate": 0.25363451509467383,
      "lower": 0.25290013285976376,
      "efficiency": 0.838654868743493,
-     "weight_label": "100 percent"
+     "weight_label": "100.00 percent"
     },
     "H4": {
      "weight": 1.0,
      "estimate": 0.25363451509467383,
      "lower": 0.25290013285976376,
      "efficiency": 0.838654868743493,
-     "weight_label": "100 percent"
+     "weight_label": "100.00 percent"
     },
     "D2": {
      "weight": 1.0,
      "estimate": 0.25363451509467383,
      "lower": 0.25290013285976376,
      "efficiency": 0.838654868743493,
-     "weight_label": "100 percent"
+     "weight_label": "100.00 percent"
     }
    },
    "best": {
@@ -133,7 +133,7 @@
     "estimate": 0.25363451509467383,
     "lower": 0.25290013285976376,
     "efficiency": 0.838654868743493,
-    "weight_label": "100 percent"
+    "weight_label": "100.00 percent"
    }
   },
   "F111": {
@@ -151,35 +151,35 @@
      "estimate": 0.0002528525162339668,
      "lower": 6.876599495205679e-05,
      "efficiency": 0.9445101108199223,
-     "weight_label": "34 percent"
+     "weight_label": "33.90 percent"
     },
     "X7-SC": {
      "weight": 0.339,
      "estimate": 0.0002528525162339668,
      "lower": 6.876599495205679e-05,
      "efficiency": 0.9445101108199223,
-     "weight_label": "34 percent"
+     "weight_label": "33.90 percent"
     },
     "X5-AG/v2": {
      "weight": 0.3155,
      "estimate": 0.0009151568817489391,
      "lower": 1.6963374835405275e-05,
      "efficiency": 0.9463787530958935,
-     "weight_label": "32 percent"
+     "weight_label": "31.55 percent"
     },
     "H4": {
      "weight": 0.4195,
      "estimate": 0.0003742630846593885,
      "lower": 2.7899627637386465e-05,
      "efficiency": 0.9319558344912628,
-     "weight_label": "42 percent"
+     "weight_label": "41.95 percent"
     },
     "D2": {
      "weight": 0.269,
      "estimate": 0.0011569697789569726,
      "lower": 3.1866754529484e-05,
      "efficiency": 0.9530933469960934,
-     "weight_label": "27 percent"
+     "weight_label": "26.90 percent"
     }
    },
    "best": {
@@ -188,7 +188,7 @@
     "estimate": 0.0003742630846593885,
     "lower": 2.7899627637386465e-05,
     "efficiency": 0.9319558344912628,
-    "weight_label": "42 percent"
+    "weight_label": "41.95 percent"
    }
   },
   "C*": {
@@ -206,35 +206,35 @@
      "estimate": 0.0002971500510672793,
      "lower": 6.676869246777033e-05,
      "efficiency": 0.9218518888759811,
-     "weight_label": "48 percent"
+     "weight_label": "48.00 percent"
     },
     "X7-SC": {
      "weight": 0.48,
      "estimate": 0.0002971500510672793,
      "lower": 6.676869246777033e-05,
      "efficiency": 0.9218518888759811,
-     "weight_label": "48 percent"
+     "weight_label": "48.00 percent"
     },
     "X5-AG/v2": {
      "weight": 0.303,
      "estimate": 0.001134580589544886,
      "lower": 5.8435520436711215e-05,
      "efficiency": 0.9484945762819834,
-     "weight_label": "30 percent"
+     "weight_label": "30.30 percent"
     },
     "H4": {
      "weight": 0.4845,
      "estimate": 0.0004560289652853301,
      "lower": 7.178727527591672e-05,
      "efficiency": 0.9211677557713308,
-     "weight_label": "48 percent"
+     "weight_label": "48.45 percent"
     },
     "D2": {
      "weight": 0.309,
      "estimate": 0.0009195789614791392,
      "lower": 5.832009207805899e-05,
      "efficiency": 0.9478536012514411,
-     "weight_label": "31 percent"
+     "weight_label": "30.90 percent"
     }
    },
    "best": {
@@ -243,7 +243,7 @@
     "estimate": 0.0004560289652853301,
     "lower": 7.178727527591672e-05,
     "efficiency": 0.9211677557713308,
-    "weight_label": "48 percent"
+    "weight_label": "48.45 percent"
    }
   }
  },

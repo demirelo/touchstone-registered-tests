@@ -69,6 +69,11 @@ def mixture(gw0, ew0, gp, ep, grid: int = 2001) -> dict:
             "efficiency": float(e.mean())}
 
 
+def weight_label(w: float) -> str:
+    """Two decimals in percent: the bound is near zero at the selected weight, and rounding can flip its sign."""
+    return f"{100 * w:.2f} percent"
+
+
 def welfare_mixtures(out, rule: str) -> dict:
     ctx = "headline@rho0.2"; w0 = _rec(out, f"{ctx}|{rule}|D2+H3|W0"); w1 = _rec(out, f"{ctx}|{rule}|D2+H3|W1")
     ref = np.asarray(w1["normalized"]) - np.asarray(w1["constraint"]); gw0 = np.asarray(w0["normalized"]) - ref
@@ -79,7 +84,7 @@ def welfare_mixtures(out, rule: str) -> dict:
         if r is None or r["seeds"] != w0["seeds"]:
             continue
         mx = mixture(gw0, w0["eff"], r["gain"], r["eff_attack"])
-        mx["weight_label"] = f"{round(100 * mx['weight'])} percent"
+        mx["weight_label"] = weight_label(mx["weight"])
         res["mixtures"][fam] = mx
     feasible = {f: v for f, v in res["mixtures"].items() if v["weight"] > 0}
     if feasible:
@@ -108,8 +113,8 @@ def stability(report: dict, stab: dict) -> dict:
             "cells": len(shifts), "max_mean_shift": float(max(shifts)), "decisions_unchanged": bool(stab["decisions_unchanged"])}
 
 
-def _f(x):
-    return "n/a" if x is None else (f"\\ensuremath{{{x:.3f}}}" if x < 0 else f"{x:.3f}")
+def _f(x, d: int = 3):
+    return "n/a" if x is None else (f"\\ensuremath{{{x:.{d}f}}}" if x < 0 else f"{x:.{d}f}")
 
 
 def tables(res: dict) -> dict:
@@ -130,7 +135,7 @@ def tables(res: dict) -> dict:
             for m, v in res["q4_diag"].items()]
     t["q4_diag"] = ("\\begin{tabular}{@{}lrrrrr@{}}\\toprule\nMarket & B3$-$R3 gain & Attacked term & Reference term & R3 audit spend & R3 served share \\\\\\midrule\n"
                     + "\n".join(rows) + "\n\\bottomrule\\end{tabular}\n")
-    rows = [f"{k} & {_f(v['estimate_report'])} & {_f(v['estimate_registered_cfg'])} & {v['category_registered_cfg']} \\\\" for k, v in res["stability"]["q1"].items()]
+    rows = [f"{k} & {_f(v['estimate_report'], 4)} & {_f(v['estimate_registered_cfg'], 4)} & {v['category_registered_cfg']} \\\\" for k, v in res["stability"]["q1"].items()]
     t["stability"] = ("\\begin{tabular}{@{}lrrl@{}}\\toprule\nQ1 test & $d$, report & $d$, registered configs & Category, registered configs \\\\\\midrule\n"
                       + "\n".join(rows) + "\n\\bottomrule\\end{tabular}\n")
     return t

@@ -56,7 +56,8 @@ def score(rep: dict, cells: dict) -> dict:
     c = cat("X7-SC")
     out["Q1-b"] = _combine([{"cell": "X7-SC", "value": c, "status": NA if c is None or c.startswith("not decided") or c == "refused"
                              else "fulfilled" if c in ("equivalent", "equivalent, direction R3 lower") else "failed"}])
-    out["Q1-c"] = _combine([_cell(f, _get(q1(f), "side", "gross_eff_diff"), lambda v: -0.01 <= v <= 0.01) for f in ("D2+H3", "X7-SC")])
+    neg = lambda v: None if v is None else -v                     # the report's side fields are F111 minus C*; Q1-c is C* minus F111
+    out["Q1-c"] = _combine([_cell(f, neg(_get(q1(f), "side", "gross_eff_diff")), lambda v: -0.01 <= v <= 0.01) for f in ("D2+H3", "X7-SC")])
     out["Q1-d"] = _combine([{"cell": f, "value": q1(f).get("better"), "status": NA if cat(f) is None or "efficiency" not in q1(f)
                              else "fulfilled" if q1(f).get("better") is None else "failed"} for f in ("D2+H3", "X7-SC")])
     s = lambda kind, f, k: _get(rep, "q2", kind, f, k, "estimate")
