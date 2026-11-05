@@ -89,7 +89,7 @@ def test_predictions_rows_carry_their_own_status_and_cells():
     tex = T.predictions(sc)
     assert "fulfilled" in _row(tex, "Q1-a") and "equivalent" in _row(tex, "Q1-a")
     r = _row(tex, "Q2-a")
-    assert r.split("&")[2].strip() == "failed" and "S 0.004 failed" in r and "-0.095" in r.replace("\\ensuremath{", "").replace("}", "")
+    assert r.split("&")[2].strip() == "failed" and "S 0.0039 failed" in r and "-0.0952" in r.replace("\\ensuremath{", "").replace("}", "")
     assert "not assessed" in _row(tex, "Q4-b")
 
 
@@ -97,8 +97,8 @@ def test_prediction_pairs_are_labelled_and_rounded():
     sc = {"Q2-d": {"status": "failed", "cells": [{"cell": "P D2+H3", "status": "failed", "value": [-0.08739750289482723, -0.0831087194]}]},
           "Q3-d": {"status": "fulfilled", "cells": [{"cell": "F111 c2_staggered", "status": "fulfilled", "value": [-0.0019989738, 0.07708038]}]}}
     tex = T.predictions(sc).replace("\\ensuremath{", "").replace("}", "")
-    assert "fixed -0.0874, searched -0.0831" in _row(tex, "Q2-d")
-    assert "G_min -0.0020, G_tot 0.0771" in _row(tex, "Q3-d").replace("\\_", "_")
+    assert "fixed -0.08740, searched -0.08311" in _row(tex, "Q2-d")
+    assert "G_min -0.00200, G_tot 0.07708" in _row(tex, "Q3-d").replace("\\_", "_")
     assert "0.08739" not in tex and "[" not in tex.split("midrule")[1]
 
 
@@ -114,7 +114,7 @@ def test_all_prediction_pairs_are_named_and_precise():
     sc = {"Q3-e": {"status": "fulfilled", "cells": [{"cell": "headline", "status": "fulfilled", "value": [0.04312, 0.04301]}]},
           "Q4-b": {"status": "fulfilled", "cells": [{"cell": "fresh0", "status": "fulfilled", "value": [1.0, 0.0001]}]}}
     tex = T.predictions(sc).replace("\\ensuremath{", "").replace("}", "")
-    assert "F111 0.0431, C* 0.0430" in _row(tex, "Q3-e").replace("C$^*$", "C*")
+    assert "F111 0.04312, C* 0.04301" in _row(tex, "Q3-e").replace("C$^*$", "C*")
     assert "value 1" not in tex and "p'" in _row(tex, "Q4-b")
 
 
@@ -122,3 +122,13 @@ def test_predictions_split_into_two_tables_by_question():
     sc = {k: {"status": "fulfilled", "cells": []} for k in ("Q1-a", "Q2-a", "Q3-a", "Q4-a")}
     a, b = T.predictions(sc, ids=("Q1", "Q2")), T.predictions(sc, ids=("Q3", "Q4"))
     assert "Q1-a" in a and "Q3-a" not in a and "Q4-a" in b and "Q2-a" not in b
+
+
+def test_close_values_stay_distinguishable_and_q3f_pairs_are_named():
+    sc = {"Q3-e": {"status": "fulfilled", "cells": [{"cell": "headline", "status": "fulfilled", "value": [0.0426027286, 0.0425939768]}]},
+          "Q3-c": {"status": "fulfilled", "cells": [{"cell": "fresh2 C*", "status": "fulfilled", "value": -0.00041}]},
+          "Q3-f": {"status": "failed", "cells": [{"cell": "F000<F111 W0", "status": "fulfilled", "value": [0.8387, 0.8403]}]}}
+    tex = T.predictions(sc).replace("\\ensuremath{", "").replace("}", "")
+    assert "0.04260" in tex and "0.04259" in tex
+    assert "-0.0004" in _row(tex, "Q3-c")
+    assert "F000 efficiency" in _row(tex, "Q3-f") and "value 1" not in tex

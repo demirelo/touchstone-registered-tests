@@ -133,15 +133,15 @@ def repair(r: dict) -> str:
     return tabular("lrl", ["Rule, family ($\\rho = 1$)", "Gain", "Interval"], rows or [("all", "no records")])
 
 
-PAIR_LABELS = {"Q2-d": ("fixed", "searched"), "Q3-d": ("G_min", "G_tot"), "Q3-e": ("F111", "C*"), "Q3-g": ("R3", "R4"),
+PAIR_LABELS = {"Q2-d": ("fixed", "searched"), "Q3-d": ("G_min", "G_tot"), "Q3-e": ("F111", "C*"), "Q3-f": ("F000 efficiency", "F111 efficiency"), "Q3-g": ("R3", "R4"),
                "Q4-b": ("p'_gain", "p'_eff")}     # score_v2.py's pair order
 
 
 def _p4(x) -> str:
-    """Paired values at four decimals, so that close pairs stay distinguishable."""
+    """Paired values at five decimals, so that close pairs stay distinguishable (Q3-e differs in the sixth digit)."""
     if x is None:
         return "n/a"
-    t = f"{float(x):.4f}"
+    t = f"{float(x):.5f}"
     return f"\\ensuremath{{{t}}}" if t.startswith("-") else t
 
 
@@ -149,7 +149,12 @@ def _pval(pid: str, v) -> str:
     if isinstance(v, (list, tuple)):
         labels = PAIR_LABELS.get(pid, tuple(f"value {i + 1}" for i in range(len(v))))
         return ", ".join(f"{esc(lab)} {_p4(x)}" for lab, x in zip(labels, v))
-    return esc(v) if isinstance(v, str) else num(v)
+    if isinstance(v, str):
+        return esc(v)
+    if isinstance(v, (int, float)) and not isinstance(v, bool):
+        t = f"{float(v):.4f}"                                      # four decimals: a value near zero keeps its sign
+        return f"\\ensuremath{{{t}}}" if t.startswith("-") else t
+    return num(v)
 
 
 def statements(md: str) -> dict:
