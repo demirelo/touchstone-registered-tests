@@ -233,5 +233,90 @@
   "path": "secondary.whole_systems.C*-t.headline.D2+H3.estimate",
   "kind": "gain",
   "section": "results"
+ },
+ "abs_q1_est_x": {
+  "path": "q1.tests.C*-F111|X7-SC.estimate",
+  "kind": "gain",
+  "section": "abstract"
+ },
+ "abs_q3_w0": {
+  "path": "q3.welfare.F111.D2+H3.W0.efficiency",
+  "kind": "eff",
+  "section": "abstract"
+ },
+ "abs_ph_mix_eff": {
+  "path": "posthoc.welfare.F111.best.efficiency",
+  "kind": "eff",
+  "section": "abstract"
+ },
+ "r_q2_s_x": {
+  "path": "q2.searched.X7-SC.S.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q3_w0_f000": {
+  "path": "q3.welfare.F000.D2+H3.W0.efficiency",
+  "kind": "eff",
+  "section": "results"
+ },
+ "r_q3_w0g_f000": {
+  "path": "q3.welfare.F000.D2+H3.W0.attacker_gain",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q3_w0g_f111": {
+  "path": "q3.welfare.F111.D2+H3.W0.attacker_gain",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q3_w1_f000": {
+  "path": "q3.welfare.F000.D2+H3.W1.efficiency",
+  "kind": "eff",
+  "section": "results"
+ },
+ "r_ph_w_r3": {
+  "path": "posthoc.welfare.F111.best.weight_label",
+  "kind": "label",
+  "section": "results"
+ },
+ "r_ph_e_r3": {
+  "path": "posthoc.welfare.F111.best.efficiency",
+  "kind": "eff",
+  "section": "results"
+ },
+ "r_ph_e_cs": {
+  "path": "posthoc.welfare.C*.best.efficiency",
+  "kind": "eff",
+  "section": "results"
+ },
+ "r_q3_coal_f111_c2": {
+  "path": "q3.coalition.F111.c2_synchronised.G_tot.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q3_coal_f000_c5": {
+  "path": "q3.coalition.F000.c5_synchronised.G_tot.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q3_coal_f111_c5min": {
+  "path": "q3.coalition.F111.c5_synchronised.G_min.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q3_db_f000": {
+  "path": "q3.coalition.F000.c2_roles.G_tot.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q3_db_f111": {
+  "path": "q3.coalition.F111.c2_roles.G_tot.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_ph_w_cs": {
+  "path": "posthoc.welfare.C*.best.weight_label",
+  "kind": "label",
+  "section": "results"
  }
 }
