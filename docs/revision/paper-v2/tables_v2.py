@@ -20,6 +20,14 @@ SIDE = ("gross_eff_diff", "net_eff_diff", "ref_profit_diff", "audit_spend_diff",
         "served_share_diff")
 
 
+def holm_adjusted(p: list) -> list:
+    """Holm step-down adjusted p-values: sorted ascending, adj_(i) = max_{j<=i} min(1, (m - j + 1) p_(j))."""
+    m = len(p); order = sorted(range(m), key=lambda i: p[i]); out = [0.0] * m; run = 0.0
+    for rank, i in enumerate(order):
+        run = max(run, min(1.0, (m - rank) * float(p[i]))); out[i] = run
+    return out
+
+
 def esc(s) -> str:
     return _fmt(str(s))
 
@@ -45,12 +53,14 @@ def tabular(cols: str, header: list[str], rows: list[tuple[str, object]]) -> str
 
 
 def q1(r: dict) -> str:
-    rows = []
-    for f in FAMS:
-        t = r["q1"]["tests"][f"C*-F111|{f}"]
+    """The stored "p" is the calibrated two-sided p-value that enters Holm over the two fixed slots (sim.decisions_v2.q1_family);
+    the Holm-adjusted value is computed beside it."""
+    rows = []; tests = [r["q1"]["tests"][f"C*-F111|{f}"] for f in FAMS]
+    ps = [t.get("p") for t in tests]; adj = holm_adjusted([1.0 if p is None else p for p in ps]) if any(p is not None for p in ps) else [None] * len(ps)
+    for f, t, a in zip(FAMS, tests, adj):
         rows.append((f, [num(t.get("estimate")), iv(t.get("interval")), esc(t.get("category")), _fmt_p(t.get("p")),
-                         esc(t.get("efficiency") or "n/a"), esc(t.get("better") or "none")]))
-    return tabular("lrllrll", ["Family", "$d$", "Interval", "Category", "$p$", "Efficiency", "Better"], rows)
+                         _fmt_p(a if t.get("p") is not None else None), esc(t.get("efficiency") or "n/a"), esc(t.get("better") or "none")]))
+    return tabular("lrllrrll", ["Family", "$d$", "Interval", "Category", "$p'$ to Holm", "Holm-adj.", "Efficiency", "Better"], rows)
 
 
 def q1_side(r: dict) -> str:
@@ -63,16 +73,19 @@ def q1_side(r: dict) -> str:
 
 
 def q4(r: dict) -> str:
-    q = r["q4"]; rows = []
-    for m in FRESH:
+    """The stored p_gain and p_eff are the raw one-sided bootstrap p-values; q4.p holds the calibrated market maxima that
+    enter Holm over six slots (sim.decisions_v2.q4_markets). Printed: raw values, the market maximum, and its Holm-adjusted value."""
+    q = r["q4"]; rows = []; adj = holm_adjusted(q["p"]) if q.get("p") else [None] * len(FRESH)
+    for i, m in enumerate(FRESH):
         x = q["markets"][m]
         if isinstance(x, str):
             rows.append((m, x)); continue
         dec = "pass" if m in q.get("passing", []) else "fail" if m in q.get("failing", []) else "not decided"
         rows.append((m, [num(x["gain_diff"]), num(x["gain_diff_lower"]), num(x["eff"]), num(x["eff_lower"]), _fmt_p(x["p_gain"]),
-                         _fmt_p(x["p_eff"]), dec + (" (search flagged)" if x.get("search") else "")]))
-    return tabular("lrrrrrrl", ["Market", "F000$-$F111", "Lower", "F111 eff.", "Lower", "$p'_{\\mathrm{gain}}$", "$p'_{\\mathrm{eff}}$",
-                                "Holm"], rows)
+                         _fmt_p(x["p_eff"]), _fmt_p(q["p"][i] if q.get("p") else None), _fmt_p(adj[i]),
+                         dec + (" (search flagged)" if x.get("search") else "")]))
+    return tabular("lrrrrrrrrl", ["Market", "F000$-$F111", "Lower", "F111 eff.", "Lower", "Raw $p_{\\mathrm{gain}}$", "Raw $p_{\\mathrm{eff}}$",
+                                  "Market $p'$", "Holm-adj.", "Decision"], rows)
 
 
 def q2(r: dict, fam: str) -> str:

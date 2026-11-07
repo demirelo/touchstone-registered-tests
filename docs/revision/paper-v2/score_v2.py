@@ -12,6 +12,12 @@ from pathlib import Path
 FRESH = tuple(f"fresh{i}" for i in range(6))
 MARKETS = FRESH + ("headline",)
 NA = "not assessed"
+KAPPA_Q4 = 0.25                       # experiments/protocol-v2.yaml, admitted Q4 multiplier
+
+
+def _cal(p, kappa: float = KAPPA_Q4):
+    """p' = min(1, p / kappa) (design 9.2): Q4-b is registered on the calibrated component p-values."""
+    return None if _num(p) is None else min(1.0, float(p) / kappa)
 
 
 def _num(x):
@@ -88,7 +94,7 @@ def score(rep: dict, cells: dict) -> dict:
     out["Q4-a"] = _combine([_cell("k", k, lambda v: v >= 5)])
     mk = _get(rep, "q4", "markets") or {}
     elig = [m for m in (_get(rep, "q4", "failing") or []) if isinstance(mk.get(m), dict)]
-    out["Q4-b"] = _combine([_cell(m, (mk[m].get("p_gain"), mk[m].get("p_eff")), lambda v: v[0] > v[1]) for m in elig])
+    out["Q4-b"] = _combine([_cell(m, (_cal(mk[m].get("p_gain")), _cal(mk[m].get("p_eff"))), lambda v: v[0] > v[1]) for m in elig])
     return out
 
 

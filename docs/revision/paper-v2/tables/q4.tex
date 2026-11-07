@@ -1,9 +1,9 @@
-\begin{tabular}{@{}lrrrrrrl@{}}\toprule
-Market & F000$-$F111 & Lower & F111 eff. & Lower & $p'_{\mathrm{gain}}$ & $p'_{\mathrm{eff}}$ & Holm \\\midrule
-fresh0 & 0.041 & 0.039 & 0.997 & 0.997 & 1 & 0.0001 & fail \\
-fresh1 & 0.469 & 0.465 & 0.998 & 0.998 & 0.0001 & 0.0001 & pass (search flagged) \\
-fresh2 & 0.057 & 0.053 & 0.985 & 0.985 & 1 & 0.0001 & fail \\
-fresh3 & 0.263 & 0.260 & 0.998 & 0.997 & 0.0001 & 0.0001 & pass \\
-fresh4 & 0.183 & 0.175 & 0.987 & 0.987 & 0.0001 & 0.0001 & pass (search flagged) \\
-fresh5 & 0.027 & 0.025 & 0.996 & 0.995 & 1 & 0.0001 & fail \\
+\begin{tabular}{@{}lrrrrrrrrl@{}}\toprule
+Market & F000$-$F111 & Lower & F111 eff. & Lower & Raw $p_{\mathrm{gain}}$ & Raw $p_{\mathrm{eff}}$ & Market $p'$ & Holm-adj. & Decision \\\midrule
+fresh0 & 0.041 & 0.039 & 0.997 & 0.997 & 1 & 0.0001 & 1 & 1 & fail \\
+fresh1 & 0.469 & 0.465 & 0.998 & 0.998 & 0.0001 & 0.0001 & 0.0004 & 0.0024 & pass (search flagged) \\
+fresh2 & 0.057 & 0.053 & 0.985 & 0.985 & 1 & 0.0001 & 1 & 1 & fail \\
+fresh3 & 0.263 & 0.260 & 0.998 & 0.997 & 0.0001 & 0.0001 & 0.0004 & 0.0024 & pass \\
+fresh4 & 0.183 & 0.175 & 0.987 & 0.987 & 0.0001 & 0.0001 & 0.0004 & 0.0024 & pass (search flagged) \\
+fresh5 & 0.027 & 0.025 & 0.996 & 0.995 & 1 & 0.0001 & 1 & 1 & fail \\
 \bottomrule\end{tabular}

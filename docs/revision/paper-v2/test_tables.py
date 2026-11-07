@@ -132,3 +132,16 @@ def test_close_values_stay_distinguishable_and_q3f_pairs_are_named():
     assert "0.04260" in tex and "0.04259" in tex
     assert "-0.0004" in _row(tex, "Q3-c")
     assert "F000 efficiency" in _row(tex, "Q3-f") and "value 1" not in tex
+
+
+def test_p_value_columns_say_what_they_print(report):
+    """Round-5 review: the report stores raw Q4 component p-values and the calibrated Q1 value that enters Holm; each column
+    label must name that quantity, and the Holm-adjusted values are printed beside them."""
+    q4 = T.q4(report); hdr = q4.split("\\midrule")[0]
+    assert "Raw $p_{\\mathrm{gain}}$" in hdr and "Raw $p_{\\mathrm{eff}}$" in hdr and "Holm-adj." in hdr and "p'_{\\mathrm{gain}}" not in hdr
+    q = report["q4"]; adj = T.holm_adjusted(q["p"])
+    for i, m in enumerate(W.FRESH):
+        if isinstance(q["markets"][m], dict):
+            assert T._fmt_p(adj[i]) in _row(q4, m)
+    q1 = T.q1(report); hdr = q1.split("\\midrule")[0]
+    assert "$p'$ to Holm" in hdr and "Holm-adj." in hdr

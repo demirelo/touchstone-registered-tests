@@ -99,3 +99,12 @@ def test_q1c_reports_c_star_minus_f111_as_registered(world):
     rep["q1"]["tests"]["C*-F111|D2+H3"]["side"]["gross_eff_diff"] = 0.004          # the report's side fields are F111 minus C*
     cell = [c for c in S.score(rep, C.extract(out))["Q1-c"]["cells"] if c["cell"] == "D2+H3"][0]
     assert cell["value"] == -0.004
+
+
+def test_q4b_compares_calibrated_p_values_as_registered(world):
+    """Raw 0.30 > 0.26, but calibrated with kappa 0.25 both cap at 1: a tie, which fails (predictions-v2.md, Q4-b)."""
+    out, rep = world
+    m = "fresh1"; rep["q4"]["failing"] = [m]
+    rep["q4"]["markets"][m]["p_gain"], rep["q4"]["markets"][m]["p_eff"] = 0.30, 0.26
+    sc = S.score(rep, C.extract(out))["Q4-b"]
+    assert sc["status"] == "failed" and sc["cells"][0]["value"] == pytest.approx((1.0, 1.0))
