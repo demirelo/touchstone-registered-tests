@@ -3,7 +3,7 @@
 Thank you for a second careful review, and for checking the materials themselves. Every correction in your section 4 is
 applied, and most of your eight remaining changes (your section 5) were done on the existing records; section 5 below
 lists what was not. No new simulation was
-run, and no registered estimate or decision changed. Table numbers refer to the revised draft (`main.pdf`, 25 pages).
+run, and no registered estimate or decision changed. Table numbers refer to the revised draft (`main.pdf`, 26 pages).
 
 ## 1. The p-value discrepancy (your finding 1)
 

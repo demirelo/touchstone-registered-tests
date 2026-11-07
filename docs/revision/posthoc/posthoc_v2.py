@@ -219,7 +219,7 @@ def tables(res: dict) -> dict:
         mixes = v.get("mixtures", {})
         if any(m["weight"] >= 1.0 for m in mixes.values()):
             mx = next(m for m in mixes.values() if m["weight"] >= 1.0)
-            rows.append(f"{r} & {_f(v['w1']['efficiency'])} & {_f(v['w0']['efficiency'])} & none (W0 gain positive) & 1 & {_s3(mx['estimate'])} & "
+            rows.append(f"{r} & {_f(v['w1']['efficiency'])} & {_f(v['w0']['efficiency'])} & none (W0 estimated gain positive) & 1 & {_s3(mx['estimate'])} & "
                         f"{_s3(mx.get('lower'))} & {_s3(mx.get('train_mix'))} & {_f(mx['efficiency'], 4)} \\\\"); continue
         for fam in ("H4", "D2+H3"):
             mx = mixes.get(fam)
