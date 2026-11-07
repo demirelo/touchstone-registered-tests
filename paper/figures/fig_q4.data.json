@@ -1,0 +1,87 @@
+{
+ "points": [
+  {
+   "eff": 0.9972112075235253,
+   "eff_lower": 0.9967394393768593,
+   "gain_diff": 0.04144271507592087,
+   "gain_diff_lower": 0.03937515164276598,
+   "market": "fresh0",
+   "paths": {
+    "eff": "q4.markets.fresh0.eff",
+    "eff_lower": "q4.markets.fresh0.eff_lower",
+    "gain_diff": "q4.markets.fresh0.gain_diff",
+    "gain_diff_lower": "q4.markets.fresh0.gain_diff_lower"
+   }
+  },
+  {
+   "eff": 0.9984168725250109,
+   "eff_lower": 0.9979963198634668,
+   "gain_diff": 0.4690626900515456,
+   "gain_diff_lower": 0.46510156437983907,
+   "market": "fresh1",
+   "paths": {
+    "eff": "q4.markets.fresh1.eff",
+    "eff_lower": "q4.markets.fresh1.eff_lower",
+    "gain_diff": "q4.markets.fresh1.gain_diff",
+    "gain_diff_lower": "q4.markets.fresh1.gain_diff_lower"
+   }
+  },
+  {
+   "eff": 0.9852763789517723,
+   "eff_lower": 0.984623470780023,
+   "gain_diff": 0.056810283555962966,
+   "gain_diff_lower": 0.052724187453575315,
+   "market": "fresh2",
+   "paths": {
+    "eff": "q4.markets.fresh2.eff",
+    "eff_lower": "q4.markets.fresh2.eff_lower",
+    "gain_diff": "q4.markets.fresh2.gain_diff",
+    "gain_diff_lower": "q4.markets.fresh2.gain_diff_lower"
+   }
+  },
+  {
+   "eff": 0.9979766341492813,
+   "eff_lower": 0.9974204999301648,
+   "gain_diff": 0.2625905586494956,
+   "gain_diff_lower": 0.2600150621892636,
+   "market": "fresh3",
+   "paths": {
+    "eff": "q4.markets.fresh3.eff",
+    "eff_lower": "q4.markets.fresh3.eff_lower",
+    "gain_diff": "q4.markets.fresh3.gain_diff",
+    "gain_diff_lower": "q4.markets.fresh3.gain_diff_lower"
+   }
+  },
+  {
+   "eff": 0.9874909900785758,
+   "eff_lower": 0.9866892414074927,
+   "gain_diff": 0.18339043852718015,
+   "gain_diff_lower": 0.1752815908546011,
+   "market": "fresh4",
+   "paths": {
+    "eff": "q4.markets.fresh4.eff",
+    "eff_lower": "q4.markets.fresh4.eff_lower",
+    "gain_diff": "q4.markets.fresh4.gain_diff",
+    "gain_diff_lower": "q4.markets.fresh4.gain_diff_lower"
+   }
+  },
+  {
+   "eff": 0.9959339576700745,
+   "eff_lower": 0.9952269499807532,
+   "gain_diff": 0.027073049880174248,
+   "gain_diff_lower": 0.025117299604411697,
+   "market": "fresh5",
+   "paths": {
+    "eff": "q4.markets.fresh5.eff",
+    "eff_lower": "q4.markets.fresh5.eff_lower",
+    "gain_diff": "q4.markets.fresh5.gain_diff",
+    "gain_diff_lower": "q4.markets.fresh5.gain_diff_lower"
+   }
+  }
+ ],
+ "skipped": [],
+ "thresholds": {
+  "eff": 0.9,
+  "gain": 0.1
+ }
+}

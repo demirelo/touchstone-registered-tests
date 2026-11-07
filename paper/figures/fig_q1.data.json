@@ -1,0 +1,28 @@
+{
+ "margin": 0.05,
+ "points": [
+  {
+   "estimate": 0.02072000551319045,
+   "family": "D2+H3",
+   "hi": 0.021622430046334597,
+   "lo": 0.019810563212799056,
+   "paths": {
+    "estimate": "q1.tests.C*-F111|D2+H3.estimate",
+    "hi": "q1.tests.C*-F111|D2+H3.interval.1",
+    "lo": "q1.tests.C*-F111|D2+H3.interval.0"
+   }
+  },
+  {
+   "estimate": 0.024318963497430204,
+   "family": "X7-SC",
+   "hi": 0.02514554239048095,
+   "lo": 0.023467842949185615,
+   "paths": {
+    "estimate": "q1.tests.C*-F111|X7-SC.estimate",
+    "hi": "q1.tests.C*-F111|X7-SC.interval.1",
+    "lo": "q1.tests.C*-F111|X7-SC.interval.0"
+   }
+  }
+ ],
+ "skipped": []
+}

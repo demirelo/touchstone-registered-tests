@@ -318,5 +318,60 @@
   "path": "posthoc.welfare.C*.best.weight_label",
   "kind": "label",
   "section": "results"
+ },
+ "abs_ph_mix_gain": {
+  "path": "posthoc.welfare.F111.best.estimate_label",
+  "kind": "label",
+  "section": "abstract"
+ },
+ "r_ph_g_r3": {
+  "path": "posthoc.welfare.F111.best.estimate_label",
+  "kind": "label",
+  "section": "results"
+ },
+ "r_ph_g_cs": {
+  "path": "posthoc.welfare.C*.best.estimate_label",
+  "kind": "label",
+  "section": "results"
+ },
+ "r_ph_e_r3_d": {
+  "path": "posthoc.welfare.F111.mixtures.D2+H3.efficiency",
+  "kind": "eff",
+  "section": "results"
+ },
+ "r_ph_e_cs_d": {
+  "path": "posthoc.welfare.C*.mixtures.D2+H3.efficiency",
+  "kind": "eff",
+  "section": "results"
+ },
+ "r_ext_n": {
+  "path": "audit.extreme_intervals.labels.extreme_entries",
+  "kind": "label",
+  "section": "results"
+ },
+ "r_ext_seeds": {
+  "path": "audit.extreme_intervals.labels.seeds_nonzero",
+  "kind": "label",
+  "section": "results"
+ },
+ "r_ext_total": {
+  "path": "audit.extreme_intervals.labels.seeds_total",
+  "kind": "label",
+  "section": "results"
+ },
+ "r_ext_share": {
+  "path": "audit.extreme_intervals.labels.share_resamples",
+  "kind": "label",
+  "section": "results"
+ },
+ "r_st_f4_old": {
+  "path": "audit.q4_stability.report.fresh4.gain_diff",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_st_f4_new": {
+  "path": "audit.q4_stability.registered_cfg.fresh4.gain_diff",
+  "kind": "gain",
+  "section": "results"
  }
 }

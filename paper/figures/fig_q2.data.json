@@ -1,0 +1,89 @@
+{
+ "points": [
+  {
+   "contrast": "P",
+   "family": "D2+H3",
+   "fixed": -0.08739750289482723,
+   "hi": -0.0826315145954288,
+   "lo": -0.0836094611701004,
+   "paths": {
+    "fixed": "q2.fixed.D2+H3.P.estimate",
+    "hi": "q2.searched.D2+H3.P.interval.1",
+    "lo": "q2.searched.D2+H3.P.interval.0",
+    "searched": "q2.searched.D2+H3.P.estimate"
+   },
+   "searched": -0.08310871946349654
+  },
+  {
+   "contrast": "G",
+   "family": "D2+H3",
+   "fixed": -0.0762792959950786,
+   "hi": -0.09458428913945902,
+   "lo": -0.09585980093595811,
+   "paths": {
+    "fixed": "q2.fixed.D2+H3.G.estimate",
+    "hi": "q2.searched.D2+H3.G.interval.1",
+    "lo": "q2.searched.D2+H3.G.interval.0",
+    "searched": "q2.searched.D2+H3.G.estimate"
+   },
+   "searched": -0.09521439478783417
+  },
+  {
+   "contrast": "S",
+   "family": "D2+H3",
+   "fixed": 0.0021697821378575195,
+   "hi": 0.004454248354950667,
+   "lo": 0.0033855997637064167,
+   "paths": {
+    "fixed": "q2.fixed.D2+H3.S.estimate",
+    "hi": "q2.searched.D2+H3.S.interval.1",
+    "lo": "q2.searched.D2+H3.S.interval.0",
+    "searched": "q2.searched.D2+H3.S.estimate"
+   },
+   "searched": 0.003925216789582635
+  },
+  {
+   "contrast": "P",
+   "family": "X7-SC",
+   "fixed": -0.08822621422357628,
+   "hi": -0.08409708747449597,
+   "lo": -0.08506477854097334,
+   "paths": {
+    "fixed": "q2.fixed.X7-SC.P.estimate",
+    "hi": "q2.searched.X7-SC.P.interval.1",
+    "lo": "q2.searched.X7-SC.P.interval.0",
+    "searched": "q2.searched.X7-SC.P.estimate"
+   },
+   "searched": -0.0845669809537204
+  },
+  {
+   "contrast": "G",
+   "family": "X7-SC",
+   "fixed": -0.07533854067819737,
+   "hi": -0.093695016029095,
+   "lo": -0.09483906036000046,
+   "paths": {
+    "fixed": "q2.fixed.X7-SC.G.estimate",
+    "hi": "q2.searched.X7-SC.G.interval.1",
+    "lo": "q2.searched.X7-SC.G.interval.0",
+    "searched": "q2.searched.X7-SC.G.estimate"
+   },
+   "searched": -0.09425612627305106
+  },
+  {
+   "contrast": "S",
+   "family": "X7-SC",
+   "fixed": 0.0024893613911173692,
+   "hi": 0.005460154160169085,
+   "lo": 0.0044939237122857455,
+   "paths": {
+    "fixed": "q2.fixed.X7-SC.S.estimate",
+    "hi": "q2.searched.X7-SC.S.interval.1",
+    "lo": "q2.searched.X7-SC.S.interval.0",
+    "searched": "q2.searched.X7-SC.S.estimate"
+   },
+   "searched": 0.004985411697627521
+  }
+ ],
+ "skipped": []
+}
