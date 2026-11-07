@@ -87,6 +87,39 @@ def weight_label(w: float) -> str:
     return f"{100 * w:.2f} percent"
 
 
+def _ref_train(out, rule: str):
+    fn = rule.replace("*", "star")
+    return np.asarray(json.loads((Path(out) / "reference" / "headline@rho0.2" / f"{fn}.json").read_text())["per_seed_normalized"], dtype=float)
+
+
+def _search_rec(out, rid):
+    return json.loads((Path(out) / "search" / (safe(rid) + ".json")).read_text())
+
+
+def _archive_entry(archive: list, knobs: dict) -> dict:
+    hits = [a for a in archive if a["knobs"] == knobs]
+    if len(hits) != 1:
+        raise ValueError(f"{len(hits)} archive entries match the evaluated policy")
+    return hits[0]
+
+
+def train_gain_w0(out, rule: str) -> float:
+    """Training mean gain of the selected W0 attack: its archive entry's per-seed normalised profit on the dev-train seeds
+    minus the frozen reference's (design 6.2: W1's constraint is this mean >= 0)."""
+    s = _search_rec(out, f"headline@rho0.2|{rule}|D2+H3|W0"); e = _archive_entry(s["welfare"]["archive"], s["selected"])
+    return float(np.mean(np.asarray(e["per_seed_normalized"], dtype=float) - _ref_train(out, rule)))
+
+
+def train_gain_profit(out, rule: str, fam: str) -> float:
+    """Training mean gain of the evaluated profit attack (attack.best_knobs, as stage_evaluate uses it)."""
+    a = _search_rec(out, f"headline@rho0.2|{rule}|{fam}|profit")["attack"]; e = _archive_entry(a["archive"], a["best_knobs"])
+    return float(np.mean(np.asarray(e["per_seed_normalized"], dtype=float) - _ref_train(out, rule)))
+
+
+def train_mix(g0: float, gp: float, w: float) -> float:
+    return float(w * g0 + (1 - w) * gp)
+
+
 def _w0_gain(out, rule: str):
     """W0's per-seed gain against the frozen reference: the W1 record's normalized profit minus its constraint (the gain)
     gives the reference term, which W0 shares (same rule, market, and reference)."""
@@ -118,6 +151,12 @@ def welfare_mixtures(out, rule: str) -> dict:
         mx = mixture(gw0, w0["eff"], r["gain"], r["eff_attack"])
         mx["weight_label"] = weight_label(mx["weight"]); mx["estimate_label"] = label3(mx["estimate"]); mx["lower_label"] = label3(mx.get("lower"))
         mx["sensitivity"] = sensitivity(gw0, w0["eff"], r["gain"], r["eff_attack"], SENS_WEIGHTS)
+        try:
+            g0, gp = train_gain_w0(out, rule), train_gain_profit(out, rule, fam)
+            mx.update(train_w0=g0, train_companion=gp, train_mix=train_mix(g0, gp, mx["weight"]))
+            mx["train_feasible"] = mx["train_mix"] >= 0; mx["train_label"] = label3(mx["train_mix"])
+        except (FileNotFoundError, ValueError, KeyError):
+            mx["train_mix"] = None
         res["mixtures"][fam] = mx
     feasible = {f: v for f, v in res["mixtures"].items() if v["weight"] > 0}
     if feasible:
@@ -180,14 +219,14 @@ def tables(res: dict) -> dict:
         mixes = v.get("mixtures", {})
         if any(m["weight"] >= 1.0 for m in mixes.values()):
             mx = next(m for m in mixes.values() if m["weight"] >= 1.0)
-            rows.append(f"{r} & {_f(v['w1']['efficiency'])} & {_f(v['w0']['efficiency'])} & none (W0 profitable) & 1 & {_s3(mx['estimate'])} & "
-                        f"{_s3(mx.get('lower'))} & {_f(mx['efficiency'], 4)} \\\\"); continue
+            rows.append(f"{r} & {_f(v['w1']['efficiency'])} & {_f(v['w0']['efficiency'])} & none (W0 gain positive) & 1 & {_s3(mx['estimate'])} & "
+                        f"{_s3(mx.get('lower'))} & {_s3(mx.get('train_mix'))} & {_f(mx['efficiency'], 4)} \\\\"); continue
         for fam in ("H4", "D2+H3"):
             mx = mixes.get(fam)
             if mx and mx["weight"] > 0:
                 rows.append(f"{r} & {_f(v['w1']['efficiency'])} & {_f(v['w0']['efficiency'])} & {fam} & {mx['weight']:.4f} & {_s3(mx['estimate'])} & "
-                            f"{_s3(mx.get('lower'))} & {_f(mx['efficiency'], 4)} \\\\")
-    t["welfare_mix"] = ("\\begin{tabular}{@{}lrrlrrrr@{}}\\toprule\nRule & W1 eff. & W0 eff. & Mixed with & W0 weight & Est.\\ gain & Unadj.\\ lower & Mixed eff. \\\\\\midrule\n"
+                            f"{_s3(mx.get('lower'))} & {_s3(mx.get('train_mix'))} & {_f(mx['efficiency'], 4)} \\\\")
+    t["welfare_mix"] = ("\\begin{tabular}{@{}lrrlrrrrr@{}}\\toprule\nRule & W1 eff. & W0 eff. & Mixed with & W0 weight & Est.\\ gain & Unadj.\\ lower & Train gain & Mixed eff. \\\\\\midrule\n"
                         + "\n".join(rows) + "\n\\bottomrule\\end{tabular}\n")
     rows = []
     for r in ("F111", "C*"):

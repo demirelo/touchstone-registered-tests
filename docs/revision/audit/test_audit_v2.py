@@ -66,15 +66,27 @@ def test_extreme_scan_finds_huge_finite_bounds_and_nothing_else():
 
 def test_studentization_diagnostic_reports_the_frozen_bootstrap_t_statistics():
     from sim.intervals import studentized_tstats
-    x = np.zeros(400); x[:3] = [1.0, 1.0 + 1e-13, 1.0 - 1e-13]                 # three near-equal outliers among zeros
+    x = np.zeros(400); x[:3] = [1.0, 1.0 + 1e-13, 1.0 - 1e-13]; x[3] = 1e-13    # three outliers, rounding elsewhere
     d = A.studentization(x)
     _, se, t = studentized_tstats(x, 9999, A.V2_RESAMPLE_SEED)
     assert d["se"] == pytest.approx(se) and d["max_abs_t"] == pytest.approx(float(np.max(np.abs(t))))
-    assert d["seeds_above_1e-9"] == 3 and d["share_resamples_without_them"] == pytest.approx((1 - 3 / 400) ** 400)
-    assert d["share_zero"] == pytest.approx(397 / 400) and d["resamples_abs_t_over_100"] == int(np.sum(np.abs(t) > 100))
+    assert d["seeds_above_1e-9"] == 3 and d["prob_resample_without_them"] == pytest.approx((1 - 3 / 400) ** 400)
+    from sim.intervals import _boot_idx
+    big = np.abs(x) > 1e-9; idx = _boot_idx(400, 9999, A.V2_RESAMPLE_SEED)
+    assert d["resamples_without_them"] == int(np.sum(~big[idx].any(axis=1)))
+    assert d["max_rounding_residual"] == pytest.approx(1e-13)
+    assert d["share_zero"] == pytest.approx(396 / 400) and d["resamples_abs_t_over_100"] == int(np.sum(np.abs(t) > 100))
 
 
 def test_labels_summarise_the_extreme_interval_diagnosis():
-    diag = {"a": {"n": 200, "seeds_above_1e-9": 3, "share_resamples_without_them": 0.0487}, "b": {"n": 200, "seeds_above_1e-9": 3, "share_resamples_without_them": 0.0487}}
+    d = {"n": 200, "seeds_above_1e-9": 3, "prob_resample_without_them": 0.0487, "resamples_without_them": 506, "max_rounding_residual": 6e-14}
+    diag = {"a": d, "b": dict(d, max_rounding_residual=1.2e-13)}
     lab = A.labels(["a", "b"], diag)
-    assert lab == {"extreme_entries": "2", "seeds_nonzero": "3", "seeds_total": "200", "share_resamples": "4.9 percent"}
+    assert lab == {"extreme_entries": "2", "seeds_nonzero": "3", "seeds_total": "200", "resamples_without": "506",
+                   "resamples_total": "9,999", "share_resamples": "5.1 percent", "prob_resamples": "4.9 percent", "max_rounding": "1.2e-13"}
+
+
+def test_q1_audit_checks_the_category_against_the_frozen_rule():
+    rep = {"q1": {"tests": {"a": {"p": 0.0004, "reject": True, "category": "equivalent"}, "b": {"p": 0.0004, "reject": True, "category": "equivalent"}}}}
+    _, problems = A.q1_audit(rep, kappa=0.5, raw={"a": 0.0002, "b": 0.0002}, categories={"a": "equivalent", "b": "R3 materially lower"})
+    assert any("b" in p and "category" in p for p in problems)

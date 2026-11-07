@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 
 from sim.decisions_v2 import ALPHA, Q1_SLOTS, q1_family, q4_markets  # noqa: E402
-from sim.intervals import V2_RESAMPLE_SEED, bootstrap_pvalue, studentized_tstats, calibrated, stratified_two_sided, studentized_at  # noqa: E402
+from sim.intervals import V2_RESAMPLE_SEED, _boot_idx, bootstrap_pvalue, studentized_tstats, calibrated, stratified_two_sided, studentized_at  # noqa: E402
 
 FRESH = tuple(f"fresh{i}" for i in range(6))
 FAMS = ("D2+H3", "X7-SC")
@@ -42,8 +42,9 @@ def holm_adjusted(p: list) -> list:
     return out
 
 
-def q1_audit(report: dict, kappa: float, raw: dict) -> tuple[dict, list]:
-    """raw: the recomputed two-sided raw p-value per test. The stored value must equal calibrated(raw)."""
+def q1_audit(report: dict, kappa: float, raw: dict, categories: dict | None = None) -> tuple[dict, list]:
+    """raw: the recomputed two-sided raw p-value per test; the stored value must equal calibrated(raw). categories: the
+    category recomputed by the frozen q1_family from the records; it must equal the report's."""
     tests = report["q1"]["tests"]; names = list(tests); problems = []
     stored = [float(tests[n]["p"]) for n in names]
     slots = stored + [1.0] * max(0, Q1_SLOTS - len(stored)); adj = holm_adjusted(slots)
@@ -55,6 +56,8 @@ def q1_audit(report: dict, kappa: float, raw: dict) -> tuple[dict, list]:
         reject = adj[i] <= ALPHA
         if reject != bool(tests[n]["reject"]):
             problems.append(f"q1 {n}: Holm decision {reject} differs from the report's {tests[n]['reject']}")
+        if categories is not None and categories[n] != tests[n].get("category"):
+            problems.append(f"q1 {n}: category {tests[n].get('category')!r} differs from the recomputed {categories[n]!r}")
         rows[n] = {"raw": float(raw[n]), "calibrated": cal, "holm_adjusted": adj[i], "reject": bool(tests[n]["reject"])}
     return rows, problems
 
@@ -114,19 +117,25 @@ def studentization(x, resamples: int = 9999, seed: int = V2_RESAMPLE_SEED) -> di
     x = np.asarray(x, dtype=float); _, se, t = studentized_tstats(x, resamples, seed); a = np.abs(t)
     return {"n": int(x.size), "mean": float(x.mean()), "se": float(se), "share_zero": float(np.mean(x == 0)),
             "max_abs": float(np.max(np.abs(x))),
-            "seeds_above_1e-9": int(np.sum(np.abs(x) > 1e-9)), "share_resamples_without_them": float((1 - np.mean(np.abs(x) > 1e-9)) ** x.size),
+            "seeds_above_1e-9": int(np.sum(np.abs(x) > 1e-9)), "prob_resample_without_them": float((1 - np.mean(np.abs(x) > 1e-9)) ** x.size),
+            "resamples_without_them": int(np.sum(~(np.abs(x) > 1e-9)[_boot_idx(x.size, resamples, seed)].any(axis=1))),
+            "max_rounding_residual": float(np.max(np.abs(x[np.abs(x) <= 1e-9]))) if np.any(np.abs(x) <= 1e-9) else 0.0,
             "max_abs_t": float(a.max()), "resamples_abs_t_over_100": int(np.sum(a > 100)),
             "t_quantiles": [float(q) for q in np.quantile(t, [0.0005, 0.025, 0.975, 0.9995])]}
 
 
-def labels(paths: list, diag: dict) -> dict:
-    """Text labels for the paper's prose: entries flagged, and the seed pattern common to all diagnosed entries."""
-    seeds = {d["seeds_above_1e-9"] for d in diag.values()}; n = {d["n"] for d in diag.values()}
-    share = {round(d["share_resamples_without_them"], 3) for d in diag.values()}
-    if len(seeds) != 1 or len(n) != 1 or len(share) != 1:
+def labels(paths: list, diag: dict, resamples: int = 9999) -> dict:
+    """Text labels for the paper's prose: entries flagged, the seed pattern common to all diagnosed entries, the observed
+    count of frozen resamples that omit the substantive seeds (beside the theoretical probability), and the largest
+    rounding residual."""
+    one = lambda k: {d[k] for d in diag.values()}
+    seeds, n, cnt, prob = one("seeds_above_1e-9"), one("n"), one("resamples_without_them"), {round(d["prob_resample_without_them"], 3) for d in diag.values()}
+    if max(len(seeds), len(n), len(cnt), len(prob)) != 1:
         raise ValueError("the diagnosed entries differ; the prose summary needs one pattern")
+    c = cnt.pop()
     return {"extreme_entries": str(len(paths)), "seeds_nonzero": str(seeds.pop()), "seeds_total": str(n.pop()),
-            "share_resamples": f"{100 * share.pop():.1f} percent"}
+            "resamples_without": str(c), "resamples_total": f"{resamples:,}", "share_resamples": f"{100 * c / resamples:.1f} percent",
+            "prob_resamples": f"{100 * prob.pop():.1f} percent", "max_rounding": f"{max(d['max_rounding_residual'] for d in diag.values()):.1e}"}
 
 
 def _fixed_reference_rows(records: Path, market: str, fam: str) -> dict:
@@ -179,7 +188,9 @@ def main(argv=None) -> int:
     for f in FAMS:
         st = [np.asarray(load_old(m, "C*", f)["gain"], dtype=float) - np.asarray(load_old(m, "F111", f)["gain"], dtype=float) for m in FRESH]
         raw[f"C*-F111|{f}"] = stratified_two_sided(st, 0.0)
-    q1, p1 = q1_audit(report, KAPPA["Q1"], raw); q4, p4 = q4_audit(report, KAPPA["Q4"])
+    strata = {f"C*-F111|{f}": [np.asarray(load_old(m, "C*", f)["gain"], dtype=float) - np.asarray(load_old(m, "F111", f)["gain"], dtype=float) for m in FRESH] for f in FAMS}
+    cats = {n: v["category"] for n, v in q1_family(strata, KAPPA["Q1"]).items()}
+    q1, p1 = q1_audit(report, KAPPA["Q1"], raw, cats); q4, p4 = q4_audit(report, KAPPA["Q4"])
     old, new = q4_table(load_old, KAPPA["Q4"]), q4_table(load_new, KAPPA["Q4"])
     for m in FRESH:                                                            # the recomputation must match the report
         for k in ("gain_diff", "gain_diff_lower", "eff", "eff_lower", "p_gain", "p_eff"):

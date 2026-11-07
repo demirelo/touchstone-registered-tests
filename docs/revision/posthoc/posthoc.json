@@ -136,7 +136,12 @@
        "lower": 0.3011351348092605,
        "efficiency": 0.9062856096364359
       }
-     ]
+     ],
+     "train_w0": 0.2537514599462576,
+     "train_companion": 0.35342362693583396,
+     "train_mix": 0.2537514599462576,
+     "train_feasible": true,
+     "train_label": "0.254"
     },
     "X7-SC": {
      "weight": 1.0,
@@ -183,7 +188,12 @@
        "lower": 0.3019945244369039,
        "efficiency": 0.906181351400388
       }
-     ]
+     ],
+     "train_w0": 0.2537514599462576,
+     "train_companion": 0.3561714940719046,
+     "train_mix": 0.2537514599462576,
+     "train_feasible": true,
+     "train_label": "0.254"
     },
     "X5-AG/v2": {
      "weight": 1.0,
@@ -230,7 +240,12 @@
        "lower": 0.30038122732356476,
        "efficiency": 0.9064333580252424
       }
-     ]
+     ],
+     "train_w0": 0.2537514599462576,
+     "train_companion": 0.3516654146511464,
+     "train_mix": 0.2537514599462576,
+     "train_feasible": true,
+     "train_label": "0.254"
     },
     "H4": {
      "weight": 1.0,
@@ -277,7 +292,12 @@
        "lower": 0.3550075149864574,
        "efficiency": 0.8956066192815284
       }
-     ]
+     ],
+     "train_w0": 0.2537514599462576,
+     "train_companion": 0.4594214114667562,
+     "train_mix": 0.2537514599462576,
+     "train_feasible": true,
+     "train_label": "0.254"
     },
     "D2": {
      "weight": 1.0,
@@ -324,7 +344,12 @@
        "lower": 0.14781106517411854,
        "efficiency": 0.916670197021388
       }
-     ]
+     ],
+     "train_w0": 0.2537514599462576,
+     "train_companion": 0.04207956380998386,
+     "train_mix": 0.2537514599462576,
+     "train_feasible": true,
+     "train_label": "0.254"
     }
    },
    "best": {
@@ -373,7 +398,12 @@
       "lower": 0.3011351348092605,
       "efficiency": 0.9062856096364359
      }
-    ]
+    ],
+    "train_w0": 0.2537514599462576,
+    "train_companion": 0.35342362693583396,
+    "train_mix": 0.2537514599462576,
+    "train_feasible": true,
+    "train_label": "0.254"
    }
   },
   "F111": {
@@ -431,7 +461,12 @@
        "lower": -0.022849142267401965,
        "efficiency": 0.9191354066755061
       }
-     ]
+     ],
+     "train_w0": -0.09412483170549824,
+     "train_companion": 0.050195351543601795,
+     "train_mix": 0.0012708094221568836,
+     "train_feasible": true,
+     "train_label": "0.00127"
     },
     "X7-SC": {
      "weight": 0.339,
@@ -478,7 +513,12 @@
        "lower": -0.022849142267401965,
        "efficiency": 0.9191354066755061
       }
-     ]
+     ],
+     "train_w0": -0.09412483170549824,
+     "train_companion": 0.050195351543601795,
+     "train_mix": 0.0012708094221568836,
+     "train_feasible": true,
+     "train_label": "0.00127"
     },
     "X5-AG/v2": {
      "weight": 0.3155,
@@ -525,7 +565,12 @@
        "lower": -0.025306103930536106,
        "efficiency": 0.9177949253840777
       }
-     ]
+     ],
+     "train_w0": -0.09412483170549824,
+     "train_companion": 0.04780631222804714,
+     "train_mix": 0.0030270363170135754,
+     "train_feasible": true,
+     "train_label": "0.00303"
     },
     "H4": {
      "weight": 0.4195,
@@ -572,7 +617,12 @@
        "lower": -0.013010723498386749,
        "efficiency": 0.9192500283323093
       }
-     ]
+     ],
+     "train_w0": -0.09412483170549824,
+     "train_companion": 0.0711246579829193,
+     "train_mix": 0.0018024970586281441,
+     "train_feasible": true,
+     "train_label": "0.00180"
     },
     "D2": {
      "weight": 0.269,
@@ -619,7 +669,12 @@
        "lower": -0.02965814488305329,
        "efficiency": 0.9174601372592142
       }
-     ]
+     ],
+     "train_w0": -0.09412483170549824,
+     "train_companion": 0.04372792553540305,
+     "train_mix": 0.006645533837600599,
+     "train_feasible": true,
+     "train_label": "0.00665"
     }
    },
    "best": {
@@ -668,7 +723,12 @@
       "lower": -0.013010723498386749,
       "efficiency": 0.9192500283323093
      }
-    ]
+    ],
+    "train_w0": -0.09412483170549824,
+    "train_companion": 0.0711246579829193,
+    "train_mix": 0.0018024970586281441,
+    "train_feasible": true,
+    "train_label": "0.00180"
    }
   },
   "C*": {
@@ -726,7 +786,12 @@
        "lower": -0.00354865524788429,
        "efficiency": 0.918713341242923
       }
-     ]
+     ],
+     "train_w0": -0.09376820269174543,
+     "train_companion": 0.0854403021423202,
+     "train_mix": -0.0005797801780312931,
+     "train_feasible": false,
+     "train_label": "-0.000580"
     },
     "X7-SC": {
      "weight": 0.48,
@@ -773,7 +838,12 @@
        "lower": -0.00354865524788429,
        "efficiency": 0.918713341242923
       }
-     ]
+     ],
+     "train_w0": -0.09376820269174543,
+     "train_companion": 0.0854403021423202,
+     "train_mix": -0.0005797801780312931,
+     "train_feasible": false,
+     "train_label": "-0.000580"
     },
     "X5-AG/v2": {
      "weight": 0.303,
@@ -820,7 +890,12 @@
        "lower": -0.026491864663526148,
        "efficiency": 0.9179002428594493
       }
-     ]
+     ],
+     "train_w0": -0.09376820269174543,
+     "train_companion": 0.041110103313394125,
+     "train_mix": 0.0002419765938368422,
+     "train_feasible": true,
+     "train_label": "0.000242"
     },
     "H4": {
      "weight": 0.4845,
@@ -867,7 +942,12 @@
        "lower": -0.0027542795117351314,
        "efficiency": 0.9187347186559081
       }
-     ]
+     ],
+     "train_w0": -0.09376820269174543,
+     "train_companion": 0.0953163294445011,
+     "train_mix": 0.003704873624489659,
+     "train_feasible": true,
+     "train_label": "0.00370"
     },
     "D2": {
      "weight": 0.309,
@@ -914,7 +994,12 @@
        "lower": -0.025909639385618567,
        "efficiency": 0.9181106857529177
       }
-     ]
+     ],
+     "train_w0": -0.09376820269174543,
+     "train_companion": 0.04398040421462657,
+     "train_mix": 0.0014160846805576222,
+     "train_feasible": true,
+     "train_label": "0.00142"
     }
    },
    "best": {
@@ -963,7 +1048,12 @@
       "lower": -0.0027542795117351314,
       "efficiency": 0.9187347186559081
      }
-    ]
+    ],
+    "train_w0": -0.09376820269174543,
+    "train_companion": 0.0953163294445011,
+    "train_mix": 0.003704873624489659,
+    "train_feasible": true,
+    "train_label": "0.00370"
    }
   }
  },

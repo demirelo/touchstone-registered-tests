@@ -63,18 +63,36 @@ def test_welfare_table_prints_small_gains_with_their_bound_and_every_companion()
     res = {"q1_split": {}, "q4_diag": {}, "stability": {"q1": {}},
            "welfare": {"F111": {"w1": {"efficiency": 0.997}, "w0": {"efficiency": 0.840},
                                 "mixtures": {"H4": {"weight": 0.4195, "weight_label": "41.95 percent", "estimate": 0.000374263, "lower": 0.0000279, "efficiency": 0.931956},
-                                             "D2+H3": {"weight": 0.339, "weight_label": "33.90 percent", "estimate": 0.000252853, "lower": 0.0000101, "efficiency": 0.944510}}}}}
+                                             "D2+H3": {"weight": 0.339, "weight_label": "33.90 percent", "estimate": 0.000252853, "lower": 0.0000101, "efficiency": 0.944510,
+                                                       "train_mix": -0.00057978}}}}}
     t = P.tables(res)["welfare_mix"]
+    assert "\\ensuremath{-0.000580}" in t and "Train gain" in t
     assert "0.000374" in t and "0.0000279" in t and "0.000253" in t and "D2+H3" in t and "H4" in t
 
 
 def test_a_profitable_w0_attack_is_one_row_without_a_companion():
-    mx = {"weight": 1.0, "weight_label": "100.00 percent", "estimate": 0.254, "lower": 0.253, "efficiency": 0.8387}
+    mx = {"weight": 1.0, "weight_label": "100.00 percent", "estimate": 0.254, "lower": 0.253, "efficiency": 0.8387, "train_mix": 0.2}
     res = {"q1_split": {}, "q4_diag": {}, "stability": {"q1": {}},
            "welfare": {"F000": {"w1": {"efficiency": 0.839}, "w0": {"efficiency": 0.839}, "mixtures": {"H4": mx, "D2+H3": dict(mx)}}}}
     t = P.tables(res)["welfare_mix"]
-    assert t.count("F000 &") == 1 and "none (W0 profitable)" in t
+    assert t.count("F000 &") == 1 and "none (W0 gain positive)" in t
 
 
 def test_mixture_labels_keep_three_significant_digits():
     assert P.label3(0.000374263) == "0.000374" and P.label3(0.0000279) == "0.0000279" and P.label3(None) == "n/a"
+
+
+def _search(out, rid, **rec):
+    p = out / "search" / (P.safe(rid) + ".json"); p.parent.mkdir(parents=True, exist_ok=True); p.write_text(json.dumps(rec))
+
+
+def test_training_gain_reads_the_archive_entry_of_the_evaluated_policy(tmp_path):
+    ref = [0.05, 0.06]
+    p = tmp_path / "reference" / "headline@rho0.2" / "F111.json"; p.parent.mkdir(parents=True); p.write_text(json.dumps({"per_seed_normalized": ref}))
+    _search(tmp_path, "headline@rho0.2|F111|D2+H3|W0", selected={"a": 1},
+            welfare={"archive": [{"knobs": {"a": 0}, "per_seed_normalized": [9, 9]}, {"knobs": {"a": 1}, "per_seed_normalized": [0.0, 0.0]}]})
+    _search(tmp_path, "headline@rho0.2|F111|H4|profit", attack={"best_knobs": {"b": 2}, "best_f": 99.0,
+            "archive": [{"knobs": {"b": 2}, "per_seed_normalized": [0.15, 0.16]}]})
+    assert P.train_gain_w0(tmp_path, "F111") == pytest.approx(-0.055)            # mean of (0 - 0.05, 0 - 0.06)
+    assert P.train_gain_profit(tmp_path, "F111", "H4") == pytest.approx(0.10)       # archive, not best_f
+    assert P.train_mix(-0.055, 0.10, 0.4) == pytest.approx(0.4 * -0.055 + 0.6 * 0.10)
