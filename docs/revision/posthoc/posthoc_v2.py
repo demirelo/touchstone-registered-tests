@@ -69,14 +69,46 @@ def mixture(gw0, ew0, gp, ep, grid: int = 2001) -> dict:
             "efficiency": float(e.mean())}
 
 
+def sensitivity(gw0, ew0, gp, ep, weights) -> list:
+    """Mean gain, its nominal one-sided 95 percent lower bound, and mean efficiency of the lottery at each W0 weight."""
+    gw0, ew0, gp, ep = (np.asarray(x, dtype=float) for x in (gw0, ew0, gp, ep)); rows = []
+    for w in weights:
+        g, e = w * gw0 + (1 - w) * gp, w * ew0 + (1 - w) * ep
+        rows.append({"weight": float(w), "estimate": float(g.mean()), "lower": float(g.mean() - Z * g.std(ddof=1) / np.sqrt(len(g))),
+                     "efficiency": float(e.mean())})
+    return rows
+
+
+SENS_WEIGHTS = (0.0, 0.1, 0.2, 0.3, 0.4, 0.5)
+
+
 def weight_label(w: float) -> str:
     """Two decimals in percent: the bound is near zero at the selected weight, and rounding can flip its sign."""
     return f"{100 * w:.2f} percent"
 
 
-def welfare_mixtures(out, rule: str) -> dict:
+def _w0_gain(out, rule: str):
+    """W0's per-seed gain against the frozen reference: the W1 record's normalized profit minus its constraint (the gain)
+    gives the reference term, which W0 shares (same rule, market, and reference)."""
     ctx = "headline@rho0.2"; w0 = _rec(out, f"{ctx}|{rule}|D2+H3|W0"); w1 = _rec(out, f"{ctx}|{rule}|D2+H3|W1")
-    ref = np.asarray(w1["normalized"]) - np.asarray(w1["constraint"]); gw0 = np.asarray(w0["normalized"]) - ref
+    ref = np.asarray(w1["normalized"]) - np.asarray(w1["constraint"])
+    return w0, w1, np.asarray(w0["normalized"]) - ref
+
+
+def seed_rows(out, rule: str) -> list:
+    """Per-seed component values for the lottery analysis, one row per seed and companion family (CSV export)."""
+    ctx = "headline@rho0.2"; w0, _, gw0 = _w0_gain(out, rule); rows = []
+    for fam in PROFIT_FAMS:
+        r = _rec(out, f"{ctx}|{rule}|{fam}|profit")
+        if r is None or r["seeds"] != w0["seeds"]:
+            continue
+        for s, a, b, c, d in zip(w0["seeds"], gw0, w0["eff"], r["gain"], r["eff_attack"]):
+            rows.append({"rule": rule, "companion": fam, "seed": s, "gain_w0": float(a), "eff_w0": float(b), "gain_companion": float(c), "eff_companion": float(d)})
+    return rows
+
+
+def welfare_mixtures(out, rule: str) -> dict:
+    ctx = "headline@rho0.2"; w0, w1, gw0 = _w0_gain(out, rule)
     res = {"w0": {"estimate": float(gw0.mean()), "efficiency": float(np.mean(w0["eff"]))},
            "w1": {"estimate": float(np.mean(w1["constraint"])), "efficiency": float(np.mean(w1["eff"]))}, "mixtures": {}}
     for fam in PROFIT_FAMS:
@@ -85,6 +117,7 @@ def welfare_mixtures(out, rule: str) -> dict:
             continue
         mx = mixture(gw0, w0["eff"], r["gain"], r["eff_attack"])
         mx["weight_label"] = weight_label(mx["weight"])
+        mx["sensitivity"] = sensitivity(gw0, w0["eff"], r["gain"], r["eff_attack"], SENS_WEIGHTS)
         res["mixtures"][fam] = mx
     feasible = {f: v for f, v in res["mixtures"].items() if v["weight"] > 0}
     if feasible:
@@ -117,6 +150,16 @@ def _f(x, d: int = 3):
     return "n/a" if x is None else (f"\\ensuremath{{{x:.{d}f}}}" if x < 0 else f"{x:.{d}f}")
 
 
+def _s3(x) -> str:
+    """Three significant digits in fixed notation, so a small gain or bound never prints as 0.000."""
+    if x is None:
+        return "n/a"
+    if x == 0:
+        return "0"
+    d = max(0, 2 - int(np.floor(np.log10(abs(x))))); t = f"{x:.{d}f}"
+    return f"\\ensuremath{{{t}}}" if x < 0 else t
+
+
 def tables(res: dict) -> dict:
     t = {}
     rows = [f"{fam} & {_f(v['pooled']['estimate'])} & {_f(v['pooled']['attacked'])} & {_f(v['pooled']['reference'])} \\\\"
@@ -125,12 +168,26 @@ def tables(res: dict) -> dict:
                      + "\n".join(rows) + "\n\\bottomrule\\end{tabular}\n")
     rows = []
     for r, v in res["welfare"].items():
-        b = v.get("best")
-        rows.append(f"{r} & {_f(v['w1']['efficiency'])} & {_f(v['w0']['efficiency'])} & "
-                    + (f"{b['family']} & {b['weight_label']} & {_f(b['estimate'])} & {_f(b['efficiency'])}" if b else "none & & &")
-                    + " \\\\")
-    t["welfare_mix"] = ("\\begin{tabular}{@{}lrrlrrr@{}}\\toprule\nRule & W1 eff. & W0 eff. & Mixed with & W0 weight & Mixed gain & Mixed eff. \\\\\\midrule\n"
+        mixes = v.get("mixtures", {})
+        if any(m["weight"] >= 1.0 for m in mixes.values()):
+            mx = next(m for m in mixes.values() if m["weight"] >= 1.0)
+            rows.append(f"{r} & {_f(v['w1']['efficiency'])} & {_f(v['w0']['efficiency'])} & none (W0 profitable) & 1 & {_s3(mx['estimate'])} & "
+                        f"{_s3(mx.get('lower'))} & {_f(mx['efficiency'], 4)} \\\\"); continue
+        for fam in ("H4", "D2+H3"):
+            mx = mixes.get(fam)
+            if mx and mx["weight"] > 0:
+                rows.append(f"{r} & {_f(v['w1']['efficiency'])} & {_f(v['w0']['efficiency'])} & {fam} & {mx['weight']:.4f} & {_s3(mx['estimate'])} & "
+                            f"{_s3(mx.get('lower'))} & {_f(mx['efficiency'], 4)} \\\\")
+    t["welfare_mix"] = ("\\begin{tabular}{@{}lrrlrrrr@{}}\\toprule\nRule & W1 eff. & W0 eff. & Mixed with & W0 weight & Est.\\ gain & Unadj.\\ lower & Mixed eff. \\\\\\midrule\n"
                         + "\n".join(rows) + "\n\\bottomrule\\end{tabular}\n")
+    rows = []
+    for r in ("F111", "C*"):
+        for fam in ("H4", "D2+H3"):
+            mx = res["welfare"].get(r, {}).get("mixtures", {}).get(fam)
+            if mx and "sensitivity" in mx:
+                rows.append(f"{r} & {fam} & " + " & ".join(f"{_s3(x['estimate'])} / {_f(x['efficiency'])}" for x in mx["sensitivity"]) + " \\\\")
+    t["welfare_sens"] = ("\\begin{tabular}{@{}ll" + "r" * len(SENS_WEIGHTS) + "@{}}\\toprule\nRule & Mixed with & "
+                         + " & ".join(f"$w={w:.1f}$" for w in SENS_WEIGHTS) + " \\\\\\midrule\n" + "\n".join(rows) + "\n\\bottomrule\\end{tabular}\n")
     rows = [f"{m} & {_f(v['estimate'])} & {_f(v['attacked'])} & {_f(v['reference'])} & {_f(v['audit_spend'])} & {_f(v['served_share'])} \\\\"
             for m, v in res["q4_diag"].items()]
     t["q4_diag"] = ("\\begin{tabular}{@{}lrrrrr@{}}\\toprule\nMarket & B3$-$R3 gain & Attacked term & Reference term & R3 audit spend & R3 served share \\\\\\midrule\n"
@@ -152,6 +209,10 @@ def main(argv=None) -> int:
            "welfare": {r: welfare_mixtures(out, r) for r in ("F000", "F111", "C*")},
            "q4_diag": q4_diagnostics(out), "stability": stability(report, stab)}
     Path(a.out).write_text(json.dumps(res, indent=1) + "\n")
+    import csv
+    seeds = [row for r in ("F000", "F111", "C*") for row in seed_rows(out, r)]
+    with open(Path(a.out).with_name("lottery_seeds.csv"), "w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(seeds[0])); w.writeheader(); w.writerows(seeds)
     d = Path(a.tables); d.mkdir(parents=True, exist_ok=True)
     for k, v in tables(res).items():
         (d / f"posthoc_{k}.tex").write_text(v.replace("C*", "C$^*$"))

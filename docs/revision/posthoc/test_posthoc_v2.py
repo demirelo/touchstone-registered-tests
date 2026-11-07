@@ -46,3 +46,31 @@ def test_weight_label_and_stability_table_keep_the_needed_precision():
     res = {"q1_split": {}, "welfare": {}, "q4_diag": {},
            "stability": {"q1": {"C*-F111|D2+H3": {"estimate_report": 0.020720, "estimate_registered_cfg": 0.020917, "category_registered_cfg": "eq"}}}}
     assert "0.0207" in P.tables(res)["stability"] and "0.0209" in P.tables(res)["stability"]
+
+
+def test_sensitivity_is_linear_in_the_weight_with_its_own_bound():
+    rng = np.random.default_rng(2)
+    gw0, gp = -0.1 + 0.01 * rng.standard_normal(200), 0.06 + 0.01 * rng.standard_normal(200)
+    ew0, ep = np.full(200, 0.84), np.full(200, 1.0)
+    rows = P.sensitivity(gw0, ew0, gp, ep, (0.0, 0.25, 0.5))
+    assert [r["weight"] for r in rows] == [0.0, 0.25, 0.5]
+    g = 0.25 * gw0 + 0.75 * gp
+    assert rows[1]["estimate"] == pytest.approx(g.mean()) and rows[1]["efficiency"] == pytest.approx(0.25 * 0.84 + 0.75)
+    assert rows[1]["lower"] == pytest.approx(g.mean() - 1.645 * g.std(ddof=1) / np.sqrt(200))
+
+
+def test_welfare_table_prints_small_gains_with_their_bound_and_every_companion():
+    res = {"q1_split": {}, "q4_diag": {}, "stability": {"q1": {}},
+           "welfare": {"F111": {"w1": {"efficiency": 0.997}, "w0": {"efficiency": 0.840},
+                                "mixtures": {"H4": {"weight": 0.4195, "weight_label": "41.95 percent", "estimate": 0.000374263, "lower": 0.0000279, "efficiency": 0.931956},
+                                             "D2+H3": {"weight": 0.339, "weight_label": "33.90 percent", "estimate": 0.000252853, "lower": 0.0000101, "efficiency": 0.944510}}}}}
+    t = P.tables(res)["welfare_mix"]
+    assert "0.000374" in t and "0.0000279" in t and "0.000253" in t and "D2+H3" in t and "H4" in t
+
+
+def test_a_profitable_w0_attack_is_one_row_without_a_companion():
+    mx = {"weight": 1.0, "weight_label": "100.00 percent", "estimate": 0.254, "lower": 0.253, "efficiency": 0.8387}
+    res = {"q1_split": {}, "q4_diag": {}, "stability": {"q1": {}},
+           "welfare": {"F000": {"w1": {"efficiency": 0.839}, "w0": {"efficiency": 0.839}, "mixtures": {"H4": mx, "D2+H3": dict(mx)}}}}
+    t = P.tables(res)["welfare_mix"]
+    assert t.count("F000 &") == 1 and "none (W0 profitable)" in t
