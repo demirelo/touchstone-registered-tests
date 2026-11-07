@@ -114,3 +114,9 @@ def test_a_failed_stability_check_lists_the_changed_decisions():
     stab = {"decisions_unchanged": False, "decision_diffs": ["q4 k: 3 -> 4"], "cells": {}}
     md = A.render(A.build(report, cfg, "c" * 64, ledger, deps, {}, stab, "d" * 64))
     assert "q4 k: 3 -> 4" in md and "changed" in md
+
+
+def test_stability_text_does_not_understate_the_largest_mean_change():
+    """Round-5 review: 0.00737 printed as 'at most 0.007' understates it; four decimals keep the bound true."""
+    dev = {"stability": {"sha256": "x", "diffs": [], "cells": 36, "cells_with_seed_changes": 30, "max_mean_shift": 0.007372580557210351}}
+    assert "at most 0.0074" in A._stab_text(dev)

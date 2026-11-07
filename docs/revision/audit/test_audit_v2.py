@@ -72,3 +72,9 @@ def test_studentization_diagnostic_reports_the_frozen_bootstrap_t_statistics():
     assert d["se"] == pytest.approx(se) and d["max_abs_t"] == pytest.approx(float(np.max(np.abs(t))))
     assert d["seeds_above_1e-9"] == 3 and d["share_resamples_without_them"] == pytest.approx((1 - 3 / 400) ** 400)
     assert d["share_zero"] == pytest.approx(397 / 400) and d["resamples_abs_t_over_100"] == int(np.sum(np.abs(t) > 100))
+
+
+def test_labels_summarise_the_extreme_interval_diagnosis():
+    diag = {"a": {"n": 200, "seeds_above_1e-9": 3, "share_resamples_without_them": 0.0487}, "b": {"n": 200, "seeds_above_1e-9": 3, "share_resamples_without_them": 0.0487}}
+    lab = A.labels(["a", "b"], diag)
+    assert lab == {"extreme_entries": "2", "seeds_nonzero": "3", "seeds_total": "200", "share_resamples": "4.9 percent"}

@@ -97,6 +97,8 @@
      "lower": 0.25290013285976376,
      "efficiency": 0.838654868743493,
      "weight_label": "100.00 percent",
+     "estimate_label": "0.254",
+     "lower_label": "0.253",
      "sensitivity": [
       {
        "weight": 0.0,
@@ -142,6 +144,8 @@
      "lower": 0.25290013285976376,
      "efficiency": 0.838654868743493,
      "weight_label": "100.00 percent",
+     "estimate_label": "0.254",
+     "lower_label": "0.253",
      "sensitivity": [
       {
        "weight": 0.0,
@@ -187,6 +191,8 @@
      "lower": 0.25290013285976376,
      "efficiency": 0.838654868743493,
      "weight_label": "100.00 percent",
+     "estimate_label": "0.254",
+     "lower_label": "0.253",
      "sensitivity": [
       {
        "weight": 0.0,
@@ -232,6 +238,8 @@
      "lower": 0.25290013285976376,
      "efficiency": 0.838654868743493,
      "weight_label": "100.00 percent",
+     "estimate_label": "0.254",
+     "lower_label": "0.253",
      "sensitivity": [
       {
        "weight": 0.0,
@@ -277,6 +285,8 @@
      "lower": 0.25290013285976376,
      "efficiency": 0.838654868743493,
      "weight_label": "100.00 percent",
+     "estimate_label": "0.254",
+     "lower_label": "0.253",
      "sensitivity": [
       {
        "weight": 0.0,
@@ -324,6 +334,8 @@
     "lower": 0.25290013285976376,
     "efficiency": 0.838654868743493,
     "weight_label": "100.00 percent",
+    "estimate_label": "0.254",
+    "lower_label": "0.253",
     "sensitivity": [
      {
       "weight": 0.0,
@@ -380,6 +392,8 @@
      "lower": 6.876599495205679e-05,
      "efficiency": 0.9445101108199223,
      "weight_label": "33.90 percent",
+     "estimate_label": "0.000253",
+     "lower_label": "0.0000688",
      "sensitivity": [
       {
        "weight": 0.0,
@@ -425,6 +439,8 @@
      "lower": 6.876599495205679e-05,
      "efficiency": 0.9445101108199223,
      "weight_label": "33.90 percent",
+     "estimate_label": "0.000253",
+     "lower_label": "0.0000688",
      "sensitivity": [
       {
        "weight": 0.0,
@@ -470,6 +486,8 @@
      "lower": 1.6963374835405275e-05,
      "efficiency": 0.9463787530958935,
      "weight_label": "31.55 percent",
+     "estimate_label": "0.000915",
+     "lower_label": "0.0000170",
      "sensitivity": [
       {
        "weight": 0.0,
@@ -515,6 +533,8 @@
      "lower": 2.7899627637386465e-05,
      "efficiency": 0.9319558344912628,
      "weight_label": "41.95 percent",
+     "estimate_label": "0.000374",
+     "lower_label": "0.0000279",
      "sensitivity": [
       {
        "weight": 0.0,
@@ -560,6 +580,8 @@
      "lower": 3.1866754529484e-05,
      "efficiency": 0.9530933469960934,
      "weight_label": "26.90 percent",
+     "estimate_label": "0.00116",
+     "lower_label": "0.0000319",
      "sensitivity": [
       {
        "weight": 0.0,
@@ -607,6 +629,8 @@
     "lower": 2.7899627637386465e-05,
     "efficiency": 0.9319558344912628,
     "weight_label": "41.95 percent",
+    "estimate_label": "0.000374",
+    "lower_label": "0.0000279",
     "sensitivity": [
      {
       "weight": 0.0,
@@ -663,6 +687,8 @@
      "lower": 6.676869246777033e-05,
      "efficiency": 0.9218518888759811,
      "weight_label": "48.00 percent",
+     "estimate_label": "0.000297",
+     "lower_label": "0.0000668",
      "sensitivity": [
       {
        "weight": 0.0,
@@ -708,6 +734,8 @@
      "lower": 6.676869246777033e-05,
      "efficiency": 0.9218518888759811,
      "weight_label": "48.00 percent",
+     "estimate_label": "0.000297",
+     "lower_label": "0.0000668",
      "sensitivity": [
       {
        "weight": 0.0,
@@ -753,6 +781,8 @@
      "lower": 5.8435520436711215e-05,
      "efficiency": 0.9484945762819834,
      "weight_label": "30.30 percent",
+     "estimate_label": "0.00113",
+     "lower_label": "0.0000584",
      "sensitivity": [
       {
        "weight": 0.0,
@@ -798,6 +828,8 @@
      "lower": 7.178727527591672e-05,
      "efficiency": 0.9211677557713308,
      "weight_label": "48.45 percent",
+     "estimate_label": "0.000456",
+     "lower_label": "0.0000718",
      "sensitivity": [
       {
        "weight": 0.0,
@@ -843,6 +875,8 @@
      "lower": 5.832009207805899e-05,
      "efficiency": 0.9478536012514411,
      "weight_label": "30.90 percent",
+     "estimate_label": "0.000920",
+     "lower_label": "0.0000583",
      "sensitivity": [
       {
        "weight": 0.0,
@@ -890,6 +924,8 @@
     "lower": 7.178727527591672e-05,
     "efficiency": 0.9211677557713308,
     "weight_label": "48.45 percent",
+    "estimate_label": "0.000456",
+    "lower_label": "0.0000718",
     "sensitivity": [
      {
       "weight": 0.0,

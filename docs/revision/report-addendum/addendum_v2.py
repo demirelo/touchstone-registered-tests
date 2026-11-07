@@ -121,7 +121,7 @@ def _stab_text(dev: dict) -> str:
         return "That the decisions would be unchanged under the registered configurations is not verified."
     head = (f"A re-evaluation of the frozen policies of the {d['cells']} fresh-market cells that Q1 and Q4 use, on the registration "
             f"platform with the registered configurations (`results/v2/deviation/stability.json`, sha256 {d['sha256']}), changes "
-            f"per-seed gains in {d['cells_with_seed_changes']} cells and cell means by at most {d['max_mean_shift']:.3f}; ")
+            f"per-seed gains in {d['cells_with_seed_changes']} cells and cell means by at most {d['max_mean_shift']:.4f}; ")
     if not d["diffs"]:
         return head + "every Q1 and Q4 decision is unchanged."
     return head + "these decisions changed: " + "; ".join(d["diffs"]) + "."

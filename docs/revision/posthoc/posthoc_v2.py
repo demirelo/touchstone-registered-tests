@@ -116,7 +116,7 @@ def welfare_mixtures(out, rule: str) -> dict:
         if r is None or r["seeds"] != w0["seeds"]:
             continue
         mx = mixture(gw0, w0["eff"], r["gain"], r["eff_attack"])
-        mx["weight_label"] = weight_label(mx["weight"])
+        mx["weight_label"] = weight_label(mx["weight"]); mx["estimate_label"] = label3(mx["estimate"]); mx["lower_label"] = label3(mx.get("lower"))
         mx["sensitivity"] = sensitivity(gw0, w0["eff"], r["gain"], r["eff_attack"], SENS_WEIGHTS)
         res["mixtures"][fam] = mx
     feasible = {f: v for f, v in res["mixtures"].items() if v["weight"] > 0}
@@ -148,6 +148,15 @@ def stability(report: dict, stab: dict) -> dict:
 
 def _f(x, d: int = 3):
     return "n/a" if x is None else (f"\\ensuremath{{{x:.{d}f}}}" if x < 0 else f"{x:.{d}f}")
+
+
+def label3(x) -> str:
+    """A positive or negative value at three significant digits as plain text (for sites in the paper's prose)."""
+    if x is None:
+        return "n/a"
+    if x == 0:
+        return "0"
+    d = max(0, 2 - int(np.floor(np.log10(abs(x))))); return f"{x:.{d}f}"
 
 
 def _s3(x) -> str:

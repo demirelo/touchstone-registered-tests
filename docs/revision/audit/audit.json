@@ -441,6 +441,12 @@
      72286332965.41786
     ]
    }
+  },
+  "labels": {
+   "extreme_entries": "12",
+   "seeds_nonzero": "3",
+   "seeds_total": "200",
+   "share_resamples": "4.9 percent"
   }
  }
 }

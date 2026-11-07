@@ -119,6 +119,16 @@ def studentization(x, resamples: int = 9999, seed: int = V2_RESAMPLE_SEED) -> di
             "t_quantiles": [float(q) for q in np.quantile(t, [0.0005, 0.025, 0.975, 0.9995])]}
 
 
+def labels(paths: list, diag: dict) -> dict:
+    """Text labels for the paper's prose: entries flagged, and the seed pattern common to all diagnosed entries."""
+    seeds = {d["seeds_above_1e-9"] for d in diag.values()}; n = {d["n"] for d in diag.values()}
+    share = {round(d["share_resamples_without_them"], 3) for d in diag.values()}
+    if len(seeds) != 1 or len(n) != 1 or len(share) != 1:
+        raise ValueError("the diagnosed entries differ; the prose summary needs one pattern")
+    return {"extreme_entries": str(len(paths)), "seeds_nonzero": str(seeds.pop()), "seeds_total": str(n.pop()),
+            "share_resamples": f"{100 * share.pop():.1f} percent"}
+
+
 def _fixed_reference_rows(records: Path, market: str, fam: str) -> dict:
     """The per-seed fixed-reference-term contrasts of report_v2.q2 for one market and family."""
     sys.path.insert(0, str(ROOT / "scripts"))
@@ -185,7 +195,7 @@ def main(argv=None) -> int:
            "q4_stability": {"report": old, "registered_cfg": new,
                             "decisions_unchanged": all(old[m]["decision"] == new[m]["decision"] for m in FRESH),
                             "max_abs_change": {k: max(abs(old[m][k] - new[m][k]) for m in FRESH) for k in ("gain_diff", "gain_diff_lower", "eff", "eff_lower")}},
-           "extreme_intervals": {"limit": 1e3, "paths": hits, "studentization": diag}}
+           "extreme_intervals": {"limit": 1e3, "paths": hits, "studentization": diag, "labels": labels(hits, diag)}}
     Path(a.out).write_text(json.dumps(res, indent=1) + "\n")
     d = Path(a.tables); d.mkdir(parents=True, exist_ok=True)
     for k, v in tables(res).items():

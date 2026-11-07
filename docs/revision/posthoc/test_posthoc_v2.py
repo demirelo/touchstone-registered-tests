@@ -74,3 +74,7 @@ def test_a_profitable_w0_attack_is_one_row_without_a_companion():
            "welfare": {"F000": {"w1": {"efficiency": 0.839}, "w0": {"efficiency": 0.839}, "mixtures": {"H4": mx, "D2+H3": dict(mx)}}}}
     t = P.tables(res)["welfare_mix"]
     assert t.count("F000 &") == 1 and "none (W0 profitable)" in t
+
+
+def test_mixture_labels_keep_three_significant_digits():
+    assert P.label3(0.000374263) == "0.000374" and P.label3(0.0000279) == "0.0000279" and P.label3(None) == "n/a"
