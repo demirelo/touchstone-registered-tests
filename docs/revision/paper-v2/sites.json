@@ -373,5 +373,40 @@
   "path": "audit.q4_stability.registered_cfg.fresh4.gain_diff",
   "kind": "gain",
   "section": "results"
+ },
+ "r_ext_round": {
+  "path": "audit.extreme_intervals.labels.max_rounding",
+  "kind": "label",
+  "section": "results"
+ },
+ "r_ext_cnt": {
+  "path": "audit.extreme_intervals.labels.resamples_without",
+  "kind": "label",
+  "section": "results"
+ },
+ "r_ext_tot": {
+  "path": "audit.extreme_intervals.labels.resamples_total",
+  "kind": "label",
+  "section": "results"
+ },
+ "r_ph_t_r3": {
+  "path": "posthoc.welfare.F111.mixtures.H4.train_label",
+  "kind": "label",
+  "section": "results"
+ },
+ "r_ph_t_r3_d": {
+  "path": "posthoc.welfare.F111.mixtures.D2+H3.train_label",
+  "kind": "label",
+  "section": "results"
+ },
+ "r_ph_t_cs": {
+  "path": "posthoc.welfare.C*.mixtures.H4.train_label",
+  "kind": "label",
+  "section": "results"
+ },
+ "r_ph_t_cs_d": {
+  "path": "posthoc.welfare.C*.mixtures.D2+H3.train_label",
+  "kind": "label",
+  "section": "results"
  }
 }

@@ -18,10 +18,13 @@ code:
   fresh1, fresh3 and fresh4 are 0.0004, with Holm-adjusted values 0.0024, as you computed.
 
 A new audit script (`docs/revision/audit/audit_v2.py`, output `audit.json`) recomputes the raw, calibrated and
-Holm-adjusted values from the evaluation records. It also checks that every stored value equals the registered
-arithmetic and that every Q1 and Q4 decision is reproduced, and it exits nonzero on any mismatch. It reports no mismatch.
-Tables 5 (tab:q1) and 8 (tab:q4) now print the raw values, the calibrated value that enters Holm, the Holm-adjusted
-value and the decision, under labels that name these quantities. Section 8 states what the report stores.
+Holm-adjusted values from the evaluation records (Q1 raw 0.0002, calibrated 0.0004, adjusted 0.0008). It checks that
+every stored value equals the registered arithmetic, that the frozen `q1_family` recomputed from the records gives each Q1
+category and direction rejection, and that each Q4 decision is reproduced; it exits nonzero on any mismatch and reports
+none. It does not recheck the Q1 intervals or efficiency labels. Table 5 (tab:q1) now prints the calibrated Q1 value that
+enters Holm and its Holm-adjusted value (the raw Q1 values are in `audit.json`); Table 8 (tab:q4) prints the raw Q4
+component values, the calibrated market value that enters Holm, its Holm-adjusted value and the decision, under labels
+that name these quantities. Section 8 states what the report stores.
 
 The same trace found a related error in the prediction scoring: Q4-b is registered on calibrated p-values, but the scoring
 compared raw ones. With these data the verdict is the same (raw 1 against 0.0001 becomes 1 against 0.0004 on each
@@ -37,23 +40,29 @@ both the column labels and the calibrated scoring; both tests failed before the 
 - **Table 11 (tab:ph-welfare)** now prints the estimated gains and the unadjusted lower bounds at three significant
   digits (R3: 0.000374 and 0.0000279; C\*: 0.000456 and 0.0000718). It shows both companions, H4 and the public D2+H3
   family. It names the weight as the largest on a grid of step 0.0005, with the bound unadjusted for selection.
-- **Randomisation versus adding H4.** With the public D2+H3 attack as companion, the efficiencies are 0.945 (R3) and
-  0.922 (C\*). The paper now says that the drop comes from randomising over existing public-family policies.
+- **Randomisation versus adding H4.** With the public D2+H3 attack as companion, the evaluation efficiencies are 0.945
+  (R3) and 0.922 (C\*); see the training-feasibility point below for which of these mixtures meet the W1 constraint.
 - **Sensitivity.** Table 12 (tab:ph-welfare-sens) gives the estimated gain and efficiency at the weights 0, 0.1, ..., 0.5
   for each rule and companion. We did not construct joint bounds over the component library, so the analysis stays a
   check of the policy class.
 - **Reproducibility.** `docs/revision/posthoc/lottery_seeds.csv` exports the per-seed W0 and companion gains and
   efficiencies (3,000 rows: three rules, five companion families, 200 seeds). The script that selects the weight and
   computes the standard error is `docs/revision/posthoc/posthoc_v2.py`.
-- **Training feasibility.** The W0 search records store training efficiency, not training gain. Therefore the mixtures'
-  feasibility on the training seeds cannot be established from the records. The paper states that it is unreported.
+- **Training feasibility.** The search archives store each evaluated policy's per-seed normalised profit on the training
+  seeds, so the training gains can be reconstructed against the frozen reference without simulation. At the selected
+  weights, the mixtures' training mean gains are 0.00180 (R3, H4), 0.00127 (R3, D2+H3), 0.00370 (C\*, H4) and
+  -0.000580 (C\*, D2+H3). Three meet the registered W1 training constraint; C\*'s public-family mixture does not. Table 11
+  (tab:ph-welfare) prints these values, and the paper says that for R3 the drop appears with public-family policies
+  alone, while for C\* at the selected weight it needs H4. (An internal reviewer found this; our first draft wrongly said
+  the records could not show it.)
 
 ## 3. Extreme fresh1 intervals (finding 3, change 5)
 
 The audit scans the report for bounds beyond 1,000 in absolute value and finds your 12 entries and no others. The cause:
-at fresh1 the fixed-reference reference-profit contrast is nonzero on only 3 of 200 seeds. The other 197 seeds carry
-floating-point rounding (at most about 6e-14). About 4.9 percent of the 9,999 resamples leave out all three seeds. Their
-standard error is of rounding size, so the frozen studentized bootstrap gives bootstrap-t statistics near 7e10. The frozen
+at fresh1 the fixed-reference reference-profit contrast is above rounding scale on only 3 of 200 seeds. The other 197
+seeds carry floating-point rounding (at most 1.2e-13 in absolute value over the affected contrasts). The probability that
+a resample leaves out all three seeds is 4.9 percent; in the frozen resample matrix, 506 of the 9,999 resamples (5.1
+percent) do. Their standard error is of rounding size, so the frozen studentized bootstrap gives bootstrap-t statistics near 7e10. The frozen
 code replaces only an exactly zero resample standard error, so these values pass. Section 9 now discloses this, keeps the
 frozen outputs, and draws no conclusion from them. `audit.json` lists each entry with its diagnostic (sample standard
 error, seed count, maximum bootstrap-t statistic, quantiles). We did not add a replacement interval.
