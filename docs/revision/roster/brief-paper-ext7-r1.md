@@ -1,0 +1,14 @@
+# Paper revision after external review round 7: internal review round 1 (read-only; no paid APIs; do not read `sealed/`, `~/touchstone-h4`, or `~/h4-session.out`; `sealed2/h4/` may be read; reasoning effort high; under 500 words)
+
+An external referee reviewed the round-7 package (AAMAS 2/5, WEIS 4/5, EC 1/5). Their review is `docs/paper/external-review-r7.md`. Commit 8d16224 (diff against d363ff3) applies it to `docs/revision/paper-v2/main.tex` (PDF: `/private/tmp/claude-502/-Users-oemer-demirel-Projects-touchstone/a48c0006-982d-4d16-9bac-5ae26e145fac/scratchpad/pdf14/main.pdf`, 27 pages). The response letter is `docs/paper/response-to-review-r7.md`.
+
+Changed code (tests beside each): `docs/revision/paper-v2/score_v2.py` (`inputs`, `eligibility`, `tally`, `eligibility_map`, `--eligibility`); `tables_v2.py` (status marks, `eligibility` table); `numbers_v2.py` (count kind accepts the tallies); `sites.json`; gate scripts `results/pods/paper_check.sh` and `paper_commit.sh` (refuse on a crashed check).
+
+Inputs: `/Users/oemer.demirel/Projects/touchstone/results/v2/report/report.json` (`search_flagged`, `doubling`), `/Users/oemer.demirel/Projects/touchstone/results/v2/paper/{cells.json,scoring.json,eligibility.json}`, `docs/revision/predictions-v2.md` (scoring table and its exclusion paragraph), design 6.5 and 9 in `docs/superpowers/specs/2026-10-22-revision-program-design.md`, `docs/revision/posthoc/posthoc.json`. The paper gate passes.
+
+Check: (1) `inputs()`: does every prediction cell map to the searches it really uses (compare with `score()` and the report's cell ids; in particular Q1-c, Q2-a to Q2-d through the fixed-attack bank, Q3-d's coalition families and objectives, Q3-f, Q4-b)? Is any flagged search missed or any input wrong? (2) List each exclusion clause of the rubric (cut, missing, excluded, incomplete, numerically refused) and the code line that implements it; say which clause no code implements. (3) Are the three readings and their tallies (10/8/0, 7/8/3, 6/5/7) right, and is the choice to keep the decision predictions (Q1-a, alternative, Q1-b, Q1-d, Q4-a, Q4-b) under the descriptive reading justified by design 6.5? (4) Is the section 9 disclosure true, neutral (no reading chosen after the outcomes), and complete; are the Q2 and failure-list qualifications right; do the marks in Tables 19 and 20 match `eligibility.json`? (5) Contributions (i) and (iii) and the conclusion's labelled values (0.932, 0.921 with H4; 0.945, 0.922 public) are true to the results. (6) Every correction the letter reports is also stated in the paper, and the letter is truthful about what was not done. (7) New errors, including in the PDF.
+
+Output exactly:
+VERDICT: accept | accept-with-caveat | reject
+CORRECTIONS: numbered, each with main.tex line, file, or site name, or "none".
+CONFIDENCE: 0 to 1.
