@@ -167,3 +167,48 @@ def test_eligibility_map_tallies_each_reading():
     assert m["tally"]["descriptive"] == {"fulfilled": 2, "failed": 1, "not assessed": 3}
     assert m["targets"]["Q3-b"]["status"] == {"numerical": "fulfilled", "q3": "not assessed", "descriptive": "not assessed"}
     assert m["targets"]["Q1-a"]["decision"] is True and m["targets"]["Q3-b"]["flagged"] == [FLAG_Q3B]
+
+
+# Internal review ext7 r1 (both seats): the map must follow recorded dependencies (references, banks, warm starts), not
+# only direct inputs; refusal statuses and non-finite values must make a cell not assessed; the export lists every cell.
+def _write(d, rel, obj):
+    import hashlib
+    p = d / rel; p.parent.mkdir(parents=True, exist_ok=True); b = json.dumps(obj).encode(); p.write_bytes(b)
+    return hashlib.sha256(b).hexdigest()
+
+
+def test_dependency_closure_follows_recorded_upstream_hashes(tmp_path):
+    a = "fresh0@rho0.2|C*|D2+H3|profit"; b = "fresh0@rho0.2|C*|X7-SC|profit"
+    ha = _write(tmp_path, "search/a.json", {"stage": "search", "upstream": {}})
+    hr = _write(tmp_path, "reference/fresh0@rho0.2/Cstar.json", {"stage": "reference", "upstream": {a: ha}})
+    hb = _write(tmp_path, "search/b.json", {"stage": "search", "upstream": {a: ha}})
+    _write(tmp_path, f"evaluate/{S._safe(b)}.json", {"stage": "evaluate", "upstream": {b: hb, "reference/fresh0@rho0.2/C*": hr}})
+    deps = S.dependencies(tmp_path, [b])
+    assert deps[b] == {a, b, "reference/fresh0@rho0.2/C*"}
+    with pytest.raises(FileNotFoundError):
+        S.dependencies(tmp_path, ["fresh9@rho0.2|C*|X7-SC|profit"])          # an input without a record is an error
+
+
+def test_a_flag_reached_through_a_dependency_counts():
+    sc = {"Q3-e": {"status": "fulfilled", "cells": [{"cell": "headline", "status": "fulfilled", "value": 0.0}]}}
+    flag = "headline@rho0.2|C*|X8-DB|min|c2_roles"
+    deps = {x: {x, flag} for x in S.inputs("Q3-e", "headline")}
+    assert S.eligibility(sc, [flag], "q3")["Q3-e"]["status"] == "fulfilled"                 # direct inputs only
+    assert S.eligibility(sc, [flag], "q3", deps=deps)["Q3-e"]["status"] == "not assessed"
+
+
+def test_refused_or_nonfinite_values_are_not_assessed(world):
+    out, rep = world
+    g = rep["q3"]["coalition"]["F111"]["c2_roles"]
+    g["G_min"]["status"] = "not decided: numerical refusal"                  # the estimate is kept, the status refuses
+    cell = [c for c in S.score(rep, C.extract(out))["Q3-d"]["cells"] if c["cell"] == "F111 c2_roles"][0]
+    assert cell["status"] == "not assessed"
+    assert S._num(float("nan")) is None and S._num(float("inf")) is None and S._num(0.5) == 0.5
+
+
+def test_eligibility_map_lists_every_cell_with_inputs_and_statuses():
+    m = S.eligibility_map(_sc(), [FLAG_Q3B])
+    c = m["targets"]["Q3-b"]["cells"]["headline F111"]
+    assert c["inputs"] == S.inputs("Q3-b", "headline F111") and c["flagged"] == [FLAG_Q3B]
+    assert c["status"] == {"numerical": "fulfilled", "q3": "not assessed", "descriptive": "not assessed"}
+    assert set(m["targets"]["Q3-c"]["cells"]) == {"fresh1 C*", "fresh2 F111"}            # unflagged cells listed too

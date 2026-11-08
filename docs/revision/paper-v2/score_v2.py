@@ -5,7 +5,9 @@ cut, refused, or a status string. Descriptive only: predictions change no decisi
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -21,7 +23,19 @@ def _cal(p, kappa: float = KAPPA_Q4):
 
 
 def _num(x):
-    return float(x) if isinstance(x, (int, float)) and not isinstance(x, bool) else None
+    """A finite number, else None (a non-finite statistic is a numerical refusal, design 9.2)."""
+    ok = isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)
+    return float(x) if ok else None
+
+
+def _refused(d) -> bool:
+    """A report entry whose status, category or decision is a refusal ("not decided: ...", sim/decisions_v2.py)."""
+    return isinstance(d, dict) and any(isinstance(d.get(k), str) and (d[k].startswith("not decided") or d[k] == "refused")
+                                       for k in ("status", "category", "decision"))
+
+
+def _est(d):
+    return None if _refused(d) else _get(d, "estimate")
 
 
 def _cell(name, value, test) -> dict:
@@ -66,7 +80,7 @@ def score(rep: dict, cells: dict) -> dict:
     out["Q1-c"] = _combine([_cell(f, neg(_get(q1(f), "side", "gross_eff_diff")), lambda v: -0.01 <= v <= 0.01) for f in ("D2+H3", "X7-SC")])
     out["Q1-d"] = _combine([{"cell": f, "value": q1(f).get("better"), "status": NA if cat(f) is None or "efficiency" not in q1(f)
                              else "fulfilled" if q1(f).get("better") is None else "failed"} for f in ("D2+H3", "X7-SC")])
-    s = lambda kind, f, k: _get(rep, "q2", kind, f, k, "estimate")
+    s = lambda kind, f, k: _est(_get(rep, "q2", kind, f, k))
     out["Q2-a"] = _combine([_cell(k, s("searched", "D2+H3", k), lambda v: v <= -0.05) for k in ("G", "S")])
     out["Q2-b"] = _combine([_cell("P", s("searched", "D2+H3", "P"), lambda v: abs(v) < 0.03)])
     out["Q2-c"] = _combine([_cell("PG", s("searched", "D2+H3", "PG"), lambda v: abs(v) < 0.03),
@@ -81,7 +95,7 @@ def score(rep: dict, cells: dict) -> dict:
     out["Q3-c"] = _combine([_cell(f"{m} {r}", diff(m, r, "X5-AG/v2", "D2+H3"), lambda v: v < 0) for m in MARKETS for r in ("F111", "C*")])
     groups = ["c2_synchronised", "c2_staggered", "c5_synchronised", "c5_staggered", "c2_roles"]
     co = lambda r, g: _get(rep, "q3", "coalition", r, g)
-    out["Q3-d"] = _combine([_cell(f"{r} {g}", (_get(co(r, g), "G_min", "estimate"), _get(co(r, g), "G_tot", "estimate")),
+    out["Q3-d"] = _combine([_cell(f"{r} {g}", (_est(_get(co(r, g), "G_min")), _est(_get(co(r, g), "G_tot"))),
                                   lambda v: v[0] - 0.5 * v[1] <= 0) for r in ("F111", "C*") for g in groups])
     ben = lambda r: (_get(cells, f"headline@rho0.2|{r}|X8-DB|total|c2_roles", "member_gain") or [None])[0]
     out["Q3-e"] = _combine([_cell("headline", (ben("F111"), ben("C*")), lambda v: v[0] > v[1])])
@@ -146,9 +160,42 @@ def inputs(pid: str, cell: str) -> list:
     raise ValueError(f"no input map for {pid}")
 
 
-def eligibility(sc: dict, flagged, scope: str) -> dict:
-    """Each cell lists its flagged required searches. Under 'q3' (the reviewer's reading) a Q3 cell with a flagged input is
-    not assessed; under 'descriptive' every cell outside DECISIONS is; 'numerical' keeps the scorer's statuses."""
+def _safe(rid: str) -> str:
+    return rid.replace("|", "__").replace("/", "~").replace("*", "star")          # revision_v2._safe
+
+
+def dependencies(records, ids) -> dict:
+    """Search id -> every record key its evaluated estimate depends on: the id, then the recorded upstream links (file
+    hashes) of its evaluation record, followed transitively (references, banks, warm-start incumbents). An id without an
+    evaluation or search record raises: an unmapped input must not pass as unflagged."""
+    root = Path(records); index = {}
+    for f in root.rglob("*.json"):
+        index[hashlib.sha256(f.read_bytes()).hexdigest()] = f
+    out = {}
+    for rid in ids:
+        start = next((f for f in (root / "evaluate" / f"{_safe(rid)}.json", root / "search" / f"{_safe(rid)}.json") if f.exists()), None)
+        if start is None:
+            raise FileNotFoundError(f"no evaluation or search record for {rid}")
+        keys, todo, seen = {rid}, [start], set()
+        while todo:
+            f = todo.pop()
+            if f in seen:
+                continue
+            seen.add(f)
+            up = json.loads(f.read_text()).get("upstream") or {}
+            for k, h in up.items():
+                keys.add(k)
+                if h in index:
+                    todo.append(index[h])
+        out[rid] = keys
+    return out
+
+
+def eligibility(sc: dict, flagged, scope: str, deps: dict | None = None) -> dict:
+    """Each cell lists its flagged required searches: its direct inputs and, with deps, everything they depend on. Under
+    'q3' a Q3 cell with a flagged required search is not assessed; under 'descriptive' every cell outside DECISIONS is (a
+    convention of this sensitivity: design 6.5 keeps the decisions, it does not say how predictions about them are
+    scored); 'numerical' keeps the scorer's statuses."""
     if scope not in SCOPES:
         raise ValueError(f"unknown scope {scope}")
     fl, out = set(flagged), {}
@@ -156,7 +203,10 @@ def eligibility(sc: dict, flagged, scope: str) -> dict:
         hit = scope == "descriptive" and pid not in DECISIONS or scope == "q3" and pid.startswith("Q3-")
         cells = []
         for c in v.get("cells", []):
-            f = [x for x in inputs(pid, c["cell"]) if x in fl]
+            req = set(inputs(pid, c["cell"]))
+            for x in list(req):
+                req |= (deps or {}).get(x, set())
+            f = sorted(req & fl)
             cells.append({**c, "flagged": f, "status": NA if (hit and f) else c["status"]})
         out[pid] = {**_combine(cells), "cells": cells} if cells else dict(v)
     return out
@@ -167,12 +217,19 @@ def tally(sc: dict) -> dict:
     return {s: st.count(s) for s in ("fulfilled", "failed", NA)}
 
 
-def eligibility_map(sc: dict, flagged) -> dict:
-    by = {s: eligibility(sc, flagged, s) for s in SCOPES}
-    return {"flagged": sorted(set(flagged)), "tally": {s: tally(by[s]) for s in SCOPES},
+def eligibility_map(sc: dict, flagged, deps: dict | None = None) -> dict:
+    """Tallies with dependencies (the readings) and with direct inputs only (as in external review round 7); every cell
+    with its direct inputs, flagged required searches, and status under each reading."""
+    by = {s: eligibility(sc, flagged, s, deps) for s in SCOPES}
+    direct = {s: tally(eligibility(sc, flagged, s)) for s in SCOPES}
+    cells = lambda pid: {c["cell"]: {"inputs": inputs(pid, c["cell"]), "flagged": c["flagged"],
+                                     "status": {s: next(d["status"] for d in by[s][pid]["cells"] if d["cell"] == c["cell"]) for s in SCOPES}}
+                         for c in by["numerical"][pid].get("cells", [])}
+    return {"flagged": sorted(set(flagged)), "dependencies_traced": deps is not None,
+            "tally": {s: tally(by[s]) for s in SCOPES}, "tally_direct_inputs": direct,
             "targets": {pid: {"decision": pid in DECISIONS, "status": {s: by[s][pid]["status"] for s in SCOPES},
                               "flagged": sorted({x for c in by["numerical"][pid].get("cells", []) for x in c["flagged"]}),
-                              "cells": {c["cell"]: c["flagged"] for c in by["numerical"][pid].get("cells", []) if c["flagged"]}}
+                              "cells": cells(pid)}
                         for pid in sorted(sc)}}
 
 
@@ -180,11 +237,15 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(); ap.add_argument("--report", required=True); ap.add_argument("--cells", required=True)
     ap.add_argument("--write", required=True)
     ap.add_argument("--eligibility", help="also write the eligibility map (flagged inputs, three readings) here")
+    ap.add_argument("--records", help="evaluation records (eval/all); with --eligibility, trace recorded dependencies")
     a = ap.parse_args(argv); rep = json.loads(Path(a.report).read_text())
     sc = score(rep, json.loads(Path(a.cells).read_text()))
     Path(a.write).write_text(json.dumps(sc, indent=1, sort_keys=True))
     if a.eligibility:
-        Path(a.eligibility).write_text(json.dumps(eligibility_map(sc, rep.get("search_flagged") or []), indent=1, sort_keys=True))
+        ids = sorted({x for pid, v in sc.items() for c in v.get("cells", []) for x in inputs(pid, c["cell"])})
+        deps = dependencies(a.records, ids) if a.records else None
+        em = eligibility_map(sc, rep.get("search_flagged") or [], deps)
+        Path(a.eligibility).write_text(json.dumps(em, indent=1, sort_keys=True))
     return 0
 
 
