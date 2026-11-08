@@ -408,5 +408,75 @@
   "path": "posthoc.welfare.C*.mixtures.D2+H3.train_label",
   "kind": "label",
   "section": "results"
+ },
+ "r_ph_wd_cs": {
+  "path": "posthoc.welfare.C*.mixtures.D2+H3.weight_label",
+  "kind": "label",
+  "section": "results"
+ },
+ "r_ph_fw_cs": {
+  "path": "posthoc.welfare.C*.mixtures.D2+H3.train_feasible_mixture.weight_label",
+  "kind": "label",
+  "section": "results"
+ },
+ "r_ph_ft_cs": {
+  "path": "posthoc.welfare.C*.mixtures.D2+H3.train_feasible_mixture.train_label",
+  "kind": "label",
+  "section": "results"
+ },
+ "r_ph_fg_cs": {
+  "path": "posthoc.welfare.C*.mixtures.D2+H3.train_feasible_mixture.estimate_label",
+  "kind": "label",
+  "section": "results"
+ },
+ "r_ph_fe_cs": {
+  "path": "posthoc.welfare.C*.mixtures.D2+H3.train_feasible_mixture.efficiency_label",
+  "kind": "label",
+  "section": "results"
+ },
+ "r_ph_w1_cs": {
+  "path": "q3.welfare.C*.D2+H3.W1.efficiency",
+  "kind": "eff",
+  "section": "results"
+ },
+ "r_q1_holm": {
+  "path": "audit.q1.C*-F111|D2+H3.holm_adjusted",
+  "kind": "p",
+  "section": "results"
+ },
+ "r_pred_q4b_g": {
+  "path": "audit.q4.fresh0.calibrated_gain",
+  "kind": "p",
+  "section": "results"
+ },
+ "r_pred_q4b_e": {
+  "path": "audit.q4.fresh0.calibrated_eff",
+  "kind": "p",
+  "section": "results"
+ },
+ "int_w1": {
+  "path": "q3.welfare.F111.D2+H3.W1.efficiency",
+  "kind": "eff",
+  "section": "intro"
+ },
+ "c_w0": {
+  "path": "q3.welfare.F111.D2+H3.W0.efficiency",
+  "kind": "eff",
+  "section": "conclusion"
+ },
+ "c_w1": {
+  "path": "q3.welfare.F111.D2+H3.W1.efficiency",
+  "kind": "eff",
+  "section": "conclusion"
+ },
+ "c_mx_r3": {
+  "path": "posthoc.welfare.F111.best.efficiency",
+  "kind": "eff",
+  "section": "conclusion"
+ },
+ "c_mx_cs": {
+  "path": "posthoc.welfare.C*.best.efficiency",
+  "kind": "eff",
+  "section": "conclusion"
  }
 }

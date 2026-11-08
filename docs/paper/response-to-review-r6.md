@@ -2,7 +2,7 @@
 
 Thank you for the third careful review, and for recomputing the lottery grid. You found that our C\* conclusion was wrong;
 the paper now states your counterexample. Every correction in your section 4 is applied, as are your remaining changes 1 to
-4. No new simulation was run, and no registered estimate or decision changed. Table numbers refer to the revised draft
+3 and the contributions-paragraph part of change 4. No new simulation was run, and no registered estimate or decision changed. Table numbers refer to the revised draft
 (`main.pdf`, 26 pages).
 
 ## 1. C\* does not need H4 (your problem 1, change 1)
