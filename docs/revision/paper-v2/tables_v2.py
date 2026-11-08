@@ -68,8 +68,8 @@ def q1_side(r: dict) -> str:
     for f in FAMS:
         s = r["q1"]["tests"][f"C*-F111|{f}"].get("side")
         rows.append((f, "not available") if not s else (f, [num(s[k]) for k in SIDE]))
-    return tabular("l" + "r" * len(SIDE), ["Family", "Gross eff.", "Net eff.", "Ref.\\ profit", "Audit spend", "Refunds (focal)",
-                                           "Refunds (others)", "Served share"], rows)
+    return tabular("l" + "r" * len(SIDE), ["Family", "Gross eff.", "Net eff.", "Ref.\\ profit", "Audit spend", "False-fail refunds (focal)",
+                                           "False-fail refunds (others)", "Service fraction"], rows)
 
 
 def q4(r: dict) -> str:

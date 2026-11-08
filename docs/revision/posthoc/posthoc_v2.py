@@ -69,6 +69,22 @@ def mixture(gw0, ew0, gp, ep, grid: int = 2001) -> dict:
             "efficiency": float(e.mean())}
 
 
+def feasible_mixture(gw0, ew0, gp, ep, g0_train: float, gp_train: float, grid: int = 2001) -> dict:
+    """The largest W0 weight on the grid at which both empirical checks hold: the evaluation lower bound and the training
+    mean gain (W1's registered constraint) are non-negative (external review round 6)."""
+    gw0, ew0, gp, ep = (np.asarray(x, dtype=float) for x in (gw0, ew0, gp, ep))
+    best = None
+    for w in np.linspace(0.0, 1.0, grid):
+        g = w * gw0 + (1 - w) * gp
+        if g.mean() - Z * g.std(ddof=1) / np.sqrt(len(g)) >= 0 and train_mix(g0_train, gp_train, w) >= 0:
+            best = float(w)
+    if best is None:
+        return {"weight": None}
+    g, e = best * gw0 + (1 - best) * gp, best * ew0 + (1 - best) * ep
+    return {"weight": best, "estimate": float(g.mean()), "lower": float(g.mean() - Z * g.std(ddof=1) / np.sqrt(len(g))),
+            "efficiency": float(e.mean()), "train_mix": train_mix(g0_train, gp_train, best)}
+
+
 def sensitivity(gw0, ew0, gp, ep, weights) -> list:
     """Mean gain, its nominal one-sided 95 percent lower bound, and mean efficiency of the lottery at each W0 weight."""
     gw0, ew0, gp, ep = (np.asarray(x, dtype=float) for x in (gw0, ew0, gp, ep)); rows = []
@@ -124,8 +140,34 @@ def _w0_gain(out, rule: str):
     """W0's per-seed gain against the frozen reference: the W1 record's normalized profit minus its constraint (the gain)
     gives the reference term, which W0 shares (same rule, market, and reference)."""
     ctx = "headline@rho0.2"; w0 = _rec(out, f"{ctx}|{rule}|D2+H3|W0"); w1 = _rec(out, f"{ctx}|{rule}|D2+H3|W1")
+    if w1["seeds"] != w0["seeds"]:
+        raise ValueError(f"{rule}: the W1 record's seed order differs from W0's")
     ref = np.asarray(w1["normalized"]) - np.asarray(w1["constraint"])
     return w0, w1, np.asarray(w0["normalized"]) - ref
+
+
+def train_rows(out, rule: str, fams=PROFIT_FAMS) -> list:
+    """The training observations behind the lottery's training gains (external review round 6): per dev-train seed, the
+    normalised profit of the selected W0 policy and of each evaluated profit attack (archive entries, matched by knobs),
+    the frozen reference's, and the reference candidate's name."""
+    ctx = "headline@rho0.2"; ref = json.loads((Path(out) / "reference" / ctx / f"{rule.replace('*', 'star')}.json").read_text())
+    rn, rname, seeds = ref["per_seed_normalized"], ref["candidates"][ref["choice"]]["name"], ref["provenance"]["seeds_train"]
+    comps = []
+    s = _search_rec(out, f"{ctx}|{rule}|D2+H3|W0"); comps.append(("W0", f"{ctx}|{rule}|D2+H3|W0", s, _archive_entry(s["welfare"]["archive"], s["selected"])))
+    for fam in fams:
+        try:
+            s = _search_rec(out, f"{ctx}|{rule}|{fam}|profit")
+        except FileNotFoundError:
+            continue
+        comps.append((fam, f"{ctx}|{rule}|{fam}|profit", s, _archive_entry(s["attack"]["archive"], s["attack"]["best_knobs"])))
+    rows = []
+    for name, rid, s, e in comps:
+        if s["provenance"]["seeds_train"] != seeds or len(e["per_seed_normalized"]) != len(seeds):
+            raise ValueError(f"{rid}: training seeds differ from the reference's")
+        for sd, x, r in zip(seeds, e["per_seed_normalized"], rn):
+            rows.append({"rule": rule, "component": name, "search_record": rid, "policy_knobs": json.dumps(e["knobs"], sort_keys=True),
+                         "seed": sd, "normalized": float(x), "reference": rname, "reference_normalized": float(r), "gain": float(x) - float(r)})
+    return rows
 
 
 def seed_rows(out, rule: str) -> list:
@@ -155,6 +197,12 @@ def welfare_mixtures(out, rule: str) -> dict:
             g0, gp = train_gain_w0(out, rule), train_gain_profit(out, rule, fam)
             mx.update(train_w0=g0, train_companion=gp, train_mix=train_mix(g0, gp, mx["weight"]))
             mx["train_feasible"] = mx["train_mix"] >= 0; mx["train_label"] = label3(mx["train_mix"])
+            if not mx["train_feasible"]:
+                fm = feasible_mixture(gw0, w0["eff"], r["gain"], r["eff_attack"], g0, gp)
+                if fm["weight"] is not None:
+                    fm.update(weight_label=weight_label(fm["weight"]), estimate_label=label3(fm["estimate"]), lower_label=label3(fm["lower"]),
+                              train_label=label3(fm["train_mix"]), efficiency_label=f"{fm['efficiency']:.4f}", break_even=float(gp / (gp - g0)) if gp != g0 else None)
+                mx["train_feasible_mixture"] = fm
         except (FileNotFoundError, ValueError, KeyError):
             mx["train_mix"] = None
         res["mixtures"][fam] = mx
@@ -226,6 +274,10 @@ def tables(res: dict) -> dict:
             if mx and mx["weight"] > 0:
                 rows.append(f"{r} & {_f(v['w1']['efficiency'])} & {_f(v['w0']['efficiency'])} & {fam} & {mx['weight']:.4f} & {_s3(mx['estimate'])} & "
                             f"{_s3(mx.get('lower'))} & {_s3(mx.get('train_mix'))} & {_f(mx['efficiency'], 4)} \\\\")
+                fm = mx.get("train_feasible_mixture") or {}
+                if fm.get("weight"):
+                    rows.append(f"{r} & {_f(v['w1']['efficiency'])} & {_f(v['w0']['efficiency'])} & {fam}, training-feasible & {fm['weight']:.4f} & "
+                                f"{_s3(fm['estimate'])} & {_s3(fm['lower'])} & {_s3(fm['train_mix'])} & {_f(fm['efficiency'], 4)} \\\\")
     t["welfare_mix"] = ("\\begin{tabular}{@{}lrrlrrrrr@{}}\\toprule\nRule & W1 eff. & W0 eff. & Mixed with & W0 weight & Est.\\ gain & Unadj.\\ lower & Train gain & Mixed eff. \\\\\\midrule\n"
                         + "\n".join(rows) + "\n\\bottomrule\\end{tabular}\n")
     rows = []
@@ -238,7 +290,7 @@ def tables(res: dict) -> dict:
                          + " & ".join(f"$w={w:.1f}$" for w in SENS_WEIGHTS) + " \\\\\\midrule\n" + "\n".join(rows) + "\n\\bottomrule\\end{tabular}\n")
     rows = [f"{m} & {_f(v['estimate'])} & {_f(v['attacked'])} & {_f(v['reference'])} & {_f(v['audit_spend'])} & {_f(v['served_share'])} \\\\"
             for m, v in res["q4_diag"].items()]
-    t["q4_diag"] = ("\\begin{tabular}{@{}lrrrrr@{}}\\toprule\nMarket & B3$-$R3 gain & Attacked term & Reference term & R3 audit spend & R3 served share \\\\\\midrule\n"
+    t["q4_diag"] = ("\\begin{tabular}{@{}lrrrrr@{}}\\toprule\nMarket & B3$-$R3 gain & Attacked term & Reference term & R3 audit spend & R3 service fraction \\\\\\midrule\n"
                     + "\n".join(rows) + "\n\\bottomrule\\end{tabular}\n")
     rows = [f"{k} & {_f(v['estimate_report'], 4)} & {_f(v['estimate_registered_cfg'], 4)} & {v['category_registered_cfg']} \\\\" for k, v in res["stability"]["q1"].items()]
     t["stability"] = ("\\begin{tabular}{@{}lrrl@{}}\\toprule\nQ1 test & $d$, report & $d$, registered configs & Category, registered configs \\\\\\midrule\n"
@@ -261,6 +313,9 @@ def main(argv=None) -> int:
     seeds = [row for r in ("F000", "F111", "C*") for row in seed_rows(out, r)]
     with open(Path(a.out).with_name("lottery_seeds.csv"), "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(seeds[0])); w.writeheader(); w.writerows(seeds)
+    train = [row for r in ("F000", "F111", "C*") for row in train_rows(out, r)]
+    with open(Path(a.out).with_name("lottery_train.csv"), "w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(train[0])); w.writeheader(); w.writerows(train)
     d = Path(a.tables); d.mkdir(parents=True, exist_ok=True)
     for k, v in tables(res).items():
         (d / f"posthoc_{k}.tex").write_text(v.replace("C*", "C$^*$"))

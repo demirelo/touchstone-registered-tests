@@ -145,3 +145,9 @@ def test_p_value_columns_say_what_they_print(report):
             assert T._fmt_p(adj[i]) in _row(q4, m)
     q1 = T.q1(report); hdr = q1.split("\\midrule")[0]
     assert "$p'$ to Holm" in hdr and "Holm-adj." in hdr
+
+
+def test_side_table_names_false_failure_refunds_and_the_service_fraction(report):
+    # external review round 6: the refund fields count refunds on failed audits of honest play, not all refunds
+    side = T.q1_side(report)
+    assert "False-fail refunds (focal)" in side and "Service fraction" in side and "Served share" not in side

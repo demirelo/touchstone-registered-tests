@@ -791,7 +791,20 @@
      "train_companion": 0.0854403021423202,
      "train_mix": -0.0005797801780312931,
      "train_feasible": false,
-     "train_label": "-0.000580"
+     "train_label": "-0.000580",
+     "train_feasible_mixture": {
+      "weight": 0.47650000000000003,
+      "estimate": 0.0009309570874953808,
+      "lower": 0.0006994478424758479,
+      "efficiency": 0.9224011347117664,
+      "train_mix": 4.7449588887922556e-05,
+      "weight_label": "47.65 percent",
+      "estimate_label": "0.000931",
+      "lower_label": "0.000699",
+      "train_label": "0.0000474",
+      "efficiency_label": "0.9224",
+      "break_even": 0.4767647730861427
+     }
     },
     "X7-SC": {
      "weight": 0.48,
@@ -843,7 +856,20 @@
      "train_companion": 0.0854403021423202,
      "train_mix": -0.0005797801780312931,
      "train_feasible": false,
-     "train_label": "-0.000580"
+     "train_label": "-0.000580",
+     "train_feasible_mixture": {
+      "weight": 0.47650000000000003,
+      "estimate": 0.0009309570874953808,
+      "lower": 0.0006994478424758479,
+      "efficiency": 0.9224011347117664,
+      "train_mix": 4.7449588887922556e-05,
+      "weight_label": "47.65 percent",
+      "estimate_label": "0.000931",
+      "lower_label": "0.000699",
+      "train_label": "0.0000474",
+      "efficiency_label": "0.9224",
+      "break_even": 0.4767647730861427
+     }
     },
     "X5-AG/v2": {
      "weight": 0.303,

@@ -25,7 +25,7 @@ NOBARE = REQUIRED = ("abstract", "intro", "results", "discussion", "conclusion")
 LABEL = re.compile(r"\\label\{sec:([^}]*)\}")
 COMMENT = re.compile(r"(?<!\\)%.*")
 INPUT = re.compile(r"\\(?:input|include)\{([^}]*)\}")
-P_LEAVES = {"p", "p_gain", "p_eff"}
+P_LEAVES = {"p", "p_gain", "p_eff", "calibrated", "holm_adjusted", "calibrated_gain", "calibrated_eff"}
 # Kinds for prose in result regions: the field name and the value type must fit the sentence's statistic.
 KINDS = {"count": lambda leaf, v: leaf == "k" and isinstance(v, int) and not isinstance(v, bool),
          "p": lambda leaf, v: leaf in P_LEAVES and isinstance(v, float) and 0 <= v <= 1,

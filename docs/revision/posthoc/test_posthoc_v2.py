@@ -96,3 +96,55 @@ def test_training_gain_reads_the_archive_entry_of_the_evaluated_policy(tmp_path)
     assert P.train_gain_w0(tmp_path, "F111") == pytest.approx(-0.055)            # mean of (0 - 0.05, 0 - 0.06)
     assert P.train_gain_profit(tmp_path, "F111", "H4") == pytest.approx(0.10)       # archive, not best_f
     assert P.train_mix(-0.055, 0.10, 0.4) == pytest.approx(0.4 * -0.055 + 0.6 * 0.10)
+
+
+def test_training_feasible_weight_meets_both_empirical_checks():
+    # external review round 6: the largest grid weight at which the evaluation lower bound and the training mean gain are
+    # both non-negative (C* with D2+H3: training break-even 0.47676, so 0.4765 on the 0.0005 grid)
+    rng = np.random.default_rng(3)
+    gw0, gp = -0.1 + 0.001 * rng.standard_normal(200), 0.11 + 0.001 * rng.standard_normal(200)
+    ew0, ep = np.full(200, 0.84), np.full(200, 1.0)
+    g0_tr, gp_tr = -0.0937682027, 0.0854403021
+    m = P.feasible_mixture(gw0, ew0, gp, ep, g0_tr, gp_tr)
+    assert m["weight"] == pytest.approx(0.4765)
+    assert P.train_mix(g0_tr, gp_tr, m["weight"]) >= 0 > P.train_mix(g0_tr, gp_tr, m["weight"] + 0.0005)
+    assert m["train_mix"] == pytest.approx(P.train_mix(g0_tr, gp_tr, 0.4765))
+    g = 0.4765 * gw0 + (1 - 0.4765) * gp
+    assert m["lower"] == pytest.approx(g.mean() - 1.645 * g.std(ddof=1) / np.sqrt(200)) and m["lower"] >= 0
+
+
+def test_w0_gain_refuses_a_w1_record_with_another_seed_order(tmp_path):
+    ctx = "headline@rho0.2"
+    _rec(tmp_path, f"{ctx}|C*|D2+H3|W0", seeds=[1, 2], normalized=[0.1, 0.2], eff=[0.8, 0.8])
+    _rec(tmp_path, f"{ctx}|C*|D2+H3|W1", seeds=[2, 1], normalized=[0.3, 0.3], constraint=[0.0, 0.0], eff=[1.0, 1.0])
+    with pytest.raises(ValueError, match="seed order"):
+        P._w0_gain(tmp_path, "C*")
+
+
+def test_training_rows_export_seeds_policies_and_reference(tmp_path):
+    ctx = "headline@rho0.2"; seeds = [11, 12, 13, 14, 15]
+    ref = {"per_seed_normalized": [0.5] * 5, "choice": 1, "candidates": [{"name": "a"}, {"name": "ref-b"}],
+           "provenance": {"seeds_train": seeds}}
+    p = tmp_path / "reference" / ctx / "Cstar.json"; p.parent.mkdir(parents=True); p.write_text(json.dumps(ref))
+    k0, kp = {"x": 0}, {"x": 1}
+    for rid, body in ((f"{ctx}|C*|D2+H3|W0", {"selected": k0, "welfare": {"archive": [{"knobs": k0, "per_seed_normalized": [0.4] * 5}]},
+                                               "provenance": {"seeds_train": seeds}}),
+                      (f"{ctx}|C*|H4|profit", {"attack": {"best_knobs": kp, "archive": [{"knobs": kp, "per_seed_normalized": [0.7] * 5}]},
+                                               "provenance": {"seeds_train": seeds}})):
+        q = tmp_path / "search" / (P.safe(rid) + ".json"); q.parent.mkdir(parents=True, exist_ok=True); q.write_text(json.dumps(body))
+    rows = P.train_rows(tmp_path, "C*", ["H4"])
+    assert [r["seed"] for r in rows if r["component"] == "W0"] == seeds
+    r = next(r for r in rows if r["component"] == "H4" and r["seed"] == 13)
+    assert r["reference"] == "ref-b" and r["normalized"] == pytest.approx(0.7) and r["reference_normalized"] == pytest.approx(0.5)
+    assert r["gain"] == pytest.approx(0.2) and json.loads(r["policy_knobs"]) == kp
+
+
+def test_welfare_table_adds_the_training_feasible_row_beside_the_failed_one():
+    fm = {"weight": 0.4765, "estimate": 0.00093096, "lower": 0.00069945, "efficiency": 0.922401, "train_mix": 0.00004745}
+    mx = {"weight": 0.48, "estimate": 0.00029715, "lower": 0.0000668, "efficiency": 0.921852, "train_mix": -0.00057978,
+          "train_feasible_mixture": fm}
+    res = {"q1_split": {}, "q4_diag": {}, "stability": {"q1": {}},
+           "welfare": {"C*": {"w1": {"efficiency": 0.997}, "w0": {"efficiency": 0.840}, "mixtures": {"D2+H3": mx}}}}
+    t = P.tables(res)["welfare_mix"]
+    assert "D2+H3 & 0.4800" in t and "D2+H3, training-feasible & 0.4765" in t       # the failed row stays
+    assert "0.0000475" in t and "0.000931" in t and "0.9224" in t

@@ -353,3 +353,9 @@ def test_with_sites_a_plain_report_macro_is_refused(tmp_path):
     tex = "\\section{Results}\\label{sec:results}\n% BEGIN-EV2\nk is \\site{k}.\n% END-EV2\nAlso \\rv{q4.k}.\n"
     _setup(tmp_path, tex)
     assert any("\\rv" in p and "sites" in p for p in N.check(tmp_path / "report.json", tmp_path / "numbers.tex", tmp_path / "main.tex"))
+
+
+def test_p_kind_accepts_the_audit_holm_adjusted_and_calibrated_values():
+    # external review round 6: section 9 prints the calibrated Q1 input and its Holm-adjusted value from audit.json
+    assert N.KINDS["p"]("holm_adjusted", 0.0008) and N.KINDS["p"]("calibrated", 0.0004) and N.KINDS["p"]("calibrated_gain", 1.0)
+    assert not N.KINDS["p"]("estimate", 0.0008)
