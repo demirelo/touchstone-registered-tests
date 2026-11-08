@@ -78,7 +78,7 @@ def score(rep: dict, cells: dict) -> dict:
                              else "fulfilled" if c in ("equivalent", "equivalent, direction R3 lower") else "failed"}])
     neg = lambda v: None if v is None else -v                     # the report's side fields are F111 minus C*; Q1-c is C* minus F111
     out["Q1-c"] = _combine([_cell(f, neg(_get(q1(f), "side", "gross_eff_diff")), lambda v: -0.01 <= v <= 0.01) for f in ("D2+H3", "X7-SC")])
-    out["Q1-d"] = _combine([{"cell": f, "value": q1(f).get("better"), "status": NA if cat(f) is None or "efficiency" not in q1(f)
+    out["Q1-d"] = _combine([{"cell": f, "value": q1(f).get("better"), "status": NA if cat(f) is None or _refused(q1(f)) or "efficiency" not in q1(f)
                              else "fulfilled" if q1(f).get("better") is None else "failed"} for f in ("D2+H3", "X7-SC")])
     s = lambda kind, f, k: _est(_get(rep, "q2", kind, f, k))
     out["Q2-a"] = _combine([_cell(k, s("searched", "D2+H3", k), lambda v: v <= -0.05) for k in ("G", "S")])
@@ -185,8 +185,9 @@ def dependencies(records, ids) -> dict:
             up = json.loads(f.read_text()).get("upstream") or {}
             for k, h in up.items():
                 keys.add(k)
-                if h in index:
-                    todo.append(index[h])
+                if h not in index:
+                    raise FileNotFoundError(f"unresolved upstream link {k} ({h[:12]}) of {f}")
+                todo.append(index[h])
         out[rid] = keys
     return out
 
@@ -207,7 +208,7 @@ def eligibility(sc: dict, flagged, scope: str, deps: dict | None = None) -> dict
             for x in list(req):
                 req |= (deps or {}).get(x, set())
             f = sorted(req & fl)
-            cells.append({**c, "flagged": f, "status": NA if (hit and f) else c["status"]})
+            cells.append({**c, "required": sorted(req), "flagged": f, "status": NA if (hit and f) else c["status"]})
         out[pid] = {**_combine(cells), "cells": cells} if cells else dict(v)
     return out
 
@@ -222,7 +223,7 @@ def eligibility_map(sc: dict, flagged, deps: dict | None = None) -> dict:
     with its direct inputs, flagged required searches, and status under each reading."""
     by = {s: eligibility(sc, flagged, s, deps) for s in SCOPES}
     direct = {s: tally(eligibility(sc, flagged, s)) for s in SCOPES}
-    cells = lambda pid: {c["cell"]: {"inputs": inputs(pid, c["cell"]), "flagged": c["flagged"],
+    cells = lambda pid: {c["cell"]: {"inputs": inputs(pid, c["cell"]), "required": c["required"], "flagged": c["flagged"],
                                      "status": {s: next(d["status"] for d in by[s][pid]["cells"] if d["cell"] == c["cell"]) for s in SCOPES}}
                          for c in by["numerical"][pid].get("cells", [])}
     return {"flagged": sorted(set(flagged)), "dependencies_traced": deps is not None,

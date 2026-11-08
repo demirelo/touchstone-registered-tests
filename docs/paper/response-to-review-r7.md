@@ -27,8 +27,8 @@ D2+H3 search through the reference. Q3-c still fails on pairs that are not flagg
   status even when their inputs are flagged (Q4-b's fresh0 cell is). Design 6.5 keeps the decisions; it does not say how
   predictions about them are scored, so the paper calls this a convention of the sensitivity.
 - **Other exclusion clauses.** Cut, missing and excluded cells reach the scorer as absent values and are not assessed.
-  Numerical refusals are now not assessed wherever the report marks them ("not decided: numerical refusal"), including
-  the Q2 and coalition entries, and non-finite values are refused (tested). The round-7 report contains no refused entry,
+  Numerical refusals ("not decided: numerical refusal") are now not assessed in the Q1-d, Q2 and coalition
+  entries, as they already were in Q1-a and Q1-b, and non-finite values are refused (tested). The round-7 report contains no refused entry,
   so no status changed.
 - **Paper.** Section 9 (Predictions) states that the scorer retains the estimates of flagged searches, that the rubric
   excludes incomplete targets, that it does not say whether a prediction computed from a flagged search is itself

@@ -212,3 +212,27 @@ def test_eligibility_map_lists_every_cell_with_inputs_and_statuses():
     assert c["inputs"] == S.inputs("Q3-b", "headline F111") and c["flagged"] == [FLAG_Q3B]
     assert c["status"] == {"numerical": "fulfilled", "q3": "not assessed", "descriptive": "not assessed"}
     assert set(m["targets"]["Q3-c"]["cells"]) == {"fresh1 C*", "fresh2 F111"}            # unflagged cells listed too
+
+
+# Internal review ext7 r2: Q1-d must not score a refused Q1 test; an unresolved upstream link must raise; the export lists
+# the complete traced search set of every cell.
+def test_q1d_is_not_assessed_when_the_q1_test_is_refused(world):
+    out, rep = world
+    rep["q1"]["tests"]["C*-F111|D2+H3"]["category"] = "not decided: numerical refusal"
+    rep["q1"]["tests"]["C*-F111|D2+H3"]["better"] = None
+    cell = [c for c in S.score(rep, C.extract(out))["Q1-d"]["cells"] if c["cell"] == "D2+H3"][0]
+    assert cell["status"] == "not assessed"
+
+
+def test_an_unresolved_upstream_link_raises(tmp_path):
+    b = "fresh0@rho0.2|C*|X7-SC|profit"
+    _write(tmp_path, f"evaluate/{S._safe(b)}.json", {"stage": "evaluate", "upstream": {b: "0" * 64}})
+    with pytest.raises(FileNotFoundError, match="unresolved"):
+        S.dependencies(tmp_path, [b])
+
+
+def test_eligibility_map_exports_the_full_traced_search_set():
+    a = "fresh0@rho0.2|C*|D2+H3|profit"
+    deps = {x: {x, a} for x in S.inputs("Q3-b", "headline F111")}
+    c = S.eligibility_map(_sc(), [FLAG_Q3B], deps)["targets"]["Q3-b"]["cells"]["headline F111"]
+    assert c["inputs"] == S.inputs("Q3-b", "headline F111") and a in c["required"] and FLAG_Q3B in c["required"]
