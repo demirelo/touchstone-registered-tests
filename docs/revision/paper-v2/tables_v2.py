@@ -183,16 +183,39 @@ def statements(md: str) -> dict:
     return out
 
 
-def predictions(sc: dict, st: dict | None = None, ids: tuple | None = None) -> str:
+def _mark(pid: str, elig: dict | None) -> str:
+    """Dagger: not assessed under both stricter eligibility readings; double dagger: only under the descriptive one."""
+    s = ((elig or {}).get("targets", {}).get(pid) or {}).get("status")
+    if not s or s["numerical"] == "not assessed":
+        return ""
+    return "$^{\\dagger}$" if s["q3"] == "not assessed" else "$^{\\ddagger}$" if s["descriptive"] == "not assessed" else ""
+
+
+READINGS = (("numerical", "Numerical (as scored)"), ("q3", "Flagged inputs, Q3"), ("descriptive", "Flagged inputs, every descriptive"))
+
+
+def eligibility(elig: dict) -> str:
+    """The prediction tally under the scorer's numerical reading and the two stricter eligibility readings (score_v2.py),
+    with the predictions each stricter reading leaves not assessed."""
+    rows = []
+    for key, label in READINGS:
+        t = elig["tally"][key]
+        ch = [pid for pid, v in sorted(elig["targets"].items()) if v["status"][key] == "not assessed" != v["status"]["numerical"]]
+        rows.append((label, [str(t["fulfilled"]), str(t["failed"]), str(t["not assessed"]), ", ".join(ch) or "none"]))
+    return tabular("lrrrl", ["Reading", "Fulfilled", "Failed", "Not assessed", "Not assessed under this reading"], rows)
+
+
+def predictions(sc: dict, st: dict | None = None, ids: tuple | None = None, elig: dict | None = None) -> str:
     """The prediction scoring table (score_v2.py): the registered statement, the overall status, then each scored cell with
-    its value and status; paired values carry their labels (they are two statistics, not an interval)."""
+    its value and status; paired values carry their labels (they are two statistics, not an interval). With an eligibility
+    map, a status a stricter reading changes carries a mark (_mark)."""
     rows = []
     for pid in sorted(sc):
         if ids and not pid.startswith(tuple(f"{q}-" for q in ids)):
             continue
         v = sc[pid]
         cells = "; ".join(f"{esc(c['cell'])} {_pval(pid, c['value'])} {esc(c['status'])}" for c in v.get("cells", [])) or "none scored"
-        rows.append((pid, [esc((st or {}).get(pid, "")), esc(v["status"]), cells]))
+        rows.append((pid, [esc((st or {}).get(pid, "")), esc(v["status"]) + _mark(pid, elig), cells]))
     return tabular("lp{0.36\\linewidth}lp{0.34\\linewidth}", ["Prediction", "Registered statement", "Status", "Scored cells"], rows)
 
 
@@ -206,12 +229,16 @@ def main(argv=None) -> int:
     ap.add_argument("--report", required=True); ap.add_argument("--dir", required=True)
     g = ap.add_mutually_exclusive_group(required=True); g.add_argument("--write", action="store_true"); g.add_argument("--check", action="store_true")
     ap.add_argument("--scoring", help="score_v2.py output; adds tables/predictions.tex")
+    ap.add_argument("--eligibility", help="score_v2.py eligibility map; marks the prediction tables, adds tables/pred_eligibility.tex")
     a = ap.parse_args(argv); tabs = all_tables(json.loads(Path(a.report).read_text())); d = Path(a.dir)
     ap_md = Path(__file__).resolve().parent.parent / "predictions-v2.md"
     if a.scoring:
         sc, st = json.loads(Path(a.scoring).read_text()), (statements(ap_md.read_text()) if ap_md.exists() else None)
-        tabs["predictions"] = predictions(sc, st, ids=("Q1", "Q2"))          # two tables: one does not fit a page
-        tabs["predictions_b"] = predictions(sc, st, ids=("Q3", "Q4"))
+        el = json.loads(Path(a.eligibility).read_text()) if a.eligibility else None
+        tabs["predictions"] = predictions(sc, st, ids=("Q1", "Q2"), elig=el)          # two tables: one does not fit a page
+        tabs["predictions_b"] = predictions(sc, st, ids=("Q3", "Q4"), elig=el)
+        if el:
+            tabs["pred_eligibility"] = eligibility(el)
     if a.write:
         d.mkdir(parents=True, exist_ok=True)
         for k, v in tabs.items():

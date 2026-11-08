@@ -98,11 +98,93 @@ def score(rep: dict, cells: dict) -> dict:
     return out
 
 
+# Eligibility (external review round 7). predictions-v2.md: a target that is "incomplete (design 6.5)" is not assessed;
+# design 6.5 calls a search-flagged cell "incomplete" and keeps its estimate for the prescribed search procedure, and keeps
+# every confirmatory decision that uses it. score() above reads the numbers only; the map below names each cell's
+# required searches and rescored the predictions under two stricter readings. Descriptive only.
+RULES8 = tuple(f"F{a}{b}{c}" for a in "01" for b in "01" for c in "01")
+DECISIONS = frozenset({"Q1-a", "Q1-a-alt", "Q1-b", "Q1-d", "Q4-a", "Q4-b"})   # score a confirmatory decision or its label
+SCOPES = ("numerical", "q3", "descriptive")
+COALITION_FAMILY = {"c2_roles": "X8-DB"}                                   # the other coalition groups are X6-SE/v2
+
+
+def _sid(m, r, fam, obj="profit", grp=None, rho="0.2"):
+    return f"{m}@rho{rho}|{r}|{fam}|{obj}" + (f"|{grp}" if grp else "")
+
+
+def inputs(pid: str, cell: str) -> list:
+    """The searches a prediction cell needs (ids as in the report's search_flagged list)."""
+    q1 = lambda fam: [_sid(m, r, fam) for m in FRESH for r in ("C*", "F111")]
+    q2 = lambda fam: [_sid(m, r, fam) for m in FRESH for r in RULES8]          # searched cells and the fixed-attack bank
+    if pid in ("Q1-a", "Q1-a-alt"):
+        return q1("D2+H3")
+    if pid in ("Q1-b", "Q1-c", "Q1-d"):
+        return q1(cell)
+    if pid in ("Q2-a", "Q2-b", "Q2-c"):
+        return q2("D2+H3")
+    if pid == "Q2-d":
+        return q2(cell.split()[1])
+    if pid in ("Q3-a", "Q3-b", "Q3-c"):
+        m, r = cell.split()
+        a, b = {"Q3-a": ("X7-SC", "D2+H3"), "Q3-b": ("H4", "X7-SC"), "Q3-c": ("X5-AG/v2", "D2+H3")}[pid]
+        return [_sid(m, r, a), _sid(m, r, b)]
+    if pid == "Q3-d":
+        r, g = cell.split()
+        fam = COALITION_FAMILY.get(g, "X6-SE/v2")
+        return [_sid("headline", r, fam, "min", g), _sid("headline", r, fam, "total", g)]
+    if pid == "Q3-e":
+        return [_sid("headline", r, "X8-DB", "total", "c2_roles") for r in ("F111", "C*")]
+    if pid == "Q3-f":
+        rules, o = (("F000", "F111"), cell.split()[1]) if cell.startswith("F000<") else ((cell.split()[0],), cell.split()[1])
+        return [_sid("headline", r, f, o) for r in rules for f in ("D2+H3", "X7-SC")]
+    if pid == "Q3-g":
+        return [_sid("headline", r, "D2", rho="1") for r in ("F111", "R4")]
+    if pid == "Q4-a":
+        return [_sid(m, r, "D2+H3") for m in FRESH for r in ("F000", "F111")]
+    if pid == "Q4-b":
+        return [_sid(cell, r, "D2+H3") for r in ("F000", "F111")]
+    raise ValueError(f"no input map for {pid}")
+
+
+def eligibility(sc: dict, flagged, scope: str) -> dict:
+    """Each cell lists its flagged required searches. Under 'q3' (the reviewer's reading) a Q3 cell with a flagged input is
+    not assessed; under 'descriptive' every cell outside DECISIONS is; 'numerical' keeps the scorer's statuses."""
+    if scope not in SCOPES:
+        raise ValueError(f"unknown scope {scope}")
+    fl, out = set(flagged), {}
+    for pid, v in sc.items():
+        hit = scope == "descriptive" and pid not in DECISIONS or scope == "q3" and pid.startswith("Q3-")
+        cells = []
+        for c in v.get("cells", []):
+            f = [x for x in inputs(pid, c["cell"]) if x in fl]
+            cells.append({**c, "flagged": f, "status": NA if (hit and f) else c["status"]})
+        out[pid] = {**_combine(cells), "cells": cells} if cells else dict(v)
+    return out
+
+
+def tally(sc: dict) -> dict:
+    st = [v["status"] for v in sc.values()]
+    return {s: st.count(s) for s in ("fulfilled", "failed", NA)}
+
+
+def eligibility_map(sc: dict, flagged) -> dict:
+    by = {s: eligibility(sc, flagged, s) for s in SCOPES}
+    return {"flagged": sorted(set(flagged)), "tally": {s: tally(by[s]) for s in SCOPES},
+            "targets": {pid: {"decision": pid in DECISIONS, "status": {s: by[s][pid]["status"] for s in SCOPES},
+                              "flagged": sorted({x for c in by["numerical"][pid].get("cells", []) for x in c["flagged"]}),
+                              "cells": {c["cell"]: c["flagged"] for c in by["numerical"][pid].get("cells", []) if c["flagged"]}}
+                        for pid in sorted(sc)}}
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(); ap.add_argument("--report", required=True); ap.add_argument("--cells", required=True)
-    ap.add_argument("--write", required=True); a = ap.parse_args(argv)
-    sc = score(json.loads(Path(a.report).read_text()), json.loads(Path(a.cells).read_text()))
+    ap.add_argument("--write", required=True)
+    ap.add_argument("--eligibility", help="also write the eligibility map (flagged inputs, three readings) here")
+    a = ap.parse_args(argv); rep = json.loads(Path(a.report).read_text())
+    sc = score(rep, json.loads(Path(a.cells).read_text()))
     Path(a.write).write_text(json.dumps(sc, indent=1, sort_keys=True))
+    if a.eligibility:
+        Path(a.eligibility).write_text(json.dumps(eligibility_map(sc, rep.get("search_flagged") or []), indent=1, sort_keys=True))
     return 0
 
 

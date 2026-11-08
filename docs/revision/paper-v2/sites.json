@@ -478,5 +478,55 @@
   "path": "posthoc.welfare.C*.best.efficiency",
   "kind": "eff",
   "section": "conclusion"
+ },
+ "r_pred_n_ful": {
+  "path": "eligibility.tally.numerical.fulfilled",
+  "kind": "count",
+  "section": "results"
+ },
+ "r_pred_n_fail": {
+  "path": "eligibility.tally.numerical.failed",
+  "kind": "count",
+  "section": "results"
+ },
+ "r_pred_q_ful": {
+  "path": "eligibility.tally.q3.fulfilled",
+  "kind": "count",
+  "section": "results"
+ },
+ "r_pred_q_fail": {
+  "path": "eligibility.tally.q3.failed",
+  "kind": "count",
+  "section": "results"
+ },
+ "r_pred_q_na": {
+  "path": "eligibility.tally.q3.not assessed",
+  "kind": "count",
+  "section": "results"
+ },
+ "r_pred_d_ful": {
+  "path": "eligibility.tally.descriptive.fulfilled",
+  "kind": "count",
+  "section": "results"
+ },
+ "r_pred_d_fail": {
+  "path": "eligibility.tally.descriptive.failed",
+  "kind": "count",
+  "section": "results"
+ },
+ "r_pred_d_na": {
+  "path": "eligibility.tally.descriptive.not assessed",
+  "kind": "count",
+  "section": "results"
+ },
+ "c_mx_r3_p": {
+  "path": "posthoc.welfare.F111.mixtures.D2+H3.efficiency",
+  "kind": "eff",
+  "section": "conclusion"
+ },
+ "c_mx_cs_p": {
+  "path": "posthoc.welfare.C*.mixtures.D2+H3.train_feasible_mixture.efficiency",
+  "kind": "eff",
+  "section": "conclusion"
  }
 }

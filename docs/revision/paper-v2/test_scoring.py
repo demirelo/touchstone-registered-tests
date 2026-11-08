@@ -108,3 +108,62 @@ def test_q4b_compares_calibrated_p_values_as_registered(world):
     rep["q4"]["markets"][m]["p_gain"], rep["q4"]["markets"][m]["p_eff"] = 0.30, 0.26
     sc = S.score(rep, C.extract(out))["Q4-b"]
     assert sc["status"] == "failed" and sc["cells"][0]["value"] == pytest.approx((1.0, 1.0))
+
+
+# External review round 7: the rubric (predictions-v2.md) makes a target "incomplete (design 6.5)" not assessed, and design
+# 6.5 calls a search-flagged cell "incomplete". The numerical scorer ignored the flags; the eligibility map makes each
+# prediction cell's required searches explicit and rescored the predictions under two stricter readings.
+FLAG_Q3B = "headline@rho0.2|F111|X7-SC|profit"
+
+
+def test_inputs_name_the_required_searches_of_each_prediction_cell():
+    assert S.inputs("Q3-a", "fresh1 C*") == ["fresh1@rho0.2|C*|X7-SC|profit", "fresh1@rho0.2|C*|D2+H3|profit"]
+    assert S.inputs("Q3-b", "headline F111") == ["headline@rho0.2|F111|H4|profit", FLAG_Q3B]
+    assert S.inputs("Q3-d", "C* c2_roles") == ["headline@rho0.2|C*|X8-DB|min|c2_roles", "headline@rho0.2|C*|X8-DB|total|c2_roles"]
+    assert S.inputs("Q3-d", "F111 c2_staggered")[0] == "headline@rho0.2|F111|X6-SE/v2|min|c2_staggered"
+    assert S.inputs("Q3-e", "headline") == ["headline@rho0.2|F111|X8-DB|total|c2_roles", "headline@rho0.2|C*|X8-DB|total|c2_roles"]
+    q2 = S.inputs("Q2-a", "G")
+    assert len(q2) == 48 and "fresh4@rho0.2|F111|D2+H3|profit" in q2 and all("|D2+H3|" in x for x in q2)
+    assert all("|X7-SC|" in x for x in S.inputs("Q2-d", "P X7-SC"))
+    assert "fresh0@rho0.2|C*|D2+H3|profit" in S.inputs("Q1-c", "D2+H3")
+    assert S.inputs("Q3-g", "headline rho1") == ["headline@rho1|F111|D2|profit", "headline@rho1|R4|D2|profit"]
+
+
+def _sc():
+    f = lambda c, s: {"cell": c, "status": s, "value": 0.0}
+    return {"Q1-a": {"status": "fulfilled", "cells": [f("D2+H3", "fulfilled")]},
+            "Q1-c": {"status": "fulfilled", "cells": [f("D2+H3", "fulfilled"), f("X7-SC", "fulfilled")]},
+            "Q2-a": {"status": "failed", "cells": [f("G", "fulfilled"), f("S", "failed")]},
+            "Q3-b": {"status": "fulfilled", "cells": [f("headline F111", "fulfilled")]},
+            "Q3-c": {"status": "failed", "cells": [f("fresh1 C*", "failed"), f("fresh2 F111", "failed")]},
+            "Q3-e": {"status": "fulfilled", "cells": [f("headline", "fulfilled")]}}
+
+
+def test_a_flagged_required_search_makes_the_q3_cell_not_assessed():
+    flagged = [FLAG_Q3B, "fresh1@rho0.2|C*|D2+H3|profit", "headline@rho0.2|C*|X8-DB|min|c2_roles", "fresh4@rho0.2|F111|D2+H3|profit"]
+    e = S.eligibility(_sc(), flagged, "q3")
+    assert e["Q3-b"]["status"] == "not assessed" and e["Q3-b"]["cells"][0]["flagged"] == [FLAG_Q3B]
+    assert e["Q3-c"]["status"] == "failed"                  # fresh2 F111 fails without a flagged input
+    assert e["Q3-e"]["status"] == "fulfilled"              # the C* flag is on the minimum objective, Q3-e uses the total
+    assert e["Q2-a"]["status"] == "failed" and e["Q1-c"]["status"] == "fulfilled"      # outside the Q3 scope
+
+
+def test_the_descriptive_reading_also_covers_q1c_and_q2_but_never_a_decision():
+    flagged = ["fresh1@rho0.2|C*|D2+H3|profit", "fresh4@rho0.2|F111|D2+H3|profit"]
+    e = S.eligibility(_sc(), flagged, "descriptive")
+    assert e["Q2-a"]["status"] == "not assessed" and e["Q1-c"]["status"] == "not assessed"
+    assert e["Q1-a"]["status"] == "fulfilled"              # a confirmatory decision is kept (design 6.5)
+    num = S.eligibility(_sc(), flagged, "numerical")                   # flags are listed, statuses unchanged
+    assert {k: v["status"] for k, v in num.items()} == {k: v["status"] for k, v in _sc().items()}
+    assert num["Q2-a"]["cells"][0]["flagged"] == ["fresh4@rho0.2|F111|D2+H3|profit"]
+    with pytest.raises(ValueError):
+        S.eligibility(_sc(), flagged, "other")
+
+
+def test_eligibility_map_tallies_each_reading():
+    m = S.eligibility_map(_sc(), [FLAG_Q3B, "fresh4@rho0.2|F111|D2+H3|profit"])
+    assert m["tally"]["numerical"] == {"fulfilled": 4, "failed": 2, "not assessed": 0}
+    assert m["tally"]["q3"] == {"fulfilled": 3, "failed": 2, "not assessed": 1}
+    assert m["tally"]["descriptive"] == {"fulfilled": 2, "failed": 1, "not assessed": 3}
+    assert m["targets"]["Q3-b"]["status"] == {"numerical": "fulfilled", "q3": "not assessed", "descriptive": "not assessed"}
+    assert m["targets"]["Q1-a"]["decision"] is True and m["targets"]["Q3-b"]["flagged"] == [FLAG_Q3B]

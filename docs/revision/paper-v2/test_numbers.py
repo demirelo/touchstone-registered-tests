@@ -359,3 +359,9 @@ def test_p_kind_accepts_the_audit_holm_adjusted_and_calibrated_values():
     # external review round 6: section 9 prints the calibrated Q1 input and its Holm-adjusted value from audit.json
     assert N.KINDS["p"]("holm_adjusted", 0.0008) and N.KINDS["p"]("calibrated", 0.0004) and N.KINDS["p"]("calibrated_gain", 1.0)
     assert not N.KINDS["p"]("estimate", 0.0008)
+
+
+def test_count_kind_accepts_the_prediction_tallies_but_not_a_float():
+    # external review round 7: section 9 prints the prediction tally under each eligibility reading (score_v2.py map)
+    assert N.KINDS["count"]("fulfilled", 10) and N.KINDS["count"]("not assessed", 3) and N.KINDS["count"]("k", 3)
+    assert not N.KINDS["count"]("failed", 8.0) and not N.KINDS["count"]("estimate", 3)

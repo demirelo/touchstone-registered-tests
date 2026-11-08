@@ -27,7 +27,8 @@ COMMENT = re.compile(r"(?<!\\)%.*")
 INPUT = re.compile(r"\\(?:input|include)\{([^}]*)\}")
 P_LEAVES = {"p", "p_gain", "p_eff", "calibrated", "holm_adjusted", "calibrated_gain", "calibrated_eff"}
 # Kinds for prose in result regions: the field name and the value type must fit the sentence's statistic.
-KINDS = {"count": lambda leaf, v: leaf == "k" and isinstance(v, int) and not isinstance(v, bool),
+COUNT_LEAVES = {"k", "fulfilled", "failed", "not assessed"}          # Q4's k; the prediction tallies (score_v2.py)
+KINDS = {"count": lambda leaf, v: leaf in COUNT_LEAVES and isinstance(v, int) and not isinstance(v, bool),
          "p": lambda leaf, v: leaf in P_LEAVES and isinstance(v, float) and 0 <= v <= 1,
          "gain": lambda leaf, v: leaf in {"estimate", "gain_diff", "gain_diff_lower", "attacker_gain", "0", "1"} and isinstance(v, float),
          "eff": lambda leaf, v: leaf in {"eff", "eff_lower", "efficiency", "0", "1"} and isinstance(v, float),

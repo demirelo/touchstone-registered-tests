@@ -151,3 +151,30 @@ def test_side_table_names_false_failure_refunds_and_the_service_fraction(report)
     # external review round 6: the refund fields count refunds on failed audits of honest play, not all refunds
     side = T.q1_side(report)
     assert "False-fail refunds (focal)" in side and "Service fraction" in side and "Served share" not in side
+
+
+def _elig():
+    st = lambda n, q, d: {"numerical": n, "q3": q, "descriptive": d}
+    return {"tally": {"numerical": {"fulfilled": 10, "failed": 8, "not assessed": 0},
+                      "q3": {"fulfilled": 7, "failed": 8, "not assessed": 3},
+                      "descriptive": {"fulfilled": 6, "failed": 5, "not assessed": 7}},
+            "targets": {"Q3-b": {"decision": False, "status": st("fulfilled", "not assessed", "not assessed")},
+                        "Q2-b": {"decision": False, "status": st("failed", "failed", "not assessed")},
+                        "Q3-c": {"decision": False, "status": st("failed", "failed", "failed")}}}
+
+
+def test_prediction_rows_mark_the_targets_a_stricter_eligibility_reading_changes():
+    # external review round 7: Q3-b is not assessed under both stricter readings, Q2-b only under the descriptive one
+    sc = {k: {"status": v["status"]["numerical"], "cells": []} for k, v in _elig()["targets"].items()}
+    a, b = T.predictions(sc, ids=("Q2",), elig=_elig()), T.predictions(sc, ids=("Q3",), elig=_elig())
+    assert _row(b, "Q3-b").split("&")[2].strip() == "fulfilled$^{\\dagger}$"
+    assert _row(a, "Q2-b").split("&")[2].strip() == "failed$^{\\ddagger}$"
+    assert _row(b, "Q3-c").split("&")[2].strip() == "failed"
+    assert T.predictions(sc, ids=("Q3",)) == T.predictions(sc, ids=("Q3",), elig=None)      # no map, no marks
+
+
+def test_eligibility_table_gives_each_reading_its_tally_and_changed_predictions():
+    tex = T.eligibility(_elig())
+    assert "Numerical (as scored) & 10 & 8 & 0" in tex and "& 7 & 8 & 3 &" in tex and "& 6 & 5 & 7 &" in tex
+    assert "Q3-b" in _row(tex, "Flagged inputs, Q3") and "Q2-b" not in _row(tex, "Flagged inputs, Q3")
+    assert "Q2-b" in _row(tex, "Flagged inputs, every descriptive")
