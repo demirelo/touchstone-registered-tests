@@ -72,10 +72,11 @@ def q1_side(r: dict) -> str:
                                            "False-fail refunds (others)", "Service fraction"], rows)
 
 
-def q4(r: dict) -> str:
+def q4(r: dict, addendum: dict | None = None) -> str:
     """The stored p_gain and p_eff are the raw one-sided bootstrap p-values; q4.p holds the calibrated market maxima that
     enter Holm over six slots (sim.decisions_v2.q4_markets). Printed: raw values, the market maximum, and its Holm-adjusted value."""
     q = r["q4"]; rows = []; adj = holm_adjusted(q["p"]) if q.get("p") else [None] * len(FRESH)
+    inh = (addendum or {}).get("search_dependencies", {}).get("q4", {})       # flags inherited through references (addendum)
     for i, m in enumerate(FRESH):
         x = q["markets"][m]
         if isinstance(x, str):
@@ -83,7 +84,7 @@ def q4(r: dict) -> str:
         dec = "pass" if m in q.get("passing", []) else "fail" if m in q.get("failing", []) else "not decided"
         rows.append((m, [num(x["gain_diff"]), num(x["gain_diff_lower"]), num(x["eff"]), num(x["eff_lower"]), _fmt_p(x["p_gain"]),
                          _fmt_p(x["p_eff"]), _fmt_p(q["p"][i] if q.get("p") else None), _fmt_p(adj[i]),
-                         dec + (" (search flagged)" if x.get("search") else "")]))
+                         dec + (" (search flagged)" if x.get("search") else " (inherited flag)" if inh.get(m, {}).get("new_qualification") else "")]))
     return tabular("lrrrrrrrrl", ["Market", "F000$-$F111", "Lower", "F111 eff.", "Lower", "Raw $p_{\\mathrm{gain}}$", "Raw $p_{\\mathrm{eff}}$",
                                   "Market $p'$", "Holm-adj.", "Decision"], rows)
 
@@ -224,8 +225,8 @@ def predictions(sc: dict, st: dict | None = None, ids: tuple | None = None, elig
     return tabular("lp{0.36\\linewidth}lp{0.34\\linewidth}", ["Prediction", "Registered statement", "Status", "Scored cells"], rows)
 
 
-def all_tables(r: dict) -> dict:
-    return {"q1": q1(r), "q1_side": q1_side(r), "q4": q4(r), "q2_d2h3": q2(r, "D2+H3"), "q2_x7sc": q2(r, "X7-SC"), "envelope": envelope(r),
+def all_tables(r: dict, addendum: dict | None = None) -> dict:
+    return {"q1": q1(r), "q1_side": q1_side(r), "q4": q4(r, addendum), "q2_d2h3": q2(r, "D2+H3"), "q2_x7sc": q2(r, "X7-SC"), "envelope": envelope(r),
             "welfare": welfare(r), "coalitions": coalitions(r), "repair": repair(r)}
 
 
@@ -235,7 +236,8 @@ def main(argv=None) -> int:
     g = ap.add_mutually_exclusive_group(required=True); g.add_argument("--write", action="store_true"); g.add_argument("--check", action="store_true")
     ap.add_argument("--scoring", help="score_v2.py output; adds tables/predictions.tex")
     ap.add_argument("--eligibility", help="score_v2.py eligibility map; marks the prediction tables, adds tables/pred_eligibility.tex")
-    a = ap.parse_args(argv); tabs = all_tables(json.loads(Path(a.report).read_text())); d = Path(a.dir)
+    a = ap.parse_args(argv); add_p = Path(a.report).with_name("addendum.json")             # the addendum beside the report
+    tabs = all_tables(json.loads(Path(a.report).read_text()), json.loads(add_p.read_text()) if add_p.exists() else None); d = Path(a.dir)
     ap_md = Path(__file__).resolve().parent.parent / "predictions-v2.md"
     if a.scoring:
         sc, st = json.loads(Path(a.scoring).read_text()), (statements(ap_md.read_text()) if ap_md.exists() else None)

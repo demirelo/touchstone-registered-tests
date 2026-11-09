@@ -148,3 +148,52 @@ def test_welfare_table_adds_the_training_feasible_row_beside_the_failed_one():
     t = P.tables(res)["welfare_mix"]
     assert "D2+H3 & 0.4800" in t and "D2+H3, training-feasible & 0.4765" in t       # the failed row stays
     assert "0.0000475" in t and "0.000931" in t and "0.9224" in t
+
+
+def _report_doubling(cells):
+    return {"doubling": {rid: {"heldout": {"gain": g, "seeds": [1, 2]}} for rid, g in cells.items()}}
+
+
+def test_doubled_winners_pair_the_heldout_gains_against_the_frozen_search(tmp_path):
+    # external review round 9: the doubled-search winners, evaluated on the same seeds, beside the frozen searches
+    for rule, g in (("C*", [0.10, 0.12]), ("F111", [0.14, 0.16]), ("F000", [0.40, 0.42])):
+        _rec(tmp_path, f"m0@rho0.2|{rule}|D2+H3|profit", gain=g, seeds=[1, 2])
+    rep = _report_doubling({"m0@rho0.2|C*|D2+H3|profit": [0.20, 0.22], "m0@rho0.2|F111|D2+H3|profit": [0.14, 0.16],
+                            "m0@rho0.2|F000|D2+H3|profit": [0.40, 0.42]})
+    got = P.doubled(tmp_path, rep, ["m0"], fams=("D2+H3",))
+    row = got["D2+H3"]["markets"]["m0"]
+    assert row["q1_frozen"] == pytest.approx(-0.04) and row["q1_doubled"] == pytest.approx(0.06)       # C* - F111 changes sign
+    assert row["q4_frozen"] == pytest.approx(0.26) and row["q4_doubled"] == pytest.approx(0.26)         # F000 - F111
+    assert got["D2+H3"]["pooled"]["q1_doubled"] == pytest.approx(0.06)
+    assert got["D2+H3"]["absolute"] == {"C*": {"mean_gain": pytest.approx(0.11)}, "F111": {"mean_gain": pytest.approx(0.15)}}
+
+
+def test_doubled_refuses_a_heldout_evaluation_on_other_seeds(tmp_path):
+    for rule in ("C*", "F111", "F000"):
+        _rec(tmp_path, f"m0@rho0.2|{rule}|D2+H3|profit", gain=[0.1, 0.1], seeds=[1, 2])
+    rep = _report_doubling({f"m0@rho0.2|{r}|D2+H3|profit": [0.1, 0.1] for r in ("C*", "F111", "F000")})
+    rep["doubling"]["m0@rho0.2|C*|D2+H3|profit"]["heldout"]["seeds"] = [3, 4]
+    with pytest.raises(ValueError):
+        P.doubled(tmp_path, rep, ["m0"], fams=("D2+H3",))
+
+
+def test_honest_profile_keeps_unrounded_values_and_the_r3_minus_cstar_difference():
+    bins = lambda a, p: [{"age": [0, 10], "audited_share": a, "profit_per_round": p, "false_refund": 1e-5},
+                         {"age": [10, 20], "audited_share": a / 2, "profit_per_round": p, "false_refund": 1e-5}]
+    rep = {"q3": {"diagnostic": {"F111": {"replace_at": 50, "bins": bins(1.0, 0.000280)},
+                                 "C*": {"replace_at": 50, "bins": bins(0.4, 0.000286)},
+                                 "F000": {"replace_at": 50, "bins": bins(0.25, 0.000287)}}}}
+    got = P.honest(rep)
+    assert got["F111"]["bins"][0]["audited_share"] == 1.0 and got["F111"]["mean_profit_per_round"] == pytest.approx(0.000280)
+    assert got["r3_minus_cstar_profit_per_round"] == pytest.approx(-0.000006)
+
+
+def test_tables_show_doubled_winners_and_the_honest_profile():
+    res = {"q1_split": {}, "welfare": {}, "q4_diag": {}, "stability": {"q1": {}},
+           "doubled": {"D2+H3": {"markets": {"fresh3": {"q1_frozen": -0.0382, "q1_doubled": 0.0149, "q4_frozen": 0.2626, "q4_doubled": 0.2600}}},
+                       "X7-SC": {"markets": {"fresh3": {"q1_frozen": 0.01, "q1_doubled": 0.01}}}},
+           "honest": {r: {"bins": [{"age": [0, 10], "audited_share": a, "profit_per_round": 0.00028, "false_refund": 2e-5}] * 3,
+                          "mean_profit_per_round": 0.00028, "mean_false_refund": 2e-5} for r, a in (("F000", 0.25), ("F111", 1.0), ("C*", 0.428))}}
+    t = P.tables(res)
+    assert "fresh3 & $-0.038$ & $0.015$ & $0.010$ & $0.010$ & $0.263$ & $0.260$" in t["doubled"]
+    assert "C* & 0.428" in t["honest"] and "R3 (F111) & 1.000" in t["honest"] and "2.80" in t["honest"] and "2.00" in t["honest"]

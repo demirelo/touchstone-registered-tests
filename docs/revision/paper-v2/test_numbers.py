@@ -365,3 +365,12 @@ def test_count_kind_accepts_the_prediction_tallies_but_not_a_float():
     # external review round 7: section 9 prints the prediction tally under each eligibility reading (score_v2.py map)
     assert N.KINDS["count"]("fulfilled", 10) and N.KINDS["count"]("not assessed", 3) and N.KINDS["count"]("k", 3)
     assert not N.KINDS["count"]("failed", 8.0) and not N.KINDS["count"]("estimate", 3)
+
+
+def test_gain_and_share_kinds_accept_the_round9_analyses_only():
+    # external review round 9: doubled-search winners (q1/q4 frozen and doubled, pooled absolute gains) and the honest
+    # replacement's audited share enter the prose through these leaves
+    for leaf in ("q1_frozen", "q1_doubled", "q4_frozen", "q4_doubled", "mean_gain"):
+        assert N.KINDS["gain"](leaf, 0.02)
+    assert N.KINDS["share"]("audited_share", 0.917) and not N.KINDS["share"]("audited_share", 1.2)
+    assert not N.KINDS["share"]("efficiency", 0.9) and not N.KINDS["gain"]("audited_share", 0.5)

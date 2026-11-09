@@ -189,3 +189,11 @@ def test_eligibility_table_adds_the_direct_input_tallies_when_the_map_has_them()
     tex = T.eligibility(e)
     assert _row(tex, "Flagged direct inputs only, Q3").split("&")[1:4] == [" 7 ", " 8 ", " 3 "]
     assert _row(tex, "Flagged direct inputs only, all non-exempt cells").split("&")[1:4] == [" 6 ", " 5 ", " 7 "]
+
+
+def test_q4_decision_marks_an_inherited_flag_from_the_addendum(report):
+    # external review round 9: a pass whose reference inherits a flag must say so in its row, not only in the caption
+    m = next(k for k in report["q4"]["markets"] if isinstance(report["q4"]["markets"][k], dict) and not report["q4"]["markets"][k].get("search"))
+    add = {"search_dependencies": {"q4": {m: {"depends_on_flagged": ["x"], "new_qualification": True}}}}
+    assert "inherited flag" not in _row(T.q4(report), m)
+    assert "(inherited flag)" in _row(T.q4(report, add), m)

@@ -212,6 +212,44 @@ def welfare_mixtures(out, rule: str) -> dict:
     return res
 
 
+def doubled(out, report: dict, markets, fams=("D2+H3", "X7-SC")) -> dict:
+    """External review round 9: per market, C* - F111 (Q1) and F000 - F111 (Q4, D2+H3 only) with the frozen search winners
+    and with the doubled-search winners (report doubling[...].heldout), both evaluated on the same seeds against the same
+    frozen reference; plus the frozen pooled absolute gains. Descriptive; no decision changes."""
+    res = {}
+    for fam in fams:
+        rows, absg = {}, {"C*": [], "F111": []}
+        for m in markets:
+            fz, db = {}, {}
+            for rule in ("C*", "F111", "F000"):
+                rid = f"{m}@rho0.2|{rule}|{fam}|profit"; r = _rec(out, rid); h = report.get("doubling", {}).get(rid)
+                if r is None or h is None:
+                    continue
+                if list(h["heldout"]["seeds"]) != list(r["seeds"]):
+                    raise ValueError(f"doubled winner of {rid} evaluated on other seeds")
+                fz[rule], db[rule] = float(np.mean(r["gain"])), float(np.mean(h["heldout"]["gain"]))
+            if "C*" not in fz or "F111" not in fz:
+                continue
+            row = {"q1_frozen": fz["C*"] - fz["F111"], "q1_doubled": db["C*"] - db["F111"]}
+            if fam == "D2+H3" and "F000" in fz:
+                row.update(q4_frozen=fz["F000"] - fz["F111"], q4_doubled=db["F000"] - db["F111"])
+            rows[m] = row; absg["C*"].append(fz["C*"]); absg["F111"].append(fz["F111"])
+        keys = sorted({k for v in rows.values() for k in v})
+        res[fam] = {"markets": rows, "pooled": {k: float(np.mean([v[k] for v in rows.values() if k in v])) for k in keys},
+                    "absolute": {k: {"mean_gain": float(np.mean(v))} for k, v in absg.items()}}
+    return res
+
+
+def honest(report: dict) -> dict:
+    """Design 6.7 honest-replacement profile (report q3.diagnostic), unrounded: per age bin of an honest provider's replacement
+    identity, the audited share of its served jobs, its profit per round and its false-failure refunds (both / (S*/N))."""
+    d = report["q3"]["diagnostic"]
+    res = {r: {"bins": v["bins"], "mean_profit_per_round": float(np.mean([b["profit_per_round"] for b in v["bins"]])),
+               "mean_false_refund": float(np.mean([b["false_refund"] for b in v["bins"]]))} for r, v in d.items()}
+    res["r3_minus_cstar_profit_per_round"] = res["F111"]["mean_profit_per_round"] - res["C*"]["mean_profit_per_round"]
+    return res
+
+
 def q4_diagnostics(out) -> dict:
     res = {}
     for m in FRESH:
@@ -295,6 +333,22 @@ def tables(res: dict) -> dict:
     rows = [f"{k} & {_f(v['estimate_report'], 4)} & {_f(v['estimate_registered_cfg'], 4)} & {v['category_registered_cfg']} \\\\" for k, v in res["stability"]["q1"].items()]
     t["stability"] = ("\\begin{tabular}{@{}lrrl@{}}\\toprule\nQ1 test & $d$, report & $d$, registered configs & Category, registered configs \\\\\\midrule\n"
                       + "\n".join(rows) + "\n\\bottomrule\\end{tabular}\n")
+    if "doubled" in res:
+        sg = lambda x: f"${x:.3f}$".replace("$-", "$-") if x is not None else "--"
+        rows = []
+        for m in res["doubled"]["D2+H3"]["markets"]:
+            a, b = res["doubled"]["D2+H3"]["markets"][m], res["doubled"].get("X7-SC", {}).get("markets", {}).get(m, {})
+            rows.append(f"{m} & {sg(a['q1_frozen'])} & {sg(a['q1_doubled'])} & {sg(b.get('q1_frozen'))} & {sg(b.get('q1_doubled'))} & "
+                        f"{sg(a.get('q4_frozen'))} & {sg(a.get('q4_doubled'))} \\\\")
+        t["doubled"] = ("\\begin{tabular}{@{}lrrrrrr@{}}\\toprule\n & \\multicolumn{2}{c}{C*$-$R3, D2+H3} & \\multicolumn{2}{c}{C*$-$R3, X7-SC} & \\multicolumn{2}{c}{B3$-$R3, D2+H3} \\\\\n"
+                        "Market & Frozen & Doubled & Frozen & Doubled & Frozen & Doubled \\\\\\midrule\n" + "\n".join(rows) + "\n\\bottomrule\\end{tabular}\n")
+    if "honest" in res:
+        rows = []
+        for r in ("F000", "F111", "C*"):
+            v = res["honest"][r]; b = v["bins"]
+            rows.append(f"{ {"F000": "B3 (F000)", "F111": "R3 (F111)"}.get(r, r)} & " + " & ".join(f"{x["audited_share"]:.3f}" for x in b[:3]) + f" & {v['mean_profit_per_round'] * 1e4:.2f} & {v['mean_false_refund'] * 1e5:.2f} \\\\")
+        t["honest"] = ("\\begin{tabular}{@{}lrrrrr@{}}\\toprule\n & \\multicolumn{3}{c}{Audited share, by age} & Profit per round & False refunds \\\\\n"
+                       "Rule & 0--10 & 10--20 & 20--30 & ($\\times 10^{-4}$) & ($\\times 10^{-5}$) \\\\\\midrule\n" + "\n".join(rows) + "\n\\bottomrule\\end{tabular}\n")
     return t
 
 
@@ -307,7 +361,8 @@ def main(argv=None) -> int:
     res = {"label": "exploratory, after the report; not registered",
            "q1_split": {f: split(out, FRESH, "C*", "F111", f) for f in ("D2+H3", "X7-SC")},
            "welfare": {r: welfare_mixtures(out, r) for r in ("F000", "F111", "C*")},
-           "q4_diag": q4_diagnostics(out), "stability": stability(report, stab)}
+           "q4_diag": q4_diagnostics(out), "stability": stability(report, stab),
+           "doubled": doubled(out, report, FRESH), "honest": honest(report)}
     Path(a.out).write_text(json.dumps(res, indent=1) + "\n")
     import csv
     seeds = [row for r in ("F000", "F111", "C*") for row in seed_rows(out, r)]
