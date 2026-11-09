@@ -1,0 +1,12 @@
+VERDICT: reject
+
+CORRECTIONS:
+1. **§1:** All four gain pairs, increments, paired SEs, 200-seed matches, and reference hashes check out. Change B2’s flag entry to “not scheduled.” Its absence from `search_flagged` does not establish search adequacy.
+2. **§§1–2, estimand:** D2 validly disables replacement within this family; frozen references cancel in the gain difference. However, D2 and D2+H3 use different search dimensions, Sobol starts, and corner sets (128 versus 256). Describe I as a difference between finite-search policy selections, conditional on fixed references—not an identified optimal replacement value. Negative I can reflect search error.
+3. **§§2, 7; `sim/manifest_v2.py:122`, `scripts/revision_v2.py:747`:** “Only a new manifest” is insufficient as specified. The manifest path is fixed; cuts=3 removes fresh D2 extras; doubling dispatch hard-codes fresh `matched` cells; existing freezes omit the new records and will fail acceptance. Specify a supplementary execution/freeze procedure, preserve original reference hashes, and verify matching Linux configuration hashes under the recorded calibration deviation.
+4. **§§3–4:** Specify the interval algorithm, market-stratified pooling, and pairing across rules. Define pooled share as a ratio of pooled contrasts. Predefine treatment of zero, near-zero, or negative denominators; report absolute contrasts alongside shares. These markets, evaluation seeds, and D2+H3 outcomes were already observed: label this a descriptive follow-up, not an independent fresh-market replication.
+5. **§5:** Remove the proposed failure conclusion. Failure of any expectation does not establish that non-replacement behavior explains most gain. Restrict successful claims to the tested family, markets, and search budgets; distinguish mixed outcomes.
+6. **§6:** Base arithmetic gives 38.88 units for A and 97.2 additional units for B, before separately priced doubled-winner evaluations. USD 39.449 matches the ledger, but 696 units describes the uncut design; actual execution used cuts=3. Reprice from measured task timings and deployment overhead. State required changes to existing budget caps.
+7. **§§3, 7:** Add selected `x`, reset counts per episode, probability of any reset, reset timing, and ban exposure for base and doubled winners. Confirm D2 has zero resets.
+
+CONFIDENCE: 0.97.
