@@ -27,6 +27,6 @@ revised draft (`main.pdf`, 29 pages).
 8. **Exemptions (problem 8).** Unchanged in this revision; the caption already names the six exemptions. Your 1/2/15
    sensitivity is noted for the supplement.
 9. **Related work.** Gilpatric, Vossler and Liu (2015) is cited and contrasted (compliance rank versus identity age).
-10. **Table 8.** The decision column now marks the inherited flags of fresh0 and fresh3.
+10. **Table 10 (tab:q4).** The decision column now marks the inherited flags of fresh0 and fresh3.
 
 Not done: the venue cut (supplement split and new figures), and the compute experiments.
