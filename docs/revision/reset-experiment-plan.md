@@ -1,4 +1,4 @@
-# Reset experiment: plan (draft 4, 2026-11-09; internal consensus; not approved; no spend)
+# Reset experiment: plan (draft 4, 2026-11-09; internal consensus; approved by the author, cap 10 USD; no spend yet)
 
 **Why.** The round-9 fresh reviewer (problem 2, `docs/paper/external-review-r9.md`): the gain is excess profit when
 identity replacement is available; it does not show how much of that profit comes from the ability to replace an
@@ -143,20 +143,23 @@ uses the larger.
 
 | Item | Estimate | Cap |
 |---|---:|---:|
-| Option A: 18 D2 cells, doubling checks, diagnostics | 1.66 to 2.10 USD | **3.00 USD** |
+| Option A: 18 D2 cells, doubling checks, diagnostics | 1.66 to 2.10 USD | **10.00 USD** (author, 2026-11-09) |
 
 A failed attempt counts toward the cap; the cap leaves room for one early failure, not for a full second run. Option B (an X7-SC variant with replacement disabled) is dropped from this plan: its
 constrained family, incumbents, and corner controls would need their own specification (the frozen X7-SC search inserts
 D2+H3 incumbents that can replace), so it is not offered for approval.
 
-**Budget.** `docs/revision/budget-ledger.json`: spent 50.869 USD of the 55 USD approval limit (headroom 4.131); evaluation
-39.449 of its 43 USD cap (headroom 3.551). The 3.00 USD cap fits both, but this is new work: it needs its own approval
-sentence, recorded verbatim, and a new ledger category `followup` with cap 3.00. Stop at the cap.
+**Budget.** `docs/revision/budget-ledger.json`: spent 50.869 USD of the 55 USD approval limit. The author approved option A
+on the board on 2026-11-09 and set the cap to 10 USD ("make the cap $10 to ensure we're not blocked by a low cap"). The
+ledger needs a new category `followup` with cap 10.00 (a tested change to `scripts/budget_v2.py`) and the approval limit
+raised to 61 USD (50.869 + 10 = 60.869, `python3 -c "print(50.869+10)"`), recorded by the author with
+`budget_v2.py --approve`. The estimate is unchanged (1.66 to 2.10 USD); the higher cap only prevents a stop from a low
+cap. Stop at the cap.
 
 ## 8. Steps
 
 1. Internal review of this plan to consensus; freeze it (commit).
-2. Decision card: run option A (recommended), or no run.
+2. Decision card: approved on 2026-11-09, cap 10 USD (card `touchstone-reset-spend`).
 3. On approval: write and test the driver (TDD), run validation (a) and (b) on the Mac (free); then one pod for the 18
    cells, deleted and verified after the run.
 4. Analysis: a new `reset` block in `posthoc_v2.py` (tested first), a table, and a paragraph in section 9 with sites; the
