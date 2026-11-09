@@ -184,7 +184,7 @@ def statements(md: str) -> dict:
 
 
 def _mark(pid: str, elig: dict | None) -> str:
-    """Dagger: not assessed under both stricter eligibility readings; double dagger: only under the descriptive one."""
+    """Dagger: not assessed under both stricter eligibility readings; double dagger: only under the broader one."""
     s = ((elig or {}).get("targets", {}).get(pid) or {}).get("status")
     if not s or s["numerical"] == "not assessed":
         return ""

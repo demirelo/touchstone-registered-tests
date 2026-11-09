@@ -164,7 +164,7 @@ def _elig():
 
 
 def test_prediction_rows_mark_the_targets_a_stricter_eligibility_reading_changes():
-    # external review round 7: Q3-b is not assessed under both stricter readings, Q2-b only under the descriptive one
+    # external review round 7: Q3-b is not assessed under both stricter readings, Q2-b only under the broader one
     sc = {k: {"status": v["status"]["numerical"], "cells": []} for k, v in _elig()["targets"].items()}
     a, b = T.predictions(sc, ids=("Q2",), elig=_elig()), T.predictions(sc, ids=("Q3",), elig=_elig())
     assert _row(b, "Q3-b").split("&")[2].strip() == "fulfilled$^{\\dagger}$"
