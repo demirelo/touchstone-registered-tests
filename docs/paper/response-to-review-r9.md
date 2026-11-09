@@ -10,7 +10,7 @@ revised draft (`main.pdf`, 29 pages).
    changes from -0.038 to 0.015 and the pooled differences become 0.030 (D2+H3) and 0.024 (X7-SC); no decision is
    recomputed. Your values match ours.
 2. **Value of replacement (problem 2).** The caveat now sits at the first definition of the gain (Section 3). The
-   reset-on versus reset-off experiment needs compute; it is offered to the author as a decision, not done.
+   reset-on versus reset-off experiment needs compute; the author decided to skip it for the WEIS version and revisit it for an AAMAS version.
 3. **Margin and comparator (problem 3).** Section 9 prints the absolute mean gains (0.086 and 0.065 under D2+H3; 0.091
    and 0.067 under X7-SC), ties "material" to the registered margin and says the margin is not a buyer-indifference
    estimate. Section 4 names the selection objective and the runner-up.
