@@ -14,7 +14,7 @@ First, list which files you could open and read. If a file did not open, say so 
 ## Materials (attached separately)
 
 1. `PROMPT.md`: this prompt.
-2. `main.pdf`: the paper (28 pages).
+2. `main.pdf`: the paper (27 pages).
 3. Registration: `protocol-v2.yaml` (the locked protocol), `predictions-v2.md` (registered predictions and the scoring
    rubric), `revision-program-design.md` (design; section 9 gives estimands, decision rules, and scope).
 4. Outputs of the tagged code: `report.md` (the report the frozen code wrote; large), `addendum.md` (labels and
@@ -45,7 +45,7 @@ First, list which files you could open and read. If a file did not open, say so 
    based spot-checking, BOINC adaptive replication, cheap pseudonyms, audit games, costly verification)? Name missing
    prior work only if you can give a real, verifiable citation (DOI or stable URL); say so if you are unsure.
 6. **Presentation.** Is the paper readable for the target venue? Say what to cut, move to a supplement, or rewrite,
-   and where a reader would get lost. The paper is long (28 pages, many tables); say what a venue version should keep.
+   and where a reader would get lost. The paper is long (27 pages, many tables); say what a venue version should keep.
 7. **Decision.** Give a score and an acceptance probability for each venue: WEIS 2027, AAMAS (main track), and ACM EC.
    For each, give your confidence and the single change that would move the score most.
 
