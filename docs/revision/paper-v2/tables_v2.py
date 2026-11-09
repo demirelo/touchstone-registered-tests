@@ -191,7 +191,7 @@ def _mark(pid: str, elig: dict | None) -> str:
     return "$^{\\dagger}$" if s["q3"] == "not assessed" else "$^{\\ddagger}$" if s["descriptive"] == "not assessed" else ""
 
 
-READINGS = (("numerical", "Numerical (as scored)"), ("q3", "Flagged inputs, Q3"), ("descriptive", "Flagged inputs, every descriptive"))
+READINGS = (("numerical", "Numerical (as scored)"), ("q3", "Flagged inputs, Q3"), ("descriptive", "Flagged inputs, all non-exempt cells"))
 
 
 def eligibility(elig: dict) -> str:
@@ -202,6 +202,11 @@ def eligibility(elig: dict) -> str:
         t = elig["tally"][key]
         ch = [pid for pid, v in sorted(elig["targets"].items()) if v["status"][key] == "not assessed" != v["status"]["numerical"]]
         rows.append((label, [str(t["fulfilled"]), str(t["failed"]), str(t["not assessed"]), ", ".join(ch) or "none"]))
+    for key, label in READINGS[1:]:                       # the same filters on the listed inputs only, without tracing
+        t = elig.get("tally_direct_inputs", {}).get(key)
+        if t:
+            rows.append((label.replace("Flagged inputs", "Flagged direct inputs only"),
+                         [str(t["fulfilled"]), str(t["failed"]), str(t["not assessed"]), "--"]))
     return tabular("lrrrl", ["Reading", "Fulfilled", "Failed", "Not assessed", "Not assessed under this reading"], rows)
 
 

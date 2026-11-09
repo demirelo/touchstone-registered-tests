@@ -177,4 +177,15 @@ def test_eligibility_table_gives_each_reading_its_tally_and_changed_predictions(
     tex = T.eligibility(_elig())
     assert "Numerical (as scored) & 10 & 8 & 0" in tex and "& 7 & 8 & 3 &" in tex and "& 6 & 5 & 7 &" in tex
     assert "Q3-b" in _row(tex, "Flagged inputs, Q3") and "Q2-b" not in _row(tex, "Flagged inputs, Q3")
-    assert "Q2-b" in _row(tex, "Flagged inputs, every descriptive")
+    assert "Q2-b" in _row(tex, "Flagged inputs, all non-exempt cells")
+
+
+def test_eligibility_table_adds_the_direct_input_tallies_when_the_map_has_them():
+    # external review round 8: Table 21 should carry both direct-input tallies (7/8/3 and 6/5/7 in the real map)
+    e = _elig()
+    assert "direct inputs" not in T.eligibility(e)                # an old map without them: no extra rows
+    e["tally_direct_inputs"] = {"q3": {"fulfilled": 7, "failed": 8, "not assessed": 3},
+                                "descriptive": {"fulfilled": 6, "failed": 5, "not assessed": 7}}
+    tex = T.eligibility(e)
+    assert _row(tex, "Flagged direct inputs only, Q3").split("&")[1:4] == [" 7 ", " 8 ", " 3 "]
+    assert _row(tex, "Flagged direct inputs only, all non-exempt cells").split("&")[1:4] == [" 6 ", " 5 ", " 7 "]

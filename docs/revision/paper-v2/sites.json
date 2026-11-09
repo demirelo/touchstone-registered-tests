@@ -543,5 +543,20 @@
   "path": "eligibility.tally_direct_inputs.q3.not assessed",
   "kind": "count",
   "section": "results"
+ },
+ "r_pred_dd_ful": {
+  "path": "eligibility.tally_direct_inputs.descriptive.fulfilled",
+  "kind": "count",
+  "section": "results"
+ },
+ "r_pred_dd_fail": {
+  "path": "eligibility.tally_direct_inputs.descriptive.failed",
+  "kind": "count",
+  "section": "results"
+ },
+ "r_pred_dd_na": {
+  "path": "eligibility.tally_direct_inputs.descriptive.not assessed",
+  "kind": "count",
+  "section": "results"
  }
 }
