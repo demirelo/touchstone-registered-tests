@@ -18,7 +18,7 @@ revised draft (`main.pdf`, 29 pages).
    per-market estimates appear in Figure 1 and the new doubled table.
 5. **Lottery (problem 5).** Section 9 now points to the fixed interior weights of Table `tab:ph-welfare-sens`.
 6. **Audit dues (problem 6).** Section 1 now says the lemma bounds audit exposure, not a monetary charge, and that the
-   bound can be zero. New Table `tab:ph-honest` gives the registered honest-replacement diagnostic unrounded (audited
+   bound can be zero. New Table `tab:ph-honest` gives the registered honest-replacement diagnostic, computed from unrounded report values (audited
    share 1.000 / 0.917 under R3, 0.428 / 0.161 under C*, 0.250 under B3; profit per round and false refunds), and Section 9
    states the burden. The Lemma proof now uses i.i.d. continuous keys (exchangeability).
 7. **Corollary (problem 7).** The statement adds the second condition (every post-failure continuation is available
