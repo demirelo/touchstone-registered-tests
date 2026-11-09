@@ -1,10 +1,10 @@
-# Reset experiment: plan (draft 3, 2026-11-09; not approved; no spend)
+# Reset experiment: plan (draft 4, 2026-11-09; internal consensus; not approved; no spend)
 
 **Why.** The round-9 fresh reviewer (problem 2, `docs/paper/external-review-r9.md`): the gain is excess profit when
 identity replacement is available; it does not show how much of that profit comes from the ability to replace an
 identity. This plan measures that, within the searched D2 family, on the second test's markets.
 
-**Status.** Draft 3 answers internal review rounds 1 and 2 (`docs/revision/roster/{sol,astra}-reset-plan-r{1,2}.md`).
+**Status.** Draft 4 applies the round-3 caveats (`docs/revision/roster/{sol,astra}-reset-plan-r{1,2,3}.md`; round 3: both accept-with-caveat).
 After consensus: a decision card for the author. Nothing runs before the author approves the spend. This file is frozen
 (commit hash in the operations ledger) before any paid cell starts.
 
@@ -63,6 +63,12 @@ re-optimisation.
   and search records, with their hashes (the frozen evaluation stage requires it). Evaluation and doubling then run
   against that freeze, and a final inventory lists every output record with its hash. The inventory is written after
   the outputs, so no record hashes itself.
+- **Freeze validator.** The frozen `run()` calls `accept()`, which requires the original manifest's full record set, so it
+  cannot admit the 18 restored cells. The driver therefore has its own acceptance check, run before evaluation and before
+  doubling: every record of the follow-up dependency set (the copied inputs, the 18 search records, the pre-evaluation
+  freeze) exists and matches its hash; the identity-salt hash matches; each new job's configuration hash equals the
+  recorded container hash. Copied records keep their original provenance, including their recorded configuration
+  hashes. Tests: it refuses a missing freeze, a changed selected-policy record, a changed salt, and a changed copied input.
 - **References in doubling.** The held-out gain of a doubled winner uses the unchanged frozen reference. Any reference
   reselection the doubling stage computes is recorded as a diagnostic only.
 - **References.** The existing frozen reference records are read, not re-selected; the driver refuses to start if any
@@ -74,15 +80,18 @@ re-optimisation.
 - **Validation before spend (free, on the Mac).** (a) The driver reproduces the registered `headline@rho0.2|F111|D2`
   search and evaluation: identical selected knobs and per-seed gains. If not identical, stop and report. (b) An
   integration test runs the complete path (input copies, search, pre-evaluation freeze, evaluation, doubling, inventory)
-  for one fresh-market cell at smoke size, which proves every dependency resolves. (c) Unit tests: the driver refuses a
+  for one fresh-market cell at smoke size, including the driver's acceptance check, which proves every dependency
+  resolves. (c) Unit tests: the driver refuses a
   changed reference hash, a missing input record, a wrong configuration hash, and an output directory inside `eval/all`.
 
 ## 4. Diagnostics (evaluation only, no search)
 
-For the base and doubled D2+H3 winners and the D2 winners, on all seven markets where they exist, on the 200 evaluation
-seeds: the selected `x`; per episode the number of resets, the probability of at least one reset, the rounds of resets,
-and the rounds spent banned. Check that every D2 winner has zero resets. **Fixed-policy switch:** each D2+H3 winner
-re-evaluated with `x` set to 0 and every other knob unchanged; g(winner) - g(winner, x = 0) is the effect of the switch
+For three rules on seven markets: the base and doubled D2+H3 winners (42 policies) and the base D2 winners (21; the doubled
+D2 winners are not included), on the 200 evaluation seeds, re-run with reset and ban instrumentation (63 single-policy
+evaluations; the existing gain records carry no reset counts, so none is reused); the selected `x`; per episode the number of resets, the probability of at least one reset, the rounds of resets,
+and the rounds spent banned. Check that every D2 winner has zero resets. **Fixed-policy switch:** each of the 42 D2+H3
+winners re-evaluated with `x` set to 0 and every other knob unchanged (42 more; a winner that already has `x = 0` is
+reported as identical and not re-run); g(winner) - g(winner, x = 0) is the effect of the switch
 without re-optimisation, reported beside I.
 
 ## 5. Analysis (fixed now)
@@ -107,29 +116,34 @@ Written before any fresh D2 result exists. **The six markets, their seeds, and t
 only the D2 outcomes are unseen.** This is a descriptive follow-up specified on 2026-11-09 after the round-9 review and
 after the headline contrast was seen, not an independent replication.
 
-Expectations: on each fresh market, I(B3) > I(R3) and I(C*) > I(R3); pooled S defined and at least 0.5. Each expectation is
+Expectations: on each fresh market, I(B3) > I(R3) and I(C*) > I(R3); pooled S defined and greater than 0.5. Expectations are
+scored on point estimates (this is a descriptive follow-up; "met" does not mean that an interval excludes the threshold),
+with the denominator gate of section 5 applied separately to the base and the doubled results. Each expectation is
 scored as met, failed, or not established: **met** if it holds under both the base and the doubled searches; **failed** if
 it fails under both; **not established (search-sensitive)** if the two disagree. An undefined S and a missing cell are
 reported as such, separately from failures. A failure is not read as evidence for any particular cause (search error and
 mixed outcomes are possible). Only if the pooled-S expectation is met may the paper say: within the D2 family, at the
-fixed parameters and search budgets, most of the B3 - R3 gap under the prescribed searches disappears when the attacker
-cannot replace its identity.
+fixed parameters and search budgets, most of the estimated B3 - R3 gap under the prescribed searches disappears when the
+attacker cannot replace its identity.
 
 ## 7. Cost
 
 **Work.** Measured benchmark (`experiments/v2/benchmark/timings.json`): one unit = a headline D2+H3 cell, 0.579
 core-hours. Per D2 cell: 1 unit + 160 further seeds (0.046) + doubling with held-out evaluation (0.479); 18 cells = 27.45
-units; the section-4 diagnostics are evaluation only (about 70 evaluations of 200 episodes, about 1 unit). Total about
-28.5 units = **16.5 core-hours**.
+units. Diagnostics: 63 instrumented evaluations + up to 42 switch evaluations = up to 105 single-policy evaluations of
+200 episodes, priced conservatively at the profit-evaluation stage's cost for 200 seeds (0.058 units each, although that
+stage evaluates more than one profile) = about 6.1 units. Total about 33.6 units = **about 19.4 core-hours**.
 
-**Billed pod time.** One 16-vCPU pod at the recorded 0.56 USD per hour. Searches use 16 workers; evaluation and doubling
-are limited to 10 workers (operations ledger). Conservatively at 10 workers throughout: 16.5 / 10 = 1.65 hours, plus 0.3
-hours preparation (image, tarball, guards), plus 0.3 hours idle tail = **about 2.25 billed hours, about 1.26 USD**. The
-benchmark's unit price (0.0625 USD per unit, at its 0.108 USD per core-hour) gives 1.78 USD; the plan uses the larger.
+**Billed pod time.** One 16-vCPU pod at the recorded 0.56 USD per hour; searches with 16 workers, evaluation, doubling,
+and diagnostics with at most 10 (operations ledger). Stage schedule with incomplete worker batches and equal benchmark
+task times: searches, evaluation, and doubling about 1.77 hours (internal review's computation); diagnostics about 0.6
+hours (105 evaluations in batches of 10); preparation 0.3 hours; idle tail 0.3 hours = **about 3.0 billed hours, about
+1.66 USD**. The benchmark's unit price (0.0625 USD per unit, at its 0.108 USD per core-hour) gives about 2.10 USD; the plan
+uses the larger.
 
 | Item | Estimate | Cap |
 |---|---:|---:|
-| Option A: 18 D2 cells, doubling checks, diagnostics | 1.26 to 1.78 USD | **3.00 USD** |
+| Option A: 18 D2 cells, doubling checks, diagnostics | 1.66 to 2.10 USD | **3.00 USD** |
 
 A failed attempt counts toward the cap; the cap leaves room for one early failure, not for a full second run. Option B (an X7-SC variant with replacement disabled) is dropped from this plan: its
 constrained family, incumbents, and corner controls would need their own specification (the frozen X7-SC search inserts
