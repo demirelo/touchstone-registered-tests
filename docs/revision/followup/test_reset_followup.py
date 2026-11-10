@@ -39,7 +39,8 @@ def _src(tmp_path) -> Path:
     x7 = F.R.path_of(src, ids[1]); write(x7, {"stage": "search", "id": ids[1], "upstream": {ids[0]: sha_file(F.R.path_of(src, ids[0]))}})
     ref = f"reference/{CTX}/F111"
     write(F.R.path_of(src, ref), {"stage": "reference", "upstream": {i: sha_file(F.R.path_of(src, i)) for i in ids}})
-    write(F.R.path_of(src, f"freeze/{CTX}"), {"stage": "freeze", "records": {ref: sha_file(F.R.path_of(src, ref)), **{i: sha_file(F.R.path_of(src, i)) for i in ids}}})
+    write(F.R.path_of(src, f"freeze/{CTX}"), {"stage": "freeze", "cuts": 3, "h4_excluded": False,
+                                              "records": {ref: sha_file(F.R.path_of(src, ref)), **{i: sha_file(F.R.path_of(src, i)) for i in ids}}})
     return src
 
 
@@ -146,10 +147,15 @@ def test_the_inventory_lists_every_output_but_itself(tmp_path, monkeypatch, no_e
     assert inv["records"]["salt.hex"] == sha_file(out / "salt.hex") and read(out / "inventory.json") == inv
 
 
-def _put(base, rid, knobs, gain, runs=100, src="restart_1", arch=3):
+PROV = {"cfg_sha256": "c", "budget": [5, 300, 5, 200], "runner_sha256": "r", "salt_sha256": "s", "rule_params_sha256": "p", "root": "h",
+        "seeds_train": [7], "seeds_val": [8], "seeds_eval": [1, 2], "context": "headline@rho0.2", "git_commit": "x"}
+
+
+def _put(base, rid, knobs, gain, runs=100, src="restart_1", arch=3, prov=None, twin=2, eval_up=None):
     write(F.R.path_of(base, rid), {"stage": "search", "attack": {"best_knobs": knobs, "best_f": 0.1, "best_source": src, "archive": [0] * arch},
-                                   "runs": runs, "upstream": {}, "provenance": {"cfg_sha256": "c", "budget": [5, 300, 5, 200]}})
-    write(F.R.eval_path(base, rid), {"stage": "evaluate", "seeds": [1, 2], "gain": gain})
+                                   "twin": {"best_f": 0.05, "archive": [0] * twin}, "runs": runs, "upstream": {}, "provenance": prov or PROV})
+    write(F.R.eval_path(base, rid), {"stage": "evaluate", "seeds": [1, 2], "gain": gain,
+                                     "upstream": eval_up or {rid: "new", "reference/headline@rho0.2/F111": "ref", "freeze/headline@rho0.2": "fz"}})
 
 
 def test_reproduction_criterion_exact_parts_and_tolerances(tmp_path):
@@ -247,7 +253,8 @@ def test_f7_a_second_different_hash_for_a_known_record_is_refused(tmp_path, no_e
     src = _src(tmp_path)                                                      # the X7-SC search lists the D2+H3 search by its hash
     x7 = F.R.path_of(src, f"{CTX}|F111|X7-SC|profit"); d = read(x7); d["upstream"] = {f"{CTX}|F111|D2+H3|profit": "0" * 64}; write(x7, d)
     ref = F.R.path_of(src, f"reference/{CTX}/F111"); r = read(ref); r["upstream"][f"{CTX}|F111|X7-SC|profit"] = sha_file(x7); write(ref, r)
-    fr = F.R.path_of(src, f"freeze/{CTX}"); f = read(fr); f["records"][f"reference/{CTX}/F111"] = sha_file(ref); write(fr, f)
+    fr = F.R.path_of(src, f"freeze/{CTX}"); f = read(fr); f["records"][f"reference/{CTX}/F111"] = sha_file(ref)
+    f["records"][f"{CTX}|F111|X7-SC|profit"] = sha_file(x7); write(fr, f)
     with pytest.raises(SystemExit, match="different hashes"):
         F.inputs(src, [_job()])
 
@@ -318,3 +325,51 @@ def test_doubling_comparison_uses_the_draft5_criterion(tmp_path):
     assert "flag differs" in F.compare_doubling(tmp_path / "a", tmp_path / "c", rid)["problems"]
     write(p(tmp_path / "d"), {**base, "heldout": {**base["heldout"], "gain": [0.1, 0.3]}})
     assert not F.compare_doubling(tmp_path / "a", tmp_path / "d", rid)["pass"]
+
+
+def test_compare_checks_provenance_twin_dependencies_and_finiteness(tmp_path):
+    """Internal review r4: the exact parts include the provenance keys, the twin archive, the evaluation dependency ids and
+    the reference hash, and every value must be finite."""
+    rid = "headline@rho0.2|F111|D2|profit"; k = {"u0": 0.5, "clip": 0}
+    _put(tmp_path / "a", rid, k, [0.1, 0.2])
+    cases = {"runner_sha256": dict(prov={**PROV, "runner_sha256": "r2"}), "seeds_train": dict(prov={**PROV, "seeds_train": [9]}),
+             "twin archive size": dict(twin=0), "evaluation dependency": dict(eval_up={rid: "new", "freeze/headline@rho0.2": "fz"}),
+             "reference hash": dict(eval_up={rid: "new", "reference/headline@rho0.2/F111": "ref2", "freeze/headline@rho0.2": "fz"}),
+             "nonfinite": dict()}
+    for name, kw in cases.items():
+        gain = [0.1, float("nan")] if name == "nonfinite" else [0.1, 0.2]
+        _put(tmp_path / name, rid, k, gain, **kw)
+        r = F.compare(tmp_path / "a", tmp_path / name, rid)
+        assert not r["pass"] and not r["identical"] and any(name in p for p in r["problems"]), (name, r["problems"])
+    _put(tmp_path / "git", rid, k, [0.1, 0.2], prov={**PROV, "git_commit": "y"})       # the commit may differ
+    assert F.compare(tmp_path / "a", tmp_path / "git", rid)["pass"]
+
+
+def test_f7_freeze_without_explicit_cuts_fields_is_refused(tmp_path, no_expected_check):
+    src = _src(tmp_path); fr = F.R.path_of(src, f"freeze/{CTX}"); f = read(fr); f.pop("h4_excluded"); write(fr, f)
+    with pytest.raises(SystemExit, match="cuts"):
+        F.inputs(src, [_job()])
+
+
+def test_f7_copied_search_hash_must_match_the_original_freeze(tmp_path, no_expected_check):
+    src = _src(tmp_path); fr = F.R.path_of(src, f"freeze/{CTX}"); f = read(fr); f["records"][f"{CTX}|F000|D2+H3|profit"] = "1" * 64; write(fr, f)
+    with pytest.raises(SystemExit, match="freeze"):
+        F.inputs(src, [_job()])
+
+
+def test_reproduction_runs_the_preflight_before_any_search(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(F.R, "market", lambda *a, **k: {"label": "headline"})
+    monkeypatch.setattr(F.R, "job", lambda *a, **k: {"id": F.REPRO, "context": "headline@rho0.2", "rule": "F111", "provenance": {}})
+    monkeypatch.setattr(F, "run_stage", lambda *a, **k: calls.append("search"))
+    def boom(*a, **k):
+        raise SystemExit("reset follow-up refused: preflight")
+    monkeypatch.setattr(F, "preflight", boom)
+    with pytest.raises(SystemExit, match="preflight"):
+        F.reproduce(tmp_path / "src", tmp_path / "out", "root", {}, "salt")
+    assert calls == []
+
+
+def test_environment_names_the_numerical_stack():
+    env = F.environment()
+    assert {"python", "numpy", "scipy", "cma", "blas", "cpu", "machine", "platform", "driver_sha256"} <= set(env)

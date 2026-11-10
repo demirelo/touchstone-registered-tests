@@ -86,6 +86,39 @@ def check_code() -> None:
         _refuse("scripts/revision_v2.py or sim/ differs from protocol-v2 (or the tag is missing)")
 
 
+def preflight(out, src, jobs: list[dict], salt_sha256: str, container: dict | None = None) -> None:
+    """Every check that must pass before any episode, on every execution path (internal review r4)."""
+    check_salt(out, salt_sha256, jobs); check_commit(jobs); check_code(); check_pairing(src, jobs)
+    if container is not None:
+        check_configs(jobs, container)
+
+
+def environment() -> dict:
+    """The numerical stack of the run (plan draft 5): interpreter, numpy with its BLAS and LAPACK, SciPy, CMA, the CPU."""
+    import platform
+    import subprocess
+    import numpy
+    def ver(m):
+        try:
+            return __import__(m).__version__
+        except Exception as e:
+            return f"unavailable: {type(e).__name__}"
+    try:
+        cfg = numpy.show_config(mode="dicts")["Build Dependencies"]; blas = {k: {kk: cfg[k].get(kk) for kk in ("name", "version")} for k in ("blas", "lapack") if k in cfg}
+    except Exception as e:
+        blas = f"unavailable: {type(e).__name__}"
+    cpu = platform.processor()
+    for cmd in (["sysctl", "-n", "machdep.cpu.brand_string"], ["sh", "-c", "grep -m1 'model name' /proc/cpuinfo"]):
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+            if r.returncode == 0 and r.stdout.strip():
+                cpu = r.stdout.strip(); break
+        except Exception:
+            pass
+    return {"python": platform.python_version(), "numpy": numpy.__version__, "scipy": ver("scipy"), "cma": ver("cma"), "blas": blas, "cpu": cpu,
+            "machine": platform.machine(), "platform": platform.platform(), "driver_sha256": sha_file(Path(__file__))}
+
+
 def check_salt(out, salt_sha256: str, jobs: list[dict]) -> None:
     salt = Path(out) / "salt.hex"
     if not salt.exists() or R._sha(bytes.fromhex(salt.read_text().strip())) != salt_sha256:
@@ -117,8 +150,8 @@ def inputs(src, jobs: list[dict]) -> dict[str, str]:
         ctx = j["context"]; fr = read(R.path_of(src, f"freeze/{ctx}"))
         if fr is None:
             _refuse(f"the original freeze of {ctx} is missing")
-        if fr.get("cuts", CUTS) != CUTS or fr.get("h4_excluded", H4_EXCLUDED) != H4_EXCLUDED:
-            _refuse(f"the original freeze of {ctx} is not cuts {CUTS} with H4 loaded")
+        if "cuts" not in fr or "h4_excluded" not in fr or fr["cuts"] != CUTS or fr["h4_excluded"] != H4_EXCLUDED:
+            _refuse(f"the original freeze of {ctx} does not state cuts {CUTS} with H4 loaded")
         rid = f"reference/{ctx}/{j['rule']}"
         if rid not in fr["records"]:
             _refuse(f"{rid} is not in the original freeze of {ctx}")
@@ -133,6 +166,8 @@ def inputs(src, jobs: list[dict]) -> dict[str, str]:
             u, s = todo.popitem()
             if need.setdefault(u, s) != s:
                 _refuse(f"{u}: two original records hold different hashes")
+            if fr["records"].get(u, s) != s:
+                _refuse(f"{u}: its hash differs from the original freeze of {ctx}")
             for k, v in ((read(R.path_of(src, u)) or {}).get("upstream") or {}).items():
                 if need.get(k, v) != v or todo.get(k, v) != v:
                     _refuse(f"{k}: two original records hold different hashes")
@@ -221,11 +256,7 @@ def inventory(out) -> dict:
     out = Path(out)
     recs = {str(p.relative_to(out)): sha_file(p) for p in sorted(out.rglob("*"))
             if p.is_file() and p.name != "inventory.json" and not p.name.endswith((".lock", ".tmp"))}
-    import platform
-    import numpy
-    env = {"python": platform.python_version(), "numpy": numpy.__version__, "machine": platform.machine(), "platform": platform.platform(),
-           "processor": platform.processor(), "driver_sha256": sha_file(Path(__file__))}
-    inv = {"stage": "inventory", "deviations": list(DEVIATIONS), "environment": env, "records": recs}
+    inv = {"stage": "inventory", "deviations": list(DEVIATIONS), "environment": environment(), "records": recs}
     write(out / "inventory.json", inv)
     return inv
 
@@ -284,34 +315,51 @@ REPRO = "headline@rho0.2|F111|D2|profit"
 KNOB_TOL, GAIN_TOL = 1e-9, 1e-9                      # plan draft 5, section 3 (a)
 
 
+EXACT_PROV = ("runner_sha256", "salt_sha256", "cfg_sha256", "rule_params_sha256", "root", "seeds_train", "seeds_val", "seeds_eval", "context", "budget")
+
+
+def _finite(*xs) -> bool:
+    import math
+    return all(math.isfinite(v) for x in xs for v in (x if isinstance(x, (list, tuple)) else [x]) if isinstance(v, (int, float)))
+
+
 def compare(src, out, rid: str = REPRO) -> dict:
-    """Validation (a), plan draft 5: exact on the episode count, archive size, `best_source`, discrete knobs, budget,
-    configuration hash, dependency set and seeds; continuous knobs within KNOB_TOL relative and per-seed gains within
-    GAIN_TOL absolute. `identical` reports bit identity separately."""
+    """Validation (a), plan draft 5: exact on the provenance keys (the commit may differ), the episode count, the attack and
+    twin archive sizes, `best_source`, the discrete knobs, the search and evaluation dependency ids, the reference hash and
+    the seeds; continuous knobs within KNOB_TOL relative and per-seed gains within GAIN_TOL absolute; every value finite.
+    `identical` additionally needs bit-identical knobs and gains."""
     a, b = read(R.path_of(src, rid)), read(R.path_of(out, rid)); ea, eb = read(R.eval_path(src, rid)), read(R.eval_path(out, rid))
     if None in (a, b, ea, eb):
         return {"pass": False, "identical": False, "problems": ["a record is missing"]}
     problems = []
     ka, kb = a["attack"]["best_knobs"], b["attack"]["best_knobs"]
+    if not _finite(list(ka.values()), list(kb.values()), ea["gain"], eb["gain"]):
+        problems.append("nonfinite value")
     if set(ka) != set(kb):
         problems.append("knob names differ")
     disc = [k for k in ka if isinstance(ka[k], int) and not isinstance(ka[k], bool)]
     if any(ka[k] != kb.get(k) for k in disc):
         problems.append("discrete knob differs")
     rel = max((abs(ka[k] - kb[k]) / max(abs(ka[k]), 1e-300) for k in ka if k not in disc and k in kb), default=0.0)
-    if rel > KNOB_TOL:
+    if not rel <= KNOB_TOL:
         problems.append(f"knob tolerance exceeded ({rel:.3g})")
+    for k in EXACT_PROV:
+        if a["provenance"].get(k) != b["provenance"].get(k):
+            problems.append(f"{k} differs")
+    ua, ub = ea.get("upstream") or {}, eb.get("upstream") or {}
+    refs = sorted(u for u in ua if u.startswith("reference/"))
     for what, x, y in (("episode count", a.get("runs"), b.get("runs")), ("best_source", a["attack"].get("best_source"), b["attack"].get("best_source")),
                        ("archive size", len(a["attack"].get("archive", [])), len(b["attack"].get("archive", []))),
-                       ("budget", a["provenance"].get("budget"), b["provenance"].get("budget")),
-                       ("configuration hash", a["provenance"].get("cfg_sha256"), b["provenance"].get("cfg_sha256")),
-                       ("dependency set", sorted(a.get("upstream") or {}), sorted(b.get("upstream") or {})), ("seeds", ea["seeds"], eb["seeds"])):
+                       ("twin archive size", len((a.get("twin") or {}).get("archive", [])), len((b.get("twin") or {}).get("archive", []))),
+                       ("dependency set", sorted(a.get("upstream") or {}), sorted(b.get("upstream") or {})),
+                       ("evaluation dependency set", sorted(ua), sorted(ub)), ("reference hash", [ua.get(r) for r in refs], [ub.get(r) for r in refs]),
+                       ("seeds", ea["seeds"], eb["seeds"])):
         if x != y:
             problems.append(f"{what} differs")
     gd = max((abs(x - y) for x, y in zip(ea["gain"], eb["gain"])), default=0.0) if len(ea["gain"]) == len(eb["gain"]) else float("inf")
-    if gd > GAIN_TOL:
+    if not gd <= GAIN_TOL:
         problems.append(f"gain tolerance exceeded ({gd:.3g})")
-    return {"pass": not problems, "identical": ka == kb and ea["gain"] == eb["gain"], "max_knob_rel": rel, "max_gain_abs": gd, "problems": problems}
+    return {"pass": not problems, "identical": not problems and ka == kb and ea["gain"] == eb["gain"], "max_knob_rel": rel, "max_gain_abs": gd, "problems": problems}
 
 
 def compare_doubling(src, out, rid: str) -> dict:
@@ -355,13 +403,14 @@ def reproduce(src, out, root: str, params: dict, salt_sha256: str, workers: int 
     mkt = R.market("headline", root, 0.2, salt_sha256=salt_sha256)
     j = R.job(mkt, "F111", "D2", "profit", params=params)
     reg = read(R.path_of(src, REPRO))
-    if reg is None or reg["provenance"]["cfg_sha256"] != j["provenance"]["cfg_sha256"]:
-        _refuse("the headline configuration on this machine is not the registered one")
+    container = {"headline": {"container_hash": (reg or {}).get("provenance", {}).get("cfg_sha256")}}
+    preflight(out, src, [j], salt_sha256, container)
     copy_inputs(src, out, inputs(src, [j]))
     run_stage("search", [j], out, workers); prefreeze(out, [j])
     accept(out, [j], salt_sha256, {"headline": {"container_hash": reg["provenance"]["cfg_sha256"]}})
     run_stage("evaluate", [j], out, workers)
-    return compare(src, out)
+    rep = compare(src, out); write(Path(out) / "gate.json", {"stage": "reproduction gate", "cell": REPRO, **rep}); inventory(out)
+    return rep
 
 
 def main(argv=None) -> int:

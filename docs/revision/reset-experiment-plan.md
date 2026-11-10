@@ -92,17 +92,23 @@ re-optimisation.
   amd64 container run both match on configuration, salt, runner, budget, rule parameters, episode count (15,660), archive
   sizes, and the twin result, with selected knobs equal to 2.6e-13 relative and per-seed gains to 2.0e-14; evaluating the
   registered knobs on the Mac gives per-seed gains within 5e-17 of the record (102 of 200 seeds bit-identical). Last-bit
-  arithmetic differences across platforms grow through the search, so bit identity across platforms is not attainable,
-  and the draft-4 rule was not well chosen. **Draft-5 criterion.** Exact: hashes, seeds, budget, episode count, archive
-  sizes, `best_source`, discrete knobs, dependency sets. Tolerance: continuous knobs within 1e-9 relative and per-seed
+  arithmetic differences grow through the search; these runs did not reproduce bit identity across platforms, and the
+  draft-4 rule is replaced as a recorded deviation. **Draft-5 criterion** (`compare()`). Exact: the provenance keys runner, salt, configuration, rule
+  parameters, root, training, validation and evaluation seeds, context and budget (the commit may differ); the episode
+  count; the attack and twin archive sizes; `best_source`; the discrete knobs; the search and evaluation dependency ids;
+  the reference hash. Every value finite. Tolerance: continuous knobs within 1e-9 relative and per-seed
   gains within 1e-9 absolute (about 10^4 times the drift measured, and far below the paired standard error of about
   0.0009). The Mac runs pass this criterion. **Pod gate:** the pod first reruns the same reproduction (about 0.34 USD of
   billed time: 2,084 s search plus evaluation at 0.56 USD per hour); the 18 cells start only if it passes the draft-5
-  criterion; a bit-identical result on the pod is reported as such. (b) An
+  criterion; a bit-identical result on the pod is reported as such. The reproduction path runs every pre-episode check
+  (salt, commit, code, pairing, configuration) before its search and saves `gate.json` and an inventory with the
+  environment (Python, numpy with BLAS and LAPACK, SciPy, CMA, CPU). (b) An
   integration test runs the complete path (input copies, search, pre-evaluation freeze, evaluation, doubling, inventory)
   for one fresh-market cell at smoke size, including the driver's acceptance check, which proves every dependency
-  resolves (passed, 2026-11-09). (d) Doubling ground truth: the driver's doubling stage reproduces one registered
-  fresh-market D2+H3 doubling record under the draft-5 criterion, on the Mac. (c) Unit tests: the driver refuses a
+  resolves (passed, 2026-11-09). (d) Doubling ground truth: the driver's doubling stage reruns the registered doubling
+  check of `fresh0@rho0.2|F111|D2+H3|profit` on the Mac (`--reproduce-doubling`), compared by `compare_doubling()`:
+  exact on the flag, the seeds and the discrete knobs; 1e-9 on the continuous held-out knobs, the attack and reference
+  changes, and the held-out per-seed gains. The saved result must pass before any pod is created. (c) Unit tests: the driver refuses a
   changed reference hash, a missing input record, a wrong configuration hash, and an output directory inside `eval/all`.
 
 ## 4. Diagnostics (evaluation only, no search)
@@ -111,8 +117,14 @@ For three rules on seven markets: the base and doubled D2+H3 winners (42 policie
 D2 winners are not included), on the 200 evaluation seeds, re-run with reset and ban instrumentation (63 single-policy
 evaluations; the existing gain records carry no reset counts, so none is reused); the selected `x`; per episode the number of resets, the probability of at least one reset, the rounds of resets,
 and the rounds spent banned. Check that every D2 winner has zero resets. **Reverse switch (draft 5):** each of the 18 D2 winners re-evaluated with
-`x = 1` and every other knob unchanged (18 more evaluations). The diagnostics are built in the driver and run free on the
-Mac before the pod, under the draft-5 tolerance against a pod spot check of one cell. **Fixed-policy switch:** each of the 42 D2+H3
+`x = 1` and every other knob unchanged (18 more evaluations). The diagnostics are built and tested in the driver (`diagnostics`
+stage) before any pod. Order: the instrumentation is validated on the registered headline cells before the pod; the
+diagnostics of the 18 new D2 winners and their reverse switches run on the Mac after the pod's records are retrieved.
+Construction: a D2 winner is embedded in D2+H3 by adding `x` (0 for itself, 1 for the reverse switch); each switch is
+the mean difference of normalised profits on the evaluation seeds, the reference cancelling. Resets are the focal
+provider's identities of generation 1 or more; ban rounds are the ban lengths imposed on its identities; rounds without
+an offer are counted separately. Spot check: `fresh0@rho0.2|F111` is also evaluated on the pod, and the Mac values must
+meet the draft-5 tolerance against it. **Fixed-policy switch:** each of the 42 D2+H3
 winners re-evaluated with `x` set to 0 and every other knob unchanged (42 more; a winner that already has `x = 0` is
 reported as identical and not re-run); g(winner) - g(winner, x = 0) is the effect of the switch
 without re-optimisation, reported beside I.
@@ -130,7 +142,10 @@ without re-optimisation, reported beside I.
   S is reported only if the lower bound of pooled G(D2+H3) exceeds 0.05; otherwise "not defined". No clipping; S can be
   negative or above 1. The absolute gaps are always reported beside it.
 - **Market sensitivity (draft 5).** The sign count of I(B3) - I(R3) and I(C*) - I(R3) over the six markets, and S with
-  each market left out in turn (six values).
+  each market left out in turn (six values), each with its own five-market denominator gate (lower bound of the
+  five-market pooled G(D2+H3) above 0.05; otherwise that value is "not defined"), for the base and the doubled results
+  separately. A nested best-of sensitivity (the better of the D2 and D2+H3 winners per cell) is deferred: it is not
+  part of this plan.
 - **Doubling flags.** For each D2 cell, the attack change and the reference-reselection change of its doubling check are
   reported separately.
 - **Doubled versions** of the same statistics, as in the paper's `tab:ph-doubled`. The base (frozen) searches are primary,
