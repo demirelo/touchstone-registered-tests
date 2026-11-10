@@ -241,3 +241,29 @@ def test_main_counts_the_x7_embedding_on_all_seven_markets_too():
     import inspect
     src = inspect.getsource(P.main)
     assert 'x7_embedding(out, FRESH + ("headline",))' in src
+
+
+# ---- follow-up reviews (Fable 5.2 r2, Astra ext11, 2026-11-10) ----
+
+def test_direct_priority_contrast_is_f111_minus_f011_per_market_and_pooled(tmp_path):
+    for m, a, b in (("m0", [0.05, 0.07], [0.06, 0.08]), ("m1", [0.10, 0.10], [0.10, 0.12])):
+        _rec(tmp_path, f"{m}@rho0.2|F111|D2+H3|profit", gain=a); _rec(tmp_path, f"{m}@rho0.2|F011|D2+H3|profit", gain=b)
+    got = P.direct_priority(tmp_path, ["m0", "m1"], fams=("D2+H3",))["D2+H3"]
+    assert got["markets"]["m0"] == pytest.approx(-0.01) and got["markets"]["m1"] == pytest.approx(-0.01) and got["pooled"] == pytest.approx(-0.01)
+
+
+def test_nesting_test_flags_x7_cells_below_the_best_d2h3_winner(tmp_path):
+    _rec(tmp_path, "m0@rho0.2|C*|D2+H3|profit", gain=[0.03, 0.04], seeds=[1, 2]); _rec(tmp_path, "m0@rho0.2|C*|X7-SC|profit", gain=[0.06, 0.07], seeds=[1, 2])
+    rep = {"doubling": {"m0@rho0.2|C*|D2+H3|profit": {"heldout": {"gain": [0.08, 0.09], "seeds": [1, 2]}}}}
+    got = P.nesting(tmp_path, rep, ["m0"], rules=("C*",))
+    row = got["cells"]["m0@rho0.2|C*"]
+    assert row["shortfall"] == pytest.approx(0.02) and got["failures"] == ["m0@rho0.2|C*"]
+    assert got["over_threshold"] == 1 and got["max_shortfall"] == pytest.approx(0.02)
+
+
+def test_envelope_interval_and_honest_relative_cost():
+    env = {"markets": {f"f{i}": {"difference": d} for i, d in enumerate([0.021, 0.070, 0.028, 0.017, 0.031, 0.016])}, "pooled": 0.0305}
+    got = P.envelope_interval(env)
+    assert got["positive"] == 6 and got["t95"][0] > 0 and got["t95"][1] < 0.06
+    hon = {"F111": {"mean_profit_per_round": 0.000274}, "C*": {"mean_profit_per_round": 0.000286}}
+    assert P.honest_relative(hon) == pytest.approx(0.000274 / 0.000286 - 1)

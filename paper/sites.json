@@ -384,16 +384,6 @@
   "kind": "eff",
   "section": "conclusion"
  },
- "c_mx_r3": {
-  "path": "posthoc.welfare.F111.best.efficiency",
-  "kind": "eff",
-  "section": "conclusion"
- },
- "c_mx_cs": {
-  "path": "posthoc.welfare.C*.best.efficiency",
-  "kind": "eff",
-  "section": "conclusion"
- },
  "r_pred_n_ful": {
   "path": "eligibility.tally.numerical.fulfilled",
   "kind": "count",
@@ -433,16 +423,6 @@
   "path": "eligibility.tally.descriptive.not assessed",
   "kind": "count",
   "section": "results"
- },
- "c_mx_r3_p": {
-  "path": "posthoc.welfare.F111.mixtures.D2+H3.efficiency",
-  "kind": "eff",
-  "section": "conclusion"
- },
- "c_mx_cs_p": {
-  "path": "posthoc.welfare.C*.mixtures.D2+H3.train_feasible_mixture.efficiency",
-  "kind": "eff",
-  "section": "conclusion"
  },
  "r_pred_qd_ful": {
   "path": "eligibility.tally_direct_inputs.q3.fulfilled",
@@ -619,11 +599,6 @@
   "kind": "ratio",
   "section": "results"
  },
- "abs_q2_pg1": {
-  "path": "q2.searched.D2+H3.P|G=1.estimate",
-  "kind": "gain",
-  "section": "abstract"
- },
  "abs_ml_lo": {
   "path": "posthoc.market_level.D2+H3.frozen.t95.0",
   "kind": "gain",
@@ -663,5 +638,85 @@
   "path": "posthoc.honest.C*.bins.1.audited_share",
   "kind": "share",
   "section": "abstract"
+ },
+ "abs_dp": {
+  "path": "posthoc.direct_priority.D2+H3.pooled",
+  "kind": "gain",
+  "section": "abstract"
+ },
+ "abs_ml_dlo": {
+  "path": "posthoc.market_level.D2+H3.doubled.t95.0",
+  "kind": "gain",
+  "section": "abstract"
+ },
+ "abs_ml_dhi": {
+  "path": "posthoc.market_level.D2+H3.doubled.t95.1",
+  "kind": "gain",
+  "section": "abstract"
+ },
+ "abs_env_lo": {
+  "path": "posthoc.envelope_interval.t95.0",
+  "kind": "gain",
+  "section": "abstract"
+ },
+ "abs_env_hi": {
+  "path": "posthoc.envelope_interval.t95.1",
+  "kind": "gain",
+  "section": "abstract"
+ },
+ "abs_hon_rel": {
+  "path": "posthoc.honest_cost.relative",
+  "kind": "ratio",
+  "section": "abstract"
+ },
+ "abs_q3_w0g": {
+  "path": "q3.welfare.F111.D2+H3.W0.attacker_gain",
+  "kind": "gain",
+  "section": "abstract"
+ },
+ "r_dp": {
+  "path": "posthoc.direct_priority.D2+H3.pooled",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_dp_f1": {
+  "path": "posthoc.direct_priority.D2+H3.markets.fresh1",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_nest_n": {
+  "path": "posthoc.nesting.n",
+  "kind": "count",
+  "section": "results"
+ },
+ "r_nest_over": {
+  "path": "posthoc.nesting.over_threshold",
+  "kind": "count",
+  "section": "results"
+ },
+ "r_nest_max": {
+  "path": "posthoc.nesting.max_shortfall",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_env_lo": {
+  "path": "posthoc.envelope_interval.t95.0",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_env_hi": {
+  "path": "posthoc.envelope_interval.t95.1",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_env_pos": {
+  "path": "posthoc.envelope_interval.positive",
+  "kind": "count",
+  "section": "results"
+ },
+ "r_hon_rel": {
+  "path": "posthoc.honest_cost.relative",
+  "kind": "ratio",
+  "section": "results"
  }
 }

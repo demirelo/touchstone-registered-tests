@@ -383,3 +383,9 @@ def test_kinds_accept_the_fable52_analyses_only():
     for leaf in ("positive", "n", "embedded_identical", "cells", "flagged", "checks"):
         assert N.KINDS["count"](leaf, 5) and not N.KINDS["count"](leaf, 5.0)
     assert N.KINDS["ratio"]("relative", 0.319) and not N.KINDS["ratio"]("mean", 0.3) and not N.KINDS["gain"]("relative", 0.3)
+
+
+def test_kinds_accept_the_followup_review_analyses():
+    for leaf in ("over_threshold",):
+        assert N.KINDS["count"](leaf, 6)
+    assert N.KINDS["gain"]("max_shortfall", 0.021) and N.KINDS["gain"]("fresh1", -0.0147)

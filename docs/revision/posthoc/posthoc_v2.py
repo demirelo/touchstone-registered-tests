@@ -298,6 +298,54 @@ def doubling_flags(report: dict) -> dict:
     return {"flagged": sum(1 for v in d.values() if v.get("incomplete")), "checks": len(d)}
 
 
+def direct_priority(out, markets, fams=("D2+H3", "X7-SC")) -> dict:
+    """Follow-up reviews: R3's own priority-phase comparison, F111 - F011 (G = 1 and S = 1), per market and pooled with equal
+    weights, from the searched evaluation records (the registered Q2 contrast P|G=1 also averages over pacing)."""
+    res = {}
+    for fam in fams:
+        rows = {}
+        for m in markets:
+            a, b = _rec(out, f"{m}@rho0.2|F111|{fam}|profit"), _rec(out, f"{m}@rho0.2|F011|{fam}|profit")
+            if a is not None and b is not None:
+                rows[m] = float(np.mean(a["gain"]) - np.mean(b["gain"]))
+        if rows:
+            res[fam] = {"markets": rows, "pooled": float(np.mean(list(rows.values())))}
+    return res
+
+
+def nesting(out, report: dict, markets, rules=("F000", "F111", "C*")) -> dict:
+    """Follow-up reviews: X7-SC contains D2+H3, so an X7-SC cell's evaluated gain is compared with the better of the frozen
+    and the doubled D2+H3 winners on the same seeds; a positive shortfall marks an X7-SC search that missed a policy its
+    family contains. Descriptive (evaluation seeds; selection was on training seeds)."""
+    cells, fails = {}, []
+    for m in markets:
+        for r in rules:
+            d, x = _rec(out, f"{m}@rho0.2|{r}|D2+H3|profit"), _rec(out, f"{m}@rho0.2|{r}|X7-SC|profit")
+            if d is None or x is None:
+                continue
+            best = float(np.mean(d["gain"])); h = report.get("doubling", {}).get(f"{m}@rho0.2|{r}|D2+H3|profit")
+            if h is not None and list(h["heldout"]["seeds"]) == list(x.get("seeds", h["heldout"]["seeds"])):
+                best = max(best, float(np.mean(h["heldout"]["gain"])))
+            sf = best - float(np.mean(x["gain"])); cells[f"{m}@rho0.2|{r}"] = {"best_d2h3": best, "x7": float(np.mean(x["gain"])), "shortfall": sf}
+            if sf > 1e-12:
+                fails.append(f"{m}@rho0.2|{r}")
+    over = [c for c in fails if cells[c]["shortfall"] >= 0.005]                # the doubling check's threshold (design 6.5)
+    return {"cells": cells, "failures": fails, "n": len(cells), "over_threshold": len(over),
+            "max_shortfall": max((cells[c]["shortfall"] for c in fails), default=0.0)}
+
+
+def envelope_interval(env: dict) -> dict:
+    from scipy import stats
+    x = np.array([v["difference"] for v in env["markets"].values()]); n = len(x)
+    h = float(stats.t.ppf(0.975, n - 1) * x.std(ddof=1) / np.sqrt(n))
+    return {"t95": [float(x.mean()) - h, float(x.mean()) + h], "positive": int((x > 0).sum()), "n": n}
+
+
+def honest_relative(hon: dict) -> float:
+    """R3's honest-replacement mean profit per round relative to C*'s, minus one (registered diagnostic; no interval)."""
+    return hon["F111"]["mean_profit_per_round"] / hon["C*"]["mean_profit_per_round"] - 1
+
+
 def q4_diagnostics(out) -> dict:
     res = {}
     for m in FRESH:
@@ -413,6 +461,8 @@ def main(argv=None) -> int:
            "doubled": doubled(out, report, FRESH), "honest": honest(report)}
     res["market_level"] = market_level(res["doubled"]); res["x7_embedding"] = x7_embedding(out, FRESH); res["x7_embedding_all"] = x7_embedding(out, FRESH + ("headline",))
     res["envelope"] = envelope_difference(report, FRESH); res["doubling_flags"] = doubling_flags(report)
+    res["direct_priority"] = direct_priority(out, FRESH); res["nesting"] = nesting(out, report, FRESH + ("headline",))
+    res["envelope_interval"] = envelope_interval(res["envelope"]); res["honest_cost"] = {"relative": honest_relative(res["honest"])}
     Path(a.out).write_text(json.dumps(res, indent=1) + "\n")
     import csv
     seeds = [row for r in ("F000", "F111", "C*") for row in seed_rows(out, r)]
