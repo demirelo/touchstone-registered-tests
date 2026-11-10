@@ -23,7 +23,7 @@ Verdicts come from commands on the records (`results/v2/report/report.json`, `re
 | 10 | Statistics do not address the main uncertainty | **Holds** (same as 1, 3) | Covered by 1 and 3; calibration detail kept but after results in the venue cut | text |
 | 11 | Process facts | **Holds**: the executor resumed the H4 session (ledger 2026-11-02) | Text: who ran the H4 session; H4 contains D2+H3; Q3-e margin; tally double count | text |
 | C | Harrington 1988, Dellarocas 2005, Golle and Mironov 2001 | **Real** (Crossref: 37(1):29-53; 16(2):209-230; LNCS CT-RSA 2001, 425-440) | Add to related work | text |
-| P | Presentation: abstract, codes, venue version | Holds | Abstract rewritten to four plain findings (about 490 to about 330 words); full venue cut stays a separate task | text |
+| P | Presentation: abstract, codes, venue version | Holds | Abstract rewritten to four plain findings (about 490 to 328 source words, `wc -w` with each site counted as one word, after the round-3 scope corrections); full venue cut stays a separate task | text |
 
 ## Driver review
 

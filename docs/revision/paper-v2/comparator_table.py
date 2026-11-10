@@ -20,6 +20,8 @@ def rows(logdir) -> list:
         out.append({"config": _name(d["spec"]["cred"]), "budget": "full" if kind == "recheck" else "inner",
                     "gain": {m: {fam: d["detail"][m][fam]["gain"] for fam in ("D2+H3", "X7-SC")} for m in ("headline", "dev0")},
                     "eff": {m: d["detail"][m]["D2+H3"]["eff"] for m in ("headline", "dev0")}})
+        score, mk, fam = min((v, m, f) for m, fs in d["margins"].items() for f, v in fs.items())     # the objective: a minimum over markets and families
+        out[-1].update(score=score, decides=f"{mk}, {fam}")
     return sorted(out, key=lambda r: (r["config"], r["budget"] != "inner"))
 
 
@@ -29,9 +31,9 @@ def _f(x: float) -> str:
 
 def table(rs: list) -> str:
     body = "".join(f"{r['config']} & {r['budget']} & {_f(r['gain']['headline']['D2+H3'])} & {_f(r['gain']['dev0']['D2+H3'])} & "
-                   f"{_f(r['eff']['headline'])} & {_f(r['eff']['dev0'])} \\\\\n" for r in rs)
-    return ("\\begin{tabular}{@{}llrrrr@{}}\\toprule\n & & \\multicolumn{2}{c}{Gain, D2+H3} & \\multicolumn{2}{c}{Gross efficiency} \\\\\n"
-            "Configuration & Budget & headline & dev0 & headline & dev0 \\\\\\midrule\n" + body + "\\bottomrule\\end{tabular}\n")
+                   f"{_f(r['eff']['headline'])} & {_f(r['eff']['dev0'])} & {_f(r['score'])} & {r['decides']} \\\\\n" for r in rs)
+    return ("\\begin{tabular}{@{}llrrrrrl@{}}\\toprule\n & & \\multicolumn{2}{c}{Gain, D2+H3} & \\multicolumn{2}{c}{Gross efficiency, D2+H3} & & \\\\\n"
+            "Configuration & Budget & headline & dev0 & headline & dev0 & Score & Deciding cell \\\\\\midrule\n" + body + "\\bottomrule\\end{tabular}\n")
 
 
 if __name__ == "__main__":
