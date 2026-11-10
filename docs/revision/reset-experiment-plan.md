@@ -105,8 +105,9 @@ re-optimisation.
   can flip a discrete branch. Finite: the knobs, the attack, twin and control objective values, and the per-seed gains. Tolerance: continuous knobs within 1e-9 relative and per-seed
   gains within 1e-9 absolute (about 10^4 times the drift measured, and far below the paired standard error of about
   0.0009). The Mac runs pass this criterion. **Pod gate:** the pod first reruns the same reproduction (about 0.34 USD of
-  billed time: 2,084 s search plus evaluation at 0.56 USD per hour); the 18 cells start only if it passes the draft-5
-  criterion; a bit-identical result on the pod is reported as such (`identical` requires bit-equal knobs, gains, twin value,
+  billed time: 2,084 s search plus evaluation at 0.56 USD per hour); the author decided (card `touchstone-reset-repro-pass`,
+  2026-11-10) that the 18 cells start only if the pod's reproduction is bit-identical (`--reproduce --require-identical`);
+  any difference stops the pod and is reported. The draft-5 criterion applies to the Mac validations (`identical` requires bit-equal knobs, gains, twin value,
   attack objective and every control value). The reproduction path runs every pre-episode check
   (salt, commit, code, pairing, configuration) before its search and saves `gate.json` and an inventory with the
   environment (Python, numpy with BLAS and LAPACK, SciPy, CMA, CPU). (b) An
@@ -221,7 +222,7 @@ cap. Stop at the cap.
    new directory each: `results/v2/followup-repro-v2`, `results/v2/followup-repro-doubling-v2`); earlier passes on the
    older path do not count and the diagnostics are validated on the registered headline
    cells, all before any pod is created.
-4. One pod: the reproduction gate first (draft-5 criterion; stop and report on failure), then `--stage all` with
+4. One pod: the reproduction gate first (bit identity, `--require-identical`; stop and report on any difference), then `--stage all` with
    `--diag-cells fresh0@rho0.2|F111|D2|profit` (inputs, search, freeze, evaluate, doubling, spot diagnostics, inventory);
    records retrieved, the pod deleted and the deletion verified, the spend recorded.
 5. On the Mac after retrieval: the diagnostics of all 18 D2 winners and their reverse switches (`--stage diagnostics`),

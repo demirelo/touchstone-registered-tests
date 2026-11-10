@@ -430,6 +430,12 @@ def reproduce_doubling(src, out, rid: str, root: str, cfgs: dict, params: dict, 
     return rep
 
 
+def pod_gate_ok(rep: dict, require_identical: bool) -> bool:
+    """The author's decision (card touchstone-reset-repro-pass): on the pod, start the 18 cells only if the reproduction
+    is bit-identical; on the Mac, the draft-5 criterion applies."""
+    return bool(rep.get("identical")) if require_identical else bool(rep.get("pass"))
+
+
 def reproduce(src, out, root: str, params: dict, salt_sha256: str, workers: int = 1) -> dict:
     """Rerun the registered headline F111 D2 search and evaluation through this script's path (input copies, freeze,
     acceptance) and compare with the registered records."""
@@ -476,6 +482,7 @@ def main(argv=None) -> int:
     ap.add_argument("--stage", default="all", choices=("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory", "all"))
     ap.add_argument("--workers", type=int, default=1); ap.add_argument("--smoke", action="store_true")
     ap.add_argument("--reproduce", action="store_true", help=f"validation (a): rerun {REPRO} and compare (plan draft 5)")
+    ap.add_argument("--require-identical", dest="req_id", action="store_true", help="the pod gate: exit 1 unless the reproduction is bit-identical")
     ap.add_argument("--reproduce-doubling", dest="repro_dbl", default=None, help="validation (d): a registered D2+H3 doubling cell id")
     ap.add_argument("--report", default=str(ROOT / "results/v2/report/report.json"), help="for the diagnostics stage")
     ap.add_argument("--headline-diagnostics", dest="hl_diag", action="store_true", help="plan section 4: the three headline cells, on the Mac")
@@ -497,8 +504,9 @@ def main(argv=None) -> int:
         return 0 if rep["pass"] else 1
     if a.reproduce:
         rep = reproduce(a.src, out, root, json.loads(Path(a.params).read_text()), salt_sha, a.workers)
-        print(json.dumps({"reproduce": REPRO, **rep}))
-        return 0 if rep["pass"] else 1
+        ok = pod_gate_ok(rep, a.req_id)
+        print(json.dumps({"reproduce": REPRO, "require_identical": a.req_id, "gate_ok": ok, **rep}))
+        return 0 if ok else 1
     jobs = build_jobs(root, cfgs, json.loads(Path(a.params).read_text()), salt_sha, tuple(a.markets.split(",")), a.smoke)
     check_configs(jobs, container); check_salt(out, salt_sha, jobs); check_commit(jobs); check_code()
     if not a.smoke:

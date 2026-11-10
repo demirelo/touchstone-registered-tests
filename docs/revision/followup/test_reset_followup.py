@@ -455,3 +455,11 @@ def test_r6_headline_diagnostics_read_the_registered_d2_winners(tmp_path, monkey
     monkeypatch.setattr(F, "headline_jobs", lambda root, params, salt: [{"id": f"headline@rho0.2|{r}|D2|profit"} for r in F.RULES])
     F.headline_diagnostics("SRC", tmp_path, "root", {}, "salt", {})
     assert seen == {"n": 3, "d2_from": "SRC"} and (tmp_path / "diagnostics_headline.json").exists()
+
+
+def test_author_decision_pod_gate_requires_bit_identity(monkeypatch, tmp_path):
+    """Card touchstone-reset-repro-pass (2026-11-10): on the pod the reproduction must be identical, not only within tolerance."""
+    monkeypatch.setattr(F, "reproduce", lambda *a, **k: {"pass": True, "identical": False, "problems": []})
+    assert F.pod_gate_ok(F.reproduce(), require_identical=True) is False
+    assert F.pod_gate_ok({"pass": True, "identical": True, "problems": []}, require_identical=True) is True
+    assert F.pod_gate_ok({"pass": True, "identical": False, "problems": []}, require_identical=False) is True
