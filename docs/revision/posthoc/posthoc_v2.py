@@ -411,7 +411,7 @@ def main(argv=None) -> int:
            "welfare": {r: welfare_mixtures(out, r) for r in ("F000", "F111", "C*")},
            "q4_diag": q4_diagnostics(out), "stability": stability(report, stab),
            "doubled": doubled(out, report, FRESH), "honest": honest(report)}
-    res["market_level"] = market_level(res["doubled"]); res["x7_embedding"] = x7_embedding(out, FRESH)
+    res["market_level"] = market_level(res["doubled"]); res["x7_embedding"] = x7_embedding(out, FRESH); res["x7_embedding_all"] = x7_embedding(out, FRESH + ("headline",))
     res["envelope"] = envelope_difference(report, FRESH); res["doubling_flags"] = doubling_flags(report)
     Path(a.out).write_text(json.dumps(res, indent=1) + "\n")
     import csv

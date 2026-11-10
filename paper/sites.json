@@ -14,16 +14,6 @@
   "kind": "count",
   "section": "abstract"
  },
- "abs_q2_pg": {
-  "path": "q2.searched.D2+H3.PG.estimate",
-  "kind": "gain",
-  "section": "abstract"
- },
- "abs_q3_f111_h4": {
-  "path": "q3.envelope.F111.headline.estimate",
-  "kind": "gain",
-  "section": "abstract"
- },
  "int_q1_cat": {
   "path": "q1.tests.C*-F111|X7-SC.category",
   "kind": "label",
@@ -233,11 +223,6 @@
   "path": "secondary.whole_systems.C*-t.headline.D2+H3.estimate",
   "kind": "gain",
   "section": "results"
- },
- "abs_q1_est_x": {
-  "path": "q1.tests.C*-F111|X7-SC.estimate",
-  "kind": "gain",
-  "section": "abstract"
  },
  "abs_q3_w0": {
   "path": "q3.welfare.F111.D2+H3.W0.efficiency",
@@ -657,6 +642,26 @@
  "abs_x7_cells": {
   "path": "posthoc.x7_embedding.cells",
   "kind": "count",
+  "section": "abstract"
+ },
+ "r_x7_all": {
+  "path": "posthoc.x7_embedding_all.embedded_identical",
+  "kind": "count",
+  "section": "results"
+ },
+ "r_x7_all_n": {
+  "path": "posthoc.x7_embedding_all.cells",
+  "kind": "count",
+  "section": "results"
+ },
+ "abs_hon_r3_1": {
+  "path": "posthoc.honest.F111.bins.1.audited_share",
+  "kind": "share",
+  "section": "abstract"
+ },
+ "abs_hon_cs_1": {
+  "path": "posthoc.honest.C*.bins.1.audited_share",
+  "kind": "share",
   "section": "abstract"
  }
 }

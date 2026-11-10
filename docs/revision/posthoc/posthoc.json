@@ -1728,6 +1728,14 @@
    "fresh4@rho0.2|F111"
   ]
  },
+ "x7_embedding_all": {
+  "embedded_identical": 12,
+  "cells": 14,
+  "differs": [
+   "fresh3@rho0.2|C*",
+   "fresh4@rho0.2|F111"
+  ]
+ },
  "envelope": {
   "markets": {
    "fresh0": {

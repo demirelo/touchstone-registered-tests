@@ -234,3 +234,10 @@ def test_envelope_difference_and_flag_count_come_from_the_report():
     assert env["markets"]["fresh1"] == {"difference": pytest.approx(0.07), "family_cstar": "X5-AG/v2", "family_r3": "D2+H3"}
     assert env["pooled"] == pytest.approx(0.045)
     assert P.doubling_flags(rep) == {"flagged": 2, "checks": 3}
+
+
+def test_main_counts_the_x7_embedding_on_all_seven_markets_too():
+    # internal review r2: Q3-a's zeros come from the embedding on the fresh markets and the headline market
+    import inspect
+    src = inspect.getsource(P.main)
+    assert 'x7_embedding(out, FRESH + ("headline",))' in src
