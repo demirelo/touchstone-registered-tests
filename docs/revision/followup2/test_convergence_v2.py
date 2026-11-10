@@ -55,13 +55,14 @@ def test_recompute_substitutes_only_the_converged_cells(tmp_path):
         write(B.R.eval_path(src, f"{m}@rho0.2|F000|D2+H3|profit"), {"seeds": [1, 2], "gain": [0.5, 0.5]})
     write(conv / "convergence" / (B.R._safe("fresh1@rho0.2|C*|D2+H3|profit") + ".json"),
           {"id": "fresh1@rho0.2|C*|D2+H3|profit", "heldout": {"seeds": [1, 2], "gain": [0.4, 0.4]}, "binding": {"smoke": False}})
-    got = B.recompute(src, conv, ("fresh0", "fresh1"), resamples=99)
+    got = B.recompute(src, conv, ("fresh0", "fresh1"), resamples=99, expected={"fresh1@rho0.2|C*|D2+H3|profit": {"smoke": False}})
     assert got["q1"]["frozen"]["estimate"] == pytest.approx(0.15) and got["q1"]["converged"]["estimate"] == pytest.approx(0.2)
     assert got["q4"]["converged"]["markets"]["fresh0"] == pytest.approx(0.4) and got["substituted"] == ["fresh1@rho0.2|C*|D2+H3|profit"]
 
 
 @pytest.mark.skipif(not (MAIN / "eval/all/freeze").is_dir(), reason="needs the registered evaluation records")
-def test_smoke_path_for_one_flagged_fresh_cell(tmp_path):
+def test_smoke_path_for_one_flagged_fresh_cell(tmp_path, monkeypatch):
+    monkeypatch.setattr(B.R, "git_commit", lambda: "pinned-for-the-rerun-check")      # a commit elsewhere during the test must not change the binding
     out = tmp_path / "conv"
     args = ["--src", str(MAIN / "eval/all"), "--out", str(out), "--report", str(MAIN / "report/report.json"), "--draw", str(MAIN / "draw/draw.json"),
             "--instances", str(MAIN / "draw/instances.json"), "--cfgs", str(MAIN / "deviation/cfg_linux.json"), "--addendum", str(MAIN / "report/addendum.json"),
@@ -105,8 +106,8 @@ def test_settings_and_budgets_are_pinned(tmp_path, monkeypatch):
 
 def test_a_full_run_needs_gate_evidence(tmp_path):
     with pytest.raises(SystemExit, match="evidence"):
-        B.check_run_evidence([], smoke=False, gate=False)
-    B.check_run_evidence([], smoke=False, gate=True); B.check_run_evidence([], smoke=True, gate=False)
+        B.check_run_evidence([], smoke=False, gate=False, cells={"a": {"inputs_sha": "i", "driver_sha": "d"}})
+    B.check_run_evidence([], smoke=False, gate=True, cells={}); B.check_run_evidence([], smoke=True, gate=False, cells={})
 
 
 def test_the_claim_is_bounded():
@@ -119,10 +120,57 @@ def test_recompute_refuses_a_smoke_or_unbound_record(tmp_path):
         write(B.R.eval_path(src, f"fresh0@rho0.2|{r}|D2+H3|profit"), {"seeds": [1, 2], "gain": [0.1, 0.1]})
     write(conv / "convergence" / (B.R._safe(rid) + ".json"), {"id": rid, "heldout": {"seeds": [1, 2], "gain": [0.4, 0.4]}, "binding": {"smoke": True}})
     with pytest.raises(ValueError, match="binding"):
-        B.recompute(src, conv, ("fresh0",), resamples=9)
+        B.recompute(src, conv, ("fresh0",), resamples=9, expected={rid: {"smoke": False}})
 
 
 def test_inputs_of_several_cells_are_merged_and_conflicts_refused():
     assert B.merge_inputs([{"a": "1", "b": "2"}, {"b": "2", "c": "3"}]) == {"a": "1", "b": "2", "c": "3"}
     with pytest.raises(SystemExit, match="different hashes"):
         B.merge_inputs([{"a": "1"}, {"a": "9"}])
+
+
+# ---- draft 3: the nesting cells, embedded incumbent, round 2 corrections ----
+
+NEST = {"cells": {"fresh0@rho0.2|C*": {"shortfall": 0.0061, "best_d2h3": 0.12, "x7": 0.11}, "fresh2@rho0.2|C*": {"shortfall": 0.0003},
+                  "headline@rho0.2|F111": {"shortfall": 0.0211, "best_d2h3": 0.07, "x7": 0.05}}}
+
+
+def test_the_cell_list_adds_x7_cells_with_a_nesting_shortfall_above_the_threshold():
+    rep = {"doubling": {"headline@rho0.2|F111|X7-SC|profit": {"kind": "profit", "incomplete": True}, "a|F111|D2+H3|profit": {"kind": "profit", "incomplete": True}}}
+    got = B.cells_for(rep, NEST)
+    assert got["cells"] == ["a|F111|D2+H3|profit", "headline@rho0.2|F111|X7-SC|profit", "fresh0@rho0.2|C*|X7-SC|profit"]
+    assert got["nesting"] == ["fresh0@rho0.2|C*|X7-SC|profit", "headline@rho0.2|F111|X7-SC|profit"]
+
+
+def test_nesting_cells_run_at_least_two_rounds():
+    assert B.decide(1, {"attack_change": 0.0, "reference_change": 0.0}, {"pass": True}, True, max_rounds=3, min_rounds=2) == "continue"
+    assert B.decide(2, {"attack_change": 0.0, "reference_change": 0.0}, None, True, max_rounds=3, min_rounds=2) == "passed"
+
+
+def test_round_incumbents_add_the_embedded_doubled_d2h3_winner_from_round_two_for_nesting_cells():
+    prev = {"u0": 0.1}; emb = {"k_F": 1.0}
+    assert B.round_incumbents(1, prev, emb) == {"previous_best": prev}                 # round 1 stays the registered doubling
+    assert B.round_incumbents(2, prev, emb) == {"previous_best": prev, "embedded_doubled_d2h3": emb}
+    assert B.round_incumbents(2, prev, None) == {"previous_best": prev}
+
+
+def test_shortfall_before_and_after():
+    got = B.shortfall_report(NEST, {"fresh0@rho0.2|C*|X7-SC|profit": [0.125, 0.125]})
+    assert got["fresh0@rho0.2|C*|X7-SC|profit"] == {"before": 0.0061, "after": pytest.approx(0.12 - 0.125), "best_d2h3": 0.12}
+
+
+def test_recompute_uses_only_this_runs_validated_cells(tmp_path):
+    src, conv = tmp_path / "src", tmp_path / "conv"; rid = "fresh0@rho0.2|C*|D2+H3|profit"; other = "fresh0@rho0.2|F111|D2+H3|profit"
+    for r in ("C*", "F111", "F000"):
+        write(B.R.eval_path(src, f"fresh0@rho0.2|{r}|D2+H3|profit"), {"seeds": [1, 2], "gain": [0.1, 0.1]})
+    good = {"smoke": False, "inputs_sha": "i"}
+    write(conv / "convergence" / (B.R._safe(rid) + ".json"), {"id": rid, "heldout": {"seeds": [1, 2], "gain": [0.4, 0.4]}, "binding": good})
+    write(conv / "convergence" / (B.R._safe(other) + ".json"), {"id": other, "heldout": {"seeds": [1, 2], "gain": [0.9, 0.9]}, "binding": good})
+    got = B.recompute(src, conv, ("fresh0",), resamples=9, expected={rid: good})
+    assert got["substituted"] == [rid] and got["q1"]["converged"]["estimate"] == pytest.approx(0.3)          # the stale F111 record is ignored
+    for bad in ({"smoke": False, "inputs_sha": "j"}, None):
+        with pytest.raises(ValueError):
+            B.recompute(src, conv, ("fresh0",), resamples=9, expected={rid: bad} if bad else {rid: good, "x": good})
+    write(conv / "convergence" / (B.R._safe(rid) + ".json"), {"id": rid, "heldout": {"seeds": [1, 2], "gain": [0.4, float("nan")]}, "binding": good})
+    with pytest.raises(ValueError):
+        B.recompute(src, conv, ("fresh0",), resamples=9, expected={rid: good})

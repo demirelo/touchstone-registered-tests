@@ -1,4 +1,4 @@
-"""Cost estimates of Run A and Run B (draft 2) from experiments/v2/benchmark/timings.json.
+"""Cost estimates of Run A (draft 3) and Run B (draft 3) from experiments/v2/benchmark/timings.json.
 Usage (repository root): python3 docs/revision/followup2/cost_estimate.py"""
 import json
 
@@ -12,12 +12,14 @@ crit_a = t["d2h3_cell"] + t["x7_cell"] + 6 * t["reference"] + ev("x7") + t["doub
 billed_a = (h(gate_a) + h(crit_a) + prep) * pod
 est_a = max(h(a_core) * u + h(gate_a) * u, billed_a)
 print(f"A: {h(a_core):.2f} core-h ({h(a_core) * u:.2f} USD at 0.108); gate {h(gate_a):.2f} h; billed path {h(gate_a) + h(crit_a) + prep:.2f} h = {billed_a:.2f} USD; "
-      f"estimate {est_a:.2f}, reservation x1.25 {est_a * 1.25:.2f}, stop cap 3.00")
-# Run B
-b_core = 3 * (10 * t["doubling"] + 4 * t["doubling_x7"]) + 14 * ev("profit")      # + round-1 held-out evaluations
-gate_b = t["doubling_x7"] + ev("x7")                                     # gate cells in parallel: headline X7-SC and fresh D2+H3
-crit_b = 3 * t["doubling_x7"] + ev("x7")
+      f"estimate {est_a:.2f}, x1.25 {est_a * 1.25:.2f}; stop cap and reservation 3.00")
+# Run B (draft 3): 10 D2+H3 and 9 X7-SC cells (14 flagged + 5 nesting X7-SC cells), up to 3 rounds, each round with
+# its held-out evaluation allowance; the gate cells (headline X7-SC, fresh D2+H3) run serially first
+rd = lambda x7: (t["doubling_x7"] if x7 else t["doubling"]) + ev("profit")
+b_core = 3 * (10 * rd(False) + 9 * rd(True))
+gate_b = rd(True) + rd(False)
+crit_b = 3 * rd(True)                                                     # 16 workers: the 9 X7-SC cells start first
 billed_b = (h(gate_b) + h(crit_b) + prep) * pod
-est_b = max(h(b_core) * u + h(gate_b + t["doubling"] + ev("profit")) * u, billed_b)
-print(f"B: {h(b_core):.2f} core-h ({h(b_core) * u:.2f} USD at 0.108); gate {h(gate_b):.2f} h; billed path {h(gate_b) + h(crit_b) + prep:.2f} h = {billed_b:.2f} USD; "
-      f"estimate {est_b:.2f}, reservation x1.25 {est_b * 1.25:.2f}, stop cap 3.00")
+est_b = max(h(b_core + gate_b) * u, billed_b)
+print(f"B: {h(b_core):.2f} core-h ({h(b_core) * u:.2f} USD at 0.108); gate {h(gate_b):.2f} h serial; billed path {h(gate_b) + h(crit_b) + prep:.2f} h = {billed_b:.2f} USD; "
+      f"estimate {est_b:.2f}, x1.25 {est_b * 1.25:.2f}; stop cap and reservation 4.25")

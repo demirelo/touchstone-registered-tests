@@ -1,4 +1,11 @@
-# Run A, the runner-up comparator on the fresh markets: plan (draft 2, 2026-11-10; for internal review; no spend)
+# Run A, the runner-up comparator on the fresh markets: plan (draft 3, 2026-11-10; for internal review; no spend)
+
+**Draft 3 changes** (internal review round 2, `docs/revision/roster/{sol,astra}-runner-up-plan-r2.md`, both reject): each
+bank copy's actual SHA-256 must equal the original freeze hash before the reference is built and at acceptance (a
+changed bank with a rebuilt reference is refused, test); the evidence is the named set, bound to the current reset driver
+and environment, with the pod gate `--reproduce --require-identical` required bit-identical on this machine; the
+reservation is the full 3.00 USD stop cap; a paid run requires the pod allocation time and carries earlier failed
+attempts (`--prior-spend-usd`).
 
 **Draft 2 changes** (internal review round 1, `docs/revision/roster/{sol,astra}-runner-up-plan-r1.md`, both reject):
 complete freeze validation with refusal tests; pinned search settings, budgets checked against the registered records,
@@ -38,18 +45,18 @@ inference method. All are differences between prescribed finite searches.
 - **Reference.** The frozen reference stage on the registered C* menu construction: the runner-up's own D2+H3 and X7-SC
   searches plus the cuts-3 bank of the other rules' registered winners (F000..F111, C*/S0), copied and checked against
   the original freeze hashes; the registered C* winner is not in the bank, as C* excluded itself.
-- **Freeze.** After the references, each market's freeze holds exactly its bank inputs, both searches, and its
-  reference. Each new record must carry the current job's provenance, the expected dependency set, and dependencies whose
+- **Freeze.** After the references, each market's freeze holds exactly its bank inputs (each copy's actual hash equal to
+  the original freeze's), both searches, and its reference. Each new record must carry the current job's provenance, the expected dependency set, and dependencies whose
   current hashes equal the recorded ones; the freeze states `followup`, cuts 3, and H4 loaded. Acceptance before
   evaluation and before doubling recomputes all of this and the bank inputs from the original freeze; an empty,
   incomplete, or stale freeze is refused (tests).
 - **Saved results.** The frozen stages reuse a record only under its exact provenance (registered resume rule).
   `run.json` binds the output to the input hashes, the job provenance, the smoke flag, the settings, and the driver hash;
   a different binding is refused, never overwritten.
-- **Reproduction gate.** Before spend: the saved Mac evidence of the reset plan (validation (a), headline F111 D2 search
-  and evaluation; validation (d), the fresh0 F111 D2+H3 doubling; Run B's gate cells for headline X7-SC and fresh D2+H3).
-  On the pod, before the 12 cells: the reset driver's reproduction gate (`reset_followup_v2.py --reproduce`), which must
-  pass. The driver refuses a full run unless every `--evidence` file reports a pass.
+- **Reproduction gate.** Required before any search (`check_run_evidence`): `--reset-mac`, the reset driver's reproduction
+  gate run on the Mac (its `gate.json` passes and its inventory names the current reset driver); `--reset-pod`, the same
+  gate run first on this pod with `--reproduce --require-identical` (bit-identical, environment equal to this machine's,
+  same driver); `--doubling-evidence`, the saved fresh0 F111 D2+H3 doubling reproduction (passes).
 - **Inventory.** Every output with its hash; Run A's deviations; hashes of `runnerup_v2.py`, `common.py`, `guards.py`, the
   imported helpers, this plan, and the report; the run arguments; the environment (Python, numpy with BLAS and LAPACK,
   SciPy, CMA, CPU).
@@ -78,16 +85,18 @@ separately, never a failure). No expectation on the category.
 
 `python3 docs/revision/followup2/cost_estimate.py`: 17.65 core-hours, 1.91 USD at the benchmark's 0.108 USD per
 core-hour; billed path on one 16-vCPU pod 3.56 hours (reproduction gate 0.61 h, searches, six serial reference calls,
-X7-SC evaluation and doubling, 0.3 h preparation and tail) = 1.99 USD at 0.56 USD per hour. Estimate 1.99 USD;
-reservation 2.49 USD (x 1.25) in the ledger category `followup` (cap 22 USD shared by all follow-up runs;
-`docs/revision/followup/budget_followup.py reserve`); **stop cap 3.00 USD**, failed attempts counted. The driver checks
-the cap between stages (`--cap-usd 3.00 --started-at <allocation time>`): a stage starts only if the billed time so far
+X7-SC evaluation and doubling, 0.3 h preparation and tail) = 1.99 USD at 0.56 USD per hour. Estimate 1.99 USD
+(x 1.25 = 2.49); **stop cap and reservation 3.00 USD**, the full allowance, in the ledger category `followup` (cap 22 USD
+shared by all follow-up runs: reset 5, churn 8, Run A 3, Run B 4.25, total 20.25; `budget_followup.py reserve`). A paid run
+requires `--started-at <allocation time>` and counts earlier failed attempts (`--prior-spend-usd`). The driver checks
+the cap between stages: a stage starts only if the billed time so far
 plus its estimate stays within the cap; a running stage is never killed (author's instruction); the run stops, writes
-`cost_stop.json` and an inventory, and reports.
+`cost_stop.json` and an inventory, and reports. This is an admission limit, not a billing ceiling: a stage that starts
+within the cap finishes, and the pod is deleted after it.
 
 ## 6. Steps
 
 1. Internal review to consensus; freeze this plan.
-2. Reserve in the ledger; one pod: the reset reproduction gate, then `runnerup_v2.py --stage all --workers 12 --evidence
-   ... --cap-usd 3.00 --started-at T`; delete and verify the pod; record the spend.
+2. Reserve 3.00 USD in the ledger; one pod: `reset_followup_v2.py --reproduce --require-identical`, then `runnerup_v2.py
+   --stage all --workers 12 --reset-mac M --reset-pod P --doubling-evidence D --cap-usd 3.00 --started-at T`; delete and verify the pod; record the spend.
 3. Analysis on the Mac from the retrieved records; a paper paragraph and table labelled exploratory, after review.

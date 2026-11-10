@@ -1,5 +1,7 @@
-"""Run B (docs/revision/followup2/convergence-plan.md): the 14 search-flagged profit cells of the report searched further,
-one doubling round at a time, until a round's doubling check passes or the cap is reached.
+"""Run B (docs/revision/followup2/convergence-plan.md, draft 3): the 14 search-flagged profit cells of the report and the
+X7-SC cells with a nesting shortfall of at least 0.005 (posthoc `nesting`) searched further, one round of R restarts at a
+time, until a round's check passes or the cap is reached; nesting cells run at least two rounds and, from round 2, also
+start from the doubled D2+H3 winner embedded in X7-SC.
 
 Round k continues the search from the best result so far with as many new restarts as registered (revision_v2
 `continue_search`, restart seeds after every earlier round's), then reselects the reference from the frozen menu plus
@@ -44,6 +46,31 @@ def flagged(report: dict) -> dict:
     return {"profit": [k for k in f if d[k].get("kind") == "profit"], "coalition": [k for k in f if d[k].get("kind") != "profit"]}
 
 
+def cells_for(report: dict, nesting: dict) -> dict:
+    """The run's cells: the flagged profit cells, then every X7-SC cell whose nesting shortfall (posthoc `nesting`) is at
+    least the doubling threshold (draft 3, Fable 5.2 r2 new problem 2)."""
+    base = sorted(flagged(report)["profit"])
+    nest = sorted(f"{k}|X7-SC|profit" for k, v in nesting["cells"].items() if v["shortfall"] >= THRESHOLD - 1e-12)
+    return {"cells": base + [c for c in nest if c not in base], "nesting": nest}
+
+
+def round_incumbents(k: int, prev_knobs: dict, embedded: dict | None) -> dict:
+    """Round 1 keeps the registered doubling's incumbent; from round 2 a nesting cell also gets the doubled D2+H3 winner
+    embedded in X7-SC (a deviation, so that the nesting gap can close)."""
+    inc = {"previous_best": dict(prev_knobs)}
+    if k >= 2 and embedded is not None:
+        inc["embedded_doubled_d2h3"] = dict(embedded)
+    return inc
+
+
+def shortfall_report(nesting: dict, final_gains: dict) -> dict:
+    res = {}
+    for rid, g in final_gains.items():
+        c = nesting["cells"][rid.rsplit("|", 2)[0]]
+        res[rid] = {"before": c["shortfall"], "after": c["best_d2h3"] - float(np.mean(g)), "best_d2h3": c["best_d2h3"]}
+    return res
+
+
 def round_seed(k: int, restarts: int) -> int:
     """`continue_search` seed of round k; round 1 is the registered doubling's seed 1."""
     return 1 + (k - 1) * restarts
@@ -86,7 +113,9 @@ def cell_inputs(src, job: dict) -> dict:
 
 CLAIM = ("a cell that passes 'passed the registered incremental check within three rounds' (a capped search extension "
          "of R restarts per round); this is not convergence, not optimality, and not a bound on the remaining search error")
-DEVIATIONS = ("continued searches of the 14 flagged profit cells beyond the registered doubling, up to three rounds of R restarts",
+DEVIATIONS = ("continued searches of the 14 flagged profit cells and of the X7-SC cells with a nesting shortfall of at least 0.005, "
+              "beyond the registered doubling, up to three rounds of R restarts",
+              "from round 2 a nesting cell's X7-SC search also starts from the doubled D2+H3 winner embedded in X7-SC, and such a cell runs at least two rounds",
               "the final winner is evaluated against the unchanged frozen reference; reselected references are diagnostics only",
               "unflagged cells, frozen banks and X7-SC's original D2+H3 incumbents are unchanged; the 7 flagged coalition cells and "
               "the unchecked fresh factorial cells are not in this run", "exploratory sensitivity after the report; the frozen estimates stay primary")
@@ -113,23 +142,29 @@ def compare_round1(registered: dict, r1: dict) -> dict:
     return {"pass": not problems, "max_knob_rel": rel, "max_change_abs": chg, "max_gain_abs": gd, "problems": problems}
 
 
-def decide(k: int, last: dict, gate: dict | None, cost_ok: bool, max_rounds: int = MAX_ROUNDS) -> str:
-    """After round k: stop on a round-1 mismatch, on a pass, at the round cap, or (before the next round) at the cost cap."""
+def decide(k: int, last: dict, gate: dict | None, cost_ok: bool, max_rounds: int = MAX_ROUNDS, min_rounds: int = 1) -> str:
+    """After round k: stop on a round-1 mismatch, on a pass (from round `min_rounds`), at the round cap, or (before the
+    next round) at the cost cap."""
     if k == 1 and gate is not None and not gate["pass"]:
         return "round-1 mismatch"
-    if _passes(last):
+    if k >= min_rounds and _passes(last):
         return "passed"
     if k >= max_rounds:
         return "round cap"
     return "continue" if cost_ok else "cost cap"
 
 
-def check_run_evidence(paths, smoke: bool, gate: bool) -> None:
+GATE_CELLS = ("headline@rho0.2|F111|X7-SC|profit", "fresh1@rho0.2|F111|D2+H3|profit")
+
+
+def check_run_evidence(paths, smoke: bool, gate: bool, cells: dict) -> None:
+    """A full run needs, for each gate cell, a passing full-budget gate record from the Mac and one from this machine,
+    bound to the cell's current inputs and this driver."""
     if smoke or gate:
         return
     if not paths:
         _refuse("no reproduction evidence given for a full run")
-    G.check_evidence(paths)
+    G.check_gate_evidence(paths, cells)
 
 
 def merge_inputs(needs: list[dict]) -> dict:
@@ -141,20 +176,26 @@ def merge_inputs(needs: list[dict]) -> dict:
     return merged
 
 
-def run_cell(job: dict, out, max_rounds: int = MAX_ROUNDS, src=None, cost: tuple | None = None, round_hours: float = 0.0) -> dict:
+def run_cell(job: dict, out, max_rounds: int = MAX_ROUNDS, src=None, cost: tuple | None = None, round_hours: float = 0.0,
+             embedded: dict | None = None, min_rounds: int = 1) -> dict:
     from sim.cell import SeedCache
     from sim.locked import load_locked
     from sim.records import search_from_json
     from sim.reference import reference_candidates, select_reference
-    from sim.search import Objective
+    from sim.search import Objective, cma_search
     T, L = R.constants(job); fam = R.family_for(job["family"], T, L); cell = R.train_cell(job); st = R.settings(job); cache = SeedCache()
     rec = read(R.path_of(out, job["id"])); prev = search_from_json(rec["attack"]); twin = search_from_json(rec["twin"])
     frozen_ref, rrec, _ = R.reference_of(job, out); prev_ref = float(np.mean(rrec["per_seed_normalized"]))
     cands, _, _ = R.menu(job, out, CUTS, H4_EXCLUDED); order = tuple(load_locked()["reference_order"])
     stopper = G.CostStop(*cost) if cost else None
+    emb = R.embed_h3(embedded, T) if embedded is not None else None
     rounds, gate, outcome = [], None, "round cap"
+    if stopper and not stopper.allow("round 1", round_hours):           # admission before the cell's first round
+        return {"stage": "convergence", "id": job["id"], "provenance": job["provenance"], "restarts": st.restarts, "rounds": [],
+                "status": "stopped at the cost cap", "passed_round": None, "round1_gate": "not run", "claim": CLAIM, "cost": stopper.report()}
     for k in range(1, max_rounds + 1):
-        new = R.continue_search(Objective(cell, fam, cache), fam, st, prev, seed=round_seed(k, st.restarts))
+        obj = Objective(cell, fam, cache); obj.archive.update(prev.archive)     # revision_v2.continue_search, with the round's incumbents
+        new = cma_search(obj, fam, st, round_seed(k, st.restarts) + st.restarts, incumbents=round_incumbents(k, prev.best_knobs, emb))
         best = new if new.best_f > prev.best_f else replace(new, best_x=prev.best_x, best_knobs=prev.best_knobs, best_f=prev.best_f, best_source=prev.best_source)
         extra = reference_candidates(cell, fam, best, twin, [], order)
         ref = select_reference(cell, cands + [c for c in extra if c.knobs is not None], cache); ref_f = float(np.mean(ref.per_seed_normalized))
@@ -167,75 +208,90 @@ def run_cell(job: dict, out, max_rounds: int = MAX_ROUNDS, src=None, cost: tuple
             r1 = {**rounds[0], "heldout": {"knobs": dict(new.best_knobs), "seeds": list(R.eval_cell(job).seeds), "gain": h1["gain"]}}
             gate = compare_round1(reg, r1) if reg is not None else {"pass": False, "problems": ["no registered doubling record"]}
         prev, prev_ref = best, ref_f
-        outcome = decide(k, rounds[-1], gate, stopper.allow(f"round {k + 1}", round_hours) if stopper else True, max_rounds)
+        outcome = decide(k, rounds[-1], gate, stopper.allow(f"round {k + 1}", round_hours) if stopper else True, max_rounds, min_rounds)
         if outcome != "continue":
             break
     status = {"passed": "passed", "round cap": "not passed at the cap", "cost cap": "stopped at the cost cap",
               "round-1 mismatch": "stopped: round 1 differs from the registered doubling"}[outcome]
     res = {"stage": "convergence", "id": job["id"], "provenance": job["provenance"], "restarts": st.restarts, "rounds": rounds, "status": status,
            "passed_round": passed_round(rounds), "round1_gate": gate if gate is not None else "not compared (smoke)", "claim": CLAIM,
-           "frozen_best_f": float(rec["attack"]["best_f"])}
+           "frozen_best_f": float(rec["attack"]["best_f"]), "embedded_doubled_d2h3": emb is not None, "min_rounds": min_rounds,
+           "cost": stopper.report() if stopper else None}
     if outcome != "round-1 mismatch":
         held = R.gain_fields(R.eval_cell(job), fam, prev.best_knobs, frozen_ref, SeedCache())
         res["heldout"] = {"knobs": dict(prev.best_knobs), "seeds": list(R.eval_cell(job).seeds), **held}
     return res
 
 
-def gate_cell(job: dict, out, src) -> dict:
-    """Gate mode: round 1 only, compared with the registered doubling record (saved full-budget evidence)."""
-    r = run_cell(job, out, max_rounds=1, src=src)
-    return {"stage": "convergence gate", "cell": job["id"], "pass": bool(r["round1_gate"] != "not compared (smoke)" and r["round1_gate"]["pass"]),
-            "comparison": r["round1_gate"], "environment": G.environment()}
+def gate_cell(job: dict, out, src, site: str, bind: dict, cost: tuple | None = None, round_hours: float = 0.0) -> dict:
+    """Gate mode: round 1 only, compared with the registered doubling record; saved full-budget evidence bound to the
+    cell's inputs, this driver, the site, and the environment."""
+    r = run_cell(job, out, max_rounds=1, src=src, cost=cost, round_hours=round_hours)
+    ok = isinstance(r["round1_gate"], dict) and r["round1_gate"]["pass"] is True
+    return {"stage": "convergence gate", "cell": job["id"], "pass": bool(ok), "site": site, "comparison": r["round1_gate"],
+            "binding": bind, "environment": G.environment()}
 
 
-def _cell_gains(src, conv, rid: str):
-    c = read(Path(conv) / "convergence" / (R._safe(rid) + ".json"))
+def _cell_gains(src, conv, rid: str, expected: dict):
     f = read(R.eval_path(src, rid))
-    if c is not None and ((c.get("binding") or {}).get("smoke") is not False or "heldout" not in c):
-        raise ValueError(f"{rid}: not a validated full-run result (binding)")
-    if c is not None and c["heldout"]["seeds"] != f["seeds"]:
-        raise ValueError(f"{rid}: held-out seeds differ from the evaluation seeds")
-    return f["gain"], (c["heldout"]["gain"] if c else f["gain"]), c is not None
+    if rid not in expected:
+        return f["gain"], f["gain"], False
+    c = read(Path(conv) / "convergence" / (R._safe(rid) + ".json"))
+    if c is None or c.get("id") != rid or c.get("binding") != expected[rid] or "heldout" not in c:
+        raise ValueError(f"{rid}: no validated result of this run (binding)")
+    g = c["heldout"]["gain"]
+    if c["heldout"]["seeds"] != f["seeds"] or len(g) != len(f["gain"]) or not G.finite(g):
+        raise ValueError(f"{rid}: held-out seeds, length or values invalid")
+    return f["gain"], g, True
 
 
-def recompute(src, conv, markets=FRESH, resamples: int = C.RESAMPLES) -> dict:
-    """Q1 (C* - R3, D2+H3) and Q4 (B3 - R3, D2+H3) per market and pooled, with the final winners substituted for the
-    re-searched cells; descriptive, nominal paired bootstrap."""
+def recompute(src, conv, markets=FRESH, resamples: int = C.RESAMPLES, expected: dict | None = None) -> dict:
+    """Q1 (C* - R3; D2+H3 and X7-SC) and Q4 (B3 - R3, D2+H3) per market and pooled, with this run's validated final
+    winners (`expected`: cell id -> binding) substituted and the frozen winners elsewhere; descriptive."""
+    expected = expected or {}
+    for rid in expected:
+        if not (Path(conv) / "convergence" / (R._safe(rid) + ".json")).exists():
+            raise ValueError(f"{rid}: the run's result is missing")
     sub, out = [], {}
-    for q, (a, b) in {"q1": ("C*", "F111"), "q4": ("F000", "F111")}.items():
+    for q, (a, b, fam) in {"q1": ("C*", "F111", "D2+H3"), "q1_x7": ("C*", "F111", "X7-SC"), "q4": ("F000", "F111", "D2+H3")}.items():
         fz_a, fz_b, cv_a, cv_b = {}, {}, {}, {}
         for m in markets:
-            ra, rb = (f"{m}@rho0.2|{r}|D2+H3|profit" for r in (a, b))
-            (fa, ca, sa), (fb, cb, sb) = _cell_gains(src, conv, ra), _cell_gains(src, conv, rb)
+            ra, rb = (f"{m}@rho0.2|{r}|{fam}|profit" for r in (a, b))
+            if read(R.eval_path(src, ra)) is None or read(R.eval_path(src, rb)) is None:
+                continue
+            (fa, ca, sa), (fb, cb, sb) = _cell_gains(src, conv, ra, expected), _cell_gains(src, conv, rb, expected)
             fz_a[m], fz_b[m], cv_a[m], cv_b[m] = fa, fb, ca, cb
-            sub += [r for r, s in ((ra, sa), (rb, sb)) if s and r not in sub]
-        out[q] = {"frozen": C.pooled_paired(fz_a, fz_b, resamples), "converged": C.pooled_paired(cv_a, cv_b, resamples)}
-    return {"label": "exploratory sensitivity; the frozen estimates stay primary", **out, "substituted": sub}
+            sub += [r for r, s_ in ((ra, sa), (rb, sb)) if s_ and r not in sub]
+        if fz_a:
+            out[q] = {"frozen": C.pooled_paired(fz_a, fz_b, resamples), "converged": C.pooled_paired(cv_a, cv_b, resamples)}
+    return {"label": "exploratory sensitivity; the frozen estimates stay primary; " + C.SCOPE, **out, "substituted": sub}
 
 
 def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--src", default=str(F.EVAL_ALL)); ap.add_argument("--out", required=True); ap.add_argument("--report", required=True)
+    ap.add_argument("--posthoc", default=str(HERE.parent / "posthoc" / "posthoc.json"), help="its `nesting` block adds X7-SC cells")
     ap.add_argument("--draw", required=True); ap.add_argument("--instances", required=True); ap.add_argument("--cfgs", required=True); ap.add_argument("--addendum", required=True)
-    ap.add_argument("--params", default=str(ROOT / "experiments/v2/params.json")); ap.add_argument("--cells", default=None, help="comma list; default all 14")
+    ap.add_argument("--params", default=str(ROOT / "experiments/v2/params.json")); ap.add_argument("--cells", default=None, help="comma list; default the whole run")
     ap.add_argument("--max-rounds", dest="max_rounds", type=int, default=MAX_ROUNDS); ap.add_argument("--workers", type=int, default=1)
     ap.add_argument("--smoke", action="store_true"); ap.add_argument("--gate", action="store_true", help="round 1 only, compared with the registered doubling")
-    ap.add_argument("--evidence", action="append", default=[], help="saved gate files that must report a pass (full runs)")
-    ap.add_argument("--cap-usd", dest="cap", type=float, default=3.00); ap.add_argument("--usd-per-hour", dest="rate", type=float, default=0.56)
-    ap.add_argument("--started-at", dest="started", type=float, default=None)
+    ap.add_argument("--site", choices=("mac", "pod"), default="pod", help="where this runs; a pod run is paid and needs --started-at")
+    ap.add_argument("--evidence", action="append", default=[], help="gate records (Mac and pod) for the gate cells (full runs)")
+    ap.add_argument("--cap-usd", dest="cap", type=float, default=4.25); ap.add_argument("--usd-per-hour", dest="rate", type=float, default=0.56)
+    ap.add_argument("--started-at", dest="started", type=float, default=None); ap.add_argument("--prior-spend-usd", dest="prior", type=float, default=0.0)
     a = ap.parse_args(argv)
     G.pin_settings(); out = Path(a.out); F.check_out(out, a.src)
     if not 1 <= a.max_rounds <= MAX_ROUNDS:
         _refuse(f"--max-rounds must be 1 to {MAX_ROUNDS}")
-    check_run_evidence(a.evidence, a.smoke, a.gate)
     from sim.records import cfg_from_dict
-    report = json.loads(Path(a.report).read_text()); root = json.loads(Path(a.draw).read_text())["hash"]
-    salt = json.loads(Path(a.instances).read_text())["salt_sha256"]; params = json.loads(Path(a.params).read_text())
-    cfgs = {k: cfg_from_dict(v) for k, v in json.loads(Path(a.cfgs).read_text()).items()}
-    cells = a.cells.split(",") if a.cells else flagged(report)["profit"]
-    if bad := [c for c in cells if c not in flagged(report)["profit"]]:
-        _refuse(f"not flagged profit cells: {bad}")
+    report = json.loads(Path(a.report).read_text()); nesting = json.loads(Path(a.posthoc).read_text())["nesting"]
+    root = json.loads(Path(a.draw).read_text())["hash"]; salt = json.loads(Path(a.instances).read_text())["salt_sha256"]
+    params = json.loads(Path(a.params).read_text()); cfgs = {k: cfg_from_dict(v) for k, v in json.loads(Path(a.cfgs).read_text()).items()}
+    plan = cells_for(report, nesting)
+    cells = a.cells.split(",") if a.cells else plan["cells"]
+    if bad := [c for c in cells if c not in plan["cells"]]:
+        _refuse(f"not cells of this run: {bad}")
     out.mkdir(parents=True, exist_ok=True); R.install_salt(root, out)
     jobs = [job_for(c, root, cfgs, params, salt, a.smoke) for c in cells]
     container = dict(json.loads(Path(a.addendum).read_text())["deviations"]["configs"])
@@ -247,37 +303,48 @@ def main(argv=None) -> int:
         F.check_pairing(a.src, jobs)
         for j in jobs:
             G.check_budget(j, R.path_of(a.src, j["id"]))
-    F.copy_inputs(a.src, out, merge_inputs([cell_inputs(a.src, j) for j in jobs]))     # one call: the helper refuses added keys
-    files = {"driver": Path(__file__), "plan": HERE / "convergence-plan.md", "report": Path(a.report)}
+    needs = {j["id"]: cell_inputs(a.src, j) for j in jobs}
+    F.copy_inputs(a.src, out, merge_inputs(list(needs.values())))     # one call: the helper refuses added keys
+    drv = sha_file(Path(__file__))
+    bind = lambda j: G.binding(inputs_sha=G.sha_json(needs[j["id"]]), provenance=j["provenance"], smoke=a.smoke,
+                               settings={"max_rounds": a.max_rounds, "threshold": THRESHOLD, "seeds": "1+(k-1)R", "nesting": j["id"] in plan["nesting"]},
+                               driver_sha=drv)
+    gate_cells = {c: {"inputs_sha": G.sha_json(cell_inputs(a.src, job_for(c, root, cfgs, params, salt, False))), "driver_sha": drv} for c in GATE_CELLS}
+    check_run_evidence(a.evidence, a.smoke, a.gate, gate_cells)
+    t = json.loads((ROOT / "experiments/v2/benchmark/timings.json").read_text())["timings"]; ev = t["eval160"]["profit"] * 200 / 160
+    hours = lambda j: ((t["doubling_x7"] if j["family"] == "X7-SC" else t["doubling"]) + ev) / 3600 + 0.1     # a round, its evaluation, shutdown
+    paid = a.site == "pod" and not a.smoke
+    cost = (lambda: G.paid_cost_stop(a.cap, a.rate, a.started, a.prior)) if paid else (lambda: None)
+    stop = cost(); cargs = (a.cap, a.rate, a.started, __import__("time").time, a.prior) if paid else None
+    files = {"driver": Path(__file__), "plan": HERE / "convergence-plan.md", "report": Path(a.report), "posthoc": Path(a.posthoc)}
     if a.gate:
-        for j in jobs:
-            write(out / "gate" / (R._safe(j["id"]) + ".json"), gate_cell(j, out, a.src))
+        res = {}
+        for j in jobs:                                           # serial; admission before each gate cell
+            if stop and not stop.allow(f"gate {j['id']}", hours(j)):
+                write(out / "cost_stop.json", stop.report()); G.inventory(out, DEVIATIONS, files, argv); return 3
+            res[j["id"]] = gate_cell(j, out, a.src, a.site, bind(j), cargs, hours(j))
+            write(out / "gate" / (R._safe(j["id"]) + f"__{a.site}.json"), res[j["id"]])
         G.inventory(out, DEVIATIONS, files, argv)
-        return 0 if all(read(out / "gate" / (R._safe(j["id"]) + ".json"))["pass"] for j in jobs) else 4
-    t = json.loads((ROOT / "experiments/v2/benchmark/timings.json").read_text())["timings"]
-    started = a.started if a.started is not None else __import__("time").time()
+        return 0 if all(r["pass"] for r in res.values()) else 4
     path = lambda j: out / "convergence" / (R._safe(j["id"]) + ".json")
-    bind = lambda j: G.binding(inputs_sha=G.sha_json(cell_inputs(a.src, j)), provenance=j["provenance"], smoke=a.smoke,
-                               settings={"max_rounds": a.max_rounds, "threshold": THRESHOLD, "seeds": "1+(k-1)R"}, driver_sha=sha_file(Path(__file__)))
-    todo = [j for j in jobs if not G.reusable(path(j), bind(j))]
-    hours = lambda j: (t["doubling_x7"] if j["family"] == "X7-SC" else t["doubling"]) / 3600
-    stop = G.CostStop(a.cap, a.rate, started)
-    if todo and not stop.allow("cells", max(hours(j) for j in todo)):
-        write(out / "cost_stop.json", stop.report()); G.inventory(out, DEVIATIONS, files, argv)
-        return 3
-    srcs = [None if a.smoke else a.src] * len(todo); costs = [(a.cap, a.rate, started)] * len(todo)
+    todo = sorted((j for j in jobs if not G.reusable(path(j), bind(j))), key=lambda j: j["family"] != "X7-SC")   # longest first
+    emb = lambda j: (report["doubling"].get(R.cell_id(j["context"], j["rule"], "D2+H3", "profit")) or {}).get("heldout", {}).get("knobs") if j["id"] in plan["nesting"] else None
+    minr = lambda j: 2 if j["id"] in plan["nesting"] else 1
+    args = [(j, out, a.max_rounds, None if a.smoke else a.src, cargs, hours(j), emb(j), minr(j)) for j in todo]
     from concurrent.futures import ProcessPoolExecutor
     if a.workers > 1 and len(todo) > 1:
         with ProcessPoolExecutor(max_workers=a.workers) as ex:
-            res = list(ex.map(run_cell, todo, [out] * len(todo), [a.max_rounds] * len(todo), srcs, costs, [hours(j) for j in todo]))
+            res = list(ex.map(run_cell, *zip(*args)))
     else:
-        res = [run_cell(j, out, a.max_rounds, s, c, hours(j)) for j, s, c in zip(todo, srcs, costs)]
+        res = [run_cell(*x) for x in args]
     for j, rec in zip(todo, res):
         write(path(j), {**rec, "binding": bind(j)})
     status = {j["id"]: read(path(j))["status"] for j in jobs}
     mismatch = [k for k, v in status.items() if v.startswith("stopped: round 1")]
     if not a.smoke and not mismatch:
-        write(out / "recompute.json", recompute(a.src, out))
+        done = {j["id"]: bind(j) for j in jobs if "heldout" in read(path(j))}
+        nest_done = {k: read(out / "convergence" / (R._safe(k) + ".json"))["heldout"]["gain"] for k in plan["nesting"] if k in done}
+        write(out / "recompute.json", {**recompute(a.src, out, expected=done), "nesting_shortfall": shortfall_report(nesting, nest_done)})
     G.inventory(out, DEVIATIONS, files, argv)
     print(json.dumps({"cells": len(jobs), "status": status}))
     return 4 if mismatch else 0

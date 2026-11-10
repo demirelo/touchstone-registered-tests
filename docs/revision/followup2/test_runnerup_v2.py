@@ -132,39 +132,56 @@ def _frozen_out(tmp_path, monkeypatch):
 
 def test_prefreeze_and_acceptance_validate_the_complete_freeze(tmp_path, monkeypatch):
     out, jobs = _frozen_out(tmp_path, monkeypatch)
-    A.prefreeze(out, jobs); fr = read(A.R.path_of(out, f"freeze/{CTX}"))
+    A.prefreeze(out, jobs, src="src"); fr = read(A.R.path_of(out, f"freeze/{CTX}"))
     assert len(fr["records"]) == 4 and fr["cuts"] == 3 and fr["h4_excluded"] is False and fr["followup"] is True
-    A.check_freeze(out, jobs, src=None)
+    A.check_freeze(out, jobs, src="src")
 
 
 def test_acceptance_refuses_an_empty_or_incomplete_freeze(tmp_path, monkeypatch):
-    out, jobs = _frozen_out(tmp_path, monkeypatch); A.prefreeze(out, jobs)
+    out, jobs = _frozen_out(tmp_path, monkeypatch); A.prefreeze(out, jobs, src="src")
     p = A.R.path_of(out, f"freeze/{CTX}"); f = read(p)
     for change in ({"records": {}}, {"records": {k: v for k, v in f["records"].items() if not k.startswith("reference/")}}, {"cuts": 2}, {"h4_excluded": True}):
         write(p, {**f, **change})
         with pytest.raises(SystemExit):
-            A.check_freeze(out, jobs, src=None)
+            A.check_freeze(out, jobs, src="src")
 
 
 def test_prefreeze_refuses_a_stale_or_wrongly_linked_record(tmp_path, monkeypatch):
     out, jobs = _frozen_out(tmp_path, monkeypatch)
     q = A.R.path_of(out, jobs[0]["id"]); d = read(q); d["provenance"] = {"id": "old"}; write(q, d)
     with pytest.raises(SystemExit, match="provenance"):
-        A.prefreeze(out, jobs)
+        A.prefreeze(out, jobs, src="src")
     out2, jobs2 = _frozen_out(tmp_path / "b", monkeypatch)
     q = A.R.path_of(out2, jobs2[1]["id"]); d = read(q); d["upstream"] = {jobs2[0]["id"]: "0" * 64}; write(q, d)
     with pytest.raises(SystemExit, match="hash"):
-        A.prefreeze(out2, jobs2)
+        A.prefreeze(out2, jobs2, src="src")
 
 
-def test_a_full_run_needs_passing_reproduction_evidence(tmp_path):
+def test_a_changed_bank_copy_is_refused_even_with_a_rebuilt_reference(tmp_path, monkeypatch):
+    out, jobs = _frozen_out(tmp_path, monkeypatch); bank = A.R.cell_id(CTX, "F000", "D2+H3", "profit"); q = A.R.path_of(out, bank)
+    orig = sha_file(q); monkeypatch.setattr(A, "bank_inputs", lambda src, ctxs: {bank: orig})          # the original freeze hash
+    write(q, {"stage": "search", "changed": True}); w = read(out / "inputs.json"); w[bank] = sha_file(q); write(out / "inputs.json", w)
+    ref = A.R.path_of(out, f"reference/{CTX}/C*"); r = read(ref); r["upstream"][bank] = sha_file(q); write(ref, r)       # rebuilt reference
+    with pytest.raises(SystemExit, match="original freeze"):
+        A.prefreeze(out, jobs, src="src")
+
+
+def test_a_full_run_needs_bound_reproduction_evidence(tmp_path, monkeypatch):
     with pytest.raises(SystemExit, match="evidence"):
-        A.check_run_evidence([], smoke=False)
-    write(tmp_path / "g.json", {"pass": True}); A.check_run_evidence([tmp_path / "g.json"], smoke=False); A.check_run_evidence([], smoke=True)
+        A.check_run_evidence(None, None, None, smoke=False)
+    seen = []
+    monkeypatch.setattr(A.G, "check_reset_evidence", lambda m, p: seen.append((m, p)))
+    write(tmp_path / "dbl.json", {"pass": True}); A.check_run_evidence(tmp_path / "m", tmp_path / "p", tmp_path / "dbl.json", smoke=False)
+    assert seen == [(tmp_path / "m", tmp_path / "p")]
+    write(tmp_path / "bad.json", {"pass": False})
+    with pytest.raises(SystemExit, match="evidence"):
+        A.check_run_evidence(tmp_path / "m", tmp_path / "p", tmp_path / "bad.json", smoke=False)
+    A.check_run_evidence(None, None, None, smoke=True)
 
 
 @pytest.mark.skipif(not (MAIN / "eval/all/freeze").is_dir(), reason="needs the registered evaluation records")
-def test_smoke_path_for_one_fresh_market(tmp_path):
+def test_smoke_path_for_one_fresh_market(tmp_path, monkeypatch):
+    monkeypatch.setattr(A.R, "git_commit", lambda: "pinned-for-the-rerun-check")      # a commit elsewhere during the test must not change the binding
     out = tmp_path / "runnerup"
     args = ["--src", str(MAIN / "eval/all"), "--out", str(out), "--draw", str(MAIN / "draw/draw.json"), "--instances", str(MAIN / "draw/instances.json"),
             "--cfgs", str(MAIN / "deviation/cfg_linux.json"), "--addendum", str(MAIN / "report/addendum.json"), "--markets", "fresh0", "--smoke"]

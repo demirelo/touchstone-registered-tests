@@ -67,3 +67,55 @@ def test_finite_values_are_required():
 def test_a_binding_survives_its_json_round_trip(tmp_path):
     b = G.binding(inputs_sha="i", provenance={"seeds": (1, 2)}, smoke=True, settings={"markets": ("fresh0",)}, driver_sha="d")
     write(tmp_path / "r.json", {"binding": b}); assert G.reusable(tmp_path / "r.json", G.binding("i", {"seeds": (1, 2)}, True, {"markets": ("fresh0",)}, "d"))
+
+
+# ---- round 2: bound evidence, spending inputs ----
+
+def _gate(path, cell, site, env, ok=True, smoke=False, inputs="i", driver="d"):
+    write(path, {"stage": "convergence gate", "cell": cell, "pass": ok, "site": site, "environment": env,
+                 "binding": {"smoke": smoke, "inputs_sha": inputs, "driver_sha": driver}})
+
+
+def test_gate_evidence_needs_both_cells_from_the_mac_and_this_machine(tmp_path):
+    here, mac = G.environment(), {"cpu": "Apple M3", "machine": "arm64"}
+    cells = {"a": {"inputs_sha": "i", "driver_sha": "d"}, "b": {"inputs_sha": "i", "driver_sha": "d"}}
+    ps = []
+    for c in cells:
+        for site, env in (("mac", mac), ("pod", here)):
+            p = tmp_path / f"{c}-{site}.json"; _gate(p, c, site, env); ps.append(p)
+    G.check_gate_evidence(ps, cells)
+    for drop in ps:                                                               # every one of the four is required
+        with pytest.raises(SystemExit, match="evidence"):
+            G.check_gate_evidence([p for p in ps if p != drop], cells)
+    write(tmp_path / "x.json", {"pass": True})                                    # an unrelated passing file does not count
+    with pytest.raises(SystemExit, match="evidence"):
+        G.check_gate_evidence([ps[0], tmp_path / "x.json"], cells)
+    for kw in ({"smoke": True}, {"inputs": "j"}, {"driver": "e"}, {"ok": False}):
+        q = tmp_path / "bad.json"; _gate(q, "a", "pod", here, **kw)
+        with pytest.raises(SystemExit, match="evidence"):
+            G.check_gate_evidence([q] + [p for p in ps if p.name != "a-pod.json"], cells)
+    q = tmp_path / "other-env.json"; _gate(q, "a", "pod", mac)                   # a pod record from another machine
+    with pytest.raises(SystemExit, match="evidence"):
+        G.check_gate_evidence([q] + [p for p in ps if p.name != "a-pod.json"], cells)
+
+
+def test_reset_evidence_needs_a_mac_pass_and_an_identical_pod_pass_on_this_machine(tmp_path):
+    drv = G.sha_file(G.HERE.parent / "followup" / "reset_followup_v2.py"); here = {**G.environment(), "driver_sha256": drv}
+    def put(d, ok=True, ident=True, env=here):
+        write(d / "gate.json", {"stage": "reproduction gate", "pass": ok, "identical": ident}); write(d / "inventory.json", {"environment": env})
+        return d
+    mac, pod = put(tmp_path / "mac", ident=False, env={"cpu": "Apple", "driver_sha256": drv}), put(tmp_path / "pod")
+    G.check_reset_evidence(mac, pod)
+    for bad in (put(tmp_path / "p1", ident=False), put(tmp_path / "p2", ok=False), put(tmp_path / "p3", env={**here, "cpu": "other"}),
+                put(tmp_path / "p4", env={**here, "driver_sha256": "x"})):
+        with pytest.raises(SystemExit, match="evidence"):
+            G.check_reset_evidence(mac, bad)
+
+
+def test_paid_runs_need_an_allocation_time_and_count_prior_spend():
+    with pytest.raises(SystemExit, match="allocation"):
+        G.paid_cost_stop(3.0, 0.56, started=None, prior_usd=0.0)
+    with pytest.raises(SystemExit, match="rate"):
+        G.paid_cost_stop(3.0, 0.0, started=0.0, prior_usd=0.0)
+    c = G.paid_cost_stop(3.0, 0.56, started=100.0, prior_usd=2.9, clock=lambda: 100.0)
+    assert c.allow("x", 0.1) is True and c.allow("y", 0.2) is False              # 2.9 failed-attempt spend + 0.112 vs + 0.224
