@@ -250,6 +250,54 @@ def honest(report: dict) -> dict:
     return res
 
 
+def market_level(dbl: dict) -> dict:
+    """Fable 5.2 review: the six per-market Q1 differences treated as a sample of markets (t interval, n - 1 degrees of
+    freedom, and the count of positive markets), for the frozen and the doubled winners; plus the relative difference of
+    the pooled absolute gains, C*/R3 - 1. The registered intervals hold the six markets fixed; this one does not."""
+    from scipy import stats
+    res = {}
+    for fam, v in dbl.items():
+        out = {}
+        for k in ("frozen", "doubled"):
+            x = np.array([row[f"q1_{k}"] for row in v["markets"].values()]); n = len(x)
+            h = float(stats.t.ppf(0.975, n - 1) * x.std(ddof=1) / np.sqrt(n))
+            out[k] = {"mean": float(x.mean()), "t95": [float(x.mean()) - h, float(x.mean()) + h], "positive": int((x > 0).sum()), "n": n}
+        out["relative"] = v["absolute"]["C*"]["mean_gain"] / v["absolute"]["F111"]["mean_gain"] - 1
+        res[fam] = out
+    return res
+
+
+def x7_embedding(out, markets) -> dict:
+    """Fable 5.2 review: Q1 cells where the X7-SC search winner is the embedded D2+H3 winner (design 5.2 incumbent) and its
+    evaluated gains equal the D2+H3 cell's, so the second Q1 family adds no evidence there."""
+    same, differs, n = 0, [], 0
+    for m in markets:
+        for rule in ("C*", "F111"):
+            x, d = _rec(out, f"{m}@rho0.2|{rule}|X7-SC|profit"), _rec(out, f"{m}@rho0.2|{rule}|D2+H3|profit")
+            if x is None or d is None:
+                continue
+            n += 1; src = _search_rec(out, f"{m}@rho0.2|{rule}|X7-SC|profit")["attack"].get("best_source", "")
+            if src.startswith("incumbent:embedded") and list(x["gain"]) == list(d["gain"]):
+                same += 1
+            else:
+                differs.append(f"{m}@rho0.2|{rule}")
+    return {"embedded_identical": same, "cells": n, "differs": differs}
+
+
+def envelope_difference(report: dict, markets) -> dict:
+    """Fable 5.2 review: C* minus R3 with each rule's training-selected strongest family (report q3.envelope); descriptive."""
+    e = report["q3"]["envelope"]; rows = {}
+    for m in markets:
+        if m in e.get("C*", {}) and m in e.get("F111", {}):
+            rows[m] = {"difference": e["C*"][m]["estimate"] - e["F111"][m]["estimate"], "family_cstar": e["C*"][m]["family"], "family_r3": e["F111"][m]["family"]}
+    return {"markets": rows, "pooled": float(np.mean([v["difference"] for v in rows.values()]))}
+
+
+def doubling_flags(report: dict) -> dict:
+    d = report["doubling"]
+    return {"flagged": sum(1 for v in d.values() if v.get("incomplete")), "checks": len(d)}
+
+
 def q4_diagnostics(out) -> dict:
     res = {}
     for m in FRESH:
@@ -363,6 +411,8 @@ def main(argv=None) -> int:
            "welfare": {r: welfare_mixtures(out, r) for r in ("F000", "F111", "C*")},
            "q4_diag": q4_diagnostics(out), "stability": stability(report, stab),
            "doubled": doubled(out, report, FRESH), "honest": honest(report)}
+    res["market_level"] = market_level(res["doubled"]); res["x7_embedding"] = x7_embedding(out, FRESH)
+    res["envelope"] = envelope_difference(report, FRESH); res["doubling_flags"] = doubling_flags(report)
     Path(a.out).write_text(json.dumps(res, indent=1) + "\n")
     import csv
     seeds = [row for r in ("F000", "F111", "C*") for row in seed_rows(out, r)]

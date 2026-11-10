@@ -4,15 +4,20 @@
 \providecommand{\rvk}[2]{\rv{#2}}
 \providecommand{\site}[1]{\ifcsname site@#1\endcsname\csname site@#1\endcsname\else\textbf{??#1}\fi}
 \providecommand{\rv}[1]{\ifcsname rv@#1\endcsname\csname rv@#1\endcsname\else\textbf{??#1}\fi}
+\expandafter\def\csname site@abs_ml_hi\endcsname{0.054}
+\expandafter\def\csname site@abs_ml_lo\endcsname{\ensuremath{-0.013}}
 \expandafter\def\csname site@abs_ph_mix_eff\endcsname{0.932}
 \expandafter\def\csname site@abs_ph_mix_gain\endcsname{0.000374}
 \expandafter\def\csname site@abs_q1_cat\endcsname{equivalent, direction R3 lower}
 \expandafter\def\csname site@abs_q1_est\endcsname{0.021}
 \expandafter\def\csname site@abs_q1_est_x\endcsname{0.024}
 \expandafter\def\csname site@abs_q2_pg\endcsname{0.082}
+\expandafter\def\csname site@abs_q2_pg1\endcsname{\ensuremath{-0.001}}
 \expandafter\def\csname site@abs_q3_f111_h4\endcsname{0.069}
 \expandafter\def\csname site@abs_q3_w0\endcsname{0.840}
 \expandafter\def\csname site@abs_q4_k\endcsname{3}
+\expandafter\def\csname site@abs_x7_cells\endcsname{12}
+\expandafter\def\csname site@abs_x7_same\endcsname{10}
 \expandafter\def\csname site@c_mx_cs\endcsname{0.921}
 \expandafter\def\csname site@c_mx_cs_p\endcsname{0.922}
 \expandafter\def\csname site@c_mx_r3\endcsname{0.932}
@@ -33,6 +38,8 @@
 \expandafter\def\csname site@r_dbl_f3_d\endcsname{0.015}
 \expandafter\def\csname site@r_dbl_pool_d\endcsname{0.030}
 \expandafter\def\csname site@r_dbl_pool_x\endcsname{0.024}
+\expandafter\def\csname site@r_env_f1\endcsname{0.070}
+\expandafter\def\csname site@r_env_pool\endcsname{0.031}
 \expandafter\def\csname site@r_ext_cnt\endcsname{506}
 \expandafter\def\csname site@r_ext_n\endcsname{12}
 \expandafter\def\csname site@r_ext_round\endcsname{1.2e-13}
@@ -40,11 +47,21 @@
 \expandafter\def\csname site@r_ext_share\endcsname{5.1 percent}
 \expandafter\def\csname site@r_ext_tot\endcsname{9,999}
 \expandafter\def\csname site@r_ext_total\endcsname{200}
+\expandafter\def\csname site@r_flag\endcsname{21}
+\expandafter\def\csname site@r_flag_n\endcsname{98}
 \expandafter\def\csname site@r_hon_b3_0\endcsname{0.250}
 \expandafter\def\csname site@r_hon_cs_0\endcsname{0.428}
 \expandafter\def\csname site@r_hon_cs_1\endcsname{0.161}
 \expandafter\def\csname site@r_hon_r3_0\endcsname{1.000}
 \expandafter\def\csname site@r_hon_r3_1\endcsname{0.917}
+\expandafter\def\csname site@r_ml_dhi\endcsname{0.045}
+\expandafter\def\csname site@r_ml_dlo\endcsname{0.014}
+\expandafter\def\csname site@r_ml_dpos\endcsname{6}
+\expandafter\def\csname site@r_ml_hi\endcsname{0.054}
+\expandafter\def\csname site@r_ml_lo\endcsname{\ensuremath{-0.013}}
+\expandafter\def\csname site@r_ml_pos\endcsname{5}
+\expandafter\def\csname site@r_ml_xhi\endcsname{0.044}
+\expandafter\def\csname site@r_ml_xlo\endcsname{0.005}
 \expandafter\def\csname site@r_ph_e_cs\endcsname{0.921}
 \expandafter\def\csname site@r_ph_e_cs_d\endcsname{0.922}
 \expandafter\def\csname site@r_ph_e_r3\endcsname{0.932}
@@ -93,6 +110,7 @@
 \expandafter\def\csname site@r_q2_g_p0\endcsname{\ensuremath{-0.177}}
 \expandafter\def\csname site@r_q2_g_p1\endcsname{\ensuremath{-0.014}}
 \expandafter\def\csname site@r_q2_p\endcsname{\ensuremath{-0.083}}
+\expandafter\def\csname site@r_q2_p_g1\endcsname{\ensuremath{-0.001}}
 \expandafter\def\csname site@r_q2_pg\endcsname{0.082}
 \expandafter\def\csname site@r_q2_s\endcsname{0.004}
 \expandafter\def\csname site@r_q2_s_x\endcsname{0.005}
@@ -121,6 +139,7 @@
 \expandafter\def\csname site@r_q4_f2_eff\endcsname{0.985}
 \expandafter\def\csname site@r_q4_f5\endcsname{0.027}
 \expandafter\def\csname site@r_q4_k\endcsname{3}
+\expandafter\def\csname site@r_rel\endcsname{0.319}
 \expandafter\def\csname site@r_rep_cs2\endcsname{0.434}
 \expandafter\def\csname site@r_rep_f111\endcsname{0.565}
 \expandafter\def\csname site@r_rep_r4\endcsname{0.356}
@@ -129,3 +148,5 @@
 \expandafter\def\csname site@r_sec_r3t\endcsname{0.060}
 \expandafter\def\csname site@r_st_f4_new\endcsname{0.176}
 \expandafter\def\csname site@r_st_f4_old\endcsname{0.183}
+\expandafter\def\csname site@r_x7_cells\endcsname{12}
+\expandafter\def\csname site@r_x7_same\endcsname{10}

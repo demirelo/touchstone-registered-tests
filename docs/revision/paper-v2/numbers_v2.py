@@ -27,11 +27,13 @@ COMMENT = re.compile(r"(?<!\\)%.*")
 INPUT = re.compile(r"\\(?:input|include)\{([^}]*)\}")
 P_LEAVES = {"p", "p_gain", "p_eff", "calibrated", "holm_adjusted", "calibrated_gain", "calibrated_eff"}
 # Kinds for prose in result regions: the field name and the value type must fit the sentence's statistic.
-COUNT_LEAVES = {"k", "fulfilled", "failed", "not assessed"}          # Q4's k; the prediction tallies (score_v2.py)
+COUNT_LEAVES = {"k", "fulfilled", "failed", "not assessed",           # Q4's k; the prediction tallies (score_v2.py)
+                "positive", "n", "embedded_identical", "cells", "flagged", "checks"}    # Fable 5.2 review counts (posthoc)
 KINDS = {"count": lambda leaf, v: leaf in COUNT_LEAVES and isinstance(v, int) and not isinstance(v, bool),
          "p": lambda leaf, v: leaf in P_LEAVES and isinstance(v, float) and 0 <= v <= 1,
          "gain": lambda leaf, v: leaf in {"estimate", "gain_diff", "gain_diff_lower", "attacker_gain", "0", "1", "q1_frozen", "q1_doubled",
-                                          "q4_frozen", "q4_doubled", "mean_gain"} and isinstance(v, float),
+                                          "q4_frozen", "q4_doubled", "mean_gain", "mean", "difference", "pooled"} and isinstance(v, float),
+         "ratio": lambda leaf, v: leaf == "relative" and isinstance(v, float),
          "share": lambda leaf, v: leaf == "audited_share" and isinstance(v, float) and 0 <= v <= 1,
          "eff": lambda leaf, v: leaf in {"eff", "eff_lower", "efficiency", "0", "1"} and isinstance(v, float),
          "label": lambda leaf, v: isinstance(v, str)}

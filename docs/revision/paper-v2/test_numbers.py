@@ -374,3 +374,12 @@ def test_gain_and_share_kinds_accept_the_round9_analyses_only():
         assert N.KINDS["gain"](leaf, 0.02)
     assert N.KINDS["share"]("audited_share", 0.917) and not N.KINDS["share"]("audited_share", 1.2)
     assert not N.KINDS["share"]("efficiency", 0.9) and not N.KINDS["gain"]("audited_share", 0.5)
+
+
+def test_kinds_accept_the_fable52_analyses_only():
+    # Fable 5.2 review (2026-11-10): market-level interval and mean, envelope difference, relative difference, and counts
+    for leaf in ("mean", "difference", "pooled"):
+        assert N.KINDS["gain"](leaf, 0.02)
+    for leaf in ("positive", "n", "embedded_identical", "cells", "flagged", "checks"):
+        assert N.KINDS["count"](leaf, 5) and not N.KINDS["count"](leaf, 5.0)
+    assert N.KINDS["ratio"]("relative", 0.319) and not N.KINDS["ratio"]("mean", 0.3) and not N.KINDS["gain"]("relative", 0.3)

@@ -1675,5 +1675,96 @@
    "mean_false_refund": 2.0144161499024578e-05
   },
   "r3_minus_cstar_profit_per_round": -1.264987273177573e-05
+ },
+ "market_level": {
+  "D2+H3": {
+   "frozen": {
+    "mean": 0.02072000551319045,
+    "t95": [
+     -0.012788594399382455,
+     0.054228605425763354
+    ],
+    "positive": 5,
+    "n": 6
+   },
+   "doubled": {
+    "mean": 0.029624480023365915,
+    "t95": [
+     0.013944171912784544,
+     0.04530478813394728
+    ],
+    "positive": 6,
+    "n": 6
+   },
+   "relative": 0.3192236652079332
+  },
+  "X7-SC": {
+   "frozen": {
+    "mean": 0.024318963497430204,
+    "t95": [
+     0.004671126332703283,
+     0.04396680066215712
+    ],
+    "positive": 5,
+    "n": 6
+   },
+   "doubled": {
+    "mean": 0.024289885977948122,
+    "t95": [
+     0.0051463825422834765,
+     0.04343338941361277
+    ],
+    "positive": 5,
+    "n": 6
+   },
+   "relative": 0.36314852907443185
+  }
+ },
+ "x7_embedding": {
+  "embedded_identical": 10,
+  "cells": 12,
+  "differs": [
+   "fresh3@rho0.2|C*",
+   "fresh4@rho0.2|F111"
+  ]
+ },
+ "envelope": {
+  "markets": {
+   "fresh0": {
+    "difference": 0.021141253469674617,
+    "family_cstar": "D2+H3",
+    "family_r3": "D2+H3"
+   },
+   "fresh1": {
+    "difference": 0.07001639398011482,
+    "family_cstar": "X5-AG/v2",
+    "family_r3": "D2+H3"
+   },
+   "fresh2": {
+    "difference": 0.02756110109157925,
+    "family_cstar": "X5-AG/v2",
+    "family_r3": "X5-AG/v2"
+   },
+   "fresh3": {
+    "difference": 0.017120630613700005,
+    "family_cstar": "X5-AG/v2",
+    "family_r3": "X5-AG/v2"
+   },
+   "fresh4": {
+    "difference": 0.03148434995243101,
+    "family_cstar": "D2+H3",
+    "family_r3": "X7-SC"
+   },
+   "fresh5": {
+    "difference": 0.016482830264015785,
+    "family_cstar": "D2+H3",
+    "family_r3": "D2+H3"
+   }
+  },
+  "pooled": 0.03063442656191925
+ },
+ "doubling_flags": {
+  "flagged": 21,
+  "checks": 98
  }
 }

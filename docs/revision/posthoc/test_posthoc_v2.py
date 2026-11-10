@@ -197,3 +197,40 @@ def test_tables_show_doubled_winners_and_the_honest_profile():
     t = P.tables(res)
     assert "fresh3 & $-0.038$ & $0.015$ & $0.010$ & $0.010$ & $0.263$ & $0.260$" in t["doubled"]
     assert "C* & 0.428" in t["honest"] and "R3 (F111) & 1.000" in t["honest"] and "2.80" in t["honest"] and "2.00" in t["honest"]
+
+
+# ---- Fable 5.2 review (2026-11-10): market-level variation, the X7-SC embedding, the envelope, the doubling flags ----
+
+def _dbl(vals_frozen, vals_doubled, c=0.09, r=0.06):
+    return {"D2+H3": {"markets": {f"fresh{i}": {"q1_frozen": a, "q1_doubled": b} for i, (a, b) in enumerate(zip(vals_frozen, vals_doubled))},
+                      "absolute": {"C*": {"mean_gain": c}, "F111": {"mean_gain": r}}}}
+
+
+def test_market_level_interval_treats_the_six_markets_as_a_sample():
+    x = [0.0211, 0.0525, 0.0285, -0.0382, 0.0438, 0.0165]
+    got = P.market_level(_dbl(x, x, c=0.0856, r=0.0649))["D2+H3"]
+    assert got["frozen"]["mean"] == pytest.approx(0.020700, abs=1e-6) and got["frozen"]["positive"] == 5 and got["frozen"]["n"] == 6
+    lo, hi = got["frozen"]["t95"]                                   # values from scipy on the report numbers (2026-11-10 command)
+    assert lo == pytest.approx(-0.01279, abs=2e-5) and hi == pytest.approx(0.05419, abs=2e-5)
+    assert got["relative"] == pytest.approx(0.0856 / 0.0649 - 1)
+
+
+def test_x7_embedding_counts_cells_whose_winner_is_the_embedded_d2h3_winner(tmp_path):
+    for m, src, gx in (("fresh0", "incumbent:embedded_h3", [0.1, 0.2]), ("fresh1", "restart_2", [0.3, 0.4])):
+        for rule in ("C*", "F111"):
+            _rec(tmp_path, f"{m}@rho0.2|{rule}|D2+H3|profit", gain=[0.1, 0.2])
+            _rec(tmp_path, f"{m}@rho0.2|{rule}|X7-SC|profit", gain=gx)
+            p = tmp_path / "search" / (P.safe(f"{m}@rho0.2|{rule}|X7-SC|profit") + ".json"); p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(json.dumps({"attack": {"best_source": src}}))
+    got = P.x7_embedding(tmp_path, ["fresh0", "fresh1"])
+    assert got["embedded_identical"] == 2 and got["cells"] == 4 and got["differs"] == ["fresh1@rho0.2|C*", "fresh1@rho0.2|F111"]
+
+
+def test_envelope_difference_and_flag_count_come_from_the_report():
+    rep = {"q3": {"envelope": {"C*": {"fresh0": {"estimate": 0.11, "family": "D2+H3"}, "fresh1": {"estimate": 0.17, "family": "X5-AG/v2"}},
+                               "F111": {"fresh0": {"estimate": 0.09, "family": "D2+H3"}, "fresh1": {"estimate": 0.10, "family": "D2+H3"}}}},
+           "doubling": {"a": {"incomplete": True}, "b": {"incomplete": False}, "c": {"incomplete": True}}}
+    env = P.envelope_difference(rep, ["fresh0", "fresh1"])
+    assert env["markets"]["fresh1"] == {"difference": pytest.approx(0.07), "family_cstar": "X5-AG/v2", "family_r3": "D2+H3"}
+    assert env["pooled"] == pytest.approx(0.045)
+    assert P.doubling_flags(rep) == {"flagged": 2, "checks": 3}

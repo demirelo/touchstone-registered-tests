@@ -623,5 +623,110 @@
   "path": "posthoc.honest.F000.bins.0.audited_share",
   "kind": "share",
   "section": "results"
+ },
+ "r_ml_lo": {
+  "path": "posthoc.market_level.D2+H3.frozen.t95.0",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_ml_hi": {
+  "path": "posthoc.market_level.D2+H3.frozen.t95.1",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_ml_dlo": {
+  "path": "posthoc.market_level.D2+H3.doubled.t95.0",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_ml_dhi": {
+  "path": "posthoc.market_level.D2+H3.doubled.t95.1",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_ml_xlo": {
+  "path": "posthoc.market_level.X7-SC.frozen.t95.0",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_ml_xhi": {
+  "path": "posthoc.market_level.X7-SC.frozen.t95.1",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_env_pool": {
+  "path": "posthoc.envelope.pooled",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_env_f1": {
+  "path": "posthoc.envelope.markets.fresh1.difference",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q2_p_g1": {
+  "path": "q2.searched.D2+H3.P|G=1.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_ml_pos": {
+  "path": "posthoc.market_level.D2+H3.frozen.positive",
+  "kind": "count",
+  "section": "results"
+ },
+ "r_ml_dpos": {
+  "path": "posthoc.market_level.D2+H3.doubled.positive",
+  "kind": "count",
+  "section": "results"
+ },
+ "r_x7_same": {
+  "path": "posthoc.x7_embedding.embedded_identical",
+  "kind": "count",
+  "section": "results"
+ },
+ "r_x7_cells": {
+  "path": "posthoc.x7_embedding.cells",
+  "kind": "count",
+  "section": "results"
+ },
+ "r_flag": {
+  "path": "posthoc.doubling_flags.flagged",
+  "kind": "count",
+  "section": "results"
+ },
+ "r_flag_n": {
+  "path": "posthoc.doubling_flags.checks",
+  "kind": "count",
+  "section": "results"
+ },
+ "r_rel": {
+  "path": "posthoc.market_level.D2+H3.relative",
+  "kind": "ratio",
+  "section": "results"
+ },
+ "abs_q2_pg1": {
+  "path": "q2.searched.D2+H3.P|G=1.estimate",
+  "kind": "gain",
+  "section": "abstract"
+ },
+ "abs_ml_lo": {
+  "path": "posthoc.market_level.D2+H3.frozen.t95.0",
+  "kind": "gain",
+  "section": "abstract"
+ },
+ "abs_ml_hi": {
+  "path": "posthoc.market_level.D2+H3.frozen.t95.1",
+  "kind": "gain",
+  "section": "abstract"
+ },
+ "abs_x7_same": {
+  "path": "posthoc.x7_embedding.embedded_identical",
+  "kind": "count",
+  "section": "abstract"
+ },
+ "abs_x7_cells": {
+  "path": "posthoc.x7_embedding.cells",
+  "kind": "count",
+  "section": "abstract"
  }
 }
