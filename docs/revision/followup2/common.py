@@ -10,6 +10,8 @@ import numpy as np
 
 MARGIN = 0.05                                       # the registered Q1 margin (design 9.3)
 RESAMPLES, SEED = 9999, 0
+SCOPE = ("nominal paired percentile bootstrap over seeds, conditional on these markets and the selected policies and references; "
+         "no search or market-sampling uncertainty; no registered calibration or Holm guarantee")
 
 
 def pooled_paired(a: dict, b: dict, resamples: int = RESAMPLES, seed: int = SEED, level: float = 0.95) -> dict:
@@ -23,12 +25,15 @@ def pooled_paired(a: dict, b: dict, resamples: int = RESAMPLES, seed: int = SEED
         if x.shape != y.shape:
             raise ValueError(f"{m}: unequal seed counts")
         diffs[m] = x - y
-    rng = np.random.default_rng(seed); reps = np.empty(resamples)
+    rng = np.random.default_rng(seed); per = {m: np.empty(resamples) for m in markets}
     for i in range(resamples):
-        reps[i] = np.mean([d[rng.integers(0, len(d), len(d))].mean() for d in (diffs[m] for m in markets)])
-    q = (1 - level) / 2
-    return {"markets": {m: float(diffs[m].mean()) for m in markets}, "estimate": float(np.mean([diffs[m].mean() for m in markets])),
-            "interval": [float(np.quantile(reps, q)), float(np.quantile(reps, 1 - q))], "resamples": resamples, "seed": seed, "level": level}
+        for m in markets:
+            d = diffs[m]; per[m][i] = d[rng.integers(0, len(d), len(d))].mean()
+    reps = np.mean([per[m] for m in markets], axis=0)
+    q = (1 - level) / 2; iv = lambda r: [float(np.quantile(r, q)), float(np.quantile(r, 1 - q))]
+    return {"markets": {m: float(diffs[m].mean()) for m in markets}, "market_intervals": {m: iv(per[m]) for m in markets},
+            "estimate": float(np.mean([diffs[m].mean() for m in markets])), "interval": iv(reps), "resamples": resamples, "seed": seed, "level": level,
+            "scope": SCOPE}
 
 
 def q1_category(interval) -> str:

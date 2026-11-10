@@ -63,14 +63,104 @@ def test_pairing_with_the_registered_cstar_reference_except_the_rule_parameters(
         A.check_pairing_rule(src, [{**job, "provenance": {**job["provenance"], "root": "x"}}])
 
 
-def test_analysis_pairs_the_runner_up_with_r3_and_cstar(tmp_path):
+def _eval_set(out, src, ru, cs, r3, ru_d=None, cs_d=None, r3_d=None, markets=("fresh0", "fresh1")):
+    rep = {"doubling": {}}
+    for m in markets:
+        for base, rule, g, gd in ((out, "C*", ru, ru_d), (src, "F111", r3, r3_d), (src, "C*", cs, cs_d)):
+            rid = f"{m}@rho0.2|{rule}|D2+H3|profit"; write(A.R.eval_path(base, rid), {"seeds": [1, 2], "gain": g})
+            held = {"seeds": [1, 2], "gain": gd if gd is not None else g, "knobs": {}}
+            if base == out:
+                write(out / "doubling" / (A.R._safe(rid) + ".json"), {"heldout": held, "attack_change": 0.001, "reference_change": 0.0, "incomplete": False})
+            else:
+                rep["doubling"][rid] = {"heldout": held}
+    return rep
+
+
+def test_analysis_has_base_and_doubled_contrasts_and_scores_the_expectation(tmp_path):
     out, src = tmp_path / "out", tmp_path / "src"
-    for m in ("fresh0", "fresh1"):
-        for base, rule, g in ((out, "C*", [0.10, 0.12]), (src, "F111", [0.08, 0.08]), (src, "C*", [0.15, 0.15])):
-            write(A.R.eval_path(base, f"{m}@rho0.2|{rule}|D2+H3|profit"), {"seeds": [1, 2], "gain": g})
-    got = A.analysis(out, src, ("fresh0", "fresh1"), fams=("D2+H3",), resamples=199)["D2+H3"]
-    assert got["runner_up_minus_r3"]["estimate"] == pytest.approx(0.03) and got["cstar_minus_runner_up"]["estimate"] == pytest.approx(0.04)
-    assert got["runner_up_minus_r3"]["category"] == A.C.q1_category(got["runner_up_minus_r3"]["interval"]) and got["label"].startswith("exploratory")
+    rep = _eval_set(out, src, ru=[0.10, 0.12], cs=[0.15, 0.15], r3=[0.08, 0.08], ru_d=[0.11, 0.13], cs_d=[0.16, 0.16])
+    got = A.analysis(out, src, rep, ("fresh0", "fresh1"), fams=("D2+H3",), resamples=199)["D2+H3"]
+    assert got["base"]["runner_up_minus_r3"]["estimate"] == pytest.approx(0.03) and got["base"]["cstar_minus_runner_up"]["estimate"] == pytest.approx(0.04)
+    assert got["base"]["cstar_minus_r3"]["estimate"] == pytest.approx(0.07) and got["doubled"]["cstar_minus_runner_up"]["estimate"] == pytest.approx(0.04)
+    assert got["base"]["runner_up_minus_r3"]["category"] == A.C.q1_category(got["base"]["runner_up_minus_r3"]["interval"])
+    assert got["expectation"] == {"statement": A.EXPECTATION, "base": 0.04 > 0, "doubled": True, "score": "met"} or got["expectation"]["score"] == "met"
+    assert set(got["flags"]["fresh0"]) == {"attack_change", "reference_change", "incomplete"} and got["label"].startswith("exploratory")
+
+
+@pytest.mark.parametrize("ru,ru_d,score", [([0.10, 0.12], [0.20, 0.20], "not established"), ([0.20, 0.20], [0.20, 0.20], "failed"),
+                                           ([0.15, 0.15], [0.10, 0.10], "not established")])
+def test_expectation_scores_ties_as_not_met(tmp_path, ru, ru_d, score):
+    out, src = tmp_path / "out", tmp_path / "src"
+    rep = _eval_set(out, src, ru=ru, cs=[0.15, 0.15], r3=[0.08, 0.08], ru_d=ru_d)
+    assert A.analysis(out, src, rep, ("fresh0", "fresh1"), fams=("D2+H3",), resamples=99)["D2+H3"]["expectation"]["score"] == score
+
+
+def test_missing_or_nonfinite_values_are_not_failures(tmp_path):
+    out, src = tmp_path / "out", tmp_path / "src"
+    rep = _eval_set(out, src, ru=[0.10, float("nan")], cs=[0.15, 0.15], r3=[0.08, 0.08])
+    assert A.analysis(out, src, rep, ("fresh0", "fresh1"), fams=("D2+H3",), resamples=99)["D2+H3"]["expectation"]["score"] == "not available"
+    rep["doubling"].pop("fresh1@rho0.2|C*|D2+H3|profit")
+    ok = _eval_set(out, src, ru=[0.10, 0.12], cs=[0.15, 0.15], r3=[0.08, 0.08]); ok["doubling"].pop("fresh1@rho0.2|C*|D2+H3|profit")
+    got = A.analysis(out, src, ok, ("fresh0", "fresh1"), fams=("D2+H3",), resamples=99)["D2+H3"]
+    assert got["doubled"] == "not available" and got["expectation"]["score"] == "not available"
+
+
+def test_the_exact_runner_up_specification_is_enforced():
+    good = {"id": "x", "spec": {"tol": 0.16, "L": 10, "cred": {"variant": "thr", "K": 12, "M": None}}}
+    A.check_spec([good])
+    for bad in ({**good["spec"], "tol": 0.14}, {**good["spec"], "cred": {"variant": "thr", "K": 6, "M": None}}, {**good["spec"], "L": 3}):
+        with pytest.raises(SystemExit, match="specification"):
+            A.check_spec([{"id": "x", "spec": bad}])
+
+
+def _frozen_out(tmp_path, monkeypatch):
+    """A follow-up output with one market's bank input, two searches and a reference, and the matching jobs."""
+    out = tmp_path / "out"; bank = A.R.cell_id(CTX, "F000", "D2+H3", "profit")
+    write(A.R.path_of(out, bank), {"stage": "search"}); write(out / "inputs.json", {bank: sha_file(A.R.path_of(out, bank))})
+    jobs = []
+    for fam in ("D2+H3", "X7-SC"):
+        rid = A.R.cell_id(CTX, "C*", fam, "profit"); prov = {"id": rid, "p": 1}
+        up = {} if fam == "D2+H3" else {A.R.cell_id(CTX, "C*", "D2+H3", "profit"): sha_file(A.R.path_of(out, A.R.cell_id(CTX, "C*", "D2+H3", "profit")))}
+        write(A.R.path_of(out, rid), {"stage": "search", "provenance": prov, "upstream": up}); jobs.append({"id": rid, "context": CTX, "family": fam, "provenance": prov})
+    ref = f"reference/{CTX}/C*"; write(A.R.path_of(out, ref), {"stage": "reference", "provenance": {"ref": 1},
+                                                                "upstream": {j["id"]: sha_file(A.R.path_of(out, j["id"])) for j in jobs} | {bank: sha_file(A.R.path_of(out, bank))}})
+    monkeypatch.setattr(A, "_expected", lambda rid, jobs: set((read(A.R.path_of(out, rid)) or {}).get("upstream") or {}))
+    monkeypatch.setattr(A, "_ref_provenance", lambda jobs, ctx: {"ref": 1})
+    monkeypatch.setattr(A, "bank_inputs", lambda src, ctxs: {bank: sha_file(A.R.path_of(out, bank))})
+    return out, jobs
+
+
+def test_prefreeze_and_acceptance_validate_the_complete_freeze(tmp_path, monkeypatch):
+    out, jobs = _frozen_out(tmp_path, monkeypatch)
+    A.prefreeze(out, jobs); fr = read(A.R.path_of(out, f"freeze/{CTX}"))
+    assert len(fr["records"]) == 4 and fr["cuts"] == 3 and fr["h4_excluded"] is False and fr["followup"] is True
+    A.check_freeze(out, jobs, src=None)
+
+
+def test_acceptance_refuses_an_empty_or_incomplete_freeze(tmp_path, monkeypatch):
+    out, jobs = _frozen_out(tmp_path, monkeypatch); A.prefreeze(out, jobs)
+    p = A.R.path_of(out, f"freeze/{CTX}"); f = read(p)
+    for change in ({"records": {}}, {"records": {k: v for k, v in f["records"].items() if not k.startswith("reference/")}}, {"cuts": 2}, {"h4_excluded": True}):
+        write(p, {**f, **change})
+        with pytest.raises(SystemExit):
+            A.check_freeze(out, jobs, src=None)
+
+
+def test_prefreeze_refuses_a_stale_or_wrongly_linked_record(tmp_path, monkeypatch):
+    out, jobs = _frozen_out(tmp_path, monkeypatch)
+    q = A.R.path_of(out, jobs[0]["id"]); d = read(q); d["provenance"] = {"id": "old"}; write(q, d)
+    with pytest.raises(SystemExit, match="provenance"):
+        A.prefreeze(out, jobs)
+    out2, jobs2 = _frozen_out(tmp_path / "b", monkeypatch)
+    q = A.R.path_of(out2, jobs2[1]["id"]); d = read(q); d["upstream"] = {jobs2[0]["id"]: "0" * 64}; write(q, d)
+    with pytest.raises(SystemExit, match="hash"):
+        A.prefreeze(out2, jobs2)
+
+
+def test_a_full_run_needs_passing_reproduction_evidence(tmp_path):
+    with pytest.raises(SystemExit, match="evidence"):
+        A.check_run_evidence([], smoke=False)
+    write(tmp_path / "g.json", {"pass": True}); A.check_run_evidence([tmp_path / "g.json"], smoke=False); A.check_run_evidence([], smoke=True)
 
 
 @pytest.mark.skipif(not (MAIN / "eval/all/freeze").is_dir(), reason="needs the registered evaluation records")
@@ -85,3 +175,15 @@ def test_smoke_path_for_one_fresh_market(tmp_path):
         assert len(ev["gain"]) == 2 and f"reference/{CTX}/C*" in ev["upstream"] and "heldout" in db
     ref = read(A.R.path_of(out, f"reference/{CTX}/C*")); assert ref["provenance"]["rule_params_sha256"] != read(A.R.path_of(MAIN / "eval/all", f"reference/{CTX}/C*"))["provenance"]["rule_params_sha256"]
     inv = read(out / "inventory.json"); assert "environment" in inv and (out / "label.json").exists()
+    assert inv["files"]["driver"] == sha_file(Path(A.__file__)) and inv["files"]["common.py"] and inv["args"] == args
+    assert read(out / "run.json")["binding"]["smoke"] is True and read(out / "cost.json")["stopped_before"] is None
+    assert A.main(args) == 0                                                     # rerun under the same binding reuses every record
+
+
+@pytest.mark.skipif(not (MAIN / "eval/all/freeze").is_dir(), reason="needs the registered evaluation records")
+def test_the_run_stops_between_stages_at_the_cost_cap(tmp_path):
+    out = tmp_path / "runnerup"
+    args = ["--src", str(MAIN / "eval/all"), "--out", str(out), "--draw", str(MAIN / "draw/draw.json"), "--instances", str(MAIN / "draw/instances.json"),
+            "--cfgs", str(MAIN / "deviation/cfg_linux.json"), "--addendum", str(MAIN / "report/addendum.json"), "--markets", "fresh0", "--smoke",
+            "--cap-usd", "0.5", "--started-at", "0"]                           # epoch 0: the cap is long spent
+    assert A.main(args) == 3 and read(out / "cost_stop.json")["stopped_before"] == "inputs" and (out / "inventory.json").exists()

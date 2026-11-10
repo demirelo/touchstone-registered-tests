@@ -463,3 +463,14 @@ def test_author_decision_pod_gate_requires_bit_identity(monkeypatch, tmp_path):
     assert F.pod_gate_ok(F.reproduce(), require_identical=True) is False
     assert F.pod_gate_ok({"pass": True, "identical": True, "problems": []}, require_identical=True) is True
     assert F.pod_gate_ok({"pass": True, "identical": False, "problems": []}, require_identical=False) is True
+
+
+def test_copy_inputs_accepts_added_inputs_and_refuses_only_a_conflict(tmp_path, no_expected_check):
+    """Found by the follow-up-2 helper: a second call that only adds inputs was refused."""
+    src = _src(tmp_path); need = F.inputs(src, [_job()]); out = tmp_path / "out"
+    first = dict(list(need.items())[:2]); rest = dict(list(need.items())[2:])
+    F.copy_inputs(src, out, first); F.copy_inputs(src, out, rest)                 # adding keys is fine
+    assert read(out / "inputs.json") == need
+    k = next(iter(first)); d = read(out / "inputs.json"); d[k] = "0" * 64; write(out / "inputs.json", d)
+    with pytest.raises(SystemExit, match="other hashes"):
+        F.copy_inputs(src, out, {k: need[k]})

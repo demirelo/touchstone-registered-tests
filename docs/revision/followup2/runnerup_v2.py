@@ -23,6 +23,7 @@ ROOT = HERE.parents[2]
 sys.path.insert(0, str(ROOT / "scripts")); sys.path.insert(0, str(ROOT)); sys.path.insert(0, str(HERE.parent / "followup")); sys.path.insert(0, str(HERE))
 
 import common as C  # noqa: E402
+import guards as G  # noqa: E402
 import reset_followup_v2 as F  # noqa: E402
 import revision_v2 as R  # noqa: E402
 from sim import manifest_v2 as MAN  # noqa: E402
@@ -123,17 +124,45 @@ def run_references(jobs, out) -> None:
         R._run_reference(item, Path(out), CUTS, H4_EXCLUDED, jobs)
 
 
-def prefreeze(out, jobs) -> None:
+def _expected(rid: str, jobs: list[dict]) -> set:
+    return R.expected_upstream(rid, jobs, CUTS, H4_EXCLUDED)
+
+
+def _ref_provenance(jobs: list[dict], ctx: str) -> dict:
+    return R.reference_provenance(next(j for j in jobs if j["context"] == ctx))
+
+
+def _validate_new(out, rid: str, stage: str, prov: dict, jobs: list[dict]) -> str:
+    """A new record of this run: its stage, its current provenance, its dependency ids, and each dependency's current hash."""
+    p = R.path_of(out, rid); rec = read(p)
+    if rec is None or rec.get("stage") != stage:
+        _refuse(f"{rid}: no {stage} record")
+    if rec.get("provenance") != prov:
+        _refuse(f"{rid}: provenance is not the current job's")
+    up = rec.get("upstream") or {}
+    if set(up) != _expected(rid, jobs):
+        _refuse(f"{rid}: dependency set {sorted(up)} is not the expected one")
+    for u, h in up.items():
+        q = R.path_of(out, u)
+        if not q.exists() or sha_file(q) != h:
+            _refuse(f"{rid}: dependency {u} differs from its recorded hash")
+    return sha_file(p)
+
+
+def _required(out, jobs: list[dict], ctx: str) -> dict:
+    """Every record the context's freeze must hold: its bank inputs, both searches, and its reference, with current hashes."""
     inp = read(Path(out) / "inputs.json") or {}
+    recs = {r: h for r, h in inp.items() if r.startswith(ctx) or f"/{ctx}/" in r}
+    for j in (j for j in jobs if j["context"] == ctx):
+        recs[j["id"]] = _validate_new(out, j["id"], "search", j["provenance"], jobs)
+    rid = f"reference/{ctx}/{LABEL}"; recs[rid] = _validate_new(out, rid, "reference", _ref_provenance(jobs, ctx), jobs)
+    return recs
+
+
+def prefreeze(out, jobs) -> None:
     for ctx in sorted({j["context"] for j in jobs}):
-        ids = [j["id"] for j in jobs if j["context"] == ctx] + [f"reference/{ctx}/{LABEL}"]
-        recs = {r: s for r, s in inp.items() if ctx in r}
-        for i in ids:
-            p = R.path_of(out, i)
-            if not p.exists():
-                _refuse(f"{i}: missing before the freeze")
-            recs[i] = sha_file(p)
-        body = {"stage": "freeze", "context": ctx, "followup": True, "deviations": list(DEVIATIONS), "cuts": CUTS, "h4_excluded": H4_EXCLUDED, "records": recs}
+        body = {"stage": "freeze", "context": ctx, "followup": True, "deviations": list(DEVIATIONS), "cuts": CUTS, "h4_excluded": H4_EXCLUDED,
+                "records": _required(out, jobs, ctx)}
         p = R.path_of(out, f"freeze/{ctx}"); old = read(p)
         if old is not None and old != body:
             _refuse(f"{p} exists with other records")
@@ -141,19 +170,43 @@ def prefreeze(out, jobs) -> None:
             write(p, body)
 
 
-def accept(out, jobs, salt_sha256: str, container: dict, src) -> None:
-    F.check_salt(out, salt_sha256, jobs); F.check_configs(jobs, container); check_no_registered_cstar(src, out)
-    have = read(Path(out) / "inputs.json") or {}
-    if bad := sorted(r for r, s in bank_inputs(src, [j["context"] for j in jobs]).items() if have.get(r) != s):
-        _refuse(f"inputs.json lacks or differs on {bad[:3]}")
+def check_freeze(out, jobs, src=None) -> None:
+    """The freeze holds exactly the required records with their current hashes and the expected metadata; with `src`,
+    the bank inputs are recomputed from the original freeze."""
+    if src is not None:
+        have = read(Path(out) / "inputs.json") or {}
+        if bad := sorted(r for r, s in bank_inputs(src, [j["context"] for j in jobs]).items() if have.get(r) != s):
+            _refuse(f"inputs.json lacks or differs on {bad[:3]}")
     for ctx in sorted({j["context"] for j in jobs}):
         fr = read(R.path_of(out, f"freeze/{ctx}"))
-        if fr is None or not fr.get("followup"):
-            _refuse(f"{ctx}: no follow-up freeze")
-        for r, sha in fr["records"].items():
-            p = R.path_of(out, r)
-            if not p.exists() or sha_file(p) != sha:
-                _refuse(f"{ctx}: {r} differs from the freeze")
+        if fr is None or fr.get("followup") is not True or "cuts" not in fr or "h4_excluded" not in fr or fr["cuts"] != CUTS or fr["h4_excluded"] != H4_EXCLUDED:
+            _refuse(f"{ctx}: no follow-up freeze with cuts {CUTS} and H4 loaded")
+        if not fr.get("records") or fr["records"] != _required(out, jobs, ctx):
+            _refuse(f"{ctx}: the freeze is empty, incomplete, or stale")
+
+
+def accept(out, jobs, salt_sha256: str, container: dict, src) -> None:
+    F.check_salt(out, salt_sha256, jobs); F.check_configs(jobs, container); check_no_registered_cstar(src, out)
+    check_freeze(out, jobs, src)
+
+
+EXPECTED_SPEC = {"tol": 0.16, "L": 10, "cred": {"variant": "thr", "K": 12, "M": None}}
+
+
+def check_spec(jobs: list[dict]) -> None:
+    """Each job runs exactly the runner-up of the development recheck: C-thr(K = 12) at tolerance 0.16 and L = 10."""
+    for j in jobs:
+        if j["spec"] != EXPECTED_SPEC:
+            _refuse(f"{j['id']}: the rule specification {j['spec']} is not the runner-up's {EXPECTED_SPEC}")
+
+
+def check_run_evidence(paths, smoke: bool) -> None:
+    """A full run needs saved, passing reproduction evidence (the Mac checks and the pod's reproduction gate)."""
+    if smoke:
+        return
+    if not paths:
+        _refuse("no reproduction evidence given for a full run")
+    G.check_evidence(paths)
 
 
 def run_stage(stage: str, jobs, out, workers: int = 1) -> None:
@@ -161,50 +214,122 @@ def run_stage(stage: str, jobs, out, workers: int = 1) -> None:
     R._pool(stage, jobs, Path(out), workers, CUTS, H4_EXCLUDED, jobs)
 
 
-def _gains(base, rule: str, fam: str, markets) -> dict:
+EXPECTATION = "pooled g(C*) - g(runner-up) > 0 under D2+H3 (the runner-up leaves the lower gain), base and doubled"
+
+
+def _base(base, rule: str, fam: str, markets) -> dict | None:
     res = {}
     for m in markets:
         rec = read(R.eval_path(base, R.cell_id(MAN.context(m), rule, fam, "profit")))
         if rec is None:
-            raise ValueError(f"no evaluation of {m} {rule} {fam} in {base}")
+            return None
         res[m] = (rec["seeds"], rec["gain"])
     return res
 
 
-def analysis(out, src, markets=MARKETS, fams=FAMS, resamples: int = C.RESAMPLES) -> dict:
-    """d' = g(runner-up) - g(R3) and g(C*) - g(runner-up) per family, paired on the evaluation seeds; exploratory."""
+def _doubled_out(out, fam: str, markets) -> dict | None:
     res = {}
-    for fam in fams:
-        ru, r3, cs = _gains(out, LABEL, fam, markets), _gains(src, "F111", fam, markets), _gains(src, "C*", fam, markets)
-        for m in markets:
-            if not (ru[m][0] == r3[m][0] == cs[m][0]):
-                raise ValueError(f"{m} {fam}: evaluation seeds differ")
-        g = lambda d: {m: d[m][1] for m in markets}
-        a = C.pooled_paired(g(ru), g(r3), resamples); b = C.pooled_paired(g(cs), g(ru), resamples)
-        res[fam] = {"label": "exploratory, after the report; nominal paired percentile bootstrap; not registered",
-                    "runner_up_minus_r3": {**a, "category": C.q1_category(a["interval"])}, "cstar_minus_runner_up": b}
+    for m in markets:
+        rec = read(Path(out) / "doubling" / (R._safe(R.cell_id(MAN.context(m), LABEL, fam, "profit")) + ".json"))
+        if rec is None or "heldout" not in rec:
+            return None
+        res[m] = (rec["heldout"]["seeds"], rec["heldout"]["gain"])
     return res
 
 
+def _doubled_report(report: dict, rule: str, fam: str, markets) -> dict | None:
+    res = {}
+    for m in markets:
+        h = (report.get("doubling", {}).get(R.cell_id(MAN.context(m), rule, fam, "profit")) or {}).get("heldout")
+        if h is None:
+            return None
+        res[m] = (h["seeds"], h["gain"])
+    return res
+
+
+def _contrasts(ru, r3, cs, markets, resamples) -> dict | str:
+    if None in (ru, r3, cs):
+        return "not available"
+    for m in markets:
+        if not (ru[m][0] == r3[m][0] == cs[m][0]):
+            raise ValueError(f"{m}: evaluation seeds differ")
+    if not G.finite([ru[m][1] for m in markets], [r3[m][1] for m in markets], [cs[m][1] for m in markets]):
+        return "not available"
+    g = lambda d: {m: d[m][1] for m in markets}
+    a, b, c = C.pooled_paired(g(ru), g(r3), resamples), C.pooled_paired(g(cs), g(ru), resamples), C.pooled_paired(g(cs), g(r3), resamples)
+    return {"runner_up_minus_r3": {**a, "category": C.q1_category(a["interval"])}, "cstar_minus_runner_up": b,
+            "cstar_minus_r3": {**c, "category": C.q1_category(c["interval"])}}
+
+
+def _score(base, doubled) -> dict:
+    vals = [None if isinstance(x, str) else x["cstar_minus_runner_up"]["estimate"] > 0 for x in (base, doubled)]   # a tie is not met
+    score = "not available" if None in vals else ("met" if all(vals) else ("failed" if not any(vals) else "not established"))
+    return {"statement": EXPECTATION, "base": vals[0], "doubled": vals[1], "score": score}
+
+
+def analysis(out, src, report: dict, markets=MARKETS, fams=FAMS, resamples: int = C.RESAMPLES) -> dict:
+    """Per family: runner-up minus R3, C* minus runner-up and C* minus R3, base and doubled, each rule against its own
+    unchanged frozen reference, paired on the evaluation seeds, from unrounded values; exploratory."""
+    res = {}
+    for fam in fams:
+        base = _contrasts(_base(out, LABEL, fam, markets), _base(src, "F111", fam, markets), _base(src, "C*", fam, markets), markets, resamples)
+        dbl = _contrasts(_doubled_out(out, fam, markets), _doubled_report(report, "F111", fam, markets), _doubled_report(report, "C*", fam, markets), markets, resamples)
+        flags = {}
+        for m in markets:
+            rec = read(Path(out) / "doubling" / (R._safe(R.cell_id(MAN.context(m), LABEL, fam, "profit")) + ".json")) or {}
+            flags[m] = {k: rec.get(k) for k in ("attack_change", "reference_change", "incomplete")}
+        row = {"label": "exploratory, after the report; " + C.SCOPE, "base": base, "doubled": dbl, "flags": flags}
+        if fam == "D2+H3":
+            row["expectation"] = _score(base, dbl)
+        res[fam] = row
+    return res
+
+
+def stage_hours() -> dict:
+    """Billed wall time per stage on one pod (critical path), from the benchmark."""
+    t = json.loads((ROOT / "experiments/v2/benchmark/timings.json").read_text())["timings"]; ev = lambda k: t["eval160"][k] * 200 / 160
+    return {"inputs": 0.02, "search": (t["d2h3_cell"] + t["x7_cell"]) / 3600, "reference": 6 * t["reference"] / 3600, "freeze": 0.01,
+            "evaluate": max(ev("profit"), ev("x7")) / 3600, "doubling": t["doubling_x7"] / 3600, "analysis": 0.05, "inventory": 0.01}
+
+
 def main(argv=None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--src", default=str(F.EVAL_ALL)); ap.add_argument("--out", required=True)
+    ap.add_argument("--src", default=str(F.EVAL_ALL)); ap.add_argument("--out", required=True); ap.add_argument("--report", default=str(ROOT / "results/v2/report/report.json"))
     ap.add_argument("--draw", required=True); ap.add_argument("--instances", required=True); ap.add_argument("--cfgs", required=True); ap.add_argument("--addendum", required=True)
     ap.add_argument("--params", default=str(ROOT / "experiments/v2/params.json")); ap.add_argument("--markets", default=",".join(MARKETS))
     ap.add_argument("--stage", default="all", choices=("inputs", "search", "reference", "freeze", "evaluate", "doubling", "analysis", "inventory", "all"))
     ap.add_argument("--workers", type=int, default=1); ap.add_argument("--smoke", action="store_true")
+    ap.add_argument("--evidence", action="append", default=[], help="saved reproduction gate files that must report a pass (full runs)")
+    ap.add_argument("--cap-usd", dest="cap", type=float, default=3.00); ap.add_argument("--usd-per-hour", dest="rate", type=float, default=0.56)
+    ap.add_argument("--started-at", dest="started", type=float, default=None, help="pod allocation time (epoch seconds)")
     a = ap.parse_args(argv); out = Path(a.out); F.check_out(out, a.src)
+    G.pin_settings(); check_run_evidence(a.evidence, a.smoke)
     from sim.records import cfg_from_dict
     root = json.loads(Path(a.draw).read_text())["hash"]; salt = json.loads(Path(a.instances).read_text())["salt_sha256"]
     container = json.loads(Path(a.addendum).read_text())["deviations"]["configs"]
     cfgs = {k: cfg_from_dict(v) for k, v in json.loads(Path(a.cfgs).read_text()).items()}
     out.mkdir(parents=True, exist_ok=True); R.install_salt(root, out)
-    write(out / "label.json", {"rule_label": LABEL, "rule": "C-thr", "cred": runner_up_cred(), "source": str(LOG.relative_to(ROOT)), "deviations": list(DEVIATIONS)})
     markets = tuple(a.markets.split(","))
     jobs = build_jobs(root, cfgs, runner_up_params(json.loads(Path(a.params).read_text())), salt, markets, a.smoke)
+    check_spec(jobs)
+    if not a.smoke:
+        for j in jobs:
+            G.check_budget(j, R.path_of(a.src, R.cell_id(j["context"], LABEL, j["family"], "profit")))
     preflight(out, a.src, jobs, salt, container, a.smoke)
+    b = G.binding(inputs_sha=G.sha_json(bank_inputs(a.src, [j["context"] for j in jobs])), provenance={j["id"]: j["provenance"] for j in jobs},
+                  smoke=a.smoke, settings={"markets": list(markets), "spec": EXPECTED_SPEC, "cuts": CUTS}, driver_sha=sha_file(Path(__file__)))
+    if not G.reusable(out / "run.json", b):
+        write(out / "run.json", {"binding": b, "label": "runner-up follow-up run"})
+    write(out / "label.json", {"rule_label": LABEL, "rule": "C-thr", "cred": runner_up_cred(), "source": str(LOG.relative_to(ROOT)), "deviations": list(DEVIATIONS)})
+    cost = G.CostStop(a.cap, a.rate, a.started if a.started is not None else __import__("time").time()); hours = stage_hours()
+    files = {"driver": Path(__file__), "plan": HERE / "runner-up-plan.md", "report": Path(a.report)}
     steps = ("inputs", "search", "reference", "freeze", "evaluate", "doubling", "analysis", "inventory") if a.stage == "all" else (a.stage,)
     for st in steps:
+        if not cost.allow(st, hours[st]):
+            write(out / "cost_stop.json", cost.report()); G.inventory(out, DEVIATIONS, files, argv)
+            print(json.dumps({"stopped_before": st, "cap_usd": a.cap}), flush=True)
+            return 3
         if st == "inputs":
             F.copy_inputs(a.src, out, bank_inputs(a.src, [j["context"] for j in jobs]))
         elif st == "search":
@@ -217,9 +342,9 @@ def main(argv=None) -> int:
             accept(out, jobs, salt, container, a.src); run_stage(st, jobs, out, a.workers)
         elif st == "analysis":
             if not a.smoke:                                       # smoke evaluations use two seeds, not the registered 200
-                write(out / "analysis.json", analysis(out, a.src, markets))
+                write(out / "analysis.json", analysis(out, a.src, json.loads(Path(a.report).read_text()), markets))
         else:
-            F.inventory(out)
+            write(out / "cost.json", cost.report()); G.inventory(out, DEVIATIONS, files, argv)
         print(json.dumps({"stage": st, "jobs": len(jobs)}), flush=True)
     return 0
 

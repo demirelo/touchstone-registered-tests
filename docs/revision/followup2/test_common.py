@@ -34,3 +34,12 @@ def test_descriptive_q1_category_uses_the_registered_margin(iv, cat):
 def test_unequal_seeds_are_refused():
     with pytest.raises(ValueError):
         C.pooled_paired({"m": np.zeros(2)}, {"m": np.zeros(3)}, 99, 0)
+
+
+def test_per_market_intervals_and_the_conditional_label():
+    rng = np.random.default_rng(2)
+    a = {m: rng.normal(0.1, 0.05, 40) for m in ("m0", "m1")}; b = {m: np.zeros(40) for m in ("m0", "m1")}
+    got = C.pooled_paired(a, b, 999, 0)
+    for m in ("m0", "m1"):
+        lo, hi = got["market_intervals"][m]; assert lo < got["markets"][m] < hi
+    assert "conditional on these markets and the selected policies" in got["scope"]

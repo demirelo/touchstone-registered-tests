@@ -54,7 +54,7 @@ def test_recompute_substitutes_only_the_converged_cells(tmp_path):
         write(B.R.eval_path(src, f"{m}@rho0.2|F111|D2+H3|profit"), {"seeds": [1, 2], "gain": gr})
         write(B.R.eval_path(src, f"{m}@rho0.2|F000|D2+H3|profit"), {"seeds": [1, 2], "gain": [0.5, 0.5]})
     write(conv / "convergence" / (B.R._safe("fresh1@rho0.2|C*|D2+H3|profit") + ".json"),
-          {"id": "fresh1@rho0.2|C*|D2+H3|profit", "heldout": {"seeds": [1, 2], "gain": [0.4, 0.4]}})
+          {"id": "fresh1@rho0.2|C*|D2+H3|profit", "heldout": {"seeds": [1, 2], "gain": [0.4, 0.4]}, "binding": {"smoke": False}})
     got = B.recompute(src, conv, ("fresh0", "fresh1"), resamples=99)
     assert got["q1"]["frozen"]["estimate"] == pytest.approx(0.15) and got["q1"]["converged"]["estimate"] == pytest.approx(0.2)
     assert got["q4"]["converged"]["markets"]["fresh0"] == pytest.approx(0.4) and got["substituted"] == ["fresh1@rho0.2|C*|D2+H3|profit"]
@@ -70,3 +70,59 @@ def test_smoke_path_for_one_flagged_fresh_cell(tmp_path):
     rec = read(out / "convergence" / (B.R._safe("fresh1@rho0.2|F111|D2+H3|profit") + ".json"))
     assert 1 <= len(rec["rounds"]) <= 2 and rec["status"] in ("passed", "not passed at the cap") and len(rec["heldout"]["gain"]) == 2
     assert rec["rounds"][0]["restarts_total"] == 2 * rec["restarts"] and (out / "inventory.json").exists()
+    assert rec["binding"]["smoke"] is True and read(out / "inventory.json")["files"]["driver"]
+    assert B.main(args) == 0                                                     # the saved result is reused under the same binding
+
+
+# ---- internal review round 1 ----
+
+REG = {"incomplete": True, "attack_change": 0.0175, "reference_change": 0.0,
+       "heldout": {"knobs": {"u0": 0.5, "x": 1, "clip": 0}, "seeds": [1, 2], "gain": [0.1, 0.2]}}
+
+
+def test_round_one_is_compared_with_the_registered_doubling_record():
+    r1 = {"attack_change": 0.0175 + 1e-13, "reference_change": 0.0, "heldout": {"knobs": {"u0": 0.5 + 1e-14, "x": 1, "clip": 0}, "seeds": [1, 2], "gain": [0.1, 0.2 + 1e-15]}}
+    assert B.compare_round1(REG, r1)["pass"]
+    for bad in ({**r1, "attack_change": 0.02}, {**r1, "heldout": {**r1["heldout"], "gain": [0.1, float("nan")]}},
+                {**r1, "heldout": {**r1["heldout"], "knobs": {"u0": 0.5, "x": 0, "clip": 0}}}, {**r1, "heldout": {**r1["heldout"], "seeds": [1, 3]}}):
+        assert not B.compare_round1(REG, bad)["pass"]
+
+
+@pytest.mark.parametrize("k,last,gate,cost_ok,want", [(1, {"attack_change": 0.01, "reference_change": 0}, {"pass": False}, True, "round-1 mismatch"),
+                                                       (1, {"attack_change": 0.01, "reference_change": 0}, {"pass": True}, True, "continue"),
+                                                       (2, {"attack_change": 0.001, "reference_change": 0}, None, True, "passed"),
+                                                       (2, {"attack_change": 0.01, "reference_change": 0}, None, False, "cost cap"),
+                                                       (3, {"attack_change": 0.01, "reference_change": 0}, None, True, "round cap")])
+def test_the_round_decision(k, last, gate, cost_ok, want):
+    assert B.decide(k, last, gate, cost_ok, max_rounds=3) == want
+
+
+def test_settings_and_budgets_are_pinned(tmp_path, monkeypatch):
+    monkeypatch.setenv("TOUCHSTONE_LOCKED", "/tmp/x.yaml")
+    with pytest.raises(SystemExit, match="TOUCHSTONE_LOCKED"):
+        B.main(["--out", str(tmp_path / "o"), "--report", "r", "--draw", "d", "--instances", "i", "--cfgs", "c", "--addendum", "a", "--src", str(tmp_path / "s")])
+
+
+def test_a_full_run_needs_gate_evidence(tmp_path):
+    with pytest.raises(SystemExit, match="evidence"):
+        B.check_run_evidence([], smoke=False, gate=False)
+    B.check_run_evidence([], smoke=False, gate=True); B.check_run_evidence([], smoke=True, gate=False)
+
+
+def test_the_claim_is_bounded():
+    assert "within three rounds" in B.CLAIM and "not convergence" in B.CLAIM
+
+
+def test_recompute_refuses_a_smoke_or_unbound_record(tmp_path):
+    src, conv = tmp_path / "src", tmp_path / "conv"; rid = "fresh0@rho0.2|C*|D2+H3|profit"
+    for r in ("C*", "F111", "F000"):
+        write(B.R.eval_path(src, f"fresh0@rho0.2|{r}|D2+H3|profit"), {"seeds": [1, 2], "gain": [0.1, 0.1]})
+    write(conv / "convergence" / (B.R._safe(rid) + ".json"), {"id": rid, "heldout": {"seeds": [1, 2], "gain": [0.4, 0.4]}, "binding": {"smoke": True}})
+    with pytest.raises(ValueError, match="binding"):
+        B.recompute(src, conv, ("fresh0",), resamples=9)
+
+
+def test_inputs_of_several_cells_are_merged_and_conflicts_refused():
+    assert B.merge_inputs([{"a": "1", "b": "2"}, {"b": "2", "c": "3"}]) == {"a": "1", "b": "2", "c": "3"}
+    with pytest.raises(SystemExit, match="different hashes"):
+        B.merge_inputs([{"a": "1"}, {"a": "9"}])

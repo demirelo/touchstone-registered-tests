@@ -192,7 +192,7 @@ def copy_inputs(src, out, need: dict[str, str]) -> None:
             continue
         q.parent.mkdir(parents=True, exist_ok=True); shutil.copyfile(p, q); q.chmod(0o444)
     prev = read(Path(out) / "inputs.json")
-    if prev is not None and prev != {**prev, **need}:
+    if prev is not None and any(prev[k] != v for k, v in need.items() if k in prev):
         _refuse("inputs.json lists other hashes for the same records")
     write(Path(out) / "inputs.json", {**(prev or {}), **need})
 

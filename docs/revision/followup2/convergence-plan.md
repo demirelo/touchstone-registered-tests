@@ -1,68 +1,86 @@
-# Run B, searches to convergence on the flagged cells: plan (draft 1, 2026-11-10; for internal review; no spend)
+# Run B, continued searches on the flagged profit cells: plan (draft 2, 2026-11-10; for internal review; no spend)
 
-**Why.** The Fable 5.2 review (problem 3): 21 of 98 doubling checks are flagged (`report.json` `doubling[...].incomplete`),
-so several Q1, Q4, Q2, and Q3 statements hold only for the prescribed search procedure. This run continues the flagged
-profit searches until the doubling check passes or a cap is reached, and reports how much the estimates move.
+**Draft 2 changes** (internal review round 1, `docs/revision/roster/{sol,astra}-convergence-plan-r1.md`, both reject):
+the run is a capped search extension and the claim is bounded ("passed the registered incremental check within three
+rounds", not convergence); pinned search settings and budgets; saved results reused only under the same binding;
+round 1 compared with the registered doubling record before round 2, with a stop on mismatch, and a gate mode with saved
+full-budget evidence for a headline X7-SC cell and a fresh D2+H3 cell; a run-specific inventory; per-market intervals and
+the conditional scope of the intervals; headline Q2/Q3 contrasts deferred; a dollar cap, ledger reservation, and a stop
+between rounds.
 
-**Status.** Exploratory sensitivity, after the report. The frozen estimates and every registered decision stay primary.
+**Why.** The Fable 5.2 review (problem 3): 21 of 98 doubling checks are flagged (`report.json` `doubling[...].incomplete`).
+This run extends the flagged profit searches and reports how much the estimates move.
+
+**Scope.** Exploratory sensitivity after the report. The registered doubling outcomes are already known; the
+expectations below precede only the new continuation outcomes. The frozen estimates and every registered decision stay
+primary. Unchanged: unflagged cells, the frozen banks, X7-SC's original D2+H3 incumbents. Deferred: the 7 flagged
+coalition cells (repeated doubling of a minimum-member search needs the joint-reference rescoring of the frozen coalition
+stages), the fresh factorial cells without a doubling check (unresolved), and the headline Q2/Q3 contrasts.
 
 ## 1. Cells
 
-The 21 flagged checks (`convergence_v2.flagged(report)`): 14 profit cells and 7 coalition cells.
+`convergence_v2.flagged(report)`: 14 profit cells. Fresh, feeding Q1 and Q4: fresh0 C* D2+H3; fresh1 C* and F111 D2+H3;
+fresh3 C* D2+H3; fresh4 F111 D2+H3. Headline: F000, F001, F100, F101, F111 D2+H3; F011, F100, F101, F111 X7-SC.
 
-- **Profit (this run):** fresh0 C* D2+H3; fresh1 C* and F111 D2+H3; fresh3 C* D2+H3; fresh4 F111 D2+H3 (these five feed Q1
-  and Q4); headline F000, F001, F100, F101, F111 D2+H3 and F011, F100, F101, F111 X7-SC (Q2 and Q3, headline).
-- **Coalition (not in this run):** headline C* X6-SE/v2 total c2_synchronised, c5_staggered, c5_synchronised; C* X8-DB min
-  c2_roles; F111 X6-SE/v2 min c2_staggered, total c2_synchronised, c5_staggered. They are Q3-descriptive; repeated
-  doubling of a minimum-member search needs the joint-reference rescoring of the frozen coalition stages, which this
-  driver does not reimplement. They stay flagged in the paper. A separate plan can add them.
+## 2. Rounds, stopping rule, and claim
 
-## 2. Stopping rule and estimand
-
-- **Round k** (k = 1, 2, 3) continues the search from the best result so far with as many new restarts as registered
-  (`revision_v2.continue_search`, the previous best as incumbent, the merged archive), with restart seeds after every
-  earlier round's (`round_seed(k) = 1 + (k - 1) R`; CMA seeds never repeat, tested). It then reselects the reference from
-  the frozen menu plus the round's candidates, as the registered doubling stage does.
-- **Pass.** A round passes when both changes against the previous round, the attacker's best training value and the
-  reselected reference's mean normalised profit, are below the registered threshold 0.005 (the registered flag rule).
-  Stop at the first passing round. **Cap:** three rounds, four times the registered restarts in all. A cell that does
-  not pass is reported "not passed at the cap".
-- **Round 1** recomputes the registered doubling check; its two changes are compared with the report's at 1e-9 (a
-  built-in reproduction check; a disagreement is reported, not hidden).
+- **Round k** (k = 1, 2, 3) adds R new restarts (R = the registered restarts) to the best result so far
+  (`revision_v2.continue_search`, the previous best as incumbent, the merged archive), with CMA seeds after every earlier
+  round's (`round_seed(k) = 1 + (k - 1) R`; tested never to repeat). Later rounds add R restarts each; they do not double
+  the accumulated budget. The reference is then reselected from the frozen menu plus the round's candidates, as the
+  registered doubling stage does (diagnostic only).
+- **Round-1 gate.** Round 1 is the registered doubling check. Before round 2, its held-out winner (round 1's search
+  winner, evaluated on the evaluation seeds against the frozen reference) and both changes are compared with the
+  registered doubling record: exact seeds and discrete knobs, 1e-9 on continuous knobs, changes, and held-out gains, all
+  values finite. On a mismatch the cell stops ("stopped: round 1 differs"), no recompute is written, and the run exits 4.
+- **Pass.** A round passes when both changes against the previous round (attacker best training value; reselected
+  reference mean normalised profit) are below the registered threshold 0.005. Stop at the first pass; cap three rounds
+  (four times the registered restarts in all). Reported as "passed the registered incremental check within three rounds"
+  or "not passed at the cap"; this is not convergence, not optimality, and not a bound on the remaining search error.
 - **Winner.** The best training value over all rounds, evaluated on the 200 evaluation seeds against the unchanged frozen
-  reference (`gain_fields`, as the registered held-out diagnostic). The reselected references are diagnostics only.
+  reference.
 
 ## 3. Analysis (fixed now)
 
-Per cell: the frozen gain, the final winner's gain, the rounds and their changes, the status. Q1 (C* - R3, D2+H3) and Q4
-(B3 - R3, D2+H3) per fresh market and pooled, with the final winners substituted for the re-searched cells and the frozen
-winners elsewhere (`recompute`), beside the frozen values; nominal paired percentile bootstrap (9,999 resamples, seed 0).
-Descriptive; no decision is recomputed.
+Per cell: the frozen and final gains, the rounds and their changes, the round-1 comparison, the status. Q1 (C* - R3,
+D2+H3) and Q4 (B3 - R3, D2+H3), per fresh market and pooled, with the final winners substituted for the re-searched cells
+and the frozen winners elsewhere, beside the frozen values (`recompute`; only validated full-run records with this run's
+binding are substituted). Per market and pooled nominal paired percentile intervals (9,999 resamples, seed 0),
+conditional on these six markets and the selected policies and references, without search or market-sampling
+uncertainty and without registered calibration. Descriptive; no decision is recomputed.
 
-## 4. Expectations (written before any result)
+## 4. Expectations (written before any continuation result)
 
-None on direction. We report how many of the 14 cells pass within the cap and the largest change of a Q1 or Q4 market
-difference.
+None on direction. Reported: how many of the 14 cells pass within three rounds, and the largest change of a Q1 or Q4
+market difference.
 
 ## 5. Execution contract
 
-`docs/revision/followup2/convergence_v2.py` (under `docs/`, code freeze). Preflight before any episode: salt, commit,
-runner and `sim/` equal to protocol-v2, configuration hashes (fresh: recorded container hashes; headline: the registered
-record's), pairing of each job with its frozen reference. Inputs copied and checked against the original freeze (the
-cell's search record, its reference, the menu and bank records). Cells run in parallel, one process each; records in
-`convergence/`, then `recompute.json` and an inventory with the environment. Validation before spend: the smoke-size
-end-to-end test for fresh1 F111 D2+H3 with two rounds passes (`uv run pytest -q docs/revision/followup2`).
+`docs/revision/followup2/convergence_v2.py` (under `docs/`, code freeze). Before any episode: `TOUCHSTONE_LOCKED` refused,
+`experiments/locked.yaml` and the manifest equal protocol-v2; salt, commit, runner and `sim/` equal to protocol-v2;
+configuration hashes (fresh: recorded container hashes; headline: the registered record's); each job paired with its
+frozen reference; each job's budget equal to its frozen search record's. Inputs copied and checked against the original
+freeze. Each result binds to its input hashes, job provenance, smoke flag, stopping settings, and driver hash; a saved
+result is reused only under the same binding and refused otherwise. Inventory: every output with its hash, Run B's
+deviations, hashes of `convergence_v2.py`, `common.py`, `guards.py`, the imported helpers, this plan, and the report, the
+run arguments, the environment. A full run is refused unless every `--evidence` file reports a pass.
 
-## 6. Cost
+**Gate evidence (free, on the Mac, before spend):** `convergence_v2.py --gate --cells headline@rho0.2|F111|X7-SC|profit,
+fresh1@rho0.2|F111|D2+H3|profit` writes `gate/*.json`, which must pass. On the pod, the same gate runs first.
 
-`python3 docs/revision/followup2/cost_estimate.py`: up to 16.88 core-hours, 1.82 USD at 0.108 USD per core-hour (14 cells,
-3 rounds each, priced as registered doubling checks with held-out evaluation); on one 16-vCPU pod with 14 workers the
-critical path is an X7-SC cell's three rounds, 2.14 hours, 1.20 USD at 0.56 USD per hour, 1.37 USD with 0.3 hours of
-preparation and tail. The plan uses 1.82 USD.
+## 6. Cost and spending controls
+
+`python3 docs/revision/followup2/cost_estimate.py`: up to 17.34 core-hours, 1.87 USD at 0.108 USD per core-hour (14 cells x
+3 rounds priced as registered doubling checks, plus round-1 held-out evaluations); billed path 3.22 hours (gate 0.75 h,
+an X7-SC cell's three rounds, 0.3 h preparation and tail) = 1.80 USD at 0.56 USD per hour. Estimate 1.99 USD;
+reservation 2.48 USD (x 1.25) in ledger category `followup` (cap 22 USD shared; `budget_followup.py reserve`); **stop
+cap 3.00 USD**, failed attempts counted. The cap is checked before the cells start and before each round of each cell;
+a running round is never killed (author's instruction); a cell that meets the cap stops after its current round, is
+evaluated, and is reported "stopped at the cost cap".
 
 ## 7. Steps
 
-1. Internal review to consensus; freeze the plan.
-2. The author records the spend approval.
-3. One pod: `convergence_v2.py --workers 14`; delete and verify; record the spend.
-4. Analysis on the Mac; a paper sentence and table, exploratory, after review.
+1. Internal review to consensus; freeze the plan; save the Mac gate evidence.
+2. Reserve in the ledger; one pod: the gate, then `convergence_v2.py --workers 14 --evidence ... --cap-usd 3.00
+   --started-at T`; delete and verify; record the spend.
+3. Analysis on the Mac; a paper sentence and table, exploratory, after review.

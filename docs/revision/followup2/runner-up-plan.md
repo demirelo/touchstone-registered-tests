@@ -1,64 +1,93 @@
-# Run A, the runner-up comparator on the fresh markets: plan (draft 1, 2026-11-10; for internal review; no spend)
+# Run A, the runner-up comparator on the fresh markets: plan (draft 2, 2026-11-10; for internal review; no spend)
+
+**Draft 2 changes** (internal review round 1, `docs/revision/roster/{sol,astra}-runner-up-plan-r1.md`, both reject):
+complete freeze validation with refusal tests; pinned search settings, budgets checked against the registered records,
+the exact runner-up specification enforced; reproduction evidence and the pod gate required before the cells; base and
+doubled contrasts for three pairs, expectation scored on unrounded values, missing and nonfinite results separate from
+failures, per-market intervals; a run-specific inventory; the claim bounded to one development-selected alternative;
+a dollar cap, ledger reservation, and a stop between stages.
 
 **Why.** The Fable 5.2 review (problem 5, `docs/paper/fable52-triage.md`): C* was selected in development on gross
-efficiency in effect. The development log shows that in the two full-budget rechecks the runner-up C-thr(K = 12) left a
-lower D2+H3 gain than C* (0.0761 against 0.0966 at the headline market, 0.0178 against 0.0381 at dev0;
-`experiments/v2/log/Cstar__*thr*12*recheck.json` and the C* recheck, field `detail`). A comparator selected on attacker
-gain could change the Q1 direction label. This run measures the runner-up on the six fresh markets.
+efficiency in effect. In the two full-budget development rechecks the runner-up C-thr(K = 12) left a lower D2+H3 gain
+than C* (0.0761 against 0.0966 at the headline market, 0.0178 against 0.0381 at dev0; `experiments/v2/log/`, the two
+`Cstar__*__recheck.json` records, field `detail`). This run measures that one alternative on the six fresh markets.
 
-**Status.** Exploratory, after the report. No registered estimate or decision changes; the registered Q1 result stays
-primary. Nothing runs before internal consensus, the author's spend approval in the ledger, and a passing smoke run.
+**Scope.** Exploratory follow-up after the report, not an independent replication: the six markets, their seeds, and
+every registered rule's outcomes were already observed; only the runner-up's outcomes are unseen. It tests one
+development-selected alternative; it does not identify the best gain-selected comparator among the twelve
+configurations. Deferred, not in this run: full-budget rechecks of the other ten configurations, gain-based selection
+across all twelve, an honest-churn arm, and searches to convergence (Run B). No registered estimate or decision changes.
 
 ## 1. Estimand
 
-For family f in {D2+H3, X7-SC}: d'(f) = pooled over the six fresh markets of the mean over the 200 evaluation seeds of
-g(C-thr12) - g(R3), equal market weights, each rule against its own frozen truthful reference, paired by seed. Beside it:
-g(C*) - g(C-thr12). Both are differences between prescribed finite searches, as the registered Q1 estimand is.
+For family f in {D2+H3, X7-SC}: d'(f) = pooled over the six fresh markets (equal weights) of the mean over the 200
+evaluation seeds of g(C-thr12) - g(R3), each rule against its own unchanged frozen truthful reference, paired by seed.
+Beside it: g(C*) - g(C-thr12) and g(C*) - g(R3) by the same method, so that a category difference cannot come from the
+inference method. All are differences between prescribed finite searches.
 
 ## 2. Cells and execution contract
 
-- **Cells.** C-thr(K = 12) (tolerance 0.16, L = 10, R3's pacing, as in the development recheck) x fresh0..fresh5 at rho 0.2
-  x {D2+H3, X7-SC}: 12 search cells, 6 references, 12 evaluations on the 200 evaluation seeds, 12 doubling checks with
-  held-out evaluation. Registered settings (search budget, seeds, configurations).
-- **Label.** The frozen code identifies a rule by its label and reads its credibility parameters from `params["cred"]`.
-  The runner-up runs under the label `C*` with `cred = {variant: thr, K: 12, M: null}`, in its own output directory; its
-  records differ from the registered C* records by `rule_params_sha256`, and `label.json` names the rule. The driver
-  refuses an output that holds a byte copy of a registered C* record, and refuses a job whose rule parameters equal the
-  registered C*'s.
-- **Reference.** Built by the frozen reference stage from the registered C* menu construction: the runner-up's own D2+H3
-  and X7-SC searches plus the cuts-3 bank of the other rules' registered winners (F000..F111, C*/S0), copied and checked
-  against the original freeze hashes. The registered C* winner is not in the bank, as C* excluded itself; this keeps the
-  construction identical to the registered one for a C*-labelled rule.
-- **Driver.** `docs/revision/followup2/runnerup_v2.py` (code freeze: under `docs/`), frozen stages through
-  `revision_v2._pool` and `_run_reference`. Preflight before any episode: salt, commit, runner and `sim/` equal to
-  protocol-v2, configuration hashes equal to the recorded container hashes, and every pairing key except the rule
-  parameters equal to the registered C* reference's. A follow-up freeze after the references; acceptance before
-  evaluation and before doubling; inventory with the environment.
-- **Validation before spend (free, on the Mac).** The smoke-size end-to-end test for fresh0 (both families, search to
-  inventory) passes (`uv run pytest -q docs/revision/followup2`).
+- **Cells.** C-thr(K = 12) at tolerance 0.16, L = 10, R3's pacing (the recheck specification; the driver refuses any
+  other: `check_spec`) x fresh0..fresh5 at rho 0.2 x {D2+H3, X7-SC}: 12 searches, 6 references, 12 evaluations on the 200
+  evaluation seeds, 12 doubling checks with held-out evaluation.
+- **Settings pinned.** `TOUCHSTONE_LOCKED` refused; `experiments/locked.yaml` and the manifest equal protocol-v2; each
+  job's search budget equals the registered C* record's for the same market and family (X7-SC doubled, as registered).
+- **Label.** The frozen code identifies a rule by its label; the runner-up runs under `C*` with its own `cred`, in its own
+  output directory. Its records differ from C*'s by `rule_params_sha256`; `label.json` names the rule; an output holding
+  a byte copy of a registered C* record is refused, and so is a job with C*'s rule parameters.
+- **Reference.** The frozen reference stage on the registered C* menu construction: the runner-up's own D2+H3 and X7-SC
+  searches plus the cuts-3 bank of the other rules' registered winners (F000..F111, C*/S0), copied and checked against
+  the original freeze hashes; the registered C* winner is not in the bank, as C* excluded itself.
+- **Freeze.** After the references, each market's freeze holds exactly its bank inputs, both searches, and its
+  reference. Each new record must carry the current job's provenance, the expected dependency set, and dependencies whose
+  current hashes equal the recorded ones; the freeze states `followup`, cuts 3, and H4 loaded. Acceptance before
+  evaluation and before doubling recomputes all of this and the bank inputs from the original freeze; an empty,
+  incomplete, or stale freeze is refused (tests).
+- **Saved results.** The frozen stages reuse a record only under its exact provenance (registered resume rule).
+  `run.json` binds the output to the input hashes, the job provenance, the smoke flag, the settings, and the driver hash;
+  a different binding is refused, never overwritten.
+- **Reproduction gate.** Before spend: the saved Mac evidence of the reset plan (validation (a), headline F111 D2 search
+  and evaluation; validation (d), the fresh0 F111 D2+H3 doubling; Run B's gate cells for headline X7-SC and fresh D2+H3).
+  On the pod, before the 12 cells: the reset driver's reproduction gate (`reset_followup_v2.py --reproduce`), which must
+  pass. The driver refuses a full run unless every `--evidence` file reports a pass.
+- **Inventory.** Every output with its hash; Run A's deviations; hashes of `runnerup_v2.py`, `common.py`, `guards.py`, the
+  imported helpers, this plan, and the report; the run arguments; the environment (Python, numpy with BLAS and LAPACK,
+  SciPy, CMA, CPU).
+- **Validation before spend (free, on the Mac).** `uv run pytest -q docs/revision/followup2`, including the smoke-size
+  end-to-end run for fresh0 (both families, inputs to inventory).
 
 ## 3. Analysis (fixed now)
 
-Per family: d'(f) and g(C*) - g(C-thr12), per market and pooled; a nominal paired percentile bootstrap (9,999
-resamples, seed 0, seeds resampled within each market, the same indices for both rules); the registered Q1 categories
-applied to that nominal interval with the margin 0.05 (`common.q1_category`), labelled exploratory. Doubled-search
-winners reported beside, as in the paper's doubled table. No calibration, no Holm, no change to any registered decision.
+Per family, base and doubled: runner-up minus R3, C* minus runner-up, and C* minus R3, each against the rule's unchanged
+frozen reference (doubled: the runner-up's doubling records and the report's held-out records for R3 and C*), from
+unrounded per-seed values. Per market and pooled estimates, each with a nominal paired percentile bootstrap interval
+(9,999 resamples, seed 0, seeds resampled within each market, the same indices for both rules). The registered Q1
+categories are applied to the nominal pooled interval with the margin 0.05, labelled exploratory. The intervals are
+conditional on these six markets and the selected policies and references; they exclude search and market-sampling
+uncertainty and carry no registered calibration or Holm guarantee. The doubling check's attack and reference changes
+and its flag are reported per cell.
 
-## 4. Expectations (written before any runner-up result)
+## 4. Expectation (written before any runner-up result)
 
-From the development rechecks: d'(D2+H3) < d(D2+H3) = 0.0207 (report Q1), that is, the runner-up leaves a lower gain than
-C*, pooled, under D2+H3. Scored met, failed, or not established (base and doubled disagree). No expectation on the
-category.
+E: pooled g(C*) - g(C-thr12) > 0 under D2+H3, computed exactly from the paired per-seed values (not against a rounded
+threshold). Met if it holds under both base and doubled records; failed if it fails under both (a tie, exactly 0, is not
+met); not established if they disagree; "not available" if a record is missing or a value is nonfinite (reported
+separately, never a failure). No expectation on the category.
 
-## 5. Cost
+## 5. Cost and spending controls
 
 `python3 docs/revision/followup2/cost_estimate.py`: 17.65 core-hours, 1.91 USD at the benchmark's 0.108 USD per
-core-hour; on one 16-vCPU pod the critical path (D2+H3 search, X7-SC search, reference, X7-SC evaluation and doubling) is
-2.63 hours, 1.47 USD at 0.56 USD per hour, 1.64 USD with 0.3 hours of preparation and tail. The plan uses 1.91 USD.
+core-hour; billed path on one 16-vCPU pod 3.56 hours (reproduction gate 0.61 h, searches, six serial reference calls,
+X7-SC evaluation and doubling, 0.3 h preparation and tail) = 1.99 USD at 0.56 USD per hour. Estimate 1.99 USD;
+reservation 2.49 USD (x 1.25) in the ledger category `followup` (cap 22 USD shared by all follow-up runs;
+`docs/revision/followup/budget_followup.py reserve`); **stop cap 3.00 USD**, failed attempts counted. The driver checks
+the cap between stages (`--cap-usd 3.00 --started-at <allocation time>`): a stage starts only if the billed time so far
+plus its estimate stays within the cap; a running stage is never killed (author's instruction); the run stops, writes
+`cost_stop.json` and an inventory, and reports.
 
 ## 6. Steps
 
-1. Internal review of this plan to consensus; freeze it.
-2. The author records the spend approval (`docs/revision/followup/budget_followup.py` or a successor category).
-3. One pod: `runnerup_v2.py --stage all --workers 12`; delete and verify the pod; record the spend.
-4. Analysis on the Mac from the retrieved records; a paper paragraph and table labelled exploratory, after review.
+1. Internal review to consensus; freeze this plan.
+2. Reserve in the ledger; one pod: the reset reproduction gate, then `runnerup_v2.py --stage all --workers 12 --evidence
+   ... --cap-usd 3.00 --started-at T`; delete and verify the pod; record the spend.
+3. Analysis on the Mac from the retrieved records; a paper paragraph and table labelled exploratory, after review.
