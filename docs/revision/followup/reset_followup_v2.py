@@ -290,7 +290,7 @@ def with_x(knobs: dict, x: int) -> dict:
     return {**knobs, "x": int(x)}
 
 
-def diagnostics(src, out, jobs: list[dict], report: dict) -> dict:
+def diagnostics(src, out, jobs: list[dict], report: dict, d2_from=None) -> dict:
     """Plan section 4 (draft 5), evaluation only: for each D2 job's (context, rule), the base and doubled D2+H3 winners and
     the base D2 winner on the evaluation seeds with reset instrumentation; the switch g(winner) - g(winner with x = 0) for
     the D2+H3 winners and the reverse switch g(D2 winner with x = 1) - g(D2 winner). The reference cancels in each switch,
@@ -302,7 +302,7 @@ def diagnostics(src, out, jobs: list[dict], report: dict) -> dict:
         T, L = R.constants(j); fam = R.family_for("D2+H3", T, L); cell = R.eval_cell(j); cache = SeedCache()
         h3 = R.cell_id(j["context"], j["rule"], "D2+H3", "profit")
         pols = {"d2h3_base": read(R.path_of(src, h3))["attack"]["best_knobs"], "d2h3_doubled": report["doubling"][h3]["heldout"]["knobs"],
-                "d2_base": with_x(read(R.path_of(out, j["id"]))["attack"]["best_knobs"], 0)}
+                "d2_base": with_x(read(R.path_of(d2_from or out, j["id"]))["attack"]["best_knobs"], 0)}
         runs = {k: run_focal(cell, lambda k=k: fam.make(dict(pols[k])), cache) for k in pols}
         row = {k: {"knobs": pols[k], **reset_stats(runs[k].results, cell.focal), "seeds": list(cell.seeds),
                    "normalized": [float(v) for v in runs[k].normalized], "mean_normalized": float(np.mean(runs[k].normalized))} for k in pols}
@@ -380,7 +380,8 @@ def compare(src, out, rid: str = REPRO) -> dict:
     if not gd <= GAIN_TOL:
         problems.append(f"gain tolerance exceeded ({gd:.3g})")
     controls = {"differing": len(cd), "max_abs": max(cd, default=0.0)}          # reported, not gated: a near-tie in a corner policy can flip a discrete branch
-    return {"pass": not problems, "identical": not problems and ka == kb and ea["gain"] == eb["gain"], "max_knob_rel": rel, "max_gain_abs": gd,
+    same_obj = ta == tb and not cd and a["attack"].get("best_f") == b["attack"].get("best_f")
+    return {"pass": not problems, "identical": not problems and ka == kb and ea["gain"] == eb["gain"] and same_obj, "max_knob_rel": rel, "max_gain_abs": gd,
             "controls": controls, "problems": problems}
 
 
@@ -445,6 +446,19 @@ def reproduce(src, out, root: str, params: dict, salt_sha256: str, workers: int 
     return rep
 
 
+def headline_jobs(root: str, params: dict, salt_sha256: str) -> list[dict]:
+    """The three registered headline D2 cells (not cut; their records are in the source)."""
+    mkt = R.market("headline", root, 0.2, salt_sha256=salt_sha256)
+    return [R.job(mkt, r, "D2", "profit", params=params) for r in RULES]
+
+
+def headline_diagnostics(src, out, root: str, params: dict, salt_sha256: str, report: dict) -> dict:
+    """Plan section 4 at the headline market, on the Mac before the pod: 9 policies and 6 switches on the 200 seeds."""
+    res = diagnostics(src, out, headline_jobs(root, params, salt_sha256), report, d2_from=src)
+    write(Path(out) / "diagnostics_headline.json", res)
+    return res
+
+
 POD_STEPS = ("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory")
 SPOT = "fresh0@rho0.2|F111|D2|profit"                 # plan section 4: the cell diagnosed on the pod and on the Mac
 
@@ -464,6 +478,7 @@ def main(argv=None) -> int:
     ap.add_argument("--reproduce", action="store_true", help=f"validation (a): rerun {REPRO} and compare (plan draft 5)")
     ap.add_argument("--reproduce-doubling", dest="repro_dbl", default=None, help="validation (d): a registered D2+H3 doubling cell id")
     ap.add_argument("--report", default=str(ROOT / "results/v2/report/report.json"), help="for the diagnostics stage")
+    ap.add_argument("--headline-diagnostics", dest="hl_diag", action="store_true", help="plan section 4: the three headline cells, on the Mac")
     ap.add_argument("--diag-cells", dest="diag_cells", default="all", help=f"diagnostics stage: 'all' (Mac, after retrieval) or cell ids (pod: {SPOT})")
     a = ap.parse_args(argv); out = Path(a.out); check_out(out, a.src)
     from sim.records import cfg_from_dict
@@ -471,6 +486,11 @@ def main(argv=None) -> int:
     container = json.loads(Path(a.addendum).read_text())["deviations"]["configs"]
     cfgs = {k: cfg_from_dict(v) for k, v in json.loads(Path(a.cfgs).read_text()).items()}
     out.mkdir(parents=True, exist_ok=True); R.install_salt(root, out)
+    if a.hl_diag:
+        params = json.loads(Path(a.params).read_text()); j0 = headline_jobs(root, params, salt_sha)
+        check_salt(out, salt_sha, j0); check_commit(j0); check_code(); check_pairing(a.src, j0)
+        headline_diagnostics(a.src, out, root, params, salt_sha, json.loads(Path(a.report).read_text())); inventory(out)
+        print(json.dumps({"headline_diagnostics": len(j0)})); return 0
     if a.repro_dbl:
         rep = reproduce_doubling(a.src, out, a.repro_dbl, root, cfgs, json.loads(Path(a.params).read_text()), salt_sha)
         print(json.dumps({"reproduce_doubling": a.repro_dbl, **rep}))

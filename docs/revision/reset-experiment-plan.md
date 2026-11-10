@@ -106,7 +106,8 @@ re-optimisation.
   gains within 1e-9 absolute (about 10^4 times the drift measured, and far below the paired standard error of about
   0.0009). The Mac runs pass this criterion. **Pod gate:** the pod first reruns the same reproduction (about 0.34 USD of
   billed time: 2,084 s search plus evaluation at 0.56 USD per hour); the 18 cells start only if it passes the draft-5
-  criterion; a bit-identical result on the pod is reported as such. The reproduction path runs every pre-episode check
+  criterion; a bit-identical result on the pod is reported as such (`identical` requires bit-equal knobs, gains, twin value,
+  attack objective and every control value). The reproduction path runs every pre-episode check
   (salt, commit, code, pairing, configuration) before its search and saves `gate.json` and an inventory with the
   environment (Python, numpy with BLAS and LAPACK, SciPy, CMA, CPU). (b) An
   integration test runs the complete path (input copies, search, pre-evaluation freeze, evaluation, doubling, inventory)
@@ -215,14 +216,18 @@ cap. Stop at the cap.
 
 1. Internal review of this plan to consensus; freeze it (commit).
 2. Decision card: approved on 2026-11-09, cap 10 USD (card `touchstone-reset-spend`).
-3. On approval: write and test the driver (TDD); on the Mac (free), validations (a), (b) and (d) must pass with saved
-   results (`gate.json` in `results/v2/followup-repro*`) and the diagnostics are validated on the registered headline
+3. On approval: write and test the driver (TDD); on the Mac (free), validations (a), (b) and (d) must pass through the
+   corrected paths (preflight run, record with provenance and dependency hashes, `gate.json` and an inventory saved in a
+   new directory each: `results/v2/followup-repro-v2`, `results/v2/followup-repro-doubling-v2`); earlier passes on the
+   older path do not count and the diagnostics are validated on the registered headline
    cells, all before any pod is created.
 4. One pod: the reproduction gate first (draft-5 criterion; stop and report on failure), then `--stage all` with
    `--diag-cells fresh0@rho0.2|F111|D2|profit` (inputs, search, freeze, evaluate, doubling, spot diagnostics, inventory);
    records retrieved, the pod deleted and the deletion verified, the spend recorded.
 5. On the Mac after retrieval: the diagnostics of all 18 D2 winners and their reverse switches (`--stage diagnostics`),
-   checked against the pod's spot-check cell.
+   checked against the pod's spot-check cell. The three headline cells (registered D2 records) run on the Mac before the
+   pod (`--headline-diagnostics`, 200 seeds); with the 18 fresh cells this gives the 63 policies and 42 switch
+   comparisons of section 4 plus the 21 reverse switches.
 6. Analysis: a new `reset` block in `posthoc_v2.py` (tested first), a table, and a paragraph in section 9 with sites; the
    section-1 headline numbers enter at the same time, labelled exploratory.
 7. Internal review of the paper change, then the next external package.

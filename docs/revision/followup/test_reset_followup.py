@@ -435,3 +435,23 @@ def test_pod_sequence_runs_diagnostics_for_the_spot_check_cell_only():
     jobs = [{"id": f"fresh{i}@rho0.2|{r}|D2|profit"} for i in range(2) for r in ("F000", "F111")]
     assert [j["id"] for j in F.diag_jobs(jobs, F.SPOT)] == ["fresh0@rho0.2|F111|D2|profit"]
     assert F.diag_jobs(jobs, "all") == jobs
+
+
+# ---- internal review r6 ----
+
+def test_r6_identical_requires_equal_objective_values(tmp_path):
+    rid = "headline@rho0.2|F111|D2|profit"; k = {"u0": 0.5, "clip": 0}
+    for name, ctl, twin in (("a", 0.01, 0.05), ("ctl", 1.01, 0.05), ("twin", 0.01, 0.05 + 5e-10)):
+        _put(tmp_path / name, rid, k, [0.1, 0.2]); q = F.R.path_of(tmp_path / name, rid); e = read(q)
+        e["controls"] = [{"knobs": k, "f": ctl}]; e["twin"]["best_f"] = twin; write(q, e)
+    for name in ("ctl", "twin"):
+        r = F.compare(tmp_path / "a", tmp_path / name, rid)
+        assert r["pass"] and not r["identical"], name
+
+
+def test_r6_headline_diagnostics_read_the_registered_d2_winners(tmp_path, monkeypatch):
+    seen = {}
+    monkeypatch.setattr(F, "diagnostics", lambda src, out, jobs, report, d2_from=None: seen.update(n=len(jobs), d2_from=d2_from) or {})
+    monkeypatch.setattr(F, "headline_jobs", lambda root, params, salt: [{"id": f"headline@rho0.2|{r}|D2|profit"} for r in F.RULES])
+    F.headline_diagnostics("SRC", tmp_path, "root", {}, "salt", {})
+    assert seen == {"n": 3, "d2_from": "SRC"} and (tmp_path / "diagnostics_headline.json").exists()
