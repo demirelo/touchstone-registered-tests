@@ -311,7 +311,7 @@ def test_diagnostics_on_the_registered_headline_cells(tmp_path):
     rep = _j.loads((MAIN / "report/report.json").read_text())
     row = F.diagnostics(MAIN / "eval/all", MAIN / "eval/all", [j], rep)["headline@rho0.2|F111"]
     assert row["d2_base"]["resets"] == [0, 0] and row["d2_base"]["knobs"]["x"] == 0
-    assert set(row["d2h3_base"]["switch_x0"]) == {"identical", "effect"} and "effect" in row["d2_base"]["switch_x1"]
+    assert {"identical", "effect"} <= set(row["d2h3_base"]["switch_x0"]) and "effect" in row["d2_base"]["switch_x1"]
 
 
 def test_doubling_comparison_uses_the_draft5_criterion(tmp_path):
@@ -373,3 +373,58 @@ def test_reproduction_runs_the_preflight_before_any_search(tmp_path, monkeypatch
 def test_environment_names_the_numerical_stack():
     env = F.environment()
     assert {"python", "numpy", "scipy", "cma", "blas", "cpu", "machine", "platform", "driver_sha256"} <= set(env)
+
+
+# ---- internal review r5 ----
+
+def test_r5_twin_best_and_objective_values_are_checked(tmp_path):
+    rid = "headline@rho0.2|F111|D2|profit"; k = {"u0": 0.5, "clip": 0}
+    _put(tmp_path / "a", rid, k, [0.1, 0.2])
+    p = F.R.path_of(tmp_path / "a", rid); d = read(p); d["controls"] = [{"knobs": k, "f": 0.01}]; write(p, d)
+    for name, edit in (("twin best", lambda d: d["twin"].__setitem__("best_f", 123.0)),
+                       ("nonfinite", lambda d: d["attack"].__setitem__("best_f", float("nan")))):
+        _put(tmp_path / name, rid, k, [0.1, 0.2]); q = F.R.path_of(tmp_path / name, rid); e = read(q); e["controls"] = [{"knobs": k, "f": 0.01}]; edit(e); write(q, e)
+        r = F.compare(tmp_path / "a", tmp_path / name, rid)
+        assert not r["pass"] and not r["identical"] and any(name in x for x in r["problems"]), (name, r)
+    _put(tmp_path / "ctl", rid, k, [0.1, 0.2]); q = F.R.path_of(tmp_path / "ctl", rid); e = read(q); e["controls"] = [{"knobs": k, "f": 0.0100152}]; write(q, e)
+    r = F.compare(tmp_path / "a", tmp_path / "ctl", rid)                         # a corner control is reported, not gated
+    assert r["pass"] and r["controls"]["differing"] == 1 and r["controls"]["max_abs"] == pytest.approx(1.52e-5, rel=1e-3)
+
+
+def test_r5_doubling_comparison_rejects_nonfinite_and_missing_fields(tmp_path):
+    rid = "fresh0@rho0.2|F111|D2+H3|profit"; p = lambda b: b / "doubling" / (F.R._safe(rid) + ".json")
+    base = {"stage": "doubling", "attack_change": 0.01, "reference_change": 0.0, "incomplete": True,
+            "heldout": {"knobs": {"u0": 0.5, "x": 1, "clip": 0}, "seeds": [1, 2], "gain": [0.1, 0.2]}}
+    write(p(tmp_path / "a"), base)
+    write(p(tmp_path / "nan"), {**base, "attack_change": float("nan")})
+    assert "nonfinite value" in F.compare_doubling(tmp_path / "a", tmp_path / "nan", rid)["problems"]
+    write(p(tmp_path / "miss"), {k: v for k, v in base.items() if k != "reference_change"})
+    assert "missing field" in F.compare_doubling(tmp_path / "a", tmp_path / "miss", rid)["problems"]
+
+
+def test_r5_a_copied_search_absent_from_the_original_freeze_is_refused(tmp_path, no_expected_check):
+    src = _src(tmp_path); fr = F.R.path_of(src, f"freeze/{CTX}"); f = read(fr); f["records"].pop(f"{CTX}|F000|D2+H3|profit"); write(fr, f)
+    with pytest.raises(SystemExit, match="not in the original freeze"):
+        F.inputs(src, [_job()])
+
+
+def test_r5_doubling_reproduction_runs_the_preflight_first(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(F.R, "market", lambda *a, **k: {"label": "fresh0"})
+    monkeypatch.setattr(F.R, "job", lambda *a, **k: {"id": "fresh0@rho0.2|F111|D2+H3|profit", "context": CTX, "rule": "F111", "provenance": {}})
+    monkeypatch.setattr(F.R, "stage_doubling", lambda *a, **k: calls.append("doubling"))
+    def boom(*a, **k):
+        raise SystemExit("reset follow-up refused: preflight")
+    monkeypatch.setattr(F, "preflight", boom)
+    with pytest.raises(SystemExit, match="preflight"):
+        F.reproduce_doubling(tmp_path / "src", tmp_path / "out", "fresh0@rho0.2|F111|D2+H3|profit", "root", {"fresh0": None}, {}, "salt")
+    assert calls == []
+
+
+def test_r5_diagnostics_keep_per_seed_values_and_refuse_a_resetting_d2_winner():
+    nan = float("nan")
+    ok = [_Ep((0, 1), (0, 0), (0, 0), [0.5] * 4, [{}] * 4)]
+    F.require_zero_resets(F.reset_stats(ok, focal=1), "x")
+    bad = [_Ep((0, 1, 1), (0, 0, 1), (0, 0, 3), [0.5, nan, 0.5, 0.5], [{}, {1: 10}, {}, {}])]
+    with pytest.raises(SystemExit, match="resets"):
+        F.require_zero_resets(F.reset_stats(bad, focal=1), "x")

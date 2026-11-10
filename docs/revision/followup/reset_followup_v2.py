@@ -166,7 +166,9 @@ def inputs(src, jobs: list[dict]) -> dict[str, str]:
             u, s = todo.popitem()
             if need.setdefault(u, s) != s:
                 _refuse(f"{u}: two original records hold different hashes")
-            if fr["records"].get(u, s) != s:
+            if u not in fr["records"]:
+                _refuse(f"{u}: not in the original freeze of {ctx}")
+            if fr["records"][u] != s:
                 _refuse(f"{u}: its hash differs from the original freeze of {ctx}")
             for k, v in ((read(R.path_of(src, u)) or {}).get("upstream") or {}).items():
                 if need.get(k, v) != v or todo.get(k, v) != v:
@@ -277,6 +279,12 @@ def reset_stats(results, focal: int) -> dict:
             "mean_no_offer_rounds": float(np.mean(no_offer)), "mean_ban_rounds": float(np.mean(bans))}
 
 
+def require_zero_resets(stats: dict, what: str) -> None:
+    """Plan section 4: a D2 winner (x = 0) must never replace its identity; anything else is a construction error."""
+    if any(stats["resets"]):
+        _refuse(f"{what}: the D2 winner has resets in {sum(1 for r in stats['resets'] if r)} episodes")
+
+
 def with_x(knobs: dict, x: int) -> dict:
     """The same policy in the D2+H3 family with the replacement switch set to x (D2 is D2+H3 with x = 0)."""
     return {**knobs, "x": int(x)}
@@ -296,15 +304,19 @@ def diagnostics(src, out, jobs: list[dict], report: dict) -> dict:
         pols = {"d2h3_base": read(R.path_of(src, h3))["attack"]["best_knobs"], "d2h3_doubled": report["doubling"][h3]["heldout"]["knobs"],
                 "d2_base": with_x(read(R.path_of(out, j["id"]))["attack"]["best_knobs"], 0)}
         runs = {k: run_focal(cell, lambda k=k: fam.make(dict(pols[k])), cache) for k in pols}
-        row = {k: {"knobs": pols[k], **reset_stats(runs[k].results, cell.focal), "mean_normalized": float(np.mean(runs[k].normalized))} for k in pols}
+        row = {k: {"knobs": pols[k], **reset_stats(runs[k].results, cell.focal), "seeds": list(cell.seeds),
+                   "normalized": [float(v) for v in runs[k].normalized], "mean_normalized": float(np.mean(runs[k].normalized))} for k in pols}
+        require_zero_resets(row["d2_base"], j["id"])
         for k in ("d2h3_base", "d2h3_doubled"):
             if int(pols[k].get("x", 0)) == 0:
                 row[k]["switch_x0"] = {"identical": True, "effect": 0.0}
             else:
                 off = run_focal(cell, lambda k=k: fam.make(with_x(pols[k], 0)), cache)
-                row[k]["switch_x0"] = {"identical": False, "effect": float(np.mean(runs[k].normalized - off.normalized))}
+                diff = runs[k].normalized - off.normalized
+                row[k]["switch_x0"] = {"identical": False, "effect": float(np.mean(diff)), "per_seed": [float(v) for v in diff]}
         on = run_focal(cell, lambda: fam.make(with_x(pols["d2_base"], 1)), cache)
-        row["d2_base"]["switch_x1"] = {"effect": float(np.mean(on.normalized - runs["d2_base"].normalized))}
+        diff = on.normalized - runs["d2_base"].normalized
+        row["d2_base"]["switch_x1"] = {"effect": float(np.mean(diff)), "per_seed": [float(v) for v in diff]}
         res[f"{j['context']}|{j['rule']}"] = row
     return res
 
@@ -333,8 +345,16 @@ def compare(src, out, rid: str = REPRO) -> dict:
         return {"pass": False, "identical": False, "problems": ["a record is missing"]}
     problems = []
     ka, kb = a["attack"]["best_knobs"], b["attack"]["best_knobs"]
-    if not _finite(list(ka.values()), list(kb.values()), ea["gain"], eb["gain"]):
+    objs = [x.get("best_f") for x in (a["attack"], b["attack"], a.get("twin") or {}, b.get("twin") or {})] + [c.get("f") for c in a.get("controls", []) + b.get("controls", [])]
+    if not _finite(list(ka.values()), list(kb.values()), ea["gain"], eb["gain"], objs) or None in objs[:2]:
         problems.append("nonfinite value")
+    ta, tb = (a.get("twin") or {}).get("best_f"), (b.get("twin") or {}).get("best_f")
+    if ta is None or tb is None or not abs(ta - tb) <= GAIN_TOL:
+        problems.append("twin best value differs")
+    ca, cb = a.get("controls", []), b.get("controls", [])
+    if [c["knobs"] for c in ca] != [c["knobs"] for c in cb]:
+        problems.append("control set differs")
+    cd = [abs(x["f"] - y["f"]) for x, y in zip(ca, cb) if x["f"] != y["f"]]
     if set(ka) != set(kb):
         problems.append("knob names differ")
     disc = [k for k in ka if isinstance(ka[k], int) and not isinstance(ka[k], bool)]
@@ -359,7 +379,9 @@ def compare(src, out, rid: str = REPRO) -> dict:
     gd = max((abs(x - y) for x, y in zip(ea["gain"], eb["gain"])), default=0.0) if len(ea["gain"]) == len(eb["gain"]) else float("inf")
     if not gd <= GAIN_TOL:
         problems.append(f"gain tolerance exceeded ({gd:.3g})")
-    return {"pass": not problems, "identical": not problems and ka == kb and ea["gain"] == eb["gain"], "max_knob_rel": rel, "max_gain_abs": gd, "problems": problems}
+    controls = {"differing": len(cd), "max_abs": max(cd, default=0.0)}          # reported, not gated: a near-tie in a corner policy can flip a discrete branch
+    return {"pass": not problems, "identical": not problems and ka == kb and ea["gain"] == eb["gain"], "max_knob_rel": rel, "max_gain_abs": gd,
+            "controls": controls, "problems": problems}
 
 
 def compare_doubling(src, out, rid: str) -> dict:
@@ -370,7 +392,13 @@ def compare_doubling(src, out, rid: str) -> dict:
     if a is None or b is None:
         return {"pass": False, "problems": ["a record is missing"]}
     problems = []
-    if bool(a.get("incomplete")) != bool(b.get("incomplete")):
+    need = ("incomplete", "attack_change", "reference_change", "heldout")
+    if any(k not in x for x in (a, b) for k in need) or any(k not in x["heldout"] for x in (a, b) for k in ("knobs", "seeds", "gain")):
+        return {"pass": False, "problems": ["missing field"]}
+    if not _finite(a["attack_change"], b["attack_change"], a["reference_change"], b["reference_change"], a["heldout"]["gain"], b["heldout"]["gain"],
+                   list(a["heldout"]["knobs"].values()), list(b["heldout"]["knobs"].values())):
+        problems.append("nonfinite value")
+    if bool(a["incomplete"]) != bool(b["incomplete"]):
         problems.append("flag differs")
     ha, hb = a["heldout"], b["heldout"]
     if ha["seeds"] != hb["seeds"]:
@@ -379,9 +407,9 @@ def compare_doubling(src, out, rid: str) -> dict:
     if set(ka) != set(kb) or any(ka[k] != kb[k] for k in disc):
         problems.append("discrete knob differs")
     rel = max((abs(ka[k] - kb[k]) / max(abs(ka[k]), 1e-300) for k in ka if k not in disc and k in kb), default=0.0)
-    chg = max(abs(a.get(k, 0.0) - b.get(k, 0.0)) for k in ("attack_change", "reference_change"))
+    chg = max(abs(a[k] - b[k]) for k in ("attack_change", "reference_change"))
     gd = max((abs(x - y) for x, y in zip(ha["gain"], hb["gain"])), default=0.0) if len(ha["gain"]) == len(hb["gain"]) else float("inf")
-    if rel > KNOB_TOL or chg > GAIN_TOL or gd > GAIN_TOL:
+    if not (rel <= KNOB_TOL and chg <= GAIN_TOL and gd <= GAIN_TOL):
         problems.append(f"tolerance exceeded (knobs {rel:.3g}, changes {chg:.3g}, gains {gd:.3g})")
     return {"pass": not problems, "max_knob_rel": rel, "max_change_abs": chg, "max_gain_abs": gd, "problems": problems}
 
@@ -390,11 +418,15 @@ def reproduce_doubling(src, out, rid: str, root: str, cfgs: dict, params: dict, 
     """Rerun the registered doubling check of one fresh-market D2+H3 cell with the frozen stage, against copies of its inputs."""
     label, rest = rid.split("@", 1); rule = rid.split("|")[1]
     j = R.job(R.market(label, root, 0.2, cfg=cfgs[label], salt_sha256=salt_sha256), rule, "D2+H3", "profit", params=params)
+    reg = read(R.path_of(src, rid))
+    preflight(out, src, [j], salt_sha256, {label: {"container_hash": (reg or {}).get("provenance", {}).get("cfg_sha256")}})
     need = inputs(src, [j]); need[j["id"]] = sha_file(R.path_of(src, j["id"]))
     copy_inputs(src, out, need)
     rec = R.stage_doubling(j, out, CUTS, H4_EXCLUDED)
-    write(Path(out) / "doubling" / (R._safe(rid) + ".json"), {"stage": "doubling", "id": rid, **rec})
-    return compare_doubling(src, out, rid)
+    write(Path(out) / "doubling" / (R._safe(rid) + ".json"),
+          {"stage": "doubling", "id": rid, "provenance": j["provenance"], "upstream": {u: sha_file(R.path_of(out, u)) for u in sorted(need)}, **rec})
+    rep = compare_doubling(src, out, rid); write(Path(out) / "gate.json", {"stage": "doubling gate", "cell": rid, **rep}); inventory(out)
+    return rep
 
 
 def reproduce(src, out, root: str, params: dict, salt_sha256: str, workers: int = 1) -> dict:
