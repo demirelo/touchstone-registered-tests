@@ -244,11 +244,6 @@
   "kind": "eff",
   "section": "abstract"
  },
- "abs_ph_mix_eff": {
-  "path": "posthoc.welfare.F111.best.efficiency",
-  "kind": "eff",
-  "section": "abstract"
- },
  "r_q2_s_x": {
   "path": "q2.searched.X7-SC.S.estimate",
   "kind": "gain",
@@ -272,11 +267,6 @@
  "r_q3_w1_f000": {
   "path": "q3.welfare.F000.D2+H3.W1.efficiency",
   "kind": "eff",
-  "section": "results"
- },
- "r_ph_w_r3": {
-  "path": "posthoc.welfare.F111.best.weight_label",
-  "kind": "label",
   "section": "results"
  },
  "r_ph_e_r3": {
@@ -314,33 +304,8 @@
   "kind": "gain",
   "section": "results"
  },
- "r_ph_w_cs": {
-  "path": "posthoc.welfare.C*.best.weight_label",
-  "kind": "label",
-  "section": "results"
- },
- "abs_ph_mix_gain": {
-  "path": "posthoc.welfare.F111.best.estimate_label",
-  "kind": "label",
-  "section": "abstract"
- },
- "r_ph_g_r3": {
-  "path": "posthoc.welfare.F111.best.estimate_label",
-  "kind": "label",
-  "section": "results"
- },
- "r_ph_g_cs": {
-  "path": "posthoc.welfare.C*.best.estimate_label",
-  "kind": "label",
-  "section": "results"
- },
  "r_ph_e_r3_d": {
   "path": "posthoc.welfare.F111.mixtures.D2+H3.efficiency",
-  "kind": "eff",
-  "section": "results"
- },
- "r_ph_e_cs_d": {
-  "path": "posthoc.welfare.C*.mixtures.D2+H3.efficiency",
   "kind": "eff",
   "section": "results"
  },
@@ -389,43 +354,8 @@
   "kind": "label",
   "section": "results"
  },
- "r_ph_t_r3": {
-  "path": "posthoc.welfare.F111.mixtures.H4.train_label",
-  "kind": "label",
-  "section": "results"
- },
- "r_ph_t_r3_d": {
-  "path": "posthoc.welfare.F111.mixtures.D2+H3.train_label",
-  "kind": "label",
-  "section": "results"
- },
- "r_ph_t_cs": {
-  "path": "posthoc.welfare.C*.mixtures.H4.train_label",
-  "kind": "label",
-  "section": "results"
- },
- "r_ph_t_cs_d": {
-  "path": "posthoc.welfare.C*.mixtures.D2+H3.train_label",
-  "kind": "label",
-  "section": "results"
- },
- "r_ph_wd_cs": {
-  "path": "posthoc.welfare.C*.mixtures.D2+H3.weight_label",
-  "kind": "label",
-  "section": "results"
- },
  "r_ph_fw_cs": {
   "path": "posthoc.welfare.C*.mixtures.D2+H3.train_feasible_mixture.weight_label",
-  "kind": "label",
-  "section": "results"
- },
- "r_ph_ft_cs": {
-  "path": "posthoc.welfare.C*.mixtures.D2+H3.train_feasible_mixture.train_label",
-  "kind": "label",
-  "section": "results"
- },
- "r_ph_fg_cs": {
-  "path": "posthoc.welfare.C*.mixtures.D2+H3.train_feasible_mixture.estimate_label",
   "kind": "label",
   "section": "results"
  },
