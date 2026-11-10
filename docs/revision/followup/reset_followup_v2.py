@@ -233,19 +233,40 @@ def inventory(out) -> dict:
 REPRO = "headline@rho0.2|F111|D2|profit"
 
 
-def compare(src, out, rid: str = REPRO) -> list[str]:
-    """Validation (a): the selected knobs and the per-seed gains must be identical, not close."""
+KNOB_TOL, GAIN_TOL = 1e-9, 1e-9                      # plan draft 5, section 3 (a)
+
+
+def compare(src, out, rid: str = REPRO) -> dict:
+    """Validation (a), plan draft 5: exact on the episode count, archive size, `best_source`, discrete knobs, budget,
+    configuration hash, dependency set and seeds; continuous knobs within KNOB_TOL relative and per-seed gains within
+    GAIN_TOL absolute. `identical` reports bit identity separately."""
+    a, b = read(R.path_of(src, rid)), read(R.path_of(out, rid)); ea, eb = read(R.eval_path(src, rid)), read(R.eval_path(out, rid))
+    if None in (a, b, ea, eb):
+        return {"pass": False, "identical": False, "problems": ["a record is missing"]}
     problems = []
-    a, b = read(R.path_of(src, rid)), read(R.path_of(out, rid))
-    if a is None or b is None or a["attack"]["best_knobs"] != b["attack"]["best_knobs"]:
-        problems.append("selected knobs differ")
-    ea, eb = read(R.eval_path(src, rid)), read(R.eval_path(out, rid))
-    if ea is None or eb is None or ea["seeds"] != eb["seeds"] or ea["gain"] != eb["gain"]:
-        problems.append("per-seed gains differ")
-    return problems
+    ka, kb = a["attack"]["best_knobs"], b["attack"]["best_knobs"]
+    if set(ka) != set(kb):
+        problems.append("knob names differ")
+    disc = [k for k in ka if isinstance(ka[k], int) and not isinstance(ka[k], bool)]
+    if any(ka[k] != kb.get(k) for k in disc):
+        problems.append("discrete knob differs")
+    rel = max((abs(ka[k] - kb[k]) / max(abs(ka[k]), 1e-300) for k in ka if k not in disc and k in kb), default=0.0)
+    if rel > KNOB_TOL:
+        problems.append(f"knob tolerance exceeded ({rel:.3g})")
+    for what, x, y in (("episode count", a.get("runs"), b.get("runs")), ("best_source", a["attack"].get("best_source"), b["attack"].get("best_source")),
+                       ("archive size", len(a["attack"].get("archive", [])), len(b["attack"].get("archive", []))),
+                       ("budget", a["provenance"].get("budget"), b["provenance"].get("budget")),
+                       ("configuration hash", a["provenance"].get("cfg_sha256"), b["provenance"].get("cfg_sha256")),
+                       ("dependency set", sorted(a.get("upstream") or {}), sorted(b.get("upstream") or {})), ("seeds", ea["seeds"], eb["seeds"])):
+        if x != y:
+            problems.append(f"{what} differs")
+    gd = max((abs(x - y) for x, y in zip(ea["gain"], eb["gain"])), default=0.0) if len(ea["gain"]) == len(eb["gain"]) else float("inf")
+    if gd > GAIN_TOL:
+        problems.append(f"gain tolerance exceeded ({gd:.3g})")
+    return {"pass": not problems, "identical": ka == kb and ea["gain"] == eb["gain"], "max_knob_rel": rel, "max_gain_abs": gd, "problems": problems}
 
 
-def reproduce(src, out, root: str, params: dict, salt_sha256: str, workers: int = 1) -> list[str]:
+def reproduce(src, out, root: str, params: dict, salt_sha256: str, workers: int = 1) -> dict:
     """Rerun the registered headline F111 D2 search and evaluation through this script's path (input copies, freeze,
     acceptance) and compare with the registered records."""
     mkt = R.market("headline", root, 0.2, salt_sha256=salt_sha256)
@@ -276,9 +297,9 @@ def main(argv=None) -> int:
     cfgs = {k: cfg_from_dict(v) for k, v in json.loads(Path(a.cfgs).read_text()).items()}
     out.mkdir(parents=True, exist_ok=True); R.install_salt(root, out)
     if a.reproduce:
-        problems = reproduce(a.src, out, root, json.loads(Path(a.params).read_text()), salt_sha, a.workers)
-        print(json.dumps({"reproduce": REPRO, "identical": not problems, "problems": problems}))
-        return 0 if not problems else 1
+        rep = reproduce(a.src, out, root, json.loads(Path(a.params).read_text()), salt_sha, a.workers)
+        print(json.dumps({"reproduce": REPRO, **rep}))
+        return 0 if rep["pass"] else 1
     jobs = build_jobs(root, cfgs, json.loads(Path(a.params).read_text()), salt_sha, tuple(a.markets.split(",")), a.smoke)
     check_configs(jobs, container); check_salt(out, salt_sha, jobs); check_commit(jobs); check_code()
     if not a.smoke:

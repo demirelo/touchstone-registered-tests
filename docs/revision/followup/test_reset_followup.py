@@ -146,15 +146,30 @@ def test_the_inventory_lists_every_output_but_itself(tmp_path, monkeypatch, no_e
     assert inv["records"]["salt.hex"] == sha_file(out / "salt.hex") and read(out / "inventory.json") == inv
 
 
-def test_reproduction_compares_knobs_and_per_seed_gains_exactly(tmp_path):
+def _put(base, rid, knobs, gain, runs=100, src="restart_1", arch=3):
+    write(F.R.path_of(base, rid), {"stage": "search", "attack": {"best_knobs": knobs, "best_f": 0.1, "best_source": src, "archive": [0] * arch},
+                                   "runs": runs, "upstream": {}, "provenance": {"cfg_sha256": "c", "budget": [5, 300, 5, 200]}})
+    write(F.R.eval_path(base, rid), {"stage": "evaluate", "seeds": [1, 2], "gain": gain})
+
+
+def test_reproduction_criterion_exact_parts_and_tolerances(tmp_path):
+    """Plan draft 5, section 3 (a): exact on counts, sources, discrete knobs, hashes; 1e-9 on continuous knobs and gains."""
     rid = "headline@rho0.2|F111|D2|profit"
-    def put(base, knobs, gain):
-        write(F.R.path_of(base, rid), {"stage": "search", "attack": {"best_knobs": knobs, "best_f": 0.1}})
-        write(F.R.eval_path(base, rid), {"stage": "evaluate", "seeds": [1, 2], "gain": gain})
-    put(tmp_path / "a", {"u0": 0.5, "clip": 0}, [0.1, 0.2]); put(tmp_path / "b", {"u0": 0.5, "clip": 0}, [0.1, 0.2])
-    assert F.compare(tmp_path / "a", tmp_path / "b", rid) == []
-    put(tmp_path / "c", {"u0": 0.5 + 1e-16, "clip": 0}, [0.1, 0.2 + 1e-16])
-    assert F.compare(tmp_path / "a", tmp_path / "c", rid) == ["selected knobs differ", "per-seed gains differ"]
+    _put(tmp_path / "a", rid, {"u0": 0.5, "clip": 0}, [0.1, 0.2])
+    _put(tmp_path / "b", rid, {"u0": 0.5 * (1 + 2.6e-13), "clip": 0}, [0.1, 0.2 + 2e-14])
+    rep = F.compare(tmp_path / "a", tmp_path / "b", rid)
+    assert rep["pass"] and not rep["identical"] and rep["max_knob_rel"] == pytest.approx(2.6e-13, rel=1e-3)
+    for name, kw in (("knob tolerance", dict(knobs={"u0": 0.5 * (1 + 2e-9), "clip": 0}, gain=[0.1, 0.2])),
+                     ("gain tolerance", dict(knobs={"u0": 0.5, "clip": 0}, gain=[0.1, 0.2 + 2e-9])),
+                     ("discrete knob", dict(knobs={"u0": 0.5, "clip": 1}, gain=[0.1, 0.2])),
+                     ("episode count", dict(knobs={"u0": 0.5, "clip": 0}, gain=[0.1, 0.2], runs=99)),
+                     ("best_source", dict(knobs={"u0": 0.5, "clip": 0}, gain=[0.1, 0.2], src="control")),
+                     ("archive size", dict(knobs={"u0": 0.5, "clip": 0}, gain=[0.1, 0.2], arch=4))):
+        _put(tmp_path / name, rid, **kw)
+        r = F.compare(tmp_path / "a", tmp_path / name, rid)
+        assert not r["pass"] and any(name in p for p in r["problems"]), name
+    _put(tmp_path / "same", rid, {"u0": 0.5, "clip": 0}, [0.1, 0.2])
+    assert F.compare(tmp_path / "a", tmp_path / "same", rid)["identical"]
 
 
 MAIN = Path("/Users/oemer.demirel/Projects/touchstone/results/v2")

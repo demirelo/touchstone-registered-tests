@@ -1,10 +1,15 @@
-# Reset experiment: plan (draft 4, 2026-11-09; internal consensus; approved by the author, cap 10 USD; no spend yet)
+# Reset experiment: plan (draft 5, 2026-11-10; draft 4 had internal consensus and the author's approval, cap 10 USD; no spend yet)
 
 **Why.** The round-9 fresh reviewer (problem 2, `docs/paper/external-review-r9.md`): the gain is excess profit when
 identity replacement is available; it does not show how much of that profit comes from the ability to replace an
 identity. This plan measures that, within the searched D2 family, on the second test's markets.
 
-**Status.** Draft 4 applies the round-3 caveats (`docs/revision/roster/{sol,astra}-reset-plan-r{1,2,3}.md`; round 3: both accept-with-caveat).
+**Draft 5** (2026-11-10) applies the Fable 5.2 driver review (`docs/revision/roster/fable52-reset-driver-r1.md`, triage
+`docs/paper/fable52-triage.md`): a reproduction criterion that a cross-platform run can meet, a pod gate, the driver's
+location under `docs/`, the diagnostics built and run free before the pod, a doubling ground truth, and clarified scoring.
+It needs one internal review round.
+
+**Status.** Draft 4 applied the round-3 caveats (`docs/revision/roster/{sol,astra}-reset-plan-r{1,2,3}.md`; round 3: both accept-with-caveat).
 After consensus: a decision card for the author. Nothing runs before the author approves the spend. This file is frozen
 (commit hash in the operations ledger) before any paid cell starts.
 
@@ -47,7 +52,8 @@ re-optimisation.
 - **New search cells.** D2 x {F000, F111, C*} x fresh0..fresh5 at rho 0.2: 18 cells, exactly the design-8.1 cells that cut
   3 removed, with their registered settings (D2 knob space and budget, the market's training seeds for search, its 200
   evaluation seeds), each with a doubling check (design 6.5, held-out evaluation of the doubled winner on the same seeds).
-- **Driver.** A separate follow-up script (`scripts/reset_followup_v2.py`, written and tested before any spend) that
+- **Driver.** A separate follow-up script (`docs/revision/followup/reset_followup_v2.py`, under `docs/` because the code
+  freeze allows changes only there; written and tested before any spend) that
   imports the frozen stage functions of `scripts/revision_v2.py` at the protocol-v2 tag (`job`, `stage_search`, the
   evaluation and doubling stages) and builds the 18 jobs from the uncut cell list. It bypasses only three things, each
   recorded as a deviation: the fixed manifest path and cut list (`sim/manifest_v2.py` `effective`), the hard-coded doubling
@@ -77,11 +83,26 @@ re-optimisation.
   fresh market's configuration hash equals the recorded container hash (`addendum.json` `deviations.configs`), so the
   new cells use the same configurations as the D2+H3 records they are paired with (the recorded 1-ulp deviation stays as
   it is).
-- **Validation before spend (free, on the Mac).** (a) The driver reproduces the registered `headline@rho0.2|F111|D2`
-  search and evaluation: identical selected knobs and per-seed gains. If not identical, stop and report. (b) An
+- **Pairing and code checks (draft 5).** Before any episode the driver refuses a job whose runner, salt, configuration,
+  root, seeds, rule parameters, or context differ from its frozen reference's provenance; an unknown commit; a runner or
+  `sim/` that differs from protocol-v2; an output inside `--src` or `eval/all`; and a salt mismatch. The inventory records
+  Python, numpy, machine, platform, and the driver's hash.
+- **Validation before spend (free, on the Mac).** (a) Reproduction of the registered `headline@rho0.2|F111|D2` search and
+  evaluation. Draft 4 required identical knobs and per-seed gains. Measured on 2026-11-09/10: a Mac arm64 run and a Linux
+  amd64 container run both match on configuration, salt, runner, budget, rule parameters, episode count (15,660), archive
+  sizes, and the twin result, with selected knobs equal to 2.6e-13 relative and per-seed gains to 2.0e-14; evaluating the
+  registered knobs on the Mac gives per-seed gains within 5e-17 of the record (102 of 200 seeds bit-identical). Last-bit
+  arithmetic differences across platforms grow through the search, so bit identity across platforms is not attainable,
+  and the draft-4 rule was not well chosen. **Draft-5 criterion.** Exact: hashes, seeds, budget, episode count, archive
+  sizes, `best_source`, discrete knobs, dependency sets. Tolerance: continuous knobs within 1e-9 relative and per-seed
+  gains within 1e-9 absolute (about 10^4 times the drift measured, and far below the paired standard error of about
+  0.0009). The Mac runs pass this criterion. **Pod gate:** the pod first reruns the same reproduction (about 0.34 USD of
+  billed time: 2,084 s search plus evaluation at 0.56 USD per hour); the 18 cells start only if it passes the draft-5
+  criterion; a bit-identical result on the pod is reported as such. (b) An
   integration test runs the complete path (input copies, search, pre-evaluation freeze, evaluation, doubling, inventory)
   for one fresh-market cell at smoke size, including the driver's acceptance check, which proves every dependency
-  resolves. (c) Unit tests: the driver refuses a
+  resolves (passed, 2026-11-09). (d) Doubling ground truth: the driver's doubling stage reproduces one registered
+  fresh-market D2+H3 doubling record under the draft-5 criterion, on the Mac. (c) Unit tests: the driver refuses a
   changed reference hash, a missing input record, a wrong configuration hash, and an output directory inside `eval/all`.
 
 ## 4. Diagnostics (evaluation only, no search)
@@ -89,7 +110,9 @@ re-optimisation.
 For three rules on seven markets: the base and doubled D2+H3 winners (42 policies) and the base D2 winners (21; the doubled
 D2 winners are not included), on the 200 evaluation seeds, re-run with reset and ban instrumentation (63 single-policy
 evaluations; the existing gain records carry no reset counts, so none is reused); the selected `x`; per episode the number of resets, the probability of at least one reset, the rounds of resets,
-and the rounds spent banned. Check that every D2 winner has zero resets. **Fixed-policy switch:** each of the 42 D2+H3
+and the rounds spent banned. Check that every D2 winner has zero resets. **Reverse switch (draft 5):** each of the 18 D2 winners re-evaluated with
+`x = 1` and every other knob unchanged (18 more evaluations). The diagnostics are built in the driver and run free on the
+Mac before the pod, under the draft-5 tolerance against a pod spot check of one cell. **Fixed-policy switch:** each of the 42 D2+H3
 winners re-evaluated with `x` set to 0 and every other knob unchanged (42 more; a winner that already has `x = 0` is
 reported as identical and not re-run); g(winner) - g(winner, x = 0) is the effect of the switch
 without re-optimisation, reported beside I.
@@ -106,6 +129,10 @@ without re-optimisation, reported beside I.
 - **Share.** S = 1 - pooled G(D2) / pooled G(D2+H3), a ratio of pooled contrasts, computed in every bootstrap replicate.
   S is reported only if the lower bound of pooled G(D2+H3) exceeds 0.05; otherwise "not defined". No clipping; S can be
   negative or above 1. The absolute gaps are always reported beside it.
+- **Market sensitivity (draft 5).** The sign count of I(B3) - I(R3) and I(C*) - I(R3) over the six markets, and S with
+  each market left out in turn (six values).
+- **Doubling flags.** For each D2 cell, the attack change and the reference-reselection change of its doubling check are
+  reported separately.
 - **Doubled versions** of the same statistics, as in the paper's `tab:ph-doubled`. The base (frozen) searches are primary,
   as in the paper; the doubled versions are reported beside them.
 - No confirmatory test, no multiplicity family, no change to any registered decision.
@@ -116,7 +143,7 @@ Written before any fresh D2 result exists. **The six markets, their seeds, and t
 only the D2 outcomes are unseen.** This is a descriptive follow-up specified on 2026-11-09 after the round-9 review and
 after the headline contrast was seen, not an independent replication.
 
-Expectations: on each fresh market, I(B3) > I(R3) and I(C*) > I(R3); pooled S defined and greater than 0.5. Expectations are
+Expectations: on all six fresh markets (each market counted; a single market against it fails the expectation), I(B3) > I(R3) and I(C*) > I(R3); pooled S defined and greater than 0.5. Expectations are
 scored on point estimates (this is a descriptive follow-up; "met" does not mean that an interval excludes the threshold),
 with the denominator gate of section 5 applied separately to the base and the doubled results. Each expectation is
 scored as met, failed, or not established: **met** if it holds under both the base and the doubled searches; **failed** if
@@ -132,7 +159,9 @@ attacker cannot replace its identity.
 core-hours. Per D2 cell: 1 unit + 160 further seeds (0.046) + doubling with held-out evaluation (0.479); 18 cells = 27.45
 units. Diagnostics: 63 instrumented evaluations + up to 42 switch evaluations = up to 105 single-policy evaluations of
 200 episodes, priced conservatively at the profit-evaluation stage's cost for 200 seeds (0.058 units each, although that
-stage evaluates more than one profile) = about 6.1 units. Total about 33.6 units = **about 19.4 core-hours**.
+stage evaluates more than one profile) = about 6.1 units. Total about 33.6 units = **about 19.4 core-hours**. Draft 5
+moves the diagnostics to the Mac (free) and adds the pod gate (about 0.34 USD); the pod estimate below is kept as an
+upper bound.
 
 **Billed pod time.** One 16-vCPU pod at the recorded 0.56 USD per hour; searches with 16 workers, evaluation, doubling,
 and diagnostics with at most 10 (operations ledger). Stage schedule with incomplete worker batches and equal benchmark
@@ -151,9 +180,10 @@ D2+H3 incumbents that can replace), so it is not offered for approval.
 
 **Budget.** `docs/revision/budget-ledger.json`: spent 50.869 USD of the 55 USD approval limit. The author approved option A
 on the board on 2026-11-09 and set the cap to 10 USD ("make the cap $10 to ensure we're not blocked by a low cap"). The
-ledger needs a new category `followup` with cap 10.00 (a tested change to `scripts/budget_v2.py`) and the approval limit
-raised to 61 USD (50.869 + 10 = 60.869, `python3 -c "print(50.869+10)"`), recorded by the author with
-`budget_v2.py --approve`. The estimate is unchanged (1.66 to 2.10 USD); the higher cap only prevents a stop from a low
+ledger needs a new category `followup` with cap 10.00 and the approval limit raised to 61 USD (50.869 + 10 = 60.869,
+`python3 -c "print(50.869+10)"`). `scripts/budget_v2.py` is frozen, so the tested wrapper
+`docs/revision/followup/budget_followup.py --approve 61 10 TEXT` records both, refuses a limit below spend plus the cap,
+and keeps the earlier approval text. The estimate is unchanged (1.66 to 2.10 USD); the higher cap only prevents a stop from a low
 cap. Stop at the cap.
 
 ## 8. Steps
