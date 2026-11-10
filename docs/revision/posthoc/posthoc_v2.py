@@ -5,7 +5,7 @@ g = (attacked profit - truthful reference profit) / (S*/N) with N = 10 (checked 
 1. Q1 split: the pooled d = g_C* - g_F111 as an attacked-profit term plus a reference-profit term, equal market weights.
 2. Welfare mixtures: an episode-level lottery between the selected W0 attack and a profitable attack of the same rule at
    the headline market (same frozen reference), with the largest W0 weight whose mean gain keeps a nonnegative one-sided
-   95 percent lower bound on the evaluation seeds. This checks whether the W1 policy class is closed under randomisation;
+   95 percent lower bound on the evaluation seeds. This shows whether the prescribed W1 search missed episode-level mixtures with lower efficiency;
    the weight is chosen on the evaluation seeds, so it is not an out-of-sample estimate.
 3. Q4 diagnostics per fresh market: the B3 - R3 gain difference split into its two terms, and R3's audit spending and
    served share under the selected attack.
@@ -315,8 +315,9 @@ def direct_priority(out, markets, fams=("D2+H3", "X7-SC")) -> dict:
 
 def nesting(out, report: dict, markets, rules=("F000", "F111", "C*")) -> dict:
     """Follow-up reviews: X7-SC contains D2+H3, so an X7-SC cell's evaluated gain is compared with the better of the frozen
-    and the doubled D2+H3 winners on the same seeds; a positive shortfall marks an X7-SC search that missed a policy its
-    family contains. Descriptive (evaluation seeds; selection was on training seeds)."""
+    and the doubled D2+H3 winners on the same seeds; a positive shortfall is an evaluation discrepancy
+    that calls for further search checks, not a demonstrated search failure: winners are selected on training seeds
+    and need not keep their order on evaluation seeds, and the better D2+H3 winner is picked on the evaluation seeds."""
     cells, fails = {}, []
     for m in markets:
         for r in rules:
