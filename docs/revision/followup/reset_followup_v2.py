@@ -230,6 +230,54 @@ def inventory(out) -> dict:
     return inv
 
 
+def reset_stats(results, focal: int) -> dict:
+    """Plan section 4: per episode, the focal provider's identity replacements, the rounds they were created, the rounds
+    without a focal offer (banned or waiting), and the ban rounds imposed on its identities."""
+    import numpy as np
+    resets, rounds, no_offer, bans = [], [], [], []
+    for r in results:
+        mine = [i for i, e in enumerate(r.entity_of) if e == focal]
+        new = [i for i in mine if r.identity_generation[i] > 0]
+        resets.append(len(new)); rounds.append([int(r.identity_round[i]) for i in new])
+        no_offer.append(int(np.isnan(r.claims[:, focal]).sum()))
+        bans.append(int(sum(v for h in r.history for i, v in h.consequences.bans.items() if i in mine)))
+    return {"resets": resets, "reset_rounds": rounds, "no_offer_rounds": no_offer, "ban_rounds": bans,
+            "mean_resets": float(np.mean(resets)), "p_any_reset": float(np.mean([x > 0 for x in resets])),
+            "mean_no_offer_rounds": float(np.mean(no_offer)), "mean_ban_rounds": float(np.mean(bans))}
+
+
+def with_x(knobs: dict, x: int) -> dict:
+    """The same policy in the D2+H3 family with the replacement switch set to x (D2 is D2+H3 with x = 0)."""
+    return {**knobs, "x": int(x)}
+
+
+def diagnostics(src, out, jobs: list[dict], report: dict) -> dict:
+    """Plan section 4 (draft 5), evaluation only: for each D2 job's (context, rule), the base and doubled D2+H3 winners and
+    the base D2 winner on the evaluation seeds with reset instrumentation; the switch g(winner) - g(winner with x = 0) for
+    the D2+H3 winners and the reverse switch g(D2 winner with x = 1) - g(D2 winner). The reference cancels in each switch,
+    so it is a difference of normalised profits."""
+    import numpy as np
+    from sim.cell import SeedCache, run_focal
+    res = {}
+    for j in jobs:
+        T, L = R.constants(j); fam = R.family_for("D2+H3", T, L); cell = R.eval_cell(j); cache = SeedCache()
+        h3 = R.cell_id(j["context"], j["rule"], "D2+H3", "profit")
+        pols = {"d2h3_base": read(R.path_of(src, h3))["attack"]["best_knobs"], "d2h3_doubled": report["doubling"][h3]["heldout"]["knobs"],
+                "d2_base": with_x(read(R.path_of(out, j["id"]))["attack"]["best_knobs"], 0)}
+        runs = {k: run_focal(cell, lambda k=k: fam.make(dict(pols[k])), cache) for k in pols}
+        row = {k: {"knobs": pols[k], **reset_stats(runs[k].results, cell.focal), "mean_normalized": float(np.mean(runs[k].normalized))} for k in pols}
+        for k in ("d2h3_base", "d2h3_doubled"):
+            if int(pols[k].get("x", 0)) == 0:
+                row[k]["switch_x0"] = {"identical": True, "effect": 0.0}
+            else:
+                off = run_focal(cell, lambda k=k: fam.make(with_x(pols[k], 0)), cache)
+                row[k]["switch_x0"] = {"identical": False, "effect": float(np.mean(runs[k].normalized - off.normalized))}
+        on = run_focal(cell, lambda: fam.make(with_x(pols["d2_base"], 1)), cache)
+        row["d2_base"]["switch_x1"] = {"effect": float(np.mean(on.normalized - runs["d2_base"].normalized))}
+        res[f"{j['context']}|{j['rule']}"] = row
+    return res
+
+
 REPRO = "headline@rho0.2|F111|D2|profit"
 
 
@@ -266,6 +314,41 @@ def compare(src, out, rid: str = REPRO) -> dict:
     return {"pass": not problems, "identical": ka == kb and ea["gain"] == eb["gain"], "max_knob_rel": rel, "max_gain_abs": gd, "problems": problems}
 
 
+def compare_doubling(src, out, rid: str) -> dict:
+    """Validation (d), plan draft 5: a doubling record against the registered one; exact on the flag, the seeds, and the
+    discrete knobs; 1e-9 on the continuous knobs, the changes, and the held-out per-seed gains."""
+    p = lambda b: Path(b) / "doubling" / (R._safe(rid) + ".json")
+    a, b = read(p(src)), read(p(out))
+    if a is None or b is None:
+        return {"pass": False, "problems": ["a record is missing"]}
+    problems = []
+    if bool(a.get("incomplete")) != bool(b.get("incomplete")):
+        problems.append("flag differs")
+    ha, hb = a["heldout"], b["heldout"]
+    if ha["seeds"] != hb["seeds"]:
+        problems.append("seeds differ")
+    ka, kb = ha["knobs"], hb["knobs"]; disc = [k for k in ka if isinstance(ka[k], int) and not isinstance(ka[k], bool)]
+    if set(ka) != set(kb) or any(ka[k] != kb[k] for k in disc):
+        problems.append("discrete knob differs")
+    rel = max((abs(ka[k] - kb[k]) / max(abs(ka[k]), 1e-300) for k in ka if k not in disc and k in kb), default=0.0)
+    chg = max(abs(a.get(k, 0.0) - b.get(k, 0.0)) for k in ("attack_change", "reference_change"))
+    gd = max((abs(x - y) for x, y in zip(ha["gain"], hb["gain"])), default=0.0) if len(ha["gain"]) == len(hb["gain"]) else float("inf")
+    if rel > KNOB_TOL or chg > GAIN_TOL or gd > GAIN_TOL:
+        problems.append(f"tolerance exceeded (knobs {rel:.3g}, changes {chg:.3g}, gains {gd:.3g})")
+    return {"pass": not problems, "max_knob_rel": rel, "max_change_abs": chg, "max_gain_abs": gd, "problems": problems}
+
+
+def reproduce_doubling(src, out, rid: str, root: str, cfgs: dict, params: dict, salt_sha256: str) -> dict:
+    """Rerun the registered doubling check of one fresh-market D2+H3 cell with the frozen stage, against copies of its inputs."""
+    label, rest = rid.split("@", 1); rule = rid.split("|")[1]
+    j = R.job(R.market(label, root, 0.2, cfg=cfgs[label], salt_sha256=salt_sha256), rule, "D2+H3", "profit", params=params)
+    need = inputs(src, [j]); need[j["id"]] = sha_file(R.path_of(src, j["id"]))
+    copy_inputs(src, out, need)
+    rec = R.stage_doubling(j, out, CUTS, H4_EXCLUDED)
+    write(Path(out) / "doubling" / (R._safe(rid) + ".json"), {"stage": "doubling", "id": rid, **rec})
+    return compare_doubling(src, out, rid)
+
+
 def reproduce(src, out, root: str, params: dict, salt_sha256: str, workers: int = 1) -> dict:
     """Rerun the registered headline F111 D2 search and evaluation through this script's path (input copies, freeze,
     acceptance) and compare with the registered records."""
@@ -287,15 +370,21 @@ def main(argv=None) -> int:
     ap.add_argument("--draw", default=str(ROOT / "results/v2/draw/draw.json")); ap.add_argument("--instances", default=str(ROOT / "results/v2/draw/instances.json"))
     ap.add_argument("--cfgs", default=str(ROOT / "results/v2/deviation/cfg_linux.json")); ap.add_argument("--addendum", default=str(ROOT / "results/v2/report/addendum.json"))
     ap.add_argument("--params", default=str(ROOT / "experiments/v2/params.json")); ap.add_argument("--markets", default=",".join(MARKETS))
-    ap.add_argument("--stage", default="all", choices=("inputs", "search", "freeze", "evaluate", "doubling", "inventory", "all"))
+    ap.add_argument("--stage", default="all", choices=("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory", "all"))
     ap.add_argument("--workers", type=int, default=1); ap.add_argument("--smoke", action="store_true")
-    ap.add_argument("--reproduce", action="store_true", help=f"validation (a): rerun {REPRO} and compare exactly")
+    ap.add_argument("--reproduce", action="store_true", help=f"validation (a): rerun {REPRO} and compare (plan draft 5)")
+    ap.add_argument("--reproduce-doubling", dest="repro_dbl", default=None, help="validation (d): a registered D2+H3 doubling cell id")
+    ap.add_argument("--report", default=str(ROOT / "results/v2/report/report.json"), help="for the diagnostics stage")
     a = ap.parse_args(argv); out = Path(a.out); check_out(out, a.src)
     from sim.records import cfg_from_dict
     root = json.loads(Path(a.draw).read_text())["hash"]; salt_sha = json.loads(Path(a.instances).read_text())["salt_sha256"]
     container = json.loads(Path(a.addendum).read_text())["deviations"]["configs"]
     cfgs = {k: cfg_from_dict(v) for k, v in json.loads(Path(a.cfgs).read_text()).items()}
     out.mkdir(parents=True, exist_ok=True); R.install_salt(root, out)
+    if a.repro_dbl:
+        rep = reproduce_doubling(a.src, out, a.repro_dbl, root, cfgs, json.loads(Path(a.params).read_text()), salt_sha)
+        print(json.dumps({"reproduce_doubling": a.repro_dbl, **rep}))
+        return 0 if rep["pass"] else 1
     if a.reproduce:
         rep = reproduce(a.src, out, root, json.loads(Path(a.params).read_text()), salt_sha, a.workers)
         print(json.dumps({"reproduce": REPRO, **rep}))
@@ -304,7 +393,7 @@ def main(argv=None) -> int:
     check_configs(jobs, container); check_salt(out, salt_sha, jobs); check_commit(jobs); check_code()
     if not a.smoke:
         check_pairing(a.src, jobs)
-    steps = ("inputs", "search", "freeze", "evaluate", "doubling", "inventory") if a.stage == "all" else (a.stage,)
+    steps = ("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory") if a.stage == "all" else (a.stage,)
     for st in steps:
         if st == "inputs":
             copy_inputs(a.src, out, inputs(a.src, jobs))
@@ -312,6 +401,8 @@ def main(argv=None) -> int:
             run_stage("search", jobs, out, a.workers)
         elif st == "freeze":
             prefreeze(out, jobs)
+        elif st == "diagnostics":
+            write(out / "diagnostics.json", diagnostics(a.src, out, jobs, json.loads(Path(a.report).read_text())))
         elif st in ("evaluate", "doubling"):
             accept(out, jobs, salt_sha, container, src=a.src); run_stage(st, jobs, out, a.workers)
         else:

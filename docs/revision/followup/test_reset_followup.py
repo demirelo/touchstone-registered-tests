@@ -182,7 +182,7 @@ def test_smoke_path_for_one_fresh_cell(tmp_path):
     acceptance, evaluation, doubling, inventory; every dependency of the frozen stages resolves."""
     out = tmp_path / "followup"
     args = ["--src", str(MAIN / "eval/all"), "--out", str(out), "--draw", str(MAIN / "draw/draw.json"), "--instances", str(MAIN / "draw/instances.json"),
-            "--cfgs", str(MAIN / "deviation/cfg_linux.json"), "--addendum", str(MAIN / "report/addendum.json"), "--markets", "fresh0", "--smoke"]
+            "--cfgs", str(MAIN / "deviation/cfg_linux.json"), "--addendum", str(MAIN / "report/addendum.json"), "--report", str(MAIN / "report/report.json"), "--markets", "fresh0", "--smoke"]
     FF = F
     real = FF.restored_cells
     FF.restored_cells = lambda markets=FF.MARKETS: [c for c in real(markets) if c["rule"] == "F111"]
@@ -195,6 +195,8 @@ def test_smoke_path_for_one_fresh_cell(tmp_path):
     assert ev["stage"] == "evaluate" and len(ev["gain"]) == 2 and f"freeze/{CTX}" in ev["upstream"]
     assert db["stage"] == "doubling" and len(db["heldout"]["gain"]) == 2 and f"reference/{CTX}/F111" in db["upstream"]
     assert inv["records"][f"evaluate/{F.R._safe(rid)}.json"] == sha_file(F.R.eval_path(out, rid))
+    dg = read(out / "diagnostics.json")[f"{CTX}|F111"]
+    assert dg["d2_base"]["knobs"]["x"] == 0 and len(dg["d2_base"]["resets"]) == 2 and "switch_x1" in dg["d2_base"]
 
 
 # ---- Fable 5.2 driver review (2026-11-10) ----
@@ -262,3 +264,57 @@ def test_f8_acceptance_recomputes_the_inputs_from_the_source(tmp_path, monkeypat
     p = out / "inputs.json"; d = read(p); d.pop(f"{CTX}|F000|D2+H3|profit"); write(p, d)
     with pytest.raises(SystemExit, match="inputs"):
         F.accept(out, [j], j["provenance"]["salt_sha256"], {"fresh0": {"container_hash": "c0"}}, src=tmp_path / "src")
+
+
+# ---- Plan section 4 diagnostics (draft 5) ----
+
+class _Ep:
+    def __init__(self, entity_of, gen, rnd, claims_focal, bans):
+        import numpy as np
+        from types import SimpleNamespace as NS
+        self.entity_of, self.identity_generation, self.identity_round = entity_of, gen, rnd
+        self.claims = np.array([[0.9, c] for c in claims_focal]); self.sstar = 10.0
+        self.history = tuple(NS(consequences=NS(bans=b)) for b in bans)
+
+
+def test_reset_stats_count_replacements_rounds_and_bans():
+    nan = float("nan")
+    eps = [_Ep((0, 1, 1, 1), (0, 0, 1, 2), (0, 0, 5, 9), [0.5, nan, 0.5, nan], [{}, {1: 10}, {}, {2: 10}]),    # two resets
+           _Ep((0, 1), (0, 0), (0, 0), [0.5, 0.5, 0.5, 0.5], [{}, {}, {}, {}])]                               # none
+    st = F.reset_stats(eps, focal=1)
+    assert st["resets"] == [2, 0] and st["reset_rounds"] == [[5, 9], []] and st["no_offer_rounds"] == [2, 0] and st["ban_rounds"] == [20, 0]
+    assert st["mean_resets"] == 1.0 and st["p_any_reset"] == 0.5
+
+
+def test_switch_knobs_set_only_x():
+    k = {"u0": 0.1, "m0": 0.2, "s": 0.3, "d": 0.4, "r": 0.5, "w": 0.6, "x": 1, "clip": 0}
+    assert F.with_x(k, 0) == {**k, "x": 0}
+    d2 = {kk: v for kk, v in k.items() if kk != "x"}
+    assert F.with_x(d2, 1) == {**d2, "x": 1}                                   # a D2 winner embedded in D2+H3 with replacement on
+
+
+@pytest.mark.skipif(not (MAIN / "eval/all/freeze").is_dir(), reason="needs the registered evaluation records")
+def test_diagnostics_on_the_registered_headline_cells(tmp_path):
+    """The diagnostic runs on headline F111, whose D2 and D2+H3 records are registered, at smoke size (two seeds)."""
+    import json as _j
+    root = _j.loads((MAIN / "draw/draw.json").read_text())["hash"]; salt = _j.loads((MAIN / "draw/instances.json").read_text())["salt_sha256"]
+    F.R.install_salt(root, tmp_path)
+    j = F.R.job(F.R.market("headline", root, 0.2, smoke=True, salt_sha256=salt), "F111", "D2", "profit", smoke=True,
+                params=_j.loads((F.ROOT / "experiments/v2/params.json").read_text()))
+    rep = _j.loads((MAIN / "report/report.json").read_text())
+    row = F.diagnostics(MAIN / "eval/all", MAIN / "eval/all", [j], rep)["headline@rho0.2|F111"]
+    assert row["d2_base"]["resets"] == [0, 0] and row["d2_base"]["knobs"]["x"] == 0
+    assert set(row["d2h3_base"]["switch_x0"]) == {"identical", "effect"} and "effect" in row["d2_base"]["switch_x1"]
+
+
+def test_doubling_comparison_uses_the_draft5_criterion(tmp_path):
+    rid = "fresh0@rho0.2|F111|D2+H3|profit"; p = lambda b: b / "doubling" / (F.R._safe(rid) + ".json")
+    base = {"stage": "doubling", "attack_change": 0.01, "reference_change": 0.0, "incomplete": True,
+            "heldout": {"knobs": {"u0": 0.5, "x": 1, "clip": 0}, "seeds": [1, 2], "gain": [0.1, 0.2]}}
+    write(p(tmp_path / "a"), base)
+    write(p(tmp_path / "b"), {**base, "attack_change": 0.01 + 1e-15, "heldout": {**base["heldout"], "knobs": {"u0": 0.5 + 1e-14, "x": 1, "clip": 0}}})
+    assert F.compare_doubling(tmp_path / "a", tmp_path / "b", rid)["pass"]
+    write(p(tmp_path / "c"), {**base, "incomplete": False})
+    assert "flag differs" in F.compare_doubling(tmp_path / "a", tmp_path / "c", rid)["problems"]
+    write(p(tmp_path / "d"), {**base, "heldout": {**base["heldout"], "gain": [0.1, 0.3]}})
+    assert not F.compare_doubling(tmp_path / "a", tmp_path / "d", rid)["pass"]
