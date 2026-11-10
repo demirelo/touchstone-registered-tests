@@ -174,3 +174,24 @@ def test_recompute_uses_only_this_runs_validated_cells(tmp_path):
     write(conv / "convergence" / (B.R._safe(rid) + ".json"), {"id": rid, "heldout": {"seeds": [1, 2], "gain": [0.4, float("nan")]}, "binding": good})
     with pytest.raises(ValueError):
         B.recompute(src, conv, ("fresh0",), resamples=9, expected={rid: good})
+
+
+def test_gate_records_keep_round_one_for_diagnosis(monkeypatch):
+    r1 = {"round": 1, "attack_change": 0.01, "reference_change": 0.0, "best_knobs": {"u0": 0.1}}
+    monkeypatch.setattr(B, "run_cell", lambda *a, **k: {"rounds": [r1], "round1_gate": {"pass": False, "problems": ["x"], "heldout_mean": 0.2}})
+    monkeypatch.setattr(B, "frozen_doubling", lambda job, out: "local.json")
+    got = B.gate_cell({"id": "c"}, "out", "src", "mac", {"smoke": False})
+    assert got["round1"] == r1 and got["pass"] is False
+
+
+def test_the_mac_gate_compares_with_the_frozen_stage_on_the_same_machine(monkeypatch, tmp_path):
+    """Flagged cells diverge between the Mac and the pods (2026-11-11: the frozen doubling stage itself differs from the
+    registered record on the Mac by the same amounts as round 1), so the Mac gate checks the driver against the frozen
+    stage on the same machine, and the pod gate checks it against the registered record."""
+    seen = {}
+    def fake_run_cell(job, out, max_rounds=3, src=None, cost=None, round_hours=0.0, embedded=None, min_rounds=1, reference=None):
+        seen["reference"] = reference; return {"rounds": [{"round": 1}], "round1_gate": {"pass": True}}
+    monkeypatch.setattr(B, "run_cell", fake_run_cell)
+    monkeypatch.setattr(B, "frozen_doubling", lambda job, out: tmp_path / "local.json")
+    B.gate_cell({"id": "c"}, "out", "src", "mac", {"smoke": False}); assert seen["reference"] == tmp_path / "local.json"
+    B.gate_cell({"id": "c"}, "out", "src", "pod", {"smoke": False}); assert seen["reference"] is None        # the registered record

@@ -177,7 +177,7 @@ def merge_inputs(needs: list[dict]) -> dict:
 
 
 def run_cell(job: dict, out, max_rounds: int = MAX_ROUNDS, src=None, cost: tuple | None = None, round_hours: float = 0.0,
-             embedded: dict | None = None, min_rounds: int = 1) -> dict:
+             embedded: dict | None = None, min_rounds: int = 1, reference=None) -> dict:
     from sim.cell import SeedCache
     from sim.locked import load_locked
     from sim.records import search_from_json
@@ -203,10 +203,11 @@ def run_cell(job: dict, out, max_rounds: int = MAX_ROUNDS, src=None, cost: tuple
                        "attack_change": float(best.best_f - prev.best_f), "reference_f": ref_f, "reference_change": ref_f - prev_ref,
                        "best_knobs": dict(best.best_knobs), "best_source": best.best_source})
         if k == 1 and src is not None:                          # the registered doubling's held-out winner is round 1's search winner
-            reg = read(Path(src) / "doubling" / (R._safe(job["id"]) + ".json"))
+            reg = read(reference) if reference is not None else read(Path(src) / "doubling" / (R._safe(job["id"]) + ".json"))
             h1 = R.gain_fields(R.eval_cell(job), fam, new.best_knobs, frozen_ref, SeedCache())
             r1 = {**rounds[0], "heldout": {"knobs": dict(new.best_knobs), "seeds": list(R.eval_cell(job).seeds), "gain": h1["gain"]}}
             gate = compare_round1(reg, r1) if reg is not None else {"pass": False, "problems": ["no registered doubling record"]}
+            gate["heldout_knobs"], gate["heldout_mean"] = dict(new.best_knobs), float(np.mean(h1["gain"]))
         prev, prev_ref = best, ref_f
         outcome = decide(k, rounds[-1], gate, stopper.allow(f"round {k + 1}", round_hours) if stopper else True, max_rounds, min_rounds)
         if outcome != "continue":
@@ -223,12 +224,24 @@ def run_cell(job: dict, out, max_rounds: int = MAX_ROUNDS, src=None, cost: tuple
     return res
 
 
+def frozen_doubling(job: dict, out) -> Path:
+    """The frozen doubling stage (revision_v2.stage_doubling) for this cell on this machine, saved as a reference record."""
+    p = Path(out) / "gate" / "frozen" / (R._safe(job["id"]) + ".json")
+    if read(p) is None:
+        write(p, {"stage": "doubling", "id": job["id"], **R.stage_doubling(job, Path(out), CUTS, H4_EXCLUDED)})
+    return p
+
+
 def gate_cell(job: dict, out, src, site: str, bind: dict, cost: tuple | None = None, round_hours: float = 0.0) -> dict:
-    """Gate mode: round 1 only, compared with the registered doubling record; saved full-budget evidence bound to the
-    cell's inputs, this driver, the site, and the environment."""
-    r = run_cell(job, out, max_rounds=1, src=src, cost=cost, round_hours=round_hours)
+    """Gate mode: round 1 only. On the Mac it is compared with the frozen doubling stage run on the same machine (flagged
+    cells diverge across platforms); on the pod, with the registered doubling record. Saved full-budget evidence bound to
+    the cell's inputs, this driver, the site, and the environment."""
+    ref = frozen_doubling(job, out) if site == "mac" else None
+    r = run_cell(job, out, max_rounds=1, src=src, cost=cost, round_hours=round_hours, reference=ref)
     ok = isinstance(r["round1_gate"], dict) and r["round1_gate"]["pass"] is True
-    return {"stage": "convergence gate", "cell": job["id"], "pass": bool(ok), "site": site, "comparison": r["round1_gate"],
+    return {"stage": "convergence gate", "cell": job["id"], "pass": bool(ok), "site": site, "compared_with": "frozen stage, same machine" if ref else "registered record",
+            "comparison": r["round1_gate"],
+            "round1": (r.get("rounds") or [None])[0],
             "binding": bind, "environment": G.environment()}
 
 

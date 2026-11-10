@@ -6,7 +6,8 @@ run: fresh0 C* (0.0061), fresh1 F111 (0.0059), fresh1 C* (0.0084), fresh3 C* (0.
 (0.0211, already flagged); 19 cells. From round 2 a nesting cell's continued X7-SC search also starts from the doubled
 D2+H3 winner embedded in X7-SC (a deviation), and such a cell runs at least two rounds; each cell's shortfall is reported
 before and after. (2) Internal review round 2 (`docs/revision/roster/{sol,astra}-convergence-plan-r2.md`, both reject):
-gate evidence bound to both gate cells, the Mac and this pod, full budget, input hashes, the driver, and the environment;
+the Mac gate compares round 1 with the frozen stage on the same machine and the pod gate with the registered record
+(flagged cells diverge across platforms, measured); gate evidence bound to both gate cells, the Mac and this pod, full budget, input hashes, the driver, and the environment;
 the analysis substitutes only this run's validated cells, with complete bindings, identities, finite values, and lengths;
 cost admission before every gate cell and before every round, including a cell's first; a paid run requires the
 allocation time and a positive rate and counts earlier failed attempts; the gate cells run serially and the estimate
@@ -85,10 +86,18 @@ result is reused only under the same binding and refused otherwise. Inventory: e
 deviations, hashes of `convergence_v2.py`, `common.py`, `guards.py`, the imported helpers, this plan, and the report, the
 run arguments, the environment. A full run is refused unless every `--evidence` file reports a pass.
 
-**Gate evidence.** `convergence_v2.py --gate --site mac --cells headline@rho0.2|F111|X7-SC|profit,fresh1@rho0.2|F111|D2+H3|profit`
-on the Mac (free), then the same with `--site pod` first on the pod; each writes `gate/<cell>__<site>.json` with the
-comparison, the binding (full budget, the cell's input hashes, the driver hash), and the environment. The main run is
-refused unless both cells have a passing Mac record and a passing pod record from this machine's environment.
+**Gate evidence.** Measured on 2026-11-11 (Mac, full budget): round 1 of fresh1 F111 D2+H3 differs from the registered
+pod record (held-out gains by up to 0.0204, changes by 0.0034), and the frozen doubling stage itself
+(`reset_followup_v2.py --reproduce-doubling`, `results/v2/followup2-diag-dbl-fresh1`) differs from it by exactly the same
+amounts; headline F111 X7-SC differs similarly (gains 0.0221). Round 1 therefore equals the frozen stage, and flagged
+cells diverge between the Mac and the pods: a small arithmetic difference sends the doubled search elsewhere in these
+rugged cells. The gate is split accordingly. `convergence_v2.py --gate --site mac --cells headline@rho0.2|F111|X7-SC|profit,
+fresh1@rho0.2|F111|D2+H3|profit` on the Mac (free) compares round 1 with the frozen doubling stage run on the same machine
+(the driver reproduces the frozen code); the same with `--site pod`, first on the pod, compares round 1 with the
+registered record (the pod reproduces the registered run). Each writes `gate/<cell>__<site>.json` with the comparison,
+round 1's own values, the binding (full budget, the cell's input hashes, the driver hash), and the environment. The main
+run is refused unless both cells have a passing Mac record and a passing pod record from this machine's environment. If
+the pod gate fails, the run stops and is reported; the frozen estimates stay primary.
 
 ## 6. Cost and spending controls
 
