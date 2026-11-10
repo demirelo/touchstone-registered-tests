@@ -1,0 +1,610 @@
+OpenAI Codex v0.162.1
+--------
+workdir: /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+model: gpt-6-astra
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1c7a6-96ec-7d72-8f9f-108dd63302d6
+--------
+user
+# Reset pod launcher: internal review round 8 (read-only; no paid APIs; do not read `sealed/`, `~/touchstone-h4`, or `~/h4-session.out`; reasoning effort high; under 300 words)
+
+Round 7 (`docs/revision/roster/{sol,astra}-reset-plan-r7.md`) accepted the plan, evidence and bundle and rejected only the launcher. The launcher (outside git) is `/Users/oemer.demirel/Projects/touchstone/results/pods/reset_pod.sh`, with `runpod.py` and its new test `test_runpod.py` beside it; the code tarball `reset_code.tgz` is rebuilt at commit fdfd83e (contains the copy_inputs fix). Changes: runpod.py ssh/push/pull return the subprocess status (test); an independent watchdog deletes the pod at 1.3x the cap during preparation, run, and pulls; the remote script checks the soft deadline itself before each stage, and the STOP file is verified after creation; pulls are retried and, after RUN OK, both output directories are verified against their inventories before deletion (verify tested on a real directory and on a one-byte change); every deletion, including of an unreachable pod, is verified; the code guard fails closed (checked exit statuses, clean tree, allowed paths, frozen code equal to the tag); dry run passes; negative tests refuse a changed frozen file and a tarball without history.
+
+Check: (1) each round-7 correction is closed; (2) any new defect in the launcher (in particular the watchdog, the deadline arithmetic, the verification, and the cleanup order); (3) anything that should block the pod.
+
+Output exactly:
+VERDICT: accept | accept-with-caveat | reject
+CORRECTIONS: numbered, each with file:line, or "none".
+CONFIDENCE: 0 to 1.
+
+hook: SessionStart
+hook: SessionStart Completed
+codex
+I will compare the round 7 corrections with the launcher and tests. I will keep the review read-only and avoid the excluded paths and paid APIs.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg -n 'touchstone|reset-plan|reset_pod' /Users/oemer.demirel/.codex/memories/MEMORY.md" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+501:# Task Group: anthropic-residency-application-writing-and-touchstone-research
+510:- rollout_summaries/2026-11-03T12-32-03-zdzn-anthropic_residency_writing_touchstone_research_plan.md (cwd=/Users/oemer.demirel/Documents/Codex/2026-11-03/why-anthropic-anthropic-sets-the-frontier, rollout_path=/Users/oemer.demirel/.codex/sessions/2026/11/03/rollout-2026-11-03T13-32-03-01a1a165-260e-7180-9d34-c9dc6bf34b4d.jsonl, updated_at=2026-11-03T13:02:09+00:00, thread_id=01a1a165-260e-7180-9d34-c9dc6bf34b4d, success; application answers finalized)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "pwd; rg --files -g AGENTS.md -g '*reset-plan-r7.md' docs/revision/roster; nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/reset_pod.sh" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+docs/revision/roster/brief-reset-plan-r7.md
+docs/revision/roster/astra-reset-plan-r7.md
+docs/revision/roster/sol-reset-plan-r7.md
+     1	#!/bin/bash
+     2	# Snapshot guard: run a private copy, so an edit to this file cannot reach a running launch.
+     3	if [ -z "${LAUNCH_SNAPSHOT:-}" ]; then
+     4	  snapf="/Users/oemer.demirel/Projects/touchstone/results/pods/snap_$(basename "$0" .sh)_$$.sh"; cp "$0" "$snapf"
+     5	  LAUNCH_SNAPSHOT="$snapf" exec bash "$snapf" "$@"
+     6	fi
+     7	# Reset follow-up (docs/revision/reset-experiment-plan.md, draft 5) on one Runpod CPU pod, adapted from eval_pod.sh.
+     8	# Order on the pod: the reproduction gate (bit identity, --require-identical; the author's decision), then the 18 D2 cells
+     9	# stage by stage (inputs and search with all vCPUs; evaluate, doubling and the spot diagnostics with WEVAL workers for
+    10	# memory), then the inventory. Spending (the author: do not kill jobs): at the reserved cap the pod stops BETWEEN stages
+    11	# (a STOP file the remote script reads before each stage); only at HARD x the cap is the pod deleted mid-stage, as an
+    12	# absolute guard. An EXIT/INT/TERM trap pulls what exists, deletes the pod and verifies the deletion.
+    13	# Usage: reset_pod.sh <code_tgz> <bundle_tgz> <tag> <cap_usd> <local_out>
+    14	# Env: EXPECT (commit inside the code tarball), MAXCPH, optional WEVAL (default 10), MINMEM (default 28), HARD (default 1.3).
+    15	set -u
+    16	PY=/opt/homebrew/bin/python3; P=/Users/oemer.demirel/Projects/touchstone/results/pods
+    17	TGZ=${1:?code tarball}; BTGZ=${2:?bundle tarball}; TAG=${3:?tag}; CAP=${4:?cap_usd}; LOUT=${5:?local_out}; cd $P
+    18	EXPECT=${EXPECT:?commit}; MAXCPH=${MAXCPH:?max usd per hour}; WEVAL=${WEVAL:-10}; MINMEM=${MINMEM:-28}; HARD=${HARD:-1.3}
+    19	mkdir -p "$LOUT" logs_r_$TAG
+    20	$PY -c "import sys,tarfile; ms=tarfile.open(sys.argv[1]).getmembers(); d=[m.name for m in ms if m.name.split('/')[-1].startswith('._')]; o=[m.name for m in ms if m.uid!=0]; print('tarball guard: %d AppleDouble, %d non-root' % (len(d),len(o))); sys.exit(1 if d or o else 0)" "$TGZ" || { echo "code tarball refused"; exit 1; }
+    21	hg=$(mktemp -d); tar xzf "$TGZ" -C "$hg" 2>/dev/null || { echo "code tarball refused: cannot unpack"; exit 1; }
+    22	# Code guard (fails closed: every git call's status is checked): HEAD is EXPECT, protocol-v2 is an ancestor, the tree is
+    23	# clean, every path changed since the tag is in the code freeze's allowed paths, and scripts/, sim/, tests/ equal the tag.
+    24	guard() {
+    25	  cd "$1" || return 1
+    26	  [ "$(git rev-parse HEAD 2>/dev/null)" = "$EXPECT" ] || { echo "HEAD is not $EXPECT"; return 1; }
+    27	  git merge-base --is-ancestor protocol-v2 HEAD || { echo "protocol-v2 is not an ancestor"; return 1; }
+    28	  st=$(git status --porcelain) || { echo "git status failed"; return 1; }; [ -z "$st" ] || { echo "tree not clean: $st" | head -c 300; return 1; }
+    29	  ch=$(git diff --name-only protocol-v2 HEAD) || { echo "git diff failed"; return 1; }
+    30	  bad=$(echo "$ch" | grep -v -e '^docs/' -e '^experiments/v2/' -e '^paper/' -e '^sealed2/h4/' -e '^$' || true); [ -z "$bad" ] || { echo "changed outside the allowed paths: $bad" | head -c 300; return 1; }
+    31	  git diff --quiet protocol-v2 -- scripts/ sim/ tests/ || { echo "scripts/, sim/ or tests/ differ from protocol-v2"; return 1; }
+    32	  echo "code guard: ok at $(git rev-parse --short HEAD)"
+    33	}
+    34	( guard "$hg" ); g=$?; mv -- "$hg" ~/.Trash/hg_reset_$$
+    35	[ $g -eq 0 ] || { echo "code tarball refused"; exit 1; }
+    36	[ -n "${DRYRUN:-}" ] && { echo "dry run: guards passed; no pod created"; exit 0; }
+    37	tmo() { perl -e 'alarm shift; exec @ARGV' "$@"; }
+    38	id=""; soft=0; hard=0; state="NOT STARTED"; rc=1; t0=0; cph=0; wd=""
+    39	# delete_verified ID: delete and confirm the pod is gone (5 tries); returns 1 if it is still listed.
+    40	delete_verified() {
+    41	  for i in 1 2 3 4 5; do
+    42	    tmo 60 $PY runpod.py delete $1 >/dev/null 2>&1
+    43	    live=$(tmo 60 $PY runpod.py list 2>/dev/null | $PY -c "import sys,json; print(sum(1 for p in json.load(sys.stdin) if p['id']=='$1'))" 2>/dev/null)
+    44	    [ "$live" = "0" ] && { echo "$(date +%H:%M) $1 deleted (verified)"; return 0; }
+    45	    sleep 15
+    46	  done
+    47	  echo "$(date +%H:%M) $1: DELETION NOT VERIFIED; delete it by hand"; return 1
+    48	}
+    49	# verify DIR: every record in DIR/inventory.json exists with its hash.
+    50	verify() { $PY - "$1" <<'PYV'
+    51	import hashlib, json, sys
+    52	from pathlib import Path
+    53	d = Path(sys.argv[1]); inv = json.loads((d / "inventory.json").read_text())
+    54	bad = [k for k, h in inv["records"].items() if not (d / k).is_file() or hashlib.sha256((d / k).read_bytes()).hexdigest() != h]
+    55	print(f"verify {d.name}: {len(inv['records'])} records, {len(bad)} bad"); sys.exit(1 if bad else 0)
+    56	PYV
+    57	}
+    58	cleanup() {
+    59	  trap - EXIT INT TERM
+    60	  if [ -n "$id" ]; then
+    61	    for try in 1 2 3; do                                  # pulls are retried; each must succeed, and finished runs are verified
+    62	      ok=1
+    63	      tmo 900 $PY runpod.py pull $id /root/touchstone/results/v2/followup-reset/ "$LOUT/followup-reset/" >/dev/null 2>&1 || ok=0
+    64	      tmo 300 $PY runpod.py pull $id /root/touchstone/results/v2/followup-gate/ "$LOUT/followup-gate/" >/dev/null 2>&1 || ok=0
+    65	      tmo 300 $PY runpod.py pull $id /root/touchstone/results/logs/ logs_r_$TAG/ >/dev/null 2>&1 || ok=0
+    66	      if [ "$state" = "RUN OK" ]; then verify "$LOUT/followup-gate" && verify "$LOUT/followup-reset" || ok=0; fi
+    67	      [ $ok = 1 ] && break; echo "$(date +%H:%M) pull or verification failed (try $try)"
+    68	    done
+    69	    [ $ok = 1 ] || { [ "$state" = "RUN OK" ] && state="RUN OK BUT RECORDS NOT VERIFIED"; rc=1; }
+    70	    delete_verified $id || rc=1
+    71	  fi
+    72	  [ -n "$wd" ] && kill "$wd" 2>/dev/null
+    73	  [ -n "$cph" ] && [ "$cph" != "0" ] || { cph=$MAXCPH; echo "$(date +%H:%M) price unknown: spend bounded at $MAXCPH USD/h"; }
+    74	  [ "$t0" -gt 0 ] && echo "$(date +%H:%M) spend: $(( $(date +%s) - t0 ))s at $cph USD/h = $($PY -c "print(round(($(date +%s)-$t0)/3600*float('$cph'),3))") USD (record with budget_v2.py --record)"
+    75	  echo "$(date +%H:%M) end: $state"
+    76	  exit $rc
+    77	}
+    78	trap cleanup EXIT INT TERM
+    79	for attempt in 1 2 3; do
+    80	  out=$(tmo 120 $PY create16.py ts-r-$TAG 2>/dev/null | tail -n 1); id=$(echo "$out" | $PY -c 'import sys,json; print(json.loads(sys.stdin.read()).get("id",""))' 2>/dev/null); v=$(echo "$out" | $PY -c 'import sys,json; print(json.loads(sys.stdin.read()).get("vcpu",""))' 2>/dev/null)
+    81	  [ -z "$id" ] && { echo "$(date +%H:%M) no capacity"; sleep 30; continue; }
+    82	  [ "$t0" -eq 0 ] && t0=$(date +%s)
+    83	  cph=$(tmo 60 $PY runpod.py list 2>/dev/null | $PY -c "import sys,json; print(next((p.get('costPerHr') or 0) for p in json.load(sys.stdin) if p['id']=='$id'))" 2>/dev/null)
+    84	  $PY -c "import sys; sys.exit(0 if 0<float('${cph:-0}' or 0)<=float('$MAXCPH') else 1)" || { state="PRICE ${cph:-unknown} NOT IN (0, $MAXCPH]"; exit 1; }
+    85	  soft=$(( t0 + $($PY -c "print(int(3600*float('$CAP')/float('$cph')))") )); hard=$(( t0 + $($PY -c "print(int(3600*float('$CAP')*float('$HARD')/float('$cph')))") ))
+    86	  up=""; for i in $(seq 1 24); do r=$(tmo 30 $PY runpod.py ssh $id 'echo up' 2>/dev/null | head -c 2); [ "$r" = up ] && { up=1; break; }; sleep 10; done
+    87	  [ -n "$up" ] && break
+    88	  echo "$(date +%H:%M) $id unreachable; deleting"; delete_verified $id || { state="UNREACHABLE POD NOT DELETED"; exit 1; }; id=""
+    89	done
+    90	[ -z "$id" ] && { state="NO POD"; exit 1; }
+    91	# Watchdog: an independent process deletes the pod at the hard deadline, whatever the launcher is doing (prep, run, pulls).
+    92	( while [ "$(date +%s)" -lt "$hard" ]; do sleep 30; done; echo "$(date +%H:%M) WATCHDOG: hard deadline ($HARD x cap) reached"; delete_verified $id ) &
+    93	wd=$!
+    94	echo "$(date +%H:%M) pod $id ($v vCPU, $cph USD/h): soft stop in $(( soft - $(date +%s) ))s, hard stop in $(( hard - $(date +%s) ))s (cap $CAP USD)"
+    95	tmo 900 $PY runpod.py push $id $TGZ /root/rc.tgz >/dev/null 2>&1
+    96	tmo 1800 $PY runpod.py push $id $BTGZ /root/rb.tgz >/dev/null 2>&1
+    97	tmo 900 $PY runpod.py ssh $id 'mkdir -p touchstone bundle && tar xzf rc.tgz -C touchstone && tar xzf rb.tgz -C bundle && (which uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh 2>/dev/null | sh >/dev/null 2>&1); export PATH=$HOME/.local/bin:$PATH; cd touchstone && uv sync --frozen -q 2>&1 | tail -n 2; mkdir -p results/logs' >/dev/null 2>&1
+    98	chk=$(tmo 300 $PY runpod.py ssh $id "cd touchstone; export PATH=\$HOME/.local/bin:\$PATH; echo git=\$(git rev-parse HEAD 2>&1) env=\${TOUCHSTONE_IDENTITY_SALT:-unset} bundle=\$(ls /root/bundle/eval-all/freeze | wc -l); m=\$(cat /sys/fs/cgroup/memory.max 2>/dev/null || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null); case \$m in max|''|9223372036854*) m=\$(awk '/MemTotal/ {print \$2*1024}' /proc/meminfo);; esac; echo memgb=\$((m/1073741824)); echo py=\$(uv run --frozen python -c 'import platform,numpy;print(platform.python_version(),numpy.__version__)' 2>&1 | tail -n 1 | tr ' ' _)" 2>/dev/null | tr '\n' ' ')
+    99	echo "$(date +%H:%M) prep: $chk"
+   100	case "$chk" in *"git=$EXPECT"*"env=unset"*) ;; *) state="PREP FAILED"; exit 1 ;; esac
+   101	memgb=$(echo "$chk" | sed -n 's/.*memgb=\([0-9]*\).*/\1/p'); [ -n "$memgb" ] && [ "$memgb" -ge "$MINMEM" ] || { state="PREP FAILED (memory ${memgb:-unknown} GB < $MINMEM GB)"; exit 1; }
+   102	cat > /tmp/r_remote_$TAG.sh <<EOS
+   103	#!/bin/bash
+   104	cd /root/touchstone; export OMP_NUM_THREADS=1 PATH=\$HOME/.local/bin:\$PATH; unset TOUCHSTONE_IDENTITY_SALT; unset TOUCHSTONE_LOCKED
+   105	B=/root/bundle; A="--src \$B/eval-all --draw \$B/draw/draw.json --instances \$B/draw/instances.json --cfgs \$B/deviation/cfg_linux.json --addendum \$B/report/addendum.json --report \$B/report/report.json"
+   106	D=docs/revision/followup/reset_followup_v2.py
+   107	echo "== gate start \$(date +%H:%M)"
+   108	uv run --frozen python \$D --reproduce --require-identical --out results/v2/followup-gate --workers 1 \$A >> results/logs/r_gate.log 2>&1 || { echo "== GATE FAILED \$(date +%H:%M)"; exit 1; }
+   109	echo "== gate passed (bit-identical) \$(date +%H:%M)"
+   110	for st in inputs search freeze evaluate doubling diagnostics inventory; do
+   111	  { [ -e /root/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE \$st (cap) \$(date +%H:%M)"; exit 1; }
+   112	  w=$v; case \$st in evaluate|doubling|diagnostics) w=$WEVAL ;; esac
+   113	  echo "== stage \$st start \$(date +%H:%M) workers \$w"
+   114	  uv run --frozen python \$D --stage \$st --diag-cells 'fresh0@rho0.2|F111|D2|profit' --workers \$w --out results/v2/followup-reset \$A >> results/logs/r_run.log 2>&1 || { echo "== RUN FAILED at \$st \$(date +%H:%M)"; exit 1; }
+   115	done
+   116	echo "== RUN OK \$(date +%H:%M)"
+   117	EOS
+   118	tmo 120 $PY runpod.py push $id /tmp/r_remote_$TAG.sh /root/r_remote.sh >/dev/null 2>&1
+   119	tmo 120 $PY runpod.py ssh $id "chmod +x /root/r_remote.sh; (nohup /root/r_remote.sh > /root/touchstone/results/logs/r_remote.log 2>&1 < /dev/null &)" >/dev/null 2>&1
+   120	state="RUNNING"; stopped=""
+   121	while true; do
+   122	  sleep 120
+   123	  now=$(date +%s)
+   124	  [ "$now" -ge "$hard" ] && { state="HARD CAP REACHED ($HARD x cap)"; exit 1; }
+   125	  if [ "$now" -ge "$soft" ] && [ -z "$stopped" ]; then tmo 60 $PY runpod.py ssh $id 'touch /root/STOP && test -e /root/STOP' >/dev/null 2>&1 && stopped=1 && echo "$(date +%H:%M) cap reached: the pod stops after the running stage"; fi
+   126	  st=$(tmo 90 $PY runpod.py ssh $id "tail -c 240 /root/touchstone/results/logs/r_remote.log" 2>/dev/null | tr '\n' ' ')
+   127	  echo "$(date +%H:%M) [soft $(( soft - now ))s, hard $(( hard - now ))s] $st" | tail -c 320
+   128	  case "$st" in
+   129	    *"RUN OK"*) state="RUN OK"; rc=0; exit 0 ;;
+   130	    *"GATE FAILED"*) state="GATE FAILED (not bit-identical; 18 cells not started)"; exit 1 ;;
+   131	    *"RUN FAILED"*|*"STOPPED BEFORE"*) state="$(echo "$st" | grep -o '== [A-Z].*' | head -c 120)"; exit 1 ;;
+   132	  esac
+   133	done
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/runpod.py; nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/test_runpod.py; nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/create16.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc 'nl -ba docs/revision/roster/sol-reset-plan-r7.md; nl -ba docs/revision/roster/astra-reset-plan-r7.md; nl -ba docs/revision/roster/brief-reset-plan-r7.md' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+     1	"""Minimal Runpod REST helper. Usage:
+     2	  python runpod.py list | get ID | delete ID | ssh ID 'cmd' | push ID LOCAL REMOTE | pull ID REMOTE LOCAL"""
+     3	import json, os, re, subprocess, sys, urllib.request
+     4	KEY = re.search(r"apikey\s*=\s*'([^']+)'", open(os.path.expanduser("~/.runpod/config.toml")).read()).group(1)
+     5	SSHKEY = os.path.expanduser("~/.runpod/ssh/runpodctl-ssh-key")
+     6	BASE = "https://rest.runpod.io/v1"
+     7	def api(method, path, body=None):
+     8	    req = urllib.request.Request(BASE + path, data=json.dumps(body).encode() if body else None, method=method,
+     9	                                 headers={"Authorization": f"Bearer {KEY}", "Content-Type": "application/json", "User-Agent": "curl/8.7.1"})
+    10	    try:
+    11	        with urllib.request.urlopen(req, timeout=60) as r:
+    12	            t = r.read().decode(); return json.loads(t) if t else None
+    13	    except urllib.error.HTTPError as e:
+    14	        return {"error": e.code, "body": e.read().decode()[:500]}
+    15	def target(pod_id):
+    16	    p = api("GET", f"/pods/{pod_id}"); pm = p.get("portMappings") or {}
+    17	    return p.get("publicIp"), pm.get("22") or pm.get(22)
+    18	def ssh(pod_id, cmd, timeout=None):
+    19	    ip, port = target(pod_id)
+    20	    return subprocess.run(["ssh", "-i", SSHKEY, "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", "-o", "LogLevel=ERROR", "-o", "ConnectTimeout=20", "-p", str(port), f"root@{ip}", cmd],
+    21	                          capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
+    22	def rsync(pod_id, src, dst, pull=False):
+    23	    ip, port = target(pod_id)
+    24	    e = f"ssh -i {SSHKEY} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -p {port}"
+    25	    a, b = (f"root@{ip}:{src}", dst) if pull else (src, f"root@{ip}:{dst}")
+    26	    return subprocess.run(["rsync", "-az", "-e", e, a, b], capture_output=True, text=True)
+    27	def main(argv) -> int:
+    28	    cmd, args = argv[0], argv[1:]
+    29	    if cmd == "list": print(json.dumps([{k: p.get(k) for k in ("id", "name", "desiredStatus", "publicIp", "portMappings", "costPerHr", "vcpuCount")} for p in api("GET", "/pods")], indent=1))
+    30	    elif cmd == "get": print(json.dumps(api("GET", f"/pods/{args[0]}"), indent=1)[:1500])
+    31	    elif cmd == "delete": print(api("DELETE", f"/pods/{args[0]}"))
+    32	    elif cmd == "ssh": r = ssh(args[0], args[1]); print(r.stdout, r.stderr, "exit", r.returncode); return r.returncode
+    33	    elif cmd == "push": r = rsync(args[0], args[1], args[2]); print(r.stdout[-300:], r.stderr[-300:], "exit", r.returncode); return r.returncode
+    34	    elif cmd == "pull": r = rsync(args[0], args[1], args[2], pull=True); print(r.stdout[-300:], r.stderr[-300:], "exit", r.returncode); return r.returncode
+    35	    return 0
+    36	
+    37	
+    38	if __name__ == "__main__":
+    39	    sys.exit(main(sys.argv[1:]))
+     1	"""runpod.py propagates the exit status of ssh, push and pull (internal review r7 of the reset plan)."""
+     2	import subprocess
+     3	import runpod as RP
+     4	
+     5	
+     6	def test_ssh_push_pull_return_the_subprocess_status(monkeypatch):
+     7	    fake = lambda *a, **k: subprocess.CompletedProcess([], 255, "", "boom")
+     8	    monkeypatch.setattr(RP, "ssh", fake); monkeypatch.setattr(RP, "rsync", fake)
+     9	    for argv in (["ssh", "p", "true"], ["push", "p", "a", "b"], ["pull", "p", "a", "b"]):
+    10	        assert RP.main(argv) == 255
+    11	    ok = lambda *a, **k: subprocess.CompletedProcess([], 0, "up", "")
+    12	    monkeypatch.setattr(RP, "ssh", ok)
+    13	    assert RP.main(["ssh", "p", "echo up"]) == 0
+     1	import sys, json
+     2	sys.path.insert(0, "/Users/oemer.demirel/Projects/touchstone/results/pods")
+     3	from runpod import api
+     4	IMAGE = "runpod/base:0.6.2-cpu"; name = sys.argv[1]
+     5	combos = [(f, v, c) for c in ("SECURE", "COMMUNITY") for v in (16,) for f in ("cpu5c", "cpu3c", "cpu5g", "cpu3g", "cpu5m", "cpu3m")]
+     6	for f, v, c in combos:
+     7	    r = api("POST", "/pods", {"name": name, "computeType": "CPU", "cloudType": c, "cpuFlavorIds": [f], "cpuFlavorPriority": "availability",
+     8	                              "vcpuCount": v, "imageName": IMAGE, "ports": ["22/tcp"], "containerDiskInGb": 20, "env": {"OMP_NUM_THREADS": "1"}})
+     9	    if isinstance(r, dict) and r.get("id"):
+    10	        print(json.dumps({"id": r["id"], "flavor": f, "vcpu": v, "cloud": c})); sys.exit(0)
+    11	print(json.dumps({"id": ""})); sys.exit(1)
+
+ succeeded in 0ms:
+     1	VERDICT: reject
+     2	
+     3	CORRECTIONS:
+     4	
+     5	1. **None — plan §§3, 4, 8.3; `reset_followup_v2.py:383`, `:461`.** The round-6 corrections are closed. Objective differences now prevent `identical`. Both saved reproduction gates pass the current comparators. Their records contain provenance and dependency hashes. All three inventories match their files. Headline diagnostics cover three rules and nine policies on 200 seeds; D2 reset counts are zero. The 168 bundled records match their sources.
+     6	
+     7	2. **None — plan §§3, 7, 8.4; `results/pods/reset_pod.sh:22`, `:66`, `:73`.** The launcher checks frozen tracked code, requires `--require-identical` before the 18 cells, uses the correct stage order, assigns 16 search workers and 10 evaluation workers by default, and requires 28 GiB memory.
+     8	
+     9	3. **Plan §7; `results/pods/reset_pod.sh:90`; `results/pods/runpod.py:32`.** Make SSH failures return a nonzero process status. The helper currently prints the remote failure and exits successfully; an isolated check confirmed this for SSH exit 255. The launcher can therefore mark STOP as delivered when delivery failed. Check the cap deadline on the pod before each stage.
+    10	
+    11	4. **Plan §7; `results/pods/reset_pod.sh:89`, `:30`.** Enforce the 1.3× hard stop before retrieval. Currently, reaching that threshold starts cleanup, which permits up to 25 minutes of pulls before deletion. Monitoring also starts after preparation and polls every 120 seconds. Use a deadline guard that covers preparation, execution, and cleanup.
+    12	
+    13	5. **Plan §8.4; `results/pods/reset_pod.sh:30`, `:56`.** Verify retrieved records against their inventories before normal deletion. Pull results are suppressed and unchecked, so `RUN OK` can accompany lost outputs. Also verify deletion of unreachable pods before clearing their IDs; otherwise a failed deletion can leave a billed pod outside cleanup.
+    14	
+    15	6. **Plan §§8.1, 8.3; `results/pods/reset_code.tgz`.** Rebuild and validate the exact launch archive. Its driver matches commit 8d18de4 and lacks d865329’s `copy_inputs` correction.
+    16	
+    17	CONFIDENCE: 0.98.     1	VERDICT: reject
+     2	
+     3	CORRECTIONS:
+     4	
+     5	1. **None — plan §§3–4, §8.3.** The round-6 corrections are closed. Both saved reproductions pass the current comparators; inventories and dependency hashes match. Headline diagnostics cover F000, F111, and C* on 200 seeds, with zero D2 resets. The diagnostics directory has no `gate.json`, contrary to the brief, but §8.3 does not require one there. The bundle contains 168 records; all 453 upstream hash checks pass. I did not rerun the writing test suite.
+     6	
+     7	2. **Plan §7; `results/pods/reset_pod.sh:30,86–90` — enforce the cap.** The hard deadline only triggers cleanup, which permits 25 minutes of pulls before deletion. Preparation also runs without deadline checks. Use an independent deadline guard that enforces the 1.3× limit. Check the soft deadline remotely before each stage; polling for a STOP file can permit another stage after the cap.
+     8	
+     9	3. **Plan §§7–8; `results/pods/runpod.py:32–34`, `reset_pod.sh:30–32,90` — propagate failures.** The helper prints SSH/rsync failures but exits successfully. An inert check confirmed this. A failed STOP command can therefore set `stopped=1`, preventing retries. Failed pulls can also precede deletion and a successful launcher exit. Propagate subprocess status, verify STOP creation, and verify retrieved files against inventories before reporting success.
+    10	
+    11	4. **Plan §8.4; `results/pods/reset_pod.sh:56` — verify every deletion.** The unreachable-pod retry deletes once, then clears `id` without verification. A failed deletion leaves a billed pod outside cleanup tracking. Retain each ID until deletion is verified.
+    12	
+    13	5. **Plan §3; `results/pods/reset_pod.sh:22` — make the code guard fail closed.** A read-only stub check showed that a failed history diff still passes. Check each Git exit status explicitly. Also check frozen working-tree paths outside `scripts/`, `sim/`, and `tests/`; commit-history checks miss uncommitted changes there.
+    14	
+    15	6. **None — plan §§3,7–8; `results/pods/reset_pod.sh:66–79`.** The memory check, bit-identity gate, stage order, and default worker limits match the plan.
+    16	
+    17	CONFIDENCE: 0.98.     1	# Reset experiment plan draft 5: internal review round 7 (read-only; no paid APIs; do not read `sealed/`, `~/touchstone-h4`, or `~/h4-session.out`; reasoning effort high; under 350 words)
+     2	
+     3	Rounds 4-6 rejected draft 5 (`docs/revision/roster/{sol,astra}-reset-plan-r{4,5,6}.md`). Commits since round 6: 30e5353 (identical requires equal objective values; headline diagnostics path), 8d18de4 (the author's decision on card touchstone-reset-repro-pass: the pod gate requires bit identity, `--require-identical`), d865329 (copy_inputs refuses only real conflicts). Driver `docs/revision/followup/reset_followup_v2.py`, 52 tests. Validation evidence through the corrected paths, each with gate.json and an inventory: `/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2` (headline reproduction), `.../followup-repro-doubling-v2` (doubling ground truth), `.../followup-diag-headline` (headline diagnostics, 200 seeds). Pod launcher (outside git): `/Users/oemer.demirel/Projects/touchstone/results/pods/reset_pod.sh` with input bundle `.../results/v2/followup-reset-bundle` (168 records; a smoke run of all stages against it passed); dry run passed; a tarball with a changed frozen file is refused.
+     4	
+     5	Check: (1) each round-6 correction is closed; (2) the saved validation evidence meets plan §8 step 3; (3) the launcher implements the plan: gate first with bit identity, stage order, workers, memory check, the between-stage cap rule with a hard stop at 1.3x (the author asked not to kill running jobs), pulls, deletion and verification, and the code guard that replaces lock_v2 --check-commit (which requires HEAD at the tag); (4) anything that should block the pod.
+     6	
+     7	Output exactly:
+     8	VERDICT: accept | accept-with-caveat | reject
+     9	CORRECTIONS: numbered, each with plan section, file:line, or "none".
+    10	CONFIDENCE: 0 to 1.
+
+hook: PostToolUse
+hook: PostToolUse
+exec
+/bin/zsh -lc "rg -n 'inventory|records|copy_inputs|reproduce' docs/revision/followup/reset_followup_v2.py; rg -n 'cap|budget|launcher|delete|pull|STOP|price' docs/revision/reset-experiment-plan.md; rg --files -g AGENTS.md -g '"'!sealed/**'"' -g '"'!sealed2/**'"' ." in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ exited 1 in 0ms:
+10:hash the original records hold), search, the follow-up freeze, acceptance, evaluation, acceptance, doubling, inventory.
+25:from sim.records_v2 import read, sha_file, write  # noqa: E402
+145:    """Every record the frozen evaluation and doubling stages read for `jobs`, with the hash the original records hold:
+146:    the reference from the context's original freeze, its menu and bank records from the reference's `upstream`, and
+156:        if rid not in fr["records"]:
+164:        need[rid] = fr["records"][rid]; todo = dict(ref["upstream"])
+168:                _refuse(f"{u}: two original records hold different hashes")
+169:            if u not in fr["records"]:
+171:            if fr["records"][u] != s:
+175:                    _refuse(f"{k}: two original records hold different hashes")
+181:def copy_inputs(src, out, need: dict[str, str]) -> None:
+188:            _refuse(f"input {rid} differs from the hash in the original records")
+196:        _refuse("inputs.json lists other hashes for the same records")
+213:    """The pre-evaluation freeze of each context: its copied inputs and its new search records, with their hashes."""
+221:        body = {"stage": "freeze", "context": ctx, "followup": True, "deviations": list(DEVIATIONS), "cuts": CUTS, "h4_excluded": H4_EXCLUDED, "records": recs}
+224:            _refuse(f"{p} exists with other records")
+232:    every input recomputed from the original records."""
+244:        if missing := sorted(set(want) - set(fr["records"])):
+246:        for r, sha in fr["records"].items():
+256:def inventory(out) -> dict:
+260:            if p.is_file() and p.name != "inventory.json" and not p.name.endswith((".lock", ".tmp"))}
+261:    inv = {"stage": "inventory", "deviations": list(DEVIATIONS), "environment": environment(), "records": recs}
+262:    write(out / "inventory.json", inv)
+418:def reproduce_doubling(src, out, rid: str, root: str, cfgs: dict, params: dict, salt_sha256: str) -> dict:
+425:    copy_inputs(src, out, need)
+429:    rep = compare_doubling(src, out, rid); write(Path(out) / "gate.json", {"stage": "doubling gate", "cell": rid, **rep}); inventory(out)
+439:def reproduce(src, out, root: str, params: dict, salt_sha256: str, workers: int = 1) -> dict:
+441:    acceptance) and compare with the registered records."""
+447:    copy_inputs(src, out, inputs(src, [j]))
+451:    rep = compare(src, out); write(Path(out) / "gate.json", {"stage": "reproduction gate", "cell": REPRO, **rep}); inventory(out)
+456:    """The three registered headline D2 cells (not cut; their records are in the source)."""
+468:POD_STEPS = ("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory")
+482:    ap.add_argument("--stage", default="all", choices=("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory", "all"))
+484:    ap.add_argument("--reproduce", action="store_true", help=f"validation (a): rerun {REPRO} and compare (plan draft 5)")
+486:    ap.add_argument("--reproduce-doubling", dest="repro_dbl", default=None, help="validation (d): a registered D2+H3 doubling cell id")
+491:    from sim.records import cfg_from_dict
+499:        headline_diagnostics(a.src, out, root, params, salt_sha, json.loads(Path(a.report).read_text())); inventory(out)
+502:        rep = reproduce_doubling(a.src, out, a.repro_dbl, root, cfgs, json.loads(Path(a.params).read_text()), salt_sha)
+503:        print(json.dumps({"reproduce_doubling": a.repro_dbl, **rep}))
+505:    if a.reproduce:
+506:        rep = reproduce(a.src, out, root, json.loads(Path(a.params).read_text()), salt_sha, a.workers)
+508:        print(json.dumps({"reproduce": REPRO, "require_identical": a.req_id, "gate_ok": ok, **rep}))
+517:            copy_inputs(a.src, out, inputs(a.src, jobs))
+528:            inventory(out)
+1:# Reset experiment: plan (draft 5, 2026-11-10; draft 4 had internal consensus and the author's approval, cap 10 USD; no spend yet)
+20:extras"); budget cut 3 removed the fresh-market D2 cells, so D2 was run at the headline market only. At `headline@rho0.2`,
+46:D2+H3 256 corner vectors), with the same restart and evaluation budgets; the two winners can differ in every knob, not
+53:  3 removed, with their registered settings (D2 knob space and budget, the market's training seeds for search, its 200
+92:  amd64 container run both match on configuration, salt, runner, budget, rule parameters, episode count (15,660), archive
+101:  parameters, root, training, validation and evaluation seeds, context and budget (the commit may differ); the episode
+180:fixed parameters and search budgets, most of the estimated B3 - R3 gap under the prescribed searches disappears when the
+188:200 episodes, priced conservatively at the profit-evaluation stage's cost for 200 seeds (0.058 units each, although that
+197:1.66 USD**. The benchmark's unit price (0.0625 USD per unit, at its 0.108 USD per core-hour) gives about 2.10 USD; the plan
+204:A failed attempt counts toward the cap; the cap leaves room for one early failure, not for a full second run. Option B (an X7-SC variant with replacement disabled) is dropped from this plan: its
+208:**Budget.** `docs/revision/budget-ledger.json`: spent 50.869 USD of the 55 USD approval limit. The author approved option A
+209:on the board on 2026-11-09 and set the cap to 10 USD ("make the cap $10 to ensure we're not blocked by a low cap"). The
+210:ledger needs a new category `followup` with cap 10.00 and the approval limit raised to 61 USD (50.869 + 10 = 60.869,
+211:`python3 -c "print(50.869+10)"`). `scripts/budget_v2.py` is frozen, so the tested wrapper
+212:`docs/revision/followup/budget_followup.py --approve 61 10 TEXT` records both, refuses a limit below spend plus the cap,
+213:and keeps the earlier approval text. The estimate is unchanged (1.66 to 2.10 USD); the higher cap only prevents a stop from a low
+214:cap. Stop at the cap.
+219:2. Decision card: approved on 2026-11-09, cap 10 USD (card `touchstone-reset-spend`).
+227:   records retrieved, the pod deleted and the deletion verified, the spend recorded.
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+codex
+The helper now returns subprocess failures, and the launcher verifies STOP creation and downloaded records. I found gaps in watchdog coverage and cleanup order. I will check them with local stubs that cannot call Runpod.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "bash -n /Users/oemer.demirel/Projects/touchstone/results/pods/reset_pod.sh; nl -ba docs/revision/reset-experiment-plan.md | sed -n '201,232p'; nl -ba docs/revision/followup/reset_followup_v2.py | sed -n '181,199p;250,265p'; git status --short; git rev-parse fdfd83e" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+   201	|---|---:|---:|
+   202	| Option A: 18 D2 cells, doubling checks, diagnostics | 1.66 to 2.10 USD | **10.00 USD** (author, 2026-11-09) |
+   203	
+   204	A failed attempt counts toward the cap; the cap leaves room for one early failure, not for a full second run. Option B (an X7-SC variant with replacement disabled) is dropped from this plan: its
+   205	constrained family, incumbents, and corner controls would need their own specification (the frozen X7-SC search inserts
+   206	D2+H3 incumbents that can replace), so it is not offered for approval.
+   207	
+   208	**Budget.** `docs/revision/budget-ledger.json`: spent 50.869 USD of the 55 USD approval limit. The author approved option A
+   209	on the board on 2026-11-09 and set the cap to 10 USD ("make the cap $10 to ensure we're not blocked by a low cap"). The
+   210	ledger needs a new category `followup` with cap 10.00 and the approval limit raised to 61 USD (50.869 + 10 = 60.869,
+   211	`python3 -c "print(50.869+10)"`). `scripts/budget_v2.py` is frozen, so the tested wrapper
+   212	`docs/revision/followup/budget_followup.py --approve 61 10 TEXT` records both, refuses a limit below spend plus the cap,
+   213	and keeps the earlier approval text. The estimate is unchanged (1.66 to 2.10 USD); the higher cap only prevents a stop from a low
+   214	cap. Stop at the cap.
+   215	
+   216	## 8. Steps
+   217	
+   218	1. Internal review of this plan to consensus; freeze it (commit).
+   219	2. Decision card: approved on 2026-11-09, cap 10 USD (card `touchstone-reset-spend`).
+   220	3. On approval: write and test the driver (TDD); on the Mac (free), validations (a), (b) and (d) must pass through the
+   221	   corrected paths (preflight run, record with provenance and dependency hashes, `gate.json` and an inventory saved in a
+   222	   new directory each: `results/v2/followup-repro-v2`, `results/v2/followup-repro-doubling-v2`); earlier passes on the
+   223	   older path do not count and the diagnostics are validated on the registered headline
+   224	   cells, all before any pod is created.
+   225	4. One pod: the reproduction gate first (bit identity, `--require-identical`; stop and report on any difference), then `--stage all` with
+   226	   `--diag-cells fresh0@rho0.2|F111|D2|profit` (inputs, search, freeze, evaluate, doubling, spot diagnostics, inventory);
+   227	   records retrieved, the pod deleted and the deletion verified, the spend recorded.
+   228	5. On the Mac after retrieval: the diagnostics of all 18 D2 winners and their reverse switches (`--stage diagnostics`),
+   229	   checked against the pod's spot-check cell. The three headline cells (registered D2 records) run on the Mac before the
+   230	   pod (`--headline-diagnostics`, 200 seeds); with the 18 fresh cells this gives the 63 policies and 42 switch
+   231	   comparisons of section 4 plus the 21 reverse switches.
+   232	6. Analysis: a new `reset` block in `posthoc_v2.py` (tested first), a table, and a paragraph in section 9 with sites; the
+   181	def copy_inputs(src, out, need: dict[str, str]) -> None:
+   182	    """Copy each input read-only, checked against its recorded hash; an existing identical copy is kept."""
+   183	    for rid, sha in sorted(need.items()):
+   184	        p, q = R.path_of(src, rid), R.path_of(out, rid)
+   185	        if not p.exists():
+   186	            _refuse(f"input {rid} is missing in {src}")
+   187	        if sha_file(p) != sha:
+   188	            _refuse(f"input {rid} differs from the hash in the original records")
+   189	        if q.exists():
+   190	            if sha_file(q) != sha:
+   191	                _refuse(f"{q} exists and differs from the original {rid}")
+   192	            continue
+   193	        q.parent.mkdir(parents=True, exist_ok=True); shutil.copyfile(p, q); q.chmod(0o444)
+   194	    prev = read(Path(out) / "inputs.json")
+   195	    if prev is not None and any(prev[k] != v for k, v in need.items() if k in prev):
+   196	        _refuse("inputs.json lists other hashes for the same records")
+   197	    write(Path(out) / "inputs.json", {**(prev or {}), **need})
+   198	
+   199	
+   250	
+   251	
+   252	def run_stage(stage: str, jobs: list[dict], out, workers: int = 1) -> list[str]:
+   253	    return R._pool(stage, jobs, Path(out), workers, CUTS, H4_EXCLUDED, jobs)
+   254	
+   255	
+   256	def inventory(out) -> dict:
+   257	    """Every output file with its hash, written after the outputs, so no record lists itself."""
+   258	    out = Path(out)
+   259	    recs = {str(p.relative_to(out)): sha_file(p) for p in sorted(out.rglob("*"))
+   260	            if p.is_file() and p.name != "inventory.json" and not p.name.endswith((".lock", ".tmp"))}
+   261	    inv = {"stage": "inventory", "deviations": list(DEVIATIONS), "environment": environment(), "records": recs}
+   262	    write(out / "inventory.json", inv)
+   263	    return inv
+   264	
+   265	
+ M docs/revision/churn/churn_memory.py
+ M docs/revision/churn/churn_v2.py
+ M docs/revision/churn/test_churn_v2.py
+ M docs/revision/followup2/convergence-plan.md
+ M docs/revision/followup2/convergence_v2.py
+ M docs/revision/followup2/cost_estimate.py
+ M docs/revision/followup2/guards.py
+ M docs/revision/followup2/runner-up-plan.md
+ M docs/revision/followup2/runnerup_v2.py
+ M docs/revision/followup2/test_convergence_v2.py
+ M docs/revision/followup2/test_guards.py
+ M docs/revision/followup2/test_runnerup_v2.py
+?? docs/revision/roster/astra-convergence-plan-r2.log
+?? docs/revision/roster/astra-convergence-plan-r2.md
+?? docs/revision/roster/astra-paper-ext6-r1.log
+?? docs/revision/roster/astra-paper-ext7-r1.log
+?? docs/revision/roster/astra-paper-ext7-r2.log
+?? docs/revision/roster/astra-paper-ext7-r3.log
+?? docs/revision/roster/astra-paper-ext8-r1.log
+?? docs/revision/roster/astra-paper-ext9-r1.log
+?? docs/revision/roster/astra-paper-followup-int-r1.log
+?? docs/revision/roster/astra-reset-plan-r1.log
+?? docs/revision/roster/astra-reset-plan-r2.log
+?? docs/revision/roster/astra-reset-plan-r3.log
+?? docs/revision/roster/astra-reset-plan-r7.log
+?? docs/revision/roster/astra-reset-plan-r7.md
+?? docs/revision/roster/astra-reset-plan-r8.log
+?? docs/revision/roster/astra-runner-up-plan-r2.log
+?? docs/revision/roster/astra-runner-up-plan-r2.md
+?? docs/revision/roster/brief-convergence-plan-r2.md
+?? docs/revision/roster/brief-paper-followup-int-r1.md
+?? docs/revision/roster/brief-reset-plan-r8.md
+?? docs/revision/roster/brief-runner-up-plan-r2.md
+?? docs/revision/roster/fable52-paper-r1.log
+?? docs/revision/roster/fable52-reset-driver-r1.log
+?? docs/revision/roster/sol-convergence-plan-r2.log
+?? docs/revision/roster/sol-convergence-plan-r2.md
+?? docs/revision/roster/sol-paper-ext6-r1.log
+?? docs/revision/roster/sol-paper-ext7-r1.log
+?? docs/revision/roster/sol-paper-ext7-r2.log
+?? docs/revision/roster/sol-paper-ext7-r3.log
+?? docs/revision/roster/sol-paper-ext8-r1.log
+?? docs/revision/roster/sol-paper-ext9-r1.log
+?? docs/revision/roster/sol-paper-followup-int-r1.log
+?? docs/revision/roster/sol-paper-followup-int-r1.md
+?? docs/revision/roster/sol-reset-plan-r1.log
+?? docs/revision/roster/sol-reset-plan-r2.log
+?? docs/revision/roster/sol-reset-plan-r3.log
+?? docs/revision/roster/sol-reset-plan-r7.log
+?? docs/revision/roster/sol-reset-plan-r7.md
+?? docs/revision/roster/sol-reset-plan-r8.log
+?? docs/revision/roster/sol-runner-up-plan-r2.log
+?? docs/revision/roster/sol-runner-up-plan-r2.md
+fdfd83e968726df21b53eec998251827ff1b28c3
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "python3 -B -c 'import ast, contextlib, hashlib, io, pathlib, subprocess
+import tarfile
+p=pathlib.Path('\\''/Users/oemer.demirel/Projects/touchstone/results/pods'\\'')
+tree=ast.parse((p/'\\''runpod.py'\\'').read_text())
+ns={'\\''subprocess'\\'':subprocess,'\\''sys'\\'':__import__('\\''sys'\\''),'\\''json'\\'':__import__('\\''json'\\'')}
+exec(compile(ast.Module(body=[n for n in tree.body if isinstance(n,ast.FunctionDef)],type_ignores=[]),'\\''runpod.py'\\'','\\''exec'\\''),ns)
+for status in [0,1,255]:
+    ns['\\''ssh'\\'']=ns['\\''rsync'\\'']=lambda *a,**k: subprocess.CompletedProcess([],status,'\\'''\\'','\\''stub'\\'')
+    for argv in [['\\''ssh'\\'','\\''p'\\'','\\''true'\\''],['\\''push'\\'','\\''p'\\'','\\''a'\\'','\\''b'\\''],['\\''pull'\\'','\\''p'\\'','\\''a'\\'','\\''b'\\'']]:
+        with contextlib.redirect_stdout(io.StringIO()): result=ns['\\''main'\\''](argv)
+        assert result==status
+print('\\''Inert SSH/push/pull status checks passed: 0, 1, 255'\\'')
+with tarfile.open(p/'\\''reset_code.tgz'\\'') as tar:
+    ms=tar.getmembers()
+    print('\\''Archive ownership/AppleDouble checks:'\\'',all(m.uid==0 and not m.name.split('\\''/'\\'')[-1].startswith('\\''._'\\'') for m in ms))
+    for suffix in ['\\''.git/HEAD'\\'','\\''docs/revision/followup/reset_followup_v2.py'\\'']:
+        matches=[m for m in ms if m.name.removeprefix('\\''./'\\'')==suffix]
+        assert len(matches)==1,(suffix,len(matches))
+        data=tar.extractfile(matches[0]).read()
+        if suffix=='\\''.git/HEAD'\\'': print('\\''Archive HEAD:'\\'',data.decode().strip())
+        else:
+            ref=subprocess.check_output(['\\''git'\\'','\\''show'\\'','\\''fdfd83e:'\\''+suffix])
+            print('\\''Archive driver equals fdfd83e:'\\'',data==ref)
+    print('\\''Archive git object entries:'\\'',sum(m.name.removeprefix('\\''./'\\'').startswith('\\''.git/objects/'\\'') and m.isfile() for m in ms))
+s=(p/'\\''reset_pod.sh'\\'').read_text()
+cleanup=s[s.index('\\''cleanup() {'\\''):s.index('\\''\\ntrap cleanup EXIT INT TERM'\\'')]
+base=\"PY=stub; id=pod; LOUT=unused; TAG=stub; state='\\''RUN OK'\\''; rc=0; wd='\\'''\\''; cph=1; t0=0; MAXCPH=1\\ntmo() { return 0; }\\n\"
+for label,stubs in [
+('\\''Failed record verification'\\'',\"verify() { echo VERIFY_FAILED; return 1; }\\ndelete_verified() { echo DELETE_CALLED; return 0; }\\n\"),
+('\\''Failed deletion'\\'',\"wd=99999\\nverify() { return 0; }\\ndelete_verified() { echo DELETE_FAILED; return 1; }\\nkill() { echo WATCHDOG_CANCELLED; return 0; }\\n\")]:
+    r=subprocess.run(['\\''bash'\\''],input=base+stubs+cleanup+'\\''\\ncleanup\\n'\\'',text=True,capture_output=True)
+    print(label,'\\''exit'\\'',r.returncode,r.stdout.strip())
+'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 236ms:
+Inert SSH/push/pull status checks passed: 0, 1, 255
+Archive ownership/AppleDouble checks: True
+Archive HEAD: fdfd83e968726df21b53eec998251827ff1b28c3
+Archive driver equals fdfd83e: True
+Archive git object entries: 1462
+Failed record verification exit 1 VERIFY_FAILED
+23:50 pull or verification failed (try 1)
+VERIFY_FAILED
+23:50 pull or verification failed (try 2)
+VERIFY_FAILED
+23:50 pull or verification failed (try 3)
+DELETE_CALLED
+23:50 end: RUN OK BUT RECORDS NOT VERIFIED
+Failed deletion exit 1 DELETE_FAILED
+WATCHDOG_CANCELLED
+23:50 end: RUN OK
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+VERDICT: reject
+
+CORRECTIONS:
+
+1. `runpod.py:32`; `reset_pod.sh:24,66,125` — Closed: subprocess status propagation, STOP verification, inventory checks, and code-guard corrections. Local stubs confirmed status propagation. The archive HEAD is fdfd83e; its driver matches that commit and contains the `copy_inputs` fix.
+
+2. `reset_pod.sh:82–93` — Start the watchdog immediately after pod creation. It currently starts after price validation and SSH readiness. A price failure enters cleanup without a watchdog; an unreachable pod can spend up to approximately 16 minutes in readiness checks without one.
+
+3. `reset_pod.sh:70–72` — Keep deletion supervision active until deletion is verified. Cleanup cancels the watchdog even when `delete_verified` fails. An inert test confirmed this path, which can leave a billed pod without further deletion attempts.
+
+4. `reset_pod.sh:61–70` — Do not perform normal deletion after retrieval or inventory verification fails. After three failures, cleanup still deletes the pod and its remaining records. An inert test confirmed this. Continue recovery until verification succeeds or the hard deadline requires deletion.
+
+5. `reset_pod.sh:82–85` — Account for each attempt at its actual rate. The launcher retains the first start time but replaces the hourly rate. A cheaper replacement pod therefore understates earlier spending and can extend both deadlines beyond the cumulative cap.
+
+6. `reset_pod.sh:107–111` — Check the soft deadline before the reproduction gate. The current check covers only the subsequent stage loop.
+
+7. `reset_pod.sh:80–81`; `create16.py:7–10` — Reconcile creation requests that time out or return no ID before retrying. A successful server-side creation with a lost response can leave an untracked, billed pod.
+
+CONFIDENCE: 0.98.
+hook: Stop
+hook: Stop Completed
+tokens used
+44'617
+VERDICT: reject
+
+CORRECTIONS:
+
+1. `runpod.py:32`; `reset_pod.sh:24,66,125` — Closed: subprocess status propagation, STOP verification, inventory checks, and code-guard corrections. Local stubs confirmed status propagation. The archive HEAD is fdfd83e; its driver matches that commit and contains the `copy_inputs` fix.
+
+2. `reset_pod.sh:82–93` — Start the watchdog immediately after pod creation. It currently starts after price validation and SSH readiness. A price failure enters cleanup without a watchdog; an unreachable pod can spend up to approximately 16 minutes in readiness checks without one.
+
+3. `reset_pod.sh:70–72` — Keep deletion supervision active until deletion is verified. Cleanup cancels the watchdog even when `delete_verified` fails. An inert test confirmed this path, which can leave a billed pod without further deletion attempts.
+
+4. `reset_pod.sh:61–70` — Do not perform normal deletion after retrieval or inventory verification fails. After three failures, cleanup still deletes the pod and its remaining records. An inert test confirmed this. Continue recovery until verification succeeds or the hard deadline requires deletion.
+
+5. `reset_pod.sh:82–85` — Account for each attempt at its actual rate. The launcher retains the first start time but replaces the hourly rate. A cheaper replacement pod therefore understates earlier spending and can extend both deadlines beyond the cumulative cap.
+
+6. `reset_pod.sh:107–111` — Check the soft deadline before the reproduction gate. The current check covers only the subsequent stage loop.
+
+7. `reset_pod.sh:80–81`; `create16.py:7–10` — Reconcile creation requests that time out or return no ID before retrying. A successful server-side creation with a lost response can leave an untracked, billed pod.
+
+CONFIDENCE: 0.98.

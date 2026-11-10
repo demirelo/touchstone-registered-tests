@@ -32,4 +32,4 @@ def test_rows_carry_the_selection_score_and_its_deciding_cell(tmp_path):
     _log(tmp_path, "mem", 6, 20, "recheck", 0.0966, 0.0381, 0.9974, 0.9944)
     r = C.rows(tmp_path)[0]
     assert r["score"] == pytest.approx((0.9944 - 0.005 - 0.9) / 0.9) and r["decides"] == "dev0, D2"
-    assert "0.099 & dev0, D2" in C.table([r])
+    assert "0.0993 & dev0, D2 & 0.9894" in C.table([r])                       # score to 4 decimals and the deciding efficiency

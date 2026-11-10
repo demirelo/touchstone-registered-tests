@@ -718,5 +718,20 @@
   "path": "posthoc.honest_cost.relative",
   "kind": "ratio",
   "section": "results"
+ },
+ "r_q2_fixed_pg1": {
+  "path": "q2.fixed.D2+H3.P|G=1.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_q2_fixed_pg1_x": {
+  "path": "q2.fixed.X7-SC.P|G=1.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_hon_cs_2": {
+  "path": "posthoc.honest.C*.bins.2.audited_share",
+  "kind": "share",
+  "section": "results"
  }
 }

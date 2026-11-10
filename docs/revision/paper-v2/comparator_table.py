@@ -31,9 +31,9 @@ def _f(x: float) -> str:
 
 def table(rs: list) -> str:
     body = "".join(f"{r['config']} & {r['budget']} & {_f(r['gain']['headline']['D2+H3'])} & {_f(r['gain']['dev0']['D2+H3'])} & "
-                   f"{_f(r['eff']['headline'])} & {_f(r['eff']['dev0'])} & {_f(r['score'])} & {r['decides']} \\\\\n" for r in rs)
-    return ("\\begin{tabular}{@{}llrrrrrl@{}}\\toprule\n & & \\multicolumn{2}{c}{Gain, D2+H3} & \\multicolumn{2}{c}{Gross efficiency, D2+H3} & & \\\\\n"
-            "Configuration & Budget & headline & dev0 & headline & dev0 & Score & Deciding cell \\\\\\midrule\n" + body + "\\bottomrule\\end{tabular}\n")
+                   f"{_f(r['eff']['headline'])} & {_f(r['eff']['dev0'])} & {r['score']:.4f} & {r['decides']} & {0.9 * (1 + r['score']):.4f} \\\\\n" for r in rs)
+    return ("\\begin{tabular}{@{}llrrrrrlr@{}}\\toprule\n & & \\multicolumn{2}{c}{Gain, D2+H3} & \\multicolumn{2}{c}{Gross efficiency, D2+H3} & & & \\\\\n"
+            "Configuration & Budget & headline & dev0 & headline & dev0 & Score & Deciding cell & Its efficiency \\\\\\midrule\n" + body + "\\bottomrule\\end{tabular}\n")
 
 
 if __name__ == "__main__":
