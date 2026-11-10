@@ -91,12 +91,18 @@ re-optimisation.
   evaluation. Draft 4 required identical knobs and per-seed gains. Measured on 2026-11-09/10: a Mac arm64 run and a Linux
   amd64 container run both match on configuration, salt, runner, budget, rule parameters, episode count (15,660), archive
   sizes, and the twin result, with selected knobs equal to 2.6e-13 relative and per-seed gains to 2.0e-14; evaluating the
-  registered knobs on the Mac gives per-seed gains within 5e-17 of the record (102 of 200 seeds bit-identical). Last-bit
+  registered knobs on the Mac gives per-seed gains within 5e-17 of the record (102 of 200 seeds bit-identical). The
+  evaluation of fixed knobs is not always this close: one of the 128 corner controls of the Mac rerun differs by 1.5e-5
+  with identical knobs (the other 127 within 2e-18), consistent with a near-tie flipping a discrete branch in an episode;
+  in the Linux container all 128 controls are bit-identical to the record. The drift source is therefore not isolated to
+  the optimiser. Last-bit
   arithmetic differences grow through the search; these runs did not reproduce bit identity across platforms, and the
   draft-4 rule is replaced as a recorded deviation. **Draft-5 criterion** (`compare()`). Exact: the provenance keys runner, salt, configuration, rule
   parameters, root, training, validation and evaluation seeds, context and budget (the commit may differ); the episode
   count; the attack and twin archive sizes; `best_source`; the discrete knobs; the search and evaluation dependency ids;
-  the reference hash. Every value finite. Tolerance: continuous knobs within 1e-9 relative and per-seed
+  the reference hash; the control set (knobs in order). Within 1e-9: the twin's best value. Reported, not gated: the
+  corner controls' objective values (count and largest difference), because a near-tie in a non-selected corner policy
+  can flip a discrete branch. Finite: the knobs, the attack, twin and control objective values, and the per-seed gains. Tolerance: continuous knobs within 1e-9 relative and per-seed
   gains within 1e-9 absolute (about 10^4 times the drift measured, and far below the paired standard error of about
   0.0009). The Mac runs pass this criterion. **Pod gate:** the pod first reruns the same reproduction (about 0.34 USD of
   billed time: 2,084 s search plus evaluation at 0.56 USD per hour); the 18 cells start only if it passes the draft-5
@@ -106,8 +112,9 @@ re-optimisation.
   integration test runs the complete path (input copies, search, pre-evaluation freeze, evaluation, doubling, inventory)
   for one fresh-market cell at smoke size, including the driver's acceptance check, which proves every dependency
   resolves (passed, 2026-11-09). (d) Doubling ground truth: the driver's doubling stage reruns the registered doubling
-  check of `fresh0@rho0.2|F111|D2+H3|profit` on the Mac (`--reproduce-doubling`), compared by `compare_doubling()`:
-  exact on the flag, the seeds and the discrete knobs; 1e-9 on the continuous held-out knobs, the attack and reference
+  check of `fresh0@rho0.2|F111|D2+H3|profit` on the Mac (`--reproduce-doubling`), after the full preflight, saving a record with provenance and dependency
+  hashes, `gate.json`, and an inventory; compared by `compare_doubling()`: required fields present; finite values; exact on
+  the flag, the seeds and the discrete knobs; 1e-9 on the continuous held-out knobs, the attack and reference
   changes, and the held-out per-seed gains. The saved result must pass before any pod is created. (c) Unit tests: the driver refuses a
   changed reference hash, a missing input record, a wrong configuration hash, and an output directory inside `eval/all`.
 
@@ -123,7 +130,10 @@ diagnostics of the 18 new D2 winners and their reverse switches run on the Mac a
 Construction: a D2 winner is embedded in D2+H3 by adding `x` (0 for itself, 1 for the reverse switch); each switch is
 the mean difference of normalised profits on the evaluation seeds, the reference cancelling. Resets are the focal
 provider's identities of generation 1 or more; ban rounds are the ban lengths imposed on its identities; rounds without
-an offer are counted separately. Spot check: `fresh0@rho0.2|F111` is also evaluated on the pod, and the Mac values must
+an offer are counted separately. Saved per policy: the seed identifiers, the per-seed normalised profits, the per-seed switch differences, and the
+reset and ban counts per episode; a D2 winner with any reset stops the run. Spot check: `fresh0@rho0.2|F111` is also
+diagnosed on the pod (`--diag-cells`); the Mac's reset and ban counts must equal the pod's exactly, and its numerical
+values must
 meet the draft-5 tolerance against it. **Fixed-policy switch:** each of the 42 D2+H3
 winners re-evaluated with `x` set to 0 and every other knob unchanged (42 more; a winner that already has `x = 0` is
 reported as identical and not re-run); g(winner) - g(winner, x = 0) is the effect of the switch
@@ -205,8 +215,14 @@ cap. Stop at the cap.
 
 1. Internal review of this plan to consensus; freeze it (commit).
 2. Decision card: approved on 2026-11-09, cap 10 USD (card `touchstone-reset-spend`).
-3. On approval: write and test the driver (TDD), run validation (a) and (b) on the Mac (free); then one pod for the 18
-   cells, deleted and verified after the run.
-4. Analysis: a new `reset` block in `posthoc_v2.py` (tested first), a table, and a paragraph in section 9 with sites; the
+3. On approval: write and test the driver (TDD); on the Mac (free), validations (a), (b) and (d) must pass with saved
+   results (`gate.json` in `results/v2/followup-repro*`) and the diagnostics are validated on the registered headline
+   cells, all before any pod is created.
+4. One pod: the reproduction gate first (draft-5 criterion; stop and report on failure), then `--stage all` with
+   `--diag-cells fresh0@rho0.2|F111|D2|profit` (inputs, search, freeze, evaluate, doubling, spot diagnostics, inventory);
+   records retrieved, the pod deleted and the deletion verified, the spend recorded.
+5. On the Mac after retrieval: the diagnostics of all 18 D2 winners and their reverse switches (`--stage diagnostics`),
+   checked against the pod's spot-check cell.
+6. Analysis: a new `reset` block in `posthoc_v2.py` (tested first), a table, and a paragraph in section 9 with sites; the
    section-1 headline numbers enter at the same time, labelled exploratory.
-5. Internal review of the paper change, then the next external package.
+7. Internal review of the paper change, then the next external package.

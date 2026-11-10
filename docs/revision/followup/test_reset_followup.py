@@ -428,3 +428,10 @@ def test_r5_diagnostics_keep_per_seed_values_and_refuse_a_resetting_d2_winner():
     bad = [_Ep((0, 1, 1), (0, 0, 1), (0, 0, 3), [0.5, nan, 0.5, 0.5], [{}, {1: 10}, {}, {}])]
     with pytest.raises(SystemExit, match="resets"):
         F.require_zero_resets(F.reset_stats(bad, focal=1), "x")
+
+
+def test_pod_sequence_runs_diagnostics_for_the_spot_check_cell_only():
+    assert F.POD_STEPS == ("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory")
+    jobs = [{"id": f"fresh{i}@rho0.2|{r}|D2|profit"} for i in range(2) for r in ("F000", "F111")]
+    assert [j["id"] for j in F.diag_jobs(jobs, F.SPOT)] == ["fresh0@rho0.2|F111|D2|profit"]
+    assert F.diag_jobs(jobs, "all") == jobs

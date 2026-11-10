@@ -1,0 +1,2253 @@
+OpenAI Codex v0.162.1
+--------
+workdir: /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+model: gpt-6-astra
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1c521-3e76-7f22-963b-4ab0c24e9632
+--------
+user
+# Reset experiment plan draft 5: internal review round 5 (read-only; no paid APIs; do not read `sealed/`, `~/touchstone-h4`, or `~/h4-session.out`; reasoning effort high; under 350 words)
+
+Draft 4 of `docs/revision/reset-experiment-plan.md` had your consensus (rounds 1-3) and the author's approval (cap 10 USD). A Fable 5.2 review of the driver and plan (`docs/revision/roster/fable52-reset-driver-r1.md`, triage `docs/paper/fable52-triage.md`) and two reproduction runs led to draft 5. Round 4 (both reject): `docs/revision/roster/{sol,astra}-reset-plan-r4.md`; commits 2220287 (diagnostics, doubling ground truth) and HEAD respond. Check each round-4 correction. The driver is `docs/revision/followup/reset_followup_v2.py` with tests beside it (42 pass). Reproduction outputs: `/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro` (Mac) and `.../followup-repro-linux/run` (Linux amd64 container); registered records in `.../eval/all`.
+
+Check: (1) is replacing the draft-4 bit-identity rule by the draft-5 criterion (exact parts plus 1e-9 tolerances, pod gate) justified by the evidence, and is it a recorded deviation rather than a silent loosening; (2) do the driver fixes (pairing, code, salt, inputs, acceptance, inventory environment, output path) close Fable's findings 1, 2, 5-8, and does `compare()` implement the criterion; (3) are the added diagnostics, reverse switch, doubling ground truth, market sensitivity, and all-six-markets scoring well specified; (4) anything that should block the pod.
+
+Output exactly:
+VERDICT: accept | accept-with-caveat | reject
+CORRECTIONS: numbered, each with plan section, file:line, or "none".
+CONFIDENCE: 0 to 1.
+
+hook: SessionStart
+hook: SessionStart Completed
+codex
+I will check draft 5 against both round-4 reviews, the driver, and the reproduction records. I will keep all access read-only and avoid the excluded paths.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg -n 'touchstone|reset-experiment|reset.plan' /Users/oemer.demirel/.codex/memories/MEMORY.md" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+501:# Task Group: anthropic-residency-application-writing-and-touchstone-research
+510:- rollout_summaries/2026-11-03T12-32-03-zdzn-anthropic_residency_writing_touchstone_research_plan.md (cwd=/Users/oemer.demirel/Documents/Codex/2026-11-03/why-anthropic-anthropic-sets-the-frontier, rollout_path=/Users/oemer.demirel/.codex/sessions/2026/11/03/rollout-2026-11-03T13-32-03-01a1a165-260e-7180-9d34-c9dc6bf34b4d.jsonl, updated_at=2026-11-03T13:02:09+00:00, thread_id=01a1a165-260e-7180-9d34-c9dc6bf34b4d, success; application answers finalized)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'pwd; git status --short; git log -3 --oneline; nl -ba docs/revision/reset-experiment-plan.md' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+?? docs/revision/roster/astra-paper-ext6-r1.log
+?? docs/revision/roster/astra-paper-ext7-r1.log
+?? docs/revision/roster/astra-paper-ext7-r2.log
+?? docs/revision/roster/astra-paper-ext7-r3.log
+?? docs/revision/roster/astra-paper-ext8-r1.log
+?? docs/revision/roster/astra-paper-ext9-r1.log
+?? docs/revision/roster/astra-paper-fable52-r2.log
+?? docs/revision/roster/astra-paper-fable52-r2.md
+?? docs/revision/roster/astra-reset-plan-r1.log
+?? docs/revision/roster/astra-reset-plan-r2.log
+?? docs/revision/roster/astra-reset-plan-r3.log
+?? docs/revision/roster/astra-reset-plan-r5.log
+?? docs/revision/roster/brief-paper-fable52-r2.md
+?? docs/revision/roster/brief-reset-plan-r5.md
+?? docs/revision/roster/fable52-paper-r1.log
+?? docs/revision/roster/fable52-reset-driver-r1.log
+?? docs/revision/roster/sol-paper-ext6-r1.log
+?? docs/revision/roster/sol-paper-ext7-r1.log
+?? docs/revision/roster/sol-paper-ext7-r2.log
+?? docs/revision/roster/sol-paper-ext7-r3.log
+?? docs/revision/roster/sol-paper-ext8-r1.log
+?? docs/revision/roster/sol-paper-ext9-r1.log
+?? docs/revision/roster/sol-paper-fable52-r2.log
+?? docs/revision/roster/sol-paper-fable52-r2.md
+?? docs/revision/roster/sol-reset-plan-r1.log
+?? docs/revision/roster/sol-reset-plan-r2.log
+?? docs/revision/roster/sol-reset-plan-r3.log
+?? docs/revision/roster/sol-reset-plan-r5.log
+c033329 Reset plan draft 5 and driver: internal review r4 corrections (Sol, Astra: reject)
+877b808 docs: response to the Fable 5.2 review (draft, numbers from posthoc.json); r9 letter item 2 updated (reset experiment approved)
+2220287 Reset driver: plan section 4 diagnostics and the doubling ground truth (TDD)
+     1	# Reset experiment: plan (draft 5, 2026-11-10; draft 4 had internal consensus and the author's approval, cap 10 USD; no spend yet)
+     2	
+     3	**Why.** The round-9 fresh reviewer (problem 2, `docs/paper/external-review-r9.md`): the gain is excess profit when
+     4	identity replacement is available; it does not show how much of that profit comes from the ability to replace an
+     5	identity. This plan measures that, within the searched D2 family, on the second test's markets.
+     6	
+     7	**Draft 5** (2026-11-10) applies the Fable 5.2 driver review (`docs/revision/roster/fable52-reset-driver-r1.md`, triage
+     8	`docs/paper/fable52-triage.md`): a reproduction criterion that a cross-platform run can meet, a pod gate, the driver's
+     9	location under `docs/`, the diagnostics built and run free before the pod, a doubling ground truth, and clarified scoring.
+    10	It needs one internal review round.
+    11	
+    12	**Status.** Draft 4 applied the round-3 caveats (`docs/revision/roster/{sol,astra}-reset-plan-r{1,2,3}.md`; round 3: both accept-with-caveat).
+    13	After consensus: a decision card for the author. Nothing runs before the author approves the spend. This file is frozen
+    14	(commit hash in the operations ledger) before any paid cell starts.
+    15	
+    16	## 1. What already exists (free; seen before this plan)
+    17	
+    18	The D2+H3 family is D2 plus one binary knob `x` (`sim/policies/identity.py`: `x = 1` exits in the round after a failed
+    19	audit and re-enters under a fresh identity; `x = 0` is plain D2). Design 8.1 listed D2 on all seven markets ("Matched core
+    20	extras"); budget cut 3 removed the fresh-market D2 cells, so D2 was run at the headline market only. At `headline@rho0.2`,
+    21	same 200 evaluation seeds, same frozen reference per rule (checked: `seeds` and reference `upstream` hashes equal):
+    22	
+    23	| Rule | g(D2+H3) | g(D2) | I = g(D2+H3) - g(D2) | Paired SE of I | D2+H3 doubling check |
+    24	|---|---:|---:|---:|---:|---|
+    25	| B2 | 0.5851 | 0.0027 | 0.5824 | 0.0011 | not scheduled |
+    26	| B3 (F000) | 0.3502 | 0.0435 | 0.3067 | 0.0012 | flagged |
+    27	| R3 (F111) | 0.0486 | 0.0361 | 0.0124 | 0.0009 | flagged |
+    28	| C* | 0.0872 | 0.0433 | 0.0439 | 0.0008 | not flagged |
+    29	
+    30	Source: `results/v2/eval/all/evaluate/headline@rho0.2__{rule}__{D2+H3,D2}__profit.json`, field `gain`; flags from
+    31	`report.json` `search_flagged`; the D2 cells had no scheduled doubling check. At `headline@rho1`, R3 and C* are in the
+    32	terminal-reserve collapse and I is 0.0025.
+    33	
+    34	Reading, exploratory: at the headline market the D2+H3 search leaves about 0.31 more gain than the D2 search against B3,
+    35	and about 0.01 against R3; the B3 - R3 gap is 0.302 under D2+H3 and 0.007 under D2.
+    36	
+    37	## 2. Estimand
+    38	
+    39	For rule r in {B3 (F000), R3 (F111), C*} and fresh market m:
+    40	
+    41	I(r, m) = mean over the 200 evaluation seeds of g(D2+H3 winner) - g(D2 winner),
+    42	
+    43	both against the same frozen truthful reference of (r, m), so the reference term cancels. **I is a difference between two
+    44	prescribed finite searches over nested families (D2 within D2+H3), not an identified optimal value of replacement and not
+    45	a system-wide prohibition of replacement.** The two searches differ in dimension, Sobol starts, and corner sets (D2 128,
+    46	D2+H3 256 corner vectors), with the same restart and evaluation budgets; the two winners can differ in every knob, not
+    47	only `x`. A negative I can come from search error. The fixed-policy diagnostic in section 4 separates the switch from
+    48	re-optimisation.
+    49	
+    50	## 3. Cells and execution contract
+    51	
+    52	- **New search cells.** D2 x {F000, F111, C*} x fresh0..fresh5 at rho 0.2: 18 cells, exactly the design-8.1 cells that cut
+    53	  3 removed, with their registered settings (D2 knob space and budget, the market's training seeds for search, its 200
+    54	  evaluation seeds), each with a doubling check (design 6.5, held-out evaluation of the doubled winner on the same seeds).
+    55	- **Driver.** A separate follow-up script (`docs/revision/followup/reset_followup_v2.py`, under `docs/` because the code
+    56	  freeze allows changes only there; written and tested before any spend) that
+    57	  imports the frozen stage functions of `scripts/revision_v2.py` at the protocol-v2 tag (`job`, `stage_search`, the
+    58	  evaluation and doubling stages) and builds the 18 jobs from the uncut cell list. It bypasses only three things, each
+    59	  recorded as a deviation: the fixed manifest path and cut list (`sim/manifest_v2.py` `effective`), the hard-coded doubling
+    60	  eligibility (`doublings`), and the original freeze. It writes to a new directory (`results/v2/followup-reset/`) and
+    61	  never writes to `results/v2/eval/all`.
+    62	- **Inputs the frozen stages read.** The search, evaluation, and doubling stages read their dependencies from the output
+    63	  directory (`menu()`, `reference_of()`, `select_reference()`). Before any episode, the driver copies into the new
+    64	  directory, read-only, every record those stages read for the 18 cells: the frozen reference records, the search
+    65	  records and bank-source records that build each (context, rule) menu, and the original cuts-3 bank membership. It
+    66	  takes the list from the `upstream` fields of the existing records and checks each copy's SHA-256 against them; it
+    67	  refuses on any missing record or mismatch.
+    68	- **Two freezes.** A pre-evaluation freeze after the 18 searches: selected policies, references, configurations, seeds,
+    69	  and search records, with their hashes (the frozen evaluation stage requires it). Evaluation and doubling then run
+    70	  against that freeze, and a final inventory lists every output record with its hash. The inventory is written after
+    71	  the outputs, so no record hashes itself.
+    72	- **Freeze validator.** The frozen `run()` calls `accept()`, which requires the original manifest's full record set, so it
+    73	  cannot admit the 18 restored cells. The driver therefore has its own acceptance check, run before evaluation and before
+    74	  doubling: every record of the follow-up dependency set (the copied inputs, the 18 search records, the pre-evaluation
+    75	  freeze) exists and matches its hash; the identity-salt hash matches; each new job's configuration hash equals the
+    76	  recorded container hash. Copied records keep their original provenance, including their recorded configuration
+    77	  hashes. Tests: it refuses a missing freeze, a changed selected-policy record, a changed salt, and a changed copied input.
+    78	- **References in doubling.** The held-out gain of a doubled winner uses the unchanged frozen reference. Any reference
+    79	  reselection the doubling stage computes is recorded as a diagnostic only.
+    80	- **References.** The existing frozen reference records are read, not re-selected; the driver refuses to start if any
+    81	  reference file's SHA-256 differs from the hash in the original records' `upstream`.
+    82	- **Configurations.** Linux pods from the same image as the evaluation; before any episode the driver checks that each
+    83	  fresh market's configuration hash equals the recorded container hash (`addendum.json` `deviations.configs`), so the
+    84	  new cells use the same configurations as the D2+H3 records they are paired with (the recorded 1-ulp deviation stays as
+    85	  it is).
+    86	- **Pairing and code checks (draft 5).** Before any episode the driver refuses a job whose runner, salt, configuration,
+    87	  root, seeds, rule parameters, or context differ from its frozen reference's provenance; an unknown commit; a runner or
+    88	  `sim/` that differs from protocol-v2; an output inside `--src` or `eval/all`; and a salt mismatch. The inventory records
+    89	  Python, numpy, machine, platform, and the driver's hash.
+    90	- **Validation before spend (free, on the Mac).** (a) Reproduction of the registered `headline@rho0.2|F111|D2` search and
+    91	  evaluation. Draft 4 required identical knobs and per-seed gains. Measured on 2026-11-09/10: a Mac arm64 run and a Linux
+    92	  amd64 container run both match on configuration, salt, runner, budget, rule parameters, episode count (15,660), archive
+    93	  sizes, and the twin result, with selected knobs equal to 2.6e-13 relative and per-seed gains to 2.0e-14; evaluating the
+    94	  registered knobs on the Mac gives per-seed gains within 5e-17 of the record (102 of 200 seeds bit-identical). Last-bit
+    95	  arithmetic differences grow through the search; these runs did not reproduce bit identity across platforms, and the
+    96	  draft-4 rule is replaced as a recorded deviation. **Draft-5 criterion** (`compare()`). Exact: the provenance keys runner, salt, configuration, rule
+    97	  parameters, root, training, validation and evaluation seeds, context and budget (the commit may differ); the episode
+    98	  count; the attack and twin archive sizes; `best_source`; the discrete knobs; the search and evaluation dependency ids;
+    99	  the reference hash. Every value finite. Tolerance: continuous knobs within 1e-9 relative and per-seed
+   100	  gains within 1e-9 absolute (about 10^4 times the drift measured, and far below the paired standard error of about
+   101	  0.0009). The Mac runs pass this criterion. **Pod gate:** the pod first reruns the same reproduction (about 0.34 USD of
+   102	  billed time: 2,084 s search plus evaluation at 0.56 USD per hour); the 18 cells start only if it passes the draft-5
+   103	  criterion; a bit-identical result on the pod is reported as such. The reproduction path runs every pre-episode check
+   104	  (salt, commit, code, pairing, configuration) before its search and saves `gate.json` and an inventory with the
+   105	  environment (Python, numpy with BLAS and LAPACK, SciPy, CMA, CPU). (b) An
+   106	  integration test runs the complete path (input copies, search, pre-evaluation freeze, evaluation, doubling, inventory)
+   107	  for one fresh-market cell at smoke size, including the driver's acceptance check, which proves every dependency
+   108	  resolves (passed, 2026-11-09). (d) Doubling ground truth: the driver's doubling stage reruns the registered doubling
+   109	  check of `fresh0@rho0.2|F111|D2+H3|profit` on the Mac (`--reproduce-doubling`), compared by `compare_doubling()`:
+   110	  exact on the flag, the seeds and the discrete knobs; 1e-9 on the continuous held-out knobs, the attack and reference
+   111	  changes, and the held-out per-seed gains. The saved result must pass before any pod is created. (c) Unit tests: the driver refuses a
+   112	  changed reference hash, a missing input record, a wrong configuration hash, and an output directory inside `eval/all`.
+   113	
+   114	## 4. Diagnostics (evaluation only, no search)
+   115	
+   116	For three rules on seven markets: the base and doubled D2+H3 winners (42 policies) and the base D2 winners (21; the doubled
+   117	D2 winners are not included), on the 200 evaluation seeds, re-run with reset and ban instrumentation (63 single-policy
+   118	evaluations; the existing gain records carry no reset counts, so none is reused); the selected `x`; per episode the number of resets, the probability of at least one reset, the rounds of resets,
+   119	and the rounds spent banned. Check that every D2 winner has zero resets. **Reverse switch (draft 5):** each of the 18 D2 winners re-evaluated with
+   120	`x = 1` and every other knob unchanged (18 more evaluations). The diagnostics are built and tested in the driver (`diagnostics`
+   121	stage) before any pod. Order: the instrumentation is validated on the registered headline cells before the pod; the
+   122	diagnostics of the 18 new D2 winners and their reverse switches run on the Mac after the pod's records are retrieved.
+   123	Construction: a D2 winner is embedded in D2+H3 by adding `x` (0 for itself, 1 for the reverse switch); each switch is
+   124	the mean difference of normalised profits on the evaluation seeds, the reference cancelling. Resets are the focal
+   125	provider's identities of generation 1 or more; ban rounds are the ban lengths imposed on its identities; rounds without
+   126	an offer are counted separately. Spot check: `fresh0@rho0.2|F111` is also evaluated on the pod, and the Mac values must
+   127	meet the draft-5 tolerance against it. **Fixed-policy switch:** each of the 42 D2+H3
+   128	winners re-evaluated with `x` set to 0 and every other knob unchanged (42 more; a winner that already has `x = 0` is
+   129	reported as identical and not re-run); g(winner) - g(winner, x = 0) is the effect of the switch
+   130	without re-optimisation, reported beside I.
+   131	
+   132	## 5. Analysis (fixed now)
+   133	
+   134	- **Intervals.** Per market: paired seed bootstrap (9,999 resamples, percentile, 95%), the same resampled seed indices for
+   135	  every rule and family of that market, so contrasts across rules stay paired. Pooled: equal market weights; in each
+   136	  replicate, seeds are resampled independently within each market and the pooled statistic is the mean of the six market
+   137	  means; percentile interval. Nominal and descriptive; conditional on the six markets and the frozen policies and
+   138	  references.
+   139	- **Statistics.** I(r, m) and pooled I(r); the contrasts I(B3) - I(R3) and I(C*) - I(R3); the absolute gaps
+   140	  G(D2+H3) = g_B3 - g_R3 under D2+H3 and G(D2) under D2, pooled.
+   141	- **Share.** S = 1 - pooled G(D2) / pooled G(D2+H3), a ratio of pooled contrasts, computed in every bootstrap replicate.
+   142	  S is reported only if the lower bound of pooled G(D2+H3) exceeds 0.05; otherwise "not defined". No clipping; S can be
+   143	  negative or above 1. The absolute gaps are always reported beside it.
+   144	- **Market sensitivity (draft 5).** The sign count of I(B3) - I(R3) and I(C*) - I(R3) over the six markets, and S with
+   145	  each market left out in turn (six values), each with its own five-market denominator gate (lower bound of the
+   146	  five-market pooled G(D2+H3) above 0.05; otherwise that value is "not defined"), for the base and the doubled results
+   147	  separately. A nested best-of sensitivity (the better of the D2 and D2+H3 winners per cell) is deferred: it is not
+   148	  part of this plan.
+   149	- **Doubling flags.** For each D2 cell, the attack change and the reference-reselection change of its doubling check are
+   150	  reported separately.
+   151	- **Doubled versions** of the same statistics, as in the paper's `tab:ph-doubled`. The base (frozen) searches are primary,
+   152	  as in the paper; the doubled versions are reported beside them.
+   153	- No confirmatory test, no multiplicity family, no change to any registered decision.
+   154	
+   155	## 6. Pre-specified expectations and labels
+   156	
+   157	Written before any fresh D2 result exists. **The six markets, their seeds, and their D2+H3 outcomes were already observed;
+   158	only the D2 outcomes are unseen.** This is a descriptive follow-up specified on 2026-11-09 after the round-9 review and
+   159	after the headline contrast was seen, not an independent replication.
+   160	
+   161	Expectations: on all six fresh markets (each market counted; a single market against it fails the expectation), I(B3) > I(R3) and I(C*) > I(R3); pooled S defined and greater than 0.5. Expectations are
+   162	scored on point estimates (this is a descriptive follow-up; "met" does not mean that an interval excludes the threshold),
+   163	with the denominator gate of section 5 applied separately to the base and the doubled results. Each expectation is
+   164	scored as met, failed, or not established: **met** if it holds under both the base and the doubled searches; **failed** if
+   165	it fails under both; **not established (search-sensitive)** if the two disagree. An undefined S and a missing cell are
+   166	reported as such, separately from failures. A failure is not read as evidence for any particular cause (search error and
+   167	mixed outcomes are possible). Only if the pooled-S expectation is met may the paper say: within the D2 family, at the
+   168	fixed parameters and search budgets, most of the estimated B3 - R3 gap under the prescribed searches disappears when the
+   169	attacker cannot replace its identity.
+   170	
+   171	## 7. Cost
+   172	
+   173	**Work.** Measured benchmark (`experiments/v2/benchmark/timings.json`): one unit = a headline D2+H3 cell, 0.579
+   174	core-hours. Per D2 cell: 1 unit + 160 further seeds (0.046) + doubling with held-out evaluation (0.479); 18 cells = 27.45
+   175	units. Diagnostics: 63 instrumented evaluations + up to 42 switch evaluations = up to 105 single-policy evaluations of
+   176	200 episodes, priced conservatively at the profit-evaluation stage's cost for 200 seeds (0.058 units each, although that
+   177	stage evaluates more than one profile) = about 6.1 units. Total about 33.6 units = **about 19.4 core-hours**. Draft 5
+   178	moves the diagnostics to the Mac (free) and adds the pod gate (about 0.34 USD); the pod estimate below is kept as an
+   179	upper bound.
+   180	
+   181	**Billed pod time.** One 16-vCPU pod at the recorded 0.56 USD per hour; searches with 16 workers, evaluation, doubling,
+   182	and diagnostics with at most 10 (operations ledger). Stage schedule with incomplete worker batches and equal benchmark
+   183	task times: searches, evaluation, and doubling about 1.77 hours (internal review's computation); diagnostics about 0.6
+   184	hours (105 evaluations in batches of 10); preparation 0.3 hours; idle tail 0.3 hours = **about 3.0 billed hours, about
+   185	1.66 USD**. The benchmark's unit price (0.0625 USD per unit, at its 0.108 USD per core-hour) gives about 2.10 USD; the plan
+   186	uses the larger.
+   187	
+   188	| Item | Estimate | Cap |
+   189	|---|---:|---:|
+   190	| Option A: 18 D2 cells, doubling checks, diagnostics | 1.66 to 2.10 USD | **10.00 USD** (author, 2026-11-09) |
+   191	
+   192	A failed attempt counts toward the cap; the cap leaves room for one early failure, not for a full second run. Option B (an X7-SC variant with replacement disabled) is dropped from this plan: its
+   193	constrained family, incumbents, and corner controls would need their own specification (the frozen X7-SC search inserts
+   194	D2+H3 incumbents that can replace), so it is not offered for approval.
+   195	
+   196	**Budget.** `docs/revision/budget-ledger.json`: spent 50.869 USD of the 55 USD approval limit. The author approved option A
+   197	on the board on 2026-11-09 and set the cap to 10 USD ("make the cap $10 to ensure we're not blocked by a low cap"). The
+   198	ledger needs a new category `followup` with cap 10.00 and the approval limit raised to 61 USD (50.869 + 10 = 60.869,
+   199	`python3 -c "print(50.869+10)"`). `scripts/budget_v2.py` is frozen, so the tested wrapper
+   200	`docs/revision/followup/budget_followup.py --approve 61 10 TEXT` records both, refuses a limit below spend plus the cap,
+   201	and keeps the earlier approval text. The estimate is unchanged (1.66 to 2.10 USD); the higher cap only prevents a stop from a low
+   202	cap. Stop at the cap.
+   203	
+   204	## 8. Steps
+   205	
+   206	1. Internal review of this plan to consensus; freeze it (commit).
+   207	2. Decision card: approved on 2026-11-09, cap 10 USD (card `touchstone-reset-spend`).
+   208	3. On approval: write and test the driver (TDD), run validation (a) and (b) on the Mac (free); then one pod for the 18
+   209	   cells, deleted and verified after the run.
+   210	4. Analysis: a new `reset` block in `posthoc_v2.py` (tested first), a table, and a paragraph in section 9 with sites; the
+   211	   section-1 headline numbers enter at the same time, labelled exploratory.
+   212	5. Internal review of the paper change, then the next external package.
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'cat docs/revision/roster/sol-reset-plan-r4.md docs/revision/roster/astra-reset-plan-r4.md docs/revision/roster/fable52-reset-driver-r1.md; cat docs/paper/fable52-triage.md; git diff 2220287..HEAD -- docs/revision/followup/reset_followup_v2.py; rg --files docs/revision/followup' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+VERDICT: reject
+
+CORRECTIONS:
+
+1. **Plan §3, lines 90–101:** The tolerance change is justified and explicitly recorded. I verified maximum knob drift of 2.58e-13 relative and gain drift of 2.02e-14 absolute. Replace “bit identity … is not attainable” with “these runs did not achieve bit identity.” The evidence does not establish universal impossibility or isolate the drift source.
+
+2. **`docs/revision/followup/reset_followup_v2.py:239`:** Complete `compare()` before pod use. It omits runner, salt and rule-parameter hashes, root, training/validation seeds, twin archive size, and evaluation dependency sets. In-memory checks passed changed provenance and twin results. Align the exact fields with §3; explicitly retain or reject Fable’s proposed exact twin and corner-control values. Report `identical` only when the required exact checks also pass.
+
+3. **`reset_followup_v2.py:299`:** Apply pairing, code, commit, and salt checks before reproduction search. `--reproduce` returns before the checks at line 304; its salt check occurs after search. Thus findings 1, 2 and 6 remain open on the pod-gate path.
+
+4. **`reset_followup_v2.py:120`:** Finish finding 7. Require explicit `cuts` and `h4_excluded` fields; missing fields currently pass. Cross-check copied search hashes against the original freeze. A conflicting freeze/menu hash passed an in-memory check. Findings 5 and 8 appear addressed.
+
+5. **Plan §§3–4 and §8:** Correct execution order. Diagnostics are absent from the driver, and the 18 new D2 winners cannot undergo diagnostics before the pod produces them. Build and validate instrumentation before provisioning; run new-winner diagnostics after retrieval. Require the registered doubling reproduction to pass before provisioning. Specify its cell, fields, comparator, and saved result.
+
+6. **`reset_followup_v2.py:226`:** Complete environment evidence with SciPy/CMA versions, BLAS details, and CPU identification. Save an inventory and gate result for reproduction too.
+
+7. **Plan §§5–6:** Keep the clarified all-six scoring. Specify whether each leave-one-market-out S recomputes the denominator interval gate. Add the requested nested best-of sensitivity or record its deferral; the reverse switch alone does not provide it.
+
+CONFIDENCE: 0.97VERDICT: reject
+
+CORRECTIONS:
+
+1. **§3, plan:90–101:** The tolerance change is justified and explicitly recorded. I verified maximum knob drift of 2.57e-13 relative and gain drift of 2.02e-14 absolute. Replace “bit identity … is not attainable” with “these runs did not reproduce bit identity”; the evidence does not establish impossibility.
+
+2. **`reset_followup_v2.py:239–266` — block the pod:** `compare()` does not implement the full criterion. Check runner, salt, rule parameters, root, training/validation seeds, twin archive size, and evaluation dependencies/reference hashes. Reject nonfinite values. In-memory checks showed that changed provenance, an empty twin archive, removed evaluation dependencies, and NaN gains all pass. Define which hashes must match; new search/freeze hashes will differ.
+
+3. **`reset_followup_v2.py:269–304` — block the pod:** `--reproduce` bypasses code, commit, pairing, and early salt checks, then returns without an inventory. Apply these checks before reproduction search and save its environment and result. Include BLAS and optimizer versions. The Linux evidence still records `git_commit: unknown`. The normal execution path addresses findings 1, 5, 6, and 8; finding 2 remains incomplete.
+
+4. **`reset_followup_v2.py:120–140`:** Finding 7 remains partly open. Require explicit `cuts` and `h4_excluded` fields instead of accepting missing fields through defaults. Check copied search hashes against their original freeze as well as upstream records.
+
+5. **§4, plan:110–118 — block the pod:** Diagnostics remain unimplemented. Build and test them before spend. Run existing-policy diagnostics before the pod; run fresh D2 diagnostics and reverse switches after those winners exist. Specify D2+H3 construction for `x=1`, the reverse-switch contrast, reset/ban counting, and the fixed spot-check cell.
+
+6. **§3:104–105; §8:193:** Select the doubling ground-truth record now. Define comparisons for held-out knobs/gains, attack change, reference change, and flags; `compare()` cannot validate doubling records. Require a saved passing result before pod creation.
+
+7. **§5:132–137; §6:146–151:** All-six scoring is clear. Specify separate five-market denominator gates for leave-one-out S, undefined-value handling, and base/doubled reporting.
+
+CONFIDENCE: 0.97.claude-fable-5-2
+
+## 1. Recommendation
+
+**→ Do not spend yet.** The rule fired. Follow it: stop, report, and amend the plan (draft 5, a recorded deviation, one review round). Do not loosen the rule silently.
+
+**→ The rule was badly chosen.** Bit identity across arm64 and amd64 was never achievable. Three platforms give three results (`jq` on the three search records): the twin best value is bit-identical (0.05595120675524875), the archive sizes are equal (1485 and 1615), and the attack best value differs at 1.5e-14. The episode code therefore looks platform-stable, and the drift probably starts in the optimizer's linear algebra (unverified). The emulated x86 container is not the pod CPU, so that run could not pass either.
+
+**→ Correct pass criterion, in three parts.**
+- **Exact:** runner, config, salt and rule-parameter hashes, seeds, budget, episode count, archive sizes, `best_source`, discrete knobs, dependency sets, twin best value and corner-control values.
+- **Tolerance:** continuous knobs relative 1e-9, per-seed gains absolute 1e-9. That is about 10^6 below the paired SE of 0.0009 and about 10^4 above the observed drift.
+- **New, free:** evaluate the registered knobs through the driver on the Mac. Bit-identical gains prove the evaluation path and isolate the drift to the search.
+
+**→ Add a pod gate.** Run the same reproduction first on the real pod (about 0.58 core-hours, about 0.3 USD of billed time). Only that test can meet the original rule. If it also drifts, apply the tolerance.
+
+## 2. Findings, ranked
+
+**1 → High: no cross-check of invariant provenance against the paired records.** `reset_followup_v2.py:61-67,151-170`. The driver checks only the config and salt hashes. `--params` comes from `experiments/v2/params.json`, which the freeze permits to change. A changed tuned C* or comparator gives D2 cells under other rule parameters than their D2+H3 pair and reference. Fix: each job's `rule_params_sha256`, `runner_sha256`, `root` and seeds must equal the reference record's provenance.
+
+**2 → High: the code state is not pinned.** The Linux repro record has `git_commit: "unknown"` (Grep on the record). The driver accepts that at `revision_v2.py:60-64` and never compares `scripts/` and `sim/` with protocol-v2. No record holds the driver hash, Python, numpy, BLAS or CPU (`:177-184`). Python is `>=3.12`, unpinned. Refuse "unknown" and add an environment block to the inventory.
+
+**3 → Medium: section 4 diagnostics do not exist.** There is no instrumented evaluation and no x=0 switch in the driver, but the cost in section 7 includes them on the same pod. They are evaluation only, so run them free on the Mac under the tolerance, or write them first.
+
+**4 → Medium: the doubling path has no ground truth.** Validation (a) covers search and evaluation (`:190-214`). Doubling ran only at smoke size, but it feeds the met/failed scores. Reproduce one registered D2+H3 doubling record (18 exist for the fresh markets, Glob) with the same criterion.
+
+**5 → Medium: `check_out` protects only the hard-coded path.** `:55-58`. On a pod, `--src` is another path. If `--out` equals it, the search writes D2 records into the registered copy before `prefreeze` refuses. Compare with `a.src` too.
+
+**6 → Low-medium: the salt check comes after the search.** `:242-247`. A mismatch between `draw.json` and `instances.json` shows only after the search spend. Run it before the search.
+
+**7 → Low: the conflict detection in `inputs()` has a gap.** `:94-99`. The `k not in need` filter drops a second, different hash for a known record, and `todo.update` overwrites pending entries. Search-copy hashes are also not compared with the original freeze, and `fr["cuts"]` and `fr["h4_excluded"]` are not asserted.
+
+**8 → Low: `accept` trusts `inputs.json`.** `:130-131,164`. It does not recompute `inputs(src, jobs)`, so a freeze made without the inputs stage passes it. Evaluation then fails loudly, so this is not silent.
+
+**9 → Low: the tests can be skipped.** `pyproject.toml` has `testpaths = ["tests"]`, so the follow-up tests do not run by default. `test_reset_followup.py:149-157` locks the exact compare that must now change. `:160` holds an absolute Mac path, so validation (b) skips silently elsewhere.
+
+**10 → Low: budget wrapper.** `budget_followup.py:21-29` does not check `new_limit >= used + cap` and can lower the limit. It also replaces the earlier approval text. `:33` creates a default ledger if the path is absent.
+
+**→ No misuse of the frozen stage functions found.** `_pool` with `catalog=jobs` gives the registered dependency sets.
+
+## 3. Plan concerns
+
+**→ The plan text is stale.** It names `scripts/reset_followup_v2.py` and a change to `budget_v2.py`. Both live under `docs/`. Correct this in draft 5.
+
+**→ The scoring of the per-market expectations is ambiguous.** "On each fresh market" does not say whether it means all six or a count. Fix it now.
+
+**→ S can be too high from weak search.** The B3 and R3 D2+H3 searches are flagged at the headline market. A weak D2 search on B3 lowers G(D2) and raises S. Add the reverse switch (the D2 winner with x=1, 18 cheap evaluations) and a nested best-of sensitivity.
+
+**→ The intervals understate uncertainty.** Winners come from 5 training seeds, and the SEs are conditional on the winners and on six markets. Report the sign count and a leave-one-market-out S.
+
+**→ The doubling flag for D2 has a second cause.** It mixes attack change and reference reselection with D2 candidates (`revision_v2.py:890-895`). Report the two separately.
+
+**→ Cost is sound.** The pod gate adds about 0.3 USD, far below the cap.
+
+## 4. Confidence
+
+- Stop and amend, three-part criterion: **high**.
+- Drift source is the optimizer: **medium** (inferred from the identical twin value, no archive diff run).
+- Findings 1, 2, 3, 5: **high** (read in code). Finding 4: **high** on the gap, **medium** on its importance.
+- Findings 6 to 10: **medium**.
+- Plan concerns: **medium**. The S bias direction is an argument, not a measurement.
+
+**Unsure:** I could not run Python here (approval denied), so I did not locate the first diverging archive entry. That check would settle the drift source.
+# Triage of the Fable 5.2 reviews (2026-11-10)
+
+Sources: `docs/revision/roster/fable52-paper-r1.md` (fresh referee: WEIS 2/5, AAMAS 2/5, EC 1/5) and
+`docs/revision/roster/fable52-reset-driver-r1.md` (the reset driver and plan). Author's instruction: fix everything;
+report any new simulation needed.
+
+Verdicts come from commands on the records (`results/v2/report/report.json`, `results/v2/deviation/stability.json`,
+`results/v2/eval/all`, `experiments/v2/comparator.json`, git history, Crossref).
+
+## Paper review
+
+| # | Claim | Verified | Action | Kind |
+|---|---|---|---|---|
+| 1 | "Equivalent" rests on the margin; market variation and search error can cross it | **Holds** in part: the t-interval over the six market differences is [-0.013, 0.054] (D2+H3) and [0.005, 0.044] (X7-SC); one doubled search moves fresh3 by 0.053. **Wrong** in part: the margin was not set after development (design 2a288f5, 2026-10-22; development d values c5227a0, 2026-10-28). | Exploratory market-level block in posthoc (t-interval, sign count, relative difference); the text says the registered interval holds the six markets fixed; "equivalent" glossed as "within the pre-set materiality margin"; the response rebuts the timing claim | analysis on existing records, text |
+| 2 | The two Q1 families are mostly one test | **Holds**: the X7-SC winner is the embedded D2+H3 winner (`best_source` `incumbent:embedded_h3`, identical mean gain) in 10 of 12 Q1 cells; only fresh3 C* and fresh4 F111 differ | Count in posthoc; text states it at Q1 and in contributions; Q3-a's zeros explained | analysis on existing records, text |
+| 3 | Searches too weak for "robust" or "equivalent" | **Holds**: 21 of 98 doubling checks flagged; X5-AG/v2 beats X7-SC against C* on fresh1-3 (report q3.envelope) | Envelope difference (C* minus R3, each rule's strongest training-selected family) in posthoc; text | analysis on existing records, text; convergence search **needs compute** |
+| 4 | No honest churn: age labels the attacker | **Holds** (model: nine honest providers never replace) | Limitation stated in model, discussion, abstract scope | text; honest-churn arm **needs compute** |
+| 5 | C* not selected on gain | **Holds**: all 12 scores in `comparator.json` are 0.103-0.111, the efficiency term, so gain never binds. Correction (internal review r1): the gains **are** stored in `experiments/v2/log/Cstar__*.json` `detail`; at the inner budget every configuration's selected attack has gain 0 or below; in the full-budget rechecks the runner-up C-thr(12) leaves 0.076 vs C* 0.097 (headline) and 0.018 vs 0.038 (dev0) under D2+H3 | Text: efficiency in effect; the runner-up's lower development gain | text; C-thr(12) on the fresh markets **needs compute** |
+| 6 | Corollary close to a restatement; abstract drops conditions | **Holds** (abstract) | Abstract and intro state the conditions; corollary text names honest non-reacting rivals, no lost round, no identity memory | text |
+| 7 | Lemma: "audit dues", age undefined, "served" ambiguity, Theorem 1 unused | **Holds**: paper says "younger than L rounds", design measures age from the first offer | Drop "audit dues"; define age; Theorem 1 marked as not used by the results | text |
+| 8 | Contribution (iii) is arithmetic; W1 returned the null policy | **Holds** in substance: W1 gain 0.0000 [0.0000, 0.0000]; the doubled W1 winners for R3 and C* have zero shading with the replacement option on (`x = 1`), i.e. truthful delivery, not a null policy | Text: W1 found no profitable attack; the mixture paragraph cut to two sentences, the abstract sentence removed | text |
+| 9 | Priority phase redundant given G | **Holds**: P given G=1 is -0.0014 | Abstract and contributions state it | text |
+| 10 | Statistics do not address the main uncertainty | **Holds** (same as 1, 3) | Covered by 1 and 3; calibration detail kept but after results in the venue cut | text |
+| 11 | Process facts | **Holds**: the executor resumed the H4 session (ledger 2026-11-02) | Text: who ran the H4 session; H4 contains D2+H3; Q3-e margin; tally double count | text |
+| C | Harrington 1988, Dellarocas 2005, Golle and Mironov 2001 | **Real** (Crossref: 37(1):29-53; 16(2):209-230; LNCS CT-RSA 2001, 425-440) | Add to related work | text |
+| P | Presentation: abstract, codes, venue version | Partly | Abstract rewrite to plain findings; full venue cut stays a separate task | text |
+
+## Driver review
+
+| # | Finding | Action |
+|---|---|---|
+| 1 | No cross-check of rule parameters, runner, root, seeds against the paired records | Check each job against its reference record's provenance |
+| 2 | Code state not pinned; `git_commit: unknown` accepted; no environment record | Refuse "unknown"; check scripts/ and sim/ against protocol-v2; environment block in the inventory |
+| 3 | Section 4 diagnostics not built | Build (free on the Mac) before the pod |
+| 4 | Doubling path has no ground truth | Reproduce one registered D2+H3 doubling record |
+| 5 | `check_out` ignores `--src` | Refuse out equal to or inside src |
+| 6 | Salt check after the search | Check before the search |
+| 7 | `inputs()` conflict gaps; freeze cuts and h4 not asserted | Fix and test |
+| 8 | `accept` trusts inputs.json | Recompute from src when given |
+| 9 | Follow-up tests outside `testpaths` | Add docs/revision/followup to the project's test command |
+| 10 | Budget wrapper can lower the limit | Refuse a limit below spend plus the new cap |
+| plan | Exact-identity rule unattainable; ambiguous per-market scoring; S bias; doubling flag mixes two causes | Plan draft 5 |
+
+## Simulations needed (author decides)
+
+1. Honest-churn arm (paper 4).
+2. Search to convergence on the flagged Q1 and Q4 cells (paper 3).
+3. The full-budget runner-up C-thr(12), which left a lower development gain than C*, on the six fresh markets under D2+H3 and X7-SC with doubling checks (paper 5): about 1.90 USD. The 12 configurations' development gains exist (inner budget, uninformative); full-budget rechecks of the other ten would add about 3.2 USD.
+4. The reset experiment (already approved, cap 10 USD), with the reproduction gate on the pod (driver review).
+diff --git a/docs/revision/followup/reset_followup_v2.py b/docs/revision/followup/reset_followup_v2.py
+index 7f0390b..b915056 100644
+--- a/docs/revision/followup/reset_followup_v2.py
++++ b/docs/revision/followup/reset_followup_v2.py
+@@ -86,6 +86,39 @@ def check_code() -> None:
+         _refuse("scripts/revision_v2.py or sim/ differs from protocol-v2 (or the tag is missing)")
+ 
+ 
++def preflight(out, src, jobs: list[dict], salt_sha256: str, container: dict | None = None) -> None:
++    """Every check that must pass before any episode, on every execution path (internal review r4)."""
++    check_salt(out, salt_sha256, jobs); check_commit(jobs); check_code(); check_pairing(src, jobs)
++    if container is not None:
++        check_configs(jobs, container)
++
++
++def environment() -> dict:
++    """The numerical stack of the run (plan draft 5): interpreter, numpy with its BLAS and LAPACK, SciPy, CMA, the CPU."""
++    import platform
++    import subprocess
++    import numpy
++    def ver(m):
++        try:
++            return __import__(m).__version__
++        except Exception as e:
++            return f"unavailable: {type(e).__name__}"
++    try:
++        cfg = numpy.show_config(mode="dicts")["Build Dependencies"]; blas = {k: {kk: cfg[k].get(kk) for kk in ("name", "version")} for k in ("blas", "lapack") if k in cfg}
++    except Exception as e:
++        blas = f"unavailable: {type(e).__name__}"
++    cpu = platform.processor()
++    for cmd in (["sysctl", "-n", "machdep.cpu.brand_string"], ["sh", "-c", "grep -m1 'model name' /proc/cpuinfo"]):
++        try:
++            r = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
++            if r.returncode == 0 and r.stdout.strip():
++                cpu = r.stdout.strip(); break
++        except Exception:
++            pass
++    return {"python": platform.python_version(), "numpy": numpy.__version__, "scipy": ver("scipy"), "cma": ver("cma"), "blas": blas, "cpu": cpu,
++            "machine": platform.machine(), "platform": platform.platform(), "driver_sha256": sha_file(Path(__file__))}
++
++
+ def check_salt(out, salt_sha256: str, jobs: list[dict]) -> None:
+     salt = Path(out) / "salt.hex"
+     if not salt.exists() or R._sha(bytes.fromhex(salt.read_text().strip())) != salt_sha256:
+@@ -117,8 +150,8 @@ def inputs(src, jobs: list[dict]) -> dict[str, str]:
+         ctx = j["context"]; fr = read(R.path_of(src, f"freeze/{ctx}"))
+         if fr is None:
+             _refuse(f"the original freeze of {ctx} is missing")
+-        if fr.get("cuts", CUTS) != CUTS or fr.get("h4_excluded", H4_EXCLUDED) != H4_EXCLUDED:
+-            _refuse(f"the original freeze of {ctx} is not cuts {CUTS} with H4 loaded")
++        if "cuts" not in fr or "h4_excluded" not in fr or fr["cuts"] != CUTS or fr["h4_excluded"] != H4_EXCLUDED:
++            _refuse(f"the original freeze of {ctx} does not state cuts {CUTS} with H4 loaded")
+         rid = f"reference/{ctx}/{j['rule']}"
+         if rid not in fr["records"]:
+             _refuse(f"{rid} is not in the original freeze of {ctx}")
+@@ -133,6 +166,8 @@ def inputs(src, jobs: list[dict]) -> dict[str, str]:
+             u, s = todo.popitem()
+             if need.setdefault(u, s) != s:
+                 _refuse(f"{u}: two original records hold different hashes")
++            if fr["records"].get(u, s) != s:
++                _refuse(f"{u}: its hash differs from the original freeze of {ctx}")
+             for k, v in ((read(R.path_of(src, u)) or {}).get("upstream") or {}).items():
+                 if need.get(k, v) != v or todo.get(k, v) != v:
+                     _refuse(f"{k}: two original records hold different hashes")
+@@ -221,11 +256,7 @@ def inventory(out) -> dict:
+     out = Path(out)
+     recs = {str(p.relative_to(out)): sha_file(p) for p in sorted(out.rglob("*"))
+             if p.is_file() and p.name != "inventory.json" and not p.name.endswith((".lock", ".tmp"))}
+-    import platform
+-    import numpy
+-    env = {"python": platform.python_version(), "numpy": numpy.__version__, "machine": platform.machine(), "platform": platform.platform(),
+-           "processor": platform.processor(), "driver_sha256": sha_file(Path(__file__))}
+-    inv = {"stage": "inventory", "deviations": list(DEVIATIONS), "environment": env, "records": recs}
++    inv = {"stage": "inventory", "deviations": list(DEVIATIONS), "environment": environment(), "records": recs}
+     write(out / "inventory.json", inv)
+     return inv
+ 
+@@ -284,34 +315,51 @@ REPRO = "headline@rho0.2|F111|D2|profit"
+ KNOB_TOL, GAIN_TOL = 1e-9, 1e-9                      # plan draft 5, section 3 (a)
+ 
+ 
++EXACT_PROV = ("runner_sha256", "salt_sha256", "cfg_sha256", "rule_params_sha256", "root", "seeds_train", "seeds_val", "seeds_eval", "context", "budget")
++
++
++def _finite(*xs) -> bool:
++    import math
++    return all(math.isfinite(v) for x in xs for v in (x if isinstance(x, (list, tuple)) else [x]) if isinstance(v, (int, float)))
++
++
+ def compare(src, out, rid: str = REPRO) -> dict:
+-    """Validation (a), plan draft 5: exact on the episode count, archive size, `best_source`, discrete knobs, budget,
+-    configuration hash, dependency set and seeds; continuous knobs within KNOB_TOL relative and per-seed gains within
+-    GAIN_TOL absolute. `identical` reports bit identity separately."""
++    """Validation (a), plan draft 5: exact on the provenance keys (the commit may differ), the episode count, the attack and
++    twin archive sizes, `best_source`, the discrete knobs, the search and evaluation dependency ids, the reference hash and
++    the seeds; continuous knobs within KNOB_TOL relative and per-seed gains within GAIN_TOL absolute; every value finite.
++    `identical` additionally needs bit-identical knobs and gains."""
+     a, b = read(R.path_of(src, rid)), read(R.path_of(out, rid)); ea, eb = read(R.eval_path(src, rid)), read(R.eval_path(out, rid))
+     if None in (a, b, ea, eb):
+         return {"pass": False, "identical": False, "problems": ["a record is missing"]}
+     problems = []
+     ka, kb = a["attack"]["best_knobs"], b["attack"]["best_knobs"]
++    if not _finite(list(ka.values()), list(kb.values()), ea["gain"], eb["gain"]):
++        problems.append("nonfinite value")
+     if set(ka) != set(kb):
+         problems.append("knob names differ")
+     disc = [k for k in ka if isinstance(ka[k], int) and not isinstance(ka[k], bool)]
+     if any(ka[k] != kb.get(k) for k in disc):
+         problems.append("discrete knob differs")
+     rel = max((abs(ka[k] - kb[k]) / max(abs(ka[k]), 1e-300) for k in ka if k not in disc and k in kb), default=0.0)
+-    if rel > KNOB_TOL:
++    if not rel <= KNOB_TOL:
+         problems.append(f"knob tolerance exceeded ({rel:.3g})")
++    for k in EXACT_PROV:
++        if a["provenance"].get(k) != b["provenance"].get(k):
++            problems.append(f"{k} differs")
++    ua, ub = ea.get("upstream") or {}, eb.get("upstream") or {}
++    refs = sorted(u for u in ua if u.startswith("reference/"))
+     for what, x, y in (("episode count", a.get("runs"), b.get("runs")), ("best_source", a["attack"].get("best_source"), b["attack"].get("best_source")),
+                        ("archive size", len(a["attack"].get("archive", [])), len(b["attack"].get("archive", []))),
+-                       ("budget", a["provenance"].get("budget"), b["provenance"].get("budget")),
+-                       ("configuration hash", a["provenance"].get("cfg_sha256"), b["provenance"].get("cfg_sha256")),
+-                       ("dependency set", sorted(a.get("upstream") or {}), sorted(b.get("upstream") or {})), ("seeds", ea["seeds"], eb["seeds"])):
++                       ("twin archive size", len((a.get("twin") or {}).get("archive", [])), len((b.get("twin") or {}).get("archive", []))),
++                       ("dependency set", sorted(a.get("upstream") or {}), sorted(b.get("upstream") or {})),
++                       ("evaluation dependency set", sorted(ua), sorted(ub)), ("reference hash", [ua.get(r) for r in refs], [ub.get(r) for r in refs]),
++                       ("seeds", ea["seeds"], eb["seeds"])):
+         if x != y:
+             problems.append(f"{what} differs")
+     gd = max((abs(x - y) for x, y in zip(ea["gain"], eb["gain"])), default=0.0) if len(ea["gain"]) == len(eb["gain"]) else float("inf")
+-    if gd > GAIN_TOL:
++    if not gd <= GAIN_TOL:
+         problems.append(f"gain tolerance exceeded ({gd:.3g})")
+-    return {"pass": not problems, "identical": ka == kb and ea["gain"] == eb["gain"], "max_knob_rel": rel, "max_gain_abs": gd, "problems": problems}
++    return {"pass": not problems, "identical": not problems and ka == kb and ea["gain"] == eb["gain"], "max_knob_rel": rel, "max_gain_abs": gd, "problems": problems}
+ 
+ 
+ def compare_doubling(src, out, rid: str) -> dict:
+@@ -355,13 +403,14 @@ def reproduce(src, out, root: str, params: dict, salt_sha256: str, workers: int
+     mkt = R.market("headline", root, 0.2, salt_sha256=salt_sha256)
+     j = R.job(mkt, "F111", "D2", "profit", params=params)
+     reg = read(R.path_of(src, REPRO))
+-    if reg is None or reg["provenance"]["cfg_sha256"] != j["provenance"]["cfg_sha256"]:
+-        _refuse("the headline configuration on this machine is not the registered one")
++    container = {"headline": {"container_hash": (reg or {}).get("provenance", {}).get("cfg_sha256")}}
++    preflight(out, src, [j], salt_sha256, container)
+     copy_inputs(src, out, inputs(src, [j]))
+     run_stage("search", [j], out, workers); prefreeze(out, [j])
+     accept(out, [j], salt_sha256, {"headline": {"container_hash": reg["provenance"]["cfg_sha256"]}})
+     run_stage("evaluate", [j], out, workers)
+-    return compare(src, out)
++    rep = compare(src, out); write(Path(out) / "gate.json", {"stage": "reproduction gate", "cell": REPRO, **rep}); inventory(out)
++    return rep
+ 
+ 
+ def main(argv=None) -> int:
+docs/revision/followup/test_budget_followup.py
+docs/revision/followup/test_reset_followup.py
+docs/revision/followup/budget_followup.py
+docs/revision/followup/reset_followup_v2.py
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'nl -ba docs/revision/followup/reset_followup_v2.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+     1	"""The reset follow-up (docs/revision/reset-experiment-plan.md, draft 4, section 3): the 18 D2 cells that cut 3 removed
+     2	(F000, F111, C* x fresh0..fresh5 at rho 0.2), run with the frozen stage functions of scripts/revision_v2.py.
+     3	
+     4	Three things of the frozen runner are bypassed, each a recorded deviation (DEVIATIONS): the manifest's cut list, the
+     5	hard-coded doubling eligibility, and the original freeze. Everything else is the frozen code: `job`, `stage_search`,
+     6	`stage_evaluate`, `stage_doubling`, reached through `revision_v2._run_one`, so the record format and the dependency sets
+     7	are the registered ones.
+     8	
+     9	Order: copy the inputs (the frozen references, the menu searches and bank sources they list, each checked against the
+    10	hash the original records hold), search, the follow-up freeze, acceptance, evaluation, acceptance, doubling, inventory.
+    11	The output directory is never results/v2/eval/all."""
+    12	from __future__ import annotations
+    13	
+    14	import argparse
+    15	import json
+    16	import shutil
+    17	import sys
+    18	from pathlib import Path
+    19	
+    20	ROOT = Path(__file__).resolve().parents[3]          # docs/revision/followup/ (code after the freeze lives under docs/)
+    21	sys.path.insert(0, str(ROOT / "scripts")); sys.path.insert(0, str(ROOT))
+    22	
+    23	import revision_v2 as R  # noqa: E402
+    24	from sim import manifest_v2 as MAN  # noqa: E402
+    25	from sim.records_v2 import read, sha_file, write  # noqa: E402
+    26	
+    27	RULES = ("F000", "F111", "C*")
+    28	MARKETS = tuple(f"fresh{i}" for i in range(6))
+    29	CUTS, H4_EXCLUDED = 3, False                        # the registered evaluation: cuts 3, H4 loaded (results/v2/draw/h4.json)
+    30	EVAL_ALL = ROOT / "results" / "v2" / "eval" / "all"
+    31	DEVIATIONS = (
+    32	    "manifest cut list bypassed: the 18 D2 cells (F000, F111, C* x fresh0..fresh5, rho 0.2) that cut 3 removed are run",
+    33	    "doubling eligibility bypassed: each of the 18 cells gets a doubling check with its held-out evaluation",
+    34	    "original freeze bypassed: this script's follow-up freeze and acceptance check replace revision_v2.accept",
+    35	)
+    36	
+    37	
+    38	def _refuse(msg: str):
+    39	    raise SystemExit(f"reset follow-up refused: {msg}")
+    40	
+    41	
+    42	def cell_ids(markets=MARKETS) -> list[str]:
+    43	    return [R.cell_id(MAN.context(m), r, "D2", "profit") for m in markets for r in RULES]
+    44	
+    45	
+    46	def restored_cells(markets=MARKETS) -> list[dict]:
+    47	    uncut = {c["id"]: c for c in MAN.cells()}; kept = {c["id"] for c in MAN.effective(CUTS, H4_EXCLUDED)}; ids = cell_ids(markets)
+    48	    if missing := [i for i in ids if i not in uncut]:
+    49	        _refuse(f"not design cells: {missing}")
+    50	    if present := [i for i in ids if i in kept]:
+    51	        _refuse(f"not removed by cut {CUTS}: {present}")
+    52	    return [uncut[i] for i in ids]
+    53	
+    54	
+    55	def check_out(out, src=None) -> None:
+    56	    o = Path(out).resolve()
+    57	    for e in {Path(EVAL_ALL).resolve()} | ({Path(src).resolve()} if src else set()):
+    58	        if o == e or e in o.parents:
+    59	            _refuse(f"the output {o} is inside {e}")
+    60	
+    61	
+    62	PAIRED_KEYS = ("runner_sha256", "salt_sha256", "cfg_sha256", "root", "seeds_train", "seeds_val", "seeds_eval", "rule_params_sha256", "context")
+    63	
+    64	
+    65	def check_pairing(src, jobs: list[dict]) -> None:
+    66	    """Each job's provenance equals its frozen reference's provenance on every key the pairing depends on (the commit may
+    67	    differ): runner, salt, configuration, root, seeds, rule parameters, context (Fable 5.2 driver review, finding 1)."""
+    68	    for j in jobs:
+    69	        ref = read(R.path_of(src, f"reference/{j['context']}/{j['rule']}"))
+    70	        if ref is None:
+    71	            _refuse(f"{j['id']}: no reference record to pair with")
+    72	        if bad := [k for k in PAIRED_KEYS if j["provenance"].get(k) != ref["provenance"].get(k)]:
+    73	            _refuse(f"{j['id']}: provenance differs from its reference in {bad}")
+    74	
+    75	
+    76	def check_commit(jobs: list[dict]) -> None:
+    77	    if bad := [j["id"] for j in jobs if j["provenance"].get("git_commit") in (None, "", "unknown")]:
+    78	        _refuse(f"no git commit recorded for {bad[:3]}")
+    79	
+    80	
+    81	def check_code() -> None:
+    82	    """The frozen runner and simulator are byte-identical to the protocol-v2 tag."""
+    83	    import subprocess
+    84	    r = subprocess.run(["git", "diff", "--quiet", "protocol-v2", "--", "scripts/revision_v2.py", "sim/"], cwd=ROOT)
+    85	    if r.returncode != 0:
+    86	        _refuse("scripts/revision_v2.py or sim/ differs from protocol-v2 (or the tag is missing)")
+    87	
+    88	
+    89	def preflight(out, src, jobs: list[dict], salt_sha256: str, container: dict | None = None) -> None:
+    90	    """Every check that must pass before any episode, on every execution path (internal review r4)."""
+    91	    check_salt(out, salt_sha256, jobs); check_commit(jobs); check_code(); check_pairing(src, jobs)
+    92	    if container is not None:
+    93	        check_configs(jobs, container)
+    94	
+    95	
+    96	def environment() -> dict:
+    97	    """The numerical stack of the run (plan draft 5): interpreter, numpy with its BLAS and LAPACK, SciPy, CMA, the CPU."""
+    98	    import platform
+    99	    import subprocess
+   100	    import numpy
+   101	    def ver(m):
+   102	        try:
+   103	            return __import__(m).__version__
+   104	        except Exception as e:
+   105	            return f"unavailable: {type(e).__name__}"
+   106	    try:
+   107	        cfg = numpy.show_config(mode="dicts")["Build Dependencies"]; blas = {k: {kk: cfg[k].get(kk) for kk in ("name", "version")} for k in ("blas", "lapack") if k in cfg}
+   108	    except Exception as e:
+   109	        blas = f"unavailable: {type(e).__name__}"
+   110	    cpu = platform.processor()
+   111	    for cmd in (["sysctl", "-n", "machdep.cpu.brand_string"], ["sh", "-c", "grep -m1 'model name' /proc/cpuinfo"]):
+   112	        try:
+   113	            r = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+   114	            if r.returncode == 0 and r.stdout.strip():
+   115	                cpu = r.stdout.strip(); break
+   116	        except Exception:
+   117	            pass
+   118	    return {"python": platform.python_version(), "numpy": numpy.__version__, "scipy": ver("scipy"), "cma": ver("cma"), "blas": blas, "cpu": cpu,
+   119	            "machine": platform.machine(), "platform": platform.platform(), "driver_sha256": sha_file(Path(__file__))}
+   120	
+   121	
+   122	def check_salt(out, salt_sha256: str, jobs: list[dict]) -> None:
+   123	    salt = Path(out) / "salt.hex"
+   124	    if not salt.exists() or R._sha(bytes.fromhex(salt.read_text().strip())) != salt_sha256:
+   125	        _refuse("the identity salt under the output is not the recorded salt")
+   126	    if bad := [j["id"] for j in jobs if j["provenance"]["salt_sha256"] != salt_sha256]:
+   127	        _refuse(f"jobs carry another salt hash: {bad}")
+   128	
+   129	
+   130	def build_jobs(root: str, cfgs: dict, params: dict, salt_sha256: str, markets=MARKETS, smoke: bool = False) -> list[dict]:
+   131	    """The frozen `job` for each restored cell, on the recorded (container) configuration of its market."""
+   132	    jobs = []
+   133	    for m in markets:
+   134	        mkt = R.market(m, root, 0.2, smoke=smoke, cfg=cfgs[m], salt_sha256=salt_sha256)
+   135	        jobs += [R.job(mkt, c["rule"], "D2", "profit", smoke=smoke, params=params, block=c["block"]) for c in restored_cells((m,))]
+   136	    return jobs
+   137	
+   138	
+   139	def _expected_reference_upstream(rid: str) -> set:
+   140	    """The registered menu and cuts-3 bank of a reference (revision_v2.expected_upstream)."""
+   141	    return R.expected_upstream(rid, [], CUTS, H4_EXCLUDED)
+   142	
+   143	
+   144	def inputs(src, jobs: list[dict]) -> dict[str, str]:
+   145	    """Every record the frozen evaluation and doubling stages read for `jobs`, with the hash the original records hold:
+   146	    the reference from the context's original freeze, its menu and bank records from the reference's `upstream`, and
+   147	    (recursively) the `upstream` of each copied search record."""
+   148	    need: dict[str, str] = {}
+   149	    for j in jobs:
+   150	        ctx = j["context"]; fr = read(R.path_of(src, f"freeze/{ctx}"))
+   151	        if fr is None:
+   152	            _refuse(f"the original freeze of {ctx} is missing")
+   153	        if "cuts" not in fr or "h4_excluded" not in fr or fr["cuts"] != CUTS or fr["h4_excluded"] != H4_EXCLUDED:
+   154	            _refuse(f"the original freeze of {ctx} does not state cuts {CUTS} with H4 loaded")
+   155	        rid = f"reference/{ctx}/{j['rule']}"
+   156	        if rid not in fr["records"]:
+   157	            _refuse(f"{rid} is not in the original freeze of {ctx}")
+   158	        ref = read(R.path_of(src, rid))
+   159	        if ref is None:
+   160	            _refuse(f"{rid} is missing in {src}")
+   161	        want = _expected_reference_upstream(rid)
+   162	        if want is not None and set(ref.get("upstream") or {}) != want:
+   163	            _refuse(f"{rid}: its dependencies are not the registered menu and cuts-{CUTS} bank")
+   164	        need[rid] = fr["records"][rid]; todo = dict(ref["upstream"])
+   165	        while todo:
+   166	            u, s = todo.popitem()
+   167	            if need.setdefault(u, s) != s:
+   168	                _refuse(f"{u}: two original records hold different hashes")
+   169	            if fr["records"].get(u, s) != s:
+   170	                _refuse(f"{u}: its hash differs from the original freeze of {ctx}")
+   171	            for k, v in ((read(R.path_of(src, u)) or {}).get("upstream") or {}).items():
+   172	                if need.get(k, v) != v or todo.get(k, v) != v:
+   173	                    _refuse(f"{k}: two original records hold different hashes")
+   174	                if k not in need:
+   175	                    todo[k] = v
+   176	    return need
+   177	
+   178	
+   179	def copy_inputs(src, out, need: dict[str, str]) -> None:
+   180	    """Copy each input read-only, checked against its recorded hash; an existing identical copy is kept."""
+   181	    for rid, sha in sorted(need.items()):
+   182	        p, q = R.path_of(src, rid), R.path_of(out, rid)
+   183	        if not p.exists():
+   184	            _refuse(f"input {rid} is missing in {src}")
+   185	        if sha_file(p) != sha:
+   186	            _refuse(f"input {rid} differs from the hash in the original records")
+   187	        if q.exists():
+   188	            if sha_file(q) != sha:
+   189	                _refuse(f"{q} exists and differs from the original {rid}")
+   190	            continue
+   191	        q.parent.mkdir(parents=True, exist_ok=True); shutil.copyfile(p, q); q.chmod(0o444)
+   192	    prev = read(Path(out) / "inputs.json")
+   193	    if prev is not None and prev != {**prev, **need}:
+   194	        _refuse("inputs.json lists other hashes for the same records")
+   195	    write(Path(out) / "inputs.json", {**(prev or {}), **need})
+   196	
+   197	
+   198	def check_configs(jobs: list[dict], container: dict) -> None:
+   199	    """Each job's configuration hash equals the recorded container hash (addendum.json deviations.configs)."""
+   200	    for j in jobs:
+   201	        label = j["mkt"]["label"]; want = (container.get(label) or {}).get("container_hash")
+   202	        if j["provenance"]["cfg_sha256"] != want:
+   203	            _refuse(f"{j['id']}: configuration hash {j['provenance']['cfg_sha256']} is not the container hash {want}")
+   204	
+   205	
+   206	def _ctx_inputs(out, ctx: str) -> dict[str, str]:
+   207	    return {r: s for r, s in (read(Path(out) / "inputs.json") or {}).items() if ctx in r}
+   208	
+   209	
+   210	def prefreeze(out, jobs: list[dict]) -> None:
+   211	    """The pre-evaluation freeze of each context: its copied inputs and its new search records, with their hashes."""
+   212	    for ctx in sorted({j["context"] for j in jobs}):
+   213	        recs = dict(_ctx_inputs(out, ctx))
+   214	        for j in (j for j in jobs if j["context"] == ctx):
+   215	            p = R.path_of(out, j["id"]); rec = read(p)
+   216	            if rec is None or rec.get("stage") != "search" or rec.get("provenance") != j["provenance"]:
+   217	                _refuse(f"{j['id']}: no current search record to freeze")
+   218	            recs[j["id"]] = sha_file(p)
+   219	        body = {"stage": "freeze", "context": ctx, "followup": True, "deviations": list(DEVIATIONS), "cuts": CUTS, "h4_excluded": H4_EXCLUDED, "records": recs}
+   220	        p = R.path_of(out, f"freeze/{ctx}"); old = read(p)
+   221	        if old is not None and old != body:
+   222	            _refuse(f"{p} exists with other records")
+   223	        if old is None:
+   224	            write(p, body)
+   225	
+   226	
+   227	def accept(out, jobs: list[dict], salt_sha256: str, container: dict, src=None) -> None:
+   228	    """Run before evaluation and before doubling: the freeze exists and every record in it, and every copied input,
+   229	    still has its hash; the identity salt and the configurations are the recorded ones; with `src`, inputs.json holds
+   230	    every input recomputed from the original records."""
+   231	    check_salt(out, salt_sha256, jobs)
+   232	    check_configs(jobs, container)
+   233	    if src is not None:
+   234	        have = read(Path(out) / "inputs.json") or {}
+   235	        if bad := sorted(r for r, s in inputs(src, jobs).items() if have.get(r) != s):
+   236	            _refuse(f"inputs.json lacks or differs on {bad[:3]}")
+   237	    for ctx in sorted({j["context"] for j in jobs}):
+   238	        fr = read(R.path_of(out, f"freeze/{ctx}"))
+   239	        if fr is None or not fr.get("followup"):
+   240	            _refuse(f"{ctx}: no follow-up freeze")
+   241	        want = {**_ctx_inputs(out, ctx), **{j["id"]: None for j in jobs if j["context"] == ctx}}
+   242	        if missing := sorted(set(want) - set(fr["records"])):
+   243	            _refuse(f"{ctx}: the freeze lacks {missing}")
+   244	        for r, sha in fr["records"].items():
+   245	            p = R.path_of(out, r)
+   246	            if not p.exists() or sha_file(p) != sha or (want.get(r) not in (None, sha)):
+   247	                _refuse(f"{ctx}: {r} differs from the freeze")
+   248	
+   249	
+   250	def run_stage(stage: str, jobs: list[dict], out, workers: int = 1) -> list[str]:
+   251	    return R._pool(stage, jobs, Path(out), workers, CUTS, H4_EXCLUDED, jobs)
+   252	
+   253	
+   254	def inventory(out) -> dict:
+   255	    """Every output file with its hash, written after the outputs, so no record lists itself."""
+   256	    out = Path(out)
+   257	    recs = {str(p.relative_to(out)): sha_file(p) for p in sorted(out.rglob("*"))
+   258	            if p.is_file() and p.name != "inventory.json" and not p.name.endswith((".lock", ".tmp"))}
+   259	    inv = {"stage": "inventory", "deviations": list(DEVIATIONS), "environment": environment(), "records": recs}
+   260	    write(out / "inventory.json", inv)
+   261	    return inv
+   262	
+   263	
+   264	def reset_stats(results, focal: int) -> dict:
+   265	    """Plan section 4: per episode, the focal provider's identity replacements, the rounds they were created, the rounds
+   266	    without a focal offer (banned or waiting), and the ban rounds imposed on its identities."""
+   267	    import numpy as np
+   268	    resets, rounds, no_offer, bans = [], [], [], []
+   269	    for r in results:
+   270	        mine = [i for i, e in enumerate(r.entity_of) if e == focal]
+   271	        new = [i for i in mine if r.identity_generation[i] > 0]
+   272	        resets.append(len(new)); rounds.append([int(r.identity_round[i]) for i in new])
+   273	        no_offer.append(int(np.isnan(r.claims[:, focal]).sum()))
+   274	        bans.append(int(sum(v for h in r.history for i, v in h.consequences.bans.items() if i in mine)))
+   275	    return {"resets": resets, "reset_rounds": rounds, "no_offer_rounds": no_offer, "ban_rounds": bans,
+   276	            "mean_resets": float(np.mean(resets)), "p_any_reset": float(np.mean([x > 0 for x in resets])),
+   277	            "mean_no_offer_rounds": float(np.mean(no_offer)), "mean_ban_rounds": float(np.mean(bans))}
+   278	
+   279	
+   280	def with_x(knobs: dict, x: int) -> dict:
+   281	    """The same policy in the D2+H3 family with the replacement switch set to x (D2 is D2+H3 with x = 0)."""
+   282	    return {**knobs, "x": int(x)}
+   283	
+   284	
+   285	def diagnostics(src, out, jobs: list[dict], report: dict) -> dict:
+   286	    """Plan section 4 (draft 5), evaluation only: for each D2 job's (context, rule), the base and doubled D2+H3 winners and
+   287	    the base D2 winner on the evaluation seeds with reset instrumentation; the switch g(winner) - g(winner with x = 0) for
+   288	    the D2+H3 winners and the reverse switch g(D2 winner with x = 1) - g(D2 winner). The reference cancels in each switch,
+   289	    so it is a difference of normalised profits."""
+   290	    import numpy as np
+   291	    from sim.cell import SeedCache, run_focal
+   292	    res = {}
+   293	    for j in jobs:
+   294	        T, L = R.constants(j); fam = R.family_for("D2+H3", T, L); cell = R.eval_cell(j); cache = SeedCache()
+   295	        h3 = R.cell_id(j["context"], j["rule"], "D2+H3", "profit")
+   296	        pols = {"d2h3_base": read(R.path_of(src, h3))["attack"]["best_knobs"], "d2h3_doubled": report["doubling"][h3]["heldout"]["knobs"],
+   297	                "d2_base": with_x(read(R.path_of(out, j["id"]))["attack"]["best_knobs"], 0)}
+   298	        runs = {k: run_focal(cell, lambda k=k: fam.make(dict(pols[k])), cache) for k in pols}
+   299	        row = {k: {"knobs": pols[k], **reset_stats(runs[k].results, cell.focal), "mean_normalized": float(np.mean(runs[k].normalized))} for k in pols}
+   300	        for k in ("d2h3_base", "d2h3_doubled"):
+   301	            if int(pols[k].get("x", 0)) == 0:
+   302	                row[k]["switch_x0"] = {"identical": True, "effect": 0.0}
+   303	            else:
+   304	                off = run_focal(cell, lambda k=k: fam.make(with_x(pols[k], 0)), cache)
+   305	                row[k]["switch_x0"] = {"identical": False, "effect": float(np.mean(runs[k].normalized - off.normalized))}
+   306	        on = run_focal(cell, lambda: fam.make(with_x(pols["d2_base"], 1)), cache)
+   307	        row["d2_base"]["switch_x1"] = {"effect": float(np.mean(on.normalized - runs["d2_base"].normalized))}
+   308	        res[f"{j['context']}|{j['rule']}"] = row
+   309	    return res
+   310	
+   311	
+   312	REPRO = "headline@rho0.2|F111|D2|profit"
+   313	
+   314	
+   315	KNOB_TOL, GAIN_TOL = 1e-9, 1e-9                      # plan draft 5, section 3 (a)
+   316	
+   317	
+   318	EXACT_PROV = ("runner_sha256", "salt_sha256", "cfg_sha256", "rule_params_sha256", "root", "seeds_train", "seeds_val", "seeds_eval", "context", "budget")
+   319	
+   320	
+   321	def _finite(*xs) -> bool:
+   322	    import math
+   323	    return all(math.isfinite(v) for x in xs for v in (x if isinstance(x, (list, tuple)) else [x]) if isinstance(v, (int, float)))
+   324	
+   325	
+   326	def compare(src, out, rid: str = REPRO) -> dict:
+   327	    """Validation (a), plan draft 5: exact on the provenance keys (the commit may differ), the episode count, the attack and
+   328	    twin archive sizes, `best_source`, the discrete knobs, the search and evaluation dependency ids, the reference hash and
+   329	    the seeds; continuous knobs within KNOB_TOL relative and per-seed gains within GAIN_TOL absolute; every value finite.
+   330	    `identical` additionally needs bit-identical knobs and gains."""
+   331	    a, b = read(R.path_of(src, rid)), read(R.path_of(out, rid)); ea, eb = read(R.eval_path(src, rid)), read(R.eval_path(out, rid))
+   332	    if None in (a, b, ea, eb):
+   333	        return {"pass": False, "identical": False, "problems": ["a record is missing"]}
+   334	    problems = []
+   335	    ka, kb = a["attack"]["best_knobs"], b["attack"]["best_knobs"]
+   336	    if not _finite(list(ka.values()), list(kb.values()), ea["gain"], eb["gain"]):
+   337	        problems.append("nonfinite value")
+   338	    if set(ka) != set(kb):
+   339	        problems.append("knob names differ")
+   340	    disc = [k for k in ka if isinstance(ka[k], int) and not isinstance(ka[k], bool)]
+   341	    if any(ka[k] != kb.get(k) for k in disc):
+   342	        problems.append("discrete knob differs")
+   343	    rel = max((abs(ka[k] - kb[k]) / max(abs(ka[k]), 1e-300) for k in ka if k not in disc and k in kb), default=0.0)
+   344	    if not rel <= KNOB_TOL:
+   345	        problems.append(f"knob tolerance exceeded ({rel:.3g})")
+   346	    for k in EXACT_PROV:
+   347	        if a["provenance"].get(k) != b["provenance"].get(k):
+   348	            problems.append(f"{k} differs")
+   349	    ua, ub = ea.get("upstream") or {}, eb.get("upstream") or {}
+   350	    refs = sorted(u for u in ua if u.startswith("reference/"))
+   351	    for what, x, y in (("episode count", a.get("runs"), b.get("runs")), ("best_source", a["attack"].get("best_source"), b["attack"].get("best_source")),
+   352	                       ("archive size", len(a["attack"].get("archive", [])), len(b["attack"].get("archive", []))),
+   353	                       ("twin archive size", len((a.get("twin") or {}).get("archive", [])), len((b.get("twin") or {}).get("archive", []))),
+   354	                       ("dependency set", sorted(a.get("upstream") or {}), sorted(b.get("upstream") or {})),
+   355	                       ("evaluation dependency set", sorted(ua), sorted(ub)), ("reference hash", [ua.get(r) for r in refs], [ub.get(r) for r in refs]),
+   356	                       ("seeds", ea["seeds"], eb["seeds"])):
+   357	        if x != y:
+   358	            problems.append(f"{what} differs")
+   359	    gd = max((abs(x - y) for x, y in zip(ea["gain"], eb["gain"])), default=0.0) if len(ea["gain"]) == len(eb["gain"]) else float("inf")
+   360	    if not gd <= GAIN_TOL:
+   361	        problems.append(f"gain tolerance exceeded ({gd:.3g})")
+   362	    return {"pass": not problems, "identical": not problems and ka == kb and ea["gain"] == eb["gain"], "max_knob_rel": rel, "max_gain_abs": gd, "problems": problems}
+   363	
+   364	
+   365	def compare_doubling(src, out, rid: str) -> dict:
+   366	    """Validation (d), plan draft 5: a doubling record against the registered one; exact on the flag, the seeds, and the
+   367	    discrete knobs; 1e-9 on the continuous knobs, the changes, and the held-out per-seed gains."""
+   368	    p = lambda b: Path(b) / "doubling" / (R._safe(rid) + ".json")
+   369	    a, b = read(p(src)), read(p(out))
+   370	    if a is None or b is None:
+   371	        return {"pass": False, "problems": ["a record is missing"]}
+   372	    problems = []
+   373	    if bool(a.get("incomplete")) != bool(b.get("incomplete")):
+   374	        problems.append("flag differs")
+   375	    ha, hb = a["heldout"], b["heldout"]
+   376	    if ha["seeds"] != hb["seeds"]:
+   377	        problems.append("seeds differ")
+   378	    ka, kb = ha["knobs"], hb["knobs"]; disc = [k for k in ka if isinstance(ka[k], int) and not isinstance(ka[k], bool)]
+   379	    if set(ka) != set(kb) or any(ka[k] != kb[k] for k in disc):
+   380	        problems.append("discrete knob differs")
+   381	    rel = max((abs(ka[k] - kb[k]) / max(abs(ka[k]), 1e-300) for k in ka if k not in disc and k in kb), default=0.0)
+   382	    chg = max(abs(a.get(k, 0.0) - b.get(k, 0.0)) for k in ("attack_change", "reference_change"))
+   383	    gd = max((abs(x - y) for x, y in zip(ha["gain"], hb["gain"])), default=0.0) if len(ha["gain"]) == len(hb["gain"]) else float("inf")
+   384	    if rel > KNOB_TOL or chg > GAIN_TOL or gd > GAIN_TOL:
+   385	        problems.append(f"tolerance exceeded (knobs {rel:.3g}, changes {chg:.3g}, gains {gd:.3g})")
+   386	    return {"pass": not problems, "max_knob_rel": rel, "max_change_abs": chg, "max_gain_abs": gd, "problems": problems}
+   387	
+   388	
+   389	def reproduce_doubling(src, out, rid: str, root: str, cfgs: dict, params: dict, salt_sha256: str) -> dict:
+   390	    """Rerun the registered doubling check of one fresh-market D2+H3 cell with the frozen stage, against copies of its inputs."""
+   391	    label, rest = rid.split("@", 1); rule = rid.split("|")[1]
+   392	    j = R.job(R.market(label, root, 0.2, cfg=cfgs[label], salt_sha256=salt_sha256), rule, "D2+H3", "profit", params=params)
+   393	    need = inputs(src, [j]); need[j["id"]] = sha_file(R.path_of(src, j["id"]))
+   394	    copy_inputs(src, out, need)
+   395	    rec = R.stage_doubling(j, out, CUTS, H4_EXCLUDED)
+   396	    write(Path(out) / "doubling" / (R._safe(rid) + ".json"), {"stage": "doubling", "id": rid, **rec})
+   397	    return compare_doubling(src, out, rid)
+   398	
+   399	
+   400	def reproduce(src, out, root: str, params: dict, salt_sha256: str, workers: int = 1) -> dict:
+   401	    """Rerun the registered headline F111 D2 search and evaluation through this script's path (input copies, freeze,
+   402	    acceptance) and compare with the registered records."""
+   403	    mkt = R.market("headline", root, 0.2, salt_sha256=salt_sha256)
+   404	    j = R.job(mkt, "F111", "D2", "profit", params=params)
+   405	    reg = read(R.path_of(src, REPRO))
+   406	    container = {"headline": {"container_hash": (reg or {}).get("provenance", {}).get("cfg_sha256")}}
+   407	    preflight(out, src, [j], salt_sha256, container)
+   408	    copy_inputs(src, out, inputs(src, [j]))
+   409	    run_stage("search", [j], out, workers); prefreeze(out, [j])
+   410	    accept(out, [j], salt_sha256, {"headline": {"container_hash": reg["provenance"]["cfg_sha256"]}})
+   411	    run_stage("evaluate", [j], out, workers)
+   412	    rep = compare(src, out); write(Path(out) / "gate.json", {"stage": "reproduction gate", "cell": REPRO, **rep}); inventory(out)
+   413	    return rep
+   414	
+   415	
+   416	def main(argv=None) -> int:
+   417	    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+   418	    ap.add_argument("--src", default=str(EVAL_ALL)); ap.add_argument("--out", required=True)
+   419	    ap.add_argument("--draw", default=str(ROOT / "results/v2/draw/draw.json")); ap.add_argument("--instances", default=str(ROOT / "results/v2/draw/instances.json"))
+   420	    ap.add_argument("--cfgs", default=str(ROOT / "results/v2/deviation/cfg_linux.json")); ap.add_argument("--addendum", default=str(ROOT / "results/v2/report/addendum.json"))
+   421	    ap.add_argument("--params", default=str(ROOT / "experiments/v2/params.json")); ap.add_argument("--markets", default=",".join(MARKETS))
+   422	    ap.add_argument("--stage", default="all", choices=("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory", "all"))
+   423	    ap.add_argument("--workers", type=int, default=1); ap.add_argument("--smoke", action="store_true")
+   424	    ap.add_argument("--reproduce", action="store_true", help=f"validation (a): rerun {REPRO} and compare (plan draft 5)")
+   425	    ap.add_argument("--reproduce-doubling", dest="repro_dbl", default=None, help="validation (d): a registered D2+H3 doubling cell id")
+   426	    ap.add_argument("--report", default=str(ROOT / "results/v2/report/report.json"), help="for the diagnostics stage")
+   427	    a = ap.parse_args(argv); out = Path(a.out); check_out(out, a.src)
+   428	    from sim.records import cfg_from_dict
+   429	    root = json.loads(Path(a.draw).read_text())["hash"]; salt_sha = json.loads(Path(a.instances).read_text())["salt_sha256"]
+   430	    container = json.loads(Path(a.addendum).read_text())["deviations"]["configs"]
+   431	    cfgs = {k: cfg_from_dict(v) for k, v in json.loads(Path(a.cfgs).read_text()).items()}
+   432	    out.mkdir(parents=True, exist_ok=True); R.install_salt(root, out)
+   433	    if a.repro_dbl:
+   434	        rep = reproduce_doubling(a.src, out, a.repro_dbl, root, cfgs, json.loads(Path(a.params).read_text()), salt_sha)
+   435	        print(json.dumps({"reproduce_doubling": a.repro_dbl, **rep}))
+   436	        return 0 if rep["pass"] else 1
+   437	    if a.reproduce:
+   438	        rep = reproduce(a.src, out, root, json.loads(Path(a.params).read_text()), salt_sha, a.workers)
+   439	        print(json.dumps({"reproduce": REPRO, **rep}))
+   440	        return 0 if rep["pass"] else 1
+   441	    jobs = build_jobs(root, cfgs, json.loads(Path(a.params).read_text()), salt_sha, tuple(a.markets.split(",")), a.smoke)
+   442	    check_configs(jobs, container); check_salt(out, salt_sha, jobs); check_commit(jobs); check_code()
+   443	    if not a.smoke:
+   444	        check_pairing(a.src, jobs)
+   445	    steps = ("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory") if a.stage == "all" else (a.stage,)
+   446	    for st in steps:
+   447	        if st == "inputs":
+   448	            copy_inputs(a.src, out, inputs(a.src, jobs))
+   449	        elif st == "search":
+   450	            run_stage("search", jobs, out, a.workers)
+   451	        elif st == "freeze":
+   452	            prefreeze(out, jobs)
+   453	        elif st == "diagnostics":
+   454	            write(out / "diagnostics.json", diagnostics(a.src, out, jobs, json.loads(Path(a.report).read_text())))
+   455	        elif st in ("evaluate", "doubling"):
+   456	            accept(out, jobs, salt_sha, container, src=a.src); run_stage(st, jobs, out, a.workers)
+   457	        else:
+   458	            inventory(out)
+   459	        print(json.dumps({"stage": st, "jobs": len(jobs)}), flush=True)
+   460	    return 0
+   461	
+   462	
+   463	if __name__ == "__main__":
+   464	    sys.exit(main())
+
+hook: PostToolUse
+hook: PostToolUse Completed
+exec
+/bin/zsh -lc "nl -ba docs/revision/followup/test_reset_followup.py; rg --files /Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro /Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-linux/run -g '*gate*' -g '*inventory*' -g '*doubl*'; rg -n 'def (stage_doubling|stage_evaluate|job|market)|ban|identity' scripts/revision_v2.py sim/engine.py sim/policies/identity.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ exited 2 in 0ms:
+     1	"""The reset follow-up driver (docs/revision/reset-experiment-plan.md, draft 4, section 3): the 18 restored cells, the
+     2	copied inputs with their hash checks, the refusals, the follow-up freeze and its acceptance check, and the inventory."""
+     3	import json
+     4	from pathlib import Path
+     5	
+     6	import pytest
+     7	
+     8	import sys
+     9	sys.path.insert(0, str(Path(__file__).resolve().parent))
+    10	import reset_followup_v2 as F  # noqa: E402
+    11	from sim.records_v2 import read, sha_file, write
+    12	
+    13	CTX = "fresh0@rho0.2"
+    14	
+    15	
+    16	def test_the_18_cells_are_exactly_the_cut_d2_cells():
+    17	    cs = F.restored_cells()
+    18	    assert len(cs) == 18 and {c["family"] for c in cs} == {"D2"} and {c["rule"] for c in cs} == {"F000", "F111", "C*"}
+    19	    assert {c["market"] for c in cs} == {f"fresh{i}" for i in range(6)} and {c["rho"] for c in cs} == {0.2}
+    20	    from sim import manifest_v2 as MAN
+    21	    kept = {c["id"] for c in MAN.effective(F.CUTS, F.H4_EXCLUDED)}
+    22	    assert not kept & {c["id"] for c in cs}                                   # every one was removed by cut 3
+    23	
+    24	
+    25	def test_an_output_inside_eval_all_is_refused(tmp_path, monkeypatch):
+    26	    monkeypatch.setattr(F, "EVAL_ALL", tmp_path / "eval" / "all")
+    27	    for bad in (tmp_path / "eval" / "all", tmp_path / "eval" / "all" / "followup"):
+    28	        with pytest.raises(SystemExit):
+    29	            F.check_out(bad)
+    30	    F.check_out(tmp_path / "followup-reset")
+    31	
+    32	
+    33	def _src(tmp_path) -> Path:
+    34	    """A minimal original output: two menu searches, one bank source, the reference, and the context's freeze."""
+    35	    src = tmp_path / "src"
+    36	    ids = [f"{CTX}|F111|D2+H3|profit", f"{CTX}|F111|X7-SC|profit", f"{CTX}|F000|D2+H3|profit"]
+    37	    for i in ids:
+    38	        write(F.R.path_of(src, i), {"stage": "search", "id": i, "upstream": {}})
+    39	    x7 = F.R.path_of(src, ids[1]); write(x7, {"stage": "search", "id": ids[1], "upstream": {ids[0]: sha_file(F.R.path_of(src, ids[0]))}})
+    40	    ref = f"reference/{CTX}/F111"
+    41	    write(F.R.path_of(src, ref), {"stage": "reference", "upstream": {i: sha_file(F.R.path_of(src, i)) for i in ids}})
+    42	    write(F.R.path_of(src, f"freeze/{CTX}"), {"stage": "freeze", "cuts": 3, "h4_excluded": False,
+    43	                                              "records": {ref: sha_file(F.R.path_of(src, ref)), **{i: sha_file(F.R.path_of(src, i)) for i in ids}}})
+    44	    return src
+    45	
+    46	
+    47	def _job(rule="F111", cfg="c0", salt="s0"):
+    48	    return {"id": f"{CTX}|{rule}|D2|profit", "context": CTX, "rule": rule, "family": "D2", "objective": "profit", "mkt": {"label": "fresh0"},
+    49	            "provenance": {"cfg_sha256": cfg, "salt_sha256": salt}}
+    50	
+    51	
+    52	@pytest.fixture
+    53	def no_expected_check(monkeypatch):
+    54	    """The miniature source has no full menu; the expected-dependency check gets its own test below."""
+    55	    monkeypatch.setattr(F, "_expected_reference_upstream", lambda rid: None)
+    56	
+    57	
+    58	def test_inputs_come_from_the_original_records_hashes(tmp_path, no_expected_check):
+    59	    src = _src(tmp_path); need = F.inputs(src, [_job()])
+    60	    assert set(need) == {f"reference/{CTX}/F111", f"{CTX}|F111|D2+H3|profit", f"{CTX}|F111|X7-SC|profit", f"{CTX}|F000|D2+H3|profit"}
+    61	    out = tmp_path / "out"; F.copy_inputs(src, out, need)
+    62	    assert all(sha_file(F.R.path_of(out, r)) == s for r, s in need.items()) and read(out / "inputs.json") == need
+    63	    F.copy_inputs(src, out, need)                                             # a second call reuses identical copies
+    64	
+    65	
+    66	def test_a_changed_reference_is_refused(tmp_path, no_expected_check):
+    67	    src = _src(tmp_path); p = F.R.path_of(src, f"reference/{CTX}/F111"); d = read(p); d["choice"] = 3; write(p, d)
+    68	    with pytest.raises(SystemExit, match="differs"):
+    69	        F.copy_inputs(src, tmp_path / "out", F.inputs(src, [_job()]))
+    70	
+    71	
+    72	def test_a_changed_menu_search_is_refused(tmp_path, no_expected_check):
+    73	    src = _src(tmp_path); p = F.R.path_of(src, f"{CTX}|F000|D2+H3|profit"); d = read(p); d["runs"] = 1; write(p, d)
+    74	    with pytest.raises(SystemExit, match="differs"):
+    75	        F.copy_inputs(src, tmp_path / "out", F.inputs(src, [_job()]))
+    76	
+    77	
+    78	def test_a_missing_input_is_refused(tmp_path, no_expected_check):
+    79	    src = _src(tmp_path); F.R.path_of(src, f"{CTX}|F111|X7-SC|profit").unlink()
+    80	    with pytest.raises(SystemExit, match="missing"):
+    81	        F.copy_inputs(src, tmp_path / "out", F.inputs(src, [_job()]))
+    82	    src2 = _src(tmp_path / "b"); F.R.path_of(src2, f"reference/{CTX}/F111").unlink()
+    83	    with pytest.raises(SystemExit, match="missing"):
+    84	        F.inputs(src2, [_job()])
+    85	
+    86	
+    87	def test_a_reference_whose_dependencies_are_not_the_registered_menu_is_refused(tmp_path):
+    88	    src = _src(tmp_path)                                                       # the miniature menu lacks the full cuts-3 bank
+    89	    with pytest.raises(SystemExit, match="registered menu"):
+    90	        F.inputs(src, [_job()])
+    91	
+    92	
+    93	def test_a_wrong_configuration_hash_is_refused():
+    94	    container = {"fresh0": {"container_hash": "c0"}}
+    95	    F.check_configs([_job(cfg="c0")], container)
+    96	    with pytest.raises(SystemExit, match="configuration"):
+    97	        F.check_configs([_job(cfg="c1")], container)
+    98	
+    99	
+   100	def _frozen(tmp_path, monkeypatch, no_check=True):
+   101	    src = _src(tmp_path); out = tmp_path / "out"
+   102	    need = F.inputs(src, [_job()]); F.copy_inputs(src, out, need)
+   103	    j = _job(salt=F.R._sha(b"\x01" * 32))
+   104	    (out / "salt.hex").write_text((b"\x01" * 32).hex())
+   105	    write(F.R.path_of(out, j["id"]), {"stage": "search", "id": j["id"], "provenance": j["provenance"], "upstream": {}})
+   106	    F.prefreeze(out, [j])
+   107	    return out, j
+   108	
+   109	
+   110	def test_acceptance_admits_the_follow_up_freeze(tmp_path, monkeypatch, no_expected_check):
+   111	    out, j = _frozen(tmp_path, monkeypatch)
+   112	    fr = read(F.R.path_of(out, f"freeze/{CTX}"))
+   113	    assert fr["followup"] is True and len(fr["deviations"]) == 3 and j["id"] in fr["records"] and f"reference/{CTX}/F111" in fr["records"]
+   114	    F.accept(out, [j], j["provenance"]["salt_sha256"], {"fresh0": {"container_hash": "c0"}})
+   115	
+   116	
+   117	def test_acceptance_refuses_a_missing_freeze(tmp_path, monkeypatch, no_expected_check):
+   118	    out, j = _frozen(tmp_path, monkeypatch); F.R.path_of(out, f"freeze/{CTX}").unlink()
+   119	    with pytest.raises(SystemExit, match="freeze"):
+   120	        F.accept(out, [j], j["provenance"]["salt_sha256"], {"fresh0": {"container_hash": "c0"}})
+   121	
+   122	
+   123	def test_acceptance_refuses_a_changed_search_record(tmp_path, monkeypatch, no_expected_check):
+   124	    out, j = _frozen(tmp_path, monkeypatch); p = F.R.path_of(out, j["id"]); d = read(p); d["attack"] = {"best_knobs": {"u0": 1}}; write(p, d)
+   125	    with pytest.raises(SystemExit, match="differs"):
+   126	        F.accept(out, [j], j["provenance"]["salt_sha256"], {"fresh0": {"container_hash": "c0"}})
+   127	
+   128	
+   129	def test_acceptance_refuses_a_changed_copied_input(tmp_path, monkeypatch, no_expected_check):
+   130	    out, j = _frozen(tmp_path, monkeypatch); p = F.R.path_of(out, f"{CTX}|F000|D2+H3|profit"); p.chmod(0o644); d = read(p); d["runs"] = 2; write(p, d)
+   131	    with pytest.raises(SystemExit, match="differs"):
+   132	        F.accept(out, [j], j["provenance"]["salt_sha256"], {"fresh0": {"container_hash": "c0"}})
+   133	
+   134	
+   135	def test_acceptance_refuses_a_changed_salt(tmp_path, monkeypatch, no_expected_check):
+   136	    out, j = _frozen(tmp_path, monkeypatch)
+   137	    with pytest.raises(SystemExit, match="salt"):
+   138	        F.accept(out, [j], F.R._sha(b"\x02" * 32), {"fresh0": {"container_hash": "c0"}})
+   139	    (out / "salt.hex").write_text((b"\x02" * 32).hex())
+   140	    with pytest.raises(SystemExit, match="salt"):
+   141	        F.accept(out, [j], j["provenance"]["salt_sha256"], {"fresh0": {"container_hash": "c0"}})
+   142	
+   143	
+   144	def test_the_inventory_lists_every_output_but_itself(tmp_path, monkeypatch, no_expected_check):
+   145	    out, j = _frozen(tmp_path, monkeypatch); inv = F.inventory(out)
+   146	    assert "inventory.json" not in inv["records"] and f"freeze/{CTX}.json" in inv["records"] and "inputs.json" in inv["records"]
+   147	    assert inv["records"]["salt.hex"] == sha_file(out / "salt.hex") and read(out / "inventory.json") == inv
+   148	
+   149	
+   150	PROV = {"cfg_sha256": "c", "budget": [5, 300, 5, 200], "runner_sha256": "r", "salt_sha256": "s", "rule_params_sha256": "p", "root": "h",
+   151	        "seeds_train": [7], "seeds_val": [8], "seeds_eval": [1, 2], "context": "headline@rho0.2", "git_commit": "x"}
+   152	
+   153	
+   154	def _put(base, rid, knobs, gain, runs=100, src="restart_1", arch=3, prov=None, twin=2, eval_up=None):
+   155	    write(F.R.path_of(base, rid), {"stage": "search", "attack": {"best_knobs": knobs, "best_f": 0.1, "best_source": src, "archive": [0] * arch},
+   156	                                   "twin": {"best_f": 0.05, "archive": [0] * twin}, "runs": runs, "upstream": {}, "provenance": prov or PROV})
+   157	    write(F.R.eval_path(base, rid), {"stage": "evaluate", "seeds": [1, 2], "gain": gain,
+   158	                                     "upstream": eval_up or {rid: "new", "reference/headline@rho0.2/F111": "ref", "freeze/headline@rho0.2": "fz"}})
+   159	
+   160	
+   161	def test_reproduction_criterion_exact_parts_and_tolerances(tmp_path):
+   162	    """Plan draft 5, section 3 (a): exact on counts, sources, discrete knobs, hashes; 1e-9 on continuous knobs and gains."""
+   163	    rid = "headline@rho0.2|F111|D2|profit"
+   164	    _put(tmp_path / "a", rid, {"u0": 0.5, "clip": 0}, [0.1, 0.2])
+   165	    _put(tmp_path / "b", rid, {"u0": 0.5 * (1 + 2.6e-13), "clip": 0}, [0.1, 0.2 + 2e-14])
+   166	    rep = F.compare(tmp_path / "a", tmp_path / "b", rid)
+   167	    assert rep["pass"] and not rep["identical"] and rep["max_knob_rel"] == pytest.approx(2.6e-13, rel=1e-3)
+   168	    for name, kw in (("knob tolerance", dict(knobs={"u0": 0.5 * (1 + 2e-9), "clip": 0}, gain=[0.1, 0.2])),
+   169	                     ("gain tolerance", dict(knobs={"u0": 0.5, "clip": 0}, gain=[0.1, 0.2 + 2e-9])),
+   170	                     ("discrete knob", dict(knobs={"u0": 0.5, "clip": 1}, gain=[0.1, 0.2])),
+   171	                     ("episode count", dict(knobs={"u0": 0.5, "clip": 0}, gain=[0.1, 0.2], runs=99)),
+   172	                     ("best_source", dict(knobs={"u0": 0.5, "clip": 0}, gain=[0.1, 0.2], src="control")),
+   173	                     ("archive size", dict(knobs={"u0": 0.5, "clip": 0}, gain=[0.1, 0.2], arch=4))):
+   174	        _put(tmp_path / name, rid, **kw)
+   175	        r = F.compare(tmp_path / "a", tmp_path / name, rid)
+   176	        assert not r["pass"] and any(name in p for p in r["problems"]), name
+   177	    _put(tmp_path / "same", rid, {"u0": 0.5, "clip": 0}, [0.1, 0.2])
+   178	    assert F.compare(tmp_path / "a", tmp_path / "same", rid)["identical"]
+   179	
+   180	
+   181	MAIN = Path("/Users/oemer.demirel/Projects/touchstone/results/v2")
+   182	
+   183	
+   184	@pytest.mark.slow
+   185	@pytest.mark.skipif(not (MAIN / "eval/all/freeze").is_dir(), reason="needs the registered evaluation records")
+   186	def test_smoke_path_for_one_fresh_cell(tmp_path):
+   187	    """Validation (b): the complete path for fresh0 F111 at smoke size: input copies, search, the follow-up freeze,
+   188	    acceptance, evaluation, doubling, inventory; every dependency of the frozen stages resolves."""
+   189	    out = tmp_path / "followup"
+   190	    args = ["--src", str(MAIN / "eval/all"), "--out", str(out), "--draw", str(MAIN / "draw/draw.json"), "--instances", str(MAIN / "draw/instances.json"),
+   191	            "--cfgs", str(MAIN / "deviation/cfg_linux.json"), "--addendum", str(MAIN / "report/addendum.json"), "--report", str(MAIN / "report/report.json"), "--markets", "fresh0", "--smoke"]
+   192	    FF = F
+   193	    real = FF.restored_cells
+   194	    FF.restored_cells = lambda markets=FF.MARKETS: [c for c in real(markets) if c["rule"] == "F111"]
+   195	    try:
+   196	        assert F.main(args) == 0
+   197	    finally:
+   198	        FF.restored_cells = real
+   199	    rid = "fresh0@rho0.2|F111|D2|profit"
+   200	    ev = read(F.R.eval_path(out, rid)); db = read(out / "doubling" / (F.R._safe(rid) + ".json")); inv = read(out / "inventory.json")
+   201	    assert ev["stage"] == "evaluate" and len(ev["gain"]) == 2 and f"freeze/{CTX}" in ev["upstream"]
+   202	    assert db["stage"] == "doubling" and len(db["heldout"]["gain"]) == 2 and f"reference/{CTX}/F111" in db["upstream"]
+   203	    assert inv["records"][f"evaluate/{F.R._safe(rid)}.json"] == sha_file(F.R.eval_path(out, rid))
+   204	    dg = read(out / "diagnostics.json")[f"{CTX}|F111"]
+   205	    assert dg["d2_base"]["knobs"]["x"] == 0 and len(dg["d2_base"]["resets"]) == 2 and "switch_x1" in dg["d2_base"]
+   206	
+   207	
+   208	# ---- Fable 5.2 driver review (2026-11-10) ----
+   209	
+   210	PAIRED = {"runner_sha256": "r", "salt_sha256": "s", "cfg_sha256": "c", "root": "h", "seeds_train": [1], "seeds_val": [2], "seeds_eval": [3],
+   211	          "rule_params_sha256": "p", "context": CTX, "rule": "F111", "git_commit": "d5e602e"}
+   212	
+   213	
+   214	def _paired_src(tmp_path, **override):
+   215	    src = tmp_path / "src"; write(F.R.path_of(src, f"reference/{CTX}/F111"), {"stage": "reference", "provenance": {**PAIRED, **override}})
+   216	    return src
+   217	
+   218	
+   219	def test_f1_each_job_matches_its_reference_provenance(tmp_path):
+   220	    j = {**_job(), "provenance": {**PAIRED, "id": f"{CTX}|F111|D2|profit", "budget": [5, 300, 5, 200], "git_commit": "abc"}}
+   221	    F.check_pairing(_paired_src(tmp_path), [j])                             # the commit may differ; everything else may not
+   222	    for key, bad in (("rule_params_sha256", "p2"), ("runner_sha256", "r2"), ("root", "h2"), ("seeds_eval", [4])):
+   223	        with pytest.raises(SystemExit, match=key):
+   224	            F.check_pairing(_paired_src(tmp_path / key, **{key: bad}), [j])
+   225	
+   226	
+   227	def test_f2_an_unknown_commit_is_refused():
+   228	    with pytest.raises(SystemExit, match="commit"):
+   229	        F.check_commit([{**_job(), "provenance": {"git_commit": "unknown"}}])
+   230	    F.check_commit([{**_job(), "provenance": {"git_commit": "052538c"}}])
+   231	
+   232	
+   233	def test_f2_the_inventory_records_the_environment(tmp_path, monkeypatch, no_expected_check):
+   234	    out, j = _frozen(tmp_path, monkeypatch); env = F.inventory(out)["environment"]
+   235	    assert {"python", "numpy", "machine", "platform", "driver_sha256"} <= set(env)
+   236	
+   237	
+   238	def test_f5_an_output_equal_to_or_inside_the_source_is_refused(tmp_path):
+   239	    src = tmp_path / "copy-of-eval"
+   240	    for bad in (src, src / "followup"):
+   241	        with pytest.raises(SystemExit, match="inside"):
+   242	            F.check_out(bad, src)
+   243	    F.check_out(tmp_path / "followup", src)
+   244	
+   245	
+   246	def test_f6_the_salt_is_checked_before_any_search(tmp_path):
+   247	    (tmp_path / "salt.hex").write_text((b"\x01" * 32).hex())
+   248	    with pytest.raises(SystemExit, match="salt"):
+   249	        F.check_salt(tmp_path, F.R._sha(b"\x02" * 32), [])
+   250	
+   251	
+   252	def test_f7_a_second_different_hash_for_a_known_record_is_refused(tmp_path, no_expected_check):
+   253	    src = _src(tmp_path)                                                      # the X7-SC search lists the D2+H3 search by its hash
+   254	    x7 = F.R.path_of(src, f"{CTX}|F111|X7-SC|profit"); d = read(x7); d["upstream"] = {f"{CTX}|F111|D2+H3|profit": "0" * 64}; write(x7, d)
+   255	    ref = F.R.path_of(src, f"reference/{CTX}/F111"); r = read(ref); r["upstream"][f"{CTX}|F111|X7-SC|profit"] = sha_file(x7); write(ref, r)
+   256	    fr = F.R.path_of(src, f"freeze/{CTX}"); f = read(fr); f["records"][f"reference/{CTX}/F111"] = sha_file(ref)
+   257	    f["records"][f"{CTX}|F111|X7-SC|profit"] = sha_file(x7); write(fr, f)
+   258	    with pytest.raises(SystemExit, match="different hashes"):
+   259	        F.inputs(src, [_job()])
+   260	
+   261	
+   262	def test_f7_the_original_freeze_must_be_cuts_3_with_h4(tmp_path, no_expected_check):
+   263	    src = _src(tmp_path); fr = F.R.path_of(src, f"freeze/{CTX}"); f = read(fr); f["cuts"] = 2; write(fr, f)
+   264	    with pytest.raises(SystemExit, match="cuts"):
+   265	        F.inputs(src, [_job()])
+   266	
+   267	
+   268	def test_f8_acceptance_recomputes_the_inputs_from_the_source(tmp_path, monkeypatch, no_expected_check):
+   269	    out, j = _frozen(tmp_path, monkeypatch)
+   270	    F.accept(out, [j], j["provenance"]["salt_sha256"], {"fresh0": {"container_hash": "c0"}}, src=tmp_path / "src")
+   271	    p = out / "inputs.json"; d = read(p); d.pop(f"{CTX}|F000|D2+H3|profit"); write(p, d)
+   272	    with pytest.raises(SystemExit, match="inputs"):
+   273	        F.accept(out, [j], j["provenance"]["salt_sha256"], {"fresh0": {"container_hash": "c0"}}, src=tmp_path / "src")
+   274	
+   275	
+   276	# ---- Plan section 4 diagnostics (draft 5) ----
+   277	
+   278	class _Ep:
+   279	    def __init__(self, entity_of, gen, rnd, claims_focal, bans):
+   280	        import numpy as np
+   281	        from types import SimpleNamespace as NS
+   282	        self.entity_of, self.identity_generation, self.identity_round = entity_of, gen, rnd
+   283	        self.claims = np.array([[0.9, c] for c in claims_focal]); self.sstar = 10.0
+   284	        self.history = tuple(NS(consequences=NS(bans=b)) for b in bans)
+   285	
+   286	
+   287	def test_reset_stats_count_replacements_rounds_and_bans():
+   288	    nan = float("nan")
+   289	    eps = [_Ep((0, 1, 1, 1), (0, 0, 1, 2), (0, 0, 5, 9), [0.5, nan, 0.5, nan], [{}, {1: 10}, {}, {2: 10}]),    # two resets
+   290	           _Ep((0, 1), (0, 0), (0, 0), [0.5, 0.5, 0.5, 0.5], [{}, {}, {}, {}])]                               # none
+   291	    st = F.reset_stats(eps, focal=1)
+   292	    assert st["resets"] == [2, 0] and st["reset_rounds"] == [[5, 9], []] and st["no_offer_rounds"] == [2, 0] and st["ban_rounds"] == [20, 0]
+   293	    assert st["mean_resets"] == 1.0 and st["p_any_reset"] == 0.5
+   294	
+   295	
+   296	def test_switch_knobs_set_only_x():
+   297	    k = {"u0": 0.1, "m0": 0.2, "s": 0.3, "d": 0.4, "r": 0.5, "w": 0.6, "x": 1, "clip": 0}
+   298	    assert F.with_x(k, 0) == {**k, "x": 0}
+   299	    d2 = {kk: v for kk, v in k.items() if kk != "x"}
+   300	    assert F.with_x(d2, 1) == {**d2, "x": 1}                                   # a D2 winner embedded in D2+H3 with replacement on
+   301	
+   302	
+   303	@pytest.mark.skipif(not (MAIN / "eval/all/freeze").is_dir(), reason="needs the registered evaluation records")
+   304	def test_diagnostics_on_the_registered_headline_cells(tmp_path):
+   305	    """The diagnostic runs on headline F111, whose D2 and D2+H3 records are registered, at smoke size (two seeds)."""
+   306	    import json as _j
+   307	    root = _j.loads((MAIN / "draw/draw.json").read_text())["hash"]; salt = _j.loads((MAIN / "draw/instances.json").read_text())["salt_sha256"]
+   308	    F.R.install_salt(root, tmp_path)
+   309	    j = F.R.job(F.R.market("headline", root, 0.2, smoke=True, salt_sha256=salt), "F111", "D2", "profit", smoke=True,
+   310	                params=_j.loads((F.ROOT / "experiments/v2/params.json").read_text()))
+   311	    rep = _j.loads((MAIN / "report/report.json").read_text())
+   312	    row = F.diagnostics(MAIN / "eval/all", MAIN / "eval/all", [j], rep)["headline@rho0.2|F111"]
+   313	    assert row["d2_base"]["resets"] == [0, 0] and row["d2_base"]["knobs"]["x"] == 0
+   314	    assert set(row["d2h3_base"]["switch_x0"]) == {"identical", "effect"} and "effect" in row["d2_base"]["switch_x1"]
+   315	
+   316	
+   317	def test_doubling_comparison_uses_the_draft5_criterion(tmp_path):
+   318	    rid = "fresh0@rho0.2|F111|D2+H3|profit"; p = lambda b: b / "doubling" / (F.R._safe(rid) + ".json")
+   319	    base = {"stage": "doubling", "attack_change": 0.01, "reference_change": 0.0, "incomplete": True,
+   320	            "heldout": {"knobs": {"u0": 0.5, "x": 1, "clip": 0}, "seeds": [1, 2], "gain": [0.1, 0.2]}}
+   321	    write(p(tmp_path / "a"), base)
+   322	    write(p(tmp_path / "b"), {**base, "attack_change": 0.01 + 1e-15, "heldout": {**base["heldout"], "knobs": {"u0": 0.5 + 1e-14, "x": 1, "clip": 0}}})
+   323	    assert F.compare_doubling(tmp_path / "a", tmp_path / "b", rid)["pass"]
+   324	    write(p(tmp_path / "c"), {**base, "incomplete": False})
+   325	    assert "flag differs" in F.compare_doubling(tmp_path / "a", tmp_path / "c", rid)["problems"]
+   326	    write(p(tmp_path / "d"), {**base, "heldout": {**base["heldout"], "gain": [0.1, 0.3]}})
+   327	    assert not F.compare_doubling(tmp_path / "a", tmp_path / "d", rid)["pass"]
+   328	
+   329	
+   330	def test_compare_checks_provenance_twin_dependencies_and_finiteness(tmp_path):
+   331	    """Internal review r4: the exact parts include the provenance keys, the twin archive, the evaluation dependency ids and
+   332	    the reference hash, and every value must be finite."""
+   333	    rid = "headline@rho0.2|F111|D2|profit"; k = {"u0": 0.5, "clip": 0}
+   334	    _put(tmp_path / "a", rid, k, [0.1, 0.2])
+   335	    cases = {"runner_sha256": dict(prov={**PROV, "runner_sha256": "r2"}), "seeds_train": dict(prov={**PROV, "seeds_train": [9]}),
+   336	             "twin archive size": dict(twin=0), "evaluation dependency": dict(eval_up={rid: "new", "freeze/headline@rho0.2": "fz"}),
+   337	             "reference hash": dict(eval_up={rid: "new", "reference/headline@rho0.2/F111": "ref2", "freeze/headline@rho0.2": "fz"}),
+   338	             "nonfinite": dict()}
+   339	    for name, kw in cases.items():
+   340	        gain = [0.1, float("nan")] if name == "nonfinite" else [0.1, 0.2]
+   341	        _put(tmp_path / name, rid, k, gain, **kw)
+   342	        r = F.compare(tmp_path / "a", tmp_path / name, rid)
+   343	        assert not r["pass"] and not r["identical"] and any(name in p for p in r["problems"]), (name, r["problems"])
+   344	    _put(tmp_path / "git", rid, k, [0.1, 0.2], prov={**PROV, "git_commit": "y"})       # the commit may differ
+   345	    assert F.compare(tmp_path / "a", tmp_path / "git", rid)["pass"]
+   346	
+   347	
+   348	def test_f7_freeze_without_explicit_cuts_fields_is_refused(tmp_path, no_expected_check):
+   349	    src = _src(tmp_path); fr = F.R.path_of(src, f"freeze/{CTX}"); f = read(fr); f.pop("h4_excluded"); write(fr, f)
+   350	    with pytest.raises(SystemExit, match="cuts"):
+   351	        F.inputs(src, [_job()])
+   352	
+   353	
+   354	def test_f7_copied_search_hash_must_match_the_original_freeze(tmp_path, no_expected_check):
+   355	    src = _src(tmp_path); fr = F.R.path_of(src, f"freeze/{CTX}"); f = read(fr); f["records"][f"{CTX}|F000|D2+H3|profit"] = "1" * 64; write(fr, f)
+   356	    with pytest.raises(SystemExit, match="freeze"):
+   357	        F.inputs(src, [_job()])
+   358	
+   359	
+   360	def test_reproduction_runs_the_preflight_before_any_search(tmp_path, monkeypatch):
+   361	    calls = []
+   362	    monkeypatch.setattr(F.R, "market", lambda *a, **k: {"label": "headline"})
+   363	    monkeypatch.setattr(F.R, "job", lambda *a, **k: {"id": F.REPRO, "context": "headline@rho0.2", "rule": "F111", "provenance": {}})
+   364	    monkeypatch.setattr(F, "run_stage", lambda *a, **k: calls.append("search"))
+   365	    def boom(*a, **k):
+   366	        raise SystemExit("reset follow-up refused: preflight")
+   367	    monkeypatch.setattr(F, "preflight", boom)
+   368	    with pytest.raises(SystemExit, match="preflight"):
+   369	        F.reproduce(tmp_path / "src", tmp_path / "out", "root", {}, "salt")
+   370	    assert calls == []
+   371	
+   372	
+   373	def test_environment_names_the_numerical_stack():
+   374	    env = F.environment()
+   375	    assert {"python", "numpy", "scipy", "cma", "blas", "cpu", "machine", "platform", "driver_sha256"} <= set(env)
+rg: sim/engine.py: No such file or directory (os error 2)
+sim/policies/identity.py:10:    after a failed audit so the entity re-enters under a fresh identity in that
+scripts/revision_v2.py:5:bank, then a complete freeze of the context), then evaluate, cross, and doubling (continued searches, diagnostic only),
+scripts/revision_v2.py:38:from sim.policies.identity import h3_family  # noqa: E402
+scripts/revision_v2.py:45:from sim.rng import SALT_ENV, load_identity_salt  # noqa: E402
+scripts/revision_v2.py:51:CATEGORIES = ("abstain", "honest_max", "twin_search", "attack_projection", "archive_clip1", "archive_truthful_clip0", "bank")
+scripts/revision_v2.py:76:    """Write the fresh root's identity salt under --out and point the harness at it before any episode."""
+scripts/revision_v2.py:77:    p = Path(out) / "salt.hex"; p.parent.mkdir(parents=True, exist_ok=True); p.write_text(INST.identity_salt_hex(root))
+scripts/revision_v2.py:100:def market(label: str, root: str, rho: float = 0.2, dev: bool = False, smoke: bool = False, cfg=None, commit: str | None = None,
+scripts/revision_v2.py:176:def job(mkt: dict, rule: str, family: str, objective: str = "profit", c: int | None = None, schedule: str | None = None,
+scripts/revision_v2.py:196:            "salt_sha256": mkt.get("salt_sha256") or _sha(load_identity_salt()), "root": mkt["root"], "seeds_train": mkt["seeds_train"],
+scripts/revision_v2.py:355:        bank = []
+scripts/revision_v2.py:357:            for other in MAN.bank_rules(manifest_ctx(ctx), fname, cuts, h4_excluded):
+scripts/revision_v2.py:362:                    raise SystemExit(f"reference {ctx}/{rule}: needs bank source {orid}")
+scripts/revision_v2.py:363:                upstream[orid] = sha_file(path_of(out, orid)); bank.append(fam.project(orec["attack"]["best_knobs"]))
+scripts/revision_v2.py:365:        cands = reference_candidates(cell, fam, search_from_json(rec["attack"]), search_from_json(rec["twin"]), bank, tuple(lk["reference_order"]))
+scripts/revision_v2.py:367:            cat = "bank" if c.name.startswith("bank_") else c.name
+scripts/revision_v2.py:591:            ids |= {_menu_id(ctx, o, f) for f in MENU for o in MAN.bank_rules(manifest_ctx(ctx), f, cuts, h4_excluded) if o != rest}
+scripts/revision_v2.py:595:    if kind == "bank":
+scripts/revision_v2.py:597:    if kind == "bank_train":
+scripts/revision_v2.py:598:        return {f"bank/{ctx}/{rest}"} | {f"reference/{ctx}/{r}" for r in MAN.FACTORIAL if cell_id(ctx, r, rest, "profit") in by}
+scripts/revision_v2.py:600:        return {f"bank_train/{ctx}/{rest.rsplit('/', 1)[1]}"}
+scripts/revision_v2.py:635:    if kind in ("bank", "bank_train"):
+scripts/revision_v2.py:664:    """Envelope family choices (design 9.3 Q3, on training gains) and the fixed-attack bank (design 6.6); a valid record
+scripts/revision_v2.py:670:        if kind in ("envelope", "bank", "bank_train", "envelope_select", "welfare_select"):
+scripts/revision_v2.py:675:        if kind in ("bank_train", "envelope_select", "welfare_select"):
+scripts/revision_v2.py:689:        elif kind == "bank":
+scripts/revision_v2.py:695:            write(path_of(out, r), {"stage": "bank", "provenance": aux_provenance(any_job["mkt"], family=fname), "attacks": attacks, "upstream": up})
+scripts/revision_v2.py:700:    if kind == "bank_train":
+scripts/revision_v2.py:701:        bank = read(path_of(out, f"bank/{ctx}/{rest}")); by_rule, rules = _cross_rules(ctx, rest, catalog, bank); cache = SeedCache(); mat = []
+scripts/revision_v2.py:707:                att = run_focal(cell, lambda: fam.make(dict(bank["attacks"][a])), cache)
+scripts/revision_v2.py:712:        rule, fam = rest.rsplit("/", 1); train = read(path_of(out, f"bank_train/{ctx}/{fam}"))
+scripts/revision_v2.py:790:def stage_evaluate(job: dict, out: Path) -> dict:
+scripts/revision_v2.py:818:def _cross_rules(ctx: str, family: str, catalog: list[dict], bank: dict) -> tuple[dict, list]:
+scripts/revision_v2.py:820:    return by_rule, [r for r in MAN.FACTORIAL if r in by_rule and r in bank["attacks"]]
+scripts/revision_v2.py:825:    bank = read(path_of(out, f"bank/{ctx}/{family}"))
+scripts/revision_v2.py:826:    if bank is None:
+scripts/revision_v2.py:827:        raise SystemExit(f"cross {ctx}/{family}: no fixed-attack bank")
+scripts/revision_v2.py:828:    if read(path_of(out, f"bank_train/{ctx}/{family}")) is None:
+scripts/revision_v2.py:829:        raise SystemExit(f"cross {ctx}/{family}: no training-seed bank matrix (frozen before the evaluation)")
+scripts/revision_v2.py:830:    _, rules = _cross_rules(ctx, family, catalog, bank)
+scripts/revision_v2.py:831:    ids = {f"freeze/{ctx}", f"bank/{ctx}/{family}", f"bank_train/{ctx}/{family}"} | {f"reference/{ctx}/{r}" for r in rules}
+scripts/revision_v2.py:837:    bank = read(path_of(out, f"bank/{ctx}/{family}")); by_rule, rules = _cross_rules(ctx, family, catalog, bank); cache = SeedCache(); mat, rows, prof = [], {}, {}
+scripts/revision_v2.py:845:            att = run_focal(cell, lambda: fam.make(dict(bank["attacks"][a])), cache); ref = run_focal(cell, cand.policy_factory, cache)
+scripts/revision_v2.py:884:def stage_doubling(job: dict, out: Path, cuts: int = 0, h4_excluded: bool = False) -> dict:
+scripts/revision_v2.py:1058:        _, rules = _cross_rules(ctx, fam, catalog, read(path_of(out, f"bank/{ctx}/{fam}")))
+scripts/revision_v2.py:1182:    """A cross record covers every (attack, rule) pair of the bank with n seeds, and its matrix holds the row means."""
+scripts/revision_v2.py:1184:        return "attacks or rules differ from the bank's factorial rules"
+scripts/revision_v2.py:1266:                bank = read(path_of(out, f"bank/{ctx}/{fam}")) or {"attacks": {}}
+scripts/revision_v2.py:1267:                _, rules = _cross_rules(ctx, fam, catalog, bank); n = len(next(j for j in catalog if j["context"] == ctx)["mkt"]["seeds_eval"])
+scripts/revision_v2.py:1355:        if decision is not None:                                   # the recorded identity only; the bundle is not loaded
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "nl -ba docs/revision/followup/reset_followup_v2.py | sed -n '305,490p'; sed -n '880,942p' scripts/revision_v2.py; sed -n '1,105p' docs/revision/followup/test_reset_followup.py; ls -ld .venv /Users/oemer.demirel/Projects/touchstone/.venv; ls /Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro /Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-linux/run" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+   305	                row[k]["switch_x0"] = {"identical": False, "effect": float(np.mean(runs[k].normalized - off.normalized))}
+   306	        on = run_focal(cell, lambda: fam.make(with_x(pols["d2_base"], 1)), cache)
+   307	        row["d2_base"]["switch_x1"] = {"effect": float(np.mean(on.normalized - runs["d2_base"].normalized))}
+   308	        res[f"{j['context']}|{j['rule']}"] = row
+   309	    return res
+   310	
+   311	
+   312	REPRO = "headline@rho0.2|F111|D2|profit"
+   313	
+   314	
+   315	KNOB_TOL, GAIN_TOL = 1e-9, 1e-9                      # plan draft 5, section 3 (a)
+   316	
+   317	
+   318	EXACT_PROV = ("runner_sha256", "salt_sha256", "cfg_sha256", "rule_params_sha256", "root", "seeds_train", "seeds_val", "seeds_eval", "context", "budget")
+   319	
+   320	
+   321	def _finite(*xs) -> bool:
+   322	    import math
+   323	    return all(math.isfinite(v) for x in xs for v in (x if isinstance(x, (list, tuple)) else [x]) if isinstance(v, (int, float)))
+   324	
+   325	
+   326	def compare(src, out, rid: str = REPRO) -> dict:
+   327	    """Validation (a), plan draft 5: exact on the provenance keys (the commit may differ), the episode count, the attack and
+   328	    twin archive sizes, `best_source`, the discrete knobs, the search and evaluation dependency ids, the reference hash and
+   329	    the seeds; continuous knobs within KNOB_TOL relative and per-seed gains within GAIN_TOL absolute; every value finite.
+   330	    `identical` additionally needs bit-identical knobs and gains."""
+   331	    a, b = read(R.path_of(src, rid)), read(R.path_of(out, rid)); ea, eb = read(R.eval_path(src, rid)), read(R.eval_path(out, rid))
+   332	    if None in (a, b, ea, eb):
+   333	        return {"pass": False, "identical": False, "problems": ["a record is missing"]}
+   334	    problems = []
+   335	    ka, kb = a["attack"]["best_knobs"], b["attack"]["best_knobs"]
+   336	    if not _finite(list(ka.values()), list(kb.values()), ea["gain"], eb["gain"]):
+   337	        problems.append("nonfinite value")
+   338	    if set(ka) != set(kb):
+   339	        problems.append("knob names differ")
+   340	    disc = [k for k in ka if isinstance(ka[k], int) and not isinstance(ka[k], bool)]
+   341	    if any(ka[k] != kb.get(k) for k in disc):
+   342	        problems.append("discrete knob differs")
+   343	    rel = max((abs(ka[k] - kb[k]) / max(abs(ka[k]), 1e-300) for k in ka if k not in disc and k in kb), default=0.0)
+   344	    if not rel <= KNOB_TOL:
+   345	        problems.append(f"knob tolerance exceeded ({rel:.3g})")
+   346	    for k in EXACT_PROV:
+   347	        if a["provenance"].get(k) != b["provenance"].get(k):
+   348	            problems.append(f"{k} differs")
+   349	    ua, ub = ea.get("upstream") or {}, eb.get("upstream") or {}
+   350	    refs = sorted(u for u in ua if u.startswith("reference/"))
+   351	    for what, x, y in (("episode count", a.get("runs"), b.get("runs")), ("best_source", a["attack"].get("best_source"), b["attack"].get("best_source")),
+   352	                       ("archive size", len(a["attack"].get("archive", [])), len(b["attack"].get("archive", []))),
+   353	                       ("twin archive size", len((a.get("twin") or {}).get("archive", [])), len((b.get("twin") or {}).get("archive", []))),
+   354	                       ("dependency set", sorted(a.get("upstream") or {}), sorted(b.get("upstream") or {})),
+   355	                       ("evaluation dependency set", sorted(ua), sorted(ub)), ("reference hash", [ua.get(r) for r in refs], [ub.get(r) for r in refs]),
+   356	                       ("seeds", ea["seeds"], eb["seeds"])):
+   357	        if x != y:
+   358	            problems.append(f"{what} differs")
+   359	    gd = max((abs(x - y) for x, y in zip(ea["gain"], eb["gain"])), default=0.0) if len(ea["gain"]) == len(eb["gain"]) else float("inf")
+   360	    if not gd <= GAIN_TOL:
+   361	        problems.append(f"gain tolerance exceeded ({gd:.3g})")
+   362	    return {"pass": not problems, "identical": not problems and ka == kb and ea["gain"] == eb["gain"], "max_knob_rel": rel, "max_gain_abs": gd, "problems": problems}
+   363	
+   364	
+   365	def compare_doubling(src, out, rid: str) -> dict:
+   366	    """Validation (d), plan draft 5: a doubling record against the registered one; exact on the flag, the seeds, and the
+   367	    discrete knobs; 1e-9 on the continuous knobs, the changes, and the held-out per-seed gains."""
+   368	    p = lambda b: Path(b) / "doubling" / (R._safe(rid) + ".json")
+   369	    a, b = read(p(src)), read(p(out))
+   370	    if a is None or b is None:
+   371	        return {"pass": False, "problems": ["a record is missing"]}
+   372	    problems = []
+   373	    if bool(a.get("incomplete")) != bool(b.get("incomplete")):
+   374	        problems.append("flag differs")
+   375	    ha, hb = a["heldout"], b["heldout"]
+   376	    if ha["seeds"] != hb["seeds"]:
+   377	        problems.append("seeds differ")
+   378	    ka, kb = ha["knobs"], hb["knobs"]; disc = [k for k in ka if isinstance(ka[k], int) and not isinstance(ka[k], bool)]
+   379	    if set(ka) != set(kb) or any(ka[k] != kb[k] for k in disc):
+   380	        problems.append("discrete knob differs")
+   381	    rel = max((abs(ka[k] - kb[k]) / max(abs(ka[k]), 1e-300) for k in ka if k not in disc and k in kb), default=0.0)
+   382	    chg = max(abs(a.get(k, 0.0) - b.get(k, 0.0)) for k in ("attack_change", "reference_change"))
+   383	    gd = max((abs(x - y) for x, y in zip(ha["gain"], hb["gain"])), default=0.0) if len(ha["gain"]) == len(hb["gain"]) else float("inf")
+   384	    if rel > KNOB_TOL or chg > GAIN_TOL or gd > GAIN_TOL:
+   385	        problems.append(f"tolerance exceeded (knobs {rel:.3g}, changes {chg:.3g}, gains {gd:.3g})")
+   386	    return {"pass": not problems, "max_knob_rel": rel, "max_change_abs": chg, "max_gain_abs": gd, "problems": problems}
+   387	
+   388	
+   389	def reproduce_doubling(src, out, rid: str, root: str, cfgs: dict, params: dict, salt_sha256: str) -> dict:
+   390	    """Rerun the registered doubling check of one fresh-market D2+H3 cell with the frozen stage, against copies of its inputs."""
+   391	    label, rest = rid.split("@", 1); rule = rid.split("|")[1]
+   392	    j = R.job(R.market(label, root, 0.2, cfg=cfgs[label], salt_sha256=salt_sha256), rule, "D2+H3", "profit", params=params)
+   393	    need = inputs(src, [j]); need[j["id"]] = sha_file(R.path_of(src, j["id"]))
+   394	    copy_inputs(src, out, need)
+   395	    rec = R.stage_doubling(j, out, CUTS, H4_EXCLUDED)
+   396	    write(Path(out) / "doubling" / (R._safe(rid) + ".json"), {"stage": "doubling", "id": rid, **rec})
+   397	    return compare_doubling(src, out, rid)
+   398	
+   399	
+   400	def reproduce(src, out, root: str, params: dict, salt_sha256: str, workers: int = 1) -> dict:
+   401	    """Rerun the registered headline F111 D2 search and evaluation through this script's path (input copies, freeze,
+   402	    acceptance) and compare with the registered records."""
+   403	    mkt = R.market("headline", root, 0.2, salt_sha256=salt_sha256)
+   404	    j = R.job(mkt, "F111", "D2", "profit", params=params)
+   405	    reg = read(R.path_of(src, REPRO))
+   406	    container = {"headline": {"container_hash": (reg or {}).get("provenance", {}).get("cfg_sha256")}}
+   407	    preflight(out, src, [j], salt_sha256, container)
+   408	    copy_inputs(src, out, inputs(src, [j]))
+   409	    run_stage("search", [j], out, workers); prefreeze(out, [j])
+   410	    accept(out, [j], salt_sha256, {"headline": {"container_hash": reg["provenance"]["cfg_sha256"]}})
+   411	    run_stage("evaluate", [j], out, workers)
+   412	    rep = compare(src, out); write(Path(out) / "gate.json", {"stage": "reproduction gate", "cell": REPRO, **rep}); inventory(out)
+   413	    return rep
+   414	
+   415	
+   416	def main(argv=None) -> int:
+   417	    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+   418	    ap.add_argument("--src", default=str(EVAL_ALL)); ap.add_argument("--out", required=True)
+   419	    ap.add_argument("--draw", default=str(ROOT / "results/v2/draw/draw.json")); ap.add_argument("--instances", default=str(ROOT / "results/v2/draw/instances.json"))
+   420	    ap.add_argument("--cfgs", default=str(ROOT / "results/v2/deviation/cfg_linux.json")); ap.add_argument("--addendum", default=str(ROOT / "results/v2/report/addendum.json"))
+   421	    ap.add_argument("--params", default=str(ROOT / "experiments/v2/params.json")); ap.add_argument("--markets", default=",".join(MARKETS))
+   422	    ap.add_argument("--stage", default="all", choices=("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory", "all"))
+   423	    ap.add_argument("--workers", type=int, default=1); ap.add_argument("--smoke", action="store_true")
+   424	    ap.add_argument("--reproduce", action="store_true", help=f"validation (a): rerun {REPRO} and compare (plan draft 5)")
+   425	    ap.add_argument("--reproduce-doubling", dest="repro_dbl", default=None, help="validation (d): a registered D2+H3 doubling cell id")
+   426	    ap.add_argument("--report", default=str(ROOT / "results/v2/report/report.json"), help="for the diagnostics stage")
+   427	    a = ap.parse_args(argv); out = Path(a.out); check_out(out, a.src)
+   428	    from sim.records import cfg_from_dict
+   429	    root = json.loads(Path(a.draw).read_text())["hash"]; salt_sha = json.loads(Path(a.instances).read_text())["salt_sha256"]
+   430	    container = json.loads(Path(a.addendum).read_text())["deviations"]["configs"]
+   431	    cfgs = {k: cfg_from_dict(v) for k, v in json.loads(Path(a.cfgs).read_text()).items()}
+   432	    out.mkdir(parents=True, exist_ok=True); R.install_salt(root, out)
+   433	    if a.repro_dbl:
+   434	        rep = reproduce_doubling(a.src, out, a.repro_dbl, root, cfgs, json.loads(Path(a.params).read_text()), salt_sha)
+   435	        print(json.dumps({"reproduce_doubling": a.repro_dbl, **rep}))
+   436	        return 0 if rep["pass"] else 1
+   437	    if a.reproduce:
+   438	        rep = reproduce(a.src, out, root, json.loads(Path(a.params).read_text()), salt_sha, a.workers)
+   439	        print(json.dumps({"reproduce": REPRO, **rep}))
+   440	        return 0 if rep["pass"] else 1
+   441	    jobs = build_jobs(root, cfgs, json.loads(Path(a.params).read_text()), salt_sha, tuple(a.markets.split(",")), a.smoke)
+   442	    check_configs(jobs, container); check_salt(out, salt_sha, jobs); check_commit(jobs); check_code()
+   443	    if not a.smoke:
+   444	        check_pairing(a.src, jobs)
+   445	    steps = ("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory") if a.stage == "all" else (a.stage,)
+   446	    for st in steps:
+   447	        if st == "inputs":
+   448	            copy_inputs(a.src, out, inputs(a.src, jobs))
+   449	        elif st == "search":
+   450	            run_stage("search", jobs, out, a.workers)
+   451	        elif st == "freeze":
+   452	            prefreeze(out, jobs)
+   453	        elif st == "diagnostics":
+   454	            write(out / "diagnostics.json", diagnostics(a.src, out, jobs, json.loads(Path(a.report).read_text())))
+   455	        elif st in ("evaluate", "doubling"):
+   456	            accept(out, jobs, salt_sha, container, src=a.src); run_stage(st, jobs, out, a.workers)
+   457	        else:
+   458	            inventory(out)
+   459	        print(json.dumps({"stage": st, "jobs": len(jobs)}), flush=True)
+   460	    return 0
+   461	
+   462	
+   463	if __name__ == "__main__":
+   464	    sys.exit(main())
+    rep["incomplete"] = bool(any(c >= THRESHOLD - 1e-12 for c in changes) or rep.get("feasibility_transition", False))
+    return rep
+
+
+def stage_doubling(job: dict, out: Path, cuts: int = 0, h4_excluded: bool = False) -> dict:
+    T, L = constants(job); cache = SeedCache(); st = settings(job); cell = train_cell(job); rec = read(path_of(out, job["id"]))
+    if job["objective"] == "profit":
+        fam = family_for(job["family"], T, L, job.get("h4")); orig = search_from_json(rec["attack"])
+        new = continue_search(Objective(cell, fam, cache), fam, st, orig)
+        _, rrec, _ = reference_of(job, out)
+        cands, fams, _ = menu(job, out, cuts, h4_excluded)
+        lk = load_locked(); extra = reference_candidates(cell, fam, new, search_from_json(rec["twin"]), [], tuple(lk["reference_order"]))
+        newref = select_reference(cell, cands + [c for c in extra if c.knobs is not None], cache)
+        cand, _, _ = reference_of(job, out)                    # held-out diagnostic (design 6.5): the frozen reference, evaluation seeds
+        return {**doubling_report("profit", {"attack_f": orig.best_f, "ref_f": float(np.mean(rrec["per_seed_normalized"]))},
+                                  {"attack_f": max(new.best_f, orig.best_f), "ref_f": float(np.mean(newref.per_seed_normalized))}),
+                "heldout": {"knobs": dict(new.best_knobs), "seeds": list(eval_cell(job).seeds),
+                            **gain_fields(eval_cell(job), fam, new.best_knobs, cand, SeedCache())}}
+    if job["objective"] in ("W0", "W1"):
+        fam = family_for(job["family"], T, L); orig = search_from_json(rec["welfare"])
+        ref = np.asarray(reference_of(job, out)[1]["per_seed_normalized"]) if job["objective"] == "W1" else None
+        obj = WelfareObjective(cell, fam, cache, ref_normalized=ref)
+        obj.extra.update({exact_key(e["knobs"]): {k: v for k, v in e.items() if k != "knobs"} for e in rec["extras"]})
+        continue_search(obj, fam, st, orig)
+        sel_old = rec["selected"]
+        old_eff = obj.extra[exact_key(sel_old)]["eff"] if sel_old is not None else None
+        sel = select_w1(obj) if job["objective"] == "W1" else dict(max(obj.archive.values(), key=lambda e: e.f).knobs)
+        new_eff = obj.extra[exact_key(sel)]["eff"] if sel is not None else None
+        held = None
+        if sel is not None:
+            fr = run_focal(eval_cell(job), lambda: fam.make(dict(sel)), SeedCache())
+            held = {"knobs": dict(sel), "seeds": list(eval_cell(job).seeds), "eff": gross_efficiency(fr.results).tolist()}
+        return {**doubling_report("w1" if job["objective"] == "W1" else "welfare", {"eff": old_eff, "feasible": sel_old is not None},
+                                  {"eff": new_eff, "feasible": sel is not None}), "heldout": held}
+    m = job["mkt"]; fam = family_for(job["family"], T, L); orig = search_from_json(rec["coalition"])
+    if job["objective"] == "total":
+        obj = _coalition_objective(job, "total", np.zeros((len(_members(job)), len(m["seeds_train"]))), cache)
+        new = continue_search(obj, fam, st, orig)
+        return {**doubling_report("coalition", {"f": orig.best_f}, {"f": max(new.best_f, orig.best_f)}),
+                "heldout": _coalition_heldout(job, _desc(job, new.best_knobs), out)}
+    ctx, tag = job["context"], _coalition_tag(job)                  # G_min: every score against the final reference (design 6.3)
+    ref = np.asarray(read(path_of(out, f"joint_reference/{ctx}/{tag}"))["member_normalized"])
+    sel = read(path_of(out, f"coalition_select/{ctx}/{tag}"))["winners"][job["id"]]
+    orig = rescore_min(orig, rec["rows"], ref)
+    obj = _coalition_objective(job, "min", ref, cache)
+    new = continue_search(obj, fam, st, orig)
+    win, f = (_desc(job, new.best_knobs), new.best_f) if new.best_f > sel["score"] else (sel["descriptor"], sel["score"])   # step 6's winner stays in
+    return {**doubling_report("coalition", {"f": sel["score"]}, {"f": f}), "heldout": _coalition_heldout(job, win, out)}
+
+
+def _coalition_heldout(job: dict, desc: dict, out: Path) -> dict:
+    """The doubled coalition winner (one descriptor, the same one the objective change reports) on the evaluation seeds
+    against the final joint reference (design 6.5)."""
+    jrec = read(path_of(out, f"joint_reference/{job['context']}/{_coalition_tag(job)}")); seeds = list(eval_cell(job).seeds); cache = SeedCache()
+    g = _rows_of(job, desc, seeds, cache) - _rows_of(job, jrec["descriptor"], seeds, cache)
+    return {"descriptor": desc, "knobs": None if desc["knobs"] is None else dict(desc["knobs"]), "seeds": seeds, "member_gain": g.tolist(),
+            "total": float(g.mean(axis=1).sum()), "min": float(g.mean(axis=1).min())}
+
+
+def rescore_min(orig, rows: list[dict], ref: np.ndarray):
+    """The search's archive with every G_min score recomputed against `ref` from the stored member rows (design 6.3)."""
+    by = {exact_key(e["knobs"]): np.asarray(e["member_rows"]) for e in rows}
+    arch = {}
+"""The reset follow-up driver (docs/revision/reset-experiment-plan.md, draft 4, section 3): the 18 restored cells, the
+copied inputs with their hash checks, the refusals, the follow-up freeze and its acceptance check, and the inventory."""
+import json
+from pathlib import Path
+
+import pytest
+
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import reset_followup_v2 as F  # noqa: E402
+from sim.records_v2 import read, sha_file, write
+
+CTX = "fresh0@rho0.2"
+
+
+def test_the_18_cells_are_exactly_the_cut_d2_cells():
+    cs = F.restored_cells()
+    assert len(cs) == 18 and {c["family"] for c in cs} == {"D2"} and {c["rule"] for c in cs} == {"F000", "F111", "C*"}
+    assert {c["market"] for c in cs} == {f"fresh{i}" for i in range(6)} and {c["rho"] for c in cs} == {0.2}
+    from sim import manifest_v2 as MAN
+    kept = {c["id"] for c in MAN.effective(F.CUTS, F.H4_EXCLUDED)}
+    assert not kept & {c["id"] for c in cs}                                   # every one was removed by cut 3
+
+
+def test_an_output_inside_eval_all_is_refused(tmp_path, monkeypatch):
+    monkeypatch.setattr(F, "EVAL_ALL", tmp_path / "eval" / "all")
+    for bad in (tmp_path / "eval" / "all", tmp_path / "eval" / "all" / "followup"):
+        with pytest.raises(SystemExit):
+            F.check_out(bad)
+    F.check_out(tmp_path / "followup-reset")
+
+
+def _src(tmp_path) -> Path:
+    """A minimal original output: two menu searches, one bank source, the reference, and the context's freeze."""
+    src = tmp_path / "src"
+    ids = [f"{CTX}|F111|D2+H3|profit", f"{CTX}|F111|X7-SC|profit", f"{CTX}|F000|D2+H3|profit"]
+    for i in ids:
+        write(F.R.path_of(src, i), {"stage": "search", "id": i, "upstream": {}})
+    x7 = F.R.path_of(src, ids[1]); write(x7, {"stage": "search", "id": ids[1], "upstream": {ids[0]: sha_file(F.R.path_of(src, ids[0]))}})
+    ref = f"reference/{CTX}/F111"
+    write(F.R.path_of(src, ref), {"stage": "reference", "upstream": {i: sha_file(F.R.path_of(src, i)) for i in ids}})
+    write(F.R.path_of(src, f"freeze/{CTX}"), {"stage": "freeze", "cuts": 3, "h4_excluded": False,
+                                              "records": {ref: sha_file(F.R.path_of(src, ref)), **{i: sha_file(F.R.path_of(src, i)) for i in ids}}})
+    return src
+
+
+def _job(rule="F111", cfg="c0", salt="s0"):
+    return {"id": f"{CTX}|{rule}|D2|profit", "context": CTX, "rule": rule, "family": "D2", "objective": "profit", "mkt": {"label": "fresh0"},
+            "provenance": {"cfg_sha256": cfg, "salt_sha256": salt}}
+
+
+@pytest.fixture
+def no_expected_check(monkeypatch):
+    """The miniature source has no full menu; the expected-dependency check gets its own test below."""
+    monkeypatch.setattr(F, "_expected_reference_upstream", lambda rid: None)
+
+
+def test_inputs_come_from_the_original_records_hashes(tmp_path, no_expected_check):
+    src = _src(tmp_path); need = F.inputs(src, [_job()])
+    assert set(need) == {f"reference/{CTX}/F111", f"{CTX}|F111|D2+H3|profit", f"{CTX}|F111|X7-SC|profit", f"{CTX}|F000|D2+H3|profit"}
+    out = tmp_path / "out"; F.copy_inputs(src, out, need)
+    assert all(sha_file(F.R.path_of(out, r)) == s for r, s in need.items()) and read(out / "inputs.json") == need
+    F.copy_inputs(src, out, need)                                             # a second call reuses identical copies
+
+
+def test_a_changed_reference_is_refused(tmp_path, no_expected_check):
+    src = _src(tmp_path); p = F.R.path_of(src, f"reference/{CTX}/F111"); d = read(p); d["choice"] = 3; write(p, d)
+    with pytest.raises(SystemExit, match="differs"):
+        F.copy_inputs(src, tmp_path / "out", F.inputs(src, [_job()]))
+
+
+def test_a_changed_menu_search_is_refused(tmp_path, no_expected_check):
+    src = _src(tmp_path); p = F.R.path_of(src, f"{CTX}|F000|D2+H3|profit"); d = read(p); d["runs"] = 1; write(p, d)
+    with pytest.raises(SystemExit, match="differs"):
+        F.copy_inputs(src, tmp_path / "out", F.inputs(src, [_job()]))
+
+
+def test_a_missing_input_is_refused(tmp_path, no_expected_check):
+    src = _src(tmp_path); F.R.path_of(src, f"{CTX}|F111|X7-SC|profit").unlink()
+    with pytest.raises(SystemExit, match="missing"):
+        F.copy_inputs(src, tmp_path / "out", F.inputs(src, [_job()]))
+    src2 = _src(tmp_path / "b"); F.R.path_of(src2, f"reference/{CTX}/F111").unlink()
+    with pytest.raises(SystemExit, match="missing"):
+        F.inputs(src2, [_job()])
+
+
+def test_a_reference_whose_dependencies_are_not_the_registered_menu_is_refused(tmp_path):
+    src = _src(tmp_path)                                                       # the miniature menu lacks the full cuts-3 bank
+    with pytest.raises(SystemExit, match="registered menu"):
+        F.inputs(src, [_job()])
+
+
+def test_a_wrong_configuration_hash_is_refused():
+    container = {"fresh0": {"container_hash": "c0"}}
+    F.check_configs([_job(cfg="c0")], container)
+    with pytest.raises(SystemExit, match="configuration"):
+        F.check_configs([_job(cfg="c1")], container)
+
+
+def _frozen(tmp_path, monkeypatch, no_check=True):
+    src = _src(tmp_path); out = tmp_path / "out"
+    need = F.inputs(src, [_job()]); F.copy_inputs(src, out, need)
+    j = _job(salt=F.R._sha(b"\x01" * 32))
+    (out / "salt.hex").write_text((b"\x01" * 32).hex())
+    write(F.R.path_of(out, j["id"]), {"stage": "search", "id": j["id"], "provenance": j["provenance"], "upstream": {}})
+drwxr-xr-x@ 9 oemer.demirel  staff  288 Oct 22 19:36 .venv
+drwxr-xr-x@ 9 oemer.demirel  staff  288 Oct 15 16:10 /Users/oemer.demirel/Projects/touchstone/.venv
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro:
+evaluate
+freeze
+inputs.json
+reference
+salt.hex
+search
+
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-linux/run:
+evaluate
+freeze
+inputs.json
+reference
+salt.hex
+search
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+The main search path now checks provenance before execution. The plan also records the tolerance change and defines the market scoring. I found a remaining gap in the doubling reproduction path: it bypasses those checks. I will test its comparator with changed records in memory.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '12,78p' scripts/revision_v2.py; sed -n '150,185p' docs/revision/followup/test_reset_followup.py; ls /Users/oemer.demirel/Projects/touchstone/results/v2; git diff --quiet protocol-v2 -- scripts/revision_v2.py sim/; git show --stat --oneline 2220287" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+import hashlib
+import json
+import os
+import subprocess
+import sys
+from concurrent.futures import ProcessPoolExecutor
+from dataclasses import replace
+from functools import lru_cache
+from pathlib import Path
+
+import numpy as np
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from sim import instances as INST  # noqa: E402
+from sim import families_v2 as FV2  # noqa: E402
+from sim import manifest_v2 as MAN  # noqa: E402
+from sim.calibrate import cell_config, load_calibration  # noqa: E402
+from sim.cell import Abstain, Cell, SeedCache, run_focal  # noqa: E402
+from sim.h4_loader import Excluded, load as load_h4  # noqa: E402
+from sim.locked import load_locked, market_config_from_locked  # noqa: E402
+from sim.objectives_v2 import (CoalitionObjective, WelfareObjective, gross_efficiency, pick_joint, profile_descriptor, profile_factories,  # noqa: E402
+                               select_w1, select_welfare, _member_rows)
+from sim.diagnostic_v2 import envelope_rule, extras, honest_replacement  # noqa: E402
+from sim.policies.families import D2, Family, exact_key  # noqa: E402
+from sim.policies.honest import HonestMax  # noqa: E402
+from sim.policies.identity import h3_family  # noqa: E402
+from sim.policies.v2 import x5v2_family, x6v2_family, x6v2_member, x6v2_members  # noqa: E402
+from sim.policies.x7 import corner_vectors, embed_h3, x7_family  # noqa: E402
+from sim.positions import positions  # noqa: E402
+from sim.records import cfg_to_dict, search_from_json, search_to_json  # noqa: E402
+from sim.records_v2 import read, sha_file, validate, write  # noqa: E402
+from sim.reference import Candidate, evaluate_gain, reference_candidates, select_reference, twin_search  # noqa: E402
+from sim.rng import SALT_ENV, load_identity_salt  # noqa: E402
+from sim.rules_v2 import CORE, FIXED, make_rule, public_constants, registered_b2_params  # noqa: E402
+from sim.search import Objective, SearchSettings, cma_search, settings_from_locked  # noqa: E402
+
+ROOT = Path(__file__).resolve().parents[1]
+STAGES = ("search", "reference", "dependent", "freeze", "evaluate", "cross", "doubling", "verify")
+CATEGORIES = ("abstain", "honest_max", "twin_search", "attack_projection", "archive_clip1", "archive_truthful_clip0", "bank")
+MENU = ("D2+H3", "X7-SC")
+SMOKE = (1, 16, 1, 2)
+DEV_ROOT = INST.DEV_ROOT
+THRESHOLD = 0.005
+
+
+# ---- context ---------------------------------------------------------------------------------------------------------
+
+def git_commit() -> str:
+    try:
+        return subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
+    except Exception:
+        return "unknown"
+
+
+def _sha(b: bytes) -> str:
+    return hashlib.sha256(b).hexdigest()
+
+
+def _sha_json(obj) -> str:
+    return _sha(json.dumps(obj, sort_keys=True, default=float).encode())
+
+
+def install_salt(root: str, out: Path) -> Path:
+    """Write the fresh root's identity salt under --out and point the harness at it before any episode."""
+    p = Path(out) / "salt.hex"; p.parent.mkdir(parents=True, exist_ok=True); p.write_text(INST.identity_salt_hex(root))
+    os.environ[SALT_ENV] = str(p)
+PROV = {"cfg_sha256": "c", "budget": [5, 300, 5, 200], "runner_sha256": "r", "salt_sha256": "s", "rule_params_sha256": "p", "root": "h",
+        "seeds_train": [7], "seeds_val": [8], "seeds_eval": [1, 2], "context": "headline@rho0.2", "git_commit": "x"}
+
+
+def _put(base, rid, knobs, gain, runs=100, src="restart_1", arch=3, prov=None, twin=2, eval_up=None):
+    write(F.R.path_of(base, rid), {"stage": "search", "attack": {"best_knobs": knobs, "best_f": 0.1, "best_source": src, "archive": [0] * arch},
+                                   "twin": {"best_f": 0.05, "archive": [0] * twin}, "runs": runs, "upstream": {}, "provenance": prov or PROV})
+    write(F.R.eval_path(base, rid), {"stage": "evaluate", "seeds": [1, 2], "gain": gain,
+                                     "upstream": eval_up or {rid: "new", "reference/headline@rho0.2/F111": "ref", "freeze/headline@rho0.2": "fz"}})
+
+
+def test_reproduction_criterion_exact_parts_and_tolerances(tmp_path):
+    """Plan draft 5, section 3 (a): exact on counts, sources, discrete knobs, hashes; 1e-9 on continuous knobs and gains."""
+    rid = "headline@rho0.2|F111|D2|profit"
+    _put(tmp_path / "a", rid, {"u0": 0.5, "clip": 0}, [0.1, 0.2])
+    _put(tmp_path / "b", rid, {"u0": 0.5 * (1 + 2.6e-13), "clip": 0}, [0.1, 0.2 + 2e-14])
+    rep = F.compare(tmp_path / "a", tmp_path / "b", rid)
+    assert rep["pass"] and not rep["identical"] and rep["max_knob_rel"] == pytest.approx(2.6e-13, rel=1e-3)
+    for name, kw in (("knob tolerance", dict(knobs={"u0": 0.5 * (1 + 2e-9), "clip": 0}, gain=[0.1, 0.2])),
+                     ("gain tolerance", dict(knobs={"u0": 0.5, "clip": 0}, gain=[0.1, 0.2 + 2e-9])),
+                     ("discrete knob", dict(knobs={"u0": 0.5, "clip": 1}, gain=[0.1, 0.2])),
+                     ("episode count", dict(knobs={"u0": 0.5, "clip": 0}, gain=[0.1, 0.2], runs=99)),
+                     ("best_source", dict(knobs={"u0": 0.5, "clip": 0}, gain=[0.1, 0.2], src="control")),
+                     ("archive size", dict(knobs={"u0": 0.5, "clip": 0}, gain=[0.1, 0.2], arch=4))):
+        _put(tmp_path / name, rid, **kw)
+        r = F.compare(tmp_path / "a", tmp_path / name, rid)
+        assert not r["pass"] and any(name in p for p in r["problems"]), name
+    _put(tmp_path / "same", rid, {"u0": 0.5, "clip": 0}, [0.1, 0.2])
+    assert F.compare(tmp_path / "a", tmp_path / "same", rid)["identical"]
+
+
+MAIN = Path("/Users/oemer.demirel/Projects/touchstone/results/v2")
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(not (MAIN / "eval/all/freeze").is_dir(), reason="needs the registered evaluation records")
+deviation
+draw
+eval
+eval-checkout
+followup-repro
+followup-repro-doubling
+followup-repro-linux
+h4pod
+paper
+post_eval.log
+release
+report
+review-fable52
+review-package-r10
+review-package-r4
+review-package-r5
+review-package-r6
+review-package-r7
+review-package-r8
+review-package-r9
+2220287 Reset driver: plan section 4 diagnostics and the doubling ground truth (TDD)
+ docs/revision/followup/reset_followup_v2.py   | 97 ++++++++++++++++++++++++++-
+ docs/revision/followup/test_reset_followup.py | 58 +++++++++++++++-
+ 2 files changed, 151 insertions(+), 4 deletions(-)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc ".venv/bin/python -B -c 'import sys,copy,json
+from pathlib import Path
+sys.path.insert(0,\"docs/revision/followup\")
+import reset_followup_v2 as F
+src=Path(\"/Users/oemer.demirel/Projects/touchstone/results/v2/eval/all\")
+for name in [\"followup-repro\",\"followup-repro-linux/run\"]:
+ out=src.parent.parent/name
+ print(name,F.compare(src,out))
+ rec=F.read(F.R.path_of(out,F.REPRO));print(\"commit\",rec[\"provenance\"][\"git_commit\"],\"twin\",rec[\"twin\"][\"best_f\"])
+rid=\"fresh0@rho0.2|F111|D2+H3|profit\"
+print(\"actual doubling\",F.compare_doubling(src,src.parent.parent/\"followup-repro-doubling\",rid))
+a=F.read(src/\"doubling\"/(F.R._safe(rid)+\".json\"));original=F.read
+for name,mutate in [(\"nan_gain\",lambda b:b[\"heldout\"][\"gain\"].__setitem__(0,float(\"nan\"))),(\"nan_attack_change\",lambda b:b.__setitem__(\"attack_change\",float(\"nan\")))]:
+ b=copy.deepcopy(a);mutate(b)
+ F.read=lambda p:copy.deepcopy(a if str(p).startswith(str(src)) else b)
+ print(name,F.compare_doubling(src,Path(\"/in-memory\"),rid))
+F.read=original
+a=F.read(F.R.path_of(src,F.REPRO));ea=F.read(F.R.eval_path(src,F.REPRO))
+for name,mutate in [(\"twin_best_changed\",lambda b:b[\"twin\"].__setitem__(\"best_f\",123.0)),(\"nan_attack_best\",lambda b:b[\"attack\"].__setitem__(\"best_f\",float(\"nan\")))]:
+ b=copy.deepcopy(a);mutate(b)
+ def rd(p):
+  is_src=str(p).startswith(str(src));is_eval=Path(p).parent.name==\"evaluate\"
+  return copy.deepcopy(ea if is_eval else a if is_src else b)
+ F.read=rd
+ print(name,F.compare(src,Path(\"/in-memory\")))
+F.read=original
+print(\"environment\",F.environment())'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ exited 1 in 357ms:
+/Users/oemer.demirel/.matplotlib is not a writable directory
+Traceback (most recent call last):
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/matplotlib/__init__.py", line 587, in _get_config_or_cache_dir
+    tmpdir = tempfile.mkdtemp(prefix="matplotlib-")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 373, in mkdtemp
+    prefix, suffix, dir, output_type = _sanitize_params(prefix, suffix, dir)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 126, in _sanitize_params
+    dir = gettempdir()
+          ^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 315, in gettempdir
+    return _os.fsdecode(_gettempdir())
+                        ^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 308, in _gettempdir
+    tempdir = _get_default_tempdir()
+              ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 223, in _get_default_tempdir
+    raise FileNotFoundError(_errno.ENOENT,
+FileNotFoundError: [Errno 2] No usable temporary directory found in ['/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/', '/tmp', '/var/tmp', '/usr/tmp', '/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79']
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<string>", line 4, in <module>
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/docs/revision/followup/reset_followup_v2.py", line 23, in <module>
+    import revision_v2 as R  # noqa: E402
+    ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/scripts/revision_v2.py", line 27, in <module>
+    from sim import families_v2 as FV2  # noqa: E402
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/sim/families_v2.py", line 11, in <module>
+    from .reference import Candidate
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/sim/reference.py", line 12, in <module>
+    from .search import Objective, SearchResult, SearchSettings, best_archived, cma_search
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/sim/search.py", line 10, in <module>
+    import cma
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/cma/__init__.py", line 128, in <module>
+    from . import s
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/cma/s.py", line 14, in <module>
+    try: from matplotlib import pyplot as _pyplot  # like this it doesn't show up in the interface
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/matplotlib/__init__.py", line 1002, in <module>
+    rcParams._update_raw(_rc_params_in_file(matplotlib_fname()))
+                                            ^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/matplotlib/__init__.py", line 680, in matplotlib_fname
+    for fname in gen_candidates():
+                 ^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/matplotlib/__init__.py", line 677, in gen_candidates
+    yield os.path.join(get_configdir(), 'matplotlibrc')
+                       ^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/matplotlib/__init__.py", line 345, in wrapper
+    ret = func(**kwargs)
+          ^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/matplotlib/__init__.py", line 622, in get_configdir
+    return _get_config_or_cache_dir(_get_xdg_config_dir)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/matplotlib/__init__.py", line 589, in _get_config_or_cache_dir
+    raise OSError(
+OSError: Matplotlib requires access to a writable cache directory, but there was an issue with the default path (/Users/oemer.demirel/.matplotlib), and a temporary directory could not be created; set the MPLCONFIGDIR environment variable to a writable directory
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '205,235p' scripts/revision_v2.py; ls /Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling; rg -n 'def path_of|def eval_path|def _safe' scripts/revision_v2.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+def train_cell(job: dict, others: tuple = ()) -> Cell:
+    m = job["mkt"]
+    return Cell(cfg=m["cfg"], rule_factory=rule_factory(job), focal=m["focal"], seeds=tuple(m["seeds_train"]), name=job["id"], others=others)
+
+
+def eval_cell(job: dict) -> Cell:
+    return replace(train_cell(job), seeds=tuple(job["mkt"]["seeds_eval"]))
+
+
+# ---- record paths ------------------------------------------------------------------------------------------------------
+
+def _safe(s: str) -> str:
+    return s.replace("|", "__").replace("/", "~").replace("*", "star")
+
+
+def path_of(out: Path, rid: str) -> Path:
+    if rid.startswith("freeze/"):
+        return Path(out) / "freeze" / (rid.split("/", 1)[1] + ".json")
+    if "|" in rid:
+        objective = rid.split("|")[3]
+        return Path(out) / ("dependent" if objective in ("W1", "total", "min") else "search") / (_safe(rid) + ".json")
+    kind, ctx, rest = rid.split("/", 2)
+    return Path(out) / kind / ctx / (_safe(rest) + ".json")
+
+
+def eval_path(out: Path, rid: str) -> Path:
+    return Path(out) / "evaluate" / (_safe(rid) + ".json")
+
+
+# ---- search adapters ---------------------------------------------------------------------------------------------------
+
+inputs.json
+reference
+salt.hex
+search
+216:def _safe(s: str) -> str:
+220:def path_of(out: Path, rid: str) -> Path:
+230:def eval_path(out: Path, rid: str) -> Path:
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "python3 -B -c 'import ast,copy,json,types
+from pathlib import Path
+p=Path(\"docs/revision/followup/reset_followup_v2.py\");tree=ast.parse(p.read_text());names={\"_finite\",\"compare\",\"compare_doubling\"}
+ns={\"Path\":Path,\"REPRO\":\"headline@rho0.2|F111|D2|profit\",\"KNOB_TOL\":1e-9,\"GAIN_TOL\":1e-9}
+for n in tree.body:
+ if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id==\"EXACT_PROV\" for t in n.targets):exec(compile(ast.Module(body=[n],type_ignores=[]),str(p),\"exec\"),ns)
+ if isinstance(n,ast.FunctionDef) and n.name in names:exec(compile(ast.Module(body=[n],type_ignores=[]),str(p),\"exec\"),ns)
+safe=lambda s:s.replace(\"|\",\"__\").replace(\"/\",\"__\")
+ns[\"R\"]=types.SimpleNamespace(_safe=safe,path_of=lambda b,r:Path(b)/\"search\"/(safe(r)+\".json\"),eval_path=lambda b,r:Path(b)/\"evaluate\"/(safe(r)+\".json\"))
+read=lambda p:json.loads(Path(p).read_text()) if Path(p).exists() else None
+ns[\"read\"]=read
+src=Path(\"/Users/oemer.demirel/Projects/touchstone/results/v2/eval/all\")
+for name in [\"followup-repro\",\"followup-repro-linux/run\"]:
+ out=src.parent.parent/name;print(name,ns[\"compare\"](src,out))
+rid=\"fresh0@rho0.2|F111|D2+H3|profit\"
+print(\"actual doubling\",ns[\"compare_doubling\"](src,src.parent.parent/\"followup-repro-doubling\",rid))
+a=read(src/\"doubling\"/(safe(rid)+\".json\"))
+for name,mutate in [(\"nan_gain\",lambda b:b[\"heldout\"][\"gain\"].__setitem__(0,float(\"nan\"))),(\"nan_attack_change\",lambda b:b.__setitem__(\"attack_change\",float(\"nan\")))]:
+ b=copy.deepcopy(a);mutate(b);ns[\"read\"]=lambda p:copy.deepcopy(a if str(p).startswith(str(src)) else b)
+ print(name,ns[\"compare_doubling\"](src,Path(\"/in-memory\"),rid))
+a=read(ns[\"R\"].path_of(src,ns[\"REPRO\"]));ea=read(ns[\"R\"].eval_path(src,ns[\"REPRO\"]))
+for name,mutate in [(\"twin_best_changed\",lambda b:b[\"twin\"].__setitem__(\"best_f\",123.0)),(\"nan_attack_best\",lambda b:b[\"attack\"].__setitem__(\"best_f\",float(\"nan\")))]:
+ b=copy.deepcopy(a);mutate(b)
+ def rd(p):return copy.deepcopy(ea if Path(p).parent.name==\"evaluate\" else a if str(p).startswith(str(src)) else b)
+ ns[\"read\"]=rd;print(name,ns[\"compare\"](src,Path(\"/in-memory\")))'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 93ms:
+followup-repro {'pass': True, 'identical': False, 'max_knob_rel': 2.515335660523085e-13, 'max_gain_abs': 1.970645868709653e-14, 'problems': []}
+followup-repro-linux/run {'pass': True, 'identical': False, 'max_knob_rel': 2.573145812843815e-13, 'max_gain_abs': 2.0164425684754406e-14, 'problems': []}
+actual doubling {'pass': False, 'problems': ['a record is missing']}
+nan_gain {'pass': True, 'max_knob_rel': 0.0, 'max_change_abs': 0.0, 'max_gain_abs': nan, 'problems': []}
+nan_attack_change {'pass': True, 'max_knob_rel': 0.0, 'max_change_abs': nan, 'max_gain_abs': 0.0, 'problems': []}
+twin_best_changed {'pass': True, 'identical': True, 'max_knob_rel': 0.0, 'max_gain_abs': 0.0, 'problems': []}
+nan_attack_best {'pass': True, 'identical': True, 'max_knob_rel': 0.0, 'max_gain_abs': 0.0, 'problems': []}
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+Both saved search runs pass the draft-5 numeric criterion. The specified doubling result is still missing. In-memory checks also show that the doubling comparator accepts NaN values, and the search comparator accepts a changed twin value while reporting `identical`. These gaps still prevent pod approval.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "python3 -B -c 'import ast,json
+from pathlib import Path
+p=Path(\"docs/revision/followup/reset_followup_v2.py\");tree=ast.parse(p.read_text())
+ns={\"CUTS\":3,\"H4_EXCLUDED\":False}
+for n in tree.body:
+ if isinstance(n,ast.FunctionDef) and n.name in {\"inputs\",\"_refuse\"}:exec(compile(ast.Module(body=[n],type_ignores=[]),str(p),\"exec\"),ns)
+import types
+ctx=\"fresh0@rho0.2\";rid=\"reference/\"+ctx+\"/F111\";dep=ctx+\"|F111|D2+H3|profit\"
+records={\"freeze/\"+ctx:{\"cuts\":3,\"h4_excluded\":False,\"records\":{rid:\"ref\"}},rid:{\"upstream\":{dep:\"search\"}},dep:{\"upstream\":{}}}
+ns.update(R=types.SimpleNamespace(path_of=lambda src,r:r),read=lambda p:records.get(p),_expected_reference_upstream=lambda r:{dep})
+print(\"missing search in original freeze\",ns[\"inputs\"](\"unused\",[{\"context\":ctx,\"rule\":\"F111\"}]))
+base=Path(\"/Users/oemer.demirel/Projects/touchstone/results/v2\")
+for name in [\"followup-repro\",\"followup-repro-linux/run\"]:
+ a=json.loads((base/name/\"search/headline@rho0.2__F111__D2__profit.json\").read_text());print(name,\"commit\",a[\"provenance\"][\"git_commit\"],\"gate\",(base/name/\"gate.json\").exists(),\"inventory\",(base/name/\"inventory.json\").exists())'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+missing search in original freeze {'reference/fresh0@rho0.2/F111': 'ref', 'fresh0@rho0.2|F111|D2+H3|profit': 'search'}
+followup-repro commit 744b1c947403f64b6f33bae8747873fda9cf69b8 gate False inventory False
+followup-repro-linux/run commit unknown gate False inventory False
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+VERDICT: reject
+
+CORRECTIONS:
+1. **None — plan §3, tolerance deviation.** Both saved search runs pass the current comparator: maximum knob drift is 2.58e-13 relative; gain drift is 2.02e-14 absolute. The 1e-9 limits are justified for this reproduction, and the plan explicitly records the deviation. The revised wording correctly avoids claiming that bit identity is impossible.
+
+2. **`docs/revision/followup/reset_followup_v2.py:326` — finish round-4 comparator correction.** Explicitly retain or reject exact twin and corner-control values. They remain unchecked. An in-memory change of the twin best value to 123 passes and reports `identical`; a NaN attack best value does too. Define the scope of “every value finite” and enforce it.
+
+3. **`docs/revision/followup/reset_followup_v2.py:365,389,433` — block the pod.** Doubling reproduction bypasses preflight checks and saves neither a comparison result nor an inventory. Its comparator accepts NaN gains and NaN attack changes. Add finite-value checks, apply preflight, and save the result and environment. The specified `followup-repro-doubling` directory currently lacks the doubling output; no passing ground truth is available there.
+
+4. **`docs/revision/followup/reset_followup_v2.py:169` — complete input validation.** `fr["records"].get(u, s)` accepts a copied search absent from the original freeze. An in-memory check confirms this. Require membership for copied searches as well as matching hashes. Explicit cuts fields and conflicting-hash rejection are corrected.
+
+5. **Plan §§4,8; `reset_followup_v2.py:445` — align execution instructions.** Diagnostics and reverse switches now exist, but default `all` runs diagnostics on the pod. Specify the pod stage sequence, Mac diagnostics after retrieval, headline coverage, and the required passing doubling result before provisioning. Section 8 still lists only validations (a) and (b).
+
+6. **None — remaining driver checks.** Main-path pairing, code, salt, output protection, source-based acceptance, and environment fields address the cited findings. Headline reproduction now runs preflight and saves gate evidence; existing reproduction directories predate those additions.
+
+7. **None — plan §§5–6.** Separate five-market denominator gates, base/doubled reporting, all-six scoring, and explicit best-of deferral close those round-4 corrections.
+
+CONFIDENCE: 0.97
+hook: Stop
+hook: Stop Completed
+tokens used
+58'072
+VERDICT: reject
+
+CORRECTIONS:
+1. **None — plan §3, tolerance deviation.** Both saved search runs pass the current comparator: maximum knob drift is 2.58e-13 relative; gain drift is 2.02e-14 absolute. The 1e-9 limits are justified for this reproduction, and the plan explicitly records the deviation. The revised wording correctly avoids claiming that bit identity is impossible.
+
+2. **`docs/revision/followup/reset_followup_v2.py:326` — finish round-4 comparator correction.** Explicitly retain or reject exact twin and corner-control values. They remain unchecked. An in-memory change of the twin best value to 123 passes and reports `identical`; a NaN attack best value does too. Define the scope of “every value finite” and enforce it.
+
+3. **`docs/revision/followup/reset_followup_v2.py:365,389,433` — block the pod.** Doubling reproduction bypasses preflight checks and saves neither a comparison result nor an inventory. Its comparator accepts NaN gains and NaN attack changes. Add finite-value checks, apply preflight, and save the result and environment. The specified `followup-repro-doubling` directory currently lacks the doubling output; no passing ground truth is available there.
+
+4. **`docs/revision/followup/reset_followup_v2.py:169` — complete input validation.** `fr["records"].get(u, s)` accepts a copied search absent from the original freeze. An in-memory check confirms this. Require membership for copied searches as well as matching hashes. Explicit cuts fields and conflicting-hash rejection are corrected.
+
+5. **Plan §§4,8; `reset_followup_v2.py:445` — align execution instructions.** Diagnostics and reverse switches now exist, but default `all` runs diagnostics on the pod. Specify the pod stage sequence, Mac diagnostics after retrieval, headline coverage, and the required passing doubling result before provisioning. Section 8 still lists only validations (a) and (b).
+
+6. **None — remaining driver checks.** Main-path pairing, code, salt, output protection, source-based acceptance, and environment fields address the cited findings. Headline reproduction now runs preflight and saves gate evidence; existing reproduction directories predate those additions.
+
+7. **None — plan §§5–6.** Separate five-market denominator gates, base/doubled reporting, all-six scoring, and explicit best-of deferral close those round-4 corrections.
+
+CONFIDENCE: 0.97

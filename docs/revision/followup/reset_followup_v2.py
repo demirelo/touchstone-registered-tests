@@ -445,6 +445,14 @@ def reproduce(src, out, root: str, params: dict, salt_sha256: str, workers: int 
     return rep
 
 
+POD_STEPS = ("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory")
+SPOT = "fresh0@rho0.2|F111|D2|profit"                 # plan section 4: the cell diagnosed on the pod and on the Mac
+
+
+def diag_jobs(jobs: list[dict], which: str) -> list[dict]:
+    return jobs if which == "all" else [j for j in jobs if j["id"] in which.split(",")]
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--src", default=str(EVAL_ALL)); ap.add_argument("--out", required=True)
@@ -456,6 +464,7 @@ def main(argv=None) -> int:
     ap.add_argument("--reproduce", action="store_true", help=f"validation (a): rerun {REPRO} and compare (plan draft 5)")
     ap.add_argument("--reproduce-doubling", dest="repro_dbl", default=None, help="validation (d): a registered D2+H3 doubling cell id")
     ap.add_argument("--report", default=str(ROOT / "results/v2/report/report.json"), help="for the diagnostics stage")
+    ap.add_argument("--diag-cells", dest="diag_cells", default="all", help=f"diagnostics stage: 'all' (Mac, after retrieval) or cell ids (pod: {SPOT})")
     a = ap.parse_args(argv); out = Path(a.out); check_out(out, a.src)
     from sim.records import cfg_from_dict
     root = json.loads(Path(a.draw).read_text())["hash"]; salt_sha = json.loads(Path(a.instances).read_text())["salt_sha256"]
@@ -474,7 +483,7 @@ def main(argv=None) -> int:
     check_configs(jobs, container); check_salt(out, salt_sha, jobs); check_commit(jobs); check_code()
     if not a.smoke:
         check_pairing(a.src, jobs)
-    steps = ("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory") if a.stage == "all" else (a.stage,)
+    steps = POD_STEPS if a.stage == "all" else (a.stage,)
     for st in steps:
         if st == "inputs":
             copy_inputs(a.src, out, inputs(a.src, jobs))
@@ -483,7 +492,8 @@ def main(argv=None) -> int:
         elif st == "freeze":
             prefreeze(out, jobs)
         elif st == "diagnostics":
-            write(out / "diagnostics.json", diagnostics(a.src, out, jobs, json.loads(Path(a.report).read_text())))
+            dj = diag_jobs(jobs, a.diag_cells)
+            write(out / ("diagnostics.json" if a.diag_cells == "all" else "diagnostics_spot.json"), diagnostics(a.src, out, dj, json.loads(Path(a.report).read_text())))
         elif st in ("evaluate", "doubling"):
             accept(out, jobs, salt_sha, container, src=a.src); run_stage(st, jobs, out, a.workers)
         else:
