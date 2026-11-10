@@ -100,8 +100,8 @@ def test_smoke_path_for_one_fresh_cell_under_churn(tmp_path):
     from sim.records import cfg_from_dict
     cfgs = {k: cfg_from_dict(v) for k, v in json.loads((MAIN / "deviation/cfg_linux.json").read_text()).items()}
     j = C.build_jobs(root, cfgs, json.loads((C.F.ROOT / "experiments/v2/params.json").read_text()), salt, 0.05, ("fresh0",), ("F111",), True)[0]
-    mp = C.memory_preflight(j, d, 9)                                                            # the pod-side preflight, run on the smoke output
-    assert mp["task_peak_bytes"] > 0 and mp["parent_bytes"] > 0 and 1 <= mp["workers"] <= 9 and read(d / "memory_preflight.json") == mp
+    mp = C.memory_preflight("evaluate", [j], d, 9)                                              # the pod-side preflight, run on the smoke output
+    assert mp["task_peak_bytes"] > 0 and mp["parent_bytes"] > 0 and 1 <= mp["workers"] <= 9 and read(d / "memory_preflight_evaluate.json") == mp
     assert inv["churn"] == 0.05 and "churn_driver_sha256" in inv["environment"]
 
 
@@ -216,7 +216,7 @@ def test_r1_market_pooling_is_the_mean_of_market_shares_over_available_markets()
 def test_r1_a_failed_gate_stops_dispatch(tmp_path, monkeypatch):
     calls = []
     monkeypatch.setattr(C, "_run_rate", lambda out, jobs, *a, **k: calls.append(jobs[0]["churn"]))
-    monkeypatch.setattr(C, "gate_compare", lambda *a, **k: {"pass": False, "search": {}, "doubling": {}})
+    monkeypatch.setattr(C, "gate_compare", lambda *a, **k: {"pass": False, "gate_ok": False, "identical": False, "search": {}, "doubling": {}})
     monkeypatch.setattr(C, "inventory", lambda *a, **k: None)
     args = ["--src", str(MAIN / "eval/all"), "--out", str(tmp_path / "c"), "--draw", str(MAIN / "draw/draw.json"), "--instances", str(MAIN / "draw/instances.json"),
             "--cfgs", str(MAIN / "deviation/cfg_linux.json"), "--addendum", str(MAIN / "report/addendum.json"), "--markets", "fresh0", "--rules", "F111"]
@@ -244,7 +244,7 @@ def test_r2_a_matching_passing_gate_is_required(tmp_path):
     write(g / "gate.json", {"pass": False, "registered": "fresh0@rho0.2|F111|D2+H3|profit", "churn": "fresh0@rho0.2|F111|D2+H3|profit|churn0"})
     with pytest.raises(SystemExit, match="gate"):
         C.require_gate(tmp_path)
-    write(g / "gate.json", {"pass": True, "registered": "fresh0@rho0.2|F111|D2+H3|profit", "churn": "fresh0@rho0.2|F111|D2+H3|profit|churn0"})
+    write(g / "gate.json", {"pass": True, "gate_ok": True, "require_identical": False, "registered": "fresh0@rho0.2|F111|D2+H3|profit", "churn": "fresh0@rho0.2|F111|D2+H3|profit|churn0"})
     write(g / "inventory.json", {"environment": {"churn_driver_sha256": "0" * 64}})
     with pytest.raises(SystemExit, match="driver"):
         C.require_gate(tmp_path)                                                               # a gate run by another driver version
@@ -286,3 +286,78 @@ def test_r2_first_offer_newest_among_identities_with_assigned_jobs():
     got = C.newcomer_shares([ep], focal=0, edges=(0, 100, 200))
     # t0: 0 and 1 tie at first offer 0 -> no; t1: only the focal has jobs -> yes; t2: identity 2 (first offer 2) newer -> no; t3: focal alone -> yes
     assert got["focal_newest_by_first_offer_assigned"] == [0.5]
+
+
+# ---- internal review round 3 (Sol, Astra: reject) and the cross-cutting rules ----
+
+def _gate_records(tmp_path, gain_out, knob_out=0.5):
+    from sim.records_v2 import write
+    rid = "fresh0@rho0.2|F111|D2+H3|profit"; cid = rid + "|churn0"
+    prov = {"cfg_sha256": "c", "budget": [5, 300, 5, 200], "runner_sha256": "r", "salt_sha256": "s", "rule_params_sha256": "p", "root": "h",
+            "seeds_train": [7], "seeds_val": [8], "seeds_eval": [1, 2], "context": "fresh0@rho0.2", "git_commit": "x"}
+    def put(base, i, gain, u0):
+        k = {"u0": u0, "x": 1, "clip": 0}
+        write(C.R.path_of(base, i), {"stage": "search", "id": i, "attack": {"best_knobs": k, "best_f": 0.1, "best_source": "r", "archive": [0]},
+                                     "twin": {"archive": [0], "best_f": 0.05}, "runs": 9, "upstream": {}, "provenance": {**prov, "id": i}})
+        write(C.R.eval_path(base, i), {"stage": "evaluate", "seeds": [1, 2], "gain": gain,
+                                       "upstream": {i: "a", "reference/fresh0@rho0.2/F111": "ref", "freeze/fresh0@rho0.2": "f"}})
+        write(base / "doubling" / (C.R._safe(i) + ".json"), {"stage": "doubling", "incomplete": False, "attack_change": 0.0, "reference_change": 0.0,
+                                                               "heldout": {"knobs": k, "seeds": [1, 2], "gain": gain}})
+    put(tmp_path / "src", rid, [0.1, 0.2], 0.5); put(tmp_path / "out", cid, gain_out, knob_out)
+    return rid, cid
+
+
+def test_r3_pod_gate_requires_bit_identity_and_the_mac_gate_the_tolerance(tmp_path):
+    rid, cid = _gate_records(tmp_path, [0.1, 0.2 + 1e-15])
+    tol = C.gate_compare(tmp_path / "src", tmp_path / "out", rid, cid, require_identical=False)
+    pod = C.gate_compare(tmp_path / "src", tmp_path / "out", rid, cid, require_identical=True)
+    assert tol["pass"] and tol["gate_ok"] and not tol["identical"]
+    assert pod["pass"] and not pod["gate_ok"] and pod["require_identical"]
+    rid, cid = _gate_records(tmp_path / "same", [0.1, 0.2])
+    assert C.gate_compare(tmp_path / "same" / "src", tmp_path / "same" / "out", rid, cid, require_identical=True)["gate_ok"]
+
+
+def test_r3_a_production_stage_on_the_pod_needs_a_bit_identical_gate(tmp_path):
+    from sim.records_v2 import write
+    g = tmp_path / "gate-p0"; base = {"pass": True, "registered": "fresh0@rho0.2|F111|D2+H3|profit", "churn": "fresh0@rho0.2|F111|D2+H3|profit|churn0"}
+    write(g / "inventory.json", {"environment": {"churn_driver_sha256": sha256_of(C.__file__)}})
+    write(g / "gate.json", {**base, "gate_ok": True, "require_identical": False})
+    C.require_gate(tmp_path, require_identical=False)
+    with pytest.raises(SystemExit, match="bit-identical"):
+        C.require_gate(tmp_path, require_identical=True)
+    write(g / "gate.json", {**base, "gate_ok": True, "require_identical": True, "identical": True})
+    C.require_gate(tmp_path, require_identical=True)
+
+
+def test_r3_preflight_measures_real_tasks_one_per_rule_and_the_doubling(tmp_path):
+    jobs = [{"id": f"m{i}|{r}", "rule": r, "context": f"m{i}"} for i in range(2) for r in ("F111", "C*", "F000")]
+    peaks = {"F111": 2.0, "C*": 2.6, "F000": 2.2}; ran = []
+    def runner(stage, job, out, catalog):
+        ran.append((stage, job["id"])); return int(peaks[job["rule"]] * 2 ** 30)
+    G = 2 ** 30
+    ev = C.memory_preflight("evaluate", jobs, tmp_path, 9, runner=runner, limit=32 * G, parent=G)
+    assert [j for s, j in ran] == ["m0|F111", "m0|C*", "m0|F000"]                              # one real task per rule
+    assert ev["task_peak_bytes"] == int(2.6 * G) and ev["margin"] == 1.25 and ev["workers"] == int((0.9 * 32 * G - G) // int(1.25 * 2.6 * G))
+    assert ev["measured"] == ["m0|F111", "m0|C*", "m0|F000"]                                   # their records count as done
+    ran.clear(); db = C.memory_preflight("doubling", jobs, tmp_path, 9, runner=runner, limit=32 * G, parent=G)
+    assert len(ran) == 1 and db["stage"] == "doubling"
+
+
+def test_r3_admission_is_rerun_after_the_preflight_and_the_reduced_workers_persist(tmp_path, monkeypatch):
+    needs, runs = [], []
+    monkeypatch.setattr(C, "check_cap", lambda started, need_s, *a, **k: needs.append(round(need_s)))
+    monkeypatch.setattr(C, "memory_preflight", lambda stage, jobs, out, req, **k: {"workers": 2, "measured": [jobs[0]["id"]], "seconds": 100.0})
+    monkeypatch.setattr(C, "run_stage", lambda st, jobs, out, w: runs.append((st, w, len(jobs))))
+    monkeypatch.setattr(C.F, "accept", lambda *a, **k: None)
+    monkeypatch.setattr(C, "diagnostics", lambda out, jobs, w: runs.append(("diagnostics", w, len(jobs))) or {})
+    for f in ("check_configs", "check_salt", "check_commit", "check_code", "check_pairing"):
+        monkeypatch.setattr(C.F, f, lambda *a, **k: None)
+    a = NS(smoke=False, src="s", workers_search=16, workers_eval=9, stop_usd=8.0, usd_per_hour=0.56, prior_usd=0.0)
+    jobs = [{"id": f"j{i}", "churn": 0.05, "rule": ("F111", "C*", "F000")[i % 3]} for i in range(18)]
+    C._run_rate(tmp_path, jobs, ("evaluate", "doubling", "diagnostics"), a, "salt", {}, 0.05, started=1.0)
+    s = C.STAGE_SECONDS; f = 1.33
+    assert needs[0] == round(s["evaluate"] * f * (3 + 2))                                      # three serial preflight tasks + 15 jobs at nine workers
+    assert needs[1] == round(s["evaluate"] * f * 9)                                            # rerun after the preflight: 17 remaining jobs at two workers
+    assert needs[2] == round(s["doubling"] * f * (1 + 9))                                      # doubling: one preflight task + 17 jobs at the kept two workers
+    assert needs[3] == round(s["doubling"] * f * 9)
+    assert ("evaluate", 2, 17) in runs and ("doubling", 2, 17) in runs and ("diagnostics", 2, 18) in runs   # the limit persists

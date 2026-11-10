@@ -253,12 +253,15 @@ def _mapped_view(out, view, cid: str, rid: str) -> None:
         write(Path(view) / "doubling" / (R._safe(rid) + ".json"), {**db, "id": rid})
 
 
-def gate_compare(src, out, rid: str, cid: str) -> dict:
+def gate_compare(src, out, rid: str, cid: str, require_identical: bool = False) -> dict:
     """The p = 0 gate (plan draft 2, section 3 c): the churn cell `cid` at p = 0 against the registered cell `rid`, by the
     reset driver's draft-5 criteria for the search and evaluation (`compare`) and the doubling check (`compare_doubling`)."""
     view = Path(out) / "gate_view"; _mapped_view(out, view, cid, rid)
     s, d = F.compare(src, view, rid), F.compare_doubling(src, view, rid)
-    res = {"stage": "churn p=0 gate", "registered": rid, "churn": cid, "pass": bool(s["pass"] and d["pass"]), "search": s, "doubling": d}
+    ok = bool(s["pass"] and d["pass"])
+    same = bool(ok and s.get("identical") and d.get("max_knob_rel") == 0 and d.get("max_change_abs") == 0 and d.get("max_gain_abs") == 0)
+    res = {"stage": "churn p=0 gate", "registered": rid, "churn": cid, "pass": ok, "identical": same, "require_identical": bool(require_identical),
+           "gate_ok": F.pod_gate_ok({"pass": ok, "identical": same}, require_identical), "search": s, "doubling": d}
     write(Path(out) / "gate.json", res)
     return res
 
@@ -297,12 +300,15 @@ def inventory(out, p: float) -> dict:
     return inv
 
 
-def require_gate(base) -> dict:
-    """Every production churn stage needs a saved, passing p = 0 gate run by this driver version (plan section 3 c)."""
+def require_gate(base, require_identical: bool = False) -> dict:
+    """Every production churn stage needs a saved p = 0 gate of this driver version that passed its criterion; on the pod
+    (`require_identical`) that criterion is bit identity (the author's decision, card touchstone-reset-repro-pass)."""
     g = read(Path(base) / "gate-p0" / "gate.json"); inv = read(Path(base) / "gate-p0" / "inventory.json")
     want = R.cell_id(f"{GATE_CELL[0]}@rho0.2", GATE_CELL[1], "D2+H3", "profit")
-    if not g or not g.get("pass") or g.get("registered") != want or g.get("churn") != f"{want}|churn0":
+    if not g or not g.get("pass") or not g.get("gate_ok", g.get("pass")) or g.get("registered") != want or g.get("churn") != f"{want}|churn0":
         raise SystemExit("churn arm refused: no saved passing p = 0 gate for this cell")
+    if require_identical and not (g.get("require_identical") and g.get("gate_ok") and g.get("identical")):
+        raise SystemExit("churn arm refused: the saved gate is not a bit-identical pod gate")
     if not inv or inv.get("environment", {}).get("churn_driver_sha256") != sha_file(Path(__file__)):
         raise SystemExit("churn arm refused: the saved gate was run by another driver version")
     return g
@@ -329,52 +335,85 @@ def memory_limit() -> int:
     return os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
 
 
-def memory_preflight(job: dict, out, requested: int) -> dict:
-    """Pod-side, before the nine-worker stages: one full evaluate task (four 200-seed profiles) for `job`, in a child
-    process, measured by its peak RSS; the parent's own RSS; the limit; and the workers that fit."""
-    import resource
-    import subprocess
+def preflight_sample(stage: str, jobs: list[dict]) -> list[dict]:
+    """The tasks the memory preflight runs for real: one evaluate task per rule; one doubling task."""
+    if stage == "evaluate":
+        seen, out = set(), []
+        for j in jobs:
+            if j.get("rule") not in seen:
+                seen.add(j.get("rule")); out.append(j)
+        return out
+    return jobs[:1] if stage == "doubling" else []
+
+
+def _measure_child(stage: str, job: dict, out, catalog: list[dict]) -> int:
+    """Run one real stage task of `job` in a child process (its record is written as in production) and return the
+    child's peak RSS in bytes."""
     import pickle
-    jp = Path(out) / "memory_preflight_job.pkl"; jp.write_bytes(pickle.dumps(job))
+    import subprocess
+    jp = Path(out) / f"memory_preflight_{stage}.pkl"; jp.write_bytes(pickle.dumps((stage, job, catalog)))
     r = subprocess.run([sys.executable, str(HERE / "churn_memory.py"), "--task", str(jp), str(out)], capture_output=True, text=True)
     if r.returncode != 0:
         raise SystemExit(f"churn arm refused: memory preflight failed: {r.stderr[-300:]}")
-    peak = int(json.loads(r.stdout.strip().splitlines()[-1])["peak_rss_bytes"])
-    parent = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * (1 if sys.platform == "darwin" else 1024)   # bytes on macOS, KiB on Linux
-    limit = memory_limit(); w = plan_workers(limit, peak, parent, requested)
-    rec = {"limit_bytes": limit, "task_peak_bytes": peak, "parent_bytes": parent, "requested": requested, "workers": w}
-    write(Path(out) / "memory_preflight.json", rec)
+    return int(json.loads(r.stdout.strip().splitlines()[-1])["peak_rss_bytes"])
+
+
+def memory_preflight(stage: str, jobs: list[dict], out, requested: int, runner=None, limit: int | None = None, parent: int | None = None,
+                     margin: float = 1.25) -> dict:
+    """Pod-side, before a four-profile stage (plan section 7): run the sample tasks for real in child processes, take the
+    largest peak, add a margin of 25 percent for variation across markets, rules and winners, and choose the workers that
+    fit the memory limit beside the parent. The measured tasks' records are kept and not run again."""
+    import resource
+    import time
+    t0 = time.time(); runner = runner or _measure_child; sample = preflight_sample(stage, jobs)
+    peaks = {j["id"]: int(runner(stage, j, out, jobs)) for j in sample}
+    peak = max(peaks.values())
+    parent = parent if parent is not None else resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * (1 if sys.platform == "darwin" else 1024)
+    limit = limit if limit is not None else memory_limit()
+    w = plan_workers(limit, int(margin * peak), parent, requested)
+    rec = {"stage": stage, "limit_bytes": limit, "task_peak_bytes": peak, "peaks": peaks, "margin": margin, "parent_bytes": parent,
+           "requested": requested, "workers": w, "measured": [j["id"] for j in sample], "seconds": time.time() - t0}
+    write(Path(out) / f"memory_preflight_{stage}.json", rec)
     return rec
 
 
 STAGE_SECONDS = {"search": 2084.3, "evaluate": 120.0, "doubling": 997.8, "diagnostics": 60.0}   # benchmark, per job (plan section 7)
 
 
+def _waves(n: int, w: int) -> int:
+    return -(-n // max(1, w)) if n > 0 else 0
+
+
 def _run_rate(out, jobs, steps, a, salt_sha, container, p, started) -> None:
     F.check_configs(jobs, container); F.check_salt(out, salt_sha, jobs); F.check_commit(jobs); F.check_code()
     if not a.smoke:
         F.check_pairing(a.src, jobs)
-    slow = 1.33 if p > 0 else 1.0
+    slow = 1.33 if p > 0 else 1.0; w_mem = a.workers_eval                     # the memory limit, kept for every later stage
+    cap = lambda need: check_cap(started, need, a.stop_usd, a.usd_per_hour, prior_usd=a.prior_usd)
     for st in steps:
-        w = a.workers_search if st == "search" else a.workers_eval
-        if st in STAGE_SECONDS:
-            check_cap(started, STAGE_SECONDS[st] * slow * -(-len(jobs) // max(1, w)), a.stop_usd, a.usd_per_hour, prior_usd=a.prior_usd)
         if st == "inputs":
             F.copy_inputs(a.src, out, F.inputs(a.src, jobs))
         elif st == "search":
-            run_stage("search", jobs, out, w)
+            cap(STAGE_SECONDS["search"] * slow * _waves(len(jobs), a.workers_search)); run_stage("search", jobs, out, a.workers_search)
         elif st == "freeze":
             F.prefreeze(out, jobs)
         elif st in ("evaluate", "doubling"):
+            sec = STAGE_SECONDS[st] * slow
+            k = len(preflight_sample(st, jobs)) if (not a.smoke and len(jobs) > 1) else 0
+            cap(sec * (k + _waves(len(jobs) - k, w_mem)))                       # admission includes the serial preflight tasks
             F.accept(out, jobs, salt_sha, container, src=a.src)
-            if not a.smoke and len(jobs) > 1:
-                w = memory_preflight(jobs[0], out, w)["workers"]
-            run_stage(st, jobs, out, w)
+            rest = jobs
+            if k:
+                mp = memory_preflight(st, jobs, out, w_mem); w_mem = mp["workers"]
+                rest = [j for j in jobs if j["id"] not in set(mp["measured"])]
+                cap(sec * _waves(len(rest), w_mem))                             # admission again with the chosen workers
+            run_stage(st, rest, out, w_mem)
         elif st == "diagnostics":
-            write(Path(out) / "diagnostics.json", diagnostics(out, jobs, w))
+            cap(STAGE_SECONDS["diagnostics"] * slow * _waves(len(jobs), w_mem))
+            write(Path(out) / "diagnostics.json", diagnostics(out, jobs, w_mem))
         else:
             inventory(out, p)
-        print(json.dumps({"churn": p, "stage": st, "jobs": len(jobs)}), flush=True)
+        print(json.dumps({"churn": p, "stage": st, "jobs": len(jobs), "workers_memory": w_mem}), flush=True)
 
 
 def main(argv=None) -> int:
@@ -391,6 +430,7 @@ def main(argv=None) -> int:
     ap.add_argument("--usd-per-hour", dest="usd_per_hour", type=float, default=None, help="the pod's actual hourly price (required in production)")
     ap.add_argument("--prior-usd", dest="prior_usd", type=float, default=0.0, help="charges of earlier failed attempts of this arm")
     ap.add_argument("--gate", choices=("first", "only", "skip"), default="first", help="the p = 0 reproduction gate (plan section 3 c)")
+    ap.add_argument("--require-identical", dest="req_id", action="store_true", help="the pod gate: bit identity (the author's decision)")
     ap.add_argument("--smoke", action="store_true")
     a = ap.parse_args(argv); base = Path(a.out); F.check_out(base, a.src)
     if not a.smoke:
@@ -400,7 +440,7 @@ def main(argv=None) -> int:
         if a.gate == "skip":
             raise SystemExit("churn arm refused: production runs cannot skip the gate")
         if a.stage != "all":
-            require_gate(base)
+            require_gate(base, a.req_id)
         base.mkdir(parents=True, exist_ok=True)
         write(base / "run.json", {"started": a.started, "usd_per_hour": a.usd_per_hour, "prior_usd": a.prior_usd, "stop_usd": a.stop_usd})
     if a.usd_per_hour is None:
@@ -417,15 +457,15 @@ def main(argv=None) -> int:
         jobs = build_jobs(root, cfgs, params, salt_sha, 0.0, (GATE_CELL[0],), (GATE_CELL[1],), a.smoke)
         _run_rate(out, jobs, ("inputs", "search", "freeze", "evaluate", "doubling", "inventory"), a, salt_sha, container, 0.0, a.started)
         rid = R.cell_id(f"{GATE_CELL[0]}@rho0.2", GATE_CELL[1], "D2+H3", "profit")
-        g = gate_compare(a.src, out, rid, jobs[0]["id"]); inventory(out, 0.0)
-        print(json.dumps({"gate": g["pass"], "search": g["search"].get("problems"), "doubling": g["doubling"].get("problems")}), flush=True)
-        if not g["pass"] and not a.smoke:
+        g = gate_compare(a.src, out, rid, jobs[0]["id"], a.req_id); inventory(out, 0.0)
+        print(json.dumps({"gate_ok": g["gate_ok"], "identical": g["identical"], "search": g["search"].get("problems"), "doubling": g["doubling"].get("problems")}), flush=True)
+        if not g["gate_ok"] and not a.smoke:
             print("churn arm stopped: the p = 0 gate failed", file=sys.stderr)
             return 1
         if a.gate == "only":
-            return 0 if g["pass"] else 1
+            return 0 if g["gate_ok"] else 1
     if not a.smoke:
-        require_gate(base)
+        require_gate(base, a.req_id)
     for p in (float(x) for x in a.rates.split(",")):
         out = base / f"p{p:g}"; out.mkdir(parents=True, exist_ok=True); R.install_salt(root, out)
         jobs = build_jobs(root, cfgs, params, salt_sha, p, tuple(a.markets.split(",")), tuple(a.rules.split(",")), a.smoke)

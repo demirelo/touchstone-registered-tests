@@ -1,4 +1,4 @@
-# Honest-churn arm: plan (draft 3, 2026-11-10; for internal review; no spend yet)
+# Honest-churn arm: plan (draft 4, 2026-11-11; for internal review; no spend yet)
 
 **Why.** The Fable 5.2 fresh review (problem 4, `docs/revision/roster/fable52-paper-r1.md`; triage
 `docs/paper/fable52-triage.md`): in both tests the nine honest opponents never replace their identities, so after the
@@ -6,8 +6,21 @@ start a new identity almost always belongs to the deviating provider. This arm l
 identities and measures how R3's results change. The author asked on 2026-11-10 to "run all necessary sims"; nothing
 runs before this plan has internal consensus and the reservation is recorded in the budget ledger.
 
-**Status.** Draft 3. Exploratory follow-up outside the registered protocol, specified after the second test's results
+**Status.** Draft 4. Exploratory follow-up outside the registered protocol, specified after the second test's results
 were seen. Not an independent replication.
+
+**Changes from draft 3** (internal review round 3, `docs/revision/roster/{sol,astra}-churn-plan-r3.md`, both reject; and
+the cross-cutting rules of the author and the reset plan):
+1. The cost admission runs again after the memory preflight chooses the workers; the first admission includes the
+   preflight's serial tasks; the chosen worker limit is kept for every later stage, including the diagnostics.
+2. The preflight runs real tasks (one evaluate task per rule, one doubling task) in child processes, takes the largest
+   peak with a 25 percent margin for markets, rules and winners, and keeps their records; doubling is measured itself.
+3. The pod gate requires bit identity (`--require-identical`, the semantics of the reset driver's `pod_gate_ok`; the
+   author's decision on card `touchstone-reset-repro-pass`); the Mac gate keeps the tolerance criterion.
+4. The launcher is a reviewed copy of `results/pods/reset_pod.sh` with `podctl.py` (draft in
+   `docs/revision/churn/churn_pod.sh`): stages stop only between stages at the soft cap; the one exception is the
+   watchdog, which deletes the pod at 1.3 times the cap at the price ceiling; attempts persist in its attempts file, with
+   the bound at the ceiling; it passes the allocation time, the price and the earlier attempts' charges to the driver.
 
 **Changes from draft 2** (internal review round 2, `docs/revision/roster/{sol,astra}-churn-plan-r2.md`: Sol
 accept-with-caveat, Astra reject):
@@ -113,14 +126,18 @@ contrast in either direction.
   A smoke-size run of the whole path for fresh0 R3 at p = 0.05, including the gate path, both winners' diagnostics, and
   the memory preflight on its output; production refuses a missing `--started`, `--gate skip`, and a separate stage
   without a saved passing gate; the worker limit fits the memory limit. All pass: `uv run pytest -q docs/revision/churn`
-  (19 passed).
+  (23 passed: also the bit-identity pod gate, the preflight's real-task sample, and admission after the preflight with
+  the kept worker limit).
 - **(c) The p = 0 gate, first on the pod.** The driver runs fresh0 R3 D2+H3 at p = 0 through the injected path (inputs,
   search, freeze, acceptance, evaluation, doubling) into `gate-p0/`, maps the id `|churn0` to the registered id, and
   compares search and evaluation by the reset driver's `compare` and the doubling check by `compare_doubling`
-  (draft-5 criteria of the reset plan). It saves `gate-p0/gate.json` and an inventory. On failure the driver stops before
+  (draft-5 criteria of the reset plan). **On the pod the gate requires bit identity** (`--require-identical`: search,
+  evaluation and doubling identical to the registered records, the reset driver's `pod_gate_ok` semantics, the author's
+  decision); on the Mac the draft-5 tolerance criterion applies. It saves `gate-p0/gate.json` (with `identical`,
+  `require_identical` and `gate_ok`) and an inventory. On failure the driver stops before
   any churn cell is dispatched and reports. Every later production stage, also when run alone or resumed, first requires
-  that saved gate record: passing, for this cell and id mapping, and run by the same driver version (its hash in the
-  gate's inventory); production runs cannot skip the gate.
+  that saved gate record: passing its criterion (on the pod, bit-identical), for this cell and id mapping, and run by the
+  same driver version (its hash in the gate's inventory); production runs cannot skip the gate.
 
 ## 4. Diagnostics (evaluation only, no search)
 
@@ -174,10 +191,15 @@ cells plus the gate cell: **41.1 core-hours, 4.43 USD** at the benchmark price.
 **Memory** (`docs/revision/churn/churn_memory.py`): one 200-seed profile peaks at 981 MB without churn and 1,084 MB at
 p = 0.05; an evaluate or doubling task keeps four profiles (2.5 GB without churn, operations ledger), so about 2.8 GB
 under churn. Workers: search 16; evaluate, doubling and diagnostics 9 (about 25 GB, 23.3 GiB, below the pod's 28 GiB floor; an
-independent four-profile check at p = 0.05 in review peaked at 2,532 MiB). **Pod-side preflight** before the nine-worker
-stages (`memory_preflight`): the cgroup limit, the peak of one full evaluate task (four 200-seed profiles) in a child
-process, and the parent's own peak; workers = min(9, floor((0.9 x limit - parent) / task peak)), saved in
-`memory_preflight.json`; the driver refuses if no task fits.
+independent four-profile check at p = 0.05 in review peaked at 2,532 MiB). **Pod-side preflight** before the evaluate and
+the doubling stage (`memory_preflight`): real tasks in child processes, one evaluate task per rule and one doubling task,
+each writing its production record (not run again); the largest peak times a margin of 1.25 for variation across
+markets, rules and winners; the cgroup limit and the parent's own peak; workers = min(current limit,
+floor((0.9 x limit - parent) / (1.25 x peak))), saved in `memory_preflight_<stage>.json`; the driver refuses if no task
+fits. The chosen limit is kept for every later stage, the diagnostics included (two profiles per task, below the
+evaluate task). **Admission and the preflight:** before a stage the cost admission covers the preflight's serial tasks
+plus the remaining jobs at the current limit; after the preflight it runs again for the remaining jobs at the chosen
+limit, and stops between stages if the cap would be passed.
 
 **Billed pod time** (one 16-vCPU pod, 0.56 USD per hour): the gate cell serially, then per rate the 18 searches in two
 waves of 16 and the evaluation, doubling and diagnostics in two waves of 9, plus 0.6 hours of preparation and idle:
@@ -190,7 +212,20 @@ stage is ever killed (author, 2026-11-10): before each stage the driver adds the
 pod's actual hourly price, the charges of earlier failed attempts, and the stage's estimate, and stops between stages
 if the sum would pass the cap, then reports. Production runs refuse to start without `--started` (the allocation time)
 and `--usd-per-hour`; with `--prior-usd`, all are saved in `run.json`. A stage that overruns its estimate can end above
-the cap. Deleting the pod on completion or on failure, and verifying the deletion, is the launcher's job.
+the cap.
+
+**Launcher** (a copy of `results/pods/reset_pod.sh` with `podctl.py`, unchanged pod safety; draft
+`docs/revision/churn/churn_pod.sh`, installed in `results/pods/` after review): code and tarball guards; creation only
+before the hard deadline; the price checked against the ceiling `MAXCPH`; the memory floor (28 GiB); the gate, then the
+stages, each started only if no STOP file exists and the soft deadline has not passed (the soft deadline is the cap at
+the ceiling, net of earlier attempts' charges); at the soft deadline it writes STOP, so the pod stops after the running
+stage. **The one exception to "no running stage is killed":** the `podctl.py` watchdog deletes the pod at 1.3 times the
+cap at the price ceiling (10.40 USD at most for this arm), also mid-stage, as an absolute guard against a hung pod. Spend
+is recorded per attempt (pod id, start, end, recorded price) in the launcher's attempts file, which persists across
+launches; the summary gives the spend at the recorded prices and the bound at the ceiling. The launcher passes to the
+driver the current attempt's allocation time, the recorded price, and the earlier attempts' charges at their recorded
+prices. An EXIT, INT or TERM trap pulls the records, verifies them against the inventories, deletes the pod, and
+verifies the deletion; the watchdog keeps deleting until no pod of this name remains.
 
 ## 8. Steps
 
@@ -209,4 +244,4 @@ the cap. Deleting the pod on completion or on failure, and verifying the deletio
   above and two waves per stage (41.06 core-hours, 4.43 USD; 5.35 hours of stages plus 0.6, 5.95 billed hours, 3.33 USD).
 - Reselection-by-regeneration cost: `sim/manifest_v2.py` `menu_families` and `bank_rules(ctx, fam, 3, False)` over the six
   markets and three rules: 60 D2+H3 and 60 X7-SC searches per rate, 12.19 USD per rate.
-- Tests: `uv run pytest -q docs/revision/churn` (19 passed, 141 s).
+- Tests: `uv run pytest -q docs/revision/churn` (23 passed, 129 s).
