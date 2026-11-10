@@ -128,9 +128,26 @@ def run_stage(stage: str, jobs: list[dict], out, workers: int = 1) -> list[str]:
         return list(ex.map(R._run_one, [stage] * n, jobs, [str(out)] * n, [F.CUTS] * n, [F.H4_EXCLUDED] * n, [jobs] * n))
 
 
+def _newest_by_first_offer(r, focal: int) -> float:
+    """The mechanism-relevant statistic (sim/mechanisms/factorial.py: R3 ages an identity from its first offer and ranks
+    the identities holding assigned jobs): over the rounds in which the focal identity holds assigned jobs, the share in
+    which its first-offer round is strictly the latest among the identities holding assigned jobs."""
+    first: dict = {}; hits = n = 0
+    for t, h in enumerate(r.history):
+        for i in getattr(h, "offers", {}) or {}:
+            first.setdefault(int(i), t)
+        holders = {int(i) for i in h.assignment.values()}
+        mine = [i for i in holders if r.entity_of[i] == focal]
+        if not mine:
+            continue
+        n += 1; f = first.get(mine[0], t); latest = max(first.get(i, t) for i in holders)
+        hits += int(f == latest and sum(1 for i in holders if first.get(i, t) == latest) == 1)
+    return hits / n if n else 0.0
+
+
 def _uniquely_newest(r, focal: int) -> float:
-    """Share of rounds in which the focal provider's current identity has the latest creation round among the current
-    identities, strictly (initial identities tie at round 0)."""
+    """Creation-time newest among the current identities: the share of rounds in which the focal provider's current
+    identity has strictly the latest creation round (initial identities tie at round 0). Not the order R3 uses."""
     T = len(r.history); born = list(r.identity_round); ent = list(r.entity_of); hits = 0
     for t in range(T):
         cur = {}
@@ -148,7 +165,7 @@ def newcomer_shares(results, focal: int, edges=AGE_EDGES) -> dict:
     pooled share per bin (None, "unavailable", when no job was served in the bin); honest replacements per episode; and
     per episode the share of rounds in which the focal identity is uniquely the newest."""
     cats = ("honest_replacement", "honest_initial", "focal"); nb = len(edges) - 1
-    per, reps, newest = [], [], []
+    per, reps, newest, offer_newest = [], [], [], []
     for r in results:
         cnt = {c: [[0, 0] for _ in range(nb)] for c in cats}
         reps.append(sum(1 for i, e in enumerate(r.entity_of) if e != focal and r.identity_generation[i] > 0))
@@ -163,7 +180,7 @@ def newcomer_shares(results, focal: int, edges=AGE_EDGES) -> dict:
                 put(i, 0)
             for a in h.audits:
                 put(a.provider, 1)
-        per.append(cnt); newest.append(_uniquely_newest(r, focal))
+        per.append(cnt); newest.append(_uniquely_newest(r, focal)); offer_newest.append(_newest_by_first_offer(r, focal))
     out = {}
     for c in cats:
         rows = []
@@ -173,7 +190,8 @@ def newcomer_shares(results, focal: int, edges=AGE_EDGES) -> dict:
         out[c] = rows
     out["per_episode"] = per
     out["honest_replacements_per_episode"] = float(sum(reps) / len(reps)) if reps else 0.0
-    out["focal_uniquely_newest"] = newest
+    out["focal_newest_by_creation"] = newest
+    out["focal_newest_by_first_offer_assigned"] = offer_newest
     return out
 
 
@@ -248,14 +266,25 @@ def gate_compare(src, out, rid: str, cid: str) -> dict:
 STOP_USD, POD_USD_PER_HOUR = 8.00, 0.56            # author, 2026-11-10: stop cap 8 USD for this arm (category followup)
 
 
-def check_cap(started: float | None, need_s: float, cap: float = STOP_USD, usd_per_hour: float = POD_USD_PER_HOUR, now: float | None = None) -> None:
-    """No running stage is ever killed (author, 2026-11-10). Between stages: refuse to dispatch the next stage if the pod
-    time already billed since `started` plus the stage's estimate would pass the stop cap; the driver then stops and
-    reports."""
+def check_started(started, now: float | None = None) -> None:
+    """Production runs need the pod's allocation time (epoch seconds, in the past)."""
+    import math
+    import time
+    now = time.time() if now is None else now
+    if started is None or not isinstance(started, (int, float)) or not math.isfinite(started) or not (1.6e9 < float(started) <= now):
+        raise SystemExit(f"churn arm refused: --started must be the pod's allocation time in epoch seconds, got {started!r}")
+
+
+def check_cap(started: float | None, need_s: float, cap: float = STOP_USD, usd_per_hour: float = POD_USD_PER_HOUR, now: float | None = None,
+              prior_usd: float = 0.0) -> None:
+    """An estimate-based stage-admission limit. No running stage is ever killed (author, 2026-11-10): before each stage,
+    the pod time billed since `started`, plus the charges of earlier failed attempts (`prior_usd`), plus the stage's
+    estimate, is compared with the cap, and the driver stops between stages if it would be passed. A stage that overruns
+    its estimate can therefore end above the cap; pod deletion on completion or failure is the launcher's job."""
     import time
     if started is None:
         return
-    spent = ((now if now is not None else time.time()) - float(started)) / 3600 * usd_per_hour
+    spent = float(prior_usd) + ((now if now is not None else time.time()) - float(started)) / 3600 * usd_per_hour
     need = float(need_s) / 3600 * usd_per_hour
     if spent + need > cap:
         raise SystemExit(f"churn arm stopped between stages: {spent:.2f} USD billed + {need:.2f} USD for the next stage would pass the {cap:.2f} USD cap")
@@ -266,6 +295,56 @@ def inventory(out, p: float) -> dict:
     inv["environment"]["churn_driver_sha256"] = sha_file(Path(__file__)); inv["churn"] = float(p); inv["deviations"] = list(DEVIATIONS)
     write(Path(out) / "inventory.json", inv)
     return inv
+
+
+def require_gate(base) -> dict:
+    """Every production churn stage needs a saved, passing p = 0 gate run by this driver version (plan section 3 c)."""
+    g = read(Path(base) / "gate-p0" / "gate.json"); inv = read(Path(base) / "gate-p0" / "inventory.json")
+    want = R.cell_id(f"{GATE_CELL[0]}@rho0.2", GATE_CELL[1], "D2+H3", "profit")
+    if not g or not g.get("pass") or g.get("registered") != want or g.get("churn") != f"{want}|churn0":
+        raise SystemExit("churn arm refused: no saved passing p = 0 gate for this cell")
+    if not inv or inv.get("environment", {}).get("churn_driver_sha256") != sha_file(Path(__file__)):
+        raise SystemExit("churn arm refused: the saved gate was run by another driver version")
+    return g
+
+
+def plan_workers(limit: int, task_peak: int, parent: int, requested: int, headroom: float = 0.9) -> int:
+    """Workers for the four-profile stages that fit the memory limit: floor((headroom x limit - parent) / task peak)."""
+    n = int((headroom * limit - parent) // task_peak)
+    if n < 1:
+        raise SystemExit(f"churn arm refused: memory limit {limit} bytes holds no {task_peak}-byte task")
+    return min(int(requested), n)
+
+
+def memory_limit() -> int:
+    """The cgroup memory limit (v2 or v1), else the physical memory."""
+    import os
+    for f in ("/sys/fs/cgroup/memory.max", "/sys/fs/cgroup/memory/memory.limit_in_bytes"):
+        try:
+            v = Path(f).read_text().strip()
+            if v.isdigit() and int(v) < 2 ** 60:
+                return int(v)
+        except OSError:
+            pass
+    return os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
+
+
+def memory_preflight(job: dict, out, requested: int) -> dict:
+    """Pod-side, before the nine-worker stages: one full evaluate task (four 200-seed profiles) for `job`, in a child
+    process, measured by its peak RSS; the parent's own RSS; the limit; and the workers that fit."""
+    import resource
+    import subprocess
+    import pickle
+    jp = Path(out) / "memory_preflight_job.pkl"; jp.write_bytes(pickle.dumps(job))
+    r = subprocess.run([sys.executable, str(HERE / "churn_memory.py"), "--task", str(jp), str(out)], capture_output=True, text=True)
+    if r.returncode != 0:
+        raise SystemExit(f"churn arm refused: memory preflight failed: {r.stderr[-300:]}")
+    peak = int(json.loads(r.stdout.strip().splitlines()[-1])["peak_rss_bytes"])
+    parent = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * (1 if sys.platform == "darwin" else 1024)   # bytes on macOS, KiB on Linux
+    limit = memory_limit(); w = plan_workers(limit, peak, parent, requested)
+    rec = {"limit_bytes": limit, "task_peak_bytes": peak, "parent_bytes": parent, "requested": requested, "workers": w}
+    write(Path(out) / "memory_preflight.json", rec)
+    return rec
 
 
 STAGE_SECONDS = {"search": 2084.3, "evaluate": 120.0, "doubling": 997.8, "diagnostics": 60.0}   # benchmark, per job (plan section 7)
@@ -279,7 +358,7 @@ def _run_rate(out, jobs, steps, a, salt_sha, container, p, started) -> None:
     for st in steps:
         w = a.workers_search if st == "search" else a.workers_eval
         if st in STAGE_SECONDS:
-            check_cap(started, STAGE_SECONDS[st] * slow * -(-len(jobs) // max(1, w)), a.stop_usd, a.usd_per_hour)
+            check_cap(started, STAGE_SECONDS[st] * slow * -(-len(jobs) // max(1, w)), a.stop_usd, a.usd_per_hour, prior_usd=a.prior_usd)
         if st == "inputs":
             F.copy_inputs(a.src, out, F.inputs(a.src, jobs))
         elif st == "search":
@@ -287,7 +366,10 @@ def _run_rate(out, jobs, steps, a, salt_sha, container, p, started) -> None:
         elif st == "freeze":
             F.prefreeze(out, jobs)
         elif st in ("evaluate", "doubling"):
-            F.accept(out, jobs, salt_sha, container, src=a.src); run_stage(st, jobs, out, w)
+            F.accept(out, jobs, salt_sha, container, src=a.src)
+            if not a.smoke and len(jobs) > 1:
+                w = memory_preflight(jobs[0], out, w)["workers"]
+            run_stage(st, jobs, out, w)
         elif st == "diagnostics":
             write(Path(out) / "diagnostics.json", diagnostics(out, jobs, w))
         else:
@@ -305,10 +387,24 @@ def main(argv=None) -> int:
     ap.add_argument("--stage", default="all", choices=("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory", "all"))
     ap.add_argument("--workers-search", dest="workers_search", type=int, default=16); ap.add_argument("--workers-eval", dest="workers_eval", type=int, default=9)
     ap.add_argument("--started", type=float, default=None, help="epoch seconds of pod allocation; spend is billed from it")
-    ap.add_argument("--stop-usd", dest="stop_usd", type=float, default=STOP_USD); ap.add_argument("--usd-per-hour", dest="usd_per_hour", type=float, default=POD_USD_PER_HOUR)
+    ap.add_argument("--stop-usd", dest="stop_usd", type=float, default=STOP_USD)
+    ap.add_argument("--usd-per-hour", dest="usd_per_hour", type=float, default=None, help="the pod's actual hourly price (required in production)")
+    ap.add_argument("--prior-usd", dest="prior_usd", type=float, default=0.0, help="charges of earlier failed attempts of this arm")
     ap.add_argument("--gate", choices=("first", "only", "skip"), default="first", help="the p = 0 reproduction gate (plan section 3 c)")
     ap.add_argument("--smoke", action="store_true")
     a = ap.parse_args(argv); base = Path(a.out); F.check_out(base, a.src)
+    if not a.smoke:
+        check_started(a.started)
+        if a.usd_per_hour is None or not a.usd_per_hour > 0:
+            raise SystemExit("churn arm refused: --usd-per-hour must be the pod's actual hourly price")
+        if a.gate == "skip":
+            raise SystemExit("churn arm refused: production runs cannot skip the gate")
+        if a.stage != "all":
+            require_gate(base)
+        base.mkdir(parents=True, exist_ok=True)
+        write(base / "run.json", {"started": a.started, "usd_per_hour": a.usd_per_hour, "prior_usd": a.prior_usd, "stop_usd": a.stop_usd})
+    if a.usd_per_hour is None:
+        a.usd_per_hour = POD_USD_PER_HOUR
     from sim.records import cfg_from_dict
     root = json.loads(Path(a.draw).read_text())["hash"]; salt_sha = json.loads(Path(a.instances).read_text())["salt_sha256"]
     container = json.loads(Path(a.addendum).read_text())["deviations"]["configs"]
@@ -328,6 +424,8 @@ def main(argv=None) -> int:
             return 1
         if a.gate == "only":
             return 0 if g["pass"] else 1
+    if not a.smoke:
+        require_gate(base)
     for p in (float(x) for x in a.rates.split(",")):
         out = base / f"p{p:g}"; out.mkdir(parents=True, exist_ok=True); R.install_salt(root, out)
         jobs = build_jobs(root, cfgs, params, salt_sha, p, tuple(a.markets.split(",")), tuple(a.rules.split(",")), a.smoke)

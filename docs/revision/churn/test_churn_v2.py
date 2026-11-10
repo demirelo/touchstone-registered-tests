@@ -96,6 +96,12 @@ def test_smoke_path_for_one_fresh_cell_under_churn(tmp_path):
         assert dg[w]["shares"]["honest_replacements_per_episode"] > 0 and len(dg[w]["normalized"]) == 2   # churn happened
     g = read(out / "gate-p0" / "gate.json")                                                     # the smoke gate ran the mapped comparison
     assert g["churn"].endswith("|churn0") and set(g) >= {"search", "doubling", "pass"} and (out / "gate-p0" / "inventory.json").exists()
+    root = json.loads((MAIN / "draw/draw.json").read_text())["hash"]; salt = json.loads((MAIN / "draw/instances.json").read_text())["salt_sha256"]
+    from sim.records import cfg_from_dict
+    cfgs = {k: cfg_from_dict(v) for k, v in json.loads((MAIN / "deviation/cfg_linux.json").read_text()).items()}
+    j = C.build_jobs(root, cfgs, json.loads((C.F.ROOT / "experiments/v2/params.json").read_text()), salt, 0.05, ("fresh0",), ("F111",), True)[0]
+    mp = C.memory_preflight(j, d, 9)                                                            # the pod-side preflight, run on the smoke output
+    assert mp["task_peak_bytes"] > 0 and mp["parent_bytes"] > 0 and 1 <= mp["workers"] <= 9 and read(d / "memory_preflight.json") == mp
     assert inv["churn"] == 0.05 and "churn_driver_sha256" in inv["environment"]
 
 
@@ -184,7 +190,8 @@ def test_r1_the_cap_stops_dispatch_between_stages_only():
     C.check_cap(t0, 3600, now=t0 + 3600)                                                       # 0.56 + 0.56 USD
     with pytest.raises(SystemExit, match="between stages"):
         C.check_cap(t0, 3600 * 3, now=t0 + 3600 * 12)                                          # 6.72 + 1.68 > 8
-    C.check_cap(None, 10**9)
+    with pytest.raises(SystemExit, match="between stages"):
+        C.check_cap(t0, 3600, now=t0 + 3600, prior_usd=7.0)                                    # charges of a failed attempt count
     assert C.STOP_USD == 8.0
 
 
@@ -197,7 +204,7 @@ def test_r1_per_seed_counts_unavailable_bins_and_focal_newest_share():
     assert got["per_episode"][0]["focal"] == [[2, 1], [2, 0], [0, 0]]                          # [served, audited] per bin
     assert got["focal"][2]["share"] is None                                                    # empty bin: unavailable
     # rounds 0..3: t0 all age 0 (tie), t1 honest identity 2 newest, t2 and t3 focal identity 3 uniquely newest
-    assert got["focal_uniquely_newest"] == [0.5]
+    assert got["focal_newest_by_creation"] == [0.5]
 
 
 def test_r1_market_pooling_is_the_mean_of_market_shares_over_available_markets():
@@ -213,4 +220,69 @@ def test_r1_a_failed_gate_stops_dispatch(tmp_path, monkeypatch):
     monkeypatch.setattr(C, "inventory", lambda *a, **k: None)
     args = ["--src", str(MAIN / "eval/all"), "--out", str(tmp_path / "c"), "--draw", str(MAIN / "draw/draw.json"), "--instances", str(MAIN / "draw/instances.json"),
             "--cfgs", str(MAIN / "deviation/cfg_linux.json"), "--addendum", str(MAIN / "report/addendum.json"), "--markets", "fresh0", "--rules", "F111"]
+    import time
+    args += ["--started", str(time.time() - 60), "--usd-per-hour", "0.56"]
     assert C.main(args) == 1 and calls == [0.0]                                              # only the gate ran
+
+
+# ---- internal review round 2 (Sol accept-with-caveat, Astra reject) ----
+
+def test_r2_production_needs_a_valid_allocation_time_and_price():
+    import time
+    now = time.time()
+    C.check_started(now - 60, now)
+    for bad in (None, now + 3600, 0.0, float("nan")):
+        with pytest.raises(SystemExit, match="started"):
+            C.check_started(bad, now)
+
+
+def test_r2_a_matching_passing_gate_is_required(tmp_path):
+    from sim.records_v2 import write
+    g = tmp_path / "gate-p0"
+    with pytest.raises(SystemExit, match="gate"):
+        C.require_gate(tmp_path)
+    write(g / "gate.json", {"pass": False, "registered": "fresh0@rho0.2|F111|D2+H3|profit", "churn": "fresh0@rho0.2|F111|D2+H3|profit|churn0"})
+    with pytest.raises(SystemExit, match="gate"):
+        C.require_gate(tmp_path)
+    write(g / "gate.json", {"pass": True, "registered": "fresh0@rho0.2|F111|D2+H3|profit", "churn": "fresh0@rho0.2|F111|D2+H3|profit|churn0"})
+    write(g / "inventory.json", {"environment": {"churn_driver_sha256": "0" * 64}})
+    with pytest.raises(SystemExit, match="driver"):
+        C.require_gate(tmp_path)                                                               # a gate run by another driver version
+    write(g / "inventory.json", {"environment": {"churn_driver_sha256": sha256_of(C.__file__)}})
+    C.require_gate(tmp_path)
+
+
+def sha256_of(path):
+    import hashlib
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+@pytest.mark.skipif(not (MAIN / "eval/all/freeze").is_dir(), reason="needs the registered evaluation records")
+def test_r2_production_refuses_gate_skip_and_missing_started(tmp_path):
+    base = ["--src", str(MAIN / "eval/all"), "--out", str(tmp_path / "c"), "--draw", str(MAIN / "draw/draw.json"), "--instances", str(MAIN / "draw/instances.json"),
+            "--cfgs", str(MAIN / "deviation/cfg_linux.json"), "--addendum", str(MAIN / "report/addendum.json"), "--markets", "fresh0", "--rules", "F111"]
+    with pytest.raises(SystemExit, match="started"):
+        C.main(base)
+    import time
+    with pytest.raises(SystemExit, match="gate"):
+        C.main(base + ["--started", str(time.time() - 60), "--usd-per-hour", "0.56", "--gate", "skip"])
+    with pytest.raises(SystemExit, match="gate"):
+        C.main(base + ["--started", str(time.time() - 60), "--usd-per-hour", "0.56", "--stage", "evaluate"])   # a separate stage needs the saved gate
+
+
+def test_r2_workers_fit_the_memory_limit():
+    G = 2 ** 30
+    assert C.plan_workers(limit=32 * G, task_peak=int(2.5 * G), parent=1 * G, requested=9) == 9
+    assert C.plan_workers(limit=20 * G, task_peak=int(2.5 * G), parent=1 * G, requested=9) == 6     # floor((0.9*20 - 1) / 2.5)
+    with pytest.raises(SystemExit, match="memory"):
+        C.plan_workers(limit=2 * G, task_peak=int(2.5 * G), parent=1 * G, requested=9)
+
+
+def test_r2_first_offer_newest_among_identities_with_assigned_jobs():
+    rec = lambda offers, assign: NS(offers={i: None for i in offers}, assignment=assign, audits=())
+    # identities 0 (focal), 1 (honest, offers first at t0), 2 (honest replacement created t1, first offer t2)
+    ep = NS(entity_of=(0, 1, 1), identity_generation=(0, 0, 1), identity_round=(0, 0, 1),
+            history=(rec([0, 1], {0: 0, 1: 1}), rec([0], {0: 0}), rec([0, 2], {0: 0, 1: 2}), rec([0, 2], {0: 0})))
+    got = C.newcomer_shares([ep], focal=0, edges=(0, 100, 200))
+    # t0: 0 and 1 tie at first offer 0 -> no; t1: only the focal has jobs -> yes; t2: identity 2 (first offer 2) newer -> no; t3: focal alone -> yes
+    assert got["focal_newest_by_first_offer_assigned"] == [0.5]

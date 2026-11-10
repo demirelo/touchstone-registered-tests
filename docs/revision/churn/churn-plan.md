@@ -1,4 +1,4 @@
-# Honest-churn arm: plan (draft 2, 2026-11-10; for internal review; no spend yet)
+# Honest-churn arm: plan (draft 3, 2026-11-10; for internal review; no spend yet)
 
 **Why.** The Fable 5.2 fresh review (problem 4, `docs/revision/roster/fable52-paper-r1.md`; triage
 `docs/paper/fable52-triage.md`): in both tests the nine honest opponents never replace their identities, so after the
@@ -6,8 +6,23 @@ start a new identity almost always belongs to the deviating provider. This arm l
 identities and measures how R3's results change. The author asked on 2026-11-10 to "run all necessary sims"; nothing
 runs before this plan has internal consensus and the reservation is recorded in the budget ledger.
 
-**Status.** Draft 2. Exploratory follow-up outside the registered protocol, specified after the second test's results
+**Status.** Draft 3. Exploratory follow-up outside the registered protocol, specified after the second test's results
 were seen. Not an independent replication.
+
+**Changes from draft 2** (internal review round 2, `docs/revision/roster/{sol,astra}-churn-plan-r2.md`: Sol
+accept-with-caveat, Astra reject):
+1. Production runs require the pod's allocation time (`--started`) and its actual hourly price (`--usd-per-hour`), and
+   carry the charges of earlier failed attempts (`--prior-usd`); all three are saved in `run.json`. The 8 USD limit is
+   described as an estimate-based stage-admission limit that an overrunning stage can exceed under the no-kill rule; pod
+   deletion on completion or failure is the launcher's job (section 7).
+2. The reservation command passes the unpadded estimate, 4.43 USD; the wrapper applies the factor 1.25.
+3. Every production stage, including separate-stage and resumed runs, requires a saved passing gate record of this
+   driver version; production cannot skip the gate (section 3 c).
+4. A pod-side memory preflight before the nine-worker stages: the cgroup limit, one full evaluate task's peak (four
+   profiles) in a child process, the parent's own memory, and fewer workers if needed (section 7).
+5. The creation-time newest statistic is labelled as such, and the mechanism-relevant one is added: first-offer age among
+   the identities holding assigned jobs (section 4).
+6. Expectation 4 is narrowed to a cross-rule difference under churn (section 6).
 
 **Changes from draft 1** (internal review round 1, `docs/revision/roster/{sol,astra}-churn-plan-r1.md`, both reject; and
 the author's instructions of 2026-11-10):
@@ -95,20 +110,28 @@ contrast in either direction.
   pool workers, and leaves other jobs unchanged; churn ids and provenance are distinct; under churn every menu candidate
   is rerun on the five training seeds and the frozen reference's score is recomputed; newcomer counts, unavailable
   bins, the focal newest share, market pooling; the gate's id mapping; a failed gate stops dispatch; the cap check. (b)
-  A smoke-size run of the whole path for fresh0 R3 at p = 0.05, including the gate path and both winners' diagnostics.
-  All pass: `uv run pytest -q docs/revision/churn` (14 passed).
+  A smoke-size run of the whole path for fresh0 R3 at p = 0.05, including the gate path, both winners' diagnostics, and
+  the memory preflight on its output; production refuses a missing `--started`, `--gate skip`, and a separate stage
+  without a saved passing gate; the worker limit fits the memory limit. All pass: `uv run pytest -q docs/revision/churn`
+  (19 passed).
 - **(c) The p = 0 gate, first on the pod.** The driver runs fresh0 R3 D2+H3 at p = 0 through the injected path (inputs,
   search, freeze, acceptance, evaluation, doubling) into `gate-p0/`, maps the id `|churn0` to the registered id, and
   compares search and evaluation by the reset driver's `compare` and the doubling check by `compare_doubling`
   (draft-5 criteria of the reset plan). It saves `gate-p0/gate.json` and an inventory. On failure the driver stops before
-  any churn cell is dispatched and reports.
+  any churn cell is dispatched and reports. Every later production stage, also when run alone or resumed, first requires
+  that saved gate record: passing, for this cell and id mapping, and run by the same driver version (its hash in the
+  gate's inventory); production runs cannot skip the gate.
 
 ## 4. Diagnostics (evaluation only, no search)
 
 For every cell, the base and the doubled winner are rerun on the evaluation seeds under churn (`diagnostics` stage):
 per-seed normalised profits; per episode the [served, audited] counts by identity age, in bins [0, 10), [10, 20),
 [20, 50), [50, 200), for honest replacement identities, honest initial identities, and the focal provider's identities;
-honest replacements per episode; and per episode the share of rounds in which the focal identity is uniquely the newest.
+honest replacements per episode; and per episode two "newest" shares for the focal identity. (i) Creation-time newest:
+the share of rounds in which its creation round is strictly the latest among all current identities; this is not the
+order R3 uses. (ii) Mechanism-relevant: over the rounds in which it holds assigned jobs, the share in which its
+first-offer round is strictly the latest among the identities holding assigned jobs, which is how R3 ages and ranks
+identities (`sim/mechanisms/factorial.py`). Only (ii) is used to discuss R3's targeting.
 A bin with no served job is reported as unavailable. Pooling over markets: per rule, winner and bin, the mean of the
 market shares over the markets where the share is available, with that count. A higher audited share of honest
 newcomers is greater audit exposure; it is not by itself a financial loss.
@@ -133,12 +156,13 @@ established (the two disagree).
 1. Pooled g_0.05(R3) exceeds the registered pooled no-churn g(R3) (base 0.0649; doubled against the doubled value).
 2. Pooled d_0.05 = C* - R3 is below the registered no-churn value (base 0.0207; doubled 0.0296).
 3. q_0.01 = B3 - R3 is positive on all six markets.
-4. Under R3 at p = 0.05, the market-pooled audited share of honest replacement identities in their first ten rounds
-   exceeds that under C* and under B3, for both winners.
+4. At p = 0.05, the market-pooled audited share of honest replacement identities in their first ten rounds is higher
+   under R3 than under C* and than under B3, for both winners (a cross-rule difference under churn; no no-churn baseline
+   exists for honest replacement identities in these cells).
 
 A failure is not read as evidence of a particular cause. Only if expectation 2 is met may the paper say that R3's
-measured edge over C* shrinks when honest opponents churn; only if 4 is met that R3's audit exposure shifts to honest
-newcomers.
+measured edge over C* shrinks when honest opponents churn; only if 4 is met that, under churn, R3 exposes honest newcomers
+to more audits than C* and B3 do.
 
 ## 7. Cost and operations
 
@@ -149,18 +173,24 @@ cells plus the gate cell: **41.1 core-hours, 4.43 USD** at the benchmark price.
 
 **Memory** (`docs/revision/churn/churn_memory.py`): one 200-seed profile peaks at 981 MB without churn and 1,084 MB at
 p = 0.05; an evaluate or doubling task keeps four profiles (2.5 GB without churn, operations ledger), so about 2.8 GB
-under churn. Workers: search 16; evaluate, doubling and diagnostics 9 (about 25 GB, below the pod's 28 GiB floor).
+under churn. Workers: search 16; evaluate, doubling and diagnostics 9 (about 25 GB, 23.3 GiB, below the pod's 28 GiB floor; an
+independent four-profile check at p = 0.05 in review peaked at 2,532 MiB). **Pod-side preflight** before the nine-worker
+stages (`memory_preflight`): the cgroup limit, the peak of one full evaluate task (four 200-seed profiles) in a child
+process, and the parent's own peak; workers = min(9, floor((0.9 x limit - parent) / task peak)), saved in
+`memory_preflight.json`; the driver refuses if no task fits.
 
 **Billed pod time** (one 16-vCPU pod, 0.56 USD per hour): the gate cell serially, then per rate the 18 searches in two
 waves of 16 and the evaluation, doubling and diagnostics in two waves of 9, plus 0.6 hours of preparation and idle:
 **5.95 hours, 3.33 USD**.
 
 **Budget** (author, 2026-11-10). The arm uses the shared ledger category `followup` (cap 22 USD for all follow-up runs).
-Before the pod: reserve the estimate times 1.25, 4.43 x 1.25 = 5.54 USD, with
-`docs/revision/followup/budget_followup.py --reserve`. **Stop cap 8.00 USD.** No running stage is ever killed: before
-each stage the driver compares the pod time billed since allocation plus the stage's estimate with the cap
-(`--started`, `--stop-usd 8`), and if the cap would be passed it stops between stages and reports. A failed attempt
-counts toward the cap.
+Before the pod: `docs/revision/followup/budget_followup.py --reserve churn-pod 4.43` (the unpadded estimate; the
+wrapper reserves 4.43 x 1.25 = 5.54 USD). **Stop cap 8.00 USD, an estimate-based stage-admission limit.** No running
+stage is ever killed (author, 2026-11-10): before each stage the driver adds the pod time billed since allocation at the
+pod's actual hourly price, the charges of earlier failed attempts, and the stage's estimate, and stops between stages
+if the sum would pass the cap, then reports. Production runs refuse to start without `--started` (the allocation time)
+and `--usd-per-hour`; with `--prior-usd`, all are saved in `run.json`. A stage that overruns its estimate can end above
+the cap. Deleting the pod on completion or on failure, and verifying the deletion, is the launcher's job.
 
 ## 8. Steps
 
@@ -179,4 +209,4 @@ counts toward the cap.
   above and two waves per stage (41.06 core-hours, 4.43 USD; 5.35 hours of stages plus 0.6, 5.95 billed hours, 3.33 USD).
 - Reselection-by-regeneration cost: `sim/manifest_v2.py` `menu_families` and `bank_rules(ctx, fam, 3, False)` over the six
   markets and three rules: 60 D2+H3 and 60 X7-SC searches per rate, 12.19 USD per rate.
-- Tests: `uv run pytest -q docs/revision/churn` (14 passed, 137 s).
+- Tests: `uv run pytest -q docs/revision/churn` (19 passed, 141 s).

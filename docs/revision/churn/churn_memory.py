@@ -1,6 +1,16 @@
-"""Peak resident memory of one 200-seed evaluation profile on fresh0 under R3, with and without churn (plan section 7).
-Usage: churn_memory.py P   (P = none, 0.01 or 0.05); prints the peak RSS in MB."""
+"""Peak resident memory (plan section 7). Usage: churn_memory.py P   (P = none, 0.01 or 0.05): one 200-seed profile on
+fresh0 under R3, peak RSS in MB. churn_memory.py --task JOB.pkl OUT: one full evaluate task (four profiles) of a churn
+job whose inputs and search record are in OUT, as the pod-side preflight uses it; prints the peak RSS in bytes."""
 import json, resource, sys
+if len(sys.argv) > 1 and sys.argv[1] == "--task":
+    import pickle
+    from pathlib import Path as _P
+    sys.path.insert(0, str(_P(__file__).resolve().parent))
+    import churn_v2 as _C
+    _C.install(); _job = pickle.loads(_P(sys.argv[2]).read_bytes())
+    _C.R.stage_evaluate(_job, _P(sys.argv[3]))
+    print(json.dumps({"peak_rss_bytes": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * (1 if sys.platform == "darwin" else 1024)}))
+    sys.exit(0)
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import churn_v2 as C
