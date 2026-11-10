@@ -22,9 +22,15 @@ def approve(path, new_limit: float, cap: float, text: str) -> None:
     new_limit = BV._amount(new_limit, "approval limit", positive=True); cap = BV._amount(cap, f"cap {OP}", positive=True)
     if not str(text).strip():
         raise Refused("an approval needs the author's written text")
+    if not Path(path).exists():
+        raise Refused(f"no ledger at {path}")
     with BV._locked(path) as d:
         if OP in d["caps"]:
             raise Refused(f"the {OP} category already has a cap of {d['caps'][OP]} USD")
+        if new_limit + 1e-9 < BV._used(d) + cap:
+            raise Refused(f"the limit {new_limit} is below the spend and reservations ({BV._used(d):.3f}) plus the new cap {cap}")
+        if d.get("approval"):
+            d.setdefault("approval_history", []).append(d["approval"])
         d["caps"][OP] = cap
         d["approval"] = {"limit": new_limit, "text": str(text)}
 

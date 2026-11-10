@@ -45,3 +45,19 @@ def test_an_existing_category_is_never_changed(tmp_path):
     with pytest.raises(B.Refused, match="already"):
         B.approve(p, 70, 20, "Raise it. (author)")
     assert json.loads(p.read_text())["caps"]["followup"] == 10.0
+
+
+def test_f10_the_approval_cannot_lower_the_limit_below_spend_plus_the_cap(tmp_path):
+    p = _ledger(tmp_path)                                                       # spent 50.869
+    with pytest.raises(B.Refused, match="below"):
+        B.approve(p, 58, 10, "Too low. (author)")                               # 50.869 + 10 > 58
+
+
+def test_f10_the_earlier_approval_text_is_kept(tmp_path):
+    p = _ledger(tmp_path); B.approve(p, 61, 10, "Approve the reset experiment. (author)")
+    d = json.loads(p.read_text()); assert d["approval_history"] == [{"limit": 55.0, "text": "earlier approval (author)"}]
+
+
+def test_f10_a_missing_ledger_is_refused(tmp_path):
+    with pytest.raises(B.Refused, match="no ledger"):
+        B.approve(tmp_path / "absent.json", 61, 10, "Approve. (author)")

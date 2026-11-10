@@ -180,3 +180,70 @@ def test_smoke_path_for_one_fresh_cell(tmp_path):
     assert ev["stage"] == "evaluate" and len(ev["gain"]) == 2 and f"freeze/{CTX}" in ev["upstream"]
     assert db["stage"] == "doubling" and len(db["heldout"]["gain"]) == 2 and f"reference/{CTX}/F111" in db["upstream"]
     assert inv["records"][f"evaluate/{F.R._safe(rid)}.json"] == sha_file(F.R.eval_path(out, rid))
+
+
+# ---- Fable 5.2 driver review (2026-11-10) ----
+
+PAIRED = {"runner_sha256": "r", "salt_sha256": "s", "cfg_sha256": "c", "root": "h", "seeds_train": [1], "seeds_val": [2], "seeds_eval": [3],
+          "rule_params_sha256": "p", "context": CTX, "rule": "F111", "git_commit": "d5e602e"}
+
+
+def _paired_src(tmp_path, **override):
+    src = tmp_path / "src"; write(F.R.path_of(src, f"reference/{CTX}/F111"), {"stage": "reference", "provenance": {**PAIRED, **override}})
+    return src
+
+
+def test_f1_each_job_matches_its_reference_provenance(tmp_path):
+    j = {**_job(), "provenance": {**PAIRED, "id": f"{CTX}|F111|D2|profit", "budget": [5, 300, 5, 200], "git_commit": "abc"}}
+    F.check_pairing(_paired_src(tmp_path), [j])                             # the commit may differ; everything else may not
+    for key, bad in (("rule_params_sha256", "p2"), ("runner_sha256", "r2"), ("root", "h2"), ("seeds_eval", [4])):
+        with pytest.raises(SystemExit, match=key):
+            F.check_pairing(_paired_src(tmp_path / key, **{key: bad}), [j])
+
+
+def test_f2_an_unknown_commit_is_refused():
+    with pytest.raises(SystemExit, match="commit"):
+        F.check_commit([{**_job(), "provenance": {"git_commit": "unknown"}}])
+    F.check_commit([{**_job(), "provenance": {"git_commit": "052538c"}}])
+
+
+def test_f2_the_inventory_records_the_environment(tmp_path, monkeypatch, no_expected_check):
+    out, j = _frozen(tmp_path, monkeypatch); env = F.inventory(out)["environment"]
+    assert {"python", "numpy", "machine", "platform", "driver_sha256"} <= set(env)
+
+
+def test_f5_an_output_equal_to_or_inside_the_source_is_refused(tmp_path):
+    src = tmp_path / "copy-of-eval"
+    for bad in (src, src / "followup"):
+        with pytest.raises(SystemExit, match="inside"):
+            F.check_out(bad, src)
+    F.check_out(tmp_path / "followup", src)
+
+
+def test_f6_the_salt_is_checked_before_any_search(tmp_path):
+    (tmp_path / "salt.hex").write_text((b"\x01" * 32).hex())
+    with pytest.raises(SystemExit, match="salt"):
+        F.check_salt(tmp_path, F.R._sha(b"\x02" * 32), [])
+
+
+def test_f7_a_second_different_hash_for_a_known_record_is_refused(tmp_path, no_expected_check):
+    src = _src(tmp_path)                                                      # the X7-SC search lists the D2+H3 search by its hash
+    x7 = F.R.path_of(src, f"{CTX}|F111|X7-SC|profit"); d = read(x7); d["upstream"] = {f"{CTX}|F111|D2+H3|profit": "0" * 64}; write(x7, d)
+    ref = F.R.path_of(src, f"reference/{CTX}/F111"); r = read(ref); r["upstream"][f"{CTX}|F111|X7-SC|profit"] = sha_file(x7); write(ref, r)
+    fr = F.R.path_of(src, f"freeze/{CTX}"); f = read(fr); f["records"][f"reference/{CTX}/F111"] = sha_file(ref); write(fr, f)
+    with pytest.raises(SystemExit, match="different hashes"):
+        F.inputs(src, [_job()])
+
+
+def test_f7_the_original_freeze_must_be_cuts_3_with_h4(tmp_path, no_expected_check):
+    src = _src(tmp_path); fr = F.R.path_of(src, f"freeze/{CTX}"); f = read(fr); f["cuts"] = 2; write(fr, f)
+    with pytest.raises(SystemExit, match="cuts"):
+        F.inputs(src, [_job()])
+
+
+def test_f8_acceptance_recomputes_the_inputs_from_the_source(tmp_path, monkeypatch, no_expected_check):
+    out, j = _frozen(tmp_path, monkeypatch)
+    F.accept(out, [j], j["provenance"]["salt_sha256"], {"fresh0": {"container_hash": "c0"}}, src=tmp_path / "src")
+    p = out / "inputs.json"; d = read(p); d.pop(f"{CTX}|F000|D2+H3|profit"); write(p, d)
+    with pytest.raises(SystemExit, match="inputs"):
+        F.accept(out, [j], j["provenance"]["salt_sha256"], {"fresh0": {"container_hash": "c0"}}, src=tmp_path / "src")

@@ -52,10 +52,46 @@ def restored_cells(markets=MARKETS) -> list[dict]:
     return [uncut[i] for i in ids]
 
 
-def check_out(out) -> None:
-    o, e = Path(out).resolve(), Path(EVAL_ALL).resolve()
-    if o == e or e in o.parents:
-        _refuse(f"the output {o} is inside {e}")
+def check_out(out, src=None) -> None:
+    o = Path(out).resolve()
+    for e in {Path(EVAL_ALL).resolve()} | ({Path(src).resolve()} if src else set()):
+        if o == e or e in o.parents:
+            _refuse(f"the output {o} is inside {e}")
+
+
+PAIRED_KEYS = ("runner_sha256", "salt_sha256", "cfg_sha256", "root", "seeds_train", "seeds_val", "seeds_eval", "rule_params_sha256", "context")
+
+
+def check_pairing(src, jobs: list[dict]) -> None:
+    """Each job's provenance equals its frozen reference's provenance on every key the pairing depends on (the commit may
+    differ): runner, salt, configuration, root, seeds, rule parameters, context (Fable 5.2 driver review, finding 1)."""
+    for j in jobs:
+        ref = read(R.path_of(src, f"reference/{j['context']}/{j['rule']}"))
+        if ref is None:
+            _refuse(f"{j['id']}: no reference record to pair with")
+        if bad := [k for k in PAIRED_KEYS if j["provenance"].get(k) != ref["provenance"].get(k)]:
+            _refuse(f"{j['id']}: provenance differs from its reference in {bad}")
+
+
+def check_commit(jobs: list[dict]) -> None:
+    if bad := [j["id"] for j in jobs if j["provenance"].get("git_commit") in (None, "", "unknown")]:
+        _refuse(f"no git commit recorded for {bad[:3]}")
+
+
+def check_code() -> None:
+    """The frozen runner and simulator are byte-identical to the protocol-v2 tag."""
+    import subprocess
+    r = subprocess.run(["git", "diff", "--quiet", "protocol-v2", "--", "scripts/revision_v2.py", "sim/"], cwd=ROOT)
+    if r.returncode != 0:
+        _refuse("scripts/revision_v2.py or sim/ differs from protocol-v2 (or the tag is missing)")
+
+
+def check_salt(out, salt_sha256: str, jobs: list[dict]) -> None:
+    salt = Path(out) / "salt.hex"
+    if not salt.exists() or R._sha(bytes.fromhex(salt.read_text().strip())) != salt_sha256:
+        _refuse("the identity salt under the output is not the recorded salt")
+    if bad := [j["id"] for j in jobs if j["provenance"]["salt_sha256"] != salt_sha256]:
+        _refuse(f"jobs carry another salt hash: {bad}")
 
 
 def build_jobs(root: str, cfgs: dict, params: dict, salt_sha256: str, markets=MARKETS, smoke: bool = False) -> list[dict]:
@@ -81,6 +117,8 @@ def inputs(src, jobs: list[dict]) -> dict[str, str]:
         ctx = j["context"]; fr = read(R.path_of(src, f"freeze/{ctx}"))
         if fr is None:
             _refuse(f"the original freeze of {ctx} is missing")
+        if fr.get("cuts", CUTS) != CUTS or fr.get("h4_excluded", H4_EXCLUDED) != H4_EXCLUDED:
+            _refuse(f"the original freeze of {ctx} is not cuts {CUTS} with H4 loaded")
         rid = f"reference/{ctx}/{j['rule']}"
         if rid not in fr["records"]:
             _refuse(f"{rid} is not in the original freeze of {ctx}")
@@ -95,8 +133,11 @@ def inputs(src, jobs: list[dict]) -> dict[str, str]:
             u, s = todo.popitem()
             if need.setdefault(u, s) != s:
                 _refuse(f"{u}: two original records hold different hashes")
-            rec = read(R.path_of(src, u))
-            todo.update({k: v for k, v in ((rec or {}).get("upstream") or {}).items() if k not in need})
+            for k, v in ((read(R.path_of(src, u)) or {}).get("upstream") or {}).items():
+                if need.get(k, v) != v or todo.get(k, v) != v:
+                    _refuse(f"{k}: two original records hold different hashes")
+                if k not in need:
+                    todo[k] = v
     return need
 
 
@@ -148,15 +189,16 @@ def prefreeze(out, jobs: list[dict]) -> None:
             write(p, body)
 
 
-def accept(out, jobs: list[dict], salt_sha256: str, container: dict) -> None:
+def accept(out, jobs: list[dict], salt_sha256: str, container: dict, src=None) -> None:
     """Run before evaluation and before doubling: the freeze exists and every record in it, and every copied input,
-    still has its hash; the identity salt and the configurations are the recorded ones."""
-    salt = Path(out) / "salt.hex"
-    if not salt.exists() or R._sha(bytes.fromhex(salt.read_text().strip())) != salt_sha256:
-        _refuse("the identity salt under the output is not the recorded salt")
-    if bad := [j["id"] for j in jobs if j["provenance"]["salt_sha256"] != salt_sha256]:
-        _refuse(f"jobs carry another salt hash: {bad}")
+    still has its hash; the identity salt and the configurations are the recorded ones; with `src`, inputs.json holds
+    every input recomputed from the original records."""
+    check_salt(out, salt_sha256, jobs)
     check_configs(jobs, container)
+    if src is not None:
+        have = read(Path(out) / "inputs.json") or {}
+        if bad := sorted(r for r, s in inputs(src, jobs).items() if have.get(r) != s):
+            _refuse(f"inputs.json lacks or differs on {bad[:3]}")
     for ctx in sorted({j["context"] for j in jobs}):
         fr = read(R.path_of(out, f"freeze/{ctx}"))
         if fr is None or not fr.get("followup"):
@@ -179,7 +221,11 @@ def inventory(out) -> dict:
     out = Path(out)
     recs = {str(p.relative_to(out)): sha_file(p) for p in sorted(out.rglob("*"))
             if p.is_file() and p.name != "inventory.json" and not p.name.endswith((".lock", ".tmp"))}
-    inv = {"stage": "inventory", "deviations": list(DEVIATIONS), "records": recs}
+    import platform
+    import numpy
+    env = {"python": platform.python_version(), "numpy": numpy.__version__, "machine": platform.machine(), "platform": platform.platform(),
+           "processor": platform.processor(), "driver_sha256": sha_file(Path(__file__))}
+    inv = {"stage": "inventory", "deviations": list(DEVIATIONS), "environment": env, "records": recs}
     write(out / "inventory.json", inv)
     return inv
 
@@ -223,7 +269,7 @@ def main(argv=None) -> int:
     ap.add_argument("--stage", default="all", choices=("inputs", "search", "freeze", "evaluate", "doubling", "inventory", "all"))
     ap.add_argument("--workers", type=int, default=1); ap.add_argument("--smoke", action="store_true")
     ap.add_argument("--reproduce", action="store_true", help=f"validation (a): rerun {REPRO} and compare exactly")
-    a = ap.parse_args(argv); out = Path(a.out); check_out(out)
+    a = ap.parse_args(argv); out = Path(a.out); check_out(out, a.src)
     from sim.records import cfg_from_dict
     root = json.loads(Path(a.draw).read_text())["hash"]; salt_sha = json.loads(Path(a.instances).read_text())["salt_sha256"]
     container = json.loads(Path(a.addendum).read_text())["deviations"]["configs"]
@@ -234,7 +280,9 @@ def main(argv=None) -> int:
         print(json.dumps({"reproduce": REPRO, "identical": not problems, "problems": problems}))
         return 0 if not problems else 1
     jobs = build_jobs(root, cfgs, json.loads(Path(a.params).read_text()), salt_sha, tuple(a.markets.split(",")), a.smoke)
-    check_configs(jobs, container)
+    check_configs(jobs, container); check_salt(out, salt_sha, jobs); check_commit(jobs); check_code()
+    if not a.smoke:
+        check_pairing(a.src, jobs)
     steps = ("inputs", "search", "freeze", "evaluate", "doubling", "inventory") if a.stage == "all" else (a.stage,)
     for st in steps:
         if st == "inputs":
@@ -244,7 +292,7 @@ def main(argv=None) -> int:
         elif st == "freeze":
             prefreeze(out, jobs)
         elif st in ("evaluate", "doubling"):
-            accept(out, jobs, salt_sha, container); run_stage(st, jobs, out, a.workers)
+            accept(out, jobs, salt_sha, container, src=a.src); run_stage(st, jobs, out, a.workers)
         else:
             inventory(out)
         print(json.dumps({"stage": st, "jobs": len(jobs)}), flush=True)
