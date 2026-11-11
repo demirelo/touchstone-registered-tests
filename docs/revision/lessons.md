@@ -90,3 +90,4 @@ Guard: tests `test_r12_settle_counts_only_after_done`, `test_r12_creation_answer
 - **Guard 1:** every internal-review brief for text written in response to a reviewer now asks: "Does any adopted reviewer inference contradict a qualification the paper already states? Quote both." (Written rule; the brief template is `docs/revision/roster/brief-*.md`.)
 - **Mistake 2:** the round-12 response note said every change was text or analysis on existing records, but the reference check ran new Mac evaluations.
 - **Guard 2:** a response note classifies each change as text, analysis on existing records, or new evaluation; `check_response_quotes.py` does not cover this, so the brief for the package's last internal check asks for it explicitly.
+- 2026-11-11: paper_commit.sh committed without the regenerated numbers.tex (54ee50c). Guard: the script now copies $S/numbers.tex into paper-v2 before git add.
