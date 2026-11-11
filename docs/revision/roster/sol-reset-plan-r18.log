@@ -1,0 +1,1525 @@
+OpenAI Codex v0.162.1
+--------
+workdir: /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+model: gpt-6.1-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1c902-0139-78f1-8103-57adfcd60c2d
+--------
+user
+# Reset pod launcher: internal review round 18 (read-only; no paid APIs; do not read `sealed/`, `~/touchstone-h4`, or `~/h4-session.out`; reasoning effort high; under 300 words)
+
+Round 17 (`docs/revision/roster/{sol,astra}-reset-plan-r17.md`) rejected the launcher on three items. Files: `/Users/oemer.demirel/Projects/touchstone/results/pods/{reset_pod.sh,podctl.py,create_one.py,runpod.py,test_podctl.py,test_runpod.py,test_reset_pod_harness.sh}`.
+
+1. Billing wait and wall time (Sol 1): the watchdog writes `NAME.wdend` as "wall monotonic". `podctl.spend` needs at least 3600 s by both clocks. If monotonic time is below the recorded value (a restart), the wait cannot be verified and spend is refused (the author takes the spend from the billing page). On macOS the monotonic clock does not advance during sleep, which only lengthens the wait. Tests: a +4000 s wall jump with 30 s elapsed is refused; a restart is refused.
+2. Spend overlapping a launch (Astra 1): `spend` takes `NAME.launchlock` (mkdir) for its whole run and refuses while a launch or watchdog holds it; the launcher takes the same lock before reading or archiving records. Test: refused while held; held during the run; released after.
+3. Partial record (Astra 2): `NAME.spent` is written to a temporary file, flushed, fsynced, then published with `os.replace`; on failure no record exists. The launcher accepts only a complete record (`^[0-9]+(\.[0-9]+)? USD `). Test: a failing replace publishes nothing. New harness scenario: an empty `.spent` does not count as recorded.
+4. Harness end states (Sol 2): the two `HARDX=1.0` scenarios accept `CREATION BLOCKED (hard deadline)`.
+
+Tests: 53 pass (r18 tests seen RED). Harness: 14 scenarios; a smoke of the 4 refusal scenarios gave PARTIAL as designed; the full run is going (about 3 h). The launch is gated on "HARNESS OK (14 of 14 scenarios)" and this review.
+
+Check: (1) each round-17 item is closed; (2) new defects in one pass; (3) anything that should block the pod.
+
+Output exactly:
+VERDICT: accept | accept-with-caveat | reject
+CORRECTIONS: numbered, each with file:line, or "none".
+CONFIDENCE: 0 to 1.
+
+hook: SessionStart
+hook: SessionStart Completed
+codex
+I will read the round-17 findings and check the listed files. I will use read-only checks and no paid APIs.
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg -n 'touchstone|reset_pod|podctl|reset-plan' /Users/oemer.demirel/.codex/memories/MEMORY.md" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+501:# Task Group: anthropic-residency-application-writing-and-touchstone-research
+510:- rollout_summaries/2026-11-03T12-32-03-zdzn-anthropic_residency_writing_touchstone_research_plan.md (cwd=/Users/oemer.demirel/Documents/Codex/2026-11-03/why-anthropic-anthropic-sets-the-frontier, rollout_path=/Users/oemer.demirel/.codex/sessions/2026/11/03/rollout-2026-11-03T13-32-03-01a1a165-260e-7180-9d34-c9dc6bf34b4d.jsonl, updated_at=2026-11-03T13:02:09+00:00, thread_id=01a1a165-260e-7180-9d34-c9dc6bf34b4d, success; application answers finalized)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "pwd; rg --files -g AGENTS.md -g '*reset-plan-r17.md' -g '"'!sealed/**'"' -g '"'!**/sealed/**'"'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+docs/revision/roster/sol-reset-plan-r17.md
+docs/revision/roster/astra-reset-plan-r17.md
+docs/revision/roster/brief-reset-plan-r17.md
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'cat docs/revision/roster/sol-reset-plan-r17.md docs/revision/roster/astra-reset-plan-r17.md' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+VERDICT: reject
+
+CORRECTIONS:
+1. podctl.py:170 — The one-hour billing wait still uses wall time. Offline reproduction: the watchdog ends at wall time 1000; after 30 elapsed seconds and a forward clock step to 5000, `spend()` accepts the balance and writes `.spent`. Delayed charges can therefore be omitted. Verify the wait with elapsed time across CLI calls, and refuse recording when that verification is unavailable. Add a regression test.
+2. test_reset_pod_harness.sh:106 — The unreachable-pod scenario excludes the actual terminal state. With `HARDX=1.0`, the soft and hard deadlines coincide. After the unreachable pod is deleted, reset_pod.sh:123 returns `CREATION BLOCKED (hard deadline)` before the soft-deadline check. An offline execution of these shell statements reproduced this result. Correct the expected state and check the related expectation at test_reset_pod_harness.sh:107. Keep the pod blocked until the corrected full run reports `HARNESS OK (13 of 13 scenarios)`.
+
+CONFIDENCE: 0.97VERDICT: reject
+
+CORRECTIONS:
+1. `podctl.py:163`, `podctl.py:185`, `reset_pod.sh:58` — Record isolation remains incomplete. A repeated spend check can read the old baseline, overlap a new launch, then write the old spend into the new launch’s `.spent`. An in-memory reproduction confirmed this bypasses the next unrecorded-spend check. Serialize spend recording with archival and baseline replacement, or bind records to immutable launch IDs.
+2. `podctl.py:185`, `reset_pod.sh:57` — A failed spend write can leave an empty `.spent`, which the launcher accepts because it checks only existence. An in-memory disk-failure simulation confirmed this. Write and close a temporary record successfully before atomic publication; validate the completed record before permitting reuse. Add regression tests for this failure and the race above.
+3. `test_reset_pod_harness.sh:116` — Full harness verification remains pending. Keep the pod blocked until the corrected launcher produces `HARNESS OK (13 of 13 scenarios)`. The partial smoke run does not close this gate.
+
+CONFIDENCE: 0.98.
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'wc -l /Users/oemer.demirel/Projects/touchstone/results/pods/{reset_pod.sh,podctl.py,create_one.py,runpod.py,test_podctl.py,test_runpod.py,test_reset_pod_harness.sh}; nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/podctl.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+     196 /Users/oemer.demirel/Projects/touchstone/results/pods/reset_pod.sh
+     292 /Users/oemer.demirel/Projects/touchstone/results/pods/podctl.py
+      24 /Users/oemer.demirel/Projects/touchstone/results/pods/create_one.py
+      46 /Users/oemer.demirel/Projects/touchstone/results/pods/runpod.py
+     333 /Users/oemer.demirel/Projects/touchstone/results/pods/test_podctl.py
+      13 /Users/oemer.demirel/Projects/touchstone/results/pods/test_runpod.py
+     118 /Users/oemer.demirel/Projects/touchstone/results/pods/test_reset_pod_harness.sh
+    1022 total
+     1	"""Pod safety primitives for the follow-up launchers (internal reviews r8-r16 of reset_pod.sh). Every function fails
+     2	closed: a failed listing counts as "pods may still exist", and success needs a successful listing that shows no pod.
+     3	Elapsed budgets use the monotonic clock; deadlines (HARD_TS) are wall-clock epoch seconds.
+     4	
+     5	Spend (r16): the record is the account balance difference, NAME.bal0 (written before the first creation request) minus
+     6	the balance at least an hour after the watchdog ended. Other usage on the account during that time is included, so the
+     7	record can overstate the spend, never understate it. The launcher prints only estimates.
+     8	
+     9	CLI (exit 0 = success):
+    10	  podctl.py reconcile NAME [KEEP_ID]          delete every pod named NAME except KEEP_ID; verified by a fresh listing
+    11	  podctl.py delete ID SECONDS                 delete one pod and verify it is gone within SECONDS
+    12	  podctl.py price ID                          print ID's price (finite, positive); exit 1 when unknown
+    13	  podctl.py balance                           print "BALANCE SPEND_PER_HR"; exit 1 when unknown
+    14	  podctl.py spend NAME                        print the recorded spend (USD, rounded up to a cent); refused until the
+    15	                                              watchdog ended at least WAIT_AFTER_WATCHDOG s ago and no pod is named NAME
+    16	  podctl.py watchdog NAME HARD_TS DONE_FILE   after DONE_FILE, or from HARD_TS (also writes NAME.blocked): delete every
+    17	                                              pod named NAME; exits only with DONE_FILE and the settle time of empty
+    18	                                              listings; then writes NAME.wdend and releases NAME.launchlock
+    19	  podctl.py unlock NAME                       release NAME.launchlock (only an empty directory)
+    20	  podctl.py may-create NAME HARD_TS           exit 0 only before HARD_TS and while NAME.blocked does not exist
+    21	  podctl.py remaining UNTIL_TS                print the seconds left (0 when past)
+    22	"""
+    23	from __future__ import annotations
+    24	
+    25	import datetime
+    26	import json
+    27	import math
+    28	import os
+    29	import subprocess
+    30	import sys
+    31	import time
+    32	from decimal import ROUND_CEILING, Decimal, InvalidOperation
+    33	
+    34	HERE = os.path.dirname(os.path.abspath(__file__))
+    35	PY = sys.executable
+    36	
+    37	SETTLE = 300               # seconds of consecutive empty listings, counted only after DONE, before the watchdog ends
+    38	AMBIGUOUS_SETTLE = 1800    # the same while NAME.request is "pending" (an outstanding or ambiguous creation request)
+    39	WAIT_AFTER_WATCHDOG = 3600  # assumed bound on the delay before the account balance shows the last charge
+    40	
+    41	
+    42	def _run(args, timeout=60):
+    43	    try:
+    44	        r = subprocess.run([PY, os.path.join(HERE, "runpod.py")] + args, capture_output=True, text=True, timeout=timeout)
+    45	        return r.returncode, r.stdout
+    46	    except subprocess.TimeoutExpired:
+    47	        return 124, ""
+    48	
+    49	
+    50	def list_pods(run=_run, timeout=60):
+    51	    """The pods as a list, or None when the listing failed (never an empty list on failure). No command runs without a
+    52	    positive budget, and the budget is passed unchanged (r12, r13)."""
+    53	    if float(timeout) <= 0:
+    54	        return None
+    55	    rc, out = run(["list"], timeout=float(timeout))
+    56	    if rc != 0:
+    57	        return None
+    58	    try:
+    59	        pods = json.loads(out)
+    60	    except ValueError:
+    61	        return None
+    62	    return pods if isinstance(pods, list) else None
+    63	
+    64	
+    65	def named(pods, name):
+    66	    return [p["id"] for p in pods if p.get("name") == name]
+    67	
+    68	
+    69	def delete_verified(pid, seconds, run=_run, clock=time.monotonic, sleep=time.sleep):
+    70	    """Delete PID until a successful listing no longer shows it, within SECONDS of elapsed time."""
+    71	    end = clock() + seconds
+    72	    while clock() < end:
+    73	        run(["delete", pid], timeout=min(60.0, end - clock()))
+    74	        if clock() >= end:
+    75	            break
+    76	        pods = list_pods(run, min(60, end - clock()))
+    77	        if clock() < end + 1e-9 and pods is not None and pid not in [p["id"] for p in pods]:
+    78	            return clock() <= end
+    79	        sleep(min(15, max(0.0, end - clock())))
+    80	    return False
+    81	
+    82	
+    83	def reconcile(name, keep="", seconds=600, run=_run, clock=time.monotonic, sleep=time.sleep):
+    84	    """Delete every pod named NAME except KEEP; True only when a successful listing shows none left."""
+    85	    end = clock() + seconds
+    86	    while clock() < end:
+    87	        pods = list_pods(run, min(60, end - clock()))
+    88	        if pods is not None and clock() <= end:
+    89	            extra = [i for i in named(pods, name) if i != keep]
+    90	            if not extra:
+    91	                return True
+    92	            for i in extra:
+    93	                if clock() >= end:
+    94	                    break
+    95	                delete_verified(i, end - clock(), run, clock, sleep)
+    96	        sleep(min(15, max(0.0, end - clock())))
+    97	    return False
+    98	
+    99	
+   100	def may_create(name, hard_ts, clock=time.time, here=HERE):
+   101	    return clock() < hard_ts and not os.path.exists(os.path.join(here, f"{name}.blocked"))
+   102	
+   103	
+   104	def classify_creation(answer, exc=None):
+   105	    """(pod id, ambiguous) for one creation request. Only a clear client refusal (HTTP 4xx other than 408 and 429) is
+   106	    unambiguous; a timeout, exception, server or gateway error, or unreadable answer may still create a pod (r11)."""
+   107	    if exc is not None:
+   108	        return "", True
+   109	    if isinstance(answer, dict) and answer.get("id"):
+   110	        return str(answer["id"]), False
+   111	    if isinstance(answer, dict) and isinstance(answer.get("error"), int):
+   112	        code = answer["error"]
+   113	        return "", not (400 <= code < 500 and code not in (408, 429))
+   114	    return "", True
+   115	
+   116	
+   117	def _finite(v, minimum):
+   118	    try:
+   119	        v = float(v)
+   120	    except (TypeError, ValueError):
+   121	        return None
+   122	    return v if math.isfinite(v) and v >= minimum else None
+   123	
+   124	
+   125	def price_of(pod):
+   126	    """The pod's price in USD/h when it is finite and positive, else None (missing, null, zero or unreadable: r12)."""
+   127	    v = _finite((pod or {}).get("costPerHr"), 0)
+   128	    return v if v is not None and v > 0 else None
+   129	
+   130	
+   131	def price(pid, run=_run):
+   132	    pods = list_pods(run)
+   133	    pod = next((p for p in pods or [] if p.get("id") == pid), None)
+   134	    return price_of(pod)
+   135	
+   136	
+   137	def balance(run=_run):
+   138	    """(balance USD, account spend USD/h) from `runpod.py balance`, or None when either is missing or unreadable."""
+   139	    rc, out = run(["balance"], timeout=60)
+   140	    if rc != 0:
+   141	        return None
+   142	    try:
+   143	        d = json.loads(out)
+   144	    except ValueError:
+   145	        return None
+   146	    if not isinstance(d, dict):
+   147	        return None
+   148	    b, s = _finite(d.get("balance"), -math.inf), _finite(d.get("spendPerHr"), 0)
+   149	    return None if b is None or s is None else (b, s)
+   150	
+   151	
+   152	def _utc(ts):
+   153	    return datetime.datetime.fromtimestamp(ts, datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+   154	
+   155	
+   156	def spend(name, run=_run, clock=time.time, here=HERE, mono=time.monotonic):
+   157	    """(USD rounded up to a cent, note) or (None, reason); on success also writes NAME.spent. Needs NAME.bal0, NAME.wdend
+   158	    at least WAIT_AFTER_WATCHDOG s old by both wall and monotonic time (r17; after a restart the wait cannot be verified
+   159	    and spend is refused), a successful listing with no pod named NAME, a readable balance, and a balance that did not
+   160	    rise (a rise proves a credit or deposit). The difference is valid only if no deposit or credit was added in the
+   161	    window (r16): the author confirms that on the Runpod billing page; the note names the window. It holds
+   162	    NAME.launchlock while it works, so it cannot overlap a launch (r17), and publishes NAME.spent atomically."""
+   163	    lock = os.path.join(here, f"{name}.launchlock")
+   164	    try:
+   165	        os.mkdir(lock)
+   166	    except OSError:
+   167	        return None, "a launch or its watchdog holds NAME.launchlock"
+   168	    try:
+   169	        return _spend_locked(name, run, clock, here, mono)
+   170	    finally:
+   171	        try:
+   172	            os.rmdir(lock)
+   173	        except OSError:
+   174	            pass
+   175	
+   176	
+   177	def _spend_locked(name, run, clock, here, mono):
+   178	    f0 = os.path.join(here, f"{name}.bal0")
+   179	    try:
+   180	        bal0 = Decimal(open(f0).read().split()[0]); t0 = os.path.getmtime(f0)
+   181	    except (OSError, IndexError, InvalidOperation):
+   182	        return None, "no starting balance (NAME.bal0)"
+   183	    try:
+   184	        wdend, wdmono = (float(x) for x in open(os.path.join(here, f"{name}.wdend")).read().split()[:2])
+   185	    except (OSError, ValueError):
+   186	        return None, "the watchdog has not ended"
+   187	    if mono() < wdmono:
+   188	        return None, "the machine restarted since the watchdog ended, so the wait cannot be verified; take the spend from the Runpod billing page"
+   189	    if clock() - wdend < WAIT_AFTER_WATCHDOG or mono() - wdmono < WAIT_AFTER_WATCHDOG:
+   190	        return None, f"wait until {WAIT_AFTER_WATCHDOG} s after the watchdog ended"
+   191	    pods = list_pods(run)
+   192	    if pods is None or named(pods, name):
+   193	        return None, "a pod named NAME may still exist"
+   194	    b = balance(run)
+   195	    if b is None:
+   196	        return None, "balance unknown"
+   197	    now = Decimal(str(b[0]))
+   198	    if now > bal0:
+   199	        return None, "the balance rose (a credit or deposit was added); take the spend from the Runpod billing page"
+   200	    usd = float((bal0 - now).quantize(Decimal("0.01"), rounding=ROUND_CEILING))
+   201	    note = (f"balance difference; valid only if no deposit or credit was added between {_utc(t0)} and {_utc(clock())} "
+   202	            f"(check the Runpod billing page)"
+   203	            + (f"; the account still bills {b[1]} USD/h elsewhere, so this overstates" if b[1] > 0 else ""))
+   204	    final, tmp = os.path.join(here, f"{name}.spent"), os.path.join(here, f"{name}.spent.tmp")
+   205	    try:
+   206	        with open(tmp, "w") as f:
+   207	            f.write(f"{usd} USD {note}\n"); f.flush(); os.fsync(f.fileno())
+   208	        os.replace(tmp, final)     # published only when complete (r17)
+   209	    except OSError as e:
+   210	        return None, f"could not write the spend record ({e})"
+   211	    return usd, note
+   212	
+   213	
+   214	def _request_pending(here, name):
+   215	    try:
+   216	        return open(os.path.join(here, f"{name}.request")).read().strip() == "pending"
+   217	    except OSError:
+   218	        return False
+   219	
+   220	
+   221	def watchdog(name, hard_ts, done_file, run=_run, clock=time.time, sleep=time.sleep, here=HERE, settle=SETTLE,
+   222	             mono=time.monotonic):
+   223	    """Ends only when DONE_FILE exists and successful listings show no pod named NAME for the settle time, counted from
+   224	    DONE onwards (r11); while NAME.request is "pending" (an outstanding or ambiguous creation request) the settle time is
+   225	    at least AMBIGUOUS_SETTLE. After DONE (the launcher reconciles first) any pod named NAME is an orphan and is deleted.
+   226	    From HARD_TS it also blocks creation and deletes every pod named NAME, with no retry limit. On exit it writes
+   227	    NAME.wdend and releases NAME.launchlock (it is the last process of a launch). Wall time (CLOCK) is used only for the
+   228	    hard deadline; the settle time and deletion budgets use MONO, so a clock change cannot shorten them (r16)."""
+   229	    blocked = False
+   230	    empty_since = None
+   231	    while True:
+   232	        if not blocked and clock() >= hard_ts:
+   233	            open(os.path.join(here, f"{name}.blocked"), "w").write(str(int(clock())))
+   234	            print(f"{time.strftime('%H:%M')} WATCHDOG: hard deadline; creation blocked; deleting every pod named {name}", flush=True)
+   235	            blocked = True
+   236	        done = os.path.exists(done_file)
+   237	        need = max(settle, AMBIGUOUS_SETTLE) if _request_pending(here, name) else settle
+   238	        if done or blocked:
+   239	            pods = list_pods(run)
+   240	            if pods is None:
+   241	                empty_since = None
+   242	            else:
+   243	                ids = named(pods, name)
+   244	                if ids:
+   245	                    empty_since = None
+   246	                    for i in ids:
+   247	                        print(f"{time.strftime('%H:%M')} WATCHDOG: deleting {i}", flush=True)
+   248	                        delete_verified(i, 120, run, mono, sleep)
+   249	                elif done:
+   250	                    empty_since = mono() if empty_since is None else empty_since
+   251	                    if mono() - empty_since >= need:
+   252	                        open(os.path.join(here, f"{name}.wdend"), "w").write(f"{time.time()} {time.monotonic()}")   # wall, monotonic (r17)
+   253	                        try:
+   254	                            os.rmdir(os.path.join(here, f"{name}.launchlock"))
+   255	                        except OSError:
+   256	                            pass
+   257	                        print(f"{time.strftime('%H:%M')} WATCHDOG: no pod named {name} for {need}s after the launcher was done; "
+   258	                              f"record the spend with `podctl.py spend {name}` from {WAIT_AFTER_WATCHDOG}s after now", flush=True)
+   259	                        return 0
+   260	                else:
+   261	                    empty_since = None
+   262	        sleep(30 if blocked else min(30, max(0.0, hard_ts - clock())) or 30)
+   263	
+   264	
+   265	def main(argv) -> int:
+   266	    cmd, a = argv[0], argv[1:]
+   267	    if cmd == "reconcile":
+   268	        return 0 if reconcile(a[0], a[1] if len(a) > 1 else "") else 1
+   269	    if cmd == "delete":
+   270	        return 0 if delete_verified(a[0], float(a[1])) else 1
+   271	    if cmd == "price":
+   272	        p = price(a[0]); print(p if p is not None else "unknown"); return 0 if p is not None else 1
+   273	    if cmd == "balance":
+   274	        b = balance(); print(f"{b[0]} {b[1]}" if b else "unknown"); return 0 if b else 1
+   275	    if cmd == "spend":
+   276	        usd, note = spend(a[0]); print(f"{usd} USD ({note})" if usd is not None else f"refused: {note}"); return 0 if usd is not None else 1
+   277	    if cmd == "watchdog":
+   278	        return watchdog(a[0], float(a[1]), a[2])
+   279	    if cmd == "unlock":      # release NAME.launchlock (an empty directory; os.rmdir refuses anything else)
+   280	        try:
+   281	            os.rmdir(os.path.join(HERE, f"{a[0]}.launchlock")); return 0
+   282	        except OSError:
+   283	            return 1
+   284	    if cmd == "may-create":
+   285	        return 0 if may_create(a[0], float(a[1])) else 1
+   286	    if cmd == "remaining":
+   287	        print(max(0, int(float(a[0]) - time.time()))); return 0
+   288	    print(__doc__); return 2
+   289	
+   290	
+   291	if __name__ == "__main__":
+   292	    sys.exit(main(sys.argv[1:]))
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/reset_pod.sh; nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/create_one.py; nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/runpod.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+     1	#!/bin/bash
+     2	# Snapshot guard: run a private copy, so an edit to this file cannot reach a running launch.
+     3	if [ -z "${LAUNCH_SNAPSHOT:-}" ]; then
+     4	  snapf="/Users/oemer.demirel/Projects/touchstone/results/pods/snap_$(basename "$0" .sh)_$$.sh"; cp "$0" "$snapf"
+     5	  LAUNCH_SNAPSHOT="$snapf" exec bash "$snapf" "$@"
+     6	fi
+     7	# Reset follow-up (docs/revision/reset-experiment-plan.md, draft 5) on one Runpod CPU pod, adapted from eval_pod.sh.
+     8	# Order on the pod: the reproduction gate (bit identity, --require-identical; the author's decision), then the 18 D2 cells
+     9	# stage by stage (inputs and search with all vCPUs; evaluate, doubling and the spot diagnostics with WEVAL workers for
+    10	# memory), then the inventory. Spending (the author: do not kill jobs): at the reserved cap the pod stops BETWEEN stages
+    11	# (a STOP file the remote script reads before each stage); only at HARD x the cap is the pod deleted mid-stage, as an
+    12	# absolute guard. An EXIT/INT/TERM trap pulls what exists (only if the run started), deletes the pod and verifies it.
+    13	# Spend (r16): the record is the account balance difference (podctl.py spend NAME, at least an hour after the watchdog
+    14	# ends); this launcher prints only estimates. One launch per NAME at a time (NAME.launchlock; the watchdog releases it).
+    15	# Usage: reset_pod.sh <code_tgz> <bundle_tgz> <tag> <cap_usd> <local_out>   (no spaces in paths)
+    16	# Env: EXPECT (commit inside the code tarball), MAXCPH, optional WEVAL (default 10), MINMEM (default 28), HARD (default 1.3).
+    17	set -u
+    18	PY=/opt/homebrew/bin/python3; P=/Users/oemer.demirel/Projects/touchstone/results/pods
+    19	TGZ=${1:?code tarball}; BTGZ=${2:?bundle tarball}; TAG=${3:?tag}; CAP=${4:?cap_usd}; LOUT=${5:?local_out}; cd $P
+    20	case "$TGZ$BTGZ$TAG$LOUT" in *[[:space:]]*) echo "refused: a path or tag contains whitespace"; exit 1 ;; esac
+    21	EXPECT=${EXPECT:?commit}; MAXCPH=${MAXCPH:?max usd per hour}; WEVAL=${WEVAL:-10}; MINMEM=${MINMEM:-28}; HARD=${HARD:-1.3}
+    22	mkdir -p "$LOUT" logs_r_$TAG
+    23	$PY -c "import sys,tarfile; ms=tarfile.open(sys.argv[1]).getmembers(); d=[m.name for m in ms if m.name.split('/')[-1].startswith('._')]; o=[m.name for m in ms if m.uid!=0]; print('tarball guard: %d AppleDouble, %d non-root' % (len(d),len(o))); sys.exit(1 if d or o else 0)" "$TGZ" || { echo "code tarball refused"; exit 1; }
+    24	hg=$(mktemp -d); tar xzf "$TGZ" -C "$hg" 2>/dev/null || { echo "code tarball refused: cannot unpack"; exit 1; }
+    25	# Code guard (fails closed: every git call's status is checked): HEAD is EXPECT, protocol-v2 is an ancestor, the tree is
+    26	# clean, every path changed since the tag is in the code freeze's allowed paths, and scripts/, sim/, tests/ equal the tag.
+    27	guard() {
+    28	  cd "$1" || return 1
+    29	  [ "$(git rev-parse HEAD 2>/dev/null)" = "$EXPECT" ] || { echo "HEAD is not $EXPECT"; return 1; }
+    30	  git merge-base --is-ancestor protocol-v2 HEAD || { echo "protocol-v2 is not an ancestor"; return 1; }
+    31	  st=$(git status --porcelain) || { echo "git status failed"; return 1; }; [ -z "$st" ] || { echo "tree not clean: $st" | head -c 300; return 1; }
+    32	  ch=$(git diff --name-only protocol-v2 HEAD) || { echo "git diff failed"; return 1; }
+    33	  bad=$(echo "$ch" | grep -v -e '^docs/' -e '^experiments/v2/' -e '^paper/' -e '^sealed2/h4/' -e '^$' || true); [ -z "$bad" ] || { echo "changed outside the allowed paths: $bad" | head -c 300; return 1; }
+    34	  git diff --quiet protocol-v2 -- scripts/ sim/ tests/ || { echo "scripts/, sim/ or tests/ differ from protocol-v2"; return 1; }
+    35	  echo "code guard: ok at $(git rev-parse --short HEAD)"
+    36	}
+    37	( guard "$hg" ); g=$?; mv -- "$hg" ~/.Trash/hg_reset_$$
+    38	[ $g -eq 0 ] || { echo "code tarball refused"; exit 1; }
+    39	[ -n "${DRYRUN:-}" ] && { echo "dry run: guards passed; no pod created"; exit 0; }
+    40	# verify DIR: every record in DIR/inventory.json exists with its hash.
+    41	verify() { $PY - "$1" <<'PYV'
+    42	import hashlib, json, sys
+    43	from pathlib import Path
+    44	d = Path(sys.argv[1]); inv = json.loads((d / "inventory.json").read_text())
+    45	bad = [k for k, h in inv["records"].items() if not (d / k).is_file() or hashlib.sha256((d / k).read_bytes()).hexdigest() != h]
+    46	print(f"verify {d.name}: {len(inv['records'])} records, {len(bad)} bad"); sys.exit(1 if bad else 0)
+    47	PYV
+    48	}
+    49	tmo() { perl -e 'alarm shift; exec @ARGV' "$@"; }
+    50	NAME=ts-r-$TAG; DONE=$P/$NAME.done; ATT=$P/$NAME.attempts
+    51	rm_ok() { [ -e "$1" ] && mv -- "$1" ~/.Trash/"$(basename "$1").$$"; true; }
+    52	# One launch per NAME: the lock is taken before any marker changes; the watchdog (the last process) releases it.
+    53	mkdir "$P/$NAME.launchlock" 2>/dev/null || { echo "LOCKED: $NAME.launchlock exists (another launch or its watchdog still runs; remove it only after checking)"; exit 1; }
+    54	unlock() { $PY podctl.py unlock $NAME >/dev/null 2>&1; }
+    55	# Spend records are never overwritten (r16): a launch is refused while the previous launch's spend is unrecorded; a
+    56	# recorded one (NAME.spent, written by podctl.py spend) is moved with its inputs to spend_records/NAME.<time>/.
+    57	spent_ok() { grep -Eq '^[0-9]+(\.[0-9]+)? USD ' "$P/$NAME.spent" 2>/dev/null; }   # a complete record only (r17)
+    58	if [ -e "$P/$NAME.bal0" ] && ! spent_ok; then echo "refused: the previous launch's spend is not recorded (podctl.py spend $NAME)"; unlock; exit 1; fi
+    59	if [ -e "$P/$NAME.spent" ] && ! spent_ok; then echo "refused: $NAME.spent is not a complete spend record"; unlock; exit 1; fi
+    60	if spent_ok; then
+    61	  arch="$P/spend_records/$NAME.$(date +%s)"; mkdir -p "$arch" || { echo "refused: cannot archive the spend record"; unlock; exit 1; }
+    62	  for f in bal0 wdend spent attempts; do [ -e "$P/$NAME.$f" ] && { mv -- "$P/$NAME.$f" "$arch/" || { echo "refused: cannot archive $NAME.$f"; unlock; exit 1; }; }; done
+    63	fi
+    64	for f in "$DONE" "$P/$NAME.blocked" "$P/$NAME.request" "$P/$NAME.wdend" "$P/$NAME.ambiguous" "$P/$NAME.acct" "$P/$NAME.unpriced"; do rm_ok "$f"; done; : > "$ATT"
+    65	b0=$(tmo 90 $PY podctl.py balance) || { echo "refused: account balance unknown"; unlock; exit 1; }
+    66	echo "$b0" > "$P/$NAME.bal0" && [ -s "$P/$NAME.bal0" ] || { echo "refused: cannot write $NAME.bal0"; unlock; exit 1; }
+    67	id=""; state="NOT STARTED"; rc=1; cph=0; a0=0; tfirst=0; unresolved=""; started=""; req=0; wd=""
+    68	# Pod safety lives in podctl.py (test_podctl.py): fail-closed listing, deletion verified within
+    69	# elapsed time, reconciliation, a creation block from the hard deadline, and a watchdog that runs on after this launcher
+    70	# exits, until no pod named $NAME remains.
+    71	cleanup() {
+    72	  trap - EXIT INT TERM
+    73	  if [ -n "$id" ] && [ -n "$started" ]; then
+    74	    try=0
+    75	    while :; do   # after RUN OK: keep the pod and retry until both directories verify, or until 2 min before the hard deadline
+    76	      try=$((try+1)); ok=1
+    77	      for d in followup-reset followup-gate; do
+    78	        t=900; [ $d = followup-gate ] && t=300
+    79	        rem=$(( hard - 120 - $(date +%s) )); [ $rem -le 0 ] && { ok=0; break; }; [ $rem -lt $t ] && t=$rem
+    80	        tmo $t $PY runpod.py pull $id "/root/touchstone/results/v2/$d/" "$LOUT/$d/" >/dev/null 2>&1 || ok=0
+    81	      done
+    82	      rem=$(( hard - 120 - $(date +%s) )); [ $rem -gt 0 ] && tmo $(( rem < 300 ? rem : 300 )) $PY runpod.py pull $id /root/touchstone/results/logs/ logs_r_$TAG/ >/dev/null 2>&1
+    83	      if [ "$state" = "RUN OK" ] && [ $ok = 1 ]; then { verify "$LOUT/followup-gate" && verify "$LOUT/followup-reset"; } || ok=0; fi
+    84	      [ $ok = 1 ] && break
+    85	      echo "$(date +%H:%M) pull or verification failed (try $try)"
+    86	      if [ "$state" = "RUN OK" ]; then [ "$(date +%s)" -ge $(( hard - 120 )) ] && break; else [ $try -ge 3 ] && break; fi
+    87	      sleep 60
+    88	    done
+    89	    [ $ok = 1 ] || { [ "$state" = "RUN OK" ] && state="RUN OK BUT RECORDS NOT VERIFIED"; rc=1; }
+    90	  fi
+    91	  if [ -n "$id" ]; then
+    92	    if $PY podctl.py delete $id 1800; then echo "$(date +%H:%M) $id deleted (verified)"; echo "$id $(date +%s) deleted" >> "$ATT"; else echo "$(date +%H:%M) $id: deletion not verified in 30 min; the watchdog keeps trying (billing may continue)"; rc=1; unresolved=1; fi
+    93	  fi
+    94	  $PY podctl.py reconcile $NAME || { echo "$(date +%H:%M) reconcile failed; the watchdog keeps trying"; rc=1; unresolved=1; }
+    95	  grep -qx pending "$P/$NAME.request" 2>/dev/null && { echo "$(date +%H:%M) a creation request is outstanding or ambiguous; the watchdog settles for 30 minutes"; unresolved=1; }
+    96	  touch "$DONE"     # the watchdog then deletes any orphan pod and exits only after its settle time of empty listings
+    97	  if [ -z "$wd" ] || ! kill -0 "$wd" 2>/dev/null; then
+    98	    echo "$(date +%H:%M) WATCHDOG NOT RUNNING"; rc=1
+    99	    if [ $req = 0 ]; then unlock; else unresolved=1; echo "$(date +%H:%M) $NAME.launchlock kept: no process deletes a late pod; check the Runpod console"; fi
+   100	  fi
+   101	  if [ "$req" = 0 ] && [ -e "$P/$NAME.bal0" ]; then   # no request was sent: nothing to record; keep the baseline as unused
+   102	    mkdir -p "$P/spend_records" && mv -- "$P/$NAME.bal0" "$P/spend_records/$NAME.$(date +%s).bal0.unused"
+   103	  fi
+   104	  [ "$tfirst" -gt 0 ] && echo "$(date +%H:%M) spend estimate so far (not a record): $(( $(date +%s) - tfirst ))s at the ceiling $MAXCPH USD/h = $($PY -c "import math; print(math.ceil(($(date +%s)-$tfirst)/3600*float('$MAXCPH')*1000)/1000)") USD (pod events in $ATT)"
+   105	  [ "$req" -gt 0 ] && echo "$(date +%H:%M) record the spend with: podctl.py spend $NAME (at least 1 h after the watchdog ends; logs_r_$TAG/watchdog.log)"
+   106	  [ -n "$unresolved" ] && { echo "$(date +%H:%M) UNRESOLVED: check the Runpod console the next day before any relaunch (plan step 4)"; rc=1; }
+   107	  echo "$(date +%H:%M) end: $state"
+   108	  exit $rc
+   109	}
+   110	trap cleanup EXIT INT TERM
+   111	# Deadlines from the first creation request at the price ceiling MAXCPH (a bound across attempts).
+   112	t0=$(date +%s); soft=$(( t0 + $($PY -c "print(int(3600*float('$CAP')/float('$MAXCPH')))") )); hard=$(( t0 + $($PY -c "print(int(3600*float('$CAP')*float('$HARD')/float('$MAXCPH')))") ))
+   113	nohup $PY podctl.py watchdog $NAME $hard "$DONE" >> logs_r_$TAG/watchdog.log 2>&1 &
+   114	wd=$!; echo $wd > "$P/$NAME.wdpid"; disown
+   115	sleep 1; kill -0 "$wd" 2>/dev/null || { state="WATCHDOG DID NOT START"; exit 1; }
+   116	# One creation request at a time (create_one.py, no hidden retries). Before EVERY request: reconciliation must succeed (no
+   117	# untracked pod), the watchdog must allow creation, and the soft deadline must be ahead. An unambiguous refusal (HTTP 4xx,
+   118	# e.g. no capacity) tries the next flavor. An AMBIGUOUS answer ends creation for this launch (r11): no further request,
+   119	# so two pods can never overlap. NAME.request is "pending" from before each request until a clear answer (r15), so a stop
+   120	# during creation also makes the watchdog delete a late pod and settle for 30 minutes.
+   121	tries=0
+   122	while [ $tries -lt 3 ] && [ $req -lt 36 ]; do
+   123	  kill -0 "$wd" 2>/dev/null || { state="WATCHDOG NOT RUNNING BEFORE REQUEST $((req+1))"; exit 1; }
+   124	  $PY podctl.py reconcile $NAME || { state="RECONCILE FAILED BEFORE REQUEST $((req+1))"; exit 1; }
+   125	  $PY podctl.py may-create $NAME $hard || { state="CREATION BLOCKED (hard deadline)"; exit 1; }
+   126	  [ "$(date +%s)" -lt "$soft" ] || { state="SOFT DEADLINE BEFORE START"; exit 1; }
+   127	  [ "$tfirst" -gt 0 ] || tfirst=$(date +%s)
+   128	  cph=0; id=""
+   129	  { echo pending > "$P/$NAME.request" && grep -qx pending "$P/$NAME.request"; } || { state="CANNOT WRITE $NAME.request BEFORE REQUEST $((req+1))"; exit 1; }
+   130	  req=$((req+1))
+   131	  out=$(tmo 120 $PY create_one.py $NAME $(( (req-1) % 12 )) 2>/dev/null | tail -n 1)
+   132	  id=$(echo "$out" | $PY -c 'import sys,json; print(json.loads(sys.stdin.read()).get("id",""))' 2>/dev/null)
+   133	  amb=$(echo "$out" | $PY -c 'import sys,json; d=json.loads(sys.stdin.read() or "{}"); print(1 if d.get("ambiguous", True) else 0)' 2>/dev/null || echo 1)
+   134	  if [ -z "$id" ]; then
+   135	    if [ "$amb" = 1 ]; then echo "$(date +%H:%M) ambiguous creation answer; no further request"; state="AMBIGUOUS CREATION ANSWER (no retry)"; exit 1; fi
+   136	    echo clear > "$P/$NAME.request"; continue
+   137	  fi
+   138	  echo clear > "$P/$NAME.request"
+   139	  v=16; echo "$id $(date +%s) start" >> "$ATT"
+   140	  # Only a finite positive price at or below the ceiling is accepted; otherwise (above, missing, null, zero, failed
+   141	  # listing, timeout) the pod is deleted at once, with no retrieval (r15); the balance difference records what it cost.
+   142	  cph=$(tmo 60 $PY podctl.py price $id 2>/dev/null) || cph=""
+   143	  if ! $PY -c "import sys; sys.exit(0 if 0<float(sys.argv[1])<=float(sys.argv[2]) else 1)" "${cph:-0}" "$MAXCPH" 2>/dev/null; then
+   144	    state="PRICE ${cph:-unknown} NOT IN (0, $MAXCPH]"; echo "$(date +%H:%M) $id: $state; deleting"
+   145	    $PY podctl.py delete $id 600 && { echo "$id $(date +%s) deleted" >> "$ATT"; id=""; }; exit 1
+   146	  fi
+   147	  a0=$(date +%s); up=""; while [ "$(date +%s)" -lt "$soft" ] && [ $(( $(date +%s) - a0 )) -lt 240 ]; do r=$(tmo 30 $PY runpod.py ssh $id 'echo up' 2>/dev/null | head -c 2); [ "$r" = up ] && { up=1; break; }; sleep 10; done
+   148	  [ -n "$up" ] && break
+   149	  echo "$(date +%H:%M) $id unreachable; deleting"; $PY podctl.py delete $id 600 || { state="UNREACHABLE POD NOT DELETED"; exit 1; }; echo "$id $(date +%s) deleted" >> "$ATT"; id=""; tries=$((tries+1))
+   150	done
+   151	[ -z "$id" ] && { state="NO POD"; exit 1; }
+   152	echo "$(date +%H:%M) pod $id ($v vCPU, $cph USD/h): soft stop in $(( soft - $(date +%s) ))s, hard stop in $(( hard - $(date +%s) ))s (cap $CAP USD)"
+   153	tmo 900 $PY runpod.py push $id $TGZ /root/rc.tgz >/dev/null 2>&1 || { state="UPLOAD FAILED (code)"; exit 1; }
+   154	tmo 1800 $PY runpod.py push $id $BTGZ /root/rb.tgz >/dev/null 2>&1 || { state="UPLOAD FAILED (bundle)"; exit 1; }
+   155	tmo 900 $PY runpod.py ssh $id 'set -e; mkdir -p touchstone bundle; tar xzf rc.tgz -C touchstone; tar xzf rb.tgz -C bundle; which uv >/dev/null || { curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1; }; export PATH=$HOME/.local/bin:$PATH; cd touchstone; uv sync --frozen -q; mkdir -p results/logs' >/dev/null 2>&1 || { state="PREP FAILED (unpack or sync)"; exit 1; }
+   156	chk=$(tmo 300 $PY runpod.py ssh $id "cd touchstone; export PATH=\$HOME/.local/bin:\$PATH; echo git=\$(git rev-parse HEAD 2>&1) env=\${TOUCHSTONE_IDENTITY_SALT:-unset} bundle=\$(ls /root/bundle/eval-all/freeze | wc -l); m=\$(cat /sys/fs/cgroup/memory.max 2>/dev/null || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null); case \$m in max|''|9223372036854*) m=\$(awk '/MemTotal/ {print \$2*1024}' /proc/meminfo);; esac; echo memgb=\$((m/1073741824)); echo py=\$(uv run --frozen python -c 'import platform,numpy;print(platform.python_version(),numpy.__version__)' 2>&1 | tail -n 1 | tr ' ' _)" 2>/dev/null | tr '\n' ' ')
+   157	echo "$(date +%H:%M) prep: $chk"
+   158	case "$chk" in *"git=$EXPECT"*"env=unset"*) ;; *) state="PREP FAILED"; exit 1 ;; esac
+   159	memgb=$(echo "$chk" | sed -n 's/.*memgb=\([0-9]*\).*/\1/p'); [ -n "$memgb" ] && [ "$memgb" -ge "$MINMEM" ] || { state="PREP FAILED (memory ${memgb:-unknown} GB < $MINMEM GB)"; exit 1; }
+   160	cat > /tmp/r_remote_$TAG.sh <<EOS
+   161	#!/bin/bash
+   162	echo "== remote started \$(date +%H:%M)"
+   163	cd /root/touchstone; export OMP_NUM_THREADS=1 PATH=\$HOME/.local/bin:\$PATH; unset TOUCHSTONE_IDENTITY_SALT; unset TOUCHSTONE_LOCKED
+   164	B=/root/bundle; A="--src \$B/eval-all --draw \$B/draw/draw.json --instances \$B/draw/instances.json --cfgs \$B/deviation/cfg_linux.json --addendum \$B/report/addendum.json --report \$B/report/report.json"
+   165	D=docs/revision/followup/reset_followup_v2.py
+   166	{ [ -e /root/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE gate (cap) \$(date +%H:%M)"; exit 1; }
+   167	echo "== gate start \$(date +%H:%M)"
+   168	uv run --frozen python \$D --reproduce --require-identical --out results/v2/followup-gate --workers 1 \$A >> results/logs/r_gate.log 2>&1 || { echo "== GATE FAILED \$(date +%H:%M)"; exit 1; }
+   169	echo "== gate passed (bit-identical) \$(date +%H:%M)"
+   170	for st in inputs search freeze evaluate doubling diagnostics inventory; do
+   171	  { [ -e /root/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE \$st (cap) \$(date +%H:%M)"; exit 1; }
+   172	  w=$v; case \$st in evaluate|doubling|diagnostics) w=$WEVAL ;; esac
+   173	  echo "== stage \$st start \$(date +%H:%M) workers \$w"
+   174	  uv run --frozen python \$D --stage \$st --diag-cells 'fresh0@rho0.2|F111|D2|profit' --workers \$w --out results/v2/followup-reset \$A >> results/logs/r_run.log 2>&1 || { echo "== RUN FAILED at \$st \$(date +%H:%M)"; exit 1; }
+   175	done
+   176	echo "== RUN OK \$(date +%H:%M)"
+   177	EOS
+   178	tmo 120 $PY runpod.py push $id /tmp/r_remote_$TAG.sh /root/r_remote.sh >/dev/null 2>&1 || { state="UPLOAD FAILED (remote script)"; exit 1; }
+   179	tmo 120 $PY runpod.py ssh $id "chmod +x /root/r_remote.sh && (nohup /root/r_remote.sh > /root/touchstone/results/logs/r_remote.log 2>&1 < /dev/null &)" >/dev/null 2>&1 || { state="REMOTE START FAILED"; exit 1; }
+   180	# the run counts as started only when the remote script's first line is in its log (r16)
+   181	for i in 1 2 3 4 5 6; do sleep 10; tmo 30 $PY runpod.py ssh $id "grep -q 'remote started' /root/touchstone/results/logs/r_remote.log" >/dev/null 2>&1 && { started=1; break; }; done
+   182	[ -n "$started" ] || { state="REMOTE START FAILED (no start line)"; exit 1; }
+   183	state="RUNNING"; stopped=""
+   184	while true; do
+   185	  sleep 120
+   186	  now=$(date +%s)
+   187	  [ "$now" -ge "$hard" ] && { state="HARD DEADLINE ($HARD x cap at $MAXCPH USD/h; the watchdog deletes the pod)"; exit 1; }
+   188	  if [ "$now" -ge "$soft" ] && [ -z "$stopped" ]; then tmo 60 $PY runpod.py ssh $id 'touch /root/STOP && test -e /root/STOP' >/dev/null 2>&1 && stopped=1 && echo "$(date +%H:%M) cap reached: the pod stops after the running stage"; fi
+   189	  st=$(tmo 90 $PY runpod.py ssh $id "tail -c 240 /root/touchstone/results/logs/r_remote.log" 2>/dev/null | tr '\n' ' ')
+   190	  echo "$(date +%H:%M) [soft $(( soft - now ))s, hard $(( hard - now ))s] $st" | tail -c 320
+   191	  case "$st" in
+   192	    *"RUN OK"*) state="RUN OK"; rc=0; exit 0 ;;
+   193	    *"GATE FAILED"*) state="GATE FAILED (not bit-identical; 18 cells not started)"; exit 1 ;;
+   194	    *"RUN FAILED"*|*"STOPPED BEFORE"*) state="$(echo "$st" | grep -o '== [A-Z].*' | head -c 120)"; exit 1 ;;
+   195	  esac
+   196	done
+     1	"""One creation request per call (internal review r10: no hidden retries). Usage: create_one.py NAME INDEX
+     2	INDEX selects one (flavor, cloud) combination; prints {"id": ..., "vcpu": ...} or {"id": "", "ambiguous": bool}.
+     3	Only a clear client refusal (HTTP 4xx other than 408/429) is unambiguous (podctl.classify_creation, r11); after an
+     4	ambiguous answer the launcher sends no further request."""
+     5	import json, sys
+     6	sys.path.insert(0, "/Users/oemer.demirel/Projects/touchstone/results/pods")
+     7	from runpod import api
+     8	from podctl import classify_creation
+     9	IMAGE = "runpod/base:0.6.2-cpu"
+    10	COMBOS = [(f, c) for c in ("SECURE", "COMMUNITY") for f in ("cpu5c", "cpu3c", "cpu5g", "cpu3g", "cpu5m", "cpu3m")]
+    11	name, i = sys.argv[1], int(sys.argv[2])
+    12	if not 0 <= i < len(COMBOS):
+    13	    print(json.dumps({"id": "", "ambiguous": False, "exhausted": True})); sys.exit(1)
+    14	f, c = COMBOS[i]
+    15	r, exc = None, None
+    16	try:
+    17	    r = api("POST", "/pods", {"name": name, "computeType": "CPU", "cloudType": c, "cpuFlavorIds": [f], "cpuFlavorPriority": "availability",
+    18	                              "vcpuCount": 16, "imageName": IMAGE, "ports": ["22/tcp"], "containerDiskInGb": 20, "env": {"OMP_NUM_THREADS": "1"}})
+    19	except Exception as e:
+    20	    exc = e
+    21	pid, amb = classify_creation(r, exc)
+    22	if pid:
+    23	    print(json.dumps({"id": pid, "vcpu": 16, "flavor": f, "cloud": c})); sys.exit(0)
+    24	print(json.dumps({"id": "", "ambiguous": amb})); sys.exit(1)
+     1	"""Minimal Runpod REST helper. Usage:
+     2	  python runpod.py list | balance | get ID | delete ID | ssh ID 'cmd' | push ID LOCAL REMOTE | pull ID REMOTE LOCAL"""
+     3	import json, os, re, subprocess, sys, urllib.request
+     4	KEY = re.search(r"apikey\s*=\s*'([^']+)'", open(os.path.expanduser("~/.runpod/config.toml")).read()).group(1)
+     5	SSHKEY = os.path.expanduser("~/.runpod/ssh/runpodctl-ssh-key")
+     6	BASE = "https://rest.runpod.io/v1"
+     7	def api(method, path, body=None):
+     8	    req = urllib.request.Request(BASE + path, data=json.dumps(body).encode() if body else None, method=method,
+     9	                                 headers={"Authorization": f"Bearer {KEY}", "Content-Type": "application/json", "User-Agent": "curl/8.7.1"})
+    10	    try:
+    11	        with urllib.request.urlopen(req, timeout=60) as r:
+    12	            t = r.read().decode(); return json.loads(t) if t else None
+    13	    except urllib.error.HTTPError as e:
+    14	        return {"error": e.code, "body": e.read().decode()[:500]}
+    15	def target(pod_id):
+    16	    p = api("GET", f"/pods/{pod_id}"); pm = p.get("portMappings") or {}
+    17	    return p.get("publicIp"), pm.get("22") or pm.get(22)
+    18	def ssh(pod_id, cmd, timeout=None):
+    19	    ip, port = target(pod_id)
+    20	    return subprocess.run(["ssh", "-i", SSHKEY, "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", "-o", "LogLevel=ERROR", "-o", "ConnectTimeout=20", "-p", str(port), f"root@{ip}", cmd],
+    21	                          capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
+    22	def rsync(pod_id, src, dst, pull=False):
+    23	    ip, port = target(pod_id)
+    24	    e = f"ssh -i {SSHKEY} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -p {port}"
+    25	    a, b = (f"root@{ip}:{src}", dst) if pull else (src, f"root@{ip}:{dst}")
+    26	    return subprocess.run(["rsync", "-az", "-e", e, a, b], capture_output=True, text=True)
+    27	def main(argv) -> int:
+    28	    cmd, args = argv[0], argv[1:]
+    29	    if cmd == "list": print(json.dumps([{k: p.get(k) for k in ("id", "name", "desiredStatus", "publicIp", "portMappings", "costPerHr", "vcpuCount")} for p in api("GET", "/pods")], indent=1))
+    30	    elif cmd == "balance":   # read-only account balance (r16 spend record); any failure exits non-zero
+    31	        q = json.dumps({"query": "query { myself { clientBalance currentSpendPerHr } }"}).encode()
+    32	        req = urllib.request.Request("https://api.runpod.io/graphql", data=q, method="POST",
+    33	                                     headers={"Authorization": f"Bearer {KEY}", "Content-Type": "application/json", "User-Agent": "curl/8.7.1"})
+    34	        with urllib.request.urlopen(req, timeout=60) as r:
+    35	            m = json.loads(r.read().decode())["data"]["myself"]
+    36	        print(json.dumps({"balance": m["clientBalance"], "spendPerHr": m["currentSpendPerHr"]}))
+    37	    elif cmd == "get": print(json.dumps(api("GET", f"/pods/{args[0]}"), indent=1)[:1500])
+    38	    elif cmd == "delete": print(api("DELETE", f"/pods/{args[0]}"))
+    39	    elif cmd == "ssh": r = ssh(args[0], args[1]); print(r.stdout, r.stderr, "exit", r.returncode); return r.returncode
+    40	    elif cmd == "push": r = rsync(args[0], args[1], args[2]); print(r.stdout[-300:], r.stderr[-300:], "exit", r.returncode); return r.returncode
+    41	    elif cmd == "pull": r = rsync(args[0], args[1], args[2], pull=True); print(r.stdout[-300:], r.stderr[-300:], "exit", r.returncode); return r.returncode
+    42	    return 0
+    43	
+    44	
+    45	if __name__ == "__main__":
+    46	    sys.exit(main(sys.argv[1:]))
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/test_podctl.py; nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/test_runpod.py; nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/test_reset_pod_harness.sh' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+     1	"""Every test runs under a 30 s alarm (a watchdog loop must never hang the suite).
+     2	
+     3	podctl: fail-closed listing, verified deletion within elapsed time, reconciliation, creation block, sustained watchdog."""
+     4	import json
+     5	import os
+     6	import signal
+     7	
+     8	import pytest
+     9	
+    10	
+    11	@pytest.fixture(autouse=True)
+    12	def _alarm():
+    13	    signal.signal(signal.SIGALRM, lambda *a: (_ for _ in ()).throw(TimeoutError('test exceeded 30 s')))
+    14	    signal.alarm(30); yield; signal.alarm(0)
+    15	
+    16	import podctl as C
+    17	
+    18	
+    19	class Fake:
+    20	    """A fake Runpod: pods by id -> name; `fail_list` listings fail; a pod in `stuck` survives `stuck[id]` deletes."""
+    21	    def __init__(self, pods=None, fail_list=0, stuck=None, prices=None):
+    22	        self.pods = dict(pods or {}); self.fail_list = fail_list; self.stuck = dict(stuck or {}); self.t = 0.0; self.calls = []
+    23	        self.prices = dict(prices or {})
+    24	    def run(self, args, timeout=60):
+    25	        self.calls.append(args[0]); self.t += 1
+    26	        if args[0] == "list":
+    27	            if self.fail_list > 0:
+    28	                self.fail_list -= 1; return 1, ""
+    29	            return 0, json.dumps([{"id": i, "name": n, "costPerHr": self.prices.get(i, 0.5)} for i, n in self.pods.items()])
+    30	        if args[0] == "delete":
+    31	            pid = args[1]
+    32	            if self.stuck.get(pid, 0) > 0:
+    33	                self.stuck[pid] -= 1
+    34	            else:
+    35	                self.pods.pop(pid, None)
+    36	            return 0, "{}"
+    37	        return 0, ""
+    38	    def clock(self):
+    39	        return self.t
+    40	    def sleep(self, s):
+    41	        self.t += max(s, 0.01)
+    42	
+    43	
+    44	def test_a_failed_listing_is_never_an_empty_list():
+    45	    f = Fake({"a": "ts-r-x"}, fail_list=1)
+    46	    assert C.list_pods(f.run) is None and [p["id"] for p in C.list_pods(f.run)] == ["a"]
+    47	
+    48	
+    49	def test_delete_is_verified_and_bounded_by_elapsed_time():
+    50	    f = Fake({"a": "n"}, stuck={"a": 2})
+    51	    assert C.delete_verified("a", 100, f.run, f.clock, f.sleep) and "a" not in f.pods
+    52	    g = Fake({"a": "n"}, stuck={"a": 10**6})
+    53	    assert not C.delete_verified("a", 50, g.run, g.clock, g.sleep) and g.t < 50 + 20     # stops by elapsed time
+    54	
+    55	
+    56	def test_reconcile_fails_closed_on_listing_failures_and_survivors():
+    57	    f = Fake({"a": "ts-r-x", "keep": "ts-r-x", "other": "else"}, fail_list=3)
+    58	    assert C.reconcile("ts-r-x", "keep", 600, f.run, f.clock, f.sleep) and set(f.pods) == {"keep", "other"}
+    59	    g = Fake({"a": "ts-r-x"}, fail_list=10**6)                                          # listing never works
+    60	    assert not C.reconcile("ts-r-x", "", 100, g.run, g.clock, g.sleep)
+    61	    h = Fake({"a": "ts-r-x"}, stuck={"a": 10**6})                                       # deletion never takes effect
+    62	    assert not C.reconcile("ts-r-x", "", 100, h.run, h.clock, h.sleep)
+    63	
+    64	
+    65	def test_creation_is_blocked_after_the_hard_deadline_or_the_block_file(tmp_path):
+    66	    assert C.may_create("n", 10, clock=lambda: 5, here=str(tmp_path))
+    67	    assert not C.may_create("n", 10, clock=lambda: 11, here=str(tmp_path))
+    68	    (tmp_path / "n.blocked").write_text("1")
+    69	    assert not C.may_create("n", 10, clock=lambda: 5, here=str(tmp_path))
+    70	
+    71	
+    72	def test_watchdog_blocks_creation_and_keeps_deleting_until_none_remain(tmp_path):
+    73	    f = Fake({"a": "ts-r-x", "b": "ts-r-x"}, fail_list=0, stuck={"a": 30}); f.t = 100; (tmp_path / "done").write_text("")
+    74	    assert C.watchdog("ts-r-x", 50, str(tmp_path / "done"), f.run, f.clock, f.sleep, here=str(tmp_path), settle=60, mono=f.clock) == 0
+    75	    assert (tmp_path / "ts-r-x.blocked").exists() and not [i for i, n in f.pods.items() if n == "ts-r-x"]
+    76	
+    77	
+    78	def test_watchdog_waits_for_done_and_an_empty_listing_before_the_deadline(tmp_path):
+    79	    f = Fake({"a": "ts-r-x"}); done = tmp_path / "done"; done.write_text("")
+    80	    calls = {"n": 0}
+    81	    def sleep(s):
+    82	        f.t += s; calls["n"] += 1
+    83	        if calls["n"] == 3:
+    84	            f.pods.clear()                                                              # the launcher deleted its pod
+    85	    assert C.watchdog("ts-r-x", 10**6, str(done), f.run, f.clock, sleep, here=str(tmp_path), mono=f.clock) == 0
+    86	    assert not (tmp_path / "ts-r-x.blocked").exists()
+    87	
+    88	
+    89	def test_r10_delete_respects_the_budget_even_with_slow_commands():
+    90	    class Slow(Fake):
+    91	        def run(self, args, timeout=60):
+    92	            self.t += 60; return super().run(args, timeout)
+    93	    f = Slow({"a": "n"})
+    94	    assert not C.delete_verified("a", 1, f.run, f.clock, f.sleep)              # success after the budget is not success
+    95	
+    96	
+    97	def test_r10_watchdog_after_the_deadline_needs_done_and_a_settled_empty_listing(tmp_path):
+    98	    f = Fake({}); f.t = 100; done = tmp_path / "done"
+    99	    late = {"n": 0}
+   100	    def sleep(s):
+   101	        f.t += s; late["n"] += 1
+   102	        if late["n"] == 2:
+   103	            f.pods["late"] = "ts-r-x"                                             # a delayed creation appears
+   104	        if late["n"] == 6:
+   105	            done.write_text("")
+   106	    assert C.watchdog("ts-r-x", 50, str(done), f.run, f.clock, sleep, here=str(tmp_path), settle=60, mono=f.clock) == 0
+   107	    assert "late" not in f.pods and late["n"] >= 6
+   108	
+   109	
+   110	def test_r11_watchdog_before_the_deadline_settles_so_a_delayed_creation_is_deleted(tmp_path):
+   111	    # harness3 scenario 5: an ambiguous creation answer, DONE written, then the pod appears. One empty listing is not proof.
+   112	    f = Fake({}); done = tmp_path / "done"; done.write_text("")
+   113	    n = {"k": 0}
+   114	    def sleep(s):
+   115	        f.t += s; n["k"] += 1
+   116	        if n["k"] == 2:
+   117	            f.pods["late"] = "ts-r-x"
+   118	    assert C.watchdog("ts-r-x", 10**6, str(done), f.run, f.clock, sleep, here=str(tmp_path), settle=60, mono=f.clock) == 0
+   119	    assert n["k"] >= 2, "the watchdog stopped before the delayed pod appeared"
+   120	    assert "late" not in f.pods and "delete" in f.calls and not (tmp_path / "ts-r-x.blocked").exists()
+   121	
+   122	
+   123	def test_r12_settle_counts_only_after_done(tmp_path):
+   124	    # r11 Sol 3: empty time before DONE must not count; DONE appears at t=330, so exit must be at t >= 330 + settle
+   125	    f = Fake({}); f.t = 100; done = tmp_path / "done"
+   126	    def sleep(s):
+   127	        f.t += s
+   128	        if f.t >= 330 and not done.exists():
+   129	            done.write_text(""); sleep.at = f.t
+   130	    sleep.at = None
+   131	    assert C.watchdog("ts-r-x", 50, str(done), f.run, f.clock, sleep, here=str(tmp_path), settle=300, mono=f.clock) == 0
+   132	    assert sleep.at is not None and f.t >= sleep.at + 300
+   133	
+   134	
+   135	def test_r12_after_an_ambiguous_answer_the_settle_is_long_enough_for_a_late_pod(tmp_path):
+   136	    # r11 Sol 2 / Astra 2: a creation delayed beyond the normal settle (here at t=600 > 300) must still be deleted
+   137	    f = Fake({}); done = tmp_path / "done"; done.write_text(""); (tmp_path / "ts-r-x.request").write_text("pending")
+   138	    def sleep(s):
+   139	        f.t += s
+   140	        if f.t >= 600 and "late" not in f.pods and not sleep.added:
+   141	            f.pods["late"] = "ts-r-x"; sleep.added = True
+   142	    sleep.added = False
+   143	    assert C.watchdog("ts-r-x", 10**6, str(done), f.run, f.clock, sleep, here=str(tmp_path), settle=300, mono=f.clock) == 0
+   144	    assert sleep.added, "the watchdog stopped before the late pod appeared"
+   145	    assert "late" not in f.pods and f.t >= C.AMBIGUOUS_SETTLE
+   146	
+   147	
+   148	def test_r12_fractional_budget_is_passed_as_a_fractional_timeout():
+   149	    seen = []
+   150	    def run(args, timeout=60):
+   151	        seen.append(timeout); return 0, "[]"
+   152	    C.list_pods(run, 0.1)
+   153	    assert seen and seen[0] <= 0.1
+   154	
+   155	
+   156	@pytest.mark.parametrize("answer,exc,ambiguous", [
+   157	    ({"id": "p1"}, None, False),
+   158	    ({"error": 400, "body": "no capacity"}, None, False),
+   159	    ({"error": 404, "body": ""}, None, False),
+   160	    ({"error": 408, "body": ""}, None, True),
+   161	    ({"error": 429, "body": ""}, None, True),
+   162	    ({"error": 500, "body": ""}, None, True),
+   163	    ({"error": 504, "body": ""}, None, True),
+   164	    (None, None, True),
+   165	    ("garbage", None, True),
+   166	    (None, TimeoutError(), True),
+   167	])
+   168	def test_r12_creation_answers_are_ambiguous_unless_clearly_refused(answer, exc, ambiguous):
+   169	    pid, amb = C.classify_creation(answer, exc)
+   170	    assert amb is ambiguous and (pid == "p1") == (answer == {"id": "p1"})
+   171	
+   172	
+   173	@pytest.mark.parametrize("value,price", [
+   174	    (0.56, 0.56), ("0.56", 0.56), (None, None), (0, None), (-1, None), ("nan", None), ("inf", None), ("", None), ("x", None),
+   175	])
+   176	def test_r13_only_a_finite_positive_price_counts(value, price):
+   177	    # r12 Sol 3 / Astra 2: a missing or null price became 0 and left billing marked resolved
+   178	    assert C.price_of({"costPerHr": value}) == price
+   179	    assert C.price_of({}) is None
+   180	
+   181	
+   182	def test_r13_no_command_gets_more_time_than_the_budget_left():
+   183	    # r12 Sol 5 / Astra 4: a 0.001 s budget became a 0.01 s timeout
+   184	    seen = []
+   185	    def run(args, timeout=60):
+   186	        seen.append((args[0], timeout)); return 0, "[]"
+   187	    C.list_pods(run, 0.001)
+   188	    assert seen == [("list", 0.001)]
+   189	    seen.clear()
+   190	    assert C.list_pods(run, 0) is None and C.list_pods(run, -1) is None and seen == []
+   191	    t = {"now": 0.0}
+   192	    def slow(args, timeout=60):
+   193	        seen.append((args[0], timeout)); t["now"] += 0.0004; return 0, "[]"
+   194	    C.delete_verified("p", 0.001, slow, clock=lambda: t["now"], sleep=lambda s: None)
+   195	    start = 0.0
+   196	    assert seen and all(0 < to <= 0.001 for _, to in seen)
+   197	
+   198	
+   199	# r16: spend comes from the account balance; a pending request marker exists before every creation request; a launch
+   200	# lock; the watchdog records its end time and releases the lock.
+   201	
+   202	@pytest.mark.parametrize("out,rc,expect", [
+   203	    ('{"balance": 10.5, "spendPerHr": 0}', 0, (10.5, 0.0)),
+   204	    ('{"balance": 10.5, "spendPerHr": 0.56}', 0, (10.5, 0.56)),
+   205	    ('{"balance": 10.5}', 0, None), ('{"balance": "nan", "spendPerHr": 0}', 0, None),
+   206	    ('{"balance": 10.5, "spendPerHr": -1}', 0, None), ("garbage", 0, None), ('{"balance": 1, "spendPerHr": 0}', 1, None),
+   207	])
+   208	def test_r16_balance_parses_or_fails_closed(out, rc, expect):
+   209	    assert C.balance(lambda args, timeout=60: (rc, out)) == expect
+   210	
+   211	
+   212	def _spend_setup(tmp_path, wd_ago, pods=None, bal_now=9.123, rate_now=0.0):
+   213	    (tmp_path / "n.bal0").write_text("10.0 0.0")
+   214	    if wd_ago is not None:
+   215	        import time as _t   # wall and monotonic end times (r17: both must show the hour)
+   216	        (tmp_path / "n.wdend").write_text(f"{1_000_000 - wd_ago} {_t.monotonic() - wd_ago}")
+   217	    f = Fake(pods or {})
+   218	    def run(args, timeout=60):
+   219	        if args[0] == "balance":
+   220	            return 0, json.dumps({"balance": bal_now, "spendPerHr": rate_now})
+   221	        return f.run(args, timeout)
+   222	    return run
+   223	
+   224	
+   225	def test_r16_spend_is_refused_until_the_watchdog_ended_an_hour_ago_and_no_pod_is_named(tmp_path):
+   226	    clock = lambda: 1_000_000
+   227	    assert C.spend("n", _spend_setup(tmp_path, None), clock, here=str(tmp_path))[0] is None          # watchdog not ended
+   228	    assert C.spend("n", _spend_setup(tmp_path, 3599), clock, here=str(tmp_path))[0] is None          # less than an hour
+   229	    assert C.spend("n", _spend_setup(tmp_path, 4000, {"x": "n"}), clock, here=str(tmp_path))[0] is None  # a pod named n
+   230	
+   231	
+   232	def test_r16_spend_is_the_balance_difference_rounded_up_to_a_cent(tmp_path):
+   233	    usd, note = C.spend("n", _spend_setup(tmp_path, 4000), lambda: 1_000_000, here=str(tmp_path))
+   234	    assert usd == 0.88 and "overstates" not in note
+   235	    usd, note = C.spend("n", _spend_setup(tmp_path, 4000, rate_now=0.3), lambda: 1_000_000, here=str(tmp_path))
+   236	    assert usd == 0.88 and "overstates" in note        # other usage on the account: the difference includes it
+   237	
+   238	
+   239	def test_r16_watchdog_writes_its_end_time_and_releases_the_launch_lock(tmp_path):
+   240	    f = Fake({}); done = tmp_path / "done"; done.write_text(""); (tmp_path / "ts-r-x.launchlock").mkdir()
+   241	    assert C.watchdog("ts-r-x", 10**6, str(done), f.run, f.clock, f.sleep, here=str(tmp_path), settle=60, mono=f.clock) == 0
+   242	    assert not (tmp_path / "ts-r-x.launchlock").exists() and all(float(x) > 0 for x in (tmp_path / "ts-r-x.wdend").read_text().split()) and len((tmp_path / "ts-r-x.wdend").read_text().split()) == 2
+   243	
+   244	
+   245	def test_r16_a_cleared_request_needs_only_the_normal_settle(tmp_path):
+   246	    f = Fake({}); done = tmp_path / "done"; done.write_text(""); (tmp_path / "ts-r-x.request").write_text("clear")
+   247	    assert C.watchdog("ts-r-x", 10**6, str(done), f.run, f.clock, f.sleep, here=str(tmp_path), settle=60, mono=f.clock) == 0
+   248	    assert f.t < C.AMBIGUOUS_SETTLE
+   249	
+   250	
+   251	def test_r16_elapsed_budgets_use_the_monotonic_clock():
+   252	    import inspect, time
+   253	    for fn in (C.delete_verified, C.reconcile):
+   254	        assert inspect.signature(fn).parameters["clock"].default is time.monotonic
+   255	
+   256	
+   257	
+   258	# r17
+   259	
+   260	def test_r17_a_wall_clock_jump_does_not_shorten_the_settle(tmp_path):
+   261	    # r16 Sol 2 / Astra 2: wall time +3600 s after 30 s of elapsed time ended the 1800 s settle
+   262	    f = Fake({}); done = tmp_path / "done"; done.write_text(""); (tmp_path / "ts-r-x.request").write_text("pending")
+   263	    mono = {"t": 0.0}; wall = {"t": 1000.0}
+   264	    def sleep(s):
+   265	        mono["t"] += s; wall["t"] += s
+   266	        if mono["t"] >= 30 and not sleep.jumped:
+   267	            wall["t"] += 3600; sleep.jumped = True
+   268	    sleep.jumped = False
+   269	    assert C.watchdog("ts-r-x", 10**9, str(done), f.run, lambda: wall["t"], sleep, here=str(tmp_path), settle=300,
+   270	                      mono=lambda: mono["t"]) == 0
+   271	    assert mono["t"] >= C.AMBIGUOUS_SETTLE
+   272	
+   273	
+   274	def test_r17_spend_rounds_up_exactly(tmp_path):
+   275	    # r16 Sol 5 / Astra 7: rounding to 6 places before ceil gave 0.01 for 0.010000001
+   276	    usd, _ = C.spend("n", _spend_setup(tmp_path, 4000, bal_now=9.989999999), lambda: 1_000_000, here=str(tmp_path))
+   277	    assert usd == 0.02
+   278	
+   279	
+   280	def test_r17_spend_refuses_a_balance_that_rose_and_states_the_credit_condition(tmp_path):
+   281	    # r16 Sol 1 / Astra 1: a credit or deposit raises the balance; the difference is valid only without one
+   282	    usd, why = C.spend("n", _spend_setup(tmp_path, 4000, bal_now=10.5), lambda: 1_000_000, here=str(tmp_path))
+   283	    assert usd is None and "credit" in why
+   284	    usd, note = C.spend("n", _spend_setup(tmp_path, 4000), lambda: 1_000_000, here=str(tmp_path))
+   285	    assert "valid only if no deposit or credit" in note
+   286	
+   287	
+   288	def test_r17_spend_writes_its_record(tmp_path):
+   289	    usd, note = C.spend("n", _spend_setup(tmp_path, 4000), lambda: 1_000_000, here=str(tmp_path))
+   290	    rec = (tmp_path / "n.spent").read_text()
+   291	    assert str(usd) in rec and "valid only if" in rec
+   292	
+   293	
+   294	# r18
+   295	
+   296	def test_r18_a_wall_clock_jump_does_not_shorten_the_billing_wait(tmp_path):
+   297	    # r17 Sol 1: wall time jumped 4000 s while only 30 s elapsed; spend accepted the balance
+   298	    import time as _t
+   299	    run = _spend_setup(tmp_path, 4000)
+   300	    (tmp_path / "n.wdend").write_text(f"{1_000_000 - 4000} {_t.monotonic() - 30}")
+   301	    usd, why = C.spend("n", run, lambda: 1_000_000, here=str(tmp_path))
+   302	    assert usd is None and not (tmp_path / "n.spent").exists()
+   303	
+   304	
+   305	def test_r18_after_a_restart_the_wait_cannot_be_verified_and_spend_is_refused(tmp_path):
+   306	    import time as _t
+   307	    run = _spend_setup(tmp_path, 4000)
+   308	    (tmp_path / "n.wdend").write_text(f"{1_000_000 - 4000} {_t.monotonic() + 10**6}")   # monotonic went backwards
+   309	    usd, why = C.spend("n", run, lambda: 1_000_000, here=str(tmp_path))
+   310	    assert usd is None and "billing page" in why
+   311	
+   312	
+   313	def test_r18_spend_holds_the_launch_lock_and_refuses_while_it_is_held(tmp_path):
+   314	    # r17 Astra 1: a spend check overlapping a new launch wrote the old spend into the new launch's record
+   315	    run = _spend_setup(tmp_path, 4000)
+   316	    (tmp_path / "n.launchlock").mkdir()
+   317	    assert C.spend("n", run, lambda: 1_000_000, here=str(tmp_path))[0] is None and not (tmp_path / "n.spent").exists()
+   318	    (tmp_path / "n.launchlock").rmdir()
+   319	    seen = []
+   320	    def run2(args, timeout=60):
+   321	        seen.append((tmp_path / "n.launchlock").is_dir()); return run(args, timeout)
+   322	    assert C.spend("n", run2, lambda: 1_000_000, here=str(tmp_path))[0] == 0.88
+   323	    assert seen and all(seen) and not (tmp_path / "n.launchlock").exists()
+   324	
+   325	
+   326	def test_r18_a_failed_record_write_publishes_no_record(tmp_path, monkeypatch):
+   327	    # r17 Astra 2: a failed write left an empty .spent that the launcher accepted
+   328	    run = _spend_setup(tmp_path, 4000)
+   329	    def boom(*a, **k):
+   330	        raise OSError("disk full")
+   331	    monkeypatch.setattr(C.os, "replace", boom)
+   332	    usd, why = C.spend("n", run, lambda: 1_000_000, here=str(tmp_path))
+   333	    assert usd is None and not (tmp_path / "n.spent").exists() and not (tmp_path / "n.launchlock").exists()
+     1	"""runpod.py propagates the exit status of ssh, push and pull (internal review r7 of the reset plan)."""
+     2	import subprocess
+     3	import runpod as RP
+     4	
+     5	
+     6	def test_ssh_push_pull_return_the_subprocess_status(monkeypatch):
+     7	    fake = lambda *a, **k: subprocess.CompletedProcess([], 255, "", "boom")
+     8	    monkeypatch.setattr(RP, "ssh", fake); monkeypatch.setattr(RP, "rsync", fake)
+     9	    for argv in (["ssh", "p", "true"], ["push", "p", "a", "b"], ["pull", "p", "a", "b"]):
+    10	        assert RP.main(argv) == 255
+    11	    ok = lambda *a, **k: subprocess.CompletedProcess([], 0, "up", "")
+    12	    monkeypatch.setattr(RP, "ssh", ok)
+    13	    assert RP.main(["ssh", "p", "echo up"]) == 0
+     1	#!/bin/bash
+     2	# Offline harness for reset_pod.sh with podctl.py and create_one.py (no real pods). A fake runpod.py keeps pods, pending
+     3	# (delayed) creations and stuck deletions in state.json; a fake create_one.py makes one request per call. Every fake
+     4	# holds an exclusive lock on state.json for its whole read-modify-write (r15). Each scenario asserts: the pods left (0),
+     5	# the exact number of creation requests, the launcher exit status, the end state (an anchored pattern), that the
+     6	# watchdog ended by itself (unless the scenario expects it to stay, fail-closed) and released the launch lock, and, where
+     7	# stated, a watchdog log line, a launcher output line, and a line that must not appear (NOTOUT).
+     8	set -u; H=$(mktemp -d); cd $H; SRC=/Users/oemer.demirel/Projects/touchstone/results/pods
+     9	sed "s#P=/Users/oemer.demirel/Projects/touchstone/results/pods#P=$H#; s#snapf=\"/Users/oemer.demirel/Projects/touchstone/results/pods/snap_#snapf=\"$H/snap_#" $SRC/reset_pod.sh > reset_pod.sh
+    10	cp $SRC/podctl.py .
+    11	mkdir -p g && (cd g && git init -q && git -c commit.gpgsign=false -c user.email=x@x -c user.name=x commit -q --allow-empty -m x && git -c tag.gpgsign=false tag protocol-v2 && COPYFILE_DISABLE=1 tar --uid 0 --gid 0 -czf ../c.tgz .)
+    12	C=$(git -C g rev-parse HEAD); echo x > b; tar czf b.tgz b; export HC=$C
+    13	# prepared remote outputs with inventories, for the RUN OK scenario
+    14	python3 - <<'EOF'
+    15	import hashlib, json, os
+    16	for d in ("remote/followup-reset", "remote/followup-gate"):
+    17	    os.makedirs(d, exist_ok=True); open(f"{d}/r.json", "w").write('{"x": 1}')
+    18	    json.dump({"records": {"r.json": hashlib.sha256(open(f"{d}/r.json", "rb").read()).hexdigest()}}, open(f"{d}/inventory.json", "w"))
+    19	EOF
+    20	cat > runpod.py <<'EOF'
+    21	import fcntl, json, os, shutil, sys
+    22	H = os.path.dirname(os.path.abspath(__file__)); S = os.path.join(H, "state.json")
+    23	L = open(S + ".lock", "w"); fcntl.flock(L, fcntl.LOCK_EX)    # held until exit: one transaction per call
+    24	st = json.load(open(S)); cmd, a = sys.argv[1], sys.argv[2:]; st["log"].append(" ".join([cmd] + a[:1])); rc = 0
+    25	for p in list(st.get("pending", {})):                       # delayed creations appear after a countdown of calls
+    26	    st["pending"][p][1] -= 1
+    27	    if st["pending"][p][1] <= 0: st["pods"][p] = st["pending"].pop(p)[0]
+    28	if cmd == "list":
+    29	    if st.get("fail_list", 0) > 0: st["fail_list"] -= 1; rc = 1; print("error")
+    30	    else: print(json.dumps([{"id": i, "name": n, "costPerHr": st["price"]} for i, n in st["pods"].items()]))
+    31	elif cmd == "balance":
+    32	    if st.get("bal_fail"): rc = 1; print("error")
+    33	    else: print(json.dumps({"balance": 100.0, "spendPerHr": 0}))
+    34	elif cmd == "delete":
+    35	    if st.get("stuck", {}).get(a[0], 0) > 0: st["stuck"][a[0]] -= 1
+    36	    else: st["pods"].pop(a[0], None)
+    37	    print("{}")
+    38	elif cmd == "ssh":
+    39	    c = a[1] if len(a) > 1 else ""
+    40	    if not st["up"]: rc = 255; print("")
+    41	    elif "git rev-parse" in c: print(f"git={os.environ.get('HC','')} env=unset bundle=6 memgb=64 py=x")
+    42	    elif "tail -c 240" in c: print("== RUN OK" if st.get("runok") else "== stage search")
+    43	    else: print("up")
+    44	elif cmd == "push":
+    45	    if st.get("push_fail"): rc = 1; print("exit 1")
+    46	    else: print("exit 0")
+    47	elif cmd == "pull":
+    48	    src, dst = a[1], a[2]
+    49	    for k in ("followup-reset", "followup-gate"):
+    50	        if k in src:
+    51	            shutil.copytree(os.path.join(H, "remote", k), dst, dirs_exist_ok=True)
+    52	            if k == "followup-reset" and st.get("corrupt_pulls", 0) > 0:
+    53	                st["corrupt_pulls"] -= 1; open(os.path.join(dst, "r.json"), "w").write("corrupt")
+    54	json.dump(st, open(S, "w")); sys.exit(rc)
+    55	EOF
+    56	cat > create_one.py <<'EOF'
+    57	import fcntl, json, os, signal, subprocess, sys
+    58	S = os.path.join(os.path.dirname(os.path.abspath(__file__)), "state.json")
+    59	L = open(S + ".lock", "w"); fcntl.flock(L, fcntl.LOCK_EX)
+    60	st = json.load(open(S))
+    61	pid = "pod%d" % (len(st["log"]) + 1); st["log"].append("create " + pid)
+    62	if st.get("delay"): st.setdefault("pending", {})[pid] = [sys.argv[1], st["delay"]]
+    63	else: st["pods"][pid] = sys.argv[1]
+    64	if st.get("stuck_next"): st.setdefault("stuck", {})[pid] = 40; st["stuck_next"] = False
+    65	amb = bool(st.get("lose")); term = bool(st.get("term")); json.dump(st, open(S, "w")); L.close()
+    66	if term:   # a stop during creation (r15): TERM the launcher while this request is outstanding; it answers nothing
+    67	    p = os.getppid(); top = None   # the topmost process running the launcher snapshot (subshells share its command line)
+    68	    while p > 1:
+    69	        cmd = subprocess.run(["ps", "-o", "command=", "-p", str(p)], capture_output=True, text=True).stdout
+    70	        if "snap_reset_pod" in cmd: top = p
+    71	        p = int(subprocess.run(["ps", "-o", "ppid=", "-p", str(p)], capture_output=True, text=True).stdout.strip() or 1)
+    72	    if top: os.kill(top, signal.SIGTERM)
+    73	    sys.exit(1)
+    74	print(json.dumps({"id": "" if amb else pid, "ambiguous": amb, "vcpu": 16}))
+    75	EOF
+    76	fail=0; ran=0; TOTAL=14
+    77	run() { # name state cap creates rc [end-pattern] [watchdog-log-substring] [launcher-output-substring]
+    78	  [ -n "${ONLY:-}" ] && ! echo "$1" | grep -q "$ONLY" && return 0   # smoke runs only; a full run sets no ONLY
+    79	  ran=$((ran+1)); echo "== $1"; echo "$2" > state.json; mkdir -p logs_r_t junk; : > logs_r_t/watchdog.log; : > ts-r-t.wdpid
+    80	  for f in ts-r-t.bal0 ts-r-t.spent ts-r-t.wdend; do [ -e $f ] && mv -- $f junk/$f.$ran; done   # isolation: one launch per scenario
+    81	  [ -n "${PRELOCK:-}" ] && mkdir ts-r-t.launchlock
+    82	  [ -n "${PREBAL:-}" ] && echo "100.0 0.0" > ts-r-t.bal0
+    83	  [ -n "${EMPTYSPENT:-}" ] && : > ts-r-t.spent
+    84	  EXPECT=$C MAXCPH=0.70 HARD=${HARDX:-1.3} perl -e 'alarm 1500; exec @ARGV' bash reset_pod.sh c.tgz b.tgz t $3 out > run.out 2>&1; lrc=$?
+    85	  out=$(grep -v "^tarball\|code guard" run.out); echo "$out" | tail -3
+    86	  # wait for THIS scenario's watchdog by its PID (r11); the settle while a request is pending is 30 minutes
+    87	  wd=$(cat ts-r-t.wdpid 2>/dev/null); alive=""
+    88	  for i in $(seq 1 ${WAITW:-800}); do [ -n "$wd" ] && kill -0 "$wd" 2>/dev/null || break; sleep 3; done
+    89	  if [ -n "$wd" ] && kill -0 "$wd" 2>/dev/null; then alive=1; kill "$wd"; sleep 1; echo "watchdog $wd still running; stopped"; fi
+    90	  read left creates <<< "$(python3 -c "import json;s=json.load(open('state.json'));print(len(s['pods'])+len(s.get('pending',{})), sum(1 for l in s['log'] if l.startswith('create')))")"
+    91	  echo "pods left: $left, creation requests: $creates (expected $4), exit $lrc (expected $5)"; tail -1 logs_r_t/watchdog.log
+    92	  [ "$left" = 0 ] && [ "$creates" = "$4" ] && [ "$lrc" = "$5" ] || { echo "SCENARIO FAILED"; fail=1; }
+    93	  [ -z "${6:-}" ] || echo "$out" | grep -Eq "^[0-9]{2}:[0-9]{2} end: ($6)\$" || { echo "SCENARIO FAILED (end line is not: $6)"; fail=1; }
+    94	  [ -z "${7:-}" ] || grep -q "$7" logs_r_t/watchdog.log || { echo "SCENARIO FAILED (watchdog log lacks: $7)"; fail=1; }
+    95	  [ -z "${8:-}" ] || echo "$out" | grep -Eq "$8" || { echo "SCENARIO FAILED (launcher output lacks: $8)"; fail=1; }
+    96	  [ -z "${NOTOUT:-}" ] || ! { echo "$out"; cat logs_r_t/watchdog.log; } | grep -q "$NOTOUT" || { echo "SCENARIO FAILED (output contains: $NOTOUT)"; fail=1; }
+    97	  if [ -n "${WD_ALIVE:-}" ]; then [ -n "$alive" ] || { echo "SCENARIO FAILED (the watchdog should have stayed, fail-closed)"; fail=1; }
+    98	  elif [ -n "$alive" ]; then echo "SCENARIO FAILED (the watchdog did not end by itself)"; fail=1; fi
+    99	  if [ -z "${PRELOCK:-}" ] && [ -z "$alive" ] && [ -d ts-r-t.launchlock ]; then echo "SCENARIO FAILED (launch lock not released)"; fail=1; fi
+   100	  [ -z "${PREBAL:-}" ] || [ -e ts-r-t.bal0 ] || { echo "SCENARIO FAILED (the previous spend baseline was not kept)"; fail=1; }
+   101	  python3 podctl.py unlock ts-r-t >/dev/null 2>&1; true; }   # test isolation only (a held or stale lock)
+   102	NOTOUT="pull or verification failed" run "price above the ceiling: deleted at once, no retrieval" '{"pods":{},"price":0.9,"up":true,"log":[]}' 5 1 1 "PRICE 0.9 NOT IN \(0, 0.70\]"
+   103	NOTOUT="pull or verification failed" run "null price: deleted at once (r12)" '{"pods":{},"price":null,"up":true,"log":[]}' 5 1 1 "PRICE unknown NOT IN \(0, 0.70\]"
+   104	run "an ambiguous answer ends creation: one request, no retry" '{"pods":{},"price":0.56,"up":true,"log":[],"lose":true}' 5 1 1 "AMBIGUOUS CREATION ANSWER \(no retry\)" "for 1800s" "UNRESOLVED"
+   105	run "a pod created long after an ambiguous answer (beyond 300 s) is deleted by the watchdog" '{"pods":{},"price":0.56,"up":true,"log":[],"lose":true,"delay":20}' 5 1 1 "AMBIGUOUS CREATION ANSWER \(no retry\)" "WATCHDOG: deleting"
+   106	run "a stop during creation leaves the request pending; the late pod is deleted (r15)" '{"pods":{},"price":0.56,"up":true,"log":[],"term":true,"delay":20}' 5 1 1 "NOT STARTED" "for 1800s" "outstanding or ambiguous"
+   107	HARDX=1.0 run "unreachable pod at the deadline" '{"pods":{},"price":0.56,"up":false,"log":[]}' 0.004 1 1 "CREATION BLOCKED \(hard deadline\)|SOFT DEADLINE BEFORE START|NO POD"
+   108	HARDX=1.0 run "deletion keeps failing: the watchdog deletes after the deadline" '{"pods":{},"price":0.56,"up":false,"log":[],"stuck_next":true}' 0.004 1 1 "UNREACHABLE POD NOT DELETED|CREATION BLOCKED \(hard deadline\)|SOFT DEADLINE BEFORE START|NO POD" "WATCHDOG: deleting"
+   109	WD_ALIVE=1 WAITW=20 run "listing always fails: no creation; the watchdog stays (fail-closed)" '{"pods":{},"price":0.56,"up":true,"log":[],"fail_list":1000000}' 5 0 1 "RECONCILE FAILED BEFORE REQUEST 1"
+   110	PRELOCK=1 run "a held launch lock refuses the launch (r15)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 5 0 1 "" "" "^LOCKED: ts-r-t.launchlock exists"
+   111	PREBAL=1 run "an unrecorded previous spend refuses the launch and keeps its baseline (r16)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 5 0 1 "" "" "^refused: the previous launch's spend is not recorded"
+   112	PREBAL=1 EMPTYSPENT=1 run "an empty spend record does not count as recorded (r17)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 5 0 1 "" "" "^refused: the previous launch's spend is not recorded"
+   113	run "unknown balance: no creation, lock released (r16)" '{"pods":{},"price":0.56,"up":true,"log":[],"bal_fail":true}' 5 0 1 "" "" "^refused: account balance unknown$"
+   114	NOTOUT="pull or verification failed" run "upload failure stops the run before it starts (r15)" '{"pods":{},"price":0.56,"up":true,"log":[],"push_fail":true}' 5 1 1 "UPLOAD FAILED \(code\)"
+   115	run "RUN OK with one corrupt pull: retried until verified" '{"pods":{},"price":0.56,"up":true,"log":[],"runok":true,"corrupt_pulls":1}' 5 1 0 "RUN OK" "" "podctl.py spend ts-r-t"
+   116	cd /; mv -- $H ~/.Trash/harness_$$
+   117	# a filtered (ONLY) run can never pass: the gate needs every scenario (r16)
+   118	if [ $fail != 0 ]; then echo "HARNESS FAILED"; exit 1; elif [ $ran != $TOTAL ]; then echo "HARNESS PARTIAL ($ran of $TOTAL scenarios ran)"; exit 2; else echo "HARNESS OK ($ran of $TOTAL scenarios)"; fi
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/create_one.py; nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/runpod.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+     1	"""One creation request per call (internal review r10: no hidden retries). Usage: create_one.py NAME INDEX
+     2	INDEX selects one (flavor, cloud) combination; prints {"id": ..., "vcpu": ...} or {"id": "", "ambiguous": bool}.
+     3	Only a clear client refusal (HTTP 4xx other than 408/429) is unambiguous (podctl.classify_creation, r11); after an
+     4	ambiguous answer the launcher sends no further request."""
+     5	import json, sys
+     6	sys.path.insert(0, "/Users/oemer.demirel/Projects/touchstone/results/pods")
+     7	from runpod import api
+     8	from podctl import classify_creation
+     9	IMAGE = "runpod/base:0.6.2-cpu"
+    10	COMBOS = [(f, c) for c in ("SECURE", "COMMUNITY") for f in ("cpu5c", "cpu3c", "cpu5g", "cpu3g", "cpu5m", "cpu3m")]
+    11	name, i = sys.argv[1], int(sys.argv[2])
+    12	if not 0 <= i < len(COMBOS):
+    13	    print(json.dumps({"id": "", "ambiguous": False, "exhausted": True})); sys.exit(1)
+    14	f, c = COMBOS[i]
+    15	r, exc = None, None
+    16	try:
+    17	    r = api("POST", "/pods", {"name": name, "computeType": "CPU", "cloudType": c, "cpuFlavorIds": [f], "cpuFlavorPriority": "availability",
+    18	                              "vcpuCount": 16, "imageName": IMAGE, "ports": ["22/tcp"], "containerDiskInGb": 20, "env": {"OMP_NUM_THREADS": "1"}})
+    19	except Exception as e:
+    20	    exc = e
+    21	pid, amb = classify_creation(r, exc)
+    22	if pid:
+    23	    print(json.dumps({"id": pid, "vcpu": 16, "flavor": f, "cloud": c})); sys.exit(0)
+    24	print(json.dumps({"id": "", "ambiguous": amb})); sys.exit(1)
+     1	"""Minimal Runpod REST helper. Usage:
+     2	  python runpod.py list | balance | get ID | delete ID | ssh ID 'cmd' | push ID LOCAL REMOTE | pull ID REMOTE LOCAL"""
+     3	import json, os, re, subprocess, sys, urllib.request
+     4	KEY = re.search(r"apikey\s*=\s*'([^']+)'", open(os.path.expanduser("~/.runpod/config.toml")).read()).group(1)
+     5	SSHKEY = os.path.expanduser("~/.runpod/ssh/runpodctl-ssh-key")
+     6	BASE = "https://rest.runpod.io/v1"
+     7	def api(method, path, body=None):
+     8	    req = urllib.request.Request(BASE + path, data=json.dumps(body).encode() if body else None, method=method,
+     9	                                 headers={"Authorization": f"Bearer {KEY}", "Content-Type": "application/json", "User-Agent": "curl/8.7.1"})
+    10	    try:
+    11	        with urllib.request.urlopen(req, timeout=60) as r:
+    12	            t = r.read().decode(); return json.loads(t) if t else None
+    13	    except urllib.error.HTTPError as e:
+    14	        return {"error": e.code, "body": e.read().decode()[:500]}
+    15	def target(pod_id):
+    16	    p = api("GET", f"/pods/{pod_id}"); pm = p.get("portMappings") or {}
+    17	    return p.get("publicIp"), pm.get("22") or pm.get(22)
+    18	def ssh(pod_id, cmd, timeout=None):
+    19	    ip, port = target(pod_id)
+    20	    return subprocess.run(["ssh", "-i", SSHKEY, "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", "-o", "LogLevel=ERROR", "-o", "ConnectTimeout=20", "-p", str(port), f"root@{ip}", cmd],
+    21	                          capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
+    22	def rsync(pod_id, src, dst, pull=False):
+    23	    ip, port = target(pod_id)
+    24	    e = f"ssh -i {SSHKEY} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -p {port}"
+    25	    a, b = (f"root@{ip}:{src}", dst) if pull else (src, f"root@{ip}:{dst}")
+    26	    return subprocess.run(["rsync", "-az", "-e", e, a, b], capture_output=True, text=True)
+    27	def main(argv) -> int:
+    28	    cmd, args = argv[0], argv[1:]
+    29	    if cmd == "list": print(json.dumps([{k: p.get(k) for k in ("id", "name", "desiredStatus", "publicIp", "portMappings", "costPerHr", "vcpuCount")} for p in api("GET", "/pods")], indent=1))
+    30	    elif cmd == "balance":   # read-only account balance (r16 spend record); any failure exits non-zero
+    31	        q = json.dumps({"query": "query { myself { clientBalance currentSpendPerHr } }"}).encode()
+    32	        req = urllib.request.Request("https://api.runpod.io/graphql", data=q, method="POST",
+    33	                                     headers={"Authorization": f"Bearer {KEY}", "Content-Type": "application/json", "User-Agent": "curl/8.7.1"})
+    34	        with urllib.request.urlopen(req, timeout=60) as r:
+    35	            m = json.loads(r.read().decode())["data"]["myself"]
+    36	        print(json.dumps({"balance": m["clientBalance"], "spendPerHr": m["currentSpendPerHr"]}))
+    37	    elif cmd == "get": print(json.dumps(api("GET", f"/pods/{args[0]}"), indent=1)[:1500])
+    38	    elif cmd == "delete": print(api("DELETE", f"/pods/{args[0]}"))
+    39	    elif cmd == "ssh": r = ssh(args[0], args[1]); print(r.stdout, r.stderr, "exit", r.returncode); return r.returncode
+    40	    elif cmd == "push": r = rsync(args[0], args[1], args[2]); print(r.stdout[-300:], r.stderr[-300:], "exit", r.returncode); return r.returncode
+    41	    elif cmd == "pull": r = rsync(args[0], args[1], args[2], pull=True); print(r.stdout[-300:], r.stderr[-300:], "exit", r.returncode); return r.returncode
+    42	    return 0
+    43	
+    44	
+    45	if __name__ == "__main__":
+    46	    sys.exit(main(sys.argv[1:]))
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '1,224p' /Users/oemer.demirel/Projects/touchstone/results/pods/test_podctl.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+"""Every test runs under a 30 s alarm (a watchdog loop must never hang the suite).
+
+podctl: fail-closed listing, verified deletion within elapsed time, reconciliation, creation block, sustained watchdog."""
+import json
+import os
+import signal
+
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def _alarm():
+    signal.signal(signal.SIGALRM, lambda *a: (_ for _ in ()).throw(TimeoutError('test exceeded 30 s')))
+    signal.alarm(30); yield; signal.alarm(0)
+
+import podctl as C
+
+
+class Fake:
+    """A fake Runpod: pods by id -> name; `fail_list` listings fail; a pod in `stuck` survives `stuck[id]` deletes."""
+    def __init__(self, pods=None, fail_list=0, stuck=None, prices=None):
+        self.pods = dict(pods or {}); self.fail_list = fail_list; self.stuck = dict(stuck or {}); self.t = 0.0; self.calls = []
+        self.prices = dict(prices or {})
+    def run(self, args, timeout=60):
+        self.calls.append(args[0]); self.t += 1
+        if args[0] == "list":
+            if self.fail_list > 0:
+                self.fail_list -= 1; return 1, ""
+            return 0, json.dumps([{"id": i, "name": n, "costPerHr": self.prices.get(i, 0.5)} for i, n in self.pods.items()])
+        if args[0] == "delete":
+            pid = args[1]
+            if self.stuck.get(pid, 0) > 0:
+                self.stuck[pid] -= 1
+            else:
+                self.pods.pop(pid, None)
+            return 0, "{}"
+        return 0, ""
+    def clock(self):
+        return self.t
+    def sleep(self, s):
+        self.t += max(s, 0.01)
+
+
+def test_a_failed_listing_is_never_an_empty_list():
+    f = Fake({"a": "ts-r-x"}, fail_list=1)
+    assert C.list_pods(f.run) is None and [p["id"] for p in C.list_pods(f.run)] == ["a"]
+
+
+def test_delete_is_verified_and_bounded_by_elapsed_time():
+    f = Fake({"a": "n"}, stuck={"a": 2})
+    assert C.delete_verified("a", 100, f.run, f.clock, f.sleep) and "a" not in f.pods
+    g = Fake({"a": "n"}, stuck={"a": 10**6})
+    assert not C.delete_verified("a", 50, g.run, g.clock, g.sleep) and g.t < 50 + 20     # stops by elapsed time
+
+
+def test_reconcile_fails_closed_on_listing_failures_and_survivors():
+    f = Fake({"a": "ts-r-x", "keep": "ts-r-x", "other": "else"}, fail_list=3)
+    assert C.reconcile("ts-r-x", "keep", 600, f.run, f.clock, f.sleep) and set(f.pods) == {"keep", "other"}
+    g = Fake({"a": "ts-r-x"}, fail_list=10**6)                                          # listing never works
+    assert not C.reconcile("ts-r-x", "", 100, g.run, g.clock, g.sleep)
+    h = Fake({"a": "ts-r-x"}, stuck={"a": 10**6})                                       # deletion never takes effect
+    assert not C.reconcile("ts-r-x", "", 100, h.run, h.clock, h.sleep)
+
+
+def test_creation_is_blocked_after_the_hard_deadline_or_the_block_file(tmp_path):
+    assert C.may_create("n", 10, clock=lambda: 5, here=str(tmp_path))
+    assert not C.may_create("n", 10, clock=lambda: 11, here=str(tmp_path))
+    (tmp_path / "n.blocked").write_text("1")
+    assert not C.may_create("n", 10, clock=lambda: 5, here=str(tmp_path))
+
+
+def test_watchdog_blocks_creation_and_keeps_deleting_until_none_remain(tmp_path):
+    f = Fake({"a": "ts-r-x", "b": "ts-r-x"}, fail_list=0, stuck={"a": 30}); f.t = 100; (tmp_path / "done").write_text("")
+    assert C.watchdog("ts-r-x", 50, str(tmp_path / "done"), f.run, f.clock, f.sleep, here=str(tmp_path), settle=60, mono=f.clock) == 0
+    assert (tmp_path / "ts-r-x.blocked").exists() and not [i for i, n in f.pods.items() if n == "ts-r-x"]
+
+
+def test_watchdog_waits_for_done_and_an_empty_listing_before_the_deadline(tmp_path):
+    f = Fake({"a": "ts-r-x"}); done = tmp_path / "done"; done.write_text("")
+    calls = {"n": 0}
+    def sleep(s):
+        f.t += s; calls["n"] += 1
+        if calls["n"] == 3:
+            f.pods.clear()                                                              # the launcher deleted its pod
+    assert C.watchdog("ts-r-x", 10**6, str(done), f.run, f.clock, sleep, here=str(tmp_path), mono=f.clock) == 0
+    assert not (tmp_path / "ts-r-x.blocked").exists()
+
+
+def test_r10_delete_respects_the_budget_even_with_slow_commands():
+    class Slow(Fake):
+        def run(self, args, timeout=60):
+            self.t += 60; return super().run(args, timeout)
+    f = Slow({"a": "n"})
+    assert not C.delete_verified("a", 1, f.run, f.clock, f.sleep)              # success after the budget is not success
+
+
+def test_r10_watchdog_after_the_deadline_needs_done_and_a_settled_empty_listing(tmp_path):
+    f = Fake({}); f.t = 100; done = tmp_path / "done"
+    late = {"n": 0}
+    def sleep(s):
+        f.t += s; late["n"] += 1
+        if late["n"] == 2:
+            f.pods["late"] = "ts-r-x"                                             # a delayed creation appears
+        if late["n"] == 6:
+            done.write_text("")
+    assert C.watchdog("ts-r-x", 50, str(done), f.run, f.clock, sleep, here=str(tmp_path), settle=60, mono=f.clock) == 0
+    assert "late" not in f.pods and late["n"] >= 6
+
+
+def test_r11_watchdog_before_the_deadline_settles_so_a_delayed_creation_is_deleted(tmp_path):
+    # harness3 scenario 5: an ambiguous creation answer, DONE written, then the pod appears. One empty listing is not proof.
+    f = Fake({}); done = tmp_path / "done"; done.write_text("")
+    n = {"k": 0}
+    def sleep(s):
+        f.t += s; n["k"] += 1
+        if n["k"] == 2:
+            f.pods["late"] = "ts-r-x"
+    assert C.watchdog("ts-r-x", 10**6, str(done), f.run, f.clock, sleep, here=str(tmp_path), settle=60, mono=f.clock) == 0
+    assert n["k"] >= 2, "the watchdog stopped before the delayed pod appeared"
+    assert "late" not in f.pods and "delete" in f.calls and not (tmp_path / "ts-r-x.blocked").exists()
+
+
+def test_r12_settle_counts_only_after_done(tmp_path):
+    # r11 Sol 3: empty time before DONE must not count; DONE appears at t=330, so exit must be at t >= 330 + settle
+    f = Fake({}); f.t = 100; done = tmp_path / "done"
+    def sleep(s):
+        f.t += s
+        if f.t >= 330 and not done.exists():
+            done.write_text(""); sleep.at = f.t
+    sleep.at = None
+    assert C.watchdog("ts-r-x", 50, str(done), f.run, f.clock, sleep, here=str(tmp_path), settle=300, mono=f.clock) == 0
+    assert sleep.at is not None and f.t >= sleep.at + 300
+
+
+def test_r12_after_an_ambiguous_answer_the_settle_is_long_enough_for_a_late_pod(tmp_path):
+    # r11 Sol 2 / Astra 2: a creation delayed beyond the normal settle (here at t=600 > 300) must still be deleted
+    f = Fake({}); done = tmp_path / "done"; done.write_text(""); (tmp_path / "ts-r-x.request").write_text("pending")
+    def sleep(s):
+        f.t += s
+        if f.t >= 600 and "late" not in f.pods and not sleep.added:
+            f.pods["late"] = "ts-r-x"; sleep.added = True
+    sleep.added = False
+    assert C.watchdog("ts-r-x", 10**6, str(done), f.run, f.clock, sleep, here=str(tmp_path), settle=300, mono=f.clock) == 0
+    assert sleep.added, "the watchdog stopped before the late pod appeared"
+    assert "late" not in f.pods and f.t >= C.AMBIGUOUS_SETTLE
+
+
+def test_r12_fractional_budget_is_passed_as_a_fractional_timeout():
+    seen = []
+    def run(args, timeout=60):
+        seen.append(timeout); return 0, "[]"
+    C.list_pods(run, 0.1)
+    assert seen and seen[0] <= 0.1
+
+
+@pytest.mark.parametrize("answer,exc,ambiguous", [
+    ({"id": "p1"}, None, False),
+    ({"error": 400, "body": "no capacity"}, None, False),
+    ({"error": 404, "body": ""}, None, False),
+    ({"error": 408, "body": ""}, None, True),
+    ({"error": 429, "body": ""}, None, True),
+    ({"error": 500, "body": ""}, None, True),
+    ({"error": 504, "body": ""}, None, True),
+    (None, None, True),
+    ("garbage", None, True),
+    (None, TimeoutError(), True),
+])
+def test_r12_creation_answers_are_ambiguous_unless_clearly_refused(answer, exc, ambiguous):
+    pid, amb = C.classify_creation(answer, exc)
+    assert amb is ambiguous and (pid == "p1") == (answer == {"id": "p1"})
+
+
+@pytest.mark.parametrize("value,price", [
+    (0.56, 0.56), ("0.56", 0.56), (None, None), (0, None), (-1, None), ("nan", None), ("inf", None), ("", None), ("x", None),
+])
+def test_r13_only_a_finite_positive_price_counts(value, price):
+    # r12 Sol 3 / Astra 2: a missing or null price became 0 and left billing marked resolved
+    assert C.price_of({"costPerHr": value}) == price
+    assert C.price_of({}) is None
+
+
+def test_r13_no_command_gets_more_time_than_the_budget_left():
+    # r12 Sol 5 / Astra 4: a 0.001 s budget became a 0.01 s timeout
+    seen = []
+    def run(args, timeout=60):
+        seen.append((args[0], timeout)); return 0, "[]"
+    C.list_pods(run, 0.001)
+    assert seen == [("list", 0.001)]
+    seen.clear()
+    assert C.list_pods(run, 0) is None and C.list_pods(run, -1) is None and seen == []
+    t = {"now": 0.0}
+    def slow(args, timeout=60):
+        seen.append((args[0], timeout)); t["now"] += 0.0004; return 0, "[]"
+    C.delete_verified("p", 0.001, slow, clock=lambda: t["now"], sleep=lambda s: None)
+    start = 0.0
+    assert seen and all(0 < to <= 0.001 for _, to in seen)
+
+
+# r16: spend comes from the account balance; a pending request marker exists before every creation request; a launch
+# lock; the watchdog records its end time and releases the lock.
+
+@pytest.mark.parametrize("out,rc,expect", [
+    ('{"balance": 10.5, "spendPerHr": 0}', 0, (10.5, 0.0)),
+    ('{"balance": 10.5, "spendPerHr": 0.56}', 0, (10.5, 0.56)),
+    ('{"balance": 10.5}', 0, None), ('{"balance": "nan", "spendPerHr": 0}', 0, None),
+    ('{"balance": 10.5, "spendPerHr": -1}', 0, None), ("garbage", 0, None), ('{"balance": 1, "spendPerHr": 0}', 1, None),
+])
+def test_r16_balance_parses_or_fails_closed(out, rc, expect):
+    assert C.balance(lambda args, timeout=60: (rc, out)) == expect
+
+
+def _spend_setup(tmp_path, wd_ago, pods=None, bal_now=9.123, rate_now=0.0):
+    (tmp_path / "n.bal0").write_text("10.0 0.0")
+    if wd_ago is not None:
+        import time as _t   # wall and monotonic end times (r17: both must show the hour)
+        (tmp_path / "n.wdend").write_text(f"{1_000_000 - wd_ago} {_t.monotonic() - wd_ago}")
+    f = Fake(pods or {})
+    def run(args, timeout=60):
+        if args[0] == "balance":
+            return 0, json.dumps({"balance": bal_now, "spendPerHr": rate_now})
+        return f.run(args, timeout)
+    return run
+
+
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+The code addresses the four listed changes. The full harness result is still pending. I will check for new defects before I set the verdict.
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'bash -n /Users/oemer.demirel/Projects/touchstone/results/pods/reset_pod.sh /Users/oemer.demirel/Projects/touchstone/results/pods/test_reset_pod_harness.sh' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "python3 -B -c '
+import ast, io, json, pathlib, types
+from unittest.mock import patch
+root = pathlib.Path(\"/Users/oemer.demirel/Projects/touchstone/results/pods\")
+for name in (\"podctl.py\", \"create_one.py\", \"runpod.py\", \"test_podctl.py\", \"test_runpod.py\"):
+    ast.parse((root / name).read_text(), filename=name)
+C = types.ModuleType(\"review_podctl\"); C.__file__ = str(root / \"podctl.py\")
+exec(compile((root / \"podctl.py\").read_text(), C.__file__, \"exec\"), C.__dict__)
+class File(io.StringIO):
+    def __init__(self, fs, name, mode):
+        self.fs, self.name, self.mode = fs, name, mode
+        super().__init__(fs.get(name, \"\") if \"r\" in mode else \"\")
+    def fileno(self): return 123
+    def close(self):
+        if not self.closed and \"w\" in self.mode: self.fs[self.name] = self.getvalue()
+        super().close()
+def scenario(wall=5000, mono=4100, held=False, fail_replace=False):
+    fs={\"/fake/n.bal0\":\"10.0 0.0\", \"/fake/n.wdend\":\"1000 100\"}
+    dirs={\"/fake/n.launchlock\"} if held else set(); seen=[]
+    def op(name, mode=\"r\"):
+        if \"r\" in mode and name not in fs: raise FileNotFoundError(name)
+        return File(fs, name, mode)
+    def mkdir(name):
+        if name in dirs: raise FileExistsError(name)
+        dirs.add(name)
+    def rmdir(name): dirs.remove(name)
+    def replace(src, dst):
+        if fail_replace: raise OSError(\"disk full\")
+        fs[dst] = fs.pop(src)
+    def run(args, timeout=60):
+        seen.append(\"/fake/n.launchlock\" in dirs)
+        return (0, \"[]\") if args[0]==\"list\" else (0,json.dumps({\"balance\":9.123,\"spendPerHr\":0}))
+    with patch(\"builtins.open\", op), patch.object(C.os, \"mkdir\", mkdir), patch.object(C.os, \"rmdir\", rmdir), patch.object(C.os, \"replace\", replace), patch.object(C.os, \"fsync\", lambda fd:None), patch.object(C.os.path, \"getmtime\", lambda name: 900):
+        result=C.spend(\"n\", run, lambda:wall, \"/fake\", lambda:mono)
+    return result, fs, dirs, seen
+for label, kwargs in [(\"wall jump\", {\"mono\":130}), (\"restart\", {\"mono\":50}), (\"held lock\", {\"held\":True}), (\"replace failure\", {\"fail_replace\":True})]:
+    result, fs, dirs, seen = scenario(**kwargs)
+    assert result[0] is None and \"/fake/n.spent\" not in fs, (label,result)
+    assert bool(dirs) == bool(kwargs.get(\"held\")), (label,dirs)
+    print(label+\": refused; no published record; lock correct\")
+result,fs,dirs,seen=scenario()
+assert result[0] == 0.88 and all(seen) and not dirs and fs[\"/fake/n.spent\"].startswith(\"0.88 USD \")
+print(\"success: lock held during calls; record published; lock released\")
+print(\"Python syntax and five in-memory checks passed; no network or file writes\")
+'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+wall jump: refused; no published record; lock correct
+restart: refused; no published record; lock correct
+held lock: refused; no published record; lock correct
+replace failure: refused; no published record; lock correct
+success: lock held during calls; record published; lock released
+Python syntax and five in-memory checks passed; no network or file writes
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+VERDICT: accept-with-caveat
+CORRECTIONS:
+1. test_reset_pod_harness.sh:118 — Keep the pod blocked until the full run reports `HARNESS OK (14 of 14 scenarios)`. The round-17 code defects are closed, including both deadline expectations. Five in-memory checks passed. No new blocking code defect was found; full harness verification remains pending.
+CONFIDENCE: 0.96
+hook: Stop
+hook: Stop Completed
+tokens used
+57'178
+VERDICT: accept-with-caveat
+CORRECTIONS:
+1. test_reset_pod_harness.sh:118 — Keep the pod blocked until the full run reports `HARNESS OK (14 of 14 scenarios)`. The round-17 code defects are closed, including both deadline expectations. Five in-memory checks passed. No new blocking code defect was found; full harness verification remains pending.
+CONFIDENCE: 0.96

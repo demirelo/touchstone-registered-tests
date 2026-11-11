@@ -1,0 +1,10 @@
+VERDICT: reject
+CORRECTIONS:
+1. Closed: `results/pods/podctl.py:33` fails closed on listing errors; `podctl.py:61` requires a successful empty reconciliation; `reset_pod.sh:90` starts supervision before creation; `reset_pod.sh:62` checks and limits each pull. Per-attempt spending is present but incomplete.
+2. Blocker — `results/pods/podctl.py:95`: After the hard deadline, the watchdog exits on an empty listing without checking DONE or unresolved creation requests. An in-memory check confirmed exit without DONE. A delayed creation can then appear without supervision. Require creation settlement and verified absence before exit.
+3. Blocker — `results/pods/create16.py:6`: Internal POST retries bypass the launcher's reconciliation and deadline checks. An ambiguous first response followed by success left two pods in an offline reproduction. Check authorization and deadline before every POST; resolve ambiguous outcomes before another request. Reconcile extra pods before accepting a returned ID.
+4. Open — `results/pods/podctl.py:53`: Delete and list commands retain separate 60-second timeouts regardless of remaining time. A one-second deletion budget returned success after 120 simulated seconds. Limit each command to the remaining elapsed-time budget and reject verification after expiry.
+5. Open — `results/pods/reset_pod.sh:98`: Lost-response accounting ends before the 30-second wait and subsequent reconciliation. An untracked pod can remain billable throughout that omitted interval. Keep accounting active until verified deletion; the reported MAXCPH bound currently omits this exposure.
+6. Open — `results/pods/test_reset_pod_harness.sh:31`: Creation assertions permit zero requests in every scenario. Failed deletion and RUN OK recovery remain untested. Add required creation counts, delayed creation, ambiguous internal retries, slow commands, and recovery verification. All seven existing unit tests passed with in-memory filesystem and credential stubs.
+
+CONFIDENCE: 0.99.

@@ -1,11 +1,46 @@
-# Run A, the runner-up comparator on the fresh markets: plan (draft 3, 2026-11-10; for internal review; no spend)
+# Run A, the runner-up comparator on the fresh markets: plan (draft 7, 2026-11-11; for internal review; no spend)
+
+**Draft 7 changes** (internal review round 6, `docs/revision/roster/{sol,astra}-runner-up-plan-r6.md`, both reject): paid accounting counts the current pod from its recorded open event, never from a later `--started-at`
+(refusal test); the ledger must have a `spent` list of rows with a tag and a finite, nonnegative amount, and the cap,
+rate, and step estimate must be finite and valid (refusal tests); the reservation command is `budget_followup.py
+--reserve`, and its returned grant must equal the stop cap (`guards.check_grant`);
+the evidence check also requires the search record's stage and identity (and the evaluation record's identity), with
+refusal tests on copies of the real evidence.
+
+**Draft 6 changes** (internal review round 5, `docs/revision/roster/{sol,astra}-runner-up-plan-r5.md`, both reject): attempt records are validated strictly (finite, ordered epochs; exactly one open attempt, the current pod; an
+allocation time between that attempt's start and now; refusal tests); a launcher calls `guards.py admit` before every
+paid step, including the reset reproduction gate, with the same cap, attempts, ledger, and run tag, so earlier spend
+is counted before any paid work; the exact reservation is `budget_followup.py --reserve <tag> 2.40`, whose grant
+(2.40 x 1.25) equals the 3.00 USD stop cap (`guards.reservation_input`); obsolete attempts references removed;
+the evidence check also verifies every copied input with its hash, the freeze contents and metadata, and the stage,
+provenance, dependency set and dependency hashes of the evaluation and doubling records (refusal tests on copies of the
+real evidence, with the real comparison functions); the real Mac evidence passes.
+
+**Draft 5 changes** (internal review round 4, `docs/revision/roster/{sol,astra}-runner-up-plan-r4.md`, both reject): the evidence check now requires every supporting record (search, evaluation, freeze for the reproduction; the doubling
+record for the doubling gate) listed in the inventory with hashes equal to the files, and recomputes `compare()` and
+`compare_doubling()` against the registered records (refusal tests for missing, unlisted, and changed records and for a
+failing recomputation); the attempts handoff follows the launcher's real event format and the ledger carries earlier
+launches; the STOP file and soft deadline are checked before each stage of `--stage all`. Mac evidence under the current
+code: `results/v2/followup2-a-gate-repro` (pass; knobs 2.5e-13, gains 2.0e-14) and `results/v2/followup2-a-gate-dbl` (pass;
+knobs 1.8e-13, gains 2.2e-16), both valid under the new check with the comparisons recomputed.
+
+**Draft 4 changes** (internal review round 3, `docs/revision/roster/{sol,astra}-runner-up-plan-r3.md`, both reject): the
+evidence is verified per named check (`guards.check_reset_evidence`): the headline F111 D2 reproduction gate from the Mac
+and, bit-identical, from this machine, and the fresh0 F111 D2+H3 doubling gate; each directory's gate record must have
+the right stage and cell and pass, its inventory must list the current gate and input hashes and name the current reset
+driver, its inputs must equal those recomputed from the original records, and its search record must carry the full
+budget (refusal tests for unrelated, incomplete, stale, and edited evidence); the environment comparison covers SciPy,
+CMA, BLAS and LAPACK; bank copies are checked against the original freeze before reference construction, also when
+resumed at `--stage reference` (test); the run binding includes the hashes of the helper, `guards.py`, `common.py`, this
+plan, and the report; failed-attempt spend comes from the launcher's attempts file (required); the launcher's stop rule
+is stated.
 
 **Draft 3 changes** (internal review round 2, `docs/revision/roster/{sol,astra}-runner-up-plan-r2.md`, both reject): each
 bank copy's actual SHA-256 must equal the original freeze hash before the reference is built and at acceptance (a
 changed bank with a rebuilt reference is refused, test); the evidence is the named set, bound to the current reset driver
 and environment, with the pod gate `--reproduce --require-identical` required bit-identical on this machine; the
 reservation is the full 3.00 USD stop cap; a paid run requires the pod allocation time and carries earlier failed
-attempts (`--prior-spend-usd`).
+attempts (`--prior-spend-usd`, replaced in draft 4 by the launcher's attempts file).
 
 **Draft 2 changes** (internal review round 1, `docs/revision/roster/{sol,astra}-runner-up-plan-r1.md`, both reject):
 complete freeze validation with refusal tests; pinned search settings, budgets checked against the registered records,
@@ -53,10 +88,12 @@ inference method. All are differences between prescribed finite searches.
 - **Saved results.** The frozen stages reuse a record only under its exact provenance (registered resume rule).
   `run.json` binds the output to the input hashes, the job provenance, the smoke flag, the settings, and the driver hash;
   a different binding is refused, never overwritten.
-- **Reproduction gate.** Required before any search (`check_run_evidence`): `--reset-mac`, the reset driver's reproduction
-  gate run on the Mac (its `gate.json` passes and its inventory names the current reset driver); `--reset-pod`, the same
-  gate run first on this pod with `--reproduce --require-identical` (bit-identical, environment equal to this machine's,
-  same driver); `--doubling-evidence`, the saved fresh0 F111 D2+H3 doubling reproduction (passes).
+- **Reproduction gate.** Required before any search (`check_run_evidence`, `guards.check_reset_evidence`): `--reset-mac`, the
+  reset driver's headline F111 D2 reproduction gate directory from the Mac; `--reset-pod`, the same gate run first on this
+  pod with `--reproduce --require-identical`, bit-identical, with the same numerical stack (CPU, platform, Python, numpy,
+  SciPy, CMA, BLAS and LAPACK); `--doubling-evidence`, the reset driver's fresh0 F111 D2+H3 doubling gate directory. Each
+  is verified: stage and cell, a pass, inventory hashes of the gate and input records equal to the files, the current
+  reset driver, the inputs recomputed from the original records, the registered full budget.
 - **Inventory.** Every output with its hash; Run A's deviations; hashes of `runnerup_v2.py`, `common.py`, `guards.py`, the
   imported helpers, this plan, and the report; the run arguments; the environment (Python, numpy with BLAS and LAPACK,
   SciPy, CMA, CPU).
@@ -88,15 +125,44 @@ core-hour; billed path on one 16-vCPU pod 3.56 hours (reproduction gate 0.61 h, 
 X7-SC evaluation and doubling, 0.3 h preparation and tail) = 1.99 USD at 0.56 USD per hour. Estimate 1.99 USD
 (x 1.25 = 2.49); **stop cap and reservation 3.00 USD**, the full allowance, in the ledger category `followup` (cap 22 USD
 shared by all follow-up runs: reset 5, churn 8, Run A 3, Run B 4.25, total 20.25; `budget_followup.py reserve`). A paid run
-requires `--started-at <allocation time>` and counts earlier failed attempts (`--prior-spend-usd`). The driver checks
+requires `--started-at <allocation time>` and the launcher's attempts file (`--attempts`). The driver checks
 the cap between stages: a stage starts only if the billed time so far
 plus its estimate stays within the cap; a running stage is never killed (author's instruction); the run stops, writes
 `cost_stop.json` and an inventory, and reports. This is an admission limit, not a billing ceiling: a stage that starts
 within the cap finishes, and the pod is deleted after it.
 
+**Launcher handoff (draft 5).** The launcher copy pushes to the pod, before every paid driver call, its current
+`<name>.attempts` file and the ledger, and passes `--attempts`, `--ledger`, `--run-tag`, `--started-at` (the current pod's
+allocation time), `--usd-per-hour` (the price ceiling MAXCPH), `--stop-file /root/STOP`, and `--soft-deadline` (its soft
+deadline). The driver reads the launcher's own event lines (`<pod> <epoch> start`, `<pod> <epoch> deleted`;
+`guards.attempts_spend`): each closed attempt counts at the ceiling, and the open start is the current pod, counted from
+its recorded `start` event (a later `--started-at` cannot shorten it; it must lie between that event and now); malformed or unordered lines are refused (tests with lines in the launcher's exact format); spend of
+earlier launches comes from the ledger rows tagged with the run tag, since the launcher truncates its file per launch. The
+driver checks the STOP file and the soft deadline before each internal stage or round, so a single `--stage all` call
+honours the launcher's between-stage stop (test).
+
+**Admission before every paid step (draft 6).** Before the pod's first paid step, and before each later one (the reset
+reproduction gate included), the launcher runs `python3 docs/revision/followup2/guards.py admit --cap-usd 3.00
+--usd-per-hour <ceiling> --started-at <allocation> --attempts <file> --ledger <ledger> --run-tag runner-up --hours <step estimate>
+--stop-file /root/STOP --soft-deadline <soft>` and starts the step only on exit 0. Reservation: `python3 docs/revision/followup/budget_followup.py --reserve runner-up-<n> 2.40`; the
+returned grant must equal 3.00 USD (`guards.check_grant`; the ledger grants less when the category is nearly full), else
+no pod. The launcher copy itself (a copy of `results/pods/reset_pod.sh`) is not part
+of this folder and is to be written and tested offline before allocation.
+
+**Launcher and the cap.** The pod launcher is a copy of `results/pods/reset_pod.sh` with `results/pods/podctl.py`. Its soft
+deadline is the cap at the price ceiling MAXCPH, counted from the first creation request of the launch, so it holds across
+attempts; at the soft deadline the remote script stops before its next stage (a STOP file read between stages), and the
+driver's own admission check (`--cap-usd`, `--started-at`, `--attempts`) stops between stages or rounds as well. A running
+stage is never stopped (the author: do not kill jobs). The single exception is the watchdog, which deletes the pod at 1.3 x
+the cap at the price ceiling; that is the only mid-stage stop. Closed attempts are listed in the launcher's
+`<name>.attempts` file (event lines `<pod> <epoch> start` and `<pod> <epoch> deleted`), which the driver reads
+(`guards.attempts_spend`) and counts toward the
+cap before each paid attempt; a paid run without it is refused (no default of zero); after the launch the spend is recorded
+in the ledger (`budget_v2.py --record`).
+
 ## 6. Steps
 
 1. Internal review to consensus; freeze this plan.
 2. Reserve 3.00 USD in the ledger; one pod: `reset_followup_v2.py --reproduce --require-identical`, then `runnerup_v2.py
-   --stage all --workers 12 --reset-mac M --reset-pod P --doubling-evidence D --cap-usd 3.00 --started-at T`; delete and verify the pod; record the spend.
+   --stage all --workers 12 --reset-mac M --reset-pod P --doubling-evidence D --cap-usd 3.00 --started-at T --attempts A --ledger L --run-tag runner-up --stop-file /root/STOP --soft-deadline S`; delete and verify the pod; record the spend.
 3. Analysis on the Mac from the retrieved records; a paper paragraph and table labelled exploratory, after review.

@@ -1,0 +1,879 @@
+OpenAI Codex v0.162.1
+--------
+workdir: /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+model: gpt-6-astra
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1bfa5-f754-7e12-95de-bea2cdeba9ca
+--------
+user
+# Paper revision after external review round 8: internal review round 1 (read-only; no paid APIs; do not read `sealed/`, `~/touchstone-h4`, or `~/h4-session.out`; `sealed2/h4/` may be read; reasoning effort high; under 300 words)
+
+The round-8 external review (`docs/paper/external-review-r8.md`) says submit to WEIS and asks for three text fixes: (1) the trace gives recorded ancestors of the listed inputs, not searches a cell "requires"; an inherited flag does not show that the flagged candidate was selected or that the statistic would change; (2) the broader reading excludes flagged scored cells (a prediction still fails on any eligible failing cell) outside six decision-related predictions kept by convention, and is renamed "Flagged inputs, all non-exempt cells"; (3) the original numerical scoring path is separated from the eligibility analysis, and Table 21 (now numbered 19, `tab:pred-eligibility`) carries both direct-input tallies (7/8/3 and 6/5/7). Commit 3512673 responds: main.tex section 9 Predictions paragraph and the captions of `tab:predictions` and `tab:pred-eligibility`; `tables_v2.py` (two direct-input rows, renamed label) with a new test in `test_tables.py`; sites `r_pred_dd_*` in `sites.json`. No scorer output changed. PDF: `/private/tmp/claude-502/-Users-oemer-demirel-Projects-touchstone/a48c0006-982d-4d16-9bac-5ae26e145fac/scratchpad/pdf16/main.pdf` (28 pages). The paper gate passes.
+
+Check: (1) each of the three fixes is made and accurate against `score_v2.py` and `/Users/oemer.demirel/Projects/touchstone/results/v2/paper/eligibility.json`; (2) new errors in the changed lines (wording, numbers, labels, any remaining "descriptive reading" that should now say "broader").
+
+Output exactly:
+VERDICT: accept | accept-with-caveat | reject
+CORRECTIONS: numbered, each with main.tex line, file, or site name, or "none".
+CONFIDENCE: 0 to 1.
+
+2026-11-09T09:31:32.439519Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+hook: SessionStart
+hook: SessionStart Completed
+codex
+I will check the changed text, table rows, and site labels against the scorer and eligibility data.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg -n 'touchstone' /Users/oemer.demirel/.codex/memories/MEMORY.md" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+401:# Task Group: anthropic-residency-application-writing-and-touchstone-research
+410:- rollout_summaries/2026-11-03T12-32-03-zdzn-anthropic_residency_writing_touchstone_research_plan.md (cwd=/Users/oemer.demirel/Documents/Codex/2026-11-03/why-anthropic-anthropic-sets-the-frontier, rollout_path=/Users/oemer.demirel/.codex/sessions/2026/11/03/rollout-2026-11-03T13-32-03-01a1a165-260e-7180-9d34-c9dc6bf34b4d.jsonl, updated_at=2026-11-03T13:02:09+00:00, thread_id=01a1a165-260e-7180-9d34-c9dc6bf34b4d, success; application answers finalized)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'git status --short && git show --stat 3512673 && git show --format=fuller --no-ext-diff 3512673 --' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+?? docs/revision/roster/astra-paper-ext6-r1.log
+?? docs/revision/roster/astra-paper-ext7-r1.log
+?? docs/revision/roster/astra-paper-ext7-r2.log
+?? docs/revision/roster/astra-paper-ext7-r3.log
+?? docs/revision/roster/astra-paper-ext8-r1.log
+?? docs/revision/roster/brief-paper-ext8-r1.md
+?? docs/revision/roster/sol-paper-ext6-r1.log
+?? docs/revision/roster/sol-paper-ext7-r1.log
+?? docs/revision/roster/sol-paper-ext7-r2.log
+?? docs/revision/roster/sol-paper-ext7-r3.log
+?? docs/revision/roster/sol-paper-ext8-r1.log
+commit 3512673978356b633236fff95648322e8f9fa887
+Author: Ömer Demirel <7556489+demirelo@users.noreply.github.com>
+Date:   Mon Nov 9 10:31:14 2026 +0100
+
+    Paper: round-8 external review text fixes (recorded ancestors, cell-level broader reading, original scoring path, direct-input rows in the tally table)
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+ docs/paper/external-review-r8.md                   | 18 ++++++++++++++++++
+ docs/revision/paper-v2/main.tex                    | 13 +++++++------
+ docs/revision/paper-v2/numbers.tex                 |  3 +++
+ docs/revision/paper-v2/sites.json                  | 15 +++++++++++++++
+ docs/revision/paper-v2/tables/pred_eligibility.tex |  4 +++-
+ docs/revision/paper-v2/tables_v2.py                |  7 ++++++-
+ docs/revision/paper-v2/test_tables.py              | 13 ++++++++++++-
+ paper/main.tex                                     | 13 +++++++------
+ paper/numbers.tex                                  |  3 +++
+ paper/sites.json                                   | 15 +++++++++++++++
+ paper/tables/pred_eligibility.tex                  |  4 +++-
+ 11 files changed, 92 insertions(+), 16 deletions(-)
+commit 3512673978356b633236fff95648322e8f9fa887
+Author:     Ömer Demirel <7556489+demirelo@users.noreply.github.com>
+AuthorDate: Mon Nov 9 10:31:14 2026 +0100
+Commit:     Ömer Demirel <7556489+demirelo@users.noreply.github.com>
+CommitDate: Mon Nov 9 10:31:14 2026 +0100
+
+    Paper: round-8 external review text fixes (recorded ancestors, cell-level broader reading, original scoring path, direct-input rows in the tally table)
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+diff --git a/docs/paper/external-review-r8.md b/docs/paper/external-review-r8.md
+new file mode 100644
+index 0000000..a1267fd
+--- /dev/null
++++ b/docs/paper/external-review-r8.md
+@@ -0,0 +1,18 @@
++# External review, round 8 (condensed record)
++
++Received 2026-11-09 on the round-8 package (22 files, all read; the 15 unchanged files byte-identical to round 7).
++
++- **Verdict:** submit to WEIS; the round-7 submission condition is resolved. Scores unchanged: AAMAS main 2/5, WEIS 2027
++  4/5, EC 1/5, confidence 4/5 at each. Forecasts: AAMAS 30% (35% after a venue edit), WEIS 70% (75%), EC 5% (6%).
++- **Eligibility audit:** all five tallies reproduced from the 70 scored cells and 21 flags with zero discrepancies
++  (direct 10/8/0, 7/8/3, 6/5/7; traced 10/8/0, 6/8/4, 5/4/9). Q3-e and Q2-d explain the direct-versus-traced difference.
++  Tracing is a conservative sensitivity to recorded provenance, not proof of causal influence (for a same-reference
++  contrast the reference payoff cancels). The six exemptions are defensible as a post hoc convention; Q4-b is a
++  diagnostic about decisions, not a confirmatory decision.
++- **New problems (text only):** (1) "searches each prediction cell requires" overstates the trace; say recorded
++  ancestors, an inherited flag does not show selection or a changed statistic. (2) The broader rule excludes cells, not
++  whole predictions, and the six exemptions are "decision-related"; rename the reading "all non-exempt cells". (3)
++  Separate the original numerical scoring path from the revised script; put both direct-input tallies in Table 21.
++- **Remaining work:** text edits above; move the eligibility table near its paragraph (venue layout); at release, a
++  manifest with root ids and parent-child hashes; optional cross-play comparison for AAMAS. No new simulation, compute,
++  or review round before WEIS.
+diff --git a/docs/revision/paper-v2/main.tex b/docs/revision/paper-v2/main.tex
+index e181d51..efc3d02 100644
+--- a/docs/revision/paper-v2/main.tex
++++ b/docs/revision/paper-v2/main.tex
+@@ -290,11 +290,16 @@ The registered estimates and decisions below come from the report that the tagge
+ \end{table}
+ 
+ 
+-\paragraph{Predictions.} Tables~\ref{tab:predictions} and~\ref{tab:predictions-b} score every registered prediction from the report. For Q4-b, the original scoring script compared the report's raw component $p$-values, although the prediction is registered on calibrated values; the corrected script compares the calibrated values, \site{r_pred_q4b_g} against \site{r_pred_q4b_e} on each of fresh0, fresh2, and fresh5. The prediction remains fulfilled and the total is unchanged: a scoring correction with no change of verdict, separate from the corrected labels of Tables~\ref{tab:q1} and~\ref{tab:q4}. The scoring script does not use the search-quality flags to decide eligibility: it retains the estimates of completed searches whose doubling check was marked incomplete, and counts \site{r_pred_n_ful} predictions fulfilled and \site{r_pred_n_fail} failed. The registered scoring rule also says that an incomplete target, in the sense of the design's search-quality checks, is not assessed; those checks call a search-flagged cell incomplete while keeping its estimate for the prescribed search procedure; the rule does not say whether a prediction computed from a flagged search is itself incomplete. Table~\ref{tab:pred-eligibility} therefore adds two stricter readings, computed from a map of the searches each prediction cell requires, directly or through the recorded dependency chain of its evaluation record (references, attack banks, and warm starts); the map is released with the scorer, and no reading was chosen as official after the outcomes. If a flagged required search makes a Q3 policy comparison ineligible, Q3-a, Q3-b, Q3-d, and Q3-e are not assessed: \site{r_pred_q_ful} predictions are fulfilled, \site{r_pred_q_fail} fail, and \site{r_pred_q_na} are not assessed (counting direct inputs only, Q3-e stays fulfilled: \site{r_pred_qd_ful}, \site{r_pred_qd_fail}, and \site{r_pred_qd_na}). If, as a convention of this sensitivity, it makes every prediction ineligible except those that score a confirmatory decision (Q1-a, its alternative, Q1-b, Q1-d, Q4-a, and Q4-b; the design keeps these decisions but does not say how predictions about them are scored), Q1-c and Q2-a to Q2-d are also not assessed: \site{r_pred_d_ful}, \site{r_pred_d_fail}, and \site{r_pred_d_na}. No reading turns a failed prediction into a fulfilled one or changes a registered decision; the marked rows of Tables~\ref{tab:predictions} and~\ref{tab:predictions-b} are those a stricter reading changes, and their estimates stand as estimates of the prescribed searches. The predictions differ in stakes and are not independent, so the count of fulfilled predictions is not a validation score. The failures are informative: we expected the priority phase to matter little, the replication to hold on at least five markets, X5-AG/v2 to stay below D2+H3, and the unconstrained welfare attack to leave R3's and C$^*$'s efficiency at the registered level, and none of these held (the first is not assessed under the descriptive reading).
++\paragraph{Predictions.} Tables~\ref{tab:predictions} and~\ref{tab:predictions-b} score every registered prediction from the report. For Q4-b, the original scoring script compared the report's raw component $p$-values, although the prediction is registered on calibrated values; the corrected script compares the calibrated values, \site{r_pred_q4b_g} against \site{r_pred_q4b_e} on each of fresh0, fresh2, and fresh5. The prediction remains fulfilled and the total is unchanged: a scoring correction with no change of verdict, separate from the corrected labels of Tables~\ref{tab:q1} and~\ref{tab:q4}. The original numerical scoring path, preserved in the released scoring output, retains estimates from completed searches even when their doubling checks were marked incomplete; it counts \site{r_pred_n_ful} predictions fulfilled and \site{r_pred_n_fail} failed. A separate eligibility analysis applies the two filters below. The registered scoring rule also says that an incomplete target, in the sense of the design's search-quality checks, is not assessed; those checks call a search-flagged cell incomplete while keeping its estimate for the prescribed search procedure; the rule does not say whether a prediction computed from a flagged search is itself incomplete. Table~\ref{tab:pred-eligibility} adds two post hoc eligibility readings. Starting from the listed inputs of each scored comparison, we propagate flags through recorded upstream links, including references, attack banks, and warm starts. An inherited flag identifies a potentially relevant ancestor; it does not establish that the flagged candidate was selected or that the statistic would change. The map is released with the scorer, and neither sensitivity is designated as the official retrospective score. If a flagged required search makes a Q3 policy comparison ineligible, Q3-a, Q3-b, Q3-d, and Q3-e are not assessed: \site{r_pred_q_ful} predictions are fulfilled, \site{r_pred_q_fail} fail, and \site{r_pred_q_na} are not assessed (counting direct inputs only, Q3-e stays fulfilled: \site{r_pred_qd_ful}, \site{r_pred_qd_fail}, and \site{r_pred_qd_na}). The broader sensitivity excludes flagged scored cells outside six decision-related predictions retained by convention: Q1-a, its alternative, Q1-b, Q1-d, Q4-a, and Q4-b (the design keeps the decisions but does not say how predictions about them are scored). A prediction still fails if any eligible cell fails; otherwise, an excluded required cell leaves it not assessed. Q1-c and Q2-a to Q2-d are then also not assessed: \site{r_pred_d_ful} fulfilled, \site{r_pred_d_fail} failed, and \site{r_pred_d_na} not assessed (counting direct inputs only: \site{r_pred_dd_ful}, \site{r_pred_dd_fail}, and \site{r_pred_dd_na}). No reading turns a failed prediction into a fulfilled one or changes a registered decision; the marked rows of Tables~\ref{tab:predictions} and~\ref{tab:predictions-b} are those a stricter reading changes, and their estimates stand as estimates of the prescribed searches. The predictions differ in stakes and are not independent, so the count of fulfilled predictions is not a validation score. The failures are informative: we expected the priority phase to matter little, the replication to hold on at least five markets, X5-AG/v2 to stay below D2+H3, and the unconstrained welfare attack to leave R3's and C$^*$'s efficiency at the registered level, and none of these held (the first is not assessed under the broader reading).
++
++\begin{table}[!t]\centering\small
++\adjustbox{max width=\linewidth}{\input{tables/pred_eligibility.tex}}
++\caption{Prediction tally under three eligibility readings, added after external review. Numerical: the scorer's statuses (Tables~\ref{tab:predictions} and~\ref{tab:predictions-b}). Flagged inputs, Q3: a Q3 cell with a search-flagged required search, direct or through the recorded dependencies of its evaluation record, is not assessed. Flagged inputs, all non-exempt cells: a flagged scored cell is excluded in every prediction except six decision-related predictions retained by convention; a prediction fails if any eligible cell fails. An inherited flag marks a potentially relevant ancestor, not a demonstrated change. The last two rows apply the same filters to the listed inputs of each cell only, without tracing. Eighteen scored predictions, including the alternative to Q1-a.}\label{tab:pred-eligibility}
++\end{table}
+ 
+ \begin{table}[p]\centering\footnotesize
+ \adjustbox{max width=\linewidth}{\input{tables/predictions.tex}}
+-\caption{Registered predictions for Q1 and Q2, scored from the report. Identifiers and statements as in the registered predictions file (supplement); a pair of values gives two statistics of the scored cell, as labelled, not an interval. Status as scored on the numerical estimates; $\dagger$: not assessed under both stricter eligibility readings of Table~\ref{tab:pred-eligibility}; $\ddagger$: not assessed under the descriptive reading only.}\label{tab:predictions}
++\caption{Registered predictions for Q1 and Q2, scored from the report. Identifiers and statements as in the registered predictions file (supplement); a pair of values gives two statistics of the scored cell, as labelled, not an interval. Status as scored on the numerical estimates; $\dagger$: not assessed under both stricter eligibility readings of Table~\ref{tab:pred-eligibility}; $\ddagger$: not assessed under the broader reading only.}\label{tab:predictions}
+ \end{table}
+ 
+ \begin{table}[p]\centering\scriptsize
+@@ -302,10 +307,6 @@ The registered estimates and decisions below come from the report that the tagge
+ \caption{Registered predictions for Q3 and Q4, scored from the report, as in Table~\ref{tab:predictions}, with the same marks.}\label{tab:predictions-b}
+ \end{table}
+ 
+-\begin{table}[t]\centering\small
+-\adjustbox{max width=\linewidth}{\input{tables/pred_eligibility.tex}}
+-\caption{Prediction tally under three eligibility readings, added after external review. Numerical: the scorer's statuses (Tables~\ref{tab:predictions} and~\ref{tab:predictions-b}). Flagged inputs, Q3: a Q3 cell with a search-flagged required search, direct or through the recorded dependencies of its evaluation record, is not assessed. Flagged inputs, every descriptive: the same for every prediction except those that score a confirmatory decision (a convention of this sensitivity). Eighteen scored predictions, including the alternative to Q1-a.}\label{tab:pred-eligibility}
+-\end{table}
+ \clearpage
+ % END-EV2
+ 
+diff --git a/docs/revision/paper-v2/numbers.tex b/docs/revision/paper-v2/numbers.tex
+index d6eb377..f53c62a 100644
+--- a/docs/revision/paper-v2/numbers.tex
++++ b/docs/revision/paper-v2/numbers.tex
+@@ -53,6 +53,9 @@
+ \expandafter\def\csname site@r_pred_d_fail\endcsname{4}
+ \expandafter\def\csname site@r_pred_d_ful\endcsname{5}
+ \expandafter\def\csname site@r_pred_d_na\endcsname{9}
++\expandafter\def\csname site@r_pred_dd_fail\endcsname{5}
++\expandafter\def\csname site@r_pred_dd_ful\endcsname{6}
++\expandafter\def\csname site@r_pred_dd_na\endcsname{7}
+ \expandafter\def\csname site@r_pred_n_fail\endcsname{8}
+ \expandafter\def\csname site@r_pred_n_ful\endcsname{10}
+ \expandafter\def\csname site@r_pred_q4b_e\endcsname{0.0004}
+diff --git a/docs/revision/paper-v2/sites.json b/docs/revision/paper-v2/sites.json
+index cb1ea2e..47de964 100644
+--- a/docs/revision/paper-v2/sites.json
++++ b/docs/revision/paper-v2/sites.json
+@@ -543,5 +543,20 @@
+   "path": "eligibility.tally_direct_inputs.q3.not assessed",
+   "kind": "count",
+   "section": "results"
++ },
++ "r_pred_dd_ful": {
++  "path": "eligibility.tally_direct_inputs.descriptive.fulfilled",
++  "kind": "count",
++  "section": "results"
++ },
++ "r_pred_dd_fail": {
++  "path": "eligibility.tally_direct_inputs.descriptive.failed",
++  "kind": "count",
++  "section": "results"
++ },
++ "r_pred_dd_na": {
++  "path": "eligibility.tally_direct_inputs.descriptive.not assessed",
++  "kind": "count",
++  "section": "results"
+  }
+ }
+diff --git a/docs/revision/paper-v2/tables/pred_eligibility.tex b/docs/revision/paper-v2/tables/pred_eligibility.tex
+index df53980..9f59329 100644
+--- a/docs/revision/paper-v2/tables/pred_eligibility.tex
++++ b/docs/revision/paper-v2/tables/pred_eligibility.tex
+@@ -2,5 +2,7 @@
+ Reading & Fulfilled & Failed & Not assessed & Not assessed under this reading \\\midrule
+ Numerical (as scored) & 10 & 8 & 0 & none \\
+ Flagged inputs, Q3 & 6 & 8 & 4 & Q3-a, Q3-b, Q3-d, Q3-e \\
+-Flagged inputs, every descriptive & 5 & 4 & 9 & Q1-c, Q2-a, Q2-b, Q2-c, Q2-d, Q3-a, Q3-b, Q3-d, Q3-e \\
++Flagged inputs, all non-exempt cells & 5 & 4 & 9 & Q1-c, Q2-a, Q2-b, Q2-c, Q2-d, Q3-a, Q3-b, Q3-d, Q3-e \\
++Flagged direct inputs only, Q3 & 7 & 8 & 3 & -- \\
++Flagged direct inputs only, all non-exempt cells & 6 & 5 & 7 & -- \\
+ \bottomrule\end{tabular}
+diff --git a/docs/revision/paper-v2/tables_v2.py b/docs/revision/paper-v2/tables_v2.py
+index 9a4b580..04cb43d 100644
+--- a/docs/revision/paper-v2/tables_v2.py
++++ b/docs/revision/paper-v2/tables_v2.py
+@@ -191,7 +191,7 @@ def _mark(pid: str, elig: dict | None) -> str:
+     return "$^{\\dagger}$" if s["q3"] == "not assessed" else "$^{\\ddagger}$" if s["descriptive"] == "not assessed" else ""
+ 
+ 
+-READINGS = (("numerical", "Numerical (as scored)"), ("q3", "Flagged inputs, Q3"), ("descriptive", "Flagged inputs, every descriptive"))
++READINGS = (("numerical", "Numerical (as scored)"), ("q3", "Flagged inputs, Q3"), ("descriptive", "Flagged inputs, all non-exempt cells"))
+ 
+ 
+ def eligibility(elig: dict) -> str:
+@@ -202,6 +202,11 @@ def eligibility(elig: dict) -> str:
+         t = elig["tally"][key]
+         ch = [pid for pid, v in sorted(elig["targets"].items()) if v["status"][key] == "not assessed" != v["status"]["numerical"]]
+         rows.append((label, [str(t["fulfilled"]), str(t["failed"]), str(t["not assessed"]), ", ".join(ch) or "none"]))
++    for key, label in READINGS[1:]:                       # the same filters on the listed inputs only, without tracing
++        t = elig.get("tally_direct_inputs", {}).get(key)
++        if t:
++            rows.append((label.replace("Flagged inputs", "Flagged direct inputs only"),
++                         [str(t["fulfilled"]), str(t["failed"]), str(t["not assessed"]), "--"]))
+     return tabular("lrrrl", ["Reading", "Fulfilled", "Failed", "Not assessed", "Not assessed under this reading"], rows)
+ 
+ 
+diff --git a/docs/revision/paper-v2/test_tables.py b/docs/revision/paper-v2/test_tables.py
+index b6e8fb3..61d6f82 100644
+--- a/docs/revision/paper-v2/test_tables.py
++++ b/docs/revision/paper-v2/test_tables.py
+@@ -177,4 +177,15 @@ def test_eligibility_table_gives_each_reading_its_tally_and_changed_predictions(
+     tex = T.eligibility(_elig())
+     assert "Numerical (as scored) & 10 & 8 & 0" in tex and "& 7 & 8 & 3 &" in tex and "& 6 & 5 & 7 &" in tex
+     assert "Q3-b" in _row(tex, "Flagged inputs, Q3") and "Q2-b" not in _row(tex, "Flagged inputs, Q3")
+-    assert "Q2-b" in _row(tex, "Flagged inputs, every descriptive")
++    assert "Q2-b" in _row(tex, "Flagged inputs, all non-exempt cells")
++
++
++def test_eligibility_table_adds_the_direct_input_tallies_when_the_map_has_them():
++    # external review round 8: Table 21 should carry both direct-input tallies (7/8/3 and 6/5/7 in the real map)
++    e = _elig()
++    assert "direct inputs" not in T.eligibility(e)                # an old map without them: no extra rows
++    e["tally_direct_inputs"] = {"q3": {"fulfilled": 7, "failed": 8, "not assessed": 3},
++                                "descriptive": {"fulfilled": 6, "failed": 5, "not assessed": 7}}
++    tex = T.eligibility(e)
++    assert _row(tex, "Flagged direct inputs only, Q3").split("&")[1:4] == [" 7 ", " 8 ", " 3 "]
++    assert _row(tex, "Flagged direct inputs only, all non-exempt cells").split("&")[1:4] == [" 6 ", " 5 ", " 7 "]
+diff --git a/paper/main.tex b/paper/main.tex
+index e181d51..efc3d02 100644
+--- a/paper/main.tex
++++ b/paper/main.tex
+@@ -290,11 +290,16 @@ The registered estimates and decisions below come from the report that the tagge
+ \end{table}
+ 
+ 
+-\paragraph{Predictions.} Tables~\ref{tab:predictions} and~\ref{tab:predictions-b} score every registered prediction from the report. For Q4-b, the original scoring script compared the report's raw component $p$-values, although the prediction is registered on calibrated values; the corrected script compares the calibrated values, \site{r_pred_q4b_g} against \site{r_pred_q4b_e} on each of fresh0, fresh2, and fresh5. The prediction remains fulfilled and the total is unchanged: a scoring correction with no change of verdict, separate from the corrected labels of Tables~\ref{tab:q1} and~\ref{tab:q4}. The scoring script does not use the search-quality flags to decide eligibility: it retains the estimates of completed searches whose doubling check was marked incomplete, and counts \site{r_pred_n_ful} predictions fulfilled and \site{r_pred_n_fail} failed. The registered scoring rule also says that an incomplete target, in the sense of the design's search-quality checks, is not assessed; those checks call a search-flagged cell incomplete while keeping its estimate for the prescribed search procedure; the rule does not say whether a prediction computed from a flagged search is itself incomplete. Table~\ref{tab:pred-eligibility} therefore adds two stricter readings, computed from a map of the searches each prediction cell requires, directly or through the recorded dependency chain of its evaluation record (references, attack banks, and warm starts); the map is released with the scorer, and no reading was chosen as official after the outcomes. If a flagged required search makes a Q3 policy comparison ineligible, Q3-a, Q3-b, Q3-d, and Q3-e are not assessed: \site{r_pred_q_ful} predictions are fulfilled, \site{r_pred_q_fail} fail, and \site{r_pred_q_na} are not assessed (counting direct inputs only, Q3-e stays fulfilled: \site{r_pred_qd_ful}, \site{r_pred_qd_fail}, and \site{r_pred_qd_na}). If, as a convention of this sensitivity, it makes every prediction ineligible except those that score a confirmatory decision (Q1-a, its alternative, Q1-b, Q1-d, Q4-a, and Q4-b; the design keeps these decisions but does not say how predictions about them are scored), Q1-c and Q2-a to Q2-d are also not assessed: \site{r_pred_d_ful}, \site{r_pred_d_fail}, and \site{r_pred_d_na}. No reading turns a failed prediction into a fulfilled one or changes a registered decision; the marked rows of Tables~\ref{tab:predictions} and~\ref{tab:predictions-b} are those a stricter reading changes, and their estimates stand as estimates of the prescribed searches. The predictions differ in stakes and are not independent, so the count of fulfilled predictions is not a validation score. The failures are informative: we expected the priority phase to matter little, the replication to hold on at least five markets, X5-AG/v2 to stay below D2+H3, and the unconstrained welfare attack to leave R3's and C$^*$'s efficiency at the registered level, and none of these held (the first is not assessed under the descriptive reading).
++\paragraph{Predictions.} Tables~\ref{tab:predictions} and~\ref{tab:predictions-b} score every registered prediction from the report. For Q4-b, the original scoring script compared the report's raw component $p$-values, although the prediction is registered on calibrated values; the corrected script compares the calibrated values, \site{r_pred_q4b_g} against \site{r_pred_q4b_e} on each of fresh0, fresh2, and fresh5. The prediction remains fulfilled and the total is unchanged: a scoring correction with no change of verdict, separate from the corrected labels of Tables~\ref{tab:q1} and~\ref{tab:q4}. The original numerical scoring path, preserved in the released scoring output, retains estimates from completed searches even when their doubling checks were marked incomplete; it counts \site{r_pred_n_ful} predictions fulfilled and \site{r_pred_n_fail} failed. A separate eligibility analysis applies the two filters below. The registered scoring rule also says that an incomplete target, in the sense of the design's search-quality checks, is not assessed; those checks call a search-flagged cell incomplete while keeping its estimate for the prescribed search procedure; the rule does not say whether a prediction computed from a flagged search is itself incomplete. Table~\ref{tab:pred-eligibility} adds two post hoc eligibility readings. Starting from the listed inputs of each scored comparison, we propagate flags through recorded upstream links, including references, attack banks, and warm starts. An inherited flag identifies a potentially relevant ancestor; it does not establish that the flagged candidate was selected or that the statistic would change. The map is released with the scorer, and neither sensitivity is designated as the official retrospective score. If a flagged required search makes a Q3 policy comparison ineligible, Q3-a, Q3-b, Q3-d, and Q3-e are not assessed: \site{r_pred_q_ful} predictions are fulfilled, \site{r_pred_q_fail} fail, and \site{r_pred_q_na} are not assessed (counting direct inputs only, Q3-e stays fulfilled: \site{r_pred_qd_ful}, \site{r_pred_qd_fail}, and \site{r_pred_qd_na}). The broader sensitivity excludes flagged scored cells outside six decision-related predictions retained by convention: Q1-a, its alternative, Q1-b, Q1-d, Q4-a, and Q4-b (the design keeps the decisions but does not say how predictions about them are scored). A prediction still fails if any eligible cell fails; otherwise, an excluded required cell leaves it not assessed. Q1-c and Q2-a to Q2-d are then also not assessed: \site{r_pred_d_ful} fulfilled, \site{r_pred_d_fail} failed, and \site{r_pred_d_na} not assessed (counting direct inputs only: \site{r_pred_dd_ful}, \site{r_pred_dd_fail}, and \site{r_pred_dd_na}). No reading turns a failed prediction into a fulfilled one or changes a registered decision; the marked rows of Tables~\ref{tab:predictions} and~\ref{tab:predictions-b} are those a stricter reading changes, and their estimates stand as estimates of the prescribed searches. The predictions differ in stakes and are not independent, so the count of fulfilled predictions is not a validation score. The failures are informative: we expected the priority phase to matter little, the replication to hold on at least five markets, X5-AG/v2 to stay below D2+H3, and the unconstrained welfare attack to leave R3's and C$^*$'s efficiency at the registered level, and none of these held (the first is not assessed under the broader reading).
++
++\begin{table}[!t]\centering\small
++\adjustbox{max width=\linewidth}{\input{tables/pred_eligibility.tex}}
++\caption{Prediction tally under three eligibility readings, added after external review. Numerical: the scorer's statuses (Tables~\ref{tab:predictions} and~\ref{tab:predictions-b}). Flagged inputs, Q3: a Q3 cell with a search-flagged required search, direct or through the recorded dependencies of its evaluation record, is not assessed. Flagged inputs, all non-exempt cells: a flagged scored cell is excluded in every prediction except six decision-related predictions retained by convention; a prediction fails if any eligible cell fails. An inherited flag marks a potentially relevant ancestor, not a demonstrated change. The last two rows apply the same filters to the listed inputs of each cell only, without tracing. Eighteen scored predictions, including the alternative to Q1-a.}\label{tab:pred-eligibility}
++\end{table}
+ 
+ \begin{table}[p]\centering\footnotesize
+ \adjustbox{max width=\linewidth}{\input{tables/predictions.tex}}
+-\caption{Registered predictions for Q1 and Q2, scored from the report. Identifiers and statements as in the registered predictions file (supplement); a pair of values gives two statistics of the scored cell, as labelled, not an interval. Status as scored on the numerical estimates; $\dagger$: not assessed under both stricter eligibility readings of Table~\ref{tab:pred-eligibility}; $\ddagger$: not assessed under the descriptive reading only.}\label{tab:predictions}
++\caption{Registered predictions for Q1 and Q2, scored from the report. Identifiers and statements as in the registered predictions file (supplement); a pair of values gives two statistics of the scored cell, as labelled, not an interval. Status as scored on the numerical estimates; $\dagger$: not assessed under both stricter eligibility readings of Table~\ref{tab:pred-eligibility}; $\ddagger$: not assessed under the broader reading only.}\label{tab:predictions}
+ \end{table}
+ 
+ \begin{table}[p]\centering\scriptsize
+@@ -302,10 +307,6 @@ The registered estimates and decisions below come from the report that the tagge
+ \caption{Registered predictions for Q3 and Q4, scored from the report, as in Table~\ref{tab:predictions}, with the same marks.}\label{tab:predictions-b}
+ \end{table}
+ 
+-\begin{table}[t]\centering\small
+-\adjustbox{max width=\linewidth}{\input{tables/pred_eligibility.tex}}
+-\caption{Prediction tally under three eligibility readings, added after external review. Numerical: the scorer's statuses (Tables~\ref{tab:predictions} and~\ref{tab:predictions-b}). Flagged inputs, Q3: a Q3 cell with a search-flagged required search, direct or through the recorded dependencies of its evaluation record, is not assessed. Flagged inputs, every descriptive: the same for every prediction except those that score a confirmatory decision (a convention of this sensitivity). Eighteen scored predictions, including the alternative to Q1-a.}\label{tab:pred-eligibility}
+-\end{table}
+ \clearpage
+ % END-EV2
+ 
+diff --git a/paper/numbers.tex b/paper/numbers.tex
+index d6eb377..f53c62a 100644
+--- a/paper/numbers.tex
++++ b/paper/numbers.tex
+@@ -53,6 +53,9 @@
+ \expandafter\def\csname site@r_pred_d_fail\endcsname{4}
+ \expandafter\def\csname site@r_pred_d_ful\endcsname{5}
+ \expandafter\def\csname site@r_pred_d_na\endcsname{9}
++\expandafter\def\csname site@r_pred_dd_fail\endcsname{5}
++\expandafter\def\csname site@r_pred_dd_ful\endcsname{6}
++\expandafter\def\csname site@r_pred_dd_na\endcsname{7}
+ \expandafter\def\csname site@r_pred_n_fail\endcsname{8}
+ \expandafter\def\csname site@r_pred_n_ful\endcsname{10}
+ \expandafter\def\csname site@r_pred_q4b_e\endcsname{0.0004}
+diff --git a/paper/sites.json b/paper/sites.json
+index cb1ea2e..47de964 100644
+--- a/paper/sites.json
++++ b/paper/sites.json
+@@ -543,5 +543,20 @@
+   "path": "eligibility.tally_direct_inputs.q3.not assessed",
+   "kind": "count",
+   "section": "results"
++ },
++ "r_pred_dd_ful": {
++  "path": "eligibility.tally_direct_inputs.descriptive.fulfilled",
++  "kind": "count",
++  "section": "results"
++ },
++ "r_pred_dd_fail": {
++  "path": "eligibility.tally_direct_inputs.descriptive.failed",
++  "kind": "count",
++  "section": "results"
++ },
++ "r_pred_dd_na": {
++  "path": "eligibility.tally_direct_inputs.descriptive.not assessed",
++  "kind": "count",
++  "section": "results"
+  }
+ }
+diff --git a/paper/tables/pred_eligibility.tex b/paper/tables/pred_eligibility.tex
+index df53980..9f59329 100644
+--- a/paper/tables/pred_eligibility.tex
++++ b/paper/tables/pred_eligibility.tex
+@@ -2,5 +2,7 @@
+ Reading & Fulfilled & Failed & Not assessed & Not assessed under this reading \\\midrule
+ Numerical (as scored) & 10 & 8 & 0 & none \\
+ Flagged inputs, Q3 & 6 & 8 & 4 & Q3-a, Q3-b, Q3-d, Q3-e \\
+-Flagged inputs, every descriptive & 5 & 4 & 9 & Q1-c, Q2-a, Q2-b, Q2-c, Q2-d, Q3-a, Q3-b, Q3-d, Q3-e \\
++Flagged inputs, all non-exempt cells & 5 & 4 & 9 & Q1-c, Q2-a, Q2-b, Q2-c, Q2-d, Q3-a, Q3-b, Q3-d, Q3-e \\
++Flagged direct inputs only, Q3 & 7 & 8 & 3 & -- \\
++Flagged direct inputs only, all non-exempt cells & 6 & 5 & 7 & -- \\
+ \bottomrule\end{tabular}
+
+hook: PostToolUse
+hook: PostToolUse Completed
+2026-11-09T09:31:57.616580Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PostToolUse
+exec
+/bin/zsh -lc "rg --files -g '"'!sealed/**'"' -g '"'!sealed2/**'"' -g '*score_v2*' -g 'AGENTS.md' -g '*eligibility*'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc "rg -n 'descriptive|requires|required search|r_pred_dd' paper/main.tex docs/revision/paper-v2/main.tex docs/revision/paper-v2/tables_v2.py docs/revision/paper-v2/test_tables.py paper/sites.json" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+paper/tables/pred_eligibility.tex
+docs/revision/paper-v2/score_v2.py
+docs/revision/paper-v2/tables/pred_eligibility.tex
+
+hook: PostToolUse Completed
+ succeeded in 0ms:
+paper/sites.json:83:  "path": "q1.descriptive.fresh3.C*-F111|D2+H3.estimate",
+paper/sites.json:88:  "path": "q1.descriptive.fresh1.C*-F111|D2+H3.estimate",
+paper/sites.json:508:  "path": "eligibility.tally.descriptive.fulfilled",
+paper/sites.json:513:  "path": "eligibility.tally.descriptive.failed",
+paper/sites.json:518:  "path": "eligibility.tally.descriptive.not assessed",
+paper/sites.json:547: "r_pred_dd_ful": {
+paper/sites.json:548:  "path": "eligibility.tally_direct_inputs.descriptive.fulfilled",
+paper/sites.json:552: "r_pred_dd_fail": {
+paper/sites.json:553:  "path": "eligibility.tally_direct_inputs.descriptive.failed",
+paper/sites.json:557: "r_pred_dd_na": {
+paper/sites.json:558:  "path": "eligibility.tally_direct_inputs.descriptive.not assessed",
+docs/revision/paper-v2/tables_v2.py:187:    """Dagger: not assessed under both stricter eligibility readings; double dagger: only under the descriptive one."""
+docs/revision/paper-v2/tables_v2.py:191:    return "$^{\\dagger}$" if s["q3"] == "not assessed" else "$^{\\ddagger}$" if s["descriptive"] == "not assessed" else ""
+docs/revision/paper-v2/tables_v2.py:194:READINGS = (("numerical", "Numerical (as scored)"), ("q3", "Flagged inputs, Q3"), ("descriptive", "Flagged inputs, all non-exempt cells"))
+docs/revision/paper-v2/test_tables.py:157:    st = lambda n, q, d: {"numerical": n, "q3": q, "descriptive": d}
+docs/revision/paper-v2/test_tables.py:160:                      "descriptive": {"fulfilled": 6, "failed": 5, "not assessed": 7}},
+docs/revision/paper-v2/test_tables.py:167:    # external review round 7: Q3-b is not assessed under both stricter readings, Q2-b only under the descriptive one
+docs/revision/paper-v2/test_tables.py:188:                                "descriptive": {"fulfilled": 6, "failed": 5, "not assessed": 7}}
+docs/revision/paper-v2/main.tex:153:\caption{Registered verdict of the first test (unchanged), on \evone{40} fresh seeds at $\beta = \evone{0.05}$ and the median position. Bounds are one-sided: \evone{95}\% for the rule clause and the absolute part, \evone{98.75}\% for the comparisons. The amended pass also requires the H2 rule clause and admission of the comparison bounds, whose interval procedures were admitted on development distributions with B3 as proxy; nominal coverage for the selected R3 is not established.}\label{tab:verdict1}
+docs/revision/paper-v2/main.tex:163:\paragraph{Questions.} Q1: does R3 ($F_{111}$) leave a lower or higher identity-replacement gain than C$^*$, at the fixed pair? Q2: what do the priority phase, the residual targeting, and the pacing contribute, alone and together? Q3: do the results hold against X7-SC, X5-AG/v2, the defence-aware sealed family H4, welfare attacks, and coalitions, and does R4 repair the reserve collapse? Q4: does the first test's comparison of B3 and R3 under D2+H3 replicate on fresh markets? Q1 and Q4 are confirmatory; Q2 and Q3 are descriptive.
+docs/revision/paper-v2/main.tex:176:Q1 & $d = g_{C^*} - g_{F_{111}}$, pooled, for D2+H3 and X7-SC. Direction: Holm's procedure~\cite{holm1979simple} on calibrated two-sided $p$-values for $d = \const{0}$. Size: the calibrated Bonferroni interval $I$ for $d$. Categories, in order: \emph{materially lower} if $I$ lies above $\const{0.05}$ (R3 lower) or below $\const{-0.05}$ (C$^*$ lower); \emph{equivalent} if $I$ lies within $[\const{-0.05}, \const{0.05}]$, with a direction label when Holm rejects $d = \const{0}$; \emph{ordered, size not established} if Holm rejects and neither applies; otherwise \emph{inconclusive}. A rule is called better only with the first category in its favour and a paired gross-efficiency difference (that rule minus the other) whose nominal one-sided \const{97.5}\% lower bound is at least $\const{-0.01}$ (descriptive; no calibrated joint guarantee). If that lower bound is below $\const{-0.01}$, the gain category stands and the result is labelled ``efficiency non-inferiority unresolved''; it is labelled ``lower gain with an efficiency loss'' only if the corresponding upper bound is below $\const{-0.01}$. \\
+docs/revision/paper-v2/main.tex:178:Q2, Q3 & Registered analyses descriptive, with nominal intervals and extrema selected on training data; the post hoc lottery analysis selects its companion and weight on evaluation data. \\\bottomrule
+docs/revision/paper-v2/main.tex:189:The registered estimates and decisions below come from the report that the tagged code wrote; the addendum beside it (Section~\ref{sec:design}) adds labels and disclosures. Tables~\ref{tab:ph-q1}, \ref{tab:ph-q4}, \ref{tab:ph-welfare}, and~\ref{tab:ph-welfare-sens} report exploratory analyses of existing records, and Tables~\ref{tab:ph-stability} and~\ref{tab:ph-q4-stability} the separate registered-configuration stability check; none of these changes a registered estimate or decision. Gains are normalised attacker gains; intervals are those of Table~\ref{tab:rules-v2}. Some descriptive fixed-reference contrasts on fresh1 (\site{r_ext_n} interval entries in the report's per-market Q2 rows) have numerically extreme studentized intervals: the reference-profit contrast there is above rounding scale on only \site{r_ext_seeds} of \site{r_ext_total} seeds (the others are at most \site{r_ext_round} in absolute value), and \site{r_ext_cnt} of the \site{r_ext_tot} frozen resamples (\site{r_ext_share}) omit all three, so their standard error is of rounding size and their bootstrap-t statistics are huge. We retain these frozen outputs, list them in the audit file, and draw no inferential conclusion from them; no other interval in the report has a bound beyond $\const{1000}$ in absolute value.
+docs/revision/paper-v2/main.tex:191:\paragraph{Age-ranked versus history-based checking (Q1).} Pooled over the six fresh markets, the prescribed searches leave the identity-replacement attacker a measured gain against C$^*$ higher than against R3 by \site{r_q1_d_est} under D2+H3 and by \site{r_q1_x_est} under X7-SC. Both direction tests reject $d = \const{0}$ (calibrated input $p' = $ \site{r_q1_d_p}; Holm-adjusted $p = $ \site{r_q1_holm} for each). Both intervals lie inside the registered margin of $\pm\const{0.05}$: the categories are ``\site{r_q1_d_cat}'' (D2+H3) and ``\site{r_q1_x_cat}'' (X7-SC), and the separate efficiency label is ``\site{r_q1_d_eff}''. R3 is not materially better than the development-selected comparator. The difference changes sign across markets: per market (descriptive), it ranges from \site{r_q1_f3_d} on fresh3 to \site{r_q1_f1_d} on fresh1 under D2+H3. Both decisions are about the prescribed search procedure: the D2+H3 test uses search-flagged cells, and the X7-SC test uses them through its references (addendum); their nominal error guarantees are not established on the fresh, selected-rule distributions (Section~\ref{sec:design}). The paired descriptive differences in Table~\ref{tab:q1-side} are small for efficiency, audit spending, refunds on false audit failures, and the market service fraction; the reference-profit column is in raw profit units. Splitting $d$ with the same normalisation into the attacked-profit term and the reference-profit term (Table~\ref{tab:ph-q1}, exploratory) shows that almost all of it is attacked profit: the attacker earns more under C$^*$ when it deviates, not when it is truthful.
+docs/revision/paper-v2/main.tex:205:\caption{Q1 side evidence, R3 minus C$^*$, pooled over the fresh markets (descriptive).}\label{tab:q1-side}
+docs/revision/paper-v2/main.tex:213:\paragraph{Repeating the comparison on six new markets (Q4).} The registered B3--R3 gain-and-efficiency comparison under D2+H3 passes on \site{r_q4_k} of the six markets (Table~\ref{tab:q4}), and all three passes (fresh1, fresh3, fresh4) are about the prescribed search procedure. On every market the estimated B3 minus R3 gain difference is positive and R3 keeps its efficiency condition; where the comparison fails, the difference is smaller than the registered threshold, not reversed: \site{r_q4_f0} on fresh0, \site{r_q4_f2} on fresh2, and \site{r_q4_f5} on fresh5, against \site{r_q4_f1} on fresh1. R3's efficiency on fresh2, the lowest, is \site{r_q4_f2_eff}. The decisions on fresh0, fresh1, fresh3, and fresh4 are about the prescribed search procedure (fresh0 and fresh3 through their references; addendum). The registered prediction of at least five passing markets failed. Q4 does not test the complete amended claim of the first test. Table~\ref{tab:ph-q4} (exploratory) decomposes each market's gain difference, which is mostly attacked profit. R3's reported audit spending is about five percent of the realised first-best surplus, and the market's service fraction (all jobs served over the first-best number) is near one. The three non-passing markets have smaller attacked-profit reductions; these descriptive diagnostics do not identify their cause.
+docs/revision/paper-v2/main.tex:234:\caption{Q2 under D2+H3: factorial contrasts, searched and fixed attacks, with attack and reference terms and efficiency (descriptive, nominal intervals).}\label{tab:q2}
+docs/revision/paper-v2/main.tex:247:\paragraph{Stronger attacks and where R3 fails (Q3).} Table~\ref{tab:q3-envelope} gives each core rule's attack envelope: the family with the highest training gain, evaluated unchanged. These are finite-search results, not bounds on the families. Against B3 the selected envelope reaches \site{r_q3_f000_f1} on fresh1; against R3 it is \site{r_q3_f111_f1} there, and against C$^*$ \site{r_q3_cs_f1}, from \site{r_q3_cs_f1_fam}. H4 was written in a separate session against the frozen defenders and committed by its hash before the lock; its author's containment note states that it contains D2+H3 exactly as a special case, so it extends the public family rather than offering a disjoint attack concept. Evaluated at the headline market only, its selected search gains \site{r_q3_f111_h4} against R3 and \site{r_q3_f000_h4} against B3. Robustness against D2+H3 is unanswered for every core rule because of search flags, and so is R3's robustness against X7-SC; X5-AG/v2 and H4 carry no search-quality claim. Welfare attacks are the clearest weakness. At the headline market, the selected W0 attacks (no profit constraint) yield gross efficiency \site{r_q3_w0_f000} for B3 and \site{r_q3_w0} for R3, with gains relative to the truthful reference of \site{r_q3_w0g_f000} and \site{r_q3_w0g_f111}; C$^*$ is like R3. Under the prescribed W1 searches (mean gain at least zero), the selected feasible attacks yield efficiency \site{r_q3_w1} for R3, while B3 stays at \site{r_q3_w1_f000} (Table~\ref{tab:q3-welfare}). These finite-search results are not lower bounds on efficiency over a broader policy class. An episode-level mixture, which picks a welfare attack or a profitable attack at the start of each episode, satisfies a mean-gain constraint only when its probability-weighted component gains satisfy that constraint; we examine such mixtures on the existing evaluation records. On the records used to select them, W0 weights of \site{r_ph_w_r3} for R3 and \site{r_ph_w_cs} for C$^*$, with the H4 attack as companion, give estimated normalised gains of \site{r_ph_g_r3} and \site{r_ph_g_cs} and gross efficiencies of \site{r_ph_e_r3} and \site{r_ph_e_cs}; with the public D2+H3 attack as companion the efficiencies are \site{r_ph_e_r3_d} and \site{r_ph_e_cs_d} (Tables~\ref{tab:ph-welfare} and~\ref{tab:ph-welfare-sens}). The registered W1 constraint is a non-negative mean gain on the training seeds. Reconstructed from the search archives, the training mean gains of these mixtures, each at its rule--companion pair's weight in Table~\ref{tab:ph-welfare}, are \site{r_ph_t_r3} and \site{r_ph_t_r3_d} for R3 and \site{r_ph_t_cs} and \site{r_ph_t_cs_d} for C$^*$ (H4 and D2+H3 companions): three meet the training constraint, but C$^*$'s public-family mixture does not. At its evaluation-selected weight of \site{r_ph_wd_cs}, C$^*$'s public-family mixture fails the training constraint. At \site{r_ph_fw_cs}, the largest weight on the same grid at which both the training mean gain and the evaluation bound are non-negative, it has training gain \site{r_ph_ft_cs}, estimated evaluation gain \site{r_ph_fg_cs}, and gross efficiency \site{r_ph_fe_cs}, against \site{r_ph_w1_cs} under the registered W1 search (last row of Table~\ref{tab:ph-welfare}). Both rules therefore show substantial empirical efficiency losses with public-family mixtures alone; H4 is not needed for a drop of this size, and population profitability remains unestablished. The evaluation-selected weights are the largest at which a nominal one-sided \const{95} percent normal bound on the mean gain stays non-negative (the training-feasible row also requires a non-negative training mean); that bound is not adjusted for selection, the weight and the companion family were chosen on the evaluation seeds, and the bound is close to zero at the selected weights, so this checks the policy class and is not an out-of-sample estimate. The mixture efficiencies stay above \const{0.90}; the analysis does not touch Q4 or its registered predicate. For coalitions of two synchronised members, the selected total gains are \site{r_q3_coal_f000} against B3 and \site{r_q3_coal_f111_c2} against R3 (search flagged); for five, \site{r_q3_coal_f000_c5} and \site{r_q3_coal_f111} (total objective), while the policy selected for the minimum-member objective leaves R3's worst member a mean gain of \site{r_q3_coal_f111_c5min}; the decoy-and-beneficiary family gives \site{r_q3_db_f000} against B3 and \site{r_q3_db_f111} against R3. These comparisons establish neither coalition stability nor an ordering across every coalition family (Table~\ref{tab:q3-coalitions}). At $\rho = \const{1}$, where R3's terminal reserve collapses, R3 leaves \site{r_rep_f111} under D2+H3; the repair R4 lowers this to \site{r_rep_r4} and C$^*$ with the capped schedule (C$^*$/S2) to \site{r_rep_cs2} (Table~\ref{tab:q3-repair}).
+docs/revision/paper-v2/main.tex:250:\caption{Exploratory, after the report: at the headline market, the efficiency of the selected W1 and W0 attacks, and, for each companion family, the episode-level lottery between the W0 attack and a profitable attack of the same rule (two displayed companions, H4 and D2+H3; all five examined companions are in \texttt{posthoc.json}) at the largest W0 weight on a grid of step \const{0.0005} whose mean gain keeps a non-negative nominal one-sided \const{95} percent lower bound, unadjusted for selection; estimated gain, that bound, and the mixture's efficiency, all on the evaluation records that selected the weight; ``Train gain'' is the mixture's mean gain on the training seeds (the registered W1 constraint requires it to be non-negative), reconstructed from the search archives. The row marked training-feasible, added after external review, uses the largest grid weight at which both the evaluation bound and the training gain are non-negative. B3's W0 attack has a positive estimated gain.}\label{tab:ph-welfare}
+docs/revision/paper-v2/main.tex:279:\paragraph{Secondary comparison.} At the headline market, with each rule's own tuned parameters, the gains are \site{r_sec_b3t} (B3-t), \site{r_sec_r3t} (R3-t), and \site{r_sec_cst} (C$^*$-t) under D2+H3. This comparison is secondary and descriptive.
+docs/revision/paper-v2/main.tex:281:\paragraph{Search quality.} No cell is missing. The report lists the search-flagged cells, and the addendum traces the inherited flags of every Q1 and Q4 decision through the records' references. Q2 and Q3 statements are descriptive; the cells they use carry the flags listed in the report. Table~\ref{tab:ph-stability} sets the Q1 estimates beside their re-evaluation with the registered configurations, and Table~\ref{tab:ph-q4-stability} compares the Q4 estimates, calibrated lower bounds, and decisions under both configurations and gives the adjusted market $p$-value under the registered configuration; the largest Q4 change is on fresh4, where the gain difference moves from \site{r_st_f4_old} to \site{r_st_f4_new}, still above the registered \const{0.10}.
+docs/revision/paper-v2/main.tex:293:\paragraph{Predictions.} Tables~\ref{tab:predictions} and~\ref{tab:predictions-b} score every registered prediction from the report. For Q4-b, the original scoring script compared the report's raw component $p$-values, although the prediction is registered on calibrated values; the corrected script compares the calibrated values, \site{r_pred_q4b_g} against \site{r_pred_q4b_e} on each of fresh0, fresh2, and fresh5. The prediction remains fulfilled and the total is unchanged: a scoring correction with no change of verdict, separate from the corrected labels of Tables~\ref{tab:q1} and~\ref{tab:q4}. The original numerical scoring path, preserved in the released scoring output, retains estimates from completed searches even when their doubling checks were marked incomplete; it counts \site{r_pred_n_ful} predictions fulfilled and \site{r_pred_n_fail} failed. A separate eligibility analysis applies the two filters below. The registered scoring rule also says that an incomplete target, in the sense of the design's search-quality checks, is not assessed; those checks call a search-flagged cell incomplete while keeping its estimate for the prescribed search procedure; the rule does not say whether a prediction computed from a flagged search is itself incomplete. Table~\ref{tab:pred-eligibility} adds two post hoc eligibility readings. Starting from the listed inputs of each scored comparison, we propagate flags through recorded upstream links, including references, attack banks, and warm starts. An inherited flag identifies a potentially relevant ancestor; it does not establish that the flagged candidate was selected or that the statistic would change. The map is released with the scorer, and neither sensitivity is designated as the official retrospective score. If a flagged required search makes a Q3 policy comparison ineligible, Q3-a, Q3-b, Q3-d, and Q3-e are not assessed: \site{r_pred_q_ful} predictions are fulfilled, \site{r_pred_q_fail} fail, and \site{r_pred_q_na} are not assessed (counting direct inputs only, Q3-e stays fulfilled: \site{r_pred_qd_ful}, \site{r_pred_qd_fail}, and \site{r_pred_qd_na}). The broader sensitivity excludes flagged scored cells outside six decision-related predictions retained by convention: Q1-a, its alternative, Q1-b, Q1-d, Q4-a, and Q4-b (the design keeps the decisions but does not say how predictions about them are scored). A prediction still fails if any eligible cell fails; otherwise, an excluded required cell leaves it not assessed. Q1-c and Q2-a to Q2-d are then also not assessed: \site{r_pred_d_ful} fulfilled, \site{r_pred_d_fail} failed, and \site{r_pred_d_na} not assessed (counting direct inputs only: \site{r_pred_dd_ful}, \site{r_pred_dd_fail}, and \site{r_pred_dd_na}). No reading turns a failed prediction into a fulfilled one or changes a registered decision; the marked rows of Tables~\ref{tab:predictions} and~\ref{tab:predictions-b} are those a stricter reading changes, and their estimates stand as estimates of the prescribed searches. The predictions differ in stakes and are not independent, so the count of fulfilled predictions is not a validation score. The failures are informative: we expected the priority phase to matter little, the replication to hold on at least five markets, X5-AG/v2 to stay below D2+H3, and the unconstrained welfare attack to leave R3's and C$^*$'s efficiency at the registered level, and none of these held (the first is not assessed under the broader reading).
+docs/revision/paper-v2/main.tex:297:\caption{Prediction tally under three eligibility readings, added after external review. Numerical: the scorer's statuses (Tables~\ref{tab:predictions} and~\ref{tab:predictions-b}). Flagged inputs, Q3: a Q3 cell with a search-flagged required search, direct or through the recorded dependencies of its evaluation record, is not assessed. Flagged inputs, all non-exempt cells: a flagged scored cell is excluded in every prediction except six decision-related predictions retained by convention; a prediction fails if any eligible cell fails. An inherited flag marks a potentially relevant ancestor, not a demonstrated change. The last two rows apply the same filters to the listed inputs of each cell only, without tracing. Eighteen scored predictions, including the alternative to Q1-a.}\label{tab:pred-eligibility}
+paper/main.tex:153:\caption{Registered verdict of the first test (unchanged), on \evone{40} fresh seeds at $\beta = \evone{0.05}$ and the median position. Bounds are one-sided: \evone{95}\% for the rule clause and the absolute part, \evone{98.75}\% for the comparisons. The amended pass also requires the H2 rule clause and admission of the comparison bounds, whose interval procedures were admitted on development distributions with B3 as proxy; nominal coverage for the selected R3 is not established.}\label{tab:verdict1}
+paper/main.tex:163:\paragraph{Questions.} Q1: does R3 ($F_{111}$) leave a lower or higher identity-replacement gain than C$^*$, at the fixed pair? Q2: what do the priority phase, the residual targeting, and the pacing contribute, alone and together? Q3: do the results hold against X7-SC, X5-AG/v2, the defence-aware sealed family H4, welfare attacks, and coalitions, and does R4 repair the reserve collapse? Q4: does the first test's comparison of B3 and R3 under D2+H3 replicate on fresh markets? Q1 and Q4 are confirmatory; Q2 and Q3 are descriptive.
+paper/main.tex:176:Q1 & $d = g_{C^*} - g_{F_{111}}$, pooled, for D2+H3 and X7-SC. Direction: Holm's procedure~\cite{holm1979simple} on calibrated two-sided $p$-values for $d = \const{0}$. Size: the calibrated Bonferroni interval $I$ for $d$. Categories, in order: \emph{materially lower} if $I$ lies above $\const{0.05}$ (R3 lower) or below $\const{-0.05}$ (C$^*$ lower); \emph{equivalent} if $I$ lies within $[\const{-0.05}, \const{0.05}]$, with a direction label when Holm rejects $d = \const{0}$; \emph{ordered, size not established} if Holm rejects and neither applies; otherwise \emph{inconclusive}. A rule is called better only with the first category in its favour and a paired gross-efficiency difference (that rule minus the other) whose nominal one-sided \const{97.5}\% lower bound is at least $\const{-0.01}$ (descriptive; no calibrated joint guarantee). If that lower bound is below $\const{-0.01}$, the gain category stands and the result is labelled ``efficiency non-inferiority unresolved''; it is labelled ``lower gain with an efficiency loss'' only if the corresponding upper bound is below $\const{-0.01}$. \\
+paper/main.tex:178:Q2, Q3 & Registered analyses descriptive, with nominal intervals and extrema selected on training data; the post hoc lottery analysis selects its companion and weight on evaluation data. \\\bottomrule
+paper/main.tex:189:The registered estimates and decisions below come from the report that the tagged code wrote; the addendum beside it (Section~\ref{sec:design}) adds labels and disclosures. Tables~\ref{tab:ph-q1}, \ref{tab:ph-q4}, \ref{tab:ph-welfare}, and~\ref{tab:ph-welfare-sens} report exploratory analyses of existing records, and Tables~\ref{tab:ph-stability} and~\ref{tab:ph-q4-stability} the separate registered-configuration stability check; none of these changes a registered estimate or decision. Gains are normalised attacker gains; intervals are those of Table~\ref{tab:rules-v2}. Some descriptive fixed-reference contrasts on fresh1 (\site{r_ext_n} interval entries in the report's per-market Q2 rows) have numerically extreme studentized intervals: the reference-profit contrast there is above rounding scale on only \site{r_ext_seeds} of \site{r_ext_total} seeds (the others are at most \site{r_ext_round} in absolute value), and \site{r_ext_cnt} of the \site{r_ext_tot} frozen resamples (\site{r_ext_share}) omit all three, so their standard error is of rounding size and their bootstrap-t statistics are huge. We retain these frozen outputs, list them in the audit file, and draw no inferential conclusion from them; no other interval in the report has a bound beyond $\const{1000}$ in absolute value.
+paper/main.tex:191:\paragraph{Age-ranked versus history-based checking (Q1).} Pooled over the six fresh markets, the prescribed searches leave the identity-replacement attacker a measured gain against C$^*$ higher than against R3 by \site{r_q1_d_est} under D2+H3 and by \site{r_q1_x_est} under X7-SC. Both direction tests reject $d = \const{0}$ (calibrated input $p' = $ \site{r_q1_d_p}; Holm-adjusted $p = $ \site{r_q1_holm} for each). Both intervals lie inside the registered margin of $\pm\const{0.05}$: the categories are ``\site{r_q1_d_cat}'' (D2+H3) and ``\site{r_q1_x_cat}'' (X7-SC), and the separate efficiency label is ``\site{r_q1_d_eff}''. R3 is not materially better than the development-selected comparator. The difference changes sign across markets: per market (descriptive), it ranges from \site{r_q1_f3_d} on fresh3 to \site{r_q1_f1_d} on fresh1 under D2+H3. Both decisions are about the prescribed search procedure: the D2+H3 test uses search-flagged cells, and the X7-SC test uses them through its references (addendum); their nominal error guarantees are not established on the fresh, selected-rule distributions (Section~\ref{sec:design}). The paired descriptive differences in Table~\ref{tab:q1-side} are small for efficiency, audit spending, refunds on false audit failures, and the market service fraction; the reference-profit column is in raw profit units. Splitting $d$ with the same normalisation into the attacked-profit term and the reference-profit term (Table~\ref{tab:ph-q1}, exploratory) shows that almost all of it is attacked profit: the attacker earns more under C$^*$ when it deviates, not when it is truthful.
+paper/main.tex:205:\caption{Q1 side evidence, R3 minus C$^*$, pooled over the fresh markets (descriptive).}\label{tab:q1-side}
+paper/main.tex:213:\paragraph{Repeating the comparison on six new markets (Q4).} The registered B3--R3 gain-and-efficiency comparison under D2+H3 passes on \site{r_q4_k} of the six markets (Table~\ref{tab:q4}), and all three passes (fresh1, fresh3, fresh4) are about the prescribed search procedure. On every market the estimated B3 minus R3 gain difference is positive and R3 keeps its efficiency condition; where the comparison fails, the difference is smaller than the registered threshold, not reversed: \site{r_q4_f0} on fresh0, \site{r_q4_f2} on fresh2, and \site{r_q4_f5} on fresh5, against \site{r_q4_f1} on fresh1. R3's efficiency on fresh2, the lowest, is \site{r_q4_f2_eff}. The decisions on fresh0, fresh1, fresh3, and fresh4 are about the prescribed search procedure (fresh0 and fresh3 through their references; addendum). The registered prediction of at least five passing markets failed. Q4 does not test the complete amended claim of the first test. Table~\ref{tab:ph-q4} (exploratory) decomposes each market's gain difference, which is mostly attacked profit. R3's reported audit spending is about five percent of the realised first-best surplus, and the market's service fraction (all jobs served over the first-best number) is near one. The three non-passing markets have smaller attacked-profit reductions; these descriptive diagnostics do not identify their cause.
+paper/main.tex:234:\caption{Q2 under D2+H3: factorial contrasts, searched and fixed attacks, with attack and reference terms and efficiency (descriptive, nominal intervals).}\label{tab:q2}
+paper/main.tex:247:\paragraph{Stronger attacks and where R3 fails (Q3).} Table~\ref{tab:q3-envelope} gives each core rule's attack envelope: the family with the highest training gain, evaluated unchanged. These are finite-search results, not bounds on the families. Against B3 the selected envelope reaches \site{r_q3_f000_f1} on fresh1; against R3 it is \site{r_q3_f111_f1} there, and against C$^*$ \site{r_q3_cs_f1}, from \site{r_q3_cs_f1_fam}. H4 was written in a separate session against the frozen defenders and committed by its hash before the lock; its author's containment note states that it contains D2+H3 exactly as a special case, so it extends the public family rather than offering a disjoint attack concept. Evaluated at the headline market only, its selected search gains \site{r_q3_f111_h4} against R3 and \site{r_q3_f000_h4} against B3. Robustness against D2+H3 is unanswered for every core rule because of search flags, and so is R3's robustness against X7-SC; X5-AG/v2 and H4 carry no search-quality claim. Welfare attacks are the clearest weakness. At the headline market, the selected W0 attacks (no profit constraint) yield gross efficiency \site{r_q3_w0_f000} for B3 and \site{r_q3_w0} for R3, with gains relative to the truthful reference of \site{r_q3_w0g_f000} and \site{r_q3_w0g_f111}; C$^*$ is like R3. Under the prescribed W1 searches (mean gain at least zero), the selected feasible attacks yield efficiency \site{r_q3_w1} for R3, while B3 stays at \site{r_q3_w1_f000} (Table~\ref{tab:q3-welfare}). These finite-search results are not lower bounds on efficiency over a broader policy class. An episode-level mixture, which picks a welfare attack or a profitable attack at the start of each episode, satisfies a mean-gain constraint only when its probability-weighted component gains satisfy that constraint; we examine such mixtures on the existing evaluation records. On the records used to select them, W0 weights of \site{r_ph_w_r3} for R3 and \site{r_ph_w_cs} for C$^*$, with the H4 attack as companion, give estimated normalised gains of \site{r_ph_g_r3} and \site{r_ph_g_cs} and gross efficiencies of \site{r_ph_e_r3} and \site{r_ph_e_cs}; with the public D2+H3 attack as companion the efficiencies are \site{r_ph_e_r3_d} and \site{r_ph_e_cs_d} (Tables~\ref{tab:ph-welfare} and~\ref{tab:ph-welfare-sens}). The registered W1 constraint is a non-negative mean gain on the training seeds. Reconstructed from the search archives, the training mean gains of these mixtures, each at its rule--companion pair's weight in Table~\ref{tab:ph-welfare}, are \site{r_ph_t_r3} and \site{r_ph_t_r3_d} for R3 and \site{r_ph_t_cs} and \site{r_ph_t_cs_d} for C$^*$ (H4 and D2+H3 companions): three meet the training constraint, but C$^*$'s public-family mixture does not. At its evaluation-selected weight of \site{r_ph_wd_cs}, C$^*$'s public-family mixture fails the training constraint. At \site{r_ph_fw_cs}, the largest weight on the same grid at which both the training mean gain and the evaluation bound are non-negative, it has training gain \site{r_ph_ft_cs}, estimated evaluation gain \site{r_ph_fg_cs}, and gross efficiency \site{r_ph_fe_cs}, against \site{r_ph_w1_cs} under the registered W1 search (last row of Table~\ref{tab:ph-welfare}). Both rules therefore show substantial empirical efficiency losses with public-family mixtures alone; H4 is not needed for a drop of this size, and population profitability remains unestablished. The evaluation-selected weights are the largest at which a nominal one-sided \const{95} percent normal bound on the mean gain stays non-negative (the training-feasible row also requires a non-negative training mean); that bound is not adjusted for selection, the weight and the companion family were chosen on the evaluation seeds, and the bound is close to zero at the selected weights, so this checks the policy class and is not an out-of-sample estimate. The mixture efficiencies stay above \const{0.90}; the analysis does not touch Q4 or its registered predicate. For coalitions of two synchronised members, the selected total gains are \site{r_q3_coal_f000} against B3 and \site{r_q3_coal_f111_c2} against R3 (search flagged); for five, \site{r_q3_coal_f000_c5} and \site{r_q3_coal_f111} (total objective), while the policy selected for the minimum-member objective leaves R3's worst member a mean gain of \site{r_q3_coal_f111_c5min}; the decoy-and-beneficiary family gives \site{r_q3_db_f000} against B3 and \site{r_q3_db_f111} against R3. These comparisons establish neither coalition stability nor an ordering across every coalition family (Table~\ref{tab:q3-coalitions}). At $\rho = \const{1}$, where R3's terminal reserve collapses, R3 leaves \site{r_rep_f111} under D2+H3; the repair R4 lowers this to \site{r_rep_r4} and C$^*$ with the capped schedule (C$^*$/S2) to \site{r_rep_cs2} (Table~\ref{tab:q3-repair}).
+paper/main.tex:250:\caption{Exploratory, after the report: at the headline market, the efficiency of the selected W1 and W0 attacks, and, for each companion family, the episode-level lottery between the W0 attack and a profitable attack of the same rule (two displayed companions, H4 and D2+H3; all five examined companions are in \texttt{posthoc.json}) at the largest W0 weight on a grid of step \const{0.0005} whose mean gain keeps a non-negative nominal one-sided \const{95} percent lower bound, unadjusted for selection; estimated gain, that bound, and the mixture's efficiency, all on the evaluation records that selected the weight; ``Train gain'' is the mixture's mean gain on the training seeds (the registered W1 constraint requires it to be non-negative), reconstructed from the search archives. The row marked training-feasible, added after external review, uses the largest grid weight at which both the evaluation bound and the training gain are non-negative. B3's W0 attack has a positive estimated gain.}\label{tab:ph-welfare}
+paper/main.tex:279:\paragraph{Secondary comparison.} At the headline market, with each rule's own tuned parameters, the gains are \site{r_sec_b3t} (B3-t), \site{r_sec_r3t} (R3-t), and \site{r_sec_cst} (C$^*$-t) under D2+H3. This comparison is secondary and descriptive.
+paper/main.tex:281:\paragraph{Search quality.} No cell is missing. The report lists the search-flagged cells, and the addendum traces the inherited flags of every Q1 and Q4 decision through the records' references. Q2 and Q3 statements are descriptive; the cells they use carry the flags listed in the report. Table~\ref{tab:ph-stability} sets the Q1 estimates beside their re-evaluation with the registered configurations, and Table~\ref{tab:ph-q4-stability} compares the Q4 estimates, calibrated lower bounds, and decisions under both configurations and gives the adjusted market $p$-value under the registered configuration; the largest Q4 change is on fresh4, where the gain difference moves from \site{r_st_f4_old} to \site{r_st_f4_new}, still above the registered \const{0.10}.
+paper/main.tex:293:\paragraph{Predictions.} Tables~\ref{tab:predictions} and~\ref{tab:predictions-b} score every registered prediction from the report. For Q4-b, the original scoring script compared the report's raw component $p$-values, although the prediction is registered on calibrated values; the corrected script compares the calibrated values, \site{r_pred_q4b_g} against \site{r_pred_q4b_e} on each of fresh0, fresh2, and fresh5. The prediction remains fulfilled and the total is unchanged: a scoring correction with no change of verdict, separate from the corrected labels of Tables~\ref{tab:q1} and~\ref{tab:q4}. The original numerical scoring path, preserved in the released scoring output, retains estimates from completed searches even when their doubling checks were marked incomplete; it counts \site{r_pred_n_ful} predictions fulfilled and \site{r_pred_n_fail} failed. A separate eligibility analysis applies the two filters below. The registered scoring rule also says that an incomplete target, in the sense of the design's search-quality checks, is not assessed; those checks call a search-flagged cell incomplete while keeping its estimate for the prescribed search procedure; the rule does not say whether a prediction computed from a flagged search is itself incomplete. Table~\ref{tab:pred-eligibility} adds two post hoc eligibility readings. Starting from the listed inputs of each scored comparison, we propagate flags through recorded upstream links, including references, attack banks, and warm starts. An inherited flag identifies a potentially relevant ancestor; it does not establish that the flagged candidate was selected or that the statistic would change. The map is released with the scorer, and neither sensitivity is designated as the official retrospective score. If a flagged required search makes a Q3 policy comparison ineligible, Q3-a, Q3-b, Q3-d, and Q3-e are not assessed: \site{r_pred_q_ful} predictions are fulfilled, \site{r_pred_q_fail} fail, and \site{r_pred_q_na} are not assessed (counting direct inputs only, Q3-e stays fulfilled: \site{r_pred_qd_ful}, \site{r_pred_qd_fail}, and \site{r_pred_qd_na}). The broader sensitivity excludes flagged scored cells outside six decision-related predictions retained by convention: Q1-a, its alternative, Q1-b, Q1-d, Q4-a, and Q4-b (the design keeps the decisions but does not say how predictions about them are scored). A prediction still fails if any eligible cell fails; otherwise, an excluded required cell leaves it not assessed. Q1-c and Q2-a to Q2-d are then also not assessed: \site{r_pred_d_ful} fulfilled, \site{r_pred_d_fail} failed, and \site{r_pred_d_na} not assessed (counting direct inputs only: \site{r_pred_dd_ful}, \site{r_pred_dd_fail}, and \site{r_pred_dd_na}). No reading turns a failed prediction into a fulfilled one or changes a registered decision; the marked rows of Tables~\ref{tab:predictions} and~\ref{tab:predictions-b} are those a stricter reading changes, and their estimates stand as estimates of the prescribed searches. The predictions differ in stakes and are not independent, so the count of fulfilled predictions is not a validation score. The failures are informative: we expected the priority phase to matter little, the replication to hold on at least five markets, X5-AG/v2 to stay below D2+H3, and the unconstrained welfare attack to leave R3's and C$^*$'s efficiency at the registered level, and none of these held (the first is not assessed under the broader reading).
+paper/main.tex:297:\caption{Prediction tally under three eligibility readings, added after external review. Numerical: the scorer's statuses (Tables~\ref{tab:predictions} and~\ref{tab:predictions-b}). Flagged inputs, Q3: a Q3 cell with a search-flagged required search, direct or through the recorded dependencies of its evaluation record, is not assessed. Flagged inputs, all non-exempt cells: a flagged scored cell is excluded in every prediction except six decision-related predictions retained by convention; a prediction fails if any eligible cell fails. An inherited flag marks a potentially relevant ancestor, not a demonstrated change. The last two rows apply the same filters to the listed inputs of each cell only, without tracing. Eighteen scored predictions, including the alternative to Q1-a.}\label{tab:pred-eligibility}
+
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'cat docs/revision/paper-v2/score_v2.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+"""Scores the hashed predictions (docs/revision/predictions-v2.md, scoring table) from report.json and cells.json.
+A prediction over several cells is scored cell by cell: failed if any assessed cell fails; fulfilled only if every
+required cell is assessed and fulfilled; otherwise not assessed. A cell is not assessed when its value is missing,
+cut, refused, or a status string. Descriptive only: predictions change no decision."""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import math
+import sys
+from pathlib import Path
+
+FRESH = tuple(f"fresh{i}" for i in range(6))
+MARKETS = FRESH + ("headline",)
+NA = "not assessed"
+KAPPA_Q4 = 0.25                       # experiments/protocol-v2.yaml, admitted Q4 multiplier
+
+
+def _cal(p, kappa: float = KAPPA_Q4):
+    """p' = min(1, p / kappa) (design 9.2): Q4-b is registered on the calibrated component p-values."""
+    return None if _num(p) is None else min(1.0, float(p) / kappa)
+
+
+def _num(x):
+    """A finite number, else None (a non-finite statistic is a numerical refusal, design 9.2)."""
+    ok = isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)
+    return float(x) if ok else None
+
+
+def _refused(d) -> bool:
+    """A report entry whose status, category or decision is a refusal ("not decided: ...", sim/decisions_v2.py)."""
+    return isinstance(d, dict) and any(isinstance(d.get(k), str) and (d[k].startswith("not decided") or d[k] == "refused")
+                                       for k in ("status", "category", "decision"))
+
+
+def _est(d):
+    return None if _refused(d) else _get(d, "estimate")
+
+
+def _cell(name, value, test) -> dict:
+    v = _num(value) if not isinstance(value, (tuple, list)) else value
+    if v is None or (isinstance(v, (tuple, list)) and any(_num(z) is None for z in v)):
+        return {"cell": name, "value": None, "status": NA}
+    return {"cell": name, "value": v, "status": "fulfilled" if test(v) else "failed"}
+
+
+def _combine(cells: list) -> dict:
+    st = [c["status"] for c in cells]
+    status = "failed" if "failed" in st else "fulfilled" if st and all(s == "fulfilled" for s in st) else NA
+    return {"status": status, "cells": cells}
+
+
+def _get(d, *path):
+    for p in path:
+        if not isinstance(d, dict) or p not in d:
+            return None
+        d = d[p]
+    return d
+
+
+def _gain(cells, m, rule, fam):
+    return _get(cells, f"{m}@rho0.2|{rule}|{fam}|profit", "gain")
+
+
+def score(rep: dict, cells: dict) -> dict:
+    out = {}
+    q1 = lambda f: _get(rep, "q1", "tests", f"C*-F111|{f}") or {}
+    cat = lambda f: q1(f).get("category") if isinstance(q1(f).get("category"), str) else None
+    c = cat("D2+H3")
+    out["Q1-a"] = _combine([{"cell": "D2+H3", "value": c, "status": NA if c is None or c.startswith("not decided") or c == "refused"
+                             else "fulfilled" if c == "equivalent, direction R3 lower" else "failed"}])
+    est = _num(q1("D2+H3").get("estimate"))
+    out["Q1-a-alt"] = _combine([{"cell": "D2+H3", "value": c, "status": NA if c is None or est is None or c.startswith("not decided")
+                                 else "fulfilled" if (c == "ordered, size not established" and est > 0) else "failed"}])
+    c = cat("X7-SC")
+    out["Q1-b"] = _combine([{"cell": "X7-SC", "value": c, "status": NA if c is None or c.startswith("not decided") or c == "refused"
+                             else "fulfilled" if c in ("equivalent", "equivalent, direction R3 lower") else "failed"}])
+    neg = lambda v: None if v is None else -v                     # the report's side fields are F111 minus C*; Q1-c is C* minus F111
+    out["Q1-c"] = _combine([_cell(f, neg(_get(q1(f), "side", "gross_eff_diff")), lambda v: -0.01 <= v <= 0.01) for f in ("D2+H3", "X7-SC")])
+    out["Q1-d"] = _combine([{"cell": f, "value": q1(f).get("better"), "status": NA if cat(f) is None or _refused(q1(f)) or "efficiency" not in q1(f)
+                             else "fulfilled" if q1(f).get("better") is None else "failed"} for f in ("D2+H3", "X7-SC")])
+    s = lambda kind, f, k: _est(_get(rep, "q2", kind, f, k))
+    out["Q2-a"] = _combine([_cell(k, s("searched", "D2+H3", k), lambda v: v <= -0.05) for k in ("G", "S")])
+    out["Q2-b"] = _combine([_cell("P", s("searched", "D2+H3", "P"), lambda v: abs(v) < 0.03)])
+    out["Q2-c"] = _combine([_cell("PG", s("searched", "D2+H3", "PG"), lambda v: abs(v) < 0.03),
+                            _cell("PS", s("searched", "D2+H3", "PS"), lambda v: abs(v) < 0.03),
+                            _cell("GS", s("searched", "D2+H3", "GS"), lambda v: v <= 0)])
+    out["Q2-d"] = _combine([_cell(f"{k} {f}", (s("fixed", f, k), s("searched", f, k)), lambda v: abs(v[0]) < abs(v[1]))
+                            for f in ("D2+H3", "X7-SC") for k in ("P", "G", "S")])
+    diff = lambda m, r, a, b: (None if _gain(cells, m, r, a) is None or _gain(cells, m, r, b) is None
+                               else _gain(cells, m, r, a) - _gain(cells, m, r, b))
+    out["Q3-a"] = _combine([_cell(f"{m} {r}", diff(m, r, "X7-SC", "D2+H3"), lambda v: v < 0.05) for m in MARKETS for r in ("F111", "C*")])
+    out["Q3-b"] = _combine([_cell("headline F111", diff("headline", "F111", "H4", "X7-SC"), lambda v: v <= 0.05)])
+    out["Q3-c"] = _combine([_cell(f"{m} {r}", diff(m, r, "X5-AG/v2", "D2+H3"), lambda v: v < 0) for m in MARKETS for r in ("F111", "C*")])
+    groups = ["c2_synchronised", "c2_staggered", "c5_synchronised", "c5_staggered", "c2_roles"]
+    co = lambda r, g: _get(rep, "q3", "coalition", r, g)
+    out["Q3-d"] = _combine([_cell(f"{r} {g}", (_est(_get(co(r, g), "G_min")), _est(_get(co(r, g), "G_tot"))),
+                                  lambda v: v[0] - 0.5 * v[1] <= 0) for r in ("F111", "C*") for g in groups])
+    ben = lambda r: (_get(cells, f"headline@rho0.2|{r}|X8-DB|total|c2_roles", "member_gain") or [None])[0]
+    out["Q3-e"] = _combine([_cell("headline", (ben("F111"), ben("C*")), lambda v: v[0] > v[1])])
+    eff = lambda r, o: _get(rep, "q3", "welfare_selected", r, o, "result", "efficiency")
+    out["Q3-f"] = _combine([_cell(f"{r} {o}", eff(r, o), lambda v: v >= 0.90) for o in ("W0", "W1") for r in ("F111", "C*")]
+                           + [_cell(f"F000<F111 {o}", (eff("F000", o), eff("F111", o)), lambda v: v[0] < v[1]) for o in ("W0", "W1")])
+    rp = lambda r: _get(rep, "secondary", "repair_rho1", r, "D2", "estimate")
+    out["Q3-g"] = _combine([_cell("headline rho1", (rp("F111"), rp("R4")), lambda v: v[0] - v[1] >= 0.10)])
+    k = _get(rep, "q4", "k")
+    out["Q4-a"] = _combine([_cell("k", k, lambda v: v >= 5)])
+    mk = _get(rep, "q4", "markets") or {}
+    elig = [m for m in (_get(rep, "q4", "failing") or []) if isinstance(mk.get(m), dict)]
+    out["Q4-b"] = _combine([_cell(m, (_cal(mk[m].get("p_gain")), _cal(mk[m].get("p_eff"))), lambda v: v[0] > v[1]) for m in elig])
+    return out
+
+
+# Eligibility (external review round 7). predictions-v2.md: a target that is "incomplete (design 6.5)" is not assessed;
+# design 6.5 calls a search-flagged cell "incomplete" and keeps its estimate for the prescribed search procedure, and keeps
+# every confirmatory decision that uses it. score() above reads the numbers only; the map below names each cell's
+# required searches and rescored the predictions under two stricter readings. Descriptive only.
+RULES8 = tuple(f"F{a}{b}{c}" for a in "01" for b in "01" for c in "01")
+DECISIONS = frozenset({"Q1-a", "Q1-a-alt", "Q1-b", "Q1-d", "Q4-a", "Q4-b"})   # score a confirmatory decision or its label
+SCOPES = ("numerical", "q3", "descriptive")
+COALITION_FAMILY = {"c2_roles": "X8-DB"}                                   # the other coalition groups are X6-SE/v2
+
+
+def _sid(m, r, fam, obj="profit", grp=None, rho="0.2"):
+    return f"{m}@rho{rho}|{r}|{fam}|{obj}" + (f"|{grp}" if grp else "")
+
+
+def inputs(pid: str, cell: str) -> list:
+    """The searches a prediction cell needs (ids as in the report's search_flagged list)."""
+    q1 = lambda fam: [_sid(m, r, fam) for m in FRESH for r in ("C*", "F111")]
+    q2 = lambda fam: [_sid(m, r, fam) for m in FRESH for r in RULES8]          # searched cells and the fixed-attack bank
+    if pid in ("Q1-a", "Q1-a-alt"):
+        return q1("D2+H3")
+    if pid in ("Q1-b", "Q1-c", "Q1-d"):
+        return q1(cell)
+    if pid in ("Q2-a", "Q2-b", "Q2-c"):
+        return q2("D2+H3")
+    if pid == "Q2-d":
+        return q2(cell.split()[1])
+    if pid in ("Q3-a", "Q3-b", "Q3-c"):
+        m, r = cell.split()
+        a, b = {"Q3-a": ("X7-SC", "D2+H3"), "Q3-b": ("H4", "X7-SC"), "Q3-c": ("X5-AG/v2", "D2+H3")}[pid]
+        return [_sid(m, r, a), _sid(m, r, b)]
+    if pid == "Q3-d":
+        r, g = cell.split()
+        fam = COALITION_FAMILY.get(g, "X6-SE/v2")
+        return [_sid("headline", r, fam, "min", g), _sid("headline", r, fam, "total", g)]
+    if pid == "Q3-e":
+        return [_sid("headline", r, "X8-DB", "total", "c2_roles") for r in ("F111", "C*")]
+    if pid == "Q3-f":
+        rules, o = (("F000", "F111"), cell.split()[1]) if cell.startswith("F000<") else ((cell.split()[0],), cell.split()[1])
+        return [_sid("headline", r, f, o) for r in rules for f in ("D2+H3", "X7-SC")]
+    if pid == "Q3-g":
+        return [_sid("headline", r, "D2", rho="1") for r in ("F111", "R4")]
+    if pid == "Q4-a":
+        return [_sid(m, r, "D2+H3") for m in FRESH for r in ("F000", "F111")]
+    if pid == "Q4-b":
+        return [_sid(cell, r, "D2+H3") for r in ("F000", "F111")]
+    raise ValueError(f"no input map for {pid}")
+
+
+def _safe(rid: str) -> str:
+    return rid.replace("|", "__").replace("/", "~").replace("*", "star")          # revision_v2._safe
+
+
+def dependencies(records, ids) -> dict:
+    """Search id -> every record key its evaluated estimate depends on: the id, then the recorded upstream links (file
+    hashes) of its evaluation record, followed transitively (references, banks, warm-start incumbents). An id without an
+    evaluation or search record raises: an unmapped input must not pass as unflagged."""
+    root = Path(records); index = {}
+    for f in root.rglob("*.json"):
+        index[hashlib.sha256(f.read_bytes()).hexdigest()] = f
+    out = {}
+    for rid in ids:
+        start = next((f for f in (root / "evaluate" / f"{_safe(rid)}.json", root / "search" / f"{_safe(rid)}.json") if f.exists()), None)
+        if start is None:
+            raise FileNotFoundError(f"no evaluation or search record for {rid}")
+        keys, todo, seen = {rid}, [start], set()
+        while todo:
+            f = todo.pop()
+            if f in seen:
+                continue
+            seen.add(f)
+            up = json.loads(f.read_text()).get("upstream") or {}
+            for k, h in up.items():
+                keys.add(k)
+                if h not in index:
+                    raise FileNotFoundError(f"unresolved upstream link {k} ({h[:12]}) of {f}")
+                todo.append(index[h])
+        out[rid] = keys
+    return out
+
+
+def eligibility(sc: dict, flagged, scope: str, deps: dict | None = None) -> dict:
+    """Each cell lists its flagged required searches: its direct inputs and, with deps, everything they depend on. Under
+    'q3' a Q3 cell with a flagged required search is not assessed; under 'descriptive' every cell outside DECISIONS is (a
+    convention of this sensitivity: design 6.5 keeps the decisions, it does not say how predictions about them are
+    scored); 'numerical' keeps the scorer's statuses."""
+    if scope not in SCOPES:
+        raise ValueError(f"unknown scope {scope}")
+    fl, out = set(flagged), {}
+    for pid, v in sc.items():
+        hit = scope == "descriptive" and pid not in DECISIONS or scope == "q3" and pid.startswith("Q3-")
+        cells = []
+        for c in v.get("cells", []):
+            req = set(inputs(pid, c["cell"]))
+            for x in list(req):
+                req |= (deps or {}).get(x, set())
+            f = sorted(req & fl)
+            cells.append({**c, "required": sorted(req), "flagged": f, "status": NA if (hit and f) else c["status"]})
+        out[pid] = {**_combine(cells), "cells": cells} if cells else dict(v)
+    return out
+
+
+def tally(sc: dict) -> dict:
+    st = [v["status"] for v in sc.values()]
+    return {s: st.count(s) for s in ("fulfilled", "failed", NA)}
+
+
+def eligibility_map(sc: dict, flagged, deps: dict | None = None) -> dict:
+    """Tallies with dependencies (the readings) and with direct inputs only (as in external review round 7); every cell
+    with its direct inputs, flagged required searches, and status under each reading."""
+    by = {s: eligibility(sc, flagged, s, deps) for s in SCOPES}
+    direct = {s: tally(eligibility(sc, flagged, s)) for s in SCOPES}
+    cells = lambda pid: {c["cell"]: {"inputs": inputs(pid, c["cell"]), "required": c["required"], "flagged": c["flagged"],
+                                     "status": {s: next(d["status"] for d in by[s][pid]["cells"] if d["cell"] == c["cell"]) for s in SCOPES}}
+                         for c in by["numerical"][pid].get("cells", [])}
+    return {"flagged": sorted(set(flagged)), "dependencies_traced": deps is not None,
+            "tally": {s: tally(by[s]) for s in SCOPES}, "tally_direct_inputs": direct,
+            "targets": {pid: {"decision": pid in DECISIONS, "status": {s: by[s][pid]["status"] for s in SCOPES},
+                              "flagged": sorted({x for c in by["numerical"][pid].get("cells", []) for x in c["flagged"]}),
+                              "cells": cells(pid)}
+                        for pid in sorted(sc)}}
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(); ap.add_argument("--report", required=True); ap.add_argument("--cells", required=True)
+    ap.add_argument("--write", required=True)
+    ap.add_argument("--eligibility", help="also write the eligibility map (flagged inputs, three readings) here")
+    ap.add_argument("--records", help="evaluation records (eval/all); with --eligibility, trace recorded dependencies")
+    a = ap.parse_args(argv); rep = json.loads(Path(a.report).read_text())
+    sc = score(rep, json.loads(Path(a.cells).read_text()))
+    Path(a.write).write_text(json.dumps(sc, indent=1, sort_keys=True))
+    if a.eligibility:
+        ids = sorted({x for pid, v in sc.items() for c in v.get("cells", []) for x in inputs(pid, c["cell"])})
+        deps = dependencies(a.records, ids) if a.records else None
+        em = eligibility_map(sc, rep.get("search_flagged") or [], deps)
+        Path(a.eligibility).write_text(json.dumps(em, indent=1, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+
+hook: PostToolUse
+hook: PostToolUse Completed
+exec
+/bin/zsh -lc "sed -n '1,65p' docs/revision/paper-v2/tables_v2.py && sed -n '145,205p' docs/revision/paper-v2/test_tables.py && rg -n 'descriptive reading|descriptive one|every descriptive' paper docs/revision/paper-v2 -g '"'!*.pdf'"' -g '"'!*.log'"'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+"""Evaluation-2 result tables for the paper, generated whole from report.json (paper draft 9 outline, "Rules for the
+text"). Each row's label is the key that fetched its values, so a label cannot sit beside another row's numbers. A
+string in the report (a status such as "not decided" or "unanswered: missing cell") is printed across the row. Captions
+live in main.tex; these files hold only the tabular. --write writes tables/<name>.tex; --check compares them."""
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from numbers_v2 import _fmt, _fmt_p  # noqa: E402
+
+FRESH = tuple(f"fresh{i}" for i in range(6))
+FAMS = ("D2+H3", "X7-SC")
+CORE = ("F000", "F111", "C*")
+SIDE = ("gross_eff_diff", "net_eff_diff", "ref_profit_diff", "audit_spend_diff", "false_refund_focal_diff", "false_refund_others_diff",
+        "served_share_diff")
+
+
+def holm_adjusted(p: list) -> list:
+    """Holm step-down adjusted p-values: sorted ascending, adj_(i) = max_{j<=i} min(1, (m - j + 1) p_(j))."""
+    m = len(p); order = sorted(range(m), key=lambda i: p[i]); out = [0.0] * m; run = 0.0
+    for rank, i in enumerate(order):
+        run = max(run, min(1.0, (m - rank) * float(p[i]))); out[i] = run
+    return out
+
+
+def esc(s) -> str:
+    return _fmt(str(s))
+
+
+def num(v) -> str:
+    return _fmt(v) if not isinstance(v, str) else esc(v)
+
+
+def iv(x) -> str:
+    return "n/a" if not x or None in x else f"[{num(float(x[0]))}, {num(float(x[1]))}]"
+
+
+def tabular(cols: str, header: list[str], rows: list[tuple[str, object]]) -> str:
+    """rows: (label, list of cells) or (label, status string); a status spans the remaining columns."""
+    n = len(header); out = [f"\\begin{{tabular}}{{@{{}}{cols}@{{}}}}\\toprule", " & ".join(header) + " \\\\\\midrule"]
+    for label, cells in rows:
+        if isinstance(cells, str):
+            out.append(f"{esc(label)} & \\multicolumn{{{n - 1}}}{{l}}{{{esc(cells)}}} \\\\")
+        else:
+            out.append(" & ".join([esc(label)] + list(cells)) + " \\\\")
+    out.append("\\bottomrule\\end{tabular}")
+    return "\n".join(out) + "\n"
+
+
+def q1(r: dict) -> str:
+    """The stored "p" is the calibrated two-sided p-value that enters Holm over the two fixed slots (sim.decisions_v2.q1_family);
+    the Holm-adjusted value is computed beside it."""
+    rows = []; tests = [r["q1"]["tests"][f"C*-F111|{f}"] for f in FAMS]
+    ps = [t.get("p") for t in tests]; adj = holm_adjusted([1.0 if p is None else p for p in ps]) if any(p is not None for p in ps) else [None] * len(ps)
+    for f, t, a in zip(FAMS, tests, adj):
+        rows.append((f, [num(t.get("estimate")), iv(t.get("interval")), esc(t.get("category")), _fmt_p(t.get("p")),
+                         _fmt_p(a if t.get("p") is not None else None), esc(t.get("efficiency") or "n/a"), esc(t.get("better") or "none")]))
+    return tabular("lrllrrll", ["Family", "$d$", "Interval", "Category", "$p'$ to Holm", "Holm-adj.", "Efficiency", "Better"], rows)
+
+
+            assert T._fmt_p(adj[i]) in _row(q4, m)
+    q1 = T.q1(report); hdr = q1.split("\\midrule")[0]
+    assert "$p'$ to Holm" in hdr and "Holm-adj." in hdr
+
+
+def test_side_table_names_false_failure_refunds_and_the_service_fraction(report):
+    # external review round 6: the refund fields count refunds on failed audits of honest play, not all refunds
+    side = T.q1_side(report)
+    assert "False-fail refunds (focal)" in side and "Service fraction" in side and "Served share" not in side
+
+
+def _elig():
+    st = lambda n, q, d: {"numerical": n, "q3": q, "descriptive": d}
+    return {"tally": {"numerical": {"fulfilled": 10, "failed": 8, "not assessed": 0},
+                      "q3": {"fulfilled": 7, "failed": 8, "not assessed": 3},
+                      "descriptive": {"fulfilled": 6, "failed": 5, "not assessed": 7}},
+            "targets": {"Q3-b": {"decision": False, "status": st("fulfilled", "not assessed", "not assessed")},
+                        "Q2-b": {"decision": False, "status": st("failed", "failed", "not assessed")},
+                        "Q3-c": {"decision": False, "status": st("failed", "failed", "failed")}}}
+
+
+def test_prediction_rows_mark_the_targets_a_stricter_eligibility_reading_changes():
+    # external review round 7: Q3-b is not assessed under both stricter readings, Q2-b only under the descriptive one
+    sc = {k: {"status": v["status"]["numerical"], "cells": []} for k, v in _elig()["targets"].items()}
+    a, b = T.predictions(sc, ids=("Q2",), elig=_elig()), T.predictions(sc, ids=("Q3",), elig=_elig())
+    assert _row(b, "Q3-b").split("&")[2].strip() == "fulfilled$^{\\dagger}$"
+    assert _row(a, "Q2-b").split("&")[2].strip() == "failed$^{\\ddagger}$"
+    assert _row(b, "Q3-c").split("&")[2].strip() == "failed"
+    assert T.predictions(sc, ids=("Q3",)) == T.predictions(sc, ids=("Q3",), elig=None)      # no map, no marks
+
+
+def test_eligibility_table_gives_each_reading_its_tally_and_changed_predictions():
+    tex = T.eligibility(_elig())
+    assert "Numerical (as scored) & 10 & 8 & 0" in tex and "& 7 & 8 & 3 &" in tex and "& 6 & 5 & 7 &" in tex
+    assert "Q3-b" in _row(tex, "Flagged inputs, Q3") and "Q2-b" not in _row(tex, "Flagged inputs, Q3")
+    assert "Q2-b" in _row(tex, "Flagged inputs, all non-exempt cells")
+
+
+def test_eligibility_table_adds_the_direct_input_tallies_when_the_map_has_them():
+    # external review round 8: Table 21 should carry both direct-input tallies (7/8/3 and 6/5/7 in the real map)
+    e = _elig()
+    assert "direct inputs" not in T.eligibility(e)                # an old map without them: no extra rows
+    e["tally_direct_inputs"] = {"q3": {"fulfilled": 7, "failed": 8, "not assessed": 3},
+                                "descriptive": {"fulfilled": 6, "failed": 5, "not assessed": 7}}
+    tex = T.eligibility(e)
+    assert _row(tex, "Flagged direct inputs only, Q3").split("&")[1:4] == [" 7 ", " 8 ", " 3 "]
+    assert _row(tex, "Flagged direct inputs only, all non-exempt cells").split("&")[1:4] == [" 6 ", " 5 ", " 7 "]
+docs/revision/paper-v2/tables_v2.py:187:    """Dagger: not assessed under both stricter eligibility readings; double dagger: only under the descriptive one."""
+docs/revision/paper-v2/test_tables.py:167:    # external review round 7: Q3-b is not assessed under both stricter readings, Q2-b only under the descriptive one
+
+hook: PostToolUse
+exec
+/bin/zsh -lc "python3 -c 'import json; e=json.load(open(\"/Users/oemer.demirel/Projects/touchstone/results/v2/paper/eligibility.json\")); print(\"keys\",list(e)); [print(k,str(v)[:15000]) for k,v in e.items() if k"'!="targets"]; print("first target",next(iter(e["targets"].items())))'"'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+keys ['dependencies_traced', 'flagged', 'tally', 'tally_direct_inputs', 'targets']
+dependencies_traced True
+flagged ['fresh0@rho0.2|C*|D2+H3|profit', 'fresh1@rho0.2|C*|D2+H3|profit', 'fresh1@rho0.2|F111|D2+H3|profit', 'fresh3@rho0.2|C*|D2+H3|profit', 'fresh4@rho0.2|F111|D2+H3|profit', 'headline@rho0.2|C*|X6-SE/v2|total|c2_synchronised', 'headline@rho0.2|C*|X6-SE/v2|total|c5_staggered', 'headline@rho0.2|C*|X6-SE/v2|total|c5_synchronised', 'headline@rho0.2|C*|X8-DB|min|c2_roles', 'headline@rho0.2|F000|D2+H3|profit', 'headline@rho0.2|F001|D2+H3|profit', 'headline@rho0.2|F011|X7-SC|profit', 'headline@rho0.2|F100|D2+H3|profit', 'headline@rho0.2|F100|X7-SC|profit', 'headline@rho0.2|F101|D2+H3|profit', 'headline@rho0.2|F101|X7-SC|profit', 'headline@rho0.2|F111|D2+H3|profit', 'headline@rho0.2|F111|X6-SE/v2|min|c2_staggered', 'headline@rho0.2|F111|X6-SE/v2|total|c2_synchronised', 'headline@rho0.2|F111|X6-SE/v2|total|c5_staggered', 'headline@rho0.2|F111|X7-SC|profit']
+tally {'descriptive': {'failed': 4, 'fulfilled': 5, 'not assessed': 9}, 'numerical': {'failed': 8, 'fulfilled': 10, 'not assessed': 0}, 'q3': {'failed': 8, 'fulfilled': 6, 'not assessed': 4}}
+tally_direct_inputs {'descriptive': {'failed': 5, 'fulfilled': 6, 'not assessed': 7}, 'numerical': {'failed': 8, 'fulfilled': 10, 'not assessed': 0}, 'q3': {'failed': 8, 'fulfilled': 7, 'not assessed': 3}}
+first target ('Q1-a', {'cells': {'D2+H3': {'flagged': ['fresh0@rho0.2|C*|D2+H3|profit', 'fresh1@rho0.2|C*|D2+H3|profit', 'fresh1@rho0.2|F111|D2+H3|profit', 'fresh3@rho0.2|C*|D2+H3|profit', 'fresh4@rho0.2|F111|D2+H3|profit'], 'inputs': ['fresh0@rho0.2|C*|D2+H3|profit', 'fresh0@rho0.2|F111|D2+H3|profit', 'fresh1@rho0.2|C*|D2+H3|profit', 'fresh1@rho0.2|F111|D2+H3|profit', 'fresh2@rho0.2|C*|D2+H3|profit', 'fresh2@rho0.2|F111|D2+H3|profit', 'fresh3@rho0.2|C*|D2+H3|profit', 'fresh3@rho0.2|F111|D2+H3|profit', 'fresh4@rho0.2|C*|D2+H3|profit', 'fresh4@rho0.2|F111|D2+H3|profit', 'fresh5@rho0.2|C*|D2+H3|profit', 'fresh5@rho0.2|F111|D2+H3|profit'], 'required': ['freeze/fresh0@rho0.2', 'freeze/fresh1@rho0.2', 'freeze/fresh2@rho0.2', 'freeze/fresh3@rho0.2', 'freeze/fresh4@rho0.2', 'freeze/fresh5@rho0.2', 'fresh0@rho0.2|C*/S0|D2+H3|profit', 'fresh0@rho0.2|C*/S0|X7-SC|profit', 'fresh0@rho0.2|C*|D2+H3|profit', 'fresh0@rho0.2|C*|X7-SC|profit', 'fresh0@rho0.2|F000|D2+H3|profit', 'fresh0@rho0.2|F000|X7-SC|profit', 'fresh0@rho0.2|F001|D2+H3|profit', 'fresh0@rho0.2|F001|X7-SC|profit', 'fresh0@rho0.2|F010|D2+H3|profit', 'fresh0@rho0.2|F010|X7-SC|profit', 'fresh0@rho0.2|F011|D2+H3|profit', 'fresh0@rho0.2|F011|X7-SC|profit', 'fresh0@rho0.2|F100|D2+H3|profit', 'fresh0@rho0.2|F100|X7-SC|profit', 'fresh0@rho0.2|F101|D2+H3|profit', 'fresh0@rho0.2|F101|X7-SC|profit', 'fresh0@rho0.2|F110|D2+H3|profit', 'fresh0@rho0.2|F110|X7-SC|profit', 'fresh0@rho0.2|F111|D2+H3|profit', 'fresh0@rho0.2|F111|X7-SC|profit', 'fresh1@rho0.2|C*/S0|D2+H3|profit', 'fresh1@rho0.2|C*/S0|X7-SC|profit', 'fresh1@rho0.2|C*|D2+H3|profit', 'fresh1@rho0.2|C*|X7-SC|profit', 'fresh1@rho0.2|F000|D2+H3|profit', 'fresh1@rho0.2|F000|X7-SC|profit', 'fresh1@rho0.2|F001|D2+H3|profit', 'fresh1@rho0.2|F001|X7-SC|profit', 'fresh1@rho0.2|F010|D2+H3|profit', 'fresh1@rho0.2|F010|X7-SC|profit', 'fresh1@rho0.2|F011|D2+H3|profit', 'fresh1@rho0.2|F011|X7-SC|profit', 'fresh1@rho0.2|F100|D2+H3|profit', 'fresh1@rho0.2|F100|X7-SC|profit', 'fresh1@rho0.2|F101|D2+H3|profit', 'fresh1@rho0.2|F101|X7-SC|profit', 'fresh1@rho0.2|F110|D2+H3|profit', 'fresh1@rho0.2|F110|X7-SC|profit', 'fresh1@rho0.2|F111|D2+H3|profit', 'fresh1@rho0.2|F111|X7-SC|profit', 'fresh2@rho0.2|C*/S0|D2+H3|profit', 'fresh2@rho0.2|C*/S0|X7-SC|profit', 'fresh2@rho0.2|C*|D2+H3|profit', 'fresh2@rho0.2|C*|X7-SC|profit', 'fresh2@rho0.2|F000|D2+H3|profit', 'fresh2@rho0.2|F000|X7-SC|profit', 'fresh2@rho0.2|F001|D2+H3|profit', 'fresh2@rho0.2|F001|X7-SC|profit', 'fresh2@rho0.2|F010|D2+H3|profit', 'fresh2@rho0.2|F010|X7-SC|profit', 'fresh2@rho0.2|F011|D2+H3|profit', 'fresh2@rho0.2|F011|X7-SC|profit', 'fresh2@rho0.2|F100|D2+H3|profit', 'fresh2@rho0.2|F100|X7-SC|profit', 'fresh2@rho0.2|F101|D2+H3|profit', 'fresh2@rho0.2|F101|X7-SC|profit', 'fresh2@rho0.2|F110|D2+H3|profit', 'fresh2@rho0.2|F110|X7-SC|profit', 'fresh2@rho0.2|F111|D2+H3|profit', 'fresh2@rho0.2|F111|X7-SC|profit', 'fresh3@rho0.2|C*/S0|D2+H3|profit', 'fresh3@rho0.2|C*/S0|X7-SC|profit', 'fresh3@rho0.2|C*|D2+H3|profit', 'fresh3@rho0.2|C*|X7-SC|profit', 'fresh3@rho0.2|F000|D2+H3|profit', 'fresh3@rho0.2|F000|X7-SC|profit', 'fresh3@rho0.2|F001|D2+H3|profit', 'fresh3@rho0.2|F001|X7-SC|profit', 'fresh3@rho0.2|F010|D2+H3|profit', 'fresh3@rho0.2|F010|X7-SC|profit', 'fresh3@rho0.2|F011|D2+H3|profit', 'fresh3@rho0.2|F011|X7-SC|profit', 'fresh3@rho0.2|F100|D2+H3|profit', 'fresh3@rho0.2|F100|X7-SC|profit', 'fresh3@rho0.2|F101|D2+H3|profit', 'fresh3@rho0.2|F101|X7-SC|profit', 'fresh3@rho0.2|F110|D2+H3|profit', 'fresh3@rho0.2|F110|X7-SC|profit', 'fresh3@rho0.2|F111|D2+H3|profit', 'fresh3@rho0.2|F111|X7-SC|profit', 'fresh4@rho0.2|C*/S0|D2+H3|profit', 'fresh4@rho0.2|C*/S0|X7-SC|profit', 'fresh4@rho0.2|C*|D2+H3|profit', 'fresh4@rho0.2|C*|X7-SC|profit', 'fresh4@rho0.2|F000|D2+H3|profit', 'fresh4@rho0.2|F000|X7-SC|profit', 'fresh4@rho0.2|F001|D2+H3|profit', 'fresh4@rho0.2|F001|X7-SC|profit', 'fresh4@rho0.2|F010|D2+H3|profit', 'fresh4@rho0.2|F010|X7-SC|profit', 'fresh4@rho0.2|F011|D2+H3|profit', 'fresh4@rho0.2|F011|X7-SC|profit', 'fresh4@rho0.2|F100|D2+H3|profit', 'fresh4@rho0.2|F100|X7-SC|profit', 'fresh4@rho0.2|F101|D2+H3|profit', 'fresh4@rho0.2|F101|X7-SC|profit', 'fresh4@rho0.2|F110|D2+H3|profit', 'fresh4@rho0.2|F110|X7-SC|profit', 'fresh4@rho0.2|F111|D2+H3|profit', 'fresh4@rho0.2|F111|X7-SC|profit', 'fresh5@rho0.2|C*/S0|D2+H3|profit', 'fresh5@rho0.2|C*/S0|X7-SC|profit', 'fresh5@rho0.2|C*|D2+H3|profit', 'fresh5@rho0.2|C*|X7-SC|profit', 'fresh5@rho0.2|F000|D2+H3|profit', 'fresh5@rho0.2|F000|X7-SC|profit', 'fresh5@rho0.2|F001|D2+H3|profit', 'fresh5@rho0.2|F001|X7-SC|profit', 'fresh5@rho0.2|F010|D2+H3|profit', 'fresh5@rho0.2|F010|X7-SC|profit', 'fresh5@rho0.2|F011|D2+H3|profit', 'fresh5@rho0.2|F011|X7-SC|profit', 'fresh5@rho0.2|F100|D2+H3|profit', 'fresh5@rho0.2|F100|X7-SC|profit', 'fresh5@rho0.2|F101|D2+H3|profit', 'fresh5@rho0.2|F101|X7-SC|profit', 'fresh5@rho0.2|F110|D2+H3|profit', 'fresh5@rho0.2|F110|X7-SC|profit', 'fresh5@rho0.2|F111|D2+H3|profit', 'fresh5@rho0.2|F111|X7-SC|profit', 'reference/fresh0@rho0.2/C*', 'reference/fresh0@rho0.2/F111', 'reference/fresh1@rho0.2/C*', 'reference/fresh1@rho0.2/F111', 'reference/fresh2@rho0.2/C*', 'reference/fresh2@rho0.2/F111', 'reference/fresh3@rho0.2/C*', 'reference/fresh3@rho0.2/F111', 'reference/fresh4@rho0.2/C*', 'reference/fresh4@rho0.2/F111', 'reference/fresh5@rho0.2/C*', 'reference/fresh5@rho0.2/F111'], 'status': {'descriptive': 'fulfilled', 'numerical': 'fulfilled', 'q3': 'fulfilled'}}}, 'decision': True, 'flagged': ['fresh0@rho0.2|C*|D2+H3|profit', 'fresh1@rho0.2|C*|D2+H3|profit', 'fresh1@rho0.2|F111|D2+H3|profit', 'fresh3@rho0.2|C*|D2+H3|profit', 'fresh4@rho0.2|F111|D2+H3|profit'], 'status': {'descriptive': 'fulfilled', 'numerical': 'fulfilled', 'q3': 'fulfilled'}})
+
+hook: PostToolUse Completed
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+The tallies and six exemptions match the eligibility data. The text separates numerical scoring from eligibility analysis. I found two remaining uses of “required search” in the revised paragraph and caption. I will check the cell-level results and site values next.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "python3 -B -c 'import json,sys,importlib.util; from pathlib import Path; from collections import Counter
+root=Path(\"docs/revision/paper-v2\"); sys.path.insert(0,str(root.resolve()))
+import score_v2 as S
+import tables_v2 as T
+e=json.load(open(\"/Users/oemer.demirel/Projects/touchstone/results/v2/paper/eligibility.json\")); flagged=set(e[\"flagged\"]); sc={p:{\"status\":v[\"status\"][\"numerical\"],\"cells\":[{\"cell\":n,\"status\":c[\"status\"][\"numerical\"]} for n,c in v[\"cells\"].items()]} for p,v in e[\"targets\"].items()}
+for scope in S.SCOPES:
+ direct=S.eligibility(sc,flagged,scope)
+ assert S.tally(direct)==e[\"tally_direct_inputs\"][scope]
+ statuses=[]
+ for p,v in e[\"targets\"].items():
+  cells=[]
+  hit=(scope==\"descriptive\" and p not in S.DECISIONS) or (scope==\"q3\" and p.startswith(\"Q3-\"))
+  assert v[\"decision\"]==(p in S.DECISIONS)
+  for name,c in v[\"cells\"].items():
+   assert c[\"inputs\"]==S.inputs(p,name)
+   assert set(c[\"flagged\"])==set(c[\"required\"])&flagged
+   status=S.NA if hit and c[\"flagged\"] else c[\"status\"][\"numerical\"]
+   assert status==c[\"status\"][scope]
+   cells.append({\"status\":status})
+  status=S._combine(cells)[\"status\"]
+  assert status==v[\"status\"][scope]
+  statuses.append(status)
+ assert dict(Counter(statuses))=={k:v for k,v in e[\"tally\"][scope].items() if v}
+ print(scope,\"traced\",e[\"tally\"][scope],\"direct\",S.tally(direct))
+for base in (root,Path(\"paper\")):
+ assert T.eligibility(e)==(base/\"tables/pred_eligibility.tex\").read_text()
+ sites=json.loads((base/\"sites.json\").read_text()); nums=(base/\"numbers.tex\").read_text()
+ for key,site in sites.items():
+  if not key.startswith(\"r_pred_\") or not site[\"path\"].startswith(\"eligibility.\"): continue
+  value={\"eligibility\":e}
+  for part in site[\"path\"].split(\".\"): value=value[part]
+  assert \"site@\"+key+\"\\\\endcsname{\"+str(value)+\"}\" in nums,(key,value)
+for name in (\"main.tex\",\"sites.json\",\"numbers.tex\",\"tables/pred_eligibility.tex\"):
+ assert (root/name).read_bytes()==(Path(\"paper\")/name).read_bytes()
+print(\"PASS: all cell statuses, tallies, exemptions, generated eligibility tables, eligibility site values, mirrored files\")
+print(\"cells\",sum(len(v[\"cells\"]) for v in e[\"targets\"].values()),\"flags\",len(flagged))
+print(\"trace-only target changes\",[(p,{s: S.eligibility(sc,flagged,s)[p][\"status\"] for s in (\"q3\",\"descriptive\")},v[\"status\"]) for p,v in e[\"targets\"].items() if any(S.eligibility(sc,flagged,s)[p][\"status\"]"'!=v["status"][s] for s in ("q3","descriptive"))])
+'"'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+numerical traced {'failed': 8, 'fulfilled': 10, 'not assessed': 0} direct {'fulfilled': 10, 'failed': 8, 'not assessed': 0}
+q3 traced {'failed': 8, 'fulfilled': 6, 'not assessed': 4} direct {'fulfilled': 7, 'failed': 8, 'not assessed': 3}
+descriptive traced {'failed': 4, 'fulfilled': 5, 'not assessed': 9} direct {'fulfilled': 6, 'failed': 5, 'not assessed': 7}
+PASS: all cell statuses, tallies, exemptions, generated eligibility tables, eligibility site values, mirrored files
+cells 70 flags 21
+trace-only target changes [('Q2-d', {'q3': 'failed', 'descriptive': 'failed'}, {'descriptive': 'not assessed', 'numerical': 'failed', 'q3': 'failed'}), ('Q3-e', {'q3': 'fulfilled', 'descriptive': 'fulfilled'}, {'descriptive': 'not assessed', 'numerical': 'fulfilled', 'q3': 'not assessed'})]
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+VERDICT: accept-with-caveat
+
+CORRECTIONS:
+
+1. `paper/main.tex:293,297` and mirrored `docs/revision/paper-v2/main.tex`: Replace “flagged required search” and “search-flagged required search” with “flagged listed input or recorded ancestor.” These remaining phrases imply necessity despite the new, accurate explanation of inherited flags.
+2. `docs/revision/paper-v2/tables_v2.py:187` and `test_tables.py:167`: Change “descriptive one” to “broader one.” These are internal comments; the paper uses the corrected name. Keep the `descriptive` JSON keys unchanged.
+
+All 70 cell statuses, six exemptions, five tallies, generated table rows, and eligibility site values match the scorer and eligibility data. The text correctly separates numerical scoring from eligibility analysis. Both direct-input tallies are correct: 7/8/3 and 6/5/7.
+
+CONFIDENCE: 0.97.
+hook: Stop
+hook: Stop Completed
+tokens used
+66'701
+VERDICT: accept-with-caveat
+
+CORRECTIONS:
+
+1. `paper/main.tex:293,297` and mirrored `docs/revision/paper-v2/main.tex`: Replace “flagged required search” and “search-flagged required search” with “flagged listed input or recorded ancestor.” These remaining phrases imply necessity despite the new, accurate explanation of inherited flags.
+2. `docs/revision/paper-v2/tables_v2.py:187` and `test_tables.py:167`: Change “descriptive one” to “broader one.” These are internal comments; the paper uses the corrected name. Keep the `descriptive` JSON keys unchanged.
+
+All 70 cell statuses, six exemptions, five tallies, generated table rows, and eligibility site values match the scorer and eligibility data. The text correctly separates numerical scoring from eligibility analysis. Both direct-input tallies are correct: 7/8/3 and 6/5/7.
+
+CONFIDENCE: 0.97.

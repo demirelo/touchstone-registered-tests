@@ -166,17 +166,25 @@ def test_a_changed_bank_copy_is_refused_even_with_a_rebuilt_reference(tmp_path, 
         A.prefreeze(out, jobs, src="src")
 
 
-def test_a_full_run_needs_bound_reproduction_evidence(tmp_path, monkeypatch):
+def test_a_full_run_needs_the_verified_reset_evidence(tmp_path, monkeypatch):
     with pytest.raises(SystemExit, match="evidence"):
-        A.check_run_evidence(None, None, None, smoke=False)
+        A.check_run_evidence(None, None, None, smoke=False, want={})
     seen = []
-    monkeypatch.setattr(A.G, "check_reset_evidence", lambda m, p: seen.append((m, p)))
-    write(tmp_path / "dbl.json", {"pass": True}); A.check_run_evidence(tmp_path / "m", tmp_path / "p", tmp_path / "dbl.json", smoke=False)
-    assert seen == [(tmp_path / "m", tmp_path / "p")]
-    write(tmp_path / "bad.json", {"pass": False})
-    with pytest.raises(SystemExit, match="evidence"):
-        A.check_run_evidence(tmp_path / "m", tmp_path / "p", tmp_path / "bad.json", smoke=False)
-    A.check_run_evidence(None, None, None, smoke=True)
+    monkeypatch.setattr(A.G, "check_reset_evidence", lambda m, p, d, w: seen.append((m, p, d, w)))
+    A.check_run_evidence(tmp_path / "m", tmp_path / "p", tmp_path / "d", smoke=False, want={"budget": [5]})
+    assert seen == [(tmp_path / "m", tmp_path / "p", tmp_path / "d", {"budget": [5]})]
+    A.check_run_evidence(None, None, None, smoke=True, want={})
+
+
+def test_bank_copies_are_checked_before_reference_construction(tmp_path, monkeypatch):
+    out, jobs = _frozen_out(tmp_path, monkeypatch); bank = A.R.cell_id(CTX, "F000", "D2+H3", "profit")
+    built = []; monkeypatch.setattr(A, "run_references", lambda jobs, out: built.append(1))
+    orig = sha_file(A.R.path_of(out, bank)); monkeypatch.setattr(A, "bank_inputs", lambda src, ctxs: {bank: orig})   # the original freeze hash
+    A.reference_stage(jobs, out, "src"); assert built == [1]
+    write(A.R.path_of(out, bank), {"stage": "search", "changed": True})          # a changed copy, resumed at --stage reference
+    with pytest.raises(SystemExit, match="original freeze"):
+        A.reference_stage(jobs, out, "src")
+    assert built == [1]
 
 
 @pytest.mark.skipif(not (MAIN / "eval/all/freeze").is_dir(), reason="needs the registered evaluation records")
@@ -184,7 +192,7 @@ def test_smoke_path_for_one_fresh_market(tmp_path, monkeypatch):
     monkeypatch.setattr(A.R, "git_commit", lambda: "pinned-for-the-rerun-check")      # a commit elsewhere during the test must not change the binding
     out = tmp_path / "runnerup"
     args = ["--src", str(MAIN / "eval/all"), "--out", str(out), "--draw", str(MAIN / "draw/draw.json"), "--instances", str(MAIN / "draw/instances.json"),
-            "--cfgs", str(MAIN / "deviation/cfg_linux.json"), "--addendum", str(MAIN / "report/addendum.json"), "--markets", "fresh0", "--smoke"]
+            "--cfgs", str(MAIN / "deviation/cfg_linux.json"), "--addendum", str(MAIN / "report/addendum.json"), "--report", str(MAIN / "report/report.json"), "--markets", "fresh0", "--smoke"]
     assert A.main(args) == 0
     for fam in ("D2+H3", "X7-SC"):
         rid = A.R.cell_id(CTX, "C*", fam, "profit")
@@ -201,6 +209,15 @@ def test_smoke_path_for_one_fresh_market(tmp_path, monkeypatch):
 def test_the_run_stops_between_stages_at_the_cost_cap(tmp_path):
     out = tmp_path / "runnerup"
     args = ["--src", str(MAIN / "eval/all"), "--out", str(out), "--draw", str(MAIN / "draw/draw.json"), "--instances", str(MAIN / "draw/instances.json"),
-            "--cfgs", str(MAIN / "deviation/cfg_linux.json"), "--addendum", str(MAIN / "report/addendum.json"), "--markets", "fresh0", "--smoke",
+            "--cfgs", str(MAIN / "deviation/cfg_linux.json"), "--addendum", str(MAIN / "report/addendum.json"), "--report", str(MAIN / "report/report.json"), "--markets", "fresh0", "--smoke",
             "--cap-usd", "0.5", "--started-at", "0"]                           # epoch 0: the cap is long spent
     assert A.main(args) == 3 and read(out / "cost_stop.json")["stopped_before"] == "inputs" and (out / "inventory.json").exists()
+
+
+@pytest.mark.skipif(not (MAIN / "eval/all/freeze").is_dir(), reason="needs the registered evaluation records")
+def test_the_launchers_stop_file_stops_the_run_before_the_next_stage(tmp_path):
+    out = tmp_path / "runnerup"; stop = tmp_path / "STOP"; stop.write_text("")
+    args = ["--src", str(MAIN / "eval/all"), "--out", str(out), "--draw", str(MAIN / "draw/draw.json"), "--instances", str(MAIN / "draw/instances.json"),
+            "--cfgs", str(MAIN / "deviation/cfg_linux.json"), "--addendum", str(MAIN / "report/addendum.json"), "--report", str(MAIN / "report/report.json"),
+            "--markets", "fresh0", "--smoke", "--stop-file", str(stop)]
+    assert A.main(args) == 3 and read(out / "cost_stop.json")["stopped_before"] == "inputs"

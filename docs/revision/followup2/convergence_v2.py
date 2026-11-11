@@ -85,8 +85,35 @@ def _passes(r: dict) -> bool:
     return r["attack_change"] < THRESHOLD - 1e-12 and r["reference_change"] < THRESHOLD - 1e-12
 
 
-def passed_round(rounds: list) -> int | None:
-    return next((r["round"] for r in rounds if _passes(r)), None)
+def passed_round(rounds: list, min_rounds: int = 1) -> int | None:
+    """The first eligible passing round (from `min_rounds`)."""
+    return next((r["round"] for r in rounds if r["round"] >= min_rounds and _passes(r)), None)
+
+
+def final_status(rounds: list, outcome: str, min_rounds: int = 1) -> tuple:
+    """The reported status and pass round agree with the final outcome."""
+    status = {"passed": "passed", "round cap": "not passed at the cap", "cost cap": "stopped at the cost cap",
+              "round-1 mismatch": "stopped: round 1 differs from the registered doubling"}[outcome]
+    return status, (passed_round(rounds, min_rounds) if outcome == "passed" else None)
+
+
+def place_heldout(status: str, held: dict) -> dict:
+    """A cost-stopped cell keeps its frozen estimate as primary; its partial result goes to a separate field."""
+    return {"partial": held} if status == "stopped at the cost cap" else {"heldout": held}
+
+
+def check_rounds(max_rounds: int, gate: bool, nesting: list) -> None:
+    if not gate and nesting and max_rounds < 2:
+        _refuse("--max-rounds must be at least 2 for a continuation run with nesting cells")
+
+
+def deps_for(report, posthoc, registered_doubling, embedded) -> dict:
+    """What a result depends on besides its inputs and driver: helpers, plan, report, posthoc, the registered doubling
+    record of the cell, and the embedded doubled D2+H3 incumbent (nesting cells)."""
+    h = lambda p: sha_file(p) if p is not None and Path(p).exists() else None
+    return {"reset_followup_v2.py": h(HERE.parent / "followup" / "reset_followup_v2.py"), "guards.py": h(HERE / "guards.py"), "common.py": h(HERE / "common.py"),
+            "plan": h(HERE / "convergence-plan.md"), "report": h(report), "posthoc": h(posthoc), "registered_doubling": h(registered_doubling),
+            "embedded_incumbent": G.sha_json(embedded) if embedded is not None else None}
 
 
 def round1_agrees(r1: dict, registered: dict, tol: float = 1e-9) -> bool:
@@ -176,6 +203,13 @@ def merge_inputs(needs: list[dict]) -> dict:
     return merged
 
 
+def worker_cost_args(stop) -> tuple:
+    """The arguments a worker uses to rebuild the validated cost stop: the same cap, rate, accounting start (the recorded
+    open event), prior spend, STOP file and soft deadline."""
+    import time as _t
+    return (stop.cap, stop.rate, stop.started, _t.time, stop.prior, str(stop.stop_file) if stop.stop_file else None, stop.soft)
+
+
 def run_cell(job: dict, out, max_rounds: int = MAX_ROUNDS, src=None, cost: tuple | None = None, round_hours: float = 0.0,
              embedded: dict | None = None, min_rounds: int = 1, reference=None) -> dict:
     from sim.cell import SeedCache
@@ -212,15 +246,14 @@ def run_cell(job: dict, out, max_rounds: int = MAX_ROUNDS, src=None, cost: tuple
         outcome = decide(k, rounds[-1], gate, stopper.allow(f"round {k + 1}", round_hours) if stopper else True, max_rounds, min_rounds)
         if outcome != "continue":
             break
-    status = {"passed": "passed", "round cap": "not passed at the cap", "cost cap": "stopped at the cost cap",
-              "round-1 mismatch": "stopped: round 1 differs from the registered doubling"}[outcome]
+    status, passed = final_status(rounds, outcome, min_rounds)
     res = {"stage": "convergence", "id": job["id"], "provenance": job["provenance"], "restarts": st.restarts, "rounds": rounds, "status": status,
-           "passed_round": passed_round(rounds), "round1_gate": gate if gate is not None else "not compared (smoke)", "claim": CLAIM,
+           "passed_round": passed, "round1_gate": gate if gate is not None else "not compared (smoke)", "claim": CLAIM,
            "frozen_best_f": float(rec["attack"]["best_f"]), "embedded_doubled_d2h3": emb is not None, "min_rounds": min_rounds,
            "cost": stopper.report() if stopper else None}
     if outcome != "round-1 mismatch":
         held = R.gain_fields(R.eval_cell(job), fam, prev.best_knobs, frozen_ref, SeedCache())
-        res["heldout"] = {"knobs": dict(prev.best_knobs), "seeds": list(R.eval_cell(job).seeds), **held}
+        res.update(place_heldout(status, {"knobs": dict(prev.best_knobs), "seeds": list(R.eval_cell(job).seeds), **held}))
     return res
 
 
@@ -292,7 +325,12 @@ def main(argv=None) -> int:
     ap.add_argument("--site", choices=("mac", "pod"), default="pod", help="where this runs; a pod run is paid and needs --started-at")
     ap.add_argument("--evidence", action="append", default=[], help="gate records (Mac and pod) for the gate cells (full runs)")
     ap.add_argument("--cap-usd", dest="cap", type=float, default=4.25); ap.add_argument("--usd-per-hour", dest="rate", type=float, default=0.56)
-    ap.add_argument("--started-at", dest="started", type=float, default=None); ap.add_argument("--prior-spend-usd", dest="prior", type=float, default=0.0)
+    ap.add_argument("--started-at", dest="started", type=float, default=None)
+    ap.add_argument("--attempts", default=None, help="the launcher's attempts file (closed attempts count toward the cap); required for a paid run")
+    ap.add_argument("--ledger", default=str(ROOT / "docs/revision/budget-ledger.json"), help="recorded spend of earlier launches")
+    ap.add_argument("--run-tag", dest="run_tag", default=None, help="ledger tag prefix of this run's launches (e.g. convergence); required for a paid run")
+    ap.add_argument("--stop-file", dest="stop_file", default=None, help="the launcher's STOP file, checked before each stage or round")
+    ap.add_argument("--soft-deadline", dest="soft", type=float, default=None, help="the launcher's soft deadline (epoch seconds)")
     a = ap.parse_args(argv)
     G.pin_settings(); out = Path(a.out); F.check_out(out, a.src)
     if not 1 <= a.max_rounds <= MAX_ROUNDS:
@@ -301,7 +339,7 @@ def main(argv=None) -> int:
     report = json.loads(Path(a.report).read_text()); nesting = json.loads(Path(a.posthoc).read_text())["nesting"]
     root = json.loads(Path(a.draw).read_text())["hash"]; salt = json.loads(Path(a.instances).read_text())["salt_sha256"]
     params = json.loads(Path(a.params).read_text()); cfgs = {k: cfg_from_dict(v) for k, v in json.loads(Path(a.cfgs).read_text()).items()}
-    plan = cells_for(report, nesting)
+    plan = cells_for(report, nesting); check_rounds(a.max_rounds, a.gate, plan["nesting"])
     cells = a.cells.split(",") if a.cells else plan["cells"]
     if bad := [c for c in cells if c not in plan["cells"]]:
         _refuse(f"not cells of this run: {bad}")
@@ -319,16 +357,22 @@ def main(argv=None) -> int:
     needs = {j["id"]: cell_inputs(a.src, j) for j in jobs}
     F.copy_inputs(a.src, out, merge_inputs(list(needs.values())))     # one call: the helper refuses added keys
     drv = sha_file(Path(__file__))
-    bind = lambda j: G.binding(inputs_sha=G.sha_json(needs[j["id"]]), provenance=j["provenance"], smoke=a.smoke,
-                               settings={"max_rounds": a.max_rounds, "threshold": THRESHOLD, "seeds": "1+(k-1)R", "nesting": j["id"] in plan["nesting"]},
-                               driver_sha=drv)
-    gate_cells = {c: {"inputs_sha": G.sha_json(cell_inputs(a.src, job_for(c, root, cfgs, params, salt, False))), "driver_sha": drv} for c in GATE_CELLS}
-    check_run_evidence(a.evidence, a.smoke, a.gate, gate_cells)
+    emb = lambda j: (report["doubling"].get(R.cell_id(j["context"], j["rule"], "D2+H3", "profit")) or {}).get("heldout", {}).get("knobs") if j["id"] in plan["nesting"] else None
+    dbl_rec = lambda j: Path(a.src) / "doubling" / (R._safe(j["id"]) + ".json")
+    def bind_for(j, inputs, smoke, gate):
+        st = {"max_rounds": 1 if gate else a.max_rounds, "threshold": THRESHOLD, "seeds": "1+(k-1)R", "gate": gate,
+              "nesting": (j["id"] in plan["nesting"]) and not gate}
+        return G.binding(inputs_sha=G.sha_json(inputs), provenance=j["provenance"], smoke=smoke, settings=st, driver_sha=drv,
+                         deps=deps_for(a.report, a.posthoc, dbl_rec(j), None if gate else emb(j)))
+    bind = lambda j: bind_for(j, needs[j["id"]], a.smoke, a.gate)
+    if not a.smoke and not a.gate:
+        gj = {c: job_for(c, root, cfgs, params, salt, False) for c in GATE_CELLS}
+        check_run_evidence(a.evidence, a.smoke, a.gate, {c: bind_for(j, cell_inputs(a.src, j), False, True) for c, j in gj.items()})
     t = json.loads((ROOT / "experiments/v2/benchmark/timings.json").read_text())["timings"]; ev = t["eval160"]["profit"] * 200 / 160
     hours = lambda j: ((t["doubling_x7"] if j["family"] == "X7-SC" else t["doubling"]) + ev) / 3600 + 0.1     # a round, its evaluation, shutdown
     paid = a.site == "pod" and not a.smoke
-    cost = (lambda: G.paid_cost_stop(a.cap, a.rate, a.started, a.prior)) if paid else (lambda: None)
-    stop = cost(); cargs = (a.cap, a.rate, a.started, __import__("time").time, a.prior) if paid else None
+    stop = G.paid_cost_stop(a.cap, a.rate, a.started, a.attempts, a.ledger, a.run_tag, stop_file=a.stop_file, soft_deadline=a.soft) if paid else None
+    cargs = worker_cost_args(stop) if paid else None
     files = {"driver": Path(__file__), "plan": HERE / "convergence-plan.md", "report": Path(a.report), "posthoc": Path(a.posthoc)}
     if a.gate:
         res = {}
@@ -341,7 +385,6 @@ def main(argv=None) -> int:
         return 0 if all(r["pass"] for r in res.values()) else 4
     path = lambda j: out / "convergence" / (R._safe(j["id"]) + ".json")
     todo = sorted((j for j in jobs if not G.reusable(path(j), bind(j))), key=lambda j: j["family"] != "X7-SC")   # longest first
-    emb = lambda j: (report["doubling"].get(R.cell_id(j["context"], j["rule"], "D2+H3", "profit")) or {}).get("heldout", {}).get("knobs") if j["id"] in plan["nesting"] else None
     minr = lambda j: 2 if j["id"] in plan["nesting"] else 1
     args = [(j, out, a.max_rounds, None if a.smoke else a.src, cargs, hours(j), emb(j), minr(j)) for j in todo]
     from concurrent.futures import ProcessPoolExecutor
@@ -355,7 +398,7 @@ def main(argv=None) -> int:
     status = {j["id"]: read(path(j))["status"] for j in jobs}
     mismatch = [k for k, v in status.items() if v.startswith("stopped: round 1")]
     if not a.smoke and not mismatch:
-        done = {j["id"]: bind(j) for j in jobs if "heldout" in read(path(j))}
+        done = {j["id"]: bind(j) for j in jobs if "heldout" in read(path(j))}           # cost-stopped cells keep their frozen estimates
         nest_done = {k: read(out / "convergence" / (R._safe(k) + ".json"))["heldout"]["gain"] for k in plan["nesting"] if k in done}
         write(out / "recompute.json", {**recompute(a.src, out, expected=done), "nesting_shortfall": shortfall_report(nesting, nest_done)})
     G.inventory(out, DEVIATIONS, files, argv)

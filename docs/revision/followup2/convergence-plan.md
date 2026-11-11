@@ -1,4 +1,30 @@
-# Run B, continued searches on the flagged and nesting cells: plan (draft 3, 2026-11-10; for internal review; no spend)
+# Run B, continued searches on the flagged and nesting cells: plan (draft 7, 2026-11-11; for internal review; no spend)
+
+**Draft 7 changes** (internal review round 6, `docs/revision/roster/{sol,astra}-convergence-plan-r6.md`, both reject): paid accounting counts the current pod from its recorded open event, never from a later `--started-at`
+(refusal test); the ledger must have a `spent` list of rows with a tag and a finite, nonnegative amount, and the cap,
+rate, and step estimate must be finite and valid (refusal tests); the reservation command is `budget_followup.py
+--reserve`, and its returned grant must equal the stop cap (`guards.check_grant`);
+the Mac gate is rerun under this code.
+
+**Draft 6 changes** (internal review round 5, `docs/revision/roster/{sol,astra}-convergence-plan-r5.md`, both reject): attempt records are validated strictly (finite, ordered epochs; exactly one open attempt, the current pod; an
+allocation time between that attempt's start and now; refusal tests); a launcher calls `guards.py admit` before every
+paid step, including the reset reproduction gate, with the same cap, attempts, ledger, and run tag, so earlier spend
+is counted before any paid work; the exact reservation is `budget_followup.py --reserve <tag> 3.40`, whose grant
+(3.40 x 1.25) equals the 4.25 USD stop cap (`guards.reservation_input`); obsolete attempts references removed;
+the Mac gate is rerun under this code.
+
+**Draft 5 changes** (internal review round 4, `docs/revision/roster/{sol,astra}-convergence-plan-r4.md`, both reject): the attempts handoff follows the launcher's real event format and the ledger carries earlier launches; the STOP file
+and soft deadline are checked before each round and gate cell; the Mac gate is rerun under this final code.
+
+**Draft 4 changes** (internal review round 3, `docs/revision/roster/{sol,astra}-convergence-plan-r3.md`, both reject):
+gate evidence must carry exactly the expected binding (full-budget provenance, gate settings, input hashes, driver, and
+dependencies) and, for the pod, the same numerical stack (SciPy, CMA, BLAS and LAPACK included); result and gate bindings
+include the hashes of the helper, `guards.py`, `common.py`, this plan, the report, the posthoc file, the cell's registered
+doubling record, and the embedded doubled D2+H3 incumbent (a changed incumbent changes the binding; test); a pass counts
+only from the minimum round and only with a "passed" outcome, and `--max-rounds 1` is refused for a continuation run with
+nesting cells; a cost-stopped cell keeps its frozen estimate as primary and its partial result goes to a separate field
+(`partial`), never substituted; failed-attempt spend comes from the launcher's attempts file (required); the launcher's
+stop rule is stated; the Mac gate is rerun under the final code.
 
 **Draft 3 changes.** (1) Scope (Fable 5.2 r2, new problem 2; `docs/revision/posthoc/posthoc.json` `nesting`): the X7-SC
 cells whose evaluated gain falls short of the better of the frozen and doubled D2+H3 winners by at least 0.005 join the
@@ -95,8 +121,9 @@ rugged cells. The gate is split accordingly. `convergence_v2.py --gate --site ma
 fresh1@rho0.2|F111|D2+H3|profit` on the Mac (free) compares round 1 with the frozen doubling stage run on the same machine
 (the driver reproduces the frozen code); the same with `--site pod`, first on the pod, compares round 1 with the
 registered record (the pod reproduces the registered run). Each writes `gate/<cell>__<site>.json` with the comparison,
-round 1's own values, the binding (full budget, the cell's input hashes, the driver hash), and the environment. The main
-run is refused unless both cells have a passing Mac record and a passing pod record from this machine's environment. If
+round 1's own values, the binding (full-budget provenance, gate settings, input hashes, driver, dependency hashes), and
+the environment. The main run is refused unless both cells have a passing Mac record and a passing pod record from this
+machine's numerical stack, each with exactly the binding recomputed now. If
 the pod gate fails, the run stops and is reported; the frozen estimates stay primary.
 
 ## 6. Cost and spending controls
@@ -106,16 +133,45 @@ the pod gate fails, the run stops and is reported; the frozen estimates stay pri
 hours; billed path 3.60 hours (gate, an X7-SC cell's three rounds with 16 workers starting the 9 X7-SC cells first, 0.3 h
 preparation and tail) = 2.01 USD at 0.56 USD per hour. Estimate 3.30 USD (x 1.25 = 4.12); **stop cap and reservation
 4.25 USD** in ledger category `followup` (cap 22 USD shared: reset 5, churn 8, Run A 3, Run B 4.25, total 20.25;
-`budget_followup.py reserve`). A paid run requires `--started-at <allocation time>` and a positive rate, and counts
-earlier failed attempts (`--prior-spend-usd`). Admission is checked before each gate cell and before every round of every
+`budget_followup.py reserve`). A paid run requires `--started-at <allocation time>`, a positive rate, and the launcher's attempts file
+(`--attempts`). Admission is checked before each gate cell and before every round of every
 cell, including its first, with the round's estimate plus its evaluation and a 0.1-hour shutdown allowance; a running round
-is never killed (author's instruction). A cell refused admission keeps its frozen estimate and is reported "stopped at the
-cost cap"; after the last running round finishes, the pod is deleted and verified. This is an admission limit, not a
+is never killed (author's instruction). A cell refused admission, or stopped by it after a completed round, keeps its frozen estimate as primary and is
+reported "stopped at the cost cap"; any partial result is kept under `partial` and never substituted; after the last running round finishes, the pod is deleted and verified. This is an admission limit, not a
 billing ceiling.
+
+**Launcher handoff (draft 5).** The launcher copy pushes to the pod, before every paid driver call, its current
+`<name>.attempts` file and the ledger, and passes `--attempts`, `--ledger`, `--run-tag`, `--started-at` (the current pod's
+allocation time), `--usd-per-hour` (the price ceiling MAXCPH), `--stop-file /root/STOP`, and `--soft-deadline` (its soft
+deadline). The driver reads the launcher's own event lines (`<pod> <epoch> start`, `<pod> <epoch> deleted`;
+`guards.attempts_spend`): each closed attempt counts at the ceiling, and the open start is the current pod, counted from
+its recorded `start` event (a later `--started-at` cannot shorten it; it must lie between that event and now); malformed or unordered lines are refused (tests with lines in the launcher's exact format); spend of
+earlier launches comes from the ledger rows tagged with the run tag, since the launcher truncates its file per launch. The
+driver checks the STOP file and the soft deadline before each gate cell and before every round of every cell, so it
+honours the launcher's between-stage stop without a mid-round stop (test).
+
+**Admission before every paid step (draft 6).** Before the pod's first paid step, and before each later one (the reset
+reproduction gate included), the launcher runs `python3 docs/revision/followup2/guards.py admit --cap-usd 4.25
+--usd-per-hour <ceiling> --started-at <allocation> --attempts <file> --ledger <ledger> --run-tag convergence --hours <step estimate>
+--stop-file /root/STOP --soft-deadline <soft>` and starts the step only on exit 0. Reservation: `python3 docs/revision/followup/budget_followup.py --reserve convergence-<n> 3.40`; the
+returned grant must equal 4.25 USD (`guards.check_grant`; the ledger grants less when the category is nearly full), else
+no pod. The launcher copy itself (a copy of `results/pods/reset_pod.sh`) is not part
+of this folder and is to be written and tested offline before allocation.
+
+**Launcher and the cap.** The pod launcher is a copy of `results/pods/reset_pod.sh` with `results/pods/podctl.py`. Its soft
+deadline is the cap at the price ceiling MAXCPH, counted from the first creation request of the launch, so it holds across
+attempts; at the soft deadline the remote script stops before its next stage (a STOP file read between stages), and the
+driver's own admission check (`--cap-usd`, `--started-at`, `--attempts`) stops between stages or rounds as well. A running
+stage is never stopped (the author: do not kill jobs). The single exception is the watchdog, which deletes the pod at 1.3 x
+the cap at the price ceiling; that is the only mid-stage stop. Closed attempts are listed in the launcher's
+`<name>.attempts` file (event lines `<pod> <epoch> start` and `<pod> <epoch> deleted`), which the driver reads
+(`guards.attempts_spend`) and counts toward the
+cap before each paid attempt; a paid run without it is refused (no default of zero); after the launch the spend is recorded
+in the ledger (`budget_v2.py --record`).
 
 ## 7. Steps
 
 1. Internal review to consensus; freeze the plan; save the Mac gate evidence.
 2. Reserve 4.25 USD in the ledger; one pod: the gate with `--site pod`, then `convergence_v2.py --workers 16 --evidence
-   <four gate records> --cap-usd 4.25 --started-at T`; delete and verify; record the spend.
+   <four gate records> --cap-usd 4.25 --started-at T --attempts A --ledger L --run-tag convergence --stop-file /root/STOP --soft-deadline S`; delete and verify; record the spend.
 3. Analysis on the Mac; a paper sentence and table, exploratory, after review.

@@ -225,6 +225,13 @@ cap. Stop at the cap.
 4. One pod: the reproduction gate first (bit identity, `--require-identical`; stop and report on any difference), then `--stage all` with
    `--diag-cells fresh0@rho0.2|F111|D2|profit` (inputs, search, freeze, evaluate, doubling, spot diagnostics, inventory);
    records retrieved, the pod deleted and the deletion verified, the spend recorded.
+   Launcher rule (launcher review r11): an ambiguous creation answer ends the launch with no further request; the watchdog
+   deletes any late pod and settles for 30 minutes. After any launch that ends UNRESOLVED, check the Runpod console for
+   pods named ts-r-TAG the next day and relaunch only after that check. Spend record (launcher review r16): the account
+   balance difference, `podctl.py spend ts-r-TAG`, at least one hour after the watchdog ends; it can only overstate the
+   spend (other usage on the account is included), provided no deposit or credit was added in the window. The author
+   confirms that on the Runpod billing page before the record enters the ledger (r17); a balance that rose is refused.
+   The next launch with the same name is refused until the spend is recorded. The launcher's numbers are estimates.
 5. On the Mac after retrieval: the diagnostics of all 18 D2 winners and their reverse switches (`--stage diagnostics`),
    checked against the pod's spot-check cell. The three headline cells (registered D2 records) run on the Mac before the
    pod (`--headline-diagnostics`, 200 seeds); with the 18 fresh cells this gives the 63 policies and 42 switch

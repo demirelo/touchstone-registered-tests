@@ -195,3 +195,51 @@ def test_the_mac_gate_compares_with_the_frozen_stage_on_the_same_machine(monkeyp
     monkeypatch.setattr(B, "frozen_doubling", lambda job, out: tmp_path / "local.json")
     B.gate_cell({"id": "c"}, "out", "src", "mac", {"smoke": False}); assert seen["reference"] == tmp_path / "local.json"
     B.gate_cell({"id": "c"}, "out", "src", "pod", {"smoke": False}); assert seen["reference"] is None        # the registered record
+
+
+
+# ---- round 3 ----
+
+def _rounds(*changes):
+    return [{"round": i + 1, "attack_change": a, "reference_change": 0.0} for i, a in enumerate(changes)]
+
+
+def test_a_pass_counts_only_from_the_minimum_round_and_agrees_with_the_outcome():
+    assert B.passed_round(_rounds(0.001, 0.01, 0.01), min_rounds=2) is None                 # a round-1 pass does not count for a nesting cell
+    assert B.final_status(_rounds(0.001, 0.01, 0.01), "round cap", min_rounds=2) == ("not passed at the cap", None)
+    assert B.final_status(_rounds(0.01, 0.001), "passed", min_rounds=2) == ("passed", 2)
+    assert B.final_status(_rounds(0.01, 0.01), "cost cap", min_rounds=1) == ("stopped at the cost cap", None)
+
+
+def test_a_cost_stopped_cell_keeps_its_frozen_estimate_and_files_the_partial_result():
+    held = {"gain": [0.1, 0.2]}
+    assert B.place_heldout("passed", held) == {"heldout": held}
+    assert B.place_heldout("not passed at the cap", held) == {"heldout": held}
+    assert B.place_heldout("stopped at the cost cap", held) == {"partial": held}
+
+
+def test_one_round_is_refused_for_a_continuation_run_with_nesting_cells():
+    with pytest.raises(SystemExit, match="max-rounds"):
+        B.check_rounds(1, gate=False, nesting=["x"])
+    B.check_rounds(1, gate=True, nesting=["x"]); B.check_rounds(1, gate=False, nesting=[]); B.check_rounds(2, gate=False, nesting=["x"])
+
+
+def test_bindings_change_with_the_report_the_registered_doubling_and_the_embedded_incumbent(tmp_path):
+    files = {k: tmp_path / k for k in ("report.json", "posthoc.json", "dbl.json")}
+    for p in files.values():
+        p.write_text("{}")
+    d0 = B.deps_for(files["report.json"], files["posthoc.json"], files["dbl.json"], {"u0": 0.1})
+    assert {"reset_followup_v2.py", "guards.py", "common.py", "plan", "report", "posthoc", "registered_doubling", "embedded_incumbent"} <= set(d0)
+    files["report.json"].write_text('{"changed": 1}'); assert B.deps_for(files["report.json"], files["posthoc.json"], files["dbl.json"], {"u0": 0.1}) != d0
+    files["report.json"].write_text("{}"); assert B.deps_for(files["report.json"], files["posthoc.json"], files["dbl.json"], {"u0": 0.2}) != d0
+    files["dbl.json"].write_text('{"x": 1}'); assert B.deps_for(files["report.json"], files["posthoc.json"], files["dbl.json"], {"u0": 0.1}) != d0
+
+
+def test_worker_cost_arguments_keep_the_recorded_accounting_start(tmp_path):
+    """Internal review r7 (Astra): the workers rebuild the cost stop; they must count from the recorded open event."""
+    f = tmp_path / "a.attempts"; f.write_text("p1 0 start\n"); led = tmp_path / "l.json"; write(led, {"spent": [{"op": "followup", "tag": "c-1", "usd": 2.0}]})
+    stop = B.G.paid_cost_stop(4.25, 0.56, started=3600.0, attempts=f, ledger=led, tag="c", clock=lambda: 3600.0)
+    args = B.worker_cost_args(stop)
+    assert args[2] == 0.0 and args[4] == pytest.approx(2.0)
+    w = B.G.CostStop(*args[:3], lambda: 3600.0, *args[4:])
+    assert w.allow("round 2", 3.9) is False                                     # 2.00 + 0.56 + 2.18 > 4.25, as the validated stopper says

@@ -1,0 +1,1983 @@
+OpenAI Codex v0.162.1
+--------
+workdir: /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+model: gpt-6.1-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1c8fd-4b40-7e00-907d-0bd5db92748b
+--------
+user
+# Reset pod launcher: internal review round 17 (read-only; no paid APIs; do not read `sealed/`, `~/touchstone-h4`, or `~/h4-session.out`; reasoning effort high; under 350 words)
+
+Round 16 (`docs/revision/roster/{sol,astra}-reset-plan-r16.md`) rejected the launcher. Files: `/Users/oemer.demirel/Projects/touchstone/results/pods/{reset_pod.sh,podctl.py,create_one.py,runpod.py,test_podctl.py,test_runpod.py,test_reset_pod_harness.sh}`; plan step 4 in `docs/revision/reset-experiment-plan.md`.
+
+Round-16 items:
+1. Credits (Sol 1, Astra 1): the API exposes no transaction history (GraphQL schema lookup is refused), so absence of credits cannot be verified by code. `podctl.spend` refuses a balance that rose, and its record states "valid only if no deposit or credit was added between <bal0 time> and <read time> (check the Runpod billing page)". Plan step 4: the author confirms on the billing page before the record enters the ledger. This is a stated, author-verified condition, like the 30-minute late-pod assumption.
+2. Watchdog clocks (Sol 2, Astra 2): wall time only for the hard deadline; the settle time and deletion budgets use `mono` (default `time.monotonic`). Test: a +3600 s wall jump after 30 s does not shorten the 1800 s settle.
+3. Records across launches (Sol 3, Astra 4): a launch is refused while `NAME.bal0` exists without `NAME.spent`, before any file changes; `podctl.py spend` writes `NAME.spent`; the next launch moves bal0, wdend, spent and attempts to `spend_records/NAME.<time>/`. A launch with no request moves its bal0 there as unused.
+4. Remote failures (Sol 4, Astra 3): preparation runs under `set -e` with no masking pipe; start uses `chmod ... &&`; the run counts as started only when the remote log's first line "== remote started" is seen.
+5. Unchecked writes (Astra 5): bal0 and the pending marker are written and read back before any request.
+6. Rounding (Sol 5, Astra 7): Decimal with ROUND_CEILING to the cent. Test: 10 -> 9.989999999 gives 0.02.
+7. Harness (Sol 6, Astra 6): a filtered run prints "HARNESS PARTIAL" (exit 2); OK needs all 13 scenarios. Every end state is a full anchored line; refusal scenarios check their full message start. New: an unrecorded previous spend refuses the launch and keeps its baseline.
+
+Tests: 49 pass (r17 tests seen RED). Harness: smoke of 3 instant scenarios gave PARTIAL as designed; the full 13-scenario run is going (about 3 h). The launch is gated on "HARNESS OK (13 of 13 scenarios)" and this review.
+
+Check: (1) each round-16 item is closed; (2) new defects in one pass; (3) anything that should block the pod.
+
+Output exactly:
+VERDICT: accept | accept-with-caveat | reject
+CORRECTIONS: numbered, each with file:line, or "none".
+CONFIDENCE: 0 to 1.
+
+hook: SessionStart
+hook: SessionStart Completed
+codex
+I will check the round-16 findings, the launcher, and its tests. I will keep the review read-only and avoid the excluded paths and paid APIs.
+
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg -n 'touchstone|reset.pod|podctl' /Users/oemer.demirel/.codex/memories/MEMORY.md" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+501:# Task Group: anthropic-residency-application-writing-and-touchstone-research
+510:- rollout_summaries/2026-11-03T12-32-03-zdzn-anthropic_residency_writing_touchstone_research_plan.md (cwd=/Users/oemer.demirel/Documents/Codex/2026-11-03/why-anthropic-anthropic-sets-the-frontier, rollout_path=/Users/oemer.demirel/.codex/sessions/2026/11/03/rollout-2026-11-03T13-32-03-01a1a165-260e-7180-9d34-c9dc6bf34b4d.jsonl, updated_at=2026-11-03T13:02:09+00:00, thread_id=01a1a165-260e-7180-9d34-c9dc6bf34b4d, success; application answers finalized)
+
+hook: PostToolUse
+exec
+/bin/zsh -lc "pwd && rg --files -g AGENTS.md -g '*reset-plan-r16.md' -g reset-experiment-plan.md -g '*pod*' -g create_one.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+scripts/pod_setup.sh
+docs/revision/churn/churn_pod.sh
+docs/revision/reset-experiment-plan.md
+docs/revision/roster/brief-reset-plan-r16.md
+docs/revision/roster/astra-reset-plan-r16.md
+docs/revision/roster/sol-reset-plan-r16.md
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'for p in /AGENTS.md /Users/AGENTS.md /Users/oemer.demirel/AGENTS.md /Users/oemer.demirel/Projects/AGENTS.md /Users/oemer.demirel/Projects/touchstone/AGENTS.md /Users/oemer.demirel/Projects/touchstone/results/AGENTS.md /Users/oemer.demirel/Projects/touchstone/results/pods/AGENTS.md; do if [ -f "$p" ]; then printf '"'%s\\n' \""'$p"; cat "$p"; fi; done' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+hook: PostToolUse
+exec
+/bin/zsh -lc 'wc -l /Users/oemer.demirel/Projects/touchstone/results/pods/{reset_pod.sh,podctl.py,create_one.py,runpod.py,test_podctl.py,test_runpod.py,test_reset_pod_harness.sh}; nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/podctl.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+     194 /Users/oemer.demirel/Projects/touchstone/results/pods/reset_pod.sh
+     267 /Users/oemer.demirel/Projects/touchstone/results/pods/podctl.py
+      24 /Users/oemer.demirel/Projects/touchstone/results/pods/create_one.py
+      46 /Users/oemer.demirel/Projects/touchstone/results/pods/runpod.py
+     290 /Users/oemer.demirel/Projects/touchstone/results/pods/test_podctl.py
+      13 /Users/oemer.demirel/Projects/touchstone/results/pods/test_runpod.py
+     116 /Users/oemer.demirel/Projects/touchstone/results/pods/test_reset_pod_harness.sh
+     950 total
+     1	"""Pod safety primitives for the follow-up launchers (internal reviews r8-r16 of reset_pod.sh). Every function fails
+     2	closed: a failed listing counts as "pods may still exist", and success needs a successful listing that shows no pod.
+     3	Elapsed budgets use the monotonic clock; deadlines (HARD_TS) are wall-clock epoch seconds.
+     4	
+     5	Spend (r16): the record is the account balance difference, NAME.bal0 (written before the first creation request) minus
+     6	the balance at least an hour after the watchdog ended. Other usage on the account during that time is included, so the
+     7	record can overstate the spend, never understate it. The launcher prints only estimates.
+     8	
+     9	CLI (exit 0 = success):
+    10	  podctl.py reconcile NAME [KEEP_ID]          delete every pod named NAME except KEEP_ID; verified by a fresh listing
+    11	  podctl.py delete ID SECONDS                 delete one pod and verify it is gone within SECONDS
+    12	  podctl.py price ID                          print ID's price (finite, positive); exit 1 when unknown
+    13	  podctl.py balance                           print "BALANCE SPEND_PER_HR"; exit 1 when unknown
+    14	  podctl.py spend NAME                        print the recorded spend (USD, rounded up to a cent); refused until the
+    15	                                              watchdog ended at least WAIT_AFTER_WATCHDOG s ago and no pod is named NAME
+    16	  podctl.py watchdog NAME HARD_TS DONE_FILE   after DONE_FILE, or from HARD_TS (also writes NAME.blocked): delete every
+    17	                                              pod named NAME; exits only with DONE_FILE and the settle time of empty
+    18	                                              listings; then writes NAME.wdend and releases NAME.launchlock
+    19	  podctl.py unlock NAME                       release NAME.launchlock (only an empty directory)
+    20	  podctl.py may-create NAME HARD_TS           exit 0 only before HARD_TS and while NAME.blocked does not exist
+    21	  podctl.py remaining UNTIL_TS                print the seconds left (0 when past)
+    22	"""
+    23	from __future__ import annotations
+    24	
+    25	import datetime
+    26	import json
+    27	import math
+    28	import os
+    29	import subprocess
+    30	import sys
+    31	import time
+    32	from decimal import ROUND_CEILING, Decimal, InvalidOperation
+    33	
+    34	HERE = os.path.dirname(os.path.abspath(__file__))
+    35	PY = sys.executable
+    36	
+    37	SETTLE = 300               # seconds of consecutive empty listings, counted only after DONE, before the watchdog ends
+    38	AMBIGUOUS_SETTLE = 1800    # the same while NAME.request is "pending" (an outstanding or ambiguous creation request)
+    39	WAIT_AFTER_WATCHDOG = 3600  # assumed bound on the delay before the account balance shows the last charge
+    40	
+    41	
+    42	def _run(args, timeout=60):
+    43	    try:
+    44	        r = subprocess.run([PY, os.path.join(HERE, "runpod.py")] + args, capture_output=True, text=True, timeout=timeout)
+    45	        return r.returncode, r.stdout
+    46	    except subprocess.TimeoutExpired:
+    47	        return 124, ""
+    48	
+    49	
+    50	def list_pods(run=_run, timeout=60):
+    51	    """The pods as a list, or None when the listing failed (never an empty list on failure). No command runs without a
+    52	    positive budget, and the budget is passed unchanged (r12, r13)."""
+    53	    if float(timeout) <= 0:
+    54	        return None
+    55	    rc, out = run(["list"], timeout=float(timeout))
+    56	    if rc != 0:
+    57	        return None
+    58	    try:
+    59	        pods = json.loads(out)
+    60	    except ValueError:
+    61	        return None
+    62	    return pods if isinstance(pods, list) else None
+    63	
+    64	
+    65	def named(pods, name):
+    66	    return [p["id"] for p in pods if p.get("name") == name]
+    67	
+    68	
+    69	def delete_verified(pid, seconds, run=_run, clock=time.monotonic, sleep=time.sleep):
+    70	    """Delete PID until a successful listing no longer shows it, within SECONDS of elapsed time."""
+    71	    end = clock() + seconds
+    72	    while clock() < end:
+    73	        run(["delete", pid], timeout=min(60.0, end - clock()))
+    74	        if clock() >= end:
+    75	            break
+    76	        pods = list_pods(run, min(60, end - clock()))
+    77	        if clock() < end + 1e-9 and pods is not None and pid not in [p["id"] for p in pods]:
+    78	            return clock() <= end
+    79	        sleep(min(15, max(0.0, end - clock())))
+    80	    return False
+    81	
+    82	
+    83	def reconcile(name, keep="", seconds=600, run=_run, clock=time.monotonic, sleep=time.sleep):
+    84	    """Delete every pod named NAME except KEEP; True only when a successful listing shows none left."""
+    85	    end = clock() + seconds
+    86	    while clock() < end:
+    87	        pods = list_pods(run, min(60, end - clock()))
+    88	        if pods is not None and clock() <= end:
+    89	            extra = [i for i in named(pods, name) if i != keep]
+    90	            if not extra:
+    91	                return True
+    92	            for i in extra:
+    93	                if clock() >= end:
+    94	                    break
+    95	                delete_verified(i, end - clock(), run, clock, sleep)
+    96	        sleep(min(15, max(0.0, end - clock())))
+    97	    return False
+    98	
+    99	
+   100	def may_create(name, hard_ts, clock=time.time, here=HERE):
+   101	    return clock() < hard_ts and not os.path.exists(os.path.join(here, f"{name}.blocked"))
+   102	
+   103	
+   104	def classify_creation(answer, exc=None):
+   105	    """(pod id, ambiguous) for one creation request. Only a clear client refusal (HTTP 4xx other than 408 and 429) is
+   106	    unambiguous; a timeout, exception, server or gateway error, or unreadable answer may still create a pod (r11)."""
+   107	    if exc is not None:
+   108	        return "", True
+   109	    if isinstance(answer, dict) and answer.get("id"):
+   110	        return str(answer["id"]), False
+   111	    if isinstance(answer, dict) and isinstance(answer.get("error"), int):
+   112	        code = answer["error"]
+   113	        return "", not (400 <= code < 500 and code not in (408, 429))
+   114	    return "", True
+   115	
+   116	
+   117	def _finite(v, minimum):
+   118	    try:
+   119	        v = float(v)
+   120	    except (TypeError, ValueError):
+   121	        return None
+   122	    return v if math.isfinite(v) and v >= minimum else None
+   123	
+   124	
+   125	def price_of(pod):
+   126	    """The pod's price in USD/h when it is finite and positive, else None (missing, null, zero or unreadable: r12)."""
+   127	    v = _finite((pod or {}).get("costPerHr"), 0)
+   128	    return v if v is not None and v > 0 else None
+   129	
+   130	
+   131	def price(pid, run=_run):
+   132	    pods = list_pods(run)
+   133	    pod = next((p for p in pods or [] if p.get("id") == pid), None)
+   134	    return price_of(pod)
+   135	
+   136	
+   137	def balance(run=_run):
+   138	    """(balance USD, account spend USD/h) from `runpod.py balance`, or None when either is missing or unreadable."""
+   139	    rc, out = run(["balance"], timeout=60)
+   140	    if rc != 0:
+   141	        return None
+   142	    try:
+   143	        d = json.loads(out)
+   144	    except ValueError:
+   145	        return None
+   146	    if not isinstance(d, dict):
+   147	        return None
+   148	    b, s = _finite(d.get("balance"), -math.inf), _finite(d.get("spendPerHr"), 0)
+   149	    return None if b is None or s is None else (b, s)
+   150	
+   151	
+   152	def _utc(ts):
+   153	    return datetime.datetime.fromtimestamp(ts, datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+   154	
+   155	
+   156	def spend(name, run=_run, clock=time.time, here=HERE):
+   157	    """(USD rounded up to a cent, note) or (None, reason); on success also writes NAME.spent. Needs NAME.bal0, NAME.wdend
+   158	    at least WAIT_AFTER_WATCHDOG s old, a successful listing with no pod named NAME, a readable balance, and a balance
+   159	    that did not rise (a rise proves a credit or deposit). The difference is valid only if no deposit or credit was
+   160	    added in the window (r16): the author confirms that on the Runpod billing page; the note names the window."""
+   161	    f0 = os.path.join(here, f"{name}.bal0")
+   162	    try:
+   163	        bal0 = Decimal(open(f0).read().split()[0]); t0 = os.path.getmtime(f0)
+   164	    except (OSError, IndexError, InvalidOperation):
+   165	        return None, "no starting balance (NAME.bal0)"
+   166	    try:
+   167	        wdend = float(open(os.path.join(here, f"{name}.wdend")).read().split()[0])
+   168	    except (OSError, ValueError, IndexError):
+   169	        return None, "the watchdog has not ended"
+   170	    if clock() - wdend < WAIT_AFTER_WATCHDOG:
+   171	        return None, f"wait until {WAIT_AFTER_WATCHDOG} s after the watchdog ended"
+   172	    pods = list_pods(run)
+   173	    if pods is None or named(pods, name):
+   174	        return None, "a pod named NAME may still exist"
+   175	    b = balance(run)
+   176	    if b is None:
+   177	        return None, "balance unknown"
+   178	    now = Decimal(str(b[0]))
+   179	    if now > bal0:
+   180	        return None, "the balance rose (a credit or deposit was added); take the spend from the Runpod billing page"
+   181	    usd = float((bal0 - now).quantize(Decimal("0.01"), rounding=ROUND_CEILING))
+   182	    note = (f"balance difference; valid only if no deposit or credit was added between {_utc(t0)} and {_utc(clock())} "
+   183	            f"(check the Runpod billing page)"
+   184	            + (f"; the account still bills {b[1]} USD/h elsewhere, so this overstates" if b[1] > 0 else ""))
+   185	    open(os.path.join(here, f"{name}.spent"), "w").write(f"{usd} USD {note}\n")
+   186	    return usd, note
+   187	
+   188	
+   189	def _request_pending(here, name):
+   190	    try:
+   191	        return open(os.path.join(here, f"{name}.request")).read().strip() == "pending"
+   192	    except OSError:
+   193	        return False
+   194	
+   195	
+   196	def watchdog(name, hard_ts, done_file, run=_run, clock=time.time, sleep=time.sleep, here=HERE, settle=SETTLE,
+   197	             mono=time.monotonic):
+   198	    """Ends only when DONE_FILE exists and successful listings show no pod named NAME for the settle time, counted from
+   199	    DONE onwards (r11); while NAME.request is "pending" (an outstanding or ambiguous creation request) the settle time is
+   200	    at least AMBIGUOUS_SETTLE. After DONE (the launcher reconciles first) any pod named NAME is an orphan and is deleted.
+   201	    From HARD_TS it also blocks creation and deletes every pod named NAME, with no retry limit. On exit it writes
+   202	    NAME.wdend and releases NAME.launchlock (it is the last process of a launch). Wall time (CLOCK) is used only for the
+   203	    hard deadline; the settle time and deletion budgets use MONO, so a clock change cannot shorten them (r16)."""
+   204	    blocked = False
+   205	    empty_since = None
+   206	    while True:
+   207	        if not blocked and clock() >= hard_ts:
+   208	            open(os.path.join(here, f"{name}.blocked"), "w").write(str(int(clock())))
+   209	            print(f"{time.strftime('%H:%M')} WATCHDOG: hard deadline; creation blocked; deleting every pod named {name}", flush=True)
+   210	            blocked = True
+   211	        done = os.path.exists(done_file)
+   212	        need = max(settle, AMBIGUOUS_SETTLE) if _request_pending(here, name) else settle
+   213	        if done or blocked:
+   214	            pods = list_pods(run)
+   215	            if pods is None:
+   216	                empty_since = None
+   217	            else:
+   218	                ids = named(pods, name)
+   219	                if ids:
+   220	                    empty_since = None
+   221	                    for i in ids:
+   222	                        print(f"{time.strftime('%H:%M')} WATCHDOG: deleting {i}", flush=True)
+   223	                        delete_verified(i, 120, run, mono, sleep)
+   224	                elif done:
+   225	                    empty_since = mono() if empty_since is None else empty_since
+   226	                    if mono() - empty_since >= need:
+   227	                        open(os.path.join(here, f"{name}.wdend"), "w").write(str(time.time()))
+   228	                        try:
+   229	                            os.rmdir(os.path.join(here, f"{name}.launchlock"))
+   230	                        except OSError:
+   231	                            pass
+   232	                        print(f"{time.strftime('%H:%M')} WATCHDOG: no pod named {name} for {need}s after the launcher was done; "
+   233	                              f"record the spend with `podctl.py spend {name}` from {WAIT_AFTER_WATCHDOG}s after now", flush=True)
+   234	                        return 0
+   235	                else:
+   236	                    empty_since = None
+   237	        sleep(30 if blocked else min(30, max(0.0, hard_ts - clock())) or 30)
+   238	
+   239	
+   240	def main(argv) -> int:
+   241	    cmd, a = argv[0], argv[1:]
+   242	    if cmd == "reconcile":
+   243	        return 0 if reconcile(a[0], a[1] if len(a) > 1 else "") else 1
+   244	    if cmd == "delete":
+   245	        return 0 if delete_verified(a[0], float(a[1])) else 1
+   246	    if cmd == "price":
+   247	        p = price(a[0]); print(p if p is not None else "unknown"); return 0 if p is not None else 1
+   248	    if cmd == "balance":
+   249	        b = balance(); print(f"{b[0]} {b[1]}" if b else "unknown"); return 0 if b else 1
+   250	    if cmd == "spend":
+   251	        usd, note = spend(a[0]); print(f"{usd} USD ({note})" if usd is not None else f"refused: {note}"); return 0 if usd is not None else 1
+   252	    if cmd == "watchdog":
+   253	        return watchdog(a[0], float(a[1]), a[2])
+   254	    if cmd == "unlock":      # release NAME.launchlock (an empty directory; os.rmdir refuses anything else)
+   255	        try:
+   256	            os.rmdir(os.path.join(HERE, f"{a[0]}.launchlock")); return 0
+   257	        except OSError:
+   258	            return 1
+   259	    if cmd == "may-create":
+   260	        return 0 if may_create(a[0], float(a[1])) else 1
+   261	    if cmd == "remaining":
+   262	        print(max(0, int(float(a[0]) - time.time()))); return 0
+   263	    print(__doc__); return 2
+   264	
+   265	
+   266	if __name__ == "__main__":
+   267	    sys.exit(main(sys.argv[1:]))
+
+exec
+/bin/zsh -lc 'nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/reset_pod.sh; nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/create_one.py; nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/runpod.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc 'nl -ba docs/revision/roster/sol-reset-plan-r16.md; nl -ba docs/revision/roster/astra-reset-plan-r16.md; nl -ba docs/revision/reset-experiment-plan.md' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+     1	#!/bin/bash
+     2	# Snapshot guard: run a private copy, so an edit to this file cannot reach a running launch.
+     3	if [ -z "${LAUNCH_SNAPSHOT:-}" ]; then
+     4	  snapf="/Users/oemer.demirel/Projects/touchstone/results/pods/snap_$(basename "$0" .sh)_$$.sh"; cp "$0" "$snapf"
+     5	  LAUNCH_SNAPSHOT="$snapf" exec bash "$snapf" "$@"
+     6	fi
+     7	# Reset follow-up (docs/revision/reset-experiment-plan.md, draft 5) on one Runpod CPU pod, adapted from eval_pod.sh.
+     8	# Order on the pod: the reproduction gate (bit identity, --require-identical; the author's decision), then the 18 D2 cells
+     9	# stage by stage (inputs and search with all vCPUs; evaluate, doubling and the spot diagnostics with WEVAL workers for
+    10	# memory), then the inventory. Spending (the author: do not kill jobs): at the reserved cap the pod stops BETWEEN stages
+    11	# (a STOP file the remote script reads before each stage); only at HARD x the cap is the pod deleted mid-stage, as an
+    12	# absolute guard. An EXIT/INT/TERM trap pulls what exists (only if the run started), deletes the pod and verifies it.
+    13	# Spend (r16): the record is the account balance difference (podctl.py spend NAME, at least an hour after the watchdog
+    14	# ends); this launcher prints only estimates. One launch per NAME at a time (NAME.launchlock; the watchdog releases it).
+    15	# Usage: reset_pod.sh <code_tgz> <bundle_tgz> <tag> <cap_usd> <local_out>   (no spaces in paths)
+    16	# Env: EXPECT (commit inside the code tarball), MAXCPH, optional WEVAL (default 10), MINMEM (default 28), HARD (default 1.3).
+    17	set -u
+    18	PY=/opt/homebrew/bin/python3; P=/Users/oemer.demirel/Projects/touchstone/results/pods
+    19	TGZ=${1:?code tarball}; BTGZ=${2:?bundle tarball}; TAG=${3:?tag}; CAP=${4:?cap_usd}; LOUT=${5:?local_out}; cd $P
+    20	case "$TGZ$BTGZ$TAG$LOUT" in *[[:space:]]*) echo "refused: a path or tag contains whitespace"; exit 1 ;; esac
+    21	EXPECT=${EXPECT:?commit}; MAXCPH=${MAXCPH:?max usd per hour}; WEVAL=${WEVAL:-10}; MINMEM=${MINMEM:-28}; HARD=${HARD:-1.3}
+    22	mkdir -p "$LOUT" logs_r_$TAG
+    23	$PY -c "import sys,tarfile; ms=tarfile.open(sys.argv[1]).getmembers(); d=[m.name for m in ms if m.name.split('/')[-1].startswith('._')]; o=[m.name for m in ms if m.uid!=0]; print('tarball guard: %d AppleDouble, %d non-root' % (len(d),len(o))); sys.exit(1 if d or o else 0)" "$TGZ" || { echo "code tarball refused"; exit 1; }
+    24	hg=$(mktemp -d); tar xzf "$TGZ" -C "$hg" 2>/dev/null || { echo "code tarball refused: cannot unpack"; exit 1; }
+    25	# Code guard (fails closed: every git call's status is checked): HEAD is EXPECT, protocol-v2 is an ancestor, the tree is
+    26	# clean, every path changed since the tag is in the code freeze's allowed paths, and scripts/, sim/, tests/ equal the tag.
+    27	guard() {
+    28	  cd "$1" || return 1
+    29	  [ "$(git rev-parse HEAD 2>/dev/null)" = "$EXPECT" ] || { echo "HEAD is not $EXPECT"; return 1; }
+    30	  git merge-base --is-ancestor protocol-v2 HEAD || { echo "protocol-v2 is not an ancestor"; return 1; }
+    31	  st=$(git status --porcelain) || { echo "git status failed"; return 1; }; [ -z "$st" ] || { echo "tree not clean: $st" | head -c 300; return 1; }
+    32	  ch=$(git diff --name-only protocol-v2 HEAD) || { echo "git diff failed"; return 1; }
+    33	  bad=$(echo "$ch" | grep -v -e '^docs/' -e '^experiments/v2/' -e '^paper/' -e '^sealed2/h4/' -e '^$' || true); [ -z "$bad" ] || { echo "changed outside the allowed paths: $bad" | head -c 300; return 1; }
+    34	  git diff --quiet protocol-v2 -- scripts/ sim/ tests/ || { echo "scripts/, sim/ or tests/ differ from protocol-v2"; return 1; }
+    35	  echo "code guard: ok at $(git rev-parse --short HEAD)"
+    36	}
+    37	( guard "$hg" ); g=$?; mv -- "$hg" ~/.Trash/hg_reset_$$
+    38	[ $g -eq 0 ] || { echo "code tarball refused"; exit 1; }
+    39	[ -n "${DRYRUN:-}" ] && { echo "dry run: guards passed; no pod created"; exit 0; }
+    40	# verify DIR: every record in DIR/inventory.json exists with its hash.
+    41	verify() { $PY - "$1" <<'PYV'
+    42	import hashlib, json, sys
+    43	from pathlib import Path
+    44	d = Path(sys.argv[1]); inv = json.loads((d / "inventory.json").read_text())
+    45	bad = [k for k, h in inv["records"].items() if not (d / k).is_file() or hashlib.sha256((d / k).read_bytes()).hexdigest() != h]
+    46	print(f"verify {d.name}: {len(inv['records'])} records, {len(bad)} bad"); sys.exit(1 if bad else 0)
+    47	PYV
+    48	}
+    49	tmo() { perl -e 'alarm shift; exec @ARGV' "$@"; }
+    50	NAME=ts-r-$TAG; DONE=$P/$NAME.done; ATT=$P/$NAME.attempts
+    51	rm_ok() { [ -e "$1" ] && mv -- "$1" ~/.Trash/"$(basename "$1").$$"; true; }
+    52	# One launch per NAME: the lock is taken before any marker changes; the watchdog (the last process) releases it.
+    53	mkdir "$P/$NAME.launchlock" 2>/dev/null || { echo "LOCKED: $NAME.launchlock exists (another launch or its watchdog still runs; remove it only after checking)"; exit 1; }
+    54	unlock() { $PY podctl.py unlock $NAME >/dev/null 2>&1; }
+    55	# Spend records are never overwritten (r16): a launch is refused while the previous launch's spend is unrecorded; a
+    56	# recorded one (NAME.spent, written by podctl.py spend) is moved with its inputs to spend_records/NAME.<time>/.
+    57	if [ -e "$P/$NAME.bal0" ] && [ ! -e "$P/$NAME.spent" ]; then echo "refused: the previous launch's spend is not recorded (podctl.py spend $NAME)"; unlock; exit 1; fi
+    58	if [ -e "$P/$NAME.spent" ]; then
+    59	  arch="$P/spend_records/$NAME.$(date +%s)"; mkdir -p "$arch" || { echo "refused: cannot archive the spend record"; unlock; exit 1; }
+    60	  for f in bal0 wdend spent attempts; do [ -e "$P/$NAME.$f" ] && { mv -- "$P/$NAME.$f" "$arch/" || { echo "refused: cannot archive $NAME.$f"; unlock; exit 1; }; }; done
+    61	fi
+    62	for f in "$DONE" "$P/$NAME.blocked" "$P/$NAME.request" "$P/$NAME.wdend" "$P/$NAME.ambiguous" "$P/$NAME.acct" "$P/$NAME.unpriced"; do rm_ok "$f"; done; : > "$ATT"
+    63	b0=$(tmo 90 $PY podctl.py balance) || { echo "refused: account balance unknown"; unlock; exit 1; }
+    64	echo "$b0" > "$P/$NAME.bal0" && [ -s "$P/$NAME.bal0" ] || { echo "refused: cannot write $NAME.bal0"; unlock; exit 1; }
+    65	id=""; state="NOT STARTED"; rc=1; cph=0; a0=0; tfirst=0; unresolved=""; started=""; req=0; wd=""
+    66	# Pod safety lives in podctl.py (test_podctl.py): fail-closed listing, deletion verified within
+    67	# elapsed time, reconciliation, a creation block from the hard deadline, and a watchdog that runs on after this launcher
+    68	# exits, until no pod named $NAME remains.
+    69	cleanup() {
+    70	  trap - EXIT INT TERM
+    71	  if [ -n "$id" ] && [ -n "$started" ]; then
+    72	    try=0
+    73	    while :; do   # after RUN OK: keep the pod and retry until both directories verify, or until 2 min before the hard deadline
+    74	      try=$((try+1)); ok=1
+    75	      for d in followup-reset followup-gate; do
+    76	        t=900; [ $d = followup-gate ] && t=300
+    77	        rem=$(( hard - 120 - $(date +%s) )); [ $rem -le 0 ] && { ok=0; break; }; [ $rem -lt $t ] && t=$rem
+    78	        tmo $t $PY runpod.py pull $id "/root/touchstone/results/v2/$d/" "$LOUT/$d/" >/dev/null 2>&1 || ok=0
+    79	      done
+    80	      rem=$(( hard - 120 - $(date +%s) )); [ $rem -gt 0 ] && tmo $(( rem < 300 ? rem : 300 )) $PY runpod.py pull $id /root/touchstone/results/logs/ logs_r_$TAG/ >/dev/null 2>&1
+    81	      if [ "$state" = "RUN OK" ] && [ $ok = 1 ]; then { verify "$LOUT/followup-gate" && verify "$LOUT/followup-reset"; } || ok=0; fi
+    82	      [ $ok = 1 ] && break
+    83	      echo "$(date +%H:%M) pull or verification failed (try $try)"
+    84	      if [ "$state" = "RUN OK" ]; then [ "$(date +%s)" -ge $(( hard - 120 )) ] && break; else [ $try -ge 3 ] && break; fi
+    85	      sleep 60
+    86	    done
+    87	    [ $ok = 1 ] || { [ "$state" = "RUN OK" ] && state="RUN OK BUT RECORDS NOT VERIFIED"; rc=1; }
+    88	  fi
+    89	  if [ -n "$id" ]; then
+    90	    if $PY podctl.py delete $id 1800; then echo "$(date +%H:%M) $id deleted (verified)"; echo "$id $(date +%s) deleted" >> "$ATT"; else echo "$(date +%H:%M) $id: deletion not verified in 30 min; the watchdog keeps trying (billing may continue)"; rc=1; unresolved=1; fi
+    91	  fi
+    92	  $PY podctl.py reconcile $NAME || { echo "$(date +%H:%M) reconcile failed; the watchdog keeps trying"; rc=1; unresolved=1; }
+    93	  grep -qx pending "$P/$NAME.request" 2>/dev/null && { echo "$(date +%H:%M) a creation request is outstanding or ambiguous; the watchdog settles for 30 minutes"; unresolved=1; }
+    94	  touch "$DONE"     # the watchdog then deletes any orphan pod and exits only after its settle time of empty listings
+    95	  if [ -z "$wd" ] || ! kill -0 "$wd" 2>/dev/null; then
+    96	    echo "$(date +%H:%M) WATCHDOG NOT RUNNING"; rc=1
+    97	    if [ $req = 0 ]; then unlock; else unresolved=1; echo "$(date +%H:%M) $NAME.launchlock kept: no process deletes a late pod; check the Runpod console"; fi
+    98	  fi
+    99	  if [ "$req" = 0 ] && [ -e "$P/$NAME.bal0" ]; then   # no request was sent: nothing to record; keep the baseline as unused
+   100	    mkdir -p "$P/spend_records" && mv -- "$P/$NAME.bal0" "$P/spend_records/$NAME.$(date +%s).bal0.unused"
+   101	  fi
+   102	  [ "$tfirst" -gt 0 ] && echo "$(date +%H:%M) spend estimate so far (not a record): $(( $(date +%s) - tfirst ))s at the ceiling $MAXCPH USD/h = $($PY -c "import math; print(math.ceil(($(date +%s)-$tfirst)/3600*float('$MAXCPH')*1000)/1000)") USD (pod events in $ATT)"
+   103	  [ "$req" -gt 0 ] && echo "$(date +%H:%M) record the spend with: podctl.py spend $NAME (at least 1 h after the watchdog ends; logs_r_$TAG/watchdog.log)"
+   104	  [ -n "$unresolved" ] && { echo "$(date +%H:%M) UNRESOLVED: check the Runpod console the next day before any relaunch (plan step 4)"; rc=1; }
+   105	  echo "$(date +%H:%M) end: $state"
+   106	  exit $rc
+   107	}
+   108	trap cleanup EXIT INT TERM
+   109	# Deadlines from the first creation request at the price ceiling MAXCPH (a bound across attempts).
+   110	t0=$(date +%s); soft=$(( t0 + $($PY -c "print(int(3600*float('$CAP')/float('$MAXCPH')))") )); hard=$(( t0 + $($PY -c "print(int(3600*float('$CAP')*float('$HARD')/float('$MAXCPH')))") ))
+   111	nohup $PY podctl.py watchdog $NAME $hard "$DONE" >> logs_r_$TAG/watchdog.log 2>&1 &
+   112	wd=$!; echo $wd > "$P/$NAME.wdpid"; disown
+   113	sleep 1; kill -0 "$wd" 2>/dev/null || { state="WATCHDOG DID NOT START"; exit 1; }
+   114	# One creation request at a time (create_one.py, no hidden retries). Before EVERY request: reconciliation must succeed (no
+   115	# untracked pod), the watchdog must allow creation, and the soft deadline must be ahead. An unambiguous refusal (HTTP 4xx,
+   116	# e.g. no capacity) tries the next flavor. An AMBIGUOUS answer ends creation for this launch (r11): no further request,
+   117	# so two pods can never overlap. NAME.request is "pending" from before each request until a clear answer (r15), so a stop
+   118	# during creation also makes the watchdog delete a late pod and settle for 30 minutes.
+   119	tries=0
+   120	while [ $tries -lt 3 ] && [ $req -lt 36 ]; do
+   121	  kill -0 "$wd" 2>/dev/null || { state="WATCHDOG NOT RUNNING BEFORE REQUEST $((req+1))"; exit 1; }
+   122	  $PY podctl.py reconcile $NAME || { state="RECONCILE FAILED BEFORE REQUEST $((req+1))"; exit 1; }
+   123	  $PY podctl.py may-create $NAME $hard || { state="CREATION BLOCKED (hard deadline)"; exit 1; }
+   124	  [ "$(date +%s)" -lt "$soft" ] || { state="SOFT DEADLINE BEFORE START"; exit 1; }
+   125	  [ "$tfirst" -gt 0 ] || tfirst=$(date +%s)
+   126	  cph=0; id=""
+   127	  { echo pending > "$P/$NAME.request" && grep -qx pending "$P/$NAME.request"; } || { state="CANNOT WRITE $NAME.request BEFORE REQUEST $((req+1))"; exit 1; }
+   128	  req=$((req+1))
+   129	  out=$(tmo 120 $PY create_one.py $NAME $(( (req-1) % 12 )) 2>/dev/null | tail -n 1)
+   130	  id=$(echo "$out" | $PY -c 'import sys,json; print(json.loads(sys.stdin.read()).get("id",""))' 2>/dev/null)
+   131	  amb=$(echo "$out" | $PY -c 'import sys,json; d=json.loads(sys.stdin.read() or "{}"); print(1 if d.get("ambiguous", True) else 0)' 2>/dev/null || echo 1)
+   132	  if [ -z "$id" ]; then
+   133	    if [ "$amb" = 1 ]; then echo "$(date +%H:%M) ambiguous creation answer; no further request"; state="AMBIGUOUS CREATION ANSWER (no retry)"; exit 1; fi
+   134	    echo clear > "$P/$NAME.request"; continue
+   135	  fi
+   136	  echo clear > "$P/$NAME.request"
+   137	  v=16; echo "$id $(date +%s) start" >> "$ATT"
+   138	  # Only a finite positive price at or below the ceiling is accepted; otherwise (above, missing, null, zero, failed
+   139	  # listing, timeout) the pod is deleted at once, with no retrieval (r15); the balance difference records what it cost.
+   140	  cph=$(tmo 60 $PY podctl.py price $id 2>/dev/null) || cph=""
+   141	  if ! $PY -c "import sys; sys.exit(0 if 0<float(sys.argv[1])<=float(sys.argv[2]) else 1)" "${cph:-0}" "$MAXCPH" 2>/dev/null; then
+   142	    state="PRICE ${cph:-unknown} NOT IN (0, $MAXCPH]"; echo "$(date +%H:%M) $id: $state; deleting"
+   143	    $PY podctl.py delete $id 600 && { echo "$id $(date +%s) deleted" >> "$ATT"; id=""; }; exit 1
+   144	  fi
+   145	  a0=$(date +%s); up=""; while [ "$(date +%s)" -lt "$soft" ] && [ $(( $(date +%s) - a0 )) -lt 240 ]; do r=$(tmo 30 $PY runpod.py ssh $id 'echo up' 2>/dev/null | head -c 2); [ "$r" = up ] && { up=1; break; }; sleep 10; done
+   146	  [ -n "$up" ] && break
+   147	  echo "$(date +%H:%M) $id unreachable; deleting"; $PY podctl.py delete $id 600 || { state="UNREACHABLE POD NOT DELETED"; exit 1; }; echo "$id $(date +%s) deleted" >> "$ATT"; id=""; tries=$((tries+1))
+   148	done
+   149	[ -z "$id" ] && { state="NO POD"; exit 1; }
+   150	echo "$(date +%H:%M) pod $id ($v vCPU, $cph USD/h): soft stop in $(( soft - $(date +%s) ))s, hard stop in $(( hard - $(date +%s) ))s (cap $CAP USD)"
+   151	tmo 900 $PY runpod.py push $id $TGZ /root/rc.tgz >/dev/null 2>&1 || { state="UPLOAD FAILED (code)"; exit 1; }
+   152	tmo 1800 $PY runpod.py push $id $BTGZ /root/rb.tgz >/dev/null 2>&1 || { state="UPLOAD FAILED (bundle)"; exit 1; }
+   153	tmo 900 $PY runpod.py ssh $id 'set -e; mkdir -p touchstone bundle; tar xzf rc.tgz -C touchstone; tar xzf rb.tgz -C bundle; which uv >/dev/null || { curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1; }; export PATH=$HOME/.local/bin:$PATH; cd touchstone; uv sync --frozen -q; mkdir -p results/logs' >/dev/null 2>&1 || { state="PREP FAILED (unpack or sync)"; exit 1; }
+   154	chk=$(tmo 300 $PY runpod.py ssh $id "cd touchstone; export PATH=\$HOME/.local/bin:\$PATH; echo git=\$(git rev-parse HEAD 2>&1) env=\${TOUCHSTONE_IDENTITY_SALT:-unset} bundle=\$(ls /root/bundle/eval-all/freeze | wc -l); m=\$(cat /sys/fs/cgroup/memory.max 2>/dev/null || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null); case \$m in max|''|9223372036854*) m=\$(awk '/MemTotal/ {print \$2*1024}' /proc/meminfo);; esac; echo memgb=\$((m/1073741824)); echo py=\$(uv run --frozen python -c 'import platform,numpy;print(platform.python_version(),numpy.__version__)' 2>&1 | tail -n 1 | tr ' ' _)" 2>/dev/null | tr '\n' ' ')
+   155	echo "$(date +%H:%M) prep: $chk"
+   156	case "$chk" in *"git=$EXPECT"*"env=unset"*) ;; *) state="PREP FAILED"; exit 1 ;; esac
+   157	memgb=$(echo "$chk" | sed -n 's/.*memgb=\([0-9]*\).*/\1/p'); [ -n "$memgb" ] && [ "$memgb" -ge "$MINMEM" ] || { state="PREP FAILED (memory ${memgb:-unknown} GB < $MINMEM GB)"; exit 1; }
+   158	cat > /tmp/r_remote_$TAG.sh <<EOS
+   159	#!/bin/bash
+   160	echo "== remote started \$(date +%H:%M)"
+   161	cd /root/touchstone; export OMP_NUM_THREADS=1 PATH=\$HOME/.local/bin:\$PATH; unset TOUCHSTONE_IDENTITY_SALT; unset TOUCHSTONE_LOCKED
+   162	B=/root/bundle; A="--src \$B/eval-all --draw \$B/draw/draw.json --instances \$B/draw/instances.json --cfgs \$B/deviation/cfg_linux.json --addendum \$B/report/addendum.json --report \$B/report/report.json"
+   163	D=docs/revision/followup/reset_followup_v2.py
+   164	{ [ -e /root/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE gate (cap) \$(date +%H:%M)"; exit 1; }
+   165	echo "== gate start \$(date +%H:%M)"
+   166	uv run --frozen python \$D --reproduce --require-identical --out results/v2/followup-gate --workers 1 \$A >> results/logs/r_gate.log 2>&1 || { echo "== GATE FAILED \$(date +%H:%M)"; exit 1; }
+   167	echo "== gate passed (bit-identical) \$(date +%H:%M)"
+   168	for st in inputs search freeze evaluate doubling diagnostics inventory; do
+   169	  { [ -e /root/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE \$st (cap) \$(date +%H:%M)"; exit 1; }
+   170	  w=$v; case \$st in evaluate|doubling|diagnostics) w=$WEVAL ;; esac
+   171	  echo "== stage \$st start \$(date +%H:%M) workers \$w"
+   172	  uv run --frozen python \$D --stage \$st --diag-cells 'fresh0@rho0.2|F111|D2|profit' --workers \$w --out results/v2/followup-reset \$A >> results/logs/r_run.log 2>&1 || { echo "== RUN FAILED at \$st \$(date +%H:%M)"; exit 1; }
+   173	done
+   174	echo "== RUN OK \$(date +%H:%M)"
+   175	EOS
+   176	tmo 120 $PY runpod.py push $id /tmp/r_remote_$TAG.sh /root/r_remote.sh >/dev/null 2>&1 || { state="UPLOAD FAILED (remote script)"; exit 1; }
+   177	tmo 120 $PY runpod.py ssh $id "chmod +x /root/r_remote.sh && (nohup /root/r_remote.sh > /root/touchstone/results/logs/r_remote.log 2>&1 < /dev/null &)" >/dev/null 2>&1 || { state="REMOTE START FAILED"; exit 1; }
+   178	# the run counts as started only when the remote script's first line is in its log (r16)
+   179	for i in 1 2 3 4 5 6; do sleep 10; tmo 30 $PY runpod.py ssh $id "grep -q 'remote started' /root/touchstone/results/logs/r_remote.log" >/dev/null 2>&1 && { started=1; break; }; done
+   180	[ -n "$started" ] || { state="REMOTE START FAILED (no start line)"; exit 1; }
+   181	state="RUNNING"; stopped=""
+   182	while true; do
+   183	  sleep 120
+   184	  now=$(date +%s)
+   185	  [ "$now" -ge "$hard" ] && { state="HARD DEADLINE ($HARD x cap at $MAXCPH USD/h; the watchdog deletes the pod)"; exit 1; }
+   186	  if [ "$now" -ge "$soft" ] && [ -z "$stopped" ]; then tmo 60 $PY runpod.py ssh $id 'touch /root/STOP && test -e /root/STOP' >/dev/null 2>&1 && stopped=1 && echo "$(date +%H:%M) cap reached: the pod stops after the running stage"; fi
+   187	  st=$(tmo 90 $PY runpod.py ssh $id "tail -c 240 /root/touchstone/results/logs/r_remote.log" 2>/dev/null | tr '\n' ' ')
+   188	  echo "$(date +%H:%M) [soft $(( soft - now ))s, hard $(( hard - now ))s] $st" | tail -c 320
+   189	  case "$st" in
+   190	    *"RUN OK"*) state="RUN OK"; rc=0; exit 0 ;;
+   191	    *"GATE FAILED"*) state="GATE FAILED (not bit-identical; 18 cells not started)"; exit 1 ;;
+   192	    *"RUN FAILED"*|*"STOPPED BEFORE"*) state="$(echo "$st" | grep -o '== [A-Z].*' | head -c 120)"; exit 1 ;;
+   193	  esac
+   194	done
+     1	"""One creation request per call (internal review r10: no hidden retries). Usage: create_one.py NAME INDEX
+     2	INDEX selects one (flavor, cloud) combination; prints {"id": ..., "vcpu": ...} or {"id": "", "ambiguous": bool}.
+     3	Only a clear client refusal (HTTP 4xx other than 408/429) is unambiguous (podctl.classify_creation, r11); after an
+     4	ambiguous answer the launcher sends no further request."""
+     5	import json, sys
+     6	sys.path.insert(0, "/Users/oemer.demirel/Projects/touchstone/results/pods")
+     7	from runpod import api
+     8	from podctl import classify_creation
+     9	IMAGE = "runpod/base:0.6.2-cpu"
+    10	COMBOS = [(f, c) for c in ("SECURE", "COMMUNITY") for f in ("cpu5c", "cpu3c", "cpu5g", "cpu3g", "cpu5m", "cpu3m")]
+    11	name, i = sys.argv[1], int(sys.argv[2])
+    12	if not 0 <= i < len(COMBOS):
+    13	    print(json.dumps({"id": "", "ambiguous": False, "exhausted": True})); sys.exit(1)
+    14	f, c = COMBOS[i]
+    15	r, exc = None, None
+    16	try:
+    17	    r = api("POST", "/pods", {"name": name, "computeType": "CPU", "cloudType": c, "cpuFlavorIds": [f], "cpuFlavorPriority": "availability",
+    18	                              "vcpuCount": 16, "imageName": IMAGE, "ports": ["22/tcp"], "containerDiskInGb": 20, "env": {"OMP_NUM_THREADS": "1"}})
+    19	except Exception as e:
+    20	    exc = e
+    21	pid, amb = classify_creation(r, exc)
+    22	if pid:
+    23	    print(json.dumps({"id": pid, "vcpu": 16, "flavor": f, "cloud": c})); sys.exit(0)
+    24	print(json.dumps({"id": "", "ambiguous": amb})); sys.exit(1)
+     1	"""Minimal Runpod REST helper. Usage:
+     2	  python runpod.py list | balance | get ID | delete ID | ssh ID 'cmd' | push ID LOCAL REMOTE | pull ID REMOTE LOCAL"""
+     3	import json, os, re, subprocess, sys, urllib.request
+     4	KEY = re.search(r"apikey\s*=\s*'([^']+)'", open(os.path.expanduser("~/.runpod/config.toml")).read()).group(1)
+     5	SSHKEY = os.path.expanduser("~/.runpod/ssh/runpodctl-ssh-key")
+     6	BASE = "https://rest.runpod.io/v1"
+     7	def api(method, path, body=None):
+     8	    req = urllib.request.Request(BASE + path, data=json.dumps(body).encode() if body else None, method=method,
+     9	                                 headers={"Authorization": f"Bearer {KEY}", "Content-Type": "application/json", "User-Agent": "curl/8.7.1"})
+    10	    try:
+    11	        with urllib.request.urlopen(req, timeout=60) as r:
+    12	            t = r.read().decode(); return json.loads(t) if t else None
+    13	    except urllib.error.HTTPError as e:
+    14	        return {"error": e.code, "body": e.read().decode()[:500]}
+    15	def target(pod_id):
+    16	    p = api("GET", f"/pods/{pod_id}"); pm = p.get("portMappings") or {}
+    17	    return p.get("publicIp"), pm.get("22") or pm.get(22)
+    18	def ssh(pod_id, cmd, timeout=None):
+    19	    ip, port = target(pod_id)
+    20	    return subprocess.run(["ssh", "-i", SSHKEY, "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", "-o", "LogLevel=ERROR", "-o", "ConnectTimeout=20", "-p", str(port), f"root@{ip}", cmd],
+    21	                          capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
+    22	def rsync(pod_id, src, dst, pull=False):
+    23	    ip, port = target(pod_id)
+    24	    e = f"ssh -i {SSHKEY} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -p {port}"
+    25	    a, b = (f"root@{ip}:{src}", dst) if pull else (src, f"root@{ip}:{dst}")
+    26	    return subprocess.run(["rsync", "-az", "-e", e, a, b], capture_output=True, text=True)
+    27	def main(argv) -> int:
+    28	    cmd, args = argv[0], argv[1:]
+    29	    if cmd == "list": print(json.dumps([{k: p.get(k) for k in ("id", "name", "desiredStatus", "publicIp", "portMappings", "costPerHr", "vcpuCount")} for p in api("GET", "/pods")], indent=1))
+    30	    elif cmd == "balance":   # read-only account balance (r16 spend record); any failure exits non-zero
+    31	        q = json.dumps({"query": "query { myself { clientBalance currentSpendPerHr } }"}).encode()
+    32	        req = urllib.request.Request("https://api.runpod.io/graphql", data=q, method="POST",
+    33	                                     headers={"Authorization": f"Bearer {KEY}", "Content-Type": "application/json", "User-Agent": "curl/8.7.1"})
+    34	        with urllib.request.urlopen(req, timeout=60) as r:
+    35	            m = json.loads(r.read().decode())["data"]["myself"]
+    36	        print(json.dumps({"balance": m["clientBalance"], "spendPerHr": m["currentSpendPerHr"]}))
+    37	    elif cmd == "get": print(json.dumps(api("GET", f"/pods/{args[0]}"), indent=1)[:1500])
+    38	    elif cmd == "delete": print(api("DELETE", f"/pods/{args[0]}"))
+    39	    elif cmd == "ssh": r = ssh(args[0], args[1]); print(r.stdout, r.stderr, "exit", r.returncode); return r.returncode
+    40	    elif cmd == "push": r = rsync(args[0], args[1], args[2]); print(r.stdout[-300:], r.stderr[-300:], "exit", r.returncode); return r.returncode
+    41	    elif cmd == "pull": r = rsync(args[0], args[1], args[2], pull=True); print(r.stdout[-300:], r.stderr[-300:], "exit", r.returncode); return r.returncode
+    42	    return 0
+    43	
+    44	
+    45	if __name__ == "__main__":
+    46	    sys.exit(main(sys.argv[1:]))
+
+ succeeded in 0ms:
+     1	VERDICT: reject
+     2	CORRECTIONS:
+     3	1. podctl.py:169 — Balance credits can understate spend. Starting at $100, charging $2, then crediting $10 returns −$8. Account for credits or refuse the conservative spend claim unless their absence is verified. The one-hour charge assumption does not cover this case.
+     4	2. podctl.py:181,206,209 — The watchdog uses wall time for settling and passes it into deletion, overriding the monotonic default. A simulated +3600-second clock step released the pending-request lock after only 30 elapsed seconds. Use separate monotonic timers for deletion and settling.
+     5	3. reset_pod.sh:55-56 — Reusing NAME erases the previous `.bal0` and `.wdend` before obtaining a new balance. Even a refused launch can destroy the previous spend evidence. Preserve records per launch or refuse reuse until the previous spend record is saved.
+     6	4. reset_pod.sh:141,164 — Remote failures remain hidden. The preparation command returned zero with both tar and uv failing because its final mkdir succeeded. The background-start command can also return zero when chmod or execution fails. Propagate preparation failures and verify a remote start marker before setting `started=1`. Astra 8 remains partly open.
+     7	5. podctl.py:169 — Intermediate nearest rounding can defeat upward cent rounding. Starting at 10 and ending at 9.989999999 returns 0.01; upward rounding requires 0.02. Use decimal arithmetic and round upward directly.
+     8	6. test_reset_pod_harness.sh:78,110 — `ONLY` skips scenarios but still permits `HARNESS OK`. Give partial runs a distinct result and require all 12 scenarios for full success. Keep the pod blocked until that full result passes.
+     9	
+    10	CONFIDENCE: 0.98.     1	VERDICT: reject
+     2	
+     3	CORRECTIONS:
+     4	1. `podctl.py:169`: Balance credits invalidate “never understate.” Offline reproduction: starting balance $10, usage $1, credit $5 produces recorded spend −$4. Include credits in the calculation, or require verified absence of credits throughout the measurement period. Clamping negative results does not fix this.
+     5	2. `podctl.py:181,206,208-209`: The watchdog uses wall time for settling and passes that clock into deletion. A simulated forward clock change ended the required 1800-second settle after 30 elapsed seconds. Use a separate monotonic clock for both elapsed budgets. Sol 9 remains partly open.
+     6	3. `reset_pod.sh:141,164-165`: Preparation and remote-start failures remain masked. Offline checks returned success after unpack/sync failures and after failures in the background-start command structure. Propagate each preparation failure and require confirmation from the remote process before setting `started=1`. Astra 8 remains partly open.
+     7	4. `reset_pod.sh:55-56`; `podctl.py:210-212`: The watchdog releases the launch lock before spend becomes recordable. A same-name relaunch then replaces `.bal0` and removes `.wdend`, losing the previous measurement. Preserve immutable records for each launch and prevent spend reads from mixing launches.
+     8	5. `reset_pod.sh:56,116`: Balance and pending-marker writes have unchecked exit statuses. A failed write can permit creation without a persisted baseline or pending marker. Abort before dispatch unless both required writes succeed.
+     9	6. `test_reset_pod_harness.sh:90,98-108`: Most terminal-state checks remain substring matches; several scenarios omit them. Require complete expected terminal lines where applicable. Sol 8 remains partly open. Keep launch blocked until the corrected full harness reports HARNESS OK; the reported smoke run does not meet that gate.
+    10	7. `podctl.py:169`: Rounding before `ceil` can round downward. Offline reproduction: $0.010000001 becomes $0.01 instead of $0.02. Use decimal arithmetic with upward cent rounding.
+    11	
+    12	CONFIDENCE: 0.98.     1	# Reset experiment: plan (draft 5, 2026-11-10; draft 4 had internal consensus and the author's approval, cap 10 USD; no spend yet)
+     2	
+     3	**Why.** The round-9 fresh reviewer (problem 2, `docs/paper/external-review-r9.md`): the gain is excess profit when
+     4	identity replacement is available; it does not show how much of that profit comes from the ability to replace an
+     5	identity. This plan measures that, within the searched D2 family, on the second test's markets.
+     6	
+     7	**Draft 5** (2026-11-10) applies the Fable 5.2 driver review (`docs/revision/roster/fable52-reset-driver-r1.md`, triage
+     8	`docs/paper/fable52-triage.md`): a reproduction criterion that a cross-platform run can meet, a pod gate, the driver's
+     9	location under `docs/`, the diagnostics built and run free before the pod, a doubling ground truth, and clarified scoring.
+    10	It needs one internal review round.
+    11	
+    12	**Status.** Draft 4 applied the round-3 caveats (`docs/revision/roster/{sol,astra}-reset-plan-r{1,2,3}.md`; round 3: both accept-with-caveat).
+    13	After consensus: a decision card for the author. Nothing runs before the author approves the spend. This file is frozen
+    14	(commit hash in the operations ledger) before any paid cell starts.
+    15	
+    16	## 1. What already exists (free; seen before this plan)
+    17	
+    18	The D2+H3 family is D2 plus one binary knob `x` (`sim/policies/identity.py`: `x = 1` exits in the round after a failed
+    19	audit and re-enters under a fresh identity; `x = 0` is plain D2). Design 8.1 listed D2 on all seven markets ("Matched core
+    20	extras"); budget cut 3 removed the fresh-market D2 cells, so D2 was run at the headline market only. At `headline@rho0.2`,
+    21	same 200 evaluation seeds, same frozen reference per rule (checked: `seeds` and reference `upstream` hashes equal):
+    22	
+    23	| Rule | g(D2+H3) | g(D2) | I = g(D2+H3) - g(D2) | Paired SE of I | D2+H3 doubling check |
+    24	|---|---:|---:|---:|---:|---|
+    25	| B2 | 0.5851 | 0.0027 | 0.5824 | 0.0011 | not scheduled |
+    26	| B3 (F000) | 0.3502 | 0.0435 | 0.3067 | 0.0012 | flagged |
+    27	| R3 (F111) | 0.0486 | 0.0361 | 0.0124 | 0.0009 | flagged |
+    28	| C* | 0.0872 | 0.0433 | 0.0439 | 0.0008 | not flagged |
+    29	
+    30	Source: `results/v2/eval/all/evaluate/headline@rho0.2__{rule}__{D2+H3,D2}__profit.json`, field `gain`; flags from
+    31	`report.json` `search_flagged`; the D2 cells had no scheduled doubling check. At `headline@rho1`, R3 and C* are in the
+    32	terminal-reserve collapse and I is 0.0025.
+    33	
+    34	Reading, exploratory: at the headline market the D2+H3 search leaves about 0.31 more gain than the D2 search against B3,
+    35	and about 0.01 against R3; the B3 - R3 gap is 0.302 under D2+H3 and 0.007 under D2.
+    36	
+    37	## 2. Estimand
+    38	
+    39	For rule r in {B3 (F000), R3 (F111), C*} and fresh market m:
+    40	
+    41	I(r, m) = mean over the 200 evaluation seeds of g(D2+H3 winner) - g(D2 winner),
+    42	
+    43	both against the same frozen truthful reference of (r, m), so the reference term cancels. **I is a difference between two
+    44	prescribed finite searches over nested families (D2 within D2+H3), not an identified optimal value of replacement and not
+    45	a system-wide prohibition of replacement.** The two searches differ in dimension, Sobol starts, and corner sets (D2 128,
+    46	D2+H3 256 corner vectors), with the same restart and evaluation budgets; the two winners can differ in every knob, not
+    47	only `x`. A negative I can come from search error. The fixed-policy diagnostic in section 4 separates the switch from
+    48	re-optimisation.
+    49	
+    50	## 3. Cells and execution contract
+    51	
+    52	- **New search cells.** D2 x {F000, F111, C*} x fresh0..fresh5 at rho 0.2: 18 cells, exactly the design-8.1 cells that cut
+    53	  3 removed, with their registered settings (D2 knob space and budget, the market's training seeds for search, its 200
+    54	  evaluation seeds), each with a doubling check (design 6.5, held-out evaluation of the doubled winner on the same seeds).
+    55	- **Driver.** A separate follow-up script (`docs/revision/followup/reset_followup_v2.py`, under `docs/` because the code
+    56	  freeze allows changes only there; written and tested before any spend) that
+    57	  imports the frozen stage functions of `scripts/revision_v2.py` at the protocol-v2 tag (`job`, `stage_search`, the
+    58	  evaluation and doubling stages) and builds the 18 jobs from the uncut cell list. It bypasses only three things, each
+    59	  recorded as a deviation: the fixed manifest path and cut list (`sim/manifest_v2.py` `effective`), the hard-coded doubling
+    60	  eligibility (`doublings`), and the original freeze. It writes to a new directory (`results/v2/followup-reset/`) and
+    61	  never writes to `results/v2/eval/all`.
+    62	- **Inputs the frozen stages read.** The search, evaluation, and doubling stages read their dependencies from the output
+    63	  directory (`menu()`, `reference_of()`, `select_reference()`). Before any episode, the driver copies into the new
+    64	  directory, read-only, every record those stages read for the 18 cells: the frozen reference records, the search
+    65	  records and bank-source records that build each (context, rule) menu, and the original cuts-3 bank membership. It
+    66	  takes the list from the `upstream` fields of the existing records and checks each copy's SHA-256 against them; it
+    67	  refuses on any missing record or mismatch.
+    68	- **Two freezes.** A pre-evaluation freeze after the 18 searches: selected policies, references, configurations, seeds,
+    69	  and search records, with their hashes (the frozen evaluation stage requires it). Evaluation and doubling then run
+    70	  against that freeze, and a final inventory lists every output record with its hash. The inventory is written after
+    71	  the outputs, so no record hashes itself.
+    72	- **Freeze validator.** The frozen `run()` calls `accept()`, which requires the original manifest's full record set, so it
+    73	  cannot admit the 18 restored cells. The driver therefore has its own acceptance check, run before evaluation and before
+    74	  doubling: every record of the follow-up dependency set (the copied inputs, the 18 search records, the pre-evaluation
+    75	  freeze) exists and matches its hash; the identity-salt hash matches; each new job's configuration hash equals the
+    76	  recorded container hash. Copied records keep their original provenance, including their recorded configuration
+    77	  hashes. Tests: it refuses a missing freeze, a changed selected-policy record, a changed salt, and a changed copied input.
+    78	- **References in doubling.** The held-out gain of a doubled winner uses the unchanged frozen reference. Any reference
+    79	  reselection the doubling stage computes is recorded as a diagnostic only.
+    80	- **References.** The existing frozen reference records are read, not re-selected; the driver refuses to start if any
+    81	  reference file's SHA-256 differs from the hash in the original records' `upstream`.
+    82	- **Configurations.** Linux pods from the same image as the evaluation; before any episode the driver checks that each
+    83	  fresh market's configuration hash equals the recorded container hash (`addendum.json` `deviations.configs`), so the
+    84	  new cells use the same configurations as the D2+H3 records they are paired with (the recorded 1-ulp deviation stays as
+    85	  it is).
+    86	- **Pairing and code checks (draft 5).** Before any episode the driver refuses a job whose runner, salt, configuration,
+    87	  root, seeds, rule parameters, or context differ from its frozen reference's provenance; an unknown commit; a runner or
+    88	  `sim/` that differs from protocol-v2; an output inside `--src` or `eval/all`; and a salt mismatch. The inventory records
+    89	  Python, numpy, machine, platform, and the driver's hash.
+    90	- **Validation before spend (free, on the Mac).** (a) Reproduction of the registered `headline@rho0.2|F111|D2` search and
+    91	  evaluation. Draft 4 required identical knobs and per-seed gains. Measured on 2026-11-09/10: a Mac arm64 run and a Linux
+    92	  amd64 container run both match on configuration, salt, runner, budget, rule parameters, episode count (15,660), archive
+    93	  sizes, and the twin result, with selected knobs equal to 2.6e-13 relative and per-seed gains to 2.0e-14; evaluating the
+    94	  registered knobs on the Mac gives per-seed gains within 5e-17 of the record (102 of 200 seeds bit-identical). The
+    95	  evaluation of fixed knobs is not always this close: one of the 128 corner controls of the Mac rerun differs by 1.5e-5
+    96	  with identical knobs (the other 127 within 2e-18), consistent with a near-tie flipping a discrete branch in an episode;
+    97	  in the Linux container all 128 controls are bit-identical to the record. The drift source is therefore not isolated to
+    98	  the optimiser. Last-bit
+    99	  arithmetic differences grow through the search; these runs did not reproduce bit identity across platforms, and the
+   100	  draft-4 rule is replaced as a recorded deviation. **Draft-5 criterion** (`compare()`). Exact: the provenance keys runner, salt, configuration, rule
+   101	  parameters, root, training, validation and evaluation seeds, context and budget (the commit may differ); the episode
+   102	  count; the attack and twin archive sizes; `best_source`; the discrete knobs; the search and evaluation dependency ids;
+   103	  the reference hash; the control set (knobs in order). Within 1e-9: the twin's best value. Reported, not gated: the
+   104	  corner controls' objective values (count and largest difference), because a near-tie in a non-selected corner policy
+   105	  can flip a discrete branch. Finite: the knobs, the attack, twin and control objective values, and the per-seed gains. Tolerance: continuous knobs within 1e-9 relative and per-seed
+   106	  gains within 1e-9 absolute (about 10^4 times the drift measured, and far below the paired standard error of about
+   107	  0.0009). The Mac runs pass this criterion. **Pod gate:** the pod first reruns the same reproduction (about 0.34 USD of
+   108	  billed time: 2,084 s search plus evaluation at 0.56 USD per hour); the author decided (card `touchstone-reset-repro-pass`,
+   109	  2026-11-10) that the 18 cells start only if the pod's reproduction is bit-identical (`--reproduce --require-identical`);
+   110	  any difference stops the pod and is reported. The draft-5 criterion applies to the Mac validations (`identical` requires bit-equal knobs, gains, twin value,
+   111	  attack objective and every control value). The reproduction path runs every pre-episode check
+   112	  (salt, commit, code, pairing, configuration) before its search and saves `gate.json` and an inventory with the
+   113	  environment (Python, numpy with BLAS and LAPACK, SciPy, CMA, CPU). (b) An
+   114	  integration test runs the complete path (input copies, search, pre-evaluation freeze, evaluation, doubling, inventory)
+   115	  for one fresh-market cell at smoke size, including the driver's acceptance check, which proves every dependency
+   116	  resolves (passed, 2026-11-09). (d) Doubling ground truth: the driver's doubling stage reruns the registered doubling
+   117	  check of `fresh0@rho0.2|F111|D2+H3|profit` on the Mac (`--reproduce-doubling`), after the full preflight, saving a record with provenance and dependency
+   118	  hashes, `gate.json`, and an inventory; compared by `compare_doubling()`: required fields present; finite values; exact on
+   119	  the flag, the seeds and the discrete knobs; 1e-9 on the continuous held-out knobs, the attack and reference
+   120	  changes, and the held-out per-seed gains. The saved result must pass before any pod is created. (c) Unit tests: the driver refuses a
+   121	  changed reference hash, a missing input record, a wrong configuration hash, and an output directory inside `eval/all`.
+   122	
+   123	## 4. Diagnostics (evaluation only, no search)
+   124	
+   125	For three rules on seven markets: the base and doubled D2+H3 winners (42 policies) and the base D2 winners (21; the doubled
+   126	D2 winners are not included), on the 200 evaluation seeds, re-run with reset and ban instrumentation (63 single-policy
+   127	evaluations; the existing gain records carry no reset counts, so none is reused); the selected `x`; per episode the number of resets, the probability of at least one reset, the rounds of resets,
+   128	and the rounds spent banned. Check that every D2 winner has zero resets. **Reverse switch (draft 5):** each of the 18 D2 winners re-evaluated with
+   129	`x = 1` and every other knob unchanged (18 more evaluations). The diagnostics are built and tested in the driver (`diagnostics`
+   130	stage) before any pod. Order: the instrumentation is validated on the registered headline cells before the pod; the
+   131	diagnostics of the 18 new D2 winners and their reverse switches run on the Mac after the pod's records are retrieved.
+   132	Construction: a D2 winner is embedded in D2+H3 by adding `x` (0 for itself, 1 for the reverse switch); each switch is
+   133	the mean difference of normalised profits on the evaluation seeds, the reference cancelling. Resets are the focal
+   134	provider's identities of generation 1 or more; ban rounds are the ban lengths imposed on its identities; rounds without
+   135	an offer are counted separately. Saved per policy: the seed identifiers, the per-seed normalised profits, the per-seed switch differences, and the
+   136	reset and ban counts per episode; a D2 winner with any reset stops the run. Spot check: `fresh0@rho0.2|F111` is also
+   137	diagnosed on the pod (`--diag-cells`); the Mac's reset and ban counts must equal the pod's exactly, and its numerical
+   138	values must
+   139	meet the draft-5 tolerance against it. **Fixed-policy switch:** each of the 42 D2+H3
+   140	winners re-evaluated with `x` set to 0 and every other knob unchanged (42 more; a winner that already has `x = 0` is
+   141	reported as identical and not re-run); g(winner) - g(winner, x = 0) is the effect of the switch
+   142	without re-optimisation, reported beside I.
+   143	
+   144	## 5. Analysis (fixed now)
+   145	
+   146	- **Intervals.** Per market: paired seed bootstrap (9,999 resamples, percentile, 95%), the same resampled seed indices for
+   147	  every rule and family of that market, so contrasts across rules stay paired. Pooled: equal market weights; in each
+   148	  replicate, seeds are resampled independently within each market and the pooled statistic is the mean of the six market
+   149	  means; percentile interval. Nominal and descriptive; conditional on the six markets and the frozen policies and
+   150	  references.
+   151	- **Statistics.** I(r, m) and pooled I(r); the contrasts I(B3) - I(R3) and I(C*) - I(R3); the absolute gaps
+   152	  G(D2+H3) = g_B3 - g_R3 under D2+H3 and G(D2) under D2, pooled.
+   153	- **Share.** S = 1 - pooled G(D2) / pooled G(D2+H3), a ratio of pooled contrasts, computed in every bootstrap replicate.
+   154	  S is reported only if the lower bound of pooled G(D2+H3) exceeds 0.05; otherwise "not defined". No clipping; S can be
+   155	  negative or above 1. The absolute gaps are always reported beside it.
+   156	- **Market sensitivity (draft 5).** The sign count of I(B3) - I(R3) and I(C*) - I(R3) over the six markets, and S with
+   157	  each market left out in turn (six values), each with its own five-market denominator gate (lower bound of the
+   158	  five-market pooled G(D2+H3) above 0.05; otherwise that value is "not defined"), for the base and the doubled results
+   159	  separately. A nested best-of sensitivity (the better of the D2 and D2+H3 winners per cell) is deferred: it is not
+   160	  part of this plan.
+   161	- **Doubling flags.** For each D2 cell, the attack change and the reference-reselection change of its doubling check are
+   162	  reported separately.
+   163	- **Doubled versions** of the same statistics, as in the paper's `tab:ph-doubled`. The base (frozen) searches are primary,
+   164	  as in the paper; the doubled versions are reported beside them.
+   165	- No confirmatory test, no multiplicity family, no change to any registered decision.
+   166	
+   167	## 6. Pre-specified expectations and labels
+   168	
+   169	Written before any fresh D2 result exists. **The six markets, their seeds, and their D2+H3 outcomes were already observed;
+   170	only the D2 outcomes are unseen.** This is a descriptive follow-up specified on 2026-11-09 after the round-9 review and
+   171	after the headline contrast was seen, not an independent replication.
+   172	
+   173	Expectations: on all six fresh markets (each market counted; a single market against it fails the expectation), I(B3) > I(R3) and I(C*) > I(R3); pooled S defined and greater than 0.5. Expectations are
+   174	scored on point estimates (this is a descriptive follow-up; "met" does not mean that an interval excludes the threshold),
+   175	with the denominator gate of section 5 applied separately to the base and the doubled results. Each expectation is
+   176	scored as met, failed, or not established: **met** if it holds under both the base and the doubled searches; **failed** if
+   177	it fails under both; **not established (search-sensitive)** if the two disagree. An undefined S and a missing cell are
+   178	reported as such, separately from failures. A failure is not read as evidence for any particular cause (search error and
+   179	mixed outcomes are possible). Only if the pooled-S expectation is met may the paper say: within the D2 family, at the
+   180	fixed parameters and search budgets, most of the estimated B3 - R3 gap under the prescribed searches disappears when the
+   181	attacker cannot replace its identity.
+   182	
+   183	## 7. Cost
+   184	
+   185	**Work.** Measured benchmark (`experiments/v2/benchmark/timings.json`): one unit = a headline D2+H3 cell, 0.579
+   186	core-hours. Per D2 cell: 1 unit + 160 further seeds (0.046) + doubling with held-out evaluation (0.479); 18 cells = 27.45
+   187	units. Diagnostics: 63 instrumented evaluations + up to 42 switch evaluations = up to 105 single-policy evaluations of
+   188	200 episodes, priced conservatively at the profit-evaluation stage's cost for 200 seeds (0.058 units each, although that
+   189	stage evaluates more than one profile) = about 6.1 units. Total about 33.6 units = **about 19.4 core-hours**. Draft 5
+   190	moves the diagnostics to the Mac (free) and adds the pod gate (about 0.34 USD); the pod estimate below is kept as an
+   191	upper bound.
+   192	
+   193	**Billed pod time.** One 16-vCPU pod at the recorded 0.56 USD per hour; searches with 16 workers, evaluation, doubling,
+   194	and diagnostics with at most 10 (operations ledger). Stage schedule with incomplete worker batches and equal benchmark
+   195	task times: searches, evaluation, and doubling about 1.77 hours (internal review's computation); diagnostics about 0.6
+   196	hours (105 evaluations in batches of 10); preparation 0.3 hours; idle tail 0.3 hours = **about 3.0 billed hours, about
+   197	1.66 USD**. The benchmark's unit price (0.0625 USD per unit, at its 0.108 USD per core-hour) gives about 2.10 USD; the plan
+   198	uses the larger.
+   199	
+   200	| Item | Estimate | Cap |
+   201	|---|---:|---:|
+   202	| Option A: 18 D2 cells, doubling checks, diagnostics | 1.66 to 2.10 USD | **10.00 USD** (author, 2026-11-09) |
+   203	
+   204	A failed attempt counts toward the cap; the cap leaves room for one early failure, not for a full second run. Option B (an X7-SC variant with replacement disabled) is dropped from this plan: its
+   205	constrained family, incumbents, and corner controls would need their own specification (the frozen X7-SC search inserts
+   206	D2+H3 incumbents that can replace), so it is not offered for approval.
+   207	
+   208	**Budget.** `docs/revision/budget-ledger.json`: spent 50.869 USD of the 55 USD approval limit. The author approved option A
+   209	on the board on 2026-11-09 and set the cap to 10 USD ("make the cap $10 to ensure we're not blocked by a low cap"). The
+   210	ledger needs a new category `followup` with cap 10.00 and the approval limit raised to 61 USD (50.869 + 10 = 60.869,
+   211	`python3 -c "print(50.869+10)"`). `scripts/budget_v2.py` is frozen, so the tested wrapper
+   212	`docs/revision/followup/budget_followup.py --approve 61 10 TEXT` records both, refuses a limit below spend plus the cap,
+   213	and keeps the earlier approval text. The estimate is unchanged (1.66 to 2.10 USD); the higher cap only prevents a stop from a low
+   214	cap. Stop at the cap.
+   215	
+   216	## 8. Steps
+   217	
+   218	1. Internal review of this plan to consensus; freeze it (commit).
+   219	2. Decision card: approved on 2026-11-09, cap 10 USD (card `touchstone-reset-spend`).
+   220	3. On approval: write and test the driver (TDD); on the Mac (free), validations (a), (b) and (d) must pass through the
+   221	   corrected paths (preflight run, record with provenance and dependency hashes, `gate.json` and an inventory saved in a
+   222	   new directory each: `results/v2/followup-repro-v2`, `results/v2/followup-repro-doubling-v2`); earlier passes on the
+   223	   older path do not count and the diagnostics are validated on the registered headline
+   224	   cells, all before any pod is created.
+   225	4. One pod: the reproduction gate first (bit identity, `--require-identical`; stop and report on any difference), then `--stage all` with
+   226	   `--diag-cells fresh0@rho0.2|F111|D2|profit` (inputs, search, freeze, evaluate, doubling, spot diagnostics, inventory);
+   227	   records retrieved, the pod deleted and the deletion verified, the spend recorded.
+   228	   Launcher rule (launcher review r11): an ambiguous creation answer ends the launch with no further request; the watchdog
+   229	   deletes any late pod and settles for 30 minutes. After any launch that ends UNRESOLVED, check the Runpod console for
+   230	   pods named ts-r-TAG the next day and relaunch only after that check. Spend record (launcher review r16): the account
+   231	   balance difference, `podctl.py spend ts-r-TAG`, at least one hour after the watchdog ends; it can only overstate the
+   232	   spend (other usage on the account is included), provided no deposit or credit was added in the window. The author
+   233	   confirms that on the Runpod billing page before the record enters the ledger (r17); a balance that rose is refused.
+   234	   The next launch with the same name is refused until the spend is recorded. The launcher's numbers are estimates.
+   235	5. On the Mac after retrieval: the diagnostics of all 18 D2 winners and their reverse switches (`--stage diagnostics`),
+   236	   checked against the pod's spot-check cell. The three headline cells (registered D2 records) run on the Mac before the
+   237	   pod (`--headline-diagnostics`, 200 seeds); with the 18 fresh cells this gives the 63 policies and 42 switch
+   238	   comparisons of section 4 plus the 21 reverse switches.
+   239	6. Analysis: a new `reset` block in `posthoc_v2.py` (tested first), a table, and a paragraph in section 9 with sites; the
+   240	   section-1 headline numbers enter at the same time, labelled exploratory.
+   241	7. Internal review of the paper change, then the next external package.
+
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/podctl.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+     1	"""Pod safety primitives for the follow-up launchers (internal reviews r8-r16 of reset_pod.sh). Every function fails
+     2	closed: a failed listing counts as "pods may still exist", and success needs a successful listing that shows no pod.
+     3	Elapsed budgets use the monotonic clock; deadlines (HARD_TS) are wall-clock epoch seconds.
+     4	
+     5	Spend (r16): the record is the account balance difference, NAME.bal0 (written before the first creation request) minus
+     6	the balance at least an hour after the watchdog ended. Other usage on the account during that time is included, so the
+     7	record can overstate the spend, never understate it. The launcher prints only estimates.
+     8	
+     9	CLI (exit 0 = success):
+    10	  podctl.py reconcile NAME [KEEP_ID]          delete every pod named NAME except KEEP_ID; verified by a fresh listing
+    11	  podctl.py delete ID SECONDS                 delete one pod and verify it is gone within SECONDS
+    12	  podctl.py price ID                          print ID's price (finite, positive); exit 1 when unknown
+    13	  podctl.py balance                           print "BALANCE SPEND_PER_HR"; exit 1 when unknown
+    14	  podctl.py spend NAME                        print the recorded spend (USD, rounded up to a cent); refused until the
+    15	                                              watchdog ended at least WAIT_AFTER_WATCHDOG s ago and no pod is named NAME
+    16	  podctl.py watchdog NAME HARD_TS DONE_FILE   after DONE_FILE, or from HARD_TS (also writes NAME.blocked): delete every
+    17	                                              pod named NAME; exits only with DONE_FILE and the settle time of empty
+    18	                                              listings; then writes NAME.wdend and releases NAME.launchlock
+    19	  podctl.py unlock NAME                       release NAME.launchlock (only an empty directory)
+    20	  podctl.py may-create NAME HARD_TS           exit 0 only before HARD_TS and while NAME.blocked does not exist
+    21	  podctl.py remaining UNTIL_TS                print the seconds left (0 when past)
+    22	"""
+    23	from __future__ import annotations
+    24	
+    25	import datetime
+    26	import json
+    27	import math
+    28	import os
+    29	import subprocess
+    30	import sys
+    31	import time
+    32	from decimal import ROUND_CEILING, Decimal, InvalidOperation
+    33	
+    34	HERE = os.path.dirname(os.path.abspath(__file__))
+    35	PY = sys.executable
+    36	
+    37	SETTLE = 300               # seconds of consecutive empty listings, counted only after DONE, before the watchdog ends
+    38	AMBIGUOUS_SETTLE = 1800    # the same while NAME.request is "pending" (an outstanding or ambiguous creation request)
+    39	WAIT_AFTER_WATCHDOG = 3600  # assumed bound on the delay before the account balance shows the last charge
+    40	
+    41	
+    42	def _run(args, timeout=60):
+    43	    try:
+    44	        r = subprocess.run([PY, os.path.join(HERE, "runpod.py")] + args, capture_output=True, text=True, timeout=timeout)
+    45	        return r.returncode, r.stdout
+    46	    except subprocess.TimeoutExpired:
+    47	        return 124, ""
+    48	
+    49	
+    50	def list_pods(run=_run, timeout=60):
+    51	    """The pods as a list, or None when the listing failed (never an empty list on failure). No command runs without a
+    52	    positive budget, and the budget is passed unchanged (r12, r13)."""
+    53	    if float(timeout) <= 0:
+    54	        return None
+    55	    rc, out = run(["list"], timeout=float(timeout))
+    56	    if rc != 0:
+    57	        return None
+    58	    try:
+    59	        pods = json.loads(out)
+    60	    except ValueError:
+    61	        return None
+    62	    return pods if isinstance(pods, list) else None
+    63	
+    64	
+    65	def named(pods, name):
+    66	    return [p["id"] for p in pods if p.get("name") == name]
+    67	
+    68	
+    69	def delete_verified(pid, seconds, run=_run, clock=time.monotonic, sleep=time.sleep):
+    70	    """Delete PID until a successful listing no longer shows it, within SECONDS of elapsed time."""
+    71	    end = clock() + seconds
+    72	    while clock() < end:
+    73	        run(["delete", pid], timeout=min(60.0, end - clock()))
+    74	        if clock() >= end:
+    75	            break
+    76	        pods = list_pods(run, min(60, end - clock()))
+    77	        if clock() < end + 1e-9 and pods is not None and pid not in [p["id"] for p in pods]:
+    78	            return clock() <= end
+    79	        sleep(min(15, max(0.0, end - clock())))
+    80	    return False
+    81	
+    82	
+    83	def reconcile(name, keep="", seconds=600, run=_run, clock=time.monotonic, sleep=time.sleep):
+    84	    """Delete every pod named NAME except KEEP; True only when a successful listing shows none left."""
+    85	    end = clock() + seconds
+    86	    while clock() < end:
+    87	        pods = list_pods(run, min(60, end - clock()))
+    88	        if pods is not None and clock() <= end:
+    89	            extra = [i for i in named(pods, name) if i != keep]
+    90	            if not extra:
+    91	                return True
+    92	            for i in extra:
+    93	                if clock() >= end:
+    94	                    break
+    95	                delete_verified(i, end - clock(), run, clock, sleep)
+    96	        sleep(min(15, max(0.0, end - clock())))
+    97	    return False
+    98	
+    99	
+   100	def may_create(name, hard_ts, clock=time.time, here=HERE):
+   101	    return clock() < hard_ts and not os.path.exists(os.path.join(here, f"{name}.blocked"))
+   102	
+   103	
+   104	def classify_creation(answer, exc=None):
+   105	    """(pod id, ambiguous) for one creation request. Only a clear client refusal (HTTP 4xx other than 408 and 429) is
+   106	    unambiguous; a timeout, exception, server or gateway error, or unreadable answer may still create a pod (r11)."""
+   107	    if exc is not None:
+   108	        return "", True
+   109	    if isinstance(answer, dict) and answer.get("id"):
+   110	        return str(answer["id"]), False
+   111	    if isinstance(answer, dict) and isinstance(answer.get("error"), int):
+   112	        code = answer["error"]
+   113	        return "", not (400 <= code < 500 and code not in (408, 429))
+   114	    return "", True
+   115	
+   116	
+   117	def _finite(v, minimum):
+   118	    try:
+   119	        v = float(v)
+   120	    except (TypeError, ValueError):
+   121	        return None
+   122	    return v if math.isfinite(v) and v >= minimum else None
+   123	
+   124	
+   125	def price_of(pod):
+   126	    """The pod's price in USD/h when it is finite and positive, else None (missing, null, zero or unreadable: r12)."""
+   127	    v = _finite((pod or {}).get("costPerHr"), 0)
+   128	    return v if v is not None and v > 0 else None
+   129	
+   130	
+   131	def price(pid, run=_run):
+   132	    pods = list_pods(run)
+   133	    pod = next((p for p in pods or [] if p.get("id") == pid), None)
+   134	    return price_of(pod)
+   135	
+   136	
+   137	def balance(run=_run):
+   138	    """(balance USD, account spend USD/h) from `runpod.py balance`, or None when either is missing or unreadable."""
+   139	    rc, out = run(["balance"], timeout=60)
+   140	    if rc != 0:
+   141	        return None
+   142	    try:
+   143	        d = json.loads(out)
+   144	    except ValueError:
+   145	        return None
+   146	    if not isinstance(d, dict):
+   147	        return None
+   148	    b, s = _finite(d.get("balance"), -math.inf), _finite(d.get("spendPerHr"), 0)
+   149	    return None if b is None or s is None else (b, s)
+   150	
+   151	
+   152	def _utc(ts):
+   153	    return datetime.datetime.fromtimestamp(ts, datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+   154	
+   155	
+   156	def spend(name, run=_run, clock=time.time, here=HERE):
+   157	    """(USD rounded up to a cent, note) or (None, reason); on success also writes NAME.spent. Needs NAME.bal0, NAME.wdend
+   158	    at least WAIT_AFTER_WATCHDOG s old, a successful listing with no pod named NAME, a readable balance, and a balance
+   159	    that did not rise (a rise proves a credit or deposit). The difference is valid only if no deposit or credit was
+   160	    added in the window (r16): the author confirms that on the Runpod billing page; the note names the window."""
+   161	    f0 = os.path.join(here, f"{name}.bal0")
+   162	    try:
+   163	        bal0 = Decimal(open(f0).read().split()[0]); t0 = os.path.getmtime(f0)
+   164	    except (OSError, IndexError, InvalidOperation):
+   165	        return None, "no starting balance (NAME.bal0)"
+   166	    try:
+   167	        wdend = float(open(os.path.join(here, f"{name}.wdend")).read().split()[0])
+   168	    except (OSError, ValueError, IndexError):
+   169	        return None, "the watchdog has not ended"
+   170	    if clock() - wdend < WAIT_AFTER_WATCHDOG:
+   171	        return None, f"wait until {WAIT_AFTER_WATCHDOG} s after the watchdog ended"
+   172	    pods = list_pods(run)
+   173	    if pods is None or named(pods, name):
+   174	        return None, "a pod named NAME may still exist"
+   175	    b = balance(run)
+   176	    if b is None:
+   177	        return None, "balance unknown"
+   178	    now = Decimal(str(b[0]))
+   179	    if now > bal0:
+   180	        return None, "the balance rose (a credit or deposit was added); take the spend from the Runpod billing page"
+   181	    usd = float((bal0 - now).quantize(Decimal("0.01"), rounding=ROUND_CEILING))
+   182	    note = (f"balance difference; valid only if no deposit or credit was added between {_utc(t0)} and {_utc(clock())} "
+   183	            f"(check the Runpod billing page)"
+   184	            + (f"; the account still bills {b[1]} USD/h elsewhere, so this overstates" if b[1] > 0 else ""))
+   185	    open(os.path.join(here, f"{name}.spent"), "w").write(f"{usd} USD {note}\n")
+   186	    return usd, note
+   187	
+   188	
+   189	def _request_pending(here, name):
+   190	    try:
+   191	        return open(os.path.join(here, f"{name}.request")).read().strip() == "pending"
+   192	    except OSError:
+   193	        return False
+   194	
+   195	
+   196	def watchdog(name, hard_ts, done_file, run=_run, clock=time.time, sleep=time.sleep, here=HERE, settle=SETTLE,
+   197	             mono=time.monotonic):
+   198	    """Ends only when DONE_FILE exists and successful listings show no pod named NAME for the settle time, counted from
+   199	    DONE onwards (r11); while NAME.request is "pending" (an outstanding or ambiguous creation request) the settle time is
+   200	    at least AMBIGUOUS_SETTLE. After DONE (the launcher reconciles first) any pod named NAME is an orphan and is deleted.
+   201	    From HARD_TS it also blocks creation and deletes every pod named NAME, with no retry limit. On exit it writes
+   202	    NAME.wdend and releases NAME.launchlock (it is the last process of a launch). Wall time (CLOCK) is used only for the
+   203	    hard deadline; the settle time and deletion budgets use MONO, so a clock change cannot shorten them (r16)."""
+   204	    blocked = False
+   205	    empty_since = None
+   206	    while True:
+   207	        if not blocked and clock() >= hard_ts:
+   208	            open(os.path.join(here, f"{name}.blocked"), "w").write(str(int(clock())))
+   209	            print(f"{time.strftime('%H:%M')} WATCHDOG: hard deadline; creation blocked; deleting every pod named {name}", flush=True)
+   210	            blocked = True
+   211	        done = os.path.exists(done_file)
+   212	        need = max(settle, AMBIGUOUS_SETTLE) if _request_pending(here, name) else settle
+   213	        if done or blocked:
+   214	            pods = list_pods(run)
+   215	            if pods is None:
+   216	                empty_since = None
+   217	            else:
+   218	                ids = named(pods, name)
+   219	                if ids:
+   220	                    empty_since = None
+   221	                    for i in ids:
+   222	                        print(f"{time.strftime('%H:%M')} WATCHDOG: deleting {i}", flush=True)
+   223	                        delete_verified(i, 120, run, mono, sleep)
+   224	                elif done:
+   225	                    empty_since = mono() if empty_since is None else empty_since
+   226	                    if mono() - empty_since >= need:
+   227	                        open(os.path.join(here, f"{name}.wdend"), "w").write(str(time.time()))
+   228	                        try:
+   229	                            os.rmdir(os.path.join(here, f"{name}.launchlock"))
+   230	                        except OSError:
+   231	                            pass
+   232	                        print(f"{time.strftime('%H:%M')} WATCHDOG: no pod named {name} for {need}s after the launcher was done; "
+   233	                              f"record the spend with `podctl.py spend {name}` from {WAIT_AFTER_WATCHDOG}s after now", flush=True)
+   234	                        return 0
+   235	                else:
+   236	                    empty_since = None
+   237	        sleep(30 if blocked else min(30, max(0.0, hard_ts - clock())) or 30)
+   238	
+   239	
+   240	def main(argv) -> int:
+   241	    cmd, a = argv[0], argv[1:]
+   242	    if cmd == "reconcile":
+   243	        return 0 if reconcile(a[0], a[1] if len(a) > 1 else "") else 1
+   244	    if cmd == "delete":
+   245	        return 0 if delete_verified(a[0], float(a[1])) else 1
+   246	    if cmd == "price":
+   247	        p = price(a[0]); print(p if p is not None else "unknown"); return 0 if p is not None else 1
+   248	    if cmd == "balance":
+   249	        b = balance(); print(f"{b[0]} {b[1]}" if b else "unknown"); return 0 if b else 1
+   250	    if cmd == "spend":
+   251	        usd, note = spend(a[0]); print(f"{usd} USD ({note})" if usd is not None else f"refused: {note}"); return 0 if usd is not None else 1
+   252	    if cmd == "watchdog":
+   253	        return watchdog(a[0], float(a[1]), a[2])
+   254	    if cmd == "unlock":      # release NAME.launchlock (an empty directory; os.rmdir refuses anything else)
+   255	        try:
+   256	            os.rmdir(os.path.join(HERE, f"{a[0]}.launchlock")); return 0
+   257	        except OSError:
+   258	            return 1
+   259	    if cmd == "may-create":
+   260	        return 0 if may_create(a[0], float(a[1])) else 1
+   261	    if cmd == "remaining":
+   262	        print(max(0, int(float(a[0]) - time.time()))); return 0
+   263	    print(__doc__); return 2
+   264	
+   265	
+   266	if __name__ == "__main__":
+   267	    sys.exit(main(sys.argv[1:]))
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/test_runpod.py; nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/test_reset_pod_harness.sh' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc 'nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/test_podctl.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+     1	"""Every test runs under a 30 s alarm (a watchdog loop must never hang the suite).
+     2	
+     3	podctl: fail-closed listing, verified deletion within elapsed time, reconciliation, creation block, sustained watchdog."""
+     4	import json
+     5	import os
+     6	import signal
+     7	
+     8	import pytest
+     9	
+    10	
+    11	@pytest.fixture(autouse=True)
+    12	def _alarm():
+    13	    signal.signal(signal.SIGALRM, lambda *a: (_ for _ in ()).throw(TimeoutError('test exceeded 30 s')))
+    14	    signal.alarm(30); yield; signal.alarm(0)
+    15	
+    16	import podctl as C
+    17	
+    18	
+    19	class Fake:
+    20	    """A fake Runpod: pods by id -> name; `fail_list` listings fail; a pod in `stuck` survives `stuck[id]` deletes."""
+    21	    def __init__(self, pods=None, fail_list=0, stuck=None, prices=None):
+    22	        self.pods = dict(pods or {}); self.fail_list = fail_list; self.stuck = dict(stuck or {}); self.t = 0.0; self.calls = []
+    23	        self.prices = dict(prices or {})
+    24	    def run(self, args, timeout=60):
+    25	        self.calls.append(args[0]); self.t += 1
+    26	        if args[0] == "list":
+    27	            if self.fail_list > 0:
+    28	                self.fail_list -= 1; return 1, ""
+    29	            return 0, json.dumps([{"id": i, "name": n, "costPerHr": self.prices.get(i, 0.5)} for i, n in self.pods.items()])
+    30	        if args[0] == "delete":
+    31	            pid = args[1]
+    32	            if self.stuck.get(pid, 0) > 0:
+    33	                self.stuck[pid] -= 1
+    34	            else:
+    35	                self.pods.pop(pid, None)
+    36	            return 0, "{}"
+    37	        return 0, ""
+    38	    def clock(self):
+    39	        return self.t
+    40	    def sleep(self, s):
+    41	        self.t += max(s, 0.01)
+    42	
+    43	
+    44	def test_a_failed_listing_is_never_an_empty_list():
+    45	    f = Fake({"a": "ts-r-x"}, fail_list=1)
+    46	    assert C.list_pods(f.run) is None and [p["id"] for p in C.list_pods(f.run)] == ["a"]
+    47	
+    48	
+    49	def test_delete_is_verified_and_bounded_by_elapsed_time():
+    50	    f = Fake({"a": "n"}, stuck={"a": 2})
+    51	    assert C.delete_verified("a", 100, f.run, f.clock, f.sleep) and "a" not in f.pods
+    52	    g = Fake({"a": "n"}, stuck={"a": 10**6})
+    53	    assert not C.delete_verified("a", 50, g.run, g.clock, g.sleep) and g.t < 50 + 20     # stops by elapsed time
+    54	
+    55	
+    56	def test_reconcile_fails_closed_on_listing_failures_and_survivors():
+    57	    f = Fake({"a": "ts-r-x", "keep": "ts-r-x", "other": "else"}, fail_list=3)
+    58	    assert C.reconcile("ts-r-x", "keep", 600, f.run, f.clock, f.sleep) and set(f.pods) == {"keep", "other"}
+    59	    g = Fake({"a": "ts-r-x"}, fail_list=10**6)                                          # listing never works
+    60	    assert not C.reconcile("ts-r-x", "", 100, g.run, g.clock, g.sleep)
+    61	    h = Fake({"a": "ts-r-x"}, stuck={"a": 10**6})                                       # deletion never takes effect
+    62	    assert not C.reconcile("ts-r-x", "", 100, h.run, h.clock, h.sleep)
+    63	
+    64	
+    65	def test_creation_is_blocked_after_the_hard_deadline_or_the_block_file(tmp_path):
+    66	    assert C.may_create("n", 10, clock=lambda: 5, here=str(tmp_path))
+    67	    assert not C.may_create("n", 10, clock=lambda: 11, here=str(tmp_path))
+    68	    (tmp_path / "n.blocked").write_text("1")
+    69	    assert not C.may_create("n", 10, clock=lambda: 5, here=str(tmp_path))
+    70	
+    71	
+    72	def test_watchdog_blocks_creation_and_keeps_deleting_until_none_remain(tmp_path):
+    73	    f = Fake({"a": "ts-r-x", "b": "ts-r-x"}, fail_list=0, stuck={"a": 30}); f.t = 100; (tmp_path / "done").write_text("")
+    74	    assert C.watchdog("ts-r-x", 50, str(tmp_path / "done"), f.run, f.clock, f.sleep, here=str(tmp_path), settle=60, mono=f.clock) == 0
+    75	    assert (tmp_path / "ts-r-x.blocked").exists() and not [i for i, n in f.pods.items() if n == "ts-r-x"]
+    76	
+    77	
+    78	def test_watchdog_waits_for_done_and_an_empty_listing_before_the_deadline(tmp_path):
+    79	    f = Fake({"a": "ts-r-x"}); done = tmp_path / "done"; done.write_text("")
+    80	    calls = {"n": 0}
+    81	    def sleep(s):
+    82	        f.t += s; calls["n"] += 1
+    83	        if calls["n"] == 3:
+    84	            f.pods.clear()                                                              # the launcher deleted its pod
+    85	    assert C.watchdog("ts-r-x", 10**6, str(done), f.run, f.clock, sleep, here=str(tmp_path), mono=f.clock) == 0
+    86	    assert not (tmp_path / "ts-r-x.blocked").exists()
+    87	
+    88	
+    89	def test_r10_delete_respects_the_budget_even_with_slow_commands():
+    90	    class Slow(Fake):
+    91	        def run(self, args, timeout=60):
+    92	            self.t += 60; return super().run(args, timeout)
+    93	    f = Slow({"a": "n"})
+    94	    assert not C.delete_verified("a", 1, f.run, f.clock, f.sleep)              # success after the budget is not success
+    95	
+    96	
+    97	def test_r10_watchdog_after_the_deadline_needs_done_and_a_settled_empty_listing(tmp_path):
+    98	    f = Fake({}); f.t = 100; done = tmp_path / "done"
+    99	    late = {"n": 0}
+   100	    def sleep(s):
+   101	        f.t += s; late["n"] += 1
+   102	        if late["n"] == 2:
+   103	            f.pods["late"] = "ts-r-x"                                             # a delayed creation appears
+   104	        if late["n"] == 6:
+   105	            done.write_text("")
+   106	    assert C.watchdog("ts-r-x", 50, str(done), f.run, f.clock, sleep, here=str(tmp_path), settle=60, mono=f.clock) == 0
+   107	    assert "late" not in f.pods and late["n"] >= 6
+   108	
+   109	
+   110	def test_r11_watchdog_before_the_deadline_settles_so_a_delayed_creation_is_deleted(tmp_path):
+   111	    # harness3 scenario 5: an ambiguous creation answer, DONE written, then the pod appears. One empty listing is not proof.
+   112	    f = Fake({}); done = tmp_path / "done"; done.write_text("")
+   113	    n = {"k": 0}
+   114	    def sleep(s):
+   115	        f.t += s; n["k"] += 1
+   116	        if n["k"] == 2:
+   117	            f.pods["late"] = "ts-r-x"
+   118	    assert C.watchdog("ts-r-x", 10**6, str(done), f.run, f.clock, sleep, here=str(tmp_path), settle=60, mono=f.clock) == 0
+   119	    assert n["k"] >= 2, "the watchdog stopped before the delayed pod appeared"
+   120	    assert "late" not in f.pods and "delete" in f.calls and not (tmp_path / "ts-r-x.blocked").exists()
+   121	
+   122	
+   123	def test_r12_settle_counts_only_after_done(tmp_path):
+   124	    # r11 Sol 3: empty time before DONE must not count; DONE appears at t=330, so exit must be at t >= 330 + settle
+   125	    f = Fake({}); f.t = 100; done = tmp_path / "done"
+   126	    def sleep(s):
+   127	        f.t += s
+   128	        if f.t >= 330 and not done.exists():
+   129	            done.write_text(""); sleep.at = f.t
+   130	    sleep.at = None
+   131	    assert C.watchdog("ts-r-x", 50, str(done), f.run, f.clock, sleep, here=str(tmp_path), settle=300, mono=f.clock) == 0
+   132	    assert sleep.at is not None and f.t >= sleep.at + 300
+   133	
+   134	
+   135	def test_r12_after_an_ambiguous_answer_the_settle_is_long_enough_for_a_late_pod(tmp_path):
+   136	    # r11 Sol 2 / Astra 2: a creation delayed beyond the normal settle (here at t=600 > 300) must still be deleted
+   137	    f = Fake({}); done = tmp_path / "done"; done.write_text(""); (tmp_path / "ts-r-x.request").write_text("pending")
+   138	    def sleep(s):
+   139	        f.t += s
+   140	        if f.t >= 600 and "late" not in f.pods and not sleep.added:
+   141	            f.pods["late"] = "ts-r-x"; sleep.added = True
+   142	    sleep.added = False
+   143	    assert C.watchdog("ts-r-x", 10**6, str(done), f.run, f.clock, sleep, here=str(tmp_path), settle=300, mono=f.clock) == 0
+   144	    assert sleep.added, "the watchdog stopped before the late pod appeared"
+   145	    assert "late" not in f.pods and f.t >= C.AMBIGUOUS_SETTLE
+   146	
+   147	
+   148	def test_r12_fractional_budget_is_passed_as_a_fractional_timeout():
+   149	    seen = []
+   150	    def run(args, timeout=60):
+   151	        seen.append(timeout); return 0, "[]"
+   152	    C.list_pods(run, 0.1)
+   153	    assert seen and seen[0] <= 0.1
+   154	
+   155	
+   156	@pytest.mark.parametrize("answer,exc,ambiguous", [
+   157	    ({"id": "p1"}, None, False),
+   158	    ({"error": 400, "body": "no capacity"}, None, False),
+   159	    ({"error": 404, "body": ""}, None, False),
+   160	    ({"error": 408, "body": ""}, None, True),
+   161	    ({"error": 429, "body": ""}, None, True),
+   162	    ({"error": 500, "body": ""}, None, True),
+   163	    ({"error": 504, "body": ""}, None, True),
+   164	    (None, None, True),
+   165	    ("garbage", None, True),
+   166	    (None, TimeoutError(), True),
+   167	])
+   168	def test_r12_creation_answers_are_ambiguous_unless_clearly_refused(answer, exc, ambiguous):
+   169	    pid, amb = C.classify_creation(answer, exc)
+   170	    assert amb is ambiguous and (pid == "p1") == (answer == {"id": "p1"})
+   171	
+   172	
+   173	@pytest.mark.parametrize("value,price", [
+   174	    (0.56, 0.56), ("0.56", 0.56), (None, None), (0, None), (-1, None), ("nan", None), ("inf", None), ("", None), ("x", None),
+   175	])
+   176	def test_r13_only_a_finite_positive_price_counts(value, price):
+   177	    # r12 Sol 3 / Astra 2: a missing or null price became 0 and left billing marked resolved
+   178	    assert C.price_of({"costPerHr": value}) == price
+   179	    assert C.price_of({}) is None
+   180	
+   181	
+   182	def test_r13_no_command_gets_more_time_than_the_budget_left():
+   183	    # r12 Sol 5 / Astra 4: a 0.001 s budget became a 0.01 s timeout
+   184	    seen = []
+   185	    def run(args, timeout=60):
+   186	        seen.append((args[0], timeout)); return 0, "[]"
+   187	    C.list_pods(run, 0.001)
+   188	    assert seen == [("list", 0.001)]
+   189	    seen.clear()
+   190	    assert C.list_pods(run, 0) is None and C.list_pods(run, -1) is None and seen == []
+   191	    t = {"now": 0.0}
+   192	    def slow(args, timeout=60):
+   193	        seen.append((args[0], timeout)); t["now"] += 0.0004; return 0, "[]"
+   194	    C.delete_verified("p", 0.001, slow, clock=lambda: t["now"], sleep=lambda s: None)
+   195	    start = 0.0
+   196	    assert seen and all(0 < to <= 0.001 for _, to in seen)
+   197	
+   198	
+   199	# r16: spend comes from the account balance; a pending request marker exists before every creation request; a launch
+   200	# lock; the watchdog records its end time and releases the lock.
+   201	
+   202	@pytest.mark.parametrize("out,rc,expect", [
+   203	    ('{"balance": 10.5, "spendPerHr": 0}', 0, (10.5, 0.0)),
+   204	    ('{"balance": 10.5, "spendPerHr": 0.56}', 0, (10.5, 0.56)),
+   205	    ('{"balance": 10.5}', 0, None), ('{"balance": "nan", "spendPerHr": 0}', 0, None),
+   206	    ('{"balance": 10.5, "spendPerHr": -1}', 0, None), ("garbage", 0, None), ('{"balance": 1, "spendPerHr": 0}', 1, None),
+   207	])
+   208	def test_r16_balance_parses_or_fails_closed(out, rc, expect):
+   209	    assert C.balance(lambda args, timeout=60: (rc, out)) == expect
+   210	
+   211	
+   212	def _spend_setup(tmp_path, wd_ago, pods=None, bal_now=9.123, rate_now=0.0):
+   213	    (tmp_path / "n.bal0").write_text("10.0 0.0")
+   214	    if wd_ago is not None:
+   215	        (tmp_path / "n.wdend").write_text(str(1_000_000 - wd_ago))
+   216	    f = Fake(pods or {})
+   217	    def run(args, timeout=60):
+   218	        if args[0] == "balance":
+   219	            return 0, json.dumps({"balance": bal_now, "spendPerHr": rate_now})
+   220	        return f.run(args, timeout)
+   221	    return run
+   222	
+   223	
+   224	def test_r16_spend_is_refused_until_the_watchdog_ended_an_hour_ago_and_no_pod_is_named(tmp_path):
+   225	    clock = lambda: 1_000_000
+   226	    assert C.spend("n", _spend_setup(tmp_path, None), clock, here=str(tmp_path))[0] is None          # watchdog not ended
+   227	    assert C.spend("n", _spend_setup(tmp_path, 3599), clock, here=str(tmp_path))[0] is None          # less than an hour
+   228	    assert C.spend("n", _spend_setup(tmp_path, 4000, {"x": "n"}), clock, here=str(tmp_path))[0] is None  # a pod named n
+   229	
+   230	
+   231	def test_r16_spend_is_the_balance_difference_rounded_up_to_a_cent(tmp_path):
+   232	    usd, note = C.spend("n", _spend_setup(tmp_path, 4000), lambda: 1_000_000, here=str(tmp_path))
+   233	    assert usd == 0.88 and "overstates" not in note
+   234	    usd, note = C.spend("n", _spend_setup(tmp_path, 4000, rate_now=0.3), lambda: 1_000_000, here=str(tmp_path))
+   235	    assert usd == 0.88 and "overstates" in note        # other usage on the account: the difference includes it
+   236	
+   237	
+   238	def test_r16_watchdog_writes_its_end_time_and_releases_the_launch_lock(tmp_path):
+   239	    f = Fake({}); done = tmp_path / "done"; done.write_text(""); (tmp_path / "ts-r-x.launchlock").mkdir()
+   240	    assert C.watchdog("ts-r-x", 10**6, str(done), f.run, f.clock, f.sleep, here=str(tmp_path), settle=60, mono=f.clock) == 0
+   241	    assert not (tmp_path / "ts-r-x.launchlock").exists() and float((tmp_path / "ts-r-x.wdend").read_text()) > 0
+   242	
+   243	
+   244	def test_r16_a_cleared_request_needs_only_the_normal_settle(tmp_path):
+   245	    f = Fake({}); done = tmp_path / "done"; done.write_text(""); (tmp_path / "ts-r-x.request").write_text("clear")
+   246	    assert C.watchdog("ts-r-x", 10**6, str(done), f.run, f.clock, f.sleep, here=str(tmp_path), settle=60, mono=f.clock) == 0
+   247	    assert f.t < C.AMBIGUOUS_SETTLE
+   248	
+   249	
+   250	def test_r16_elapsed_budgets_use_the_monotonic_clock():
+   251	    import inspect, time
+   252	    for fn in (C.delete_verified, C.reconcile):
+   253	        assert inspect.signature(fn).parameters["clock"].default is time.monotonic
+   254	
+   255	
+   256	
+   257	# r17
+   258	
+   259	def test_r17_a_wall_clock_jump_does_not_shorten_the_settle(tmp_path):
+   260	    # r16 Sol 2 / Astra 2: wall time +3600 s after 30 s of elapsed time ended the 1800 s settle
+   261	    f = Fake({}); done = tmp_path / "done"; done.write_text(""); (tmp_path / "ts-r-x.request").write_text("pending")
+   262	    mono = {"t": 0.0}; wall = {"t": 1000.0}
+   263	    def sleep(s):
+   264	        mono["t"] += s; wall["t"] += s
+   265	        if mono["t"] >= 30 and not sleep.jumped:
+   266	            wall["t"] += 3600; sleep.jumped = True
+   267	    sleep.jumped = False
+   268	    assert C.watchdog("ts-r-x", 10**9, str(done), f.run, lambda: wall["t"], sleep, here=str(tmp_path), settle=300,
+   269	                      mono=lambda: mono["t"]) == 0
+   270	    assert mono["t"] >= C.AMBIGUOUS_SETTLE
+   271	
+   272	
+   273	def test_r17_spend_rounds_up_exactly(tmp_path):
+   274	    # r16 Sol 5 / Astra 7: rounding to 6 places before ceil gave 0.01 for 0.010000001
+   275	    usd, _ = C.spend("n", _spend_setup(tmp_path, 4000, bal_now=9.989999999), lambda: 1_000_000, here=str(tmp_path))
+   276	    assert usd == 0.02
+   277	
+   278	
+   279	def test_r17_spend_refuses_a_balance_that_rose_and_states_the_credit_condition(tmp_path):
+   280	    # r16 Sol 1 / Astra 1: a credit or deposit raises the balance; the difference is valid only without one
+   281	    usd, why = C.spend("n", _spend_setup(tmp_path, 4000, bal_now=10.5), lambda: 1_000_000, here=str(tmp_path))
+   282	    assert usd is None and "credit" in why
+   283	    usd, note = C.spend("n", _spend_setup(tmp_path, 4000), lambda: 1_000_000, here=str(tmp_path))
+   284	    assert "valid only if no deposit or credit" in note
+   285	
+   286	
+   287	def test_r17_spend_writes_its_record(tmp_path):
+   288	    usd, note = C.spend("n", _spend_setup(tmp_path, 4000), lambda: 1_000_000, here=str(tmp_path))
+   289	    rec = (tmp_path / "n.spent").read_text()
+   290	    assert str(usd) in rec and "valid only if" in rec
+
+ succeeded in 0ms:
+     1	"""runpod.py propagates the exit status of ssh, push and pull (internal review r7 of the reset plan)."""
+     2	import subprocess
+     3	import runpod as RP
+     4	
+     5	
+     6	def test_ssh_push_pull_return_the_subprocess_status(monkeypatch):
+     7	    fake = lambda *a, **k: subprocess.CompletedProcess([], 255, "", "boom")
+     8	    monkeypatch.setattr(RP, "ssh", fake); monkeypatch.setattr(RP, "rsync", fake)
+     9	    for argv in (["ssh", "p", "true"], ["push", "p", "a", "b"], ["pull", "p", "a", "b"]):
+    10	        assert RP.main(argv) == 255
+    11	    ok = lambda *a, **k: subprocess.CompletedProcess([], 0, "up", "")
+    12	    monkeypatch.setattr(RP, "ssh", ok)
+    13	    assert RP.main(["ssh", "p", "echo up"]) == 0
+     1	#!/bin/bash
+     2	# Offline harness for reset_pod.sh with podctl.py and create_one.py (no real pods). A fake runpod.py keeps pods, pending
+     3	# (delayed) creations and stuck deletions in state.json; a fake create_one.py makes one request per call. Every fake
+     4	# holds an exclusive lock on state.json for its whole read-modify-write (r15). Each scenario asserts: the pods left (0),
+     5	# the exact number of creation requests, the launcher exit status, the end state (an anchored pattern), that the
+     6	# watchdog ended by itself (unless the scenario expects it to stay, fail-closed) and released the launch lock, and, where
+     7	# stated, a watchdog log line, a launcher output line, and a line that must not appear (NOTOUT).
+     8	set -u; H=$(mktemp -d); cd $H; SRC=/Users/oemer.demirel/Projects/touchstone/results/pods
+     9	sed "s#P=/Users/oemer.demirel/Projects/touchstone/results/pods#P=$H#; s#snapf=\"/Users/oemer.demirel/Projects/touchstone/results/pods/snap_#snapf=\"$H/snap_#" $SRC/reset_pod.sh > reset_pod.sh
+    10	cp $SRC/podctl.py .
+    11	mkdir -p g && (cd g && git init -q && git -c commit.gpgsign=false -c user.email=x@x -c user.name=x commit -q --allow-empty -m x && git -c tag.gpgsign=false tag protocol-v2 && COPYFILE_DISABLE=1 tar --uid 0 --gid 0 -czf ../c.tgz .)
+    12	C=$(git -C g rev-parse HEAD); echo x > b; tar czf b.tgz b; export HC=$C
+    13	# prepared remote outputs with inventories, for the RUN OK scenario
+    14	python3 - <<'EOF'
+    15	import hashlib, json, os
+    16	for d in ("remote/followup-reset", "remote/followup-gate"):
+    17	    os.makedirs(d, exist_ok=True); open(f"{d}/r.json", "w").write('{"x": 1}')
+    18	    json.dump({"records": {"r.json": hashlib.sha256(open(f"{d}/r.json", "rb").read()).hexdigest()}}, open(f"{d}/inventory.json", "w"))
+    19	EOF
+    20	cat > runpod.py <<'EOF'
+    21	import fcntl, json, os, shutil, sys
+    22	H = os.path.dirname(os.path.abspath(__file__)); S = os.path.join(H, "state.json")
+    23	L = open(S + ".lock", "w"); fcntl.flock(L, fcntl.LOCK_EX)    # held until exit: one transaction per call
+    24	st = json.load(open(S)); cmd, a = sys.argv[1], sys.argv[2:]; st["log"].append(" ".join([cmd] + a[:1])); rc = 0
+    25	for p in list(st.get("pending", {})):                       # delayed creations appear after a countdown of calls
+    26	    st["pending"][p][1] -= 1
+    27	    if st["pending"][p][1] <= 0: st["pods"][p] = st["pending"].pop(p)[0]
+    28	if cmd == "list":
+    29	    if st.get("fail_list", 0) > 0: st["fail_list"] -= 1; rc = 1; print("error")
+    30	    else: print(json.dumps([{"id": i, "name": n, "costPerHr": st["price"]} for i, n in st["pods"].items()]))
+    31	elif cmd == "balance":
+    32	    if st.get("bal_fail"): rc = 1; print("error")
+    33	    else: print(json.dumps({"balance": 100.0, "spendPerHr": 0}))
+    34	elif cmd == "delete":
+    35	    if st.get("stuck", {}).get(a[0], 0) > 0: st["stuck"][a[0]] -= 1
+    36	    else: st["pods"].pop(a[0], None)
+    37	    print("{}")
+    38	elif cmd == "ssh":
+    39	    c = a[1] if len(a) > 1 else ""
+    40	    if not st["up"]: rc = 255; print("")
+    41	    elif "git rev-parse" in c: print(f"git={os.environ.get('HC','')} env=unset bundle=6 memgb=64 py=x")
+    42	    elif "tail -c 240" in c: print("== RUN OK" if st.get("runok") else "== stage search")
+    43	    else: print("up")
+    44	elif cmd == "push":
+    45	    if st.get("push_fail"): rc = 1; print("exit 1")
+    46	    else: print("exit 0")
+    47	elif cmd == "pull":
+    48	    src, dst = a[1], a[2]
+    49	    for k in ("followup-reset", "followup-gate"):
+    50	        if k in src:
+    51	            shutil.copytree(os.path.join(H, "remote", k), dst, dirs_exist_ok=True)
+    52	            if k == "followup-reset" and st.get("corrupt_pulls", 0) > 0:
+    53	                st["corrupt_pulls"] -= 1; open(os.path.join(dst, "r.json"), "w").write("corrupt")
+    54	json.dump(st, open(S, "w")); sys.exit(rc)
+    55	EOF
+    56	cat > create_one.py <<'EOF'
+    57	import fcntl, json, os, signal, subprocess, sys
+    58	S = os.path.join(os.path.dirname(os.path.abspath(__file__)), "state.json")
+    59	L = open(S + ".lock", "w"); fcntl.flock(L, fcntl.LOCK_EX)
+    60	st = json.load(open(S))
+    61	pid = "pod%d" % (len(st["log"]) + 1); st["log"].append("create " + pid)
+    62	if st.get("delay"): st.setdefault("pending", {})[pid] = [sys.argv[1], st["delay"]]
+    63	else: st["pods"][pid] = sys.argv[1]
+    64	if st.get("stuck_next"): st.setdefault("stuck", {})[pid] = 40; st["stuck_next"] = False
+    65	amb = bool(st.get("lose")); term = bool(st.get("term")); json.dump(st, open(S, "w")); L.close()
+    66	if term:   # a stop during creation (r15): TERM the launcher while this request is outstanding; it answers nothing
+    67	    p = os.getppid(); top = None   # the topmost process running the launcher snapshot (subshells share its command line)
+    68	    while p > 1:
+    69	        cmd = subprocess.run(["ps", "-o", "command=", "-p", str(p)], capture_output=True, text=True).stdout
+    70	        if "snap_reset_pod" in cmd: top = p
+    71	        p = int(subprocess.run(["ps", "-o", "ppid=", "-p", str(p)], capture_output=True, text=True).stdout.strip() or 1)
+    72	    if top: os.kill(top, signal.SIGTERM)
+    73	    sys.exit(1)
+    74	print(json.dumps({"id": "" if amb else pid, "ambiguous": amb, "vcpu": 16}))
+    75	EOF
+    76	fail=0; ran=0; TOTAL=13
+    77	run() { # name state cap creates rc [end-pattern] [watchdog-log-substring] [launcher-output-substring]
+    78	  [ -n "${ONLY:-}" ] && ! echo "$1" | grep -q "$ONLY" && return 0   # smoke runs only; a full run sets no ONLY
+    79	  ran=$((ran+1)); echo "== $1"; echo "$2" > state.json; mkdir -p logs_r_t junk; : > logs_r_t/watchdog.log; : > ts-r-t.wdpid
+    80	  for f in ts-r-t.bal0 ts-r-t.spent ts-r-t.wdend; do [ -e $f ] && mv -- $f junk/$f.$ran; done   # isolation: one launch per scenario
+    81	  [ -n "${PRELOCK:-}" ] && mkdir ts-r-t.launchlock
+    82	  [ -n "${PREBAL:-}" ] && echo "100.0 0.0" > ts-r-t.bal0
+    83	  EXPECT=$C MAXCPH=0.70 HARD=${HARDX:-1.3} perl -e 'alarm 1500; exec @ARGV' bash reset_pod.sh c.tgz b.tgz t $3 out > run.out 2>&1; lrc=$?
+    84	  out=$(grep -v "^tarball\|code guard" run.out); echo "$out" | tail -3
+    85	  # wait for THIS scenario's watchdog by its PID (r11); the settle while a request is pending is 30 minutes
+    86	  wd=$(cat ts-r-t.wdpid 2>/dev/null); alive=""
+    87	  for i in $(seq 1 ${WAITW:-800}); do [ -n "$wd" ] && kill -0 "$wd" 2>/dev/null || break; sleep 3; done
+    88	  if [ -n "$wd" ] && kill -0 "$wd" 2>/dev/null; then alive=1; kill "$wd"; sleep 1; echo "watchdog $wd still running; stopped"; fi
+    89	  read left creates <<< "$(python3 -c "import json;s=json.load(open('state.json'));print(len(s['pods'])+len(s.get('pending',{})), sum(1 for l in s['log'] if l.startswith('create')))")"
+    90	  echo "pods left: $left, creation requests: $creates (expected $4), exit $lrc (expected $5)"; tail -1 logs_r_t/watchdog.log
+    91	  [ "$left" = 0 ] && [ "$creates" = "$4" ] && [ "$lrc" = "$5" ] || { echo "SCENARIO FAILED"; fail=1; }
+    92	  [ -z "${6:-}" ] || echo "$out" | grep -Eq "^[0-9]{2}:[0-9]{2} end: ($6)\$" || { echo "SCENARIO FAILED (end line is not: $6)"; fail=1; }
+    93	  [ -z "${7:-}" ] || grep -q "$7" logs_r_t/watchdog.log || { echo "SCENARIO FAILED (watchdog log lacks: $7)"; fail=1; }
+    94	  [ -z "${8:-}" ] || echo "$out" | grep -Eq "$8" || { echo "SCENARIO FAILED (launcher output lacks: $8)"; fail=1; }
+    95	  [ -z "${NOTOUT:-}" ] || ! { echo "$out"; cat logs_r_t/watchdog.log; } | grep -q "$NOTOUT" || { echo "SCENARIO FAILED (output contains: $NOTOUT)"; fail=1; }
+    96	  if [ -n "${WD_ALIVE:-}" ]; then [ -n "$alive" ] || { echo "SCENARIO FAILED (the watchdog should have stayed, fail-closed)"; fail=1; }
+    97	  elif [ -n "$alive" ]; then echo "SCENARIO FAILED (the watchdog did not end by itself)"; fail=1; fi
+    98	  if [ -z "${PRELOCK:-}" ] && [ -z "$alive" ] && [ -d ts-r-t.launchlock ]; then echo "SCENARIO FAILED (launch lock not released)"; fail=1; fi
+    99	  [ -z "${PREBAL:-}" ] || [ -e ts-r-t.bal0 ] || { echo "SCENARIO FAILED (the previous spend baseline was not kept)"; fail=1; }
+   100	  python3 podctl.py unlock ts-r-t >/dev/null 2>&1; true; }   # test isolation only (a held or stale lock)
+   101	NOTOUT="pull or verification failed" run "price above the ceiling: deleted at once, no retrieval" '{"pods":{},"price":0.9,"up":true,"log":[]}' 5 1 1 "PRICE 0.9 NOT IN \(0, 0.70\]"
+   102	NOTOUT="pull or verification failed" run "null price: deleted at once (r12)" '{"pods":{},"price":null,"up":true,"log":[]}' 5 1 1 "PRICE unknown NOT IN \(0, 0.70\]"
+   103	run "an ambiguous answer ends creation: one request, no retry" '{"pods":{},"price":0.56,"up":true,"log":[],"lose":true}' 5 1 1 "AMBIGUOUS CREATION ANSWER \(no retry\)" "for 1800s" "UNRESOLVED"
+   104	run "a pod created long after an ambiguous answer (beyond 300 s) is deleted by the watchdog" '{"pods":{},"price":0.56,"up":true,"log":[],"lose":true,"delay":20}' 5 1 1 "AMBIGUOUS CREATION ANSWER \(no retry\)" "WATCHDOG: deleting"
+   105	run "a stop during creation leaves the request pending; the late pod is deleted (r15)" '{"pods":{},"price":0.56,"up":true,"log":[],"term":true,"delay":20}' 5 1 1 "NOT STARTED" "for 1800s" "outstanding or ambiguous"
+   106	HARDX=1.0 run "unreachable pod at the deadline" '{"pods":{},"price":0.56,"up":false,"log":[]}' 0.004 1 1 "SOFT DEADLINE BEFORE START|NO POD"
+   107	HARDX=1.0 run "deletion keeps failing: the watchdog deletes after the deadline" '{"pods":{},"price":0.56,"up":false,"log":[],"stuck_next":true}' 0.004 1 1 "UNREACHABLE POD NOT DELETED|SOFT DEADLINE BEFORE START|NO POD" "WATCHDOG: deleting"
+   108	WD_ALIVE=1 WAITW=20 run "listing always fails: no creation; the watchdog stays (fail-closed)" '{"pods":{},"price":0.56,"up":true,"log":[],"fail_list":1000000}' 5 0 1 "RECONCILE FAILED BEFORE REQUEST 1"
+   109	PRELOCK=1 run "a held launch lock refuses the launch (r15)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 5 0 1 "" "" "^LOCKED: ts-r-t.launchlock exists"
+   110	PREBAL=1 run "an unrecorded previous spend refuses the launch and keeps its baseline (r16)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 5 0 1 "" "" "^refused: the previous launch's spend is not recorded"
+   111	run "unknown balance: no creation, lock released (r16)" '{"pods":{},"price":0.56,"up":true,"log":[],"bal_fail":true}' 5 0 1 "" "" "^refused: account balance unknown$"
+   112	NOTOUT="pull or verification failed" run "upload failure stops the run before it starts (r15)" '{"pods":{},"price":0.56,"up":true,"log":[],"push_fail":true}' 5 1 1 "UPLOAD FAILED \(code\)"
+   113	run "RUN OK with one corrupt pull: retried until verified" '{"pods":{},"price":0.56,"up":true,"log":[],"runok":true,"corrupt_pulls":1}' 5 1 0 "RUN OK" "" "podctl.py spend ts-r-t"
+   114	cd /; mv -- $H ~/.Trash/harness_$$
+   115	# a filtered (ONLY) run can never pass: the gate needs every scenario (r16)
+   116	if [ $fail != 0 ]; then echo "HARNESS FAILED"; exit 1; elif [ $ran != $TOTAL ]; then echo "HARNESS PARTIAL ($ran of $TOTAL scenarios ran)"; exit 2; else echo "HARNESS OK ($ran of $TOTAL scenarios)"; fi
+
+hook: PostToolUse
+exec
+/bin/zsh -lc "nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/reset_pod.sh | sed -n '1,70p'; rg -n -A 42 -B 8 'HARNESS|billing|30.minute|Step|\\*\\*4\\.|watchdog|launch' docs/revision/reset-experiment-plan.md" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+     1	#!/bin/bash
+     2	# Snapshot guard: run a private copy, so an edit to this file cannot reach a running launch.
+     3	if [ -z "${LAUNCH_SNAPSHOT:-}" ]; then
+     4	  snapf="/Users/oemer.demirel/Projects/touchstone/results/pods/snap_$(basename "$0" .sh)_$$.sh"; cp "$0" "$snapf"
+     5	  LAUNCH_SNAPSHOT="$snapf" exec bash "$snapf" "$@"
+     6	fi
+     7	# Reset follow-up (docs/revision/reset-experiment-plan.md, draft 5) on one Runpod CPU pod, adapted from eval_pod.sh.
+     8	# Order on the pod: the reproduction gate (bit identity, --require-identical; the author's decision), then the 18 D2 cells
+     9	# stage by stage (inputs and search with all vCPUs; evaluate, doubling and the spot diagnostics with WEVAL workers for
+    10	# memory), then the inventory. Spending (the author: do not kill jobs): at the reserved cap the pod stops BETWEEN stages
+    11	# (a STOP file the remote script reads before each stage); only at HARD x the cap is the pod deleted mid-stage, as an
+    12	# absolute guard. An EXIT/INT/TERM trap pulls what exists (only if the run started), deletes the pod and verifies it.
+    13	# Spend (r16): the record is the account balance difference (podctl.py spend NAME, at least an hour after the watchdog
+    14	# ends); this launcher prints only estimates. One launch per NAME at a time (NAME.launchlock; the watchdog releases it).
+    15	# Usage: reset_pod.sh <code_tgz> <bundle_tgz> <tag> <cap_usd> <local_out>   (no spaces in paths)
+    16	# Env: EXPECT (commit inside the code tarball), MAXCPH, optional WEVAL (default 10), MINMEM (default 28), HARD (default 1.3).
+    17	set -u
+    18	PY=/opt/homebrew/bin/python3; P=/Users/oemer.demirel/Projects/touchstone/results/pods
+    19	TGZ=${1:?code tarball}; BTGZ=${2:?bundle tarball}; TAG=${3:?tag}; CAP=${4:?cap_usd}; LOUT=${5:?local_out}; cd $P
+    20	case "$TGZ$BTGZ$TAG$LOUT" in *[[:space:]]*) echo "refused: a path or tag contains whitespace"; exit 1 ;; esac
+    21	EXPECT=${EXPECT:?commit}; MAXCPH=${MAXCPH:?max usd per hour}; WEVAL=${WEVAL:-10}; MINMEM=${MINMEM:-28}; HARD=${HARD:-1.3}
+    22	mkdir -p "$LOUT" logs_r_$TAG
+    23	$PY -c "import sys,tarfile; ms=tarfile.open(sys.argv[1]).getmembers(); d=[m.name for m in ms if m.name.split('/')[-1].startswith('._')]; o=[m.name for m in ms if m.uid!=0]; print('tarball guard: %d AppleDouble, %d non-root' % (len(d),len(o))); sys.exit(1 if d or o else 0)" "$TGZ" || { echo "code tarball refused"; exit 1; }
+    24	hg=$(mktemp -d); tar xzf "$TGZ" -C "$hg" 2>/dev/null || { echo "code tarball refused: cannot unpack"; exit 1; }
+    25	# Code guard (fails closed: every git call's status is checked): HEAD is EXPECT, protocol-v2 is an ancestor, the tree is
+    26	# clean, every path changed since the tag is in the code freeze's allowed paths, and scripts/, sim/, tests/ equal the tag.
+    27	guard() {
+    28	  cd "$1" || return 1
+    29	  [ "$(git rev-parse HEAD 2>/dev/null)" = "$EXPECT" ] || { echo "HEAD is not $EXPECT"; return 1; }
+    30	  git merge-base --is-ancestor protocol-v2 HEAD || { echo "protocol-v2 is not an ancestor"; return 1; }
+    31	  st=$(git status --porcelain) || { echo "git status failed"; return 1; }; [ -z "$st" ] || { echo "tree not clean: $st" | head -c 300; return 1; }
+    32	  ch=$(git diff --name-only protocol-v2 HEAD) || { echo "git diff failed"; return 1; }
+    33	  bad=$(echo "$ch" | grep -v -e '^docs/' -e '^experiments/v2/' -e '^paper/' -e '^sealed2/h4/' -e '^$' || true); [ -z "$bad" ] || { echo "changed outside the allowed paths: $bad" | head -c 300; return 1; }
+    34	  git diff --quiet protocol-v2 -- scripts/ sim/ tests/ || { echo "scripts/, sim/ or tests/ differ from protocol-v2"; return 1; }
+    35	  echo "code guard: ok at $(git rev-parse --short HEAD)"
+    36	}
+    37	( guard "$hg" ); g=$?; mv -- "$hg" ~/.Trash/hg_reset_$$
+    38	[ $g -eq 0 ] || { echo "code tarball refused"; exit 1; }
+    39	[ -n "${DRYRUN:-}" ] && { echo "dry run: guards passed; no pod created"; exit 0; }
+    40	# verify DIR: every record in DIR/inventory.json exists with its hash.
+    41	verify() { $PY - "$1" <<'PYV'
+    42	import hashlib, json, sys
+    43	from pathlib import Path
+    44	d = Path(sys.argv[1]); inv = json.loads((d / "inventory.json").read_text())
+    45	bad = [k for k, h in inv["records"].items() if not (d / k).is_file() or hashlib.sha256((d / k).read_bytes()).hexdigest() != h]
+    46	print(f"verify {d.name}: {len(inv['records'])} records, {len(bad)} bad"); sys.exit(1 if bad else 0)
+    47	PYV
+    48	}
+    49	tmo() { perl -e 'alarm shift; exec @ARGV' "$@"; }
+    50	NAME=ts-r-$TAG; DONE=$P/$NAME.done; ATT=$P/$NAME.attempts
+    51	rm_ok() { [ -e "$1" ] && mv -- "$1" ~/.Trash/"$(basename "$1").$$"; true; }
+    52	# One launch per NAME: the lock is taken before any marker changes; the watchdog (the last process) releases it.
+    53	mkdir "$P/$NAME.launchlock" 2>/dev/null || { echo "LOCKED: $NAME.launchlock exists (another launch or its watchdog still runs; remove it only after checking)"; exit 1; }
+    54	unlock() { $PY podctl.py unlock $NAME >/dev/null 2>&1; }
+    55	# Spend records are never overwritten (r16): a launch is refused while the previous launch's spend is unrecorded; a
+    56	# recorded one (NAME.spent, written by podctl.py spend) is moved with its inputs to spend_records/NAME.<time>/.
+    57	if [ -e "$P/$NAME.bal0" ] && [ ! -e "$P/$NAME.spent" ]; then echo "refused: the previous launch's spend is not recorded (podctl.py spend $NAME)"; unlock; exit 1; fi
+    58	if [ -e "$P/$NAME.spent" ]; then
+    59	  arch="$P/spend_records/$NAME.$(date +%s)"; mkdir -p "$arch" || { echo "refused: cannot archive the spend record"; unlock; exit 1; }
+    60	  for f in bal0 wdend spent attempts; do [ -e "$P/$NAME.$f" ] && { mv -- "$P/$NAME.$f" "$arch/" || { echo "refused: cannot archive $NAME.$f"; unlock; exit 1; }; }; done
+    61	fi
+    62	for f in "$DONE" "$P/$NAME.blocked" "$P/$NAME.request" "$P/$NAME.wdend" "$P/$NAME.ambiguous" "$P/$NAME.acct" "$P/$NAME.unpriced"; do rm_ok "$f"; done; : > "$ATT"
+    63	b0=$(tmo 90 $PY podctl.py balance) || { echo "refused: account balance unknown"; unlock; exit 1; }
+    64	echo "$b0" > "$P/$NAME.bal0" && [ -s "$P/$NAME.bal0" ] || { echo "refused: cannot write $NAME.bal0"; unlock; exit 1; }
+    65	id=""; state="NOT STARTED"; rc=1; cph=0; a0=0; tfirst=0; unresolved=""; started=""; req=0; wd=""
+    66	# Pod safety lives in podctl.py (test_podctl.py): fail-closed listing, deletion verified within
+    67	# elapsed time, reconciliation, a creation block from the hard deadline, and a watchdog that runs on after this launcher
+    68	# exits, until no pod named $NAME remains.
+    69	cleanup() {
+    70	  trap - EXIT INT TERM
+208-**Budget.** `docs/revision/budget-ledger.json`: spent 50.869 USD of the 55 USD approval limit. The author approved option A
+209-on the board on 2026-11-09 and set the cap to 10 USD ("make the cap $10 to ensure we're not blocked by a low cap"). The
+210-ledger needs a new category `followup` with cap 10.00 and the approval limit raised to 61 USD (50.869 + 10 = 60.869,
+211-`python3 -c "print(50.869+10)"`). `scripts/budget_v2.py` is frozen, so the tested wrapper
+212-`docs/revision/followup/budget_followup.py --approve 61 10 TEXT` records both, refuses a limit below spend plus the cap,
+213-and keeps the earlier approval text. The estimate is unchanged (1.66 to 2.10 USD); the higher cap only prevents a stop from a low
+214-cap. Stop at the cap.
+215-
+216:## 8. Steps
+217-
+218-1. Internal review of this plan to consensus; freeze it (commit).
+219-2. Decision card: approved on 2026-11-09, cap 10 USD (card `touchstone-reset-spend`).
+220-3. On approval: write and test the driver (TDD); on the Mac (free), validations (a), (b) and (d) must pass through the
+221-   corrected paths (preflight run, record with provenance and dependency hashes, `gate.json` and an inventory saved in a
+222-   new directory each: `results/v2/followup-repro-v2`, `results/v2/followup-repro-doubling-v2`); earlier passes on the
+223-   older path do not count and the diagnostics are validated on the registered headline
+224-   cells, all before any pod is created.
+225-4. One pod: the reproduction gate first (bit identity, `--require-identical`; stop and report on any difference), then `--stage all` with
+226-   `--diag-cells fresh0@rho0.2|F111|D2|profit` (inputs, search, freeze, evaluate, doubling, spot diagnostics, inventory);
+227-   records retrieved, the pod deleted and the deletion verified, the spend recorded.
+228:   Launcher rule (launcher review r11): an ambiguous creation answer ends the launch with no further request; the watchdog
+229:   deletes any late pod and settles for 30 minutes. After any launch that ends UNRESOLVED, check the Runpod console for
+230:   pods named ts-r-TAG the next day and relaunch only after that check. Spend record (launcher review r16): the account
+231:   balance difference, `podctl.py spend ts-r-TAG`, at least one hour after the watchdog ends; it can only overstate the
+232-   spend (other usage on the account is included), provided no deposit or credit was added in the window. The author
+233:   confirms that on the Runpod billing page before the record enters the ledger (r17); a balance that rose is refused.
+234:   The next launch with the same name is refused until the spend is recorded. The launcher's numbers are estimates.
+235-5. On the Mac after retrieval: the diagnostics of all 18 D2 winners and their reverse switches (`--stage diagnostics`),
+236-   checked against the pod's spot-check cell. The three headline cells (registered D2 records) run on the Mac before the
+237-   pod (`--headline-diagnostics`, 200 seeds); with the 18 fresh cells this gives the 63 policies and 42 switch
+238-   comparisons of section 4 plus the 21 reverse switches.
+239-6. Analysis: a new `reset` block in `posthoc_v2.py` (tested first), a table, and a paragraph in section 9 with sites; the
+240-   section-1 headline numbers enter at the same time, labelled exploratory.
+241-7. Internal review of the paper change, then the next external package.
+
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+codex
+The credit condition, monotonic timers, and record archive checks address the main round-16 findings. I will now check failure handling and the harness assertions. The full harness result remains a launch gate.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "git status --short; nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/test_podctl.py | sed -n '154,176p'; /opt/homebrew/bin/python3 -B - <<'PY'
+import ast, pathlib
+p=pathlib.Path('/Users/oemer.demirel/Projects/touchstone/results/pods')
+for n in ('podctl.py','create_one.py','runpod.py','test_podctl.py','test_runpod.py'):
+    ast.parse((p/n).read_text(),filename=n)
+print('Python syntax: PASS')
+PY
+bash -n /Users/oemer.demirel/Projects/touchstone/results/pods/reset_pod.sh
+bash -n /Users/oemer.demirel/Projects/touchstone/results/pods/test_reset_pod_harness.sh" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+ M docs/revision/followup2/convergence-plan.md
+ M docs/revision/followup2/convergence_v2.py
+ M docs/revision/followup2/guards.py
+ M docs/revision/followup2/runner-up-plan.md
+ M docs/revision/followup2/runnerup_v2.py
+ M docs/revision/followup2/test_convergence_v2.py
+ M docs/revision/followup2/test_guards.py
+ M docs/revision/followup2/test_runnerup_v2.py
+ M docs/revision/lessons.md
+ M docs/revision/reset-experiment-plan.md
+?? docs/revision/roster/astra-churn-plan-r4.log
+?? docs/revision/roster/astra-churn-plan-r5.log
+?? docs/revision/roster/astra-churn-plan-r6.log
+?? docs/revision/roster/astra-convergence-plan-r4.log
+?? docs/revision/roster/astra-convergence-plan-r4.md
+?? docs/revision/roster/astra-convergence-plan-r5.log
+?? docs/revision/roster/astra-convergence-plan-r5.md
+?? docs/revision/roster/astra-convergence-plan-r6.log
+?? docs/revision/roster/astra-convergence-plan-r6.md
+?? docs/revision/roster/astra-convergence-plan-r7.log
+?? docs/revision/roster/astra-convergence-plan-r7.md
+?? docs/revision/roster/astra-paper-ext6-r1.log
+?? docs/revision/roster/astra-paper-ext7-r1.log
+?? docs/revision/roster/astra-paper-ext7-r2.log
+?? docs/revision/roster/astra-paper-ext7-r3.log
+?? docs/revision/roster/astra-paper-ext8-r1.log
+?? docs/revision/roster/astra-paper-ext9-r1.log
+?? docs/revision/roster/astra-paper-followup-int-r3.log
+?? docs/revision/roster/astra-paper-followup-int-r3.md
+?? docs/revision/roster/astra-reset-plan-r1.log
+?? docs/revision/roster/astra-reset-plan-r10.log
+?? docs/revision/roster/astra-reset-plan-r10.md
+?? docs/revision/roster/astra-reset-plan-r11.log
+?? docs/revision/roster/astra-reset-plan-r11.md
+?? docs/revision/roster/astra-reset-plan-r12.log
+?? docs/revision/roster/astra-reset-plan-r12.md
+?? docs/revision/roster/astra-reset-plan-r13.log
+?? docs/revision/roster/astra-reset-plan-r13.md
+?? docs/revision/roster/astra-reset-plan-r14.log
+?? docs/revision/roster/astra-reset-plan-r14.md
+?? docs/revision/roster/astra-reset-plan-r15.log
+?? docs/revision/roster/astra-reset-plan-r15.md
+?? docs/revision/roster/astra-reset-plan-r16.log
+?? docs/revision/roster/astra-reset-plan-r16.md
+?? docs/revision/roster/astra-reset-plan-r17.log
+?? docs/revision/roster/astra-reset-plan-r2.log
+?? docs/revision/roster/astra-reset-plan-r7.log
+?? docs/revision/roster/astra-reset-plan-r7.md
+?? docs/revision/roster/astra-runner-up-plan-r4.log
+?? docs/revision/roster/astra-runner-up-plan-r4.md
+?? docs/revision/roster/astra-runner-up-plan-r5.log
+?? docs/revision/roster/astra-runner-up-plan-r5.md
+?? docs/revision/roster/astra-runner-up-plan-r6.log
+?? docs/revision/roster/astra-runner-up-plan-r6.md
+?? docs/revision/roster/astra-runner-up-plan-r7.log
+?? docs/revision/roster/astra-runner-up-plan-r7.md
+?? docs/revision/roster/brief-churn-plan-r4.md
+?? docs/revision/roster/brief-convergence-plan-r4.md
+?? docs/revision/roster/brief-convergence-plan-r5.md
+?? docs/revision/roster/brief-convergence-plan-r6.md
+?? docs/revision/roster/brief-convergence-plan-r7.md
+?? docs/revision/roster/brief-paper-followup-int-r3.md
+?? docs/revision/roster/brief-reset-plan-r11.md
+?? docs/revision/roster/brief-reset-plan-r12.md
+?? docs/revision/roster/brief-reset-plan-r13.md
+?? docs/revision/roster/brief-reset-plan-r14.md
+?? docs/revision/roster/brief-reset-plan-r15.md
+?? docs/revision/roster/brief-reset-plan-r16.md
+?? docs/revision/roster/brief-reset-plan-r17.md
+?? docs/revision/roster/brief-runner-up-plan-r4.md
+?? docs/revision/roster/brief-runner-up-plan-r5.md
+?? docs/revision/roster/brief-runner-up-plan-r6.md
+?? docs/revision/roster/brief-runner-up-plan-r7.md
+?? docs/revision/roster/fable52-paper-r1.log
+?? docs/revision/roster/fable52-reset-driver-r1.log
+?? docs/revision/roster/sol-churn-plan-r4.log
+?? docs/revision/roster/sol-churn-plan-r5.log
+?? docs/revision/roster/sol-churn-plan-r6.log
+?? docs/revision/roster/sol-convergence-plan-r4.log
+?? docs/revision/roster/sol-convergence-plan-r4.md
+?? docs/revision/roster/sol-convergence-plan-r5.log
+?? docs/revision/roster/sol-convergence-plan-r5.md
+?? docs/revision/roster/sol-convergence-plan-r6.log
+?? docs/revision/roster/sol-convergence-plan-r6.md
+?? docs/revision/roster/sol-convergence-plan-r7.log
+?? docs/revision/roster/sol-convergence-plan-r7.md
+?? docs/revision/roster/sol-paper-ext6-r1.log
+?? docs/revision/roster/sol-paper-ext7-r1.log
+?? docs/revision/roster/sol-paper-ext7-r2.log
+?? docs/revision/roster/sol-paper-ext7-r3.log
+?? docs/revision/roster/sol-paper-ext8-r1.log
+?? docs/revision/roster/sol-paper-ext9-r1.log
+?? docs/revision/roster/sol-paper-followup-int-r3.log
+?? docs/revision/roster/sol-paper-followup-int-r3.md
+?? docs/revision/roster/sol-reset-plan-r1.log
+?? docs/revision/roster/sol-reset-plan-r10.log
+?? docs/revision/roster/sol-reset-plan-r10.md
+?? docs/revision/roster/sol-reset-plan-r11.log
+?? docs/revision/roster/sol-reset-plan-r11.md
+?? docs/revision/roster/sol-reset-plan-r12.log
+?? docs/revision/roster/sol-reset-plan-r12.md
+?? docs/revision/roster/sol-reset-plan-r13.log
+?? docs/revision/roster/sol-reset-plan-r13.md
+?? docs/revision/roster/sol-reset-plan-r14.log
+?? docs/revision/roster/sol-reset-plan-r14.md
+?? docs/revision/roster/sol-reset-plan-r15.log
+?? docs/revision/roster/sol-reset-plan-r15.md
+?? docs/revision/roster/sol-reset-plan-r16.log
+?? docs/revision/roster/sol-reset-plan-r16.md
+?? docs/revision/roster/sol-reset-plan-r17.log
+?? docs/revision/roster/sol-reset-plan-r2.log
+?? docs/revision/roster/sol-reset-plan-r7.log
+?? docs/revision/roster/sol-reset-plan-r7.md
+?? docs/revision/roster/sol-runner-up-plan-r4.log
+?? docs/revision/roster/sol-runner-up-plan-r4.md
+?? docs/revision/roster/sol-runner-up-plan-r5.log
+?? docs/revision/roster/sol-runner-up-plan-r5.md
+?? docs/revision/roster/sol-runner-up-plan-r6.log
+?? docs/revision/roster/sol-runner-up-plan-r6.md
+?? docs/revision/roster/sol-runner-up-plan-r7.log
+?? docs/revision/roster/sol-runner-up-plan-r7.md
+   154	
+   155	
+   156	@pytest.mark.parametrize("answer,exc,ambiguous", [
+   157	    ({"id": "p1"}, None, False),
+   158	    ({"error": 400, "body": "no capacity"}, None, False),
+   159	    ({"error": 404, "body": ""}, None, False),
+   160	    ({"error": 408, "body": ""}, None, True),
+   161	    ({"error": 429, "body": ""}, None, True),
+   162	    ({"error": 500, "body": ""}, None, True),
+   163	    ({"error": 504, "body": ""}, None, True),
+   164	    (None, None, True),
+   165	    ("garbage", None, True),
+   166	    (None, TimeoutError(), True),
+   167	])
+   168	def test_r12_creation_answers_are_ambiguous_unless_clearly_refused(answer, exc, ambiguous):
+   169	    pid, amb = C.classify_creation(answer, exc)
+   170	    assert amb is ambiguous and (pid == "p1") == (answer == {"id": "p1"})
+   171	
+   172	
+   173	@pytest.mark.parametrize("value,price", [
+   174	    (0.56, 0.56), ("0.56", 0.56), (None, None), (0, None), (-1, None), ("nan", None), ("inf", None), ("", None), ("x", None),
+   175	])
+   176	def test_r13_only_a_finite_positive_price_counts(value, price):
+zsh:1: can't create temp file for here document: operation not permitted
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "/opt/homebrew/bin/python3 -B -c 'import ast,pathlib,subprocess
+p=pathlib.Path('\\''/Users/oemer.demirel/Projects/touchstone/results/pods'\\'')
+for n in ('\\''podctl.py'\\'','\\''create_one.py'\\'','\\''runpod.py'\\'','\\''test_podctl.py'\\'','\\''test_runpod.py'\\''):
+ ast.parse((p/n).read_text(),filename=n)
+print('\\''Python syntax: PASS'\\'')
+lines=(p/'\\''reset_pod.sh'\\'').read_text().splitlines()
+segment='\\''\\n'\\''.join(lines[144:147]).replace('\\''echo \""'$id $(date +%s) deleted" >> "$ATT";'"'\\'','\\'''\\'')
+checks='\\''\\n'\\''.join(lines[120:124])
+script='\\'''\\'''\\''tick=0; soft=20; hard=20; id=p1; tries=0; PY=fakepy; NAME=n; req=1; wd=1; state=\"\"
+date() { if [ \""'$1" = +%s ]; then echo "$tick"; else echo 00:00; fi; }
+sleep() { tick=$((tick+$1)); }
+kill() { return 0; }
+tmo() { shift; "$@"; }
+fakepy() { if [ "$1" = podctl.py ]; then
+ case "$2" in delete|reconcile) return 0;; may-create) [ "$tick" -lt "$hard" ];; esac
+ else return 255; fi; }
+trap '"'\\''printf \"Observed terminal state: %s\\\\n\" \""'$state"'"'\\'' EXIT
+'\\'''\\'''\\''+segment+'\\''\\n'\\''+checks
+r=subprocess.run(['\\''bash'\\''],input=script,text=True,capture_output=True)
+print(r.stdout,end='\\'''\\'')
+print('\\''Offline simulation exit:'\\'',r.returncode)
+'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+Python syntax: PASS
+00:00 p1 unreachable; deleting
+Observed terminal state: CREATION BLOCKED (hard deadline)
+Offline simulation exit: 1
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+An offline check found a harness error. At the shared soft and hard deadline, the launcher returns `CREATION BLOCKED (hard deadline)`. The unreachable-pod scenario does not accept that result. I will also check whether a wall-clock jump can shorten the one-hour wait before spend is recorded.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "/opt/homebrew/bin/python3 -B -c 'import pathlib,types,io,json
+from unittest.mock import patch
+p=pathlib.Path('\\''/Users/oemer.demirel/Projects/touchstone/results/pods/podctl.py'\\'')
+C=types.ModuleType('\\''review_podctl'\\''); C.__file__=str(p)
+exec(compile(p.read_text(),str(p),'\\''exec'\\''),C.__dict__)
+files={'\\''/virtual/n.bal0'\\'':'\\''10.0 0.0'\\'','\\''/virtual/n.wdend'\\'':'\\''1000'\\''}
+class Mem(io.StringIO):
+ def __init__(self,path,mode):
+  self.path=path; self.mode=mode
+  if '\\''r'\\'' in mode and path not in files: raise FileNotFoundError(path)
+  super().__init__(files.get(path,'\\'''\\'') if '\\''r'\\'' in mode else '\\'''\\'')
+ def write(self,s):
+  n=super().write(s); files[self.path]=self.getvalue(); return n
+def memopen(path,mode='\\''r'\\'',*a,**k): return Mem(str(path),mode)
+def run(args,timeout=60):
+ return (0,'\\''[]'\\'') if args==['\\''list'\\''] else (0,json.dumps({'\\''balance'\\'':9.989999999,'\\''spendPerHr'\\'':0}))
+with patch('\\''builtins.open'\\'',memopen),patch.object(C.os.path,'\\''getmtime'\\'',return_value=900):
+ usd,note=C.spend('\\''n'\\'',run,clock=lambda:5000,here='\\''/virtual'\\'')
+ print('\\''Exact rounding example:'\\'',usd,'\\''(expected 0.02)'\\'')
+ assert usd==0.02
+ print('\\''Forward wall step: watchdog ended at wall=1000; after 30 elapsed seconds, wall steps +3970 to 5000.'\\'')
+ print('\\''Spend allowed after 30 elapsed seconds:'\\'',usd is not None)
+ print('\\''Spend marker written:'\\'', '\\''/virtual/n.spent'\\'' in files)
+# Verify the supplied jump test without creating files.
+files={'\\''/virtual/done'\\'':'\\'''\\'','\\''/virtual/n.request'\\'':'\\''pending'\\''}
+t={'\\''mono'\\'':0.,'\\''wall'\\'':1000.,'\\''jumped'\\'':False}
+def sleep(s):
+ t['\\''mono'\\'']+=s;t['\\''wall'\\'']+=s
+ if t['\\''mono'\\'']>=30 and not t['\\''jumped'\\'']: t['\\''wall'\\'']+=3600;t['\\''jumped'\\'']=True
+with patch('\\''builtins.open'\\'',memopen),patch.object(C.os.path,'\\''exists'\\'',side_effect=lambda x:str(x) in files),patch.object(C.os,'\\''rmdir'\\'',return_value=None):
+ C.watchdog('\\''n'\\'',10**9,'\\''/virtual/done'\\'',run=lambda args,timeout=60:(0,'\\''[]'\\''),clock=lambda:t['\\''wall'\\''],sleep=sleep,here='\\''/virtual'\\'',mono=lambda:t['\\''mono'\\''])
+ print('\\''Watchdog settle after wall jump:'\\'',t['\\''mono'\\''],'\\''elapsed seconds'\\'')
+ assert t['\\''mono'\\'']>=1800
+'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+Exact rounding example: 0.02 (expected 0.02)
+Forward wall step: watchdog ended at wall=1000; after 30 elapsed seconds, wall steps +3970 to 5000.
+Spend allowed after 30 elapsed seconds: True
+Spend marker written: True
+06:05 WATCHDOG: no pod named n for 1800s after the launcher was done; record the spend with `podctl.py spend n` from 3600s after now
+Watchdog settle after wall jump: 1800.0 elapsed seconds
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+VERDICT: reject
+
+CORRECTIONS:
+1. podctl.py:170 — The one-hour billing wait still uses wall time. Offline reproduction: the watchdog ends at wall time 1000; after 30 elapsed seconds and a forward clock step to 5000, `spend()` accepts the balance and writes `.spent`. Delayed charges can therefore be omitted. Verify the wait with elapsed time across CLI calls, and refuse recording when that verification is unavailable. Add a regression test.
+2. test_reset_pod_harness.sh:106 — The unreachable-pod scenario excludes the actual terminal state. With `HARDX=1.0`, the soft and hard deadlines coincide. After the unreachable pod is deleted, reset_pod.sh:123 returns `CREATION BLOCKED (hard deadline)` before the soft-deadline check. An offline execution of these shell statements reproduced this result. Correct the expected state and check the related expectation at test_reset_pod_harness.sh:107. Keep the pod blocked until the corrected full run reports `HARNESS OK (13 of 13 scenarios)`.
+
+CONFIDENCE: 0.97
+hook: Stop
+hook: Stop Completed
+tokens used
+43'551
+VERDICT: reject
+
+CORRECTIONS:
+1. podctl.py:170 — The one-hour billing wait still uses wall time. Offline reproduction: the watchdog ends at wall time 1000; after 30 elapsed seconds and a forward clock step to 5000, `spend()` accepts the balance and writes `.spent`. Delayed charges can therefore be omitted. Verify the wait with elapsed time across CLI calls, and refuse recording when that verification is unavailable. Add a regression test.
+2. test_reset_pod_harness.sh:106 — The unreachable-pod scenario excludes the actual terminal state. With `HARDX=1.0`, the soft and hard deadlines coincide. After the unreachable pod is deleted, reset_pod.sh:123 returns `CREATION BLOCKED (hard deadline)` before the soft-deadline check. An offline execution of these shell statements reproduced this result. Correct the expected state and check the related expectation at test_reset_pod_harness.sh:107. Keep the pod blocked until the corrected full run reports `HARNESS OK (13 of 13 scenarios)`.
+
+CONFIDENCE: 0.97

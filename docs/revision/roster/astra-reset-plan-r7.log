@@ -1,0 +1,2273 @@
+OpenAI Codex v0.162.1
+--------
+workdir: /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+model: gpt-6-astra
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1c79e-dbd9-7a60-9ff3-784fdecf5a3c
+--------
+user
+# Reset experiment plan draft 5: internal review round 7 (read-only; no paid APIs; do not read `sealed/`, `~/touchstone-h4`, or `~/h4-session.out`; reasoning effort high; under 350 words)
+
+Rounds 4-6 rejected draft 5 (`docs/revision/roster/{sol,astra}-reset-plan-r{4,5,6}.md`). Commits since round 6: 30e5353 (identical requires equal objective values; headline diagnostics path), 8d18de4 (the author's decision on card touchstone-reset-repro-pass: the pod gate requires bit identity, `--require-identical`), d865329 (copy_inputs refuses only real conflicts). Driver `docs/revision/followup/reset_followup_v2.py`, 52 tests. Validation evidence through the corrected paths, each with gate.json and an inventory: `/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2` (headline reproduction), `.../followup-repro-doubling-v2` (doubling ground truth), `.../followup-diag-headline` (headline diagnostics, 200 seeds). Pod launcher (outside git): `/Users/oemer.demirel/Projects/touchstone/results/pods/reset_pod.sh` with input bundle `.../results/v2/followup-reset-bundle` (168 records; a smoke run of all stages against it passed); dry run passed; a tarball with a changed frozen file is refused.
+
+Check: (1) each round-6 correction is closed; (2) the saved validation evidence meets plan §8 step 3; (3) the launcher implements the plan: gate first with bit identity, stage order, workers, memory check, the between-stage cap rule with a hard stop at 1.3x (the author asked not to kill running jobs), pulls, deletion and verification, and the code guard that replaces lock_v2 --check-commit (which requires HEAD at the tag); (4) anything that should block the pod.
+
+Output exactly:
+VERDICT: accept | accept-with-caveat | reject
+CORRECTIONS: numbered, each with plan section, file:line, or "none".
+CONFIDENCE: 0 to 1.
+
+hook: SessionStart
+hook: SessionStart Completed
+codex
+I will check the round-6 findings, plan, saved evidence, and launcher. I will use read-only checks and avoid the excluded paths.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg -n 'touchstone|reset-plan|reset experiment' /Users/oemer.demirel/.codex/memories/MEMORY.md" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+501:# Task Group: anthropic-residency-application-writing-and-touchstone-research
+510:- rollout_summaries/2026-11-03T12-32-03-zdzn-anthropic_residency_writing_touchstone_research_plan.md (cwd=/Users/oemer.demirel/Documents/Codex/2026-11-03/why-anthropic-anthropic-sets-the-frontier, rollout_path=/Users/oemer.demirel/.codex/sessions/2026/11/03/rollout-2026-11-03T13-32-03-01a1a165-260e-7180-9d34-c9dc6bf34b4d.jsonl, updated_at=2026-11-03T13:02:09+00:00, thread_id=01a1a165-260e-7180-9d34-c9dc6bf34b4d, success; application answers finalized)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "pwd; git status --short; rg --files -g 'AGENTS.md' -g '*reset*' docs/revision" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+?? docs/revision/roster/astra-churn-plan-r2.log
+?? docs/revision/roster/astra-churn-plan-r2.md
+?? docs/revision/roster/astra-convergence-plan-r2.log
+?? docs/revision/roster/astra-paper-ext11-r1.log
+?? docs/revision/roster/astra-paper-ext11-r1.md
+?? docs/revision/roster/astra-paper-ext6-r1.log
+?? docs/revision/roster/astra-paper-ext7-r1.log
+?? docs/revision/roster/astra-paper-ext7-r2.log
+?? docs/revision/roster/astra-paper-ext7-r3.log
+?? docs/revision/roster/astra-paper-ext8-r1.log
+?? docs/revision/roster/astra-paper-ext9-r1.log
+?? docs/revision/roster/astra-reset-plan-r1.log
+?? docs/revision/roster/astra-reset-plan-r2.log
+?? docs/revision/roster/astra-reset-plan-r3.log
+?? docs/revision/roster/astra-reset-plan-r7.log
+?? docs/revision/roster/astra-runner-up-plan-r2.log
+?? docs/revision/roster/brief-churn-plan-r2.md
+?? docs/revision/roster/brief-convergence-plan-r2.md
+?? docs/revision/roster/brief-paper-followup-r11.md
+?? docs/revision/roster/brief-reset-plan-r7.md
+?? docs/revision/roster/brief-runner-up-plan-r2.md
+?? docs/revision/roster/fable52-paper-r1.log
+?? docs/revision/roster/fable52-paper-r2.log
+?? docs/revision/roster/fable52-paper-r2.md
+?? docs/revision/roster/fable52-reset-driver-r1.log
+?? docs/revision/roster/sol-churn-plan-r2.log
+?? docs/revision/roster/sol-churn-plan-r2.md
+?? docs/revision/roster/sol-convergence-plan-r2.log
+?? docs/revision/roster/sol-paper-ext6-r1.log
+?? docs/revision/roster/sol-paper-ext7-r1.log
+?? docs/revision/roster/sol-paper-ext7-r2.log
+?? docs/revision/roster/sol-paper-ext7-r3.log
+?? docs/revision/roster/sol-paper-ext8-r1.log
+?? docs/revision/roster/sol-paper-ext9-r1.log
+?? docs/revision/roster/sol-reset-plan-r1.log
+?? docs/revision/roster/sol-reset-plan-r2.log
+?? docs/revision/roster/sol-reset-plan-r3.log
+?? docs/revision/roster/sol-reset-plan-r7.log
+?? docs/revision/roster/sol-runner-up-plan-r2.log
+docs/revision/reset-experiment-plan.md
+docs/revision/roster/brief-reset-plan-r6.md
+docs/revision/roster/brief-reset-driver-fable52.md
+docs/revision/roster/sol-reset-plan-r5.md
+docs/revision/roster/brief-reset-plan-r2.md
+docs/revision/roster/sol-reset-plan-r1.md
+docs/revision/roster/brief-reset-plan-r3.md
+docs/revision/roster/brief-reset-plan-r7.md
+docs/revision/roster/sol-reset-plan-r4.md
+docs/revision/roster/astra-reset-plan-r3.md
+docs/revision/roster/astra-reset-plan-r2.md
+docs/revision/roster/astra-reset-plan-r6.md
+docs/revision/roster/astra-reset-plan-r1.md
+docs/revision/roster/sol-reset-plan-r1.log
+docs/revision/roster/fable52-reset-driver-r1.log
+docs/revision/roster/sol-reset-plan-r3.log
+docs/revision/roster/sol-reset-plan-r2.log
+docs/revision/roster/astra-reset-plan-r5.md
+docs/revision/roster/sol-reset-plan-r6.log
+docs/revision/roster/sol-reset-plan-r7.log
+docs/revision/roster/astra-reset-plan-r4.md
+docs/revision/roster/sol-reset-plan-r5.log
+docs/revision/roster/sol-reset-plan-r4.log
+docs/revision/roster/astra-reset-plan-r1.log
+docs/revision/roster/sol-reset-plan-r3.md
+docs/revision/roster/fable52-reset-driver-r1.md
+docs/revision/roster/brief-reset-plan-r4.md
+docs/revision/roster/astra-reset-plan-r2.log
+docs/revision/roster/astra-reset-plan-r3.log
+docs/revision/roster/brief-reset-plan-r5.md
+docs/revision/roster/astra-reset-plan-r7.log
+docs/revision/roster/astra-reset-plan-r6.log
+docs/revision/roster/sol-reset-plan-r6.md
+docs/revision/roster/astra-reset-plan-r4.log
+docs/revision/roster/brief-reset-plan-r1.md
+docs/revision/roster/astra-reset-plan-r5.log
+docs/revision/roster/sol-reset-plan-r2.md
+docs/revision/followup/test_reset_followup.py
+docs/revision/followup/reset_followup_v2.py
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'for p in AGENTS.md docs/AGENTS.md docs/revision/AGENTS.md docs/revision/followup/AGENTS.md docs/revision/roster/AGENTS.md; do if [ -f "$p" ]; then cat "$p"; fi; done' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'nl -ba docs/revision/reset-experiment-plan.md; cat docs/revision/roster/{sol,astra}-reset-plan-r6.md' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+     1	# Reset experiment: plan (draft 5, 2026-11-10; draft 4 had internal consensus and the author's approval, cap 10 USD; no spend yet)
+     2	
+     3	**Why.** The round-9 fresh reviewer (problem 2, `docs/paper/external-review-r9.md`): the gain is excess profit when
+     4	identity replacement is available; it does not show how much of that profit comes from the ability to replace an
+     5	identity. This plan measures that, within the searched D2 family, on the second test's markets.
+     6	
+     7	**Draft 5** (2026-11-10) applies the Fable 5.2 driver review (`docs/revision/roster/fable52-reset-driver-r1.md`, triage
+     8	`docs/paper/fable52-triage.md`): a reproduction criterion that a cross-platform run can meet, a pod gate, the driver's
+     9	location under `docs/`, the diagnostics built and run free before the pod, a doubling ground truth, and clarified scoring.
+    10	It needs one internal review round.
+    11	
+    12	**Status.** Draft 4 applied the round-3 caveats (`docs/revision/roster/{sol,astra}-reset-plan-r{1,2,3}.md`; round 3: both accept-with-caveat).
+    13	After consensus: a decision card for the author. Nothing runs before the author approves the spend. This file is frozen
+    14	(commit hash in the operations ledger) before any paid cell starts.
+    15	
+    16	## 1. What already exists (free; seen before this plan)
+    17	
+    18	The D2+H3 family is D2 plus one binary knob `x` (`sim/policies/identity.py`: `x = 1` exits in the round after a failed
+    19	audit and re-enters under a fresh identity; `x = 0` is plain D2). Design 8.1 listed D2 on all seven markets ("Matched core
+    20	extras"); budget cut 3 removed the fresh-market D2 cells, so D2 was run at the headline market only. At `headline@rho0.2`,
+    21	same 200 evaluation seeds, same frozen reference per rule (checked: `seeds` and reference `upstream` hashes equal):
+    22	
+    23	| Rule | g(D2+H3) | g(D2) | I = g(D2+H3) - g(D2) | Paired SE of I | D2+H3 doubling check |
+    24	|---|---:|---:|---:|---:|---|
+    25	| B2 | 0.5851 | 0.0027 | 0.5824 | 0.0011 | not scheduled |
+    26	| B3 (F000) | 0.3502 | 0.0435 | 0.3067 | 0.0012 | flagged |
+    27	| R3 (F111) | 0.0486 | 0.0361 | 0.0124 | 0.0009 | flagged |
+    28	| C* | 0.0872 | 0.0433 | 0.0439 | 0.0008 | not flagged |
+    29	
+    30	Source: `results/v2/eval/all/evaluate/headline@rho0.2__{rule}__{D2+H3,D2}__profit.json`, field `gain`; flags from
+    31	`report.json` `search_flagged`; the D2 cells had no scheduled doubling check. At `headline@rho1`, R3 and C* are in the
+    32	terminal-reserve collapse and I is 0.0025.
+    33	
+    34	Reading, exploratory: at the headline market the D2+H3 search leaves about 0.31 more gain than the D2 search against B3,
+    35	and about 0.01 against R3; the B3 - R3 gap is 0.302 under D2+H3 and 0.007 under D2.
+    36	
+    37	## 2. Estimand
+    38	
+    39	For rule r in {B3 (F000), R3 (F111), C*} and fresh market m:
+    40	
+    41	I(r, m) = mean over the 200 evaluation seeds of g(D2+H3 winner) - g(D2 winner),
+    42	
+    43	both against the same frozen truthful reference of (r, m), so the reference term cancels. **I is a difference between two
+    44	prescribed finite searches over nested families (D2 within D2+H3), not an identified optimal value of replacement and not
+    45	a system-wide prohibition of replacement.** The two searches differ in dimension, Sobol starts, and corner sets (D2 128,
+    46	D2+H3 256 corner vectors), with the same restart and evaluation budgets; the two winners can differ in every knob, not
+    47	only `x`. A negative I can come from search error. The fixed-policy diagnostic in section 4 separates the switch from
+    48	re-optimisation.
+    49	
+    50	## 3. Cells and execution contract
+    51	
+    52	- **New search cells.** D2 x {F000, F111, C*} x fresh0..fresh5 at rho 0.2: 18 cells, exactly the design-8.1 cells that cut
+    53	  3 removed, with their registered settings (D2 knob space and budget, the market's training seeds for search, its 200
+    54	  evaluation seeds), each with a doubling check (design 6.5, held-out evaluation of the doubled winner on the same seeds).
+    55	- **Driver.** A separate follow-up script (`docs/revision/followup/reset_followup_v2.py`, under `docs/` because the code
+    56	  freeze allows changes only there; written and tested before any spend) that
+    57	  imports the frozen stage functions of `scripts/revision_v2.py` at the protocol-v2 tag (`job`, `stage_search`, the
+    58	  evaluation and doubling stages) and builds the 18 jobs from the uncut cell list. It bypasses only three things, each
+    59	  recorded as a deviation: the fixed manifest path and cut list (`sim/manifest_v2.py` `effective`), the hard-coded doubling
+    60	  eligibility (`doublings`), and the original freeze. It writes to a new directory (`results/v2/followup-reset/`) and
+    61	  never writes to `results/v2/eval/all`.
+    62	- **Inputs the frozen stages read.** The search, evaluation, and doubling stages read their dependencies from the output
+    63	  directory (`menu()`, `reference_of()`, `select_reference()`). Before any episode, the driver copies into the new
+    64	  directory, read-only, every record those stages read for the 18 cells: the frozen reference records, the search
+    65	  records and bank-source records that build each (context, rule) menu, and the original cuts-3 bank membership. It
+    66	  takes the list from the `upstream` fields of the existing records and checks each copy's SHA-256 against them; it
+    67	  refuses on any missing record or mismatch.
+    68	- **Two freezes.** A pre-evaluation freeze after the 18 searches: selected policies, references, configurations, seeds,
+    69	  and search records, with their hashes (the frozen evaluation stage requires it). Evaluation and doubling then run
+    70	  against that freeze, and a final inventory lists every output record with its hash. The inventory is written after
+    71	  the outputs, so no record hashes itself.
+    72	- **Freeze validator.** The frozen `run()` calls `accept()`, which requires the original manifest's full record set, so it
+    73	  cannot admit the 18 restored cells. The driver therefore has its own acceptance check, run before evaluation and before
+    74	  doubling: every record of the follow-up dependency set (the copied inputs, the 18 search records, the pre-evaluation
+    75	  freeze) exists and matches its hash; the identity-salt hash matches; each new job's configuration hash equals the
+    76	  recorded container hash. Copied records keep their original provenance, including their recorded configuration
+    77	  hashes. Tests: it refuses a missing freeze, a changed selected-policy record, a changed salt, and a changed copied input.
+    78	- **References in doubling.** The held-out gain of a doubled winner uses the unchanged frozen reference. Any reference
+    79	  reselection the doubling stage computes is recorded as a diagnostic only.
+    80	- **References.** The existing frozen reference records are read, not re-selected; the driver refuses to start if any
+    81	  reference file's SHA-256 differs from the hash in the original records' `upstream`.
+    82	- **Configurations.** Linux pods from the same image as the evaluation; before any episode the driver checks that each
+    83	  fresh market's configuration hash equals the recorded container hash (`addendum.json` `deviations.configs`), so the
+    84	  new cells use the same configurations as the D2+H3 records they are paired with (the recorded 1-ulp deviation stays as
+    85	  it is).
+    86	- **Pairing and code checks (draft 5).** Before any episode the driver refuses a job whose runner, salt, configuration,
+    87	  root, seeds, rule parameters, or context differ from its frozen reference's provenance; an unknown commit; a runner or
+    88	  `sim/` that differs from protocol-v2; an output inside `--src` or `eval/all`; and a salt mismatch. The inventory records
+    89	  Python, numpy, machine, platform, and the driver's hash.
+    90	- **Validation before spend (free, on the Mac).** (a) Reproduction of the registered `headline@rho0.2|F111|D2` search and
+    91	  evaluation. Draft 4 required identical knobs and per-seed gains. Measured on 2026-11-09/10: a Mac arm64 run and a Linux
+    92	  amd64 container run both match on configuration, salt, runner, budget, rule parameters, episode count (15,660), archive
+    93	  sizes, and the twin result, with selected knobs equal to 2.6e-13 relative and per-seed gains to 2.0e-14; evaluating the
+    94	  registered knobs on the Mac gives per-seed gains within 5e-17 of the record (102 of 200 seeds bit-identical). The
+    95	  evaluation of fixed knobs is not always this close: one of the 128 corner controls of the Mac rerun differs by 1.5e-5
+    96	  with identical knobs (the other 127 within 2e-18), consistent with a near-tie flipping a discrete branch in an episode;
+    97	  in the Linux container all 128 controls are bit-identical to the record. The drift source is therefore not isolated to
+    98	  the optimiser. Last-bit
+    99	  arithmetic differences grow through the search; these runs did not reproduce bit identity across platforms, and the
+   100	  draft-4 rule is replaced as a recorded deviation. **Draft-5 criterion** (`compare()`). Exact: the provenance keys runner, salt, configuration, rule
+   101	  parameters, root, training, validation and evaluation seeds, context and budget (the commit may differ); the episode
+   102	  count; the attack and twin archive sizes; `best_source`; the discrete knobs; the search and evaluation dependency ids;
+   103	  the reference hash; the control set (knobs in order). Within 1e-9: the twin's best value. Reported, not gated: the
+   104	  corner controls' objective values (count and largest difference), because a near-tie in a non-selected corner policy
+   105	  can flip a discrete branch. Finite: the knobs, the attack, twin and control objective values, and the per-seed gains. Tolerance: continuous knobs within 1e-9 relative and per-seed
+   106	  gains within 1e-9 absolute (about 10^4 times the drift measured, and far below the paired standard error of about
+   107	  0.0009). The Mac runs pass this criterion. **Pod gate:** the pod first reruns the same reproduction (about 0.34 USD of
+   108	  billed time: 2,084 s search plus evaluation at 0.56 USD per hour); the author decided (card `touchstone-reset-repro-pass`,
+   109	  2026-11-10) that the 18 cells start only if the pod's reproduction is bit-identical (`--reproduce --require-identical`);
+   110	  any difference stops the pod and is reported. The draft-5 criterion applies to the Mac validations (`identical` requires bit-equal knobs, gains, twin value,
+   111	  attack objective and every control value). The reproduction path runs every pre-episode check
+   112	  (salt, commit, code, pairing, configuration) before its search and saves `gate.json` and an inventory with the
+   113	  environment (Python, numpy with BLAS and LAPACK, SciPy, CMA, CPU). (b) An
+   114	  integration test runs the complete path (input copies, search, pre-evaluation freeze, evaluation, doubling, inventory)
+   115	  for one fresh-market cell at smoke size, including the driver's acceptance check, which proves every dependency
+   116	  resolves (passed, 2026-11-09). (d) Doubling ground truth: the driver's doubling stage reruns the registered doubling
+   117	  check of `fresh0@rho0.2|F111|D2+H3|profit` on the Mac (`--reproduce-doubling`), after the full preflight, saving a record with provenance and dependency
+   118	  hashes, `gate.json`, and an inventory; compared by `compare_doubling()`: required fields present; finite values; exact on
+   119	  the flag, the seeds and the discrete knobs; 1e-9 on the continuous held-out knobs, the attack and reference
+   120	  changes, and the held-out per-seed gains. The saved result must pass before any pod is created. (c) Unit tests: the driver refuses a
+   121	  changed reference hash, a missing input record, a wrong configuration hash, and an output directory inside `eval/all`.
+   122	
+   123	## 4. Diagnostics (evaluation only, no search)
+   124	
+   125	For three rules on seven markets: the base and doubled D2+H3 winners (42 policies) and the base D2 winners (21; the doubled
+   126	D2 winners are not included), on the 200 evaluation seeds, re-run with reset and ban instrumentation (63 single-policy
+   127	evaluations; the existing gain records carry no reset counts, so none is reused); the selected `x`; per episode the number of resets, the probability of at least one reset, the rounds of resets,
+   128	and the rounds spent banned. Check that every D2 winner has zero resets. **Reverse switch (draft 5):** each of the 18 D2 winners re-evaluated with
+   129	`x = 1` and every other knob unchanged (18 more evaluations). The diagnostics are built and tested in the driver (`diagnostics`
+   130	stage) before any pod. Order: the instrumentation is validated on the registered headline cells before the pod; the
+   131	diagnostics of the 18 new D2 winners and their reverse switches run on the Mac after the pod's records are retrieved.
+   132	Construction: a D2 winner is embedded in D2+H3 by adding `x` (0 for itself, 1 for the reverse switch); each switch is
+   133	the mean difference of normalised profits on the evaluation seeds, the reference cancelling. Resets are the focal
+   134	provider's identities of generation 1 or more; ban rounds are the ban lengths imposed on its identities; rounds without
+   135	an offer are counted separately. Saved per policy: the seed identifiers, the per-seed normalised profits, the per-seed switch differences, and the
+   136	reset and ban counts per episode; a D2 winner with any reset stops the run. Spot check: `fresh0@rho0.2|F111` is also
+   137	diagnosed on the pod (`--diag-cells`); the Mac's reset and ban counts must equal the pod's exactly, and its numerical
+   138	values must
+   139	meet the draft-5 tolerance against it. **Fixed-policy switch:** each of the 42 D2+H3
+   140	winners re-evaluated with `x` set to 0 and every other knob unchanged (42 more; a winner that already has `x = 0` is
+   141	reported as identical and not re-run); g(winner) - g(winner, x = 0) is the effect of the switch
+   142	without re-optimisation, reported beside I.
+   143	
+   144	## 5. Analysis (fixed now)
+   145	
+   146	- **Intervals.** Per market: paired seed bootstrap (9,999 resamples, percentile, 95%), the same resampled seed indices for
+   147	  every rule and family of that market, so contrasts across rules stay paired. Pooled: equal market weights; in each
+   148	  replicate, seeds are resampled independently within each market and the pooled statistic is the mean of the six market
+   149	  means; percentile interval. Nominal and descriptive; conditional on the six markets and the frozen policies and
+   150	  references.
+   151	- **Statistics.** I(r, m) and pooled I(r); the contrasts I(B3) - I(R3) and I(C*) - I(R3); the absolute gaps
+   152	  G(D2+H3) = g_B3 - g_R3 under D2+H3 and G(D2) under D2, pooled.
+   153	- **Share.** S = 1 - pooled G(D2) / pooled G(D2+H3), a ratio of pooled contrasts, computed in every bootstrap replicate.
+   154	  S is reported only if the lower bound of pooled G(D2+H3) exceeds 0.05; otherwise "not defined". No clipping; S can be
+   155	  negative or above 1. The absolute gaps are always reported beside it.
+   156	- **Market sensitivity (draft 5).** The sign count of I(B3) - I(R3) and I(C*) - I(R3) over the six markets, and S with
+   157	  each market left out in turn (six values), each with its own five-market denominator gate (lower bound of the
+   158	  five-market pooled G(D2+H3) above 0.05; otherwise that value is "not defined"), for the base and the doubled results
+   159	  separately. A nested best-of sensitivity (the better of the D2 and D2+H3 winners per cell) is deferred: it is not
+   160	  part of this plan.
+   161	- **Doubling flags.** For each D2 cell, the attack change and the reference-reselection change of its doubling check are
+   162	  reported separately.
+   163	- **Doubled versions** of the same statistics, as in the paper's `tab:ph-doubled`. The base (frozen) searches are primary,
+   164	  as in the paper; the doubled versions are reported beside them.
+   165	- No confirmatory test, no multiplicity family, no change to any registered decision.
+   166	
+   167	## 6. Pre-specified expectations and labels
+   168	
+   169	Written before any fresh D2 result exists. **The six markets, their seeds, and their D2+H3 outcomes were already observed;
+   170	only the D2 outcomes are unseen.** This is a descriptive follow-up specified on 2026-11-09 after the round-9 review and
+   171	after the headline contrast was seen, not an independent replication.
+   172	
+   173	Expectations: on all six fresh markets (each market counted; a single market against it fails the expectation), I(B3) > I(R3) and I(C*) > I(R3); pooled S defined and greater than 0.5. Expectations are
+   174	scored on point estimates (this is a descriptive follow-up; "met" does not mean that an interval excludes the threshold),
+   175	with the denominator gate of section 5 applied separately to the base and the doubled results. Each expectation is
+   176	scored as met, failed, or not established: **met** if it holds under both the base and the doubled searches; **failed** if
+   177	it fails under both; **not established (search-sensitive)** if the two disagree. An undefined S and a missing cell are
+   178	reported as such, separately from failures. A failure is not read as evidence for any particular cause (search error and
+   179	mixed outcomes are possible). Only if the pooled-S expectation is met may the paper say: within the D2 family, at the
+   180	fixed parameters and search budgets, most of the estimated B3 - R3 gap under the prescribed searches disappears when the
+   181	attacker cannot replace its identity.
+   182	
+   183	## 7. Cost
+   184	
+   185	**Work.** Measured benchmark (`experiments/v2/benchmark/timings.json`): one unit = a headline D2+H3 cell, 0.579
+   186	core-hours. Per D2 cell: 1 unit + 160 further seeds (0.046) + doubling with held-out evaluation (0.479); 18 cells = 27.45
+   187	units. Diagnostics: 63 instrumented evaluations + up to 42 switch evaluations = up to 105 single-policy evaluations of
+   188	200 episodes, priced conservatively at the profit-evaluation stage's cost for 200 seeds (0.058 units each, although that
+   189	stage evaluates more than one profile) = about 6.1 units. Total about 33.6 units = **about 19.4 core-hours**. Draft 5
+   190	moves the diagnostics to the Mac (free) and adds the pod gate (about 0.34 USD); the pod estimate below is kept as an
+   191	upper bound.
+   192	
+   193	**Billed pod time.** One 16-vCPU pod at the recorded 0.56 USD per hour; searches with 16 workers, evaluation, doubling,
+   194	and diagnostics with at most 10 (operations ledger). Stage schedule with incomplete worker batches and equal benchmark
+   195	task times: searches, evaluation, and doubling about 1.77 hours (internal review's computation); diagnostics about 0.6
+   196	hours (105 evaluations in batches of 10); preparation 0.3 hours; idle tail 0.3 hours = **about 3.0 billed hours, about
+   197	1.66 USD**. The benchmark's unit price (0.0625 USD per unit, at its 0.108 USD per core-hour) gives about 2.10 USD; the plan
+   198	uses the larger.
+   199	
+   200	| Item | Estimate | Cap |
+   201	|---|---:|---:|
+   202	| Option A: 18 D2 cells, doubling checks, diagnostics | 1.66 to 2.10 USD | **10.00 USD** (author, 2026-11-09) |
+   203	
+   204	A failed attempt counts toward the cap; the cap leaves room for one early failure, not for a full second run. Option B (an X7-SC variant with replacement disabled) is dropped from this plan: its
+   205	constrained family, incumbents, and corner controls would need their own specification (the frozen X7-SC search inserts
+   206	D2+H3 incumbents that can replace), so it is not offered for approval.
+   207	
+   208	**Budget.** `docs/revision/budget-ledger.json`: spent 50.869 USD of the 55 USD approval limit. The author approved option A
+   209	on the board on 2026-11-09 and set the cap to 10 USD ("make the cap $10 to ensure we're not blocked by a low cap"). The
+   210	ledger needs a new category `followup` with cap 10.00 and the approval limit raised to 61 USD (50.869 + 10 = 60.869,
+   211	`python3 -c "print(50.869+10)"`). `scripts/budget_v2.py` is frozen, so the tested wrapper
+   212	`docs/revision/followup/budget_followup.py --approve 61 10 TEXT` records both, refuses a limit below spend plus the cap,
+   213	and keeps the earlier approval text. The estimate is unchanged (1.66 to 2.10 USD); the higher cap only prevents a stop from a low
+   214	cap. Stop at the cap.
+   215	
+   216	## 8. Steps
+   217	
+   218	1. Internal review of this plan to consensus; freeze it (commit).
+   219	2. Decision card: approved on 2026-11-09, cap 10 USD (card `touchstone-reset-spend`).
+   220	3. On approval: write and test the driver (TDD); on the Mac (free), validations (a), (b) and (d) must pass through the
+   221	   corrected paths (preflight run, record with provenance and dependency hashes, `gate.json` and an inventory saved in a
+   222	   new directory each: `results/v2/followup-repro-v2`, `results/v2/followup-repro-doubling-v2`); earlier passes on the
+   223	   older path do not count and the diagnostics are validated on the registered headline
+   224	   cells, all before any pod is created.
+   225	4. One pod: the reproduction gate first (bit identity, `--require-identical`; stop and report on any difference), then `--stage all` with
+   226	   `--diag-cells fresh0@rho0.2|F111|D2|profit` (inputs, search, freeze, evaluate, doubling, spot diagnostics, inventory);
+   227	   records retrieved, the pod deleted and the deletion verified, the spend recorded.
+   228	5. On the Mac after retrieval: the diagnostics of all 18 D2 winners and their reverse switches (`--stage diagnostics`),
+   229	   checked against the pod's spot-check cell. The three headline cells (registered D2 records) run on the Mac before the
+   230	   pod (`--headline-diagnostics`, 200 seeds); with the 18 fresh cells this gives the 63 policies and 42 switch
+   231	   comparisons of section 4 plus the 21 reverse switches.
+   232	6. Analysis: a new `reset` block in `posthoc_v2.py` (tested first), a table, and a paragraph in section 9 with sites; the
+   233	   section-1 headline numbers enter at the same time, labelled exploratory.
+   234	7. Internal review of the paper change, then the next external package.
+VERDICT: reject
+
+CORRECTIONS:
+1. **None — plan §3, tolerance deviation.** The change is justified and explicitly recorded. Both saved reproductions pass the current comparator: maximum knob drift is 2.58e-13 relative; maximum gain drift is 2.02e-14 absolute. The plan now states the corner-control discrepancy and avoids attributing all drift to the optimizer. Pairing, code, salt, input conflicts, freeze membership, acceptance, output protection, and environment checks address the specified round-4 findings.
+
+2. **Plan §§3(d), 8.3; `reset_followup_v2.py:417–428` — block pod creation until current validation records exist.** The saved doubling output passes the numerical comparison, but lacks provenance and dependency hashes; its directory has no inventory. Its saved gate predates the corrected reproduction path. Both headline reproduction directories also lack `gate.json` and inventories. Run the corrected validation paths and retain their required records before provisioning. An old numerical pass does not establish that the new preflight ran.
+
+3. **Plan §§4, 8; `reset_followup_v2.py:46–51,482–496`.** Add an explicit execution path for all three headline diagnostic cells on all 200 seeds. The documented Mac command covers only six fresh markets; `--markets headline` is refused because headline cells were retained. The existing headline test covers F111 on two seeds. Thus, the instructions do not deliver the promised seven-market, 63-policy diagnostic coverage.
+
+4. **`reset_followup_v2.py:383`; plan §3.** Qualify `identical` as “selected knobs and gains identical,” or require objective equality too. An in-memory check with changed control objectives still returned `identical: true`. That result must not be reported as full bit identity.
+
+5. **None — plan §§4–6.** Reverse-switch construction, saved per-seed diagnostics, zero-reset enforcement, separate five-market denominator gates, base/doubled reporting, all-six-market scoring, and the explicit best-of deferral are clear.
+
+CONFIDENCE: 0.96.VERDICT: reject
+
+CORRECTIONS:
+
+1. **Plan §3 — none for the tolerance deviation.** Both saved reproductions pass the current comparator: maximum knob drift is 2.58e-13 relative; gain drift is 2.02e-14 absolute. The 1e-9 limits are reasonable for this reproduction. Draft 5 explicitly records the deviation, acknowledges the Mac corner discrepancy, and requires a pod gate. It correctly leaves the drift source unresolved.
+
+2. **`docs/revision/followup/reset_followup_v2.py:383` — correct `identical`.** In-memory checks returned `identical: true` after changing the twin value by 5e-10 or one control value by 1.0. Require exact numerical equality for that label, or rename it `selected_knobs_and_gains_identical`. The tolerance-based pass result otherwise implements the stated criterion.
+
+3. **Plan §§3(d), 8 — block pod creation until current validation evidence exists.** The old doubling record passes the current numerical comparator but lacks provenance, dependency hashes, and inventory. `followup-repro-doubling-v2` still lacks its doubling record, gate, and inventory. The supplied headline reproductions also lack saved gates and inventories from the corrected path. Complete and save the required validations before provisioning.
+
+4. **Plan §§4, 8; `docs/revision/followup/reset_followup_v2.py:130`; `docs/revision/followup/test_reset_followup.py:304` — complete headline diagnostic coverage.** The CLI builds only fresh-market jobs; the headline test covers only F111 at smoke size. Specify an executable path that saves all three headline rules on 200 evaluation seeds. Combined with the fresh-market diagnostics, it must cover the promised 63 policies and 42 switch comparisons.
+
+5. **Plan §§3–6 — none for the remaining round-4 corrections.** Pairing, code, salt, output protection, input conflicts, freeze membership, source-based acceptance, and environment fields address findings 1, 2, 5–8. Reverse-switch construction, per-seed outputs, zero-reset enforcement, separate five-market denominator gates, all-six scoring, and explicit best-of deferral are clear. I inspected the tests but did not rerun the writing test suite under read-only access.
+
+CONFIDENCE: 0.96.
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/reset_pod.sh; git show --stat 30e5353 8d18de4 d865329' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+     1	#!/bin/bash
+     2	# Snapshot guard: run a private copy, so an edit to this file cannot reach a running launch.
+     3	if [ -z "${LAUNCH_SNAPSHOT:-}" ]; then
+     4	  snapf="/Users/oemer.demirel/Projects/touchstone/results/pods/snap_$(basename "$0" .sh)_$$.sh"; cp "$0" "$snapf"
+     5	  LAUNCH_SNAPSHOT="$snapf" exec bash "$snapf" "$@"
+     6	fi
+     7	# Reset follow-up (docs/revision/reset-experiment-plan.md, draft 5) on one Runpod CPU pod, adapted from eval_pod.sh.
+     8	# Order on the pod: the reproduction gate (bit identity, --require-identical; the author's decision), then the 18 D2 cells
+     9	# stage by stage (inputs and search with all vCPUs; evaluate, doubling and the spot diagnostics with WEVAL workers for
+    10	# memory), then the inventory. Spending (the author: do not kill jobs): at the reserved cap the pod stops BETWEEN stages
+    11	# (a STOP file the remote script reads before each stage); only at HARD x the cap is the pod deleted mid-stage, as an
+    12	# absolute guard. An EXIT/INT/TERM trap pulls what exists, deletes the pod and verifies the deletion.
+    13	# Usage: reset_pod.sh <code_tgz> <bundle_tgz> <tag> <cap_usd> <local_out>
+    14	# Env: EXPECT (commit inside the code tarball), MAXCPH, optional WEVAL (default 10), MINMEM (default 28), HARD (default 1.3).
+    15	set -u
+    16	PY=/opt/homebrew/bin/python3; P=/Users/oemer.demirel/Projects/touchstone/results/pods
+    17	TGZ=${1:?code tarball}; BTGZ=${2:?bundle tarball}; TAG=${3:?tag}; CAP=${4:?cap_usd}; LOUT=${5:?local_out}; cd $P
+    18	EXPECT=${EXPECT:?commit}; MAXCPH=${MAXCPH:?max usd per hour}; WEVAL=${WEVAL:-10}; MINMEM=${MINMEM:-28}; HARD=${HARD:-1.3}
+    19	mkdir -p "$LOUT" logs_r_$TAG
+    20	$PY -c "import sys,tarfile; ms=tarfile.open(sys.argv[1]).getmembers(); d=[m.name for m in ms if m.name.split('/')[-1].startswith('._')]; o=[m.name for m in ms if m.uid!=0]; print('tarball guard: %d AppleDouble, %d non-root' % (len(d),len(o))); sys.exit(1 if d or o else 0)" "$TGZ" || { echo "code tarball refused"; exit 1; }
+    21	hg=$(mktemp -d); tar xzf "$TGZ" -C "$hg" 2>/dev/null
+    22	(cd "$hg" && [ "$(git rev-parse HEAD)" = "$EXPECT" ] && git merge-base --is-ancestor protocol-v2 HEAD && bad=$(git diff --name-only protocol-v2 HEAD | grep -v -e '^docs/' -e '^experiments/v2/' -e '^paper/' -e '^sealed2/h4/') ; [ -z "$bad" ] && git diff --quiet protocol-v2 -- scripts/ sim/ tests/ && echo "history guard: protocol-v2 is an ancestor, only docs/, experiments/v2/, paper/, sealed2/h4/ changed since it, HEAD $(git rev-parse --short HEAD)") || { mv -- "$hg" ~/.Trash/hg_reset_$$; echo "code tarball refused (HEAD, ancestry, or a change outside the allowed paths: ${bad:-})"; exit 1; }
+    23	mv -- "$hg" ~/.Trash/hg_reset_$$
+    24	[ -n "${DRYRUN:-}" ] && { echo "dry run: guards passed; no pod created"; exit 0; }
+    25	tmo() { perl -e 'alarm shift; exec @ARGV' "$@"; }
+    26	id=""; soft=0; hard=0; state="NOT STARTED"; rc=1; t0=0; cph=0
+    27	cleanup() {
+    28	  trap - EXIT INT TERM
+    29	  if [ -n "$id" ]; then
+    30	    tmo 900 $PY runpod.py pull $id /root/touchstone/results/v2/followup-reset/ "$LOUT/followup-reset/" >/dev/null 2>&1
+    31	    tmo 300 $PY runpod.py pull $id /root/touchstone/results/v2/followup-gate/ "$LOUT/followup-gate/" >/dev/null 2>&1
+    32	    tmo 300 $PY runpod.py pull $id /root/touchstone/results/logs/ logs_r_$TAG/ >/dev/null 2>&1
+    33	    for i in 1 2 3 4 5; do
+    34	      tmo 60 $PY runpod.py delete $id >/dev/null 2>&1
+    35	      live=$(tmo 60 $PY runpod.py list 2>/dev/null | $PY -c "import sys,json; print(sum(1 for p in json.load(sys.stdin) if p['id']=='$id'))" 2>/dev/null)
+    36	      [ "$live" = "0" ] && { echo "$(date +%H:%M) $id deleted (verified)"; break; }
+    37	      sleep 15
+    38	    done
+    39	    [ "$live" = "0" ] || { echo "$(date +%H:%M) $id: DELETION NOT VERIFIED; delete it by hand"; rc=1; }
+    40	  fi
+    41	  [ -n "$cph" ] && [ "$cph" != "0" ] || { cph=$MAXCPH; echo "$(date +%H:%M) price unknown: spend bounded at $MAXCPH USD/h"; }
+    42	  [ "$t0" -gt 0 ] && echo "$(date +%H:%M) spend: $(( $(date +%s) - t0 ))s at $cph USD/h = $($PY -c "print(round(($(date +%s)-$t0)/3600*float('$cph'),3))") USD (record with budget_v2.py --record)"
+    43	  echo "$(date +%H:%M) end: $state"
+    44	  exit $rc
+    45	}
+    46	trap cleanup EXIT INT TERM
+    47	for attempt in 1 2 3; do
+    48	  out=$(tmo 120 $PY create16.py ts-r-$TAG 2>/dev/null | tail -n 1); id=$(echo "$out" | $PY -c 'import sys,json; print(json.loads(sys.stdin.read()).get("id",""))' 2>/dev/null); v=$(echo "$out" | $PY -c 'import sys,json; print(json.loads(sys.stdin.read()).get("vcpu",""))' 2>/dev/null)
+    49	  [ -z "$id" ] && { echo "$(date +%H:%M) no capacity"; sleep 30; continue; }
+    50	  [ "$t0" -eq 0 ] && t0=$(date +%s)
+    51	  cph=$(tmo 60 $PY runpod.py list 2>/dev/null | $PY -c "import sys,json; print(next((p.get('costPerHr') or 0) for p in json.load(sys.stdin) if p['id']=='$id'))" 2>/dev/null)
+    52	  $PY -c "import sys; sys.exit(0 if 0<float('${cph:-0}' or 0)<=float('$MAXCPH') else 1)" || { state="PRICE ${cph:-unknown} NOT IN (0, $MAXCPH]"; exit 1; }
+    53	  soft=$(( t0 + $($PY -c "print(int(3600*float('$CAP')/float('$cph')))") )); hard=$(( t0 + $($PY -c "print(int(3600*float('$CAP')*float('$HARD')/float('$cph')))") ))
+    54	  up=""; for i in $(seq 1 24); do r=$(tmo 30 $PY runpod.py ssh $id 'echo up' 2>/dev/null | head -c 2); [ "$r" = up ] && { up=1; break; }; sleep 10; done
+    55	  [ -n "$up" ] && break
+    56	  echo "$(date +%H:%M) $id unreachable; deleting"; tmo 60 $PY runpod.py delete $id >/dev/null 2>&1; id=""
+    57	done
+    58	[ -z "$id" ] && { state="NO POD"; exit 1; }
+    59	echo "$(date +%H:%M) pod $id ($v vCPU, $cph USD/h): soft stop in $(( soft - $(date +%s) ))s, hard stop in $(( hard - $(date +%s) ))s (cap $CAP USD)"
+    60	tmo 900 $PY runpod.py push $id $TGZ /root/rc.tgz >/dev/null 2>&1
+    61	tmo 1800 $PY runpod.py push $id $BTGZ /root/rb.tgz >/dev/null 2>&1
+    62	tmo 900 $PY runpod.py ssh $id 'mkdir -p touchstone bundle && tar xzf rc.tgz -C touchstone && tar xzf rb.tgz -C bundle && (which uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh 2>/dev/null | sh >/dev/null 2>&1); export PATH=$HOME/.local/bin:$PATH; cd touchstone && uv sync --frozen -q 2>&1 | tail -n 2; mkdir -p results/logs' >/dev/null 2>&1
+    63	chk=$(tmo 300 $PY runpod.py ssh $id "cd touchstone; export PATH=\$HOME/.local/bin:\$PATH; echo git=\$(git rev-parse HEAD 2>&1) env=\${TOUCHSTONE_IDENTITY_SALT:-unset} bundle=\$(ls /root/bundle/eval-all/freeze | wc -l); m=\$(cat /sys/fs/cgroup/memory.max 2>/dev/null || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null); case \$m in max|''|9223372036854*) m=\$(awk '/MemTotal/ {print \$2*1024}' /proc/meminfo);; esac; echo memgb=\$((m/1073741824)); echo py=\$(uv run --frozen python -c 'import platform,numpy;print(platform.python_version(),numpy.__version__)' 2>&1 | tail -n 1 | tr ' ' _)" 2>/dev/null | tr '\n' ' ')
+    64	echo "$(date +%H:%M) prep: $chk"
+    65	case "$chk" in *"git=$EXPECT"*"env=unset"*) ;; *) state="PREP FAILED"; exit 1 ;; esac
+    66	memgb=$(echo "$chk" | sed -n 's/.*memgb=\([0-9]*\).*/\1/p'); [ -n "$memgb" ] && [ "$memgb" -ge "$MINMEM" ] || { state="PREP FAILED (memory ${memgb:-unknown} GB < $MINMEM GB)"; exit 1; }
+    67	cat > /tmp/r_remote_$TAG.sh <<EOS
+    68	#!/bin/bash
+    69	cd /root/touchstone; export OMP_NUM_THREADS=1 PATH=\$HOME/.local/bin:\$PATH; unset TOUCHSTONE_IDENTITY_SALT; unset TOUCHSTONE_LOCKED
+    70	B=/root/bundle; A="--src \$B/eval-all --draw \$B/draw/draw.json --instances \$B/draw/instances.json --cfgs \$B/deviation/cfg_linux.json --addendum \$B/report/addendum.json --report \$B/report/report.json"
+    71	D=docs/revision/followup/reset_followup_v2.py
+    72	echo "== gate start \$(date +%H:%M)"
+    73	uv run --frozen python \$D --reproduce --require-identical --out results/v2/followup-gate --workers 1 \$A >> results/logs/r_gate.log 2>&1 || { echo "== GATE FAILED \$(date +%H:%M)"; exit 1; }
+    74	echo "== gate passed (bit-identical) \$(date +%H:%M)"
+    75	for st in inputs search freeze evaluate doubling diagnostics inventory; do
+    76	  [ -e /root/STOP ] && { echo "== STOPPED BEFORE \$st (cap) \$(date +%H:%M)"; exit 1; }
+    77	  w=$v; case \$st in evaluate|doubling|diagnostics) w=$WEVAL ;; esac
+    78	  echo "== stage \$st start \$(date +%H:%M) workers \$w"
+    79	  uv run --frozen python \$D --stage \$st --diag-cells 'fresh0@rho0.2|F111|D2|profit' --workers \$w --out results/v2/followup-reset \$A >> results/logs/r_run.log 2>&1 || { echo "== RUN FAILED at \$st \$(date +%H:%M)"; exit 1; }
+    80	done
+    81	echo "== RUN OK \$(date +%H:%M)"
+    82	EOS
+    83	tmo 120 $PY runpod.py push $id /tmp/r_remote_$TAG.sh /root/r_remote.sh >/dev/null 2>&1
+    84	tmo 120 $PY runpod.py ssh $id "chmod +x /root/r_remote.sh; (nohup /root/r_remote.sh > /root/touchstone/results/logs/r_remote.log 2>&1 < /dev/null &)" >/dev/null 2>&1
+    85	state="RUNNING"; stopped=""
+    86	while true; do
+    87	  sleep 120
+    88	  now=$(date +%s)
+    89	  [ "$now" -ge "$hard" ] && { state="HARD CAP REACHED ($HARD x cap)"; exit 1; }
+    90	  if [ "$now" -ge "$soft" ] && [ -z "$stopped" ]; then tmo 60 $PY runpod.py ssh $id 'touch /root/STOP' >/dev/null 2>&1 && stopped=1 && echo "$(date +%H:%M) cap reached: the pod stops after the running stage"; fi
+    91	  st=$(tmo 90 $PY runpod.py ssh $id "tail -c 240 /root/touchstone/results/logs/r_remote.log" 2>/dev/null | tr '\n' ' ')
+    92	  echo "$(date +%H:%M) [soft $(( soft - now ))s, hard $(( hard - now ))s] $st" | tail -c 320
+    93	  case "$st" in
+    94	    *"RUN OK"*) state="RUN OK"; rc=0; exit 0 ;;
+    95	    *"GATE FAILED"*) state="GATE FAILED (not bit-identical; 18 cells not started)"; exit 1 ;;
+    96	    *"RUN FAILED"*|*"STOPPED BEFORE"*) state="$(echo "$st" | grep -o '== [A-Z].*' | head -c 120)"; exit 1 ;;
+    97	  esac
+    98	done
+commit 30e53534c528747e84ceece18379e08196ae2a82
+Author: Ömer Demirel <7556489+demirelo@users.noreply.github.com>
+Date:   Tue Nov 10 23:10:43 2026 +0100
+
+    Reset driver and plan: round-6 corrections (identical needs equal objective values; headline diagnostics path; validations through the corrected paths); 50 tests
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+ docs/revision/followup/reset_followup_v2.py   |   26 +-
+ docs/revision/followup/test_reset_followup.py |   20 +
+ docs/revision/reset-experiment-plan.md        |   13 +-
+ docs/revision/roster/astra-churn-plan-r1.log  | 3026 +++++++++++++++++++++
+ docs/revision/roster/astra-churn-plan-r1.md   |   19 +
+ docs/revision/roster/astra-reset-plan-r6.log  | 2069 +++++++++++++++
+ docs/revision/roster/astra-reset-plan-r6.md   |   15 +
+ docs/revision/roster/brief-churn-plan-r1.md   |   10 +
+ docs/revision/roster/brief-reset-plan-r6.md   |   10 +
+ docs/revision/roster/sol-churn-plan-r1.log    | 3482 +++++++++++++++++++++++++
+ docs/revision/roster/sol-churn-plan-r1.md     |   19 +
+ docs/revision/roster/sol-reset-plan-r6.log    | 3047 ++++++++++++++++++++++
+ docs/revision/roster/sol-reset-plan-r6.md     |   14 +
+ 13 files changed, 11763 insertions(+), 7 deletions(-)
+
+commit 8d18de41fa499b1dbd1949a4c2dace7aec090421
+Author: Ömer Demirel <7556489+demirelo@users.noreply.github.com>
+Date:   Tue Nov 10 23:31:01 2026 +0100
+
+    Reset plan and driver: the author's decision on the pod gate (bit identity on the pod, --require-identical; card touchstone-reset-repro-pass); 51 tests
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+ docs/revision/followup/reset_followup_v2.py   | 12 ++++++++++--
+ docs/revision/followup/test_reset_followup.py |  8 ++++++++
+ docs/revision/reset-experiment-plan.md        |  7 ++++---
+ 3 files changed, 22 insertions(+), 5 deletions(-)
+
+commit d86532930ae2737155bde166abae35f085b15df2
+Author: Ömer Demirel <7556489+demirelo@users.noreply.github.com>
+Date:   Tue Nov 10 23:38:51 2026 +0100
+
+    Reset driver: copy_inputs refuses only real hash conflicts (TDD; found by the follow-up-2 helper); follow-up runs A and B at draft 2 (review r1 corrections, guards.py, 56 tests; helper session)
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+ docs/revision/followup/reset_followup_v2.py    |   2 +-
+ docs/revision/followup/test_reset_followup.py  |  11 ++
+ docs/revision/followup2/common.py              |  15 +-
+ docs/revision/followup2/convergence-plan.md    | 116 ++++++++-------
+ docs/revision/followup2/convergence_v2.py      | 150 +++++++++++++++----
+ docs/revision/followup2/cost_estimate.py       |  33 +++--
+ docs/revision/followup2/guards.py              | 117 +++++++++++++++
+ docs/revision/followup2/runner-up-plan.md      | 117 +++++++++------
+ docs/revision/followup2/runnerup_v2.py         | 195 ++++++++++++++++++++-----
+ docs/revision/followup2/test_common.py         |   9 ++
+ docs/revision/followup2/test_convergence_v2.py |  58 +++++++-
+ docs/revision/followup2/test_guards.py         |  69 +++++++++
+ docs/revision/followup2/test_runnerup_v2.py    | 116 ++++++++++++++-
+ docs/revision/lessons.md                       |   1 +
+ 14 files changed, 830 insertions(+), 179 deletions(-)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "nl -ba docs/revision/followup/reset_followup_v2.py | sed -n '1,270p'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc "nl -ba docs/revision/followup/reset_followup_v2.py | sed -n '270,620p'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+   270	    resets, rounds, no_offer, bans = [], [], [], []
+   271	    for r in results:
+   272	        mine = [i for i, e in enumerate(r.entity_of) if e == focal]
+   273	        new = [i for i in mine if r.identity_generation[i] > 0]
+   274	        resets.append(len(new)); rounds.append([int(r.identity_round[i]) for i in new])
+   275	        no_offer.append(int(np.isnan(r.claims[:, focal]).sum()))
+   276	        bans.append(int(sum(v for h in r.history for i, v in h.consequences.bans.items() if i in mine)))
+   277	    return {"resets": resets, "reset_rounds": rounds, "no_offer_rounds": no_offer, "ban_rounds": bans,
+   278	            "mean_resets": float(np.mean(resets)), "p_any_reset": float(np.mean([x > 0 for x in resets])),
+   279	            "mean_no_offer_rounds": float(np.mean(no_offer)), "mean_ban_rounds": float(np.mean(bans))}
+   280	
+   281	
+   282	def require_zero_resets(stats: dict, what: str) -> None:
+   283	    """Plan section 4: a D2 winner (x = 0) must never replace its identity; anything else is a construction error."""
+   284	    if any(stats["resets"]):
+   285	        _refuse(f"{what}: the D2 winner has resets in {sum(1 for r in stats['resets'] if r)} episodes")
+   286	
+   287	
+   288	def with_x(knobs: dict, x: int) -> dict:
+   289	    """The same policy in the D2+H3 family with the replacement switch set to x (D2 is D2+H3 with x = 0)."""
+   290	    return {**knobs, "x": int(x)}
+   291	
+   292	
+   293	def diagnostics(src, out, jobs: list[dict], report: dict, d2_from=None) -> dict:
+   294	    """Plan section 4 (draft 5), evaluation only: for each D2 job's (context, rule), the base and doubled D2+H3 winners and
+   295	    the base D2 winner on the evaluation seeds with reset instrumentation; the switch g(winner) - g(winner with x = 0) for
+   296	    the D2+H3 winners and the reverse switch g(D2 winner with x = 1) - g(D2 winner). The reference cancels in each switch,
+   297	    so it is a difference of normalised profits."""
+   298	    import numpy as np
+   299	    from sim.cell import SeedCache, run_focal
+   300	    res = {}
+   301	    for j in jobs:
+   302	        T, L = R.constants(j); fam = R.family_for("D2+H3", T, L); cell = R.eval_cell(j); cache = SeedCache()
+   303	        h3 = R.cell_id(j["context"], j["rule"], "D2+H3", "profit")
+   304	        pols = {"d2h3_base": read(R.path_of(src, h3))["attack"]["best_knobs"], "d2h3_doubled": report["doubling"][h3]["heldout"]["knobs"],
+   305	                "d2_base": with_x(read(R.path_of(d2_from or out, j["id"]))["attack"]["best_knobs"], 0)}
+   306	        runs = {k: run_focal(cell, lambda k=k: fam.make(dict(pols[k])), cache) for k in pols}
+   307	        row = {k: {"knobs": pols[k], **reset_stats(runs[k].results, cell.focal), "seeds": list(cell.seeds),
+   308	                   "normalized": [float(v) for v in runs[k].normalized], "mean_normalized": float(np.mean(runs[k].normalized))} for k in pols}
+   309	        require_zero_resets(row["d2_base"], j["id"])
+   310	        for k in ("d2h3_base", "d2h3_doubled"):
+   311	            if int(pols[k].get("x", 0)) == 0:
+   312	                row[k]["switch_x0"] = {"identical": True, "effect": 0.0}
+   313	            else:
+   314	                off = run_focal(cell, lambda k=k: fam.make(with_x(pols[k], 0)), cache)
+   315	                diff = runs[k].normalized - off.normalized
+   316	                row[k]["switch_x0"] = {"identical": False, "effect": float(np.mean(diff)), "per_seed": [float(v) for v in diff]}
+   317	        on = run_focal(cell, lambda: fam.make(with_x(pols["d2_base"], 1)), cache)
+   318	        diff = on.normalized - runs["d2_base"].normalized
+   319	        row["d2_base"]["switch_x1"] = {"effect": float(np.mean(diff)), "per_seed": [float(v) for v in diff]}
+   320	        res[f"{j['context']}|{j['rule']}"] = row
+   321	    return res
+   322	
+   323	
+   324	REPRO = "headline@rho0.2|F111|D2|profit"
+   325	
+   326	
+   327	KNOB_TOL, GAIN_TOL = 1e-9, 1e-9                      # plan draft 5, section 3 (a)
+   328	
+   329	
+   330	EXACT_PROV = ("runner_sha256", "salt_sha256", "cfg_sha256", "rule_params_sha256", "root", "seeds_train", "seeds_val", "seeds_eval", "context", "budget")
+   331	
+   332	
+   333	def _finite(*xs) -> bool:
+   334	    import math
+   335	    return all(math.isfinite(v) for x in xs for v in (x if isinstance(x, (list, tuple)) else [x]) if isinstance(v, (int, float)))
+   336	
+   337	
+   338	def compare(src, out, rid: str = REPRO) -> dict:
+   339	    """Validation (a), plan draft 5: exact on the provenance keys (the commit may differ), the episode count, the attack and
+   340	    twin archive sizes, `best_source`, the discrete knobs, the search and evaluation dependency ids, the reference hash and
+   341	    the seeds; continuous knobs within KNOB_TOL relative and per-seed gains within GAIN_TOL absolute; every value finite.
+   342	    `identical` additionally needs bit-identical knobs and gains."""
+   343	    a, b = read(R.path_of(src, rid)), read(R.path_of(out, rid)); ea, eb = read(R.eval_path(src, rid)), read(R.eval_path(out, rid))
+   344	    if None in (a, b, ea, eb):
+   345	        return {"pass": False, "identical": False, "problems": ["a record is missing"]}
+   346	    problems = []
+   347	    ka, kb = a["attack"]["best_knobs"], b["attack"]["best_knobs"]
+   348	    objs = [x.get("best_f") for x in (a["attack"], b["attack"], a.get("twin") or {}, b.get("twin") or {})] + [c.get("f") for c in a.get("controls", []) + b.get("controls", [])]
+   349	    if not _finite(list(ka.values()), list(kb.values()), ea["gain"], eb["gain"], objs) or None in objs[:2]:
+   350	        problems.append("nonfinite value")
+   351	    ta, tb = (a.get("twin") or {}).get("best_f"), (b.get("twin") or {}).get("best_f")
+   352	    if ta is None or tb is None or not abs(ta - tb) <= GAIN_TOL:
+   353	        problems.append("twin best value differs")
+   354	    ca, cb = a.get("controls", []), b.get("controls", [])
+   355	    if [c["knobs"] for c in ca] != [c["knobs"] for c in cb]:
+   356	        problems.append("control set differs")
+   357	    cd = [abs(x["f"] - y["f"]) for x, y in zip(ca, cb) if x["f"] != y["f"]]
+   358	    if set(ka) != set(kb):
+   359	        problems.append("knob names differ")
+   360	    disc = [k for k in ka if isinstance(ka[k], int) and not isinstance(ka[k], bool)]
+   361	    if any(ka[k] != kb.get(k) for k in disc):
+   362	        problems.append("discrete knob differs")
+   363	    rel = max((abs(ka[k] - kb[k]) / max(abs(ka[k]), 1e-300) for k in ka if k not in disc and k in kb), default=0.0)
+   364	    if not rel <= KNOB_TOL:
+   365	        problems.append(f"knob tolerance exceeded ({rel:.3g})")
+   366	    for k in EXACT_PROV:
+   367	        if a["provenance"].get(k) != b["provenance"].get(k):
+   368	            problems.append(f"{k} differs")
+   369	    ua, ub = ea.get("upstream") or {}, eb.get("upstream") or {}
+   370	    refs = sorted(u for u in ua if u.startswith("reference/"))
+   371	    for what, x, y in (("episode count", a.get("runs"), b.get("runs")), ("best_source", a["attack"].get("best_source"), b["attack"].get("best_source")),
+   372	                       ("archive size", len(a["attack"].get("archive", [])), len(b["attack"].get("archive", []))),
+   373	                       ("twin archive size", len((a.get("twin") or {}).get("archive", [])), len((b.get("twin") or {}).get("archive", []))),
+   374	                       ("dependency set", sorted(a.get("upstream") or {}), sorted(b.get("upstream") or {})),
+   375	                       ("evaluation dependency set", sorted(ua), sorted(ub)), ("reference hash", [ua.get(r) for r in refs], [ub.get(r) for r in refs]),
+   376	                       ("seeds", ea["seeds"], eb["seeds"])):
+   377	        if x != y:
+   378	            problems.append(f"{what} differs")
+   379	    gd = max((abs(x - y) for x, y in zip(ea["gain"], eb["gain"])), default=0.0) if len(ea["gain"]) == len(eb["gain"]) else float("inf")
+   380	    if not gd <= GAIN_TOL:
+   381	        problems.append(f"gain tolerance exceeded ({gd:.3g})")
+   382	    controls = {"differing": len(cd), "max_abs": max(cd, default=0.0)}          # reported, not gated: a near-tie in a corner policy can flip a discrete branch
+   383	    same_obj = ta == tb and not cd and a["attack"].get("best_f") == b["attack"].get("best_f")
+   384	    return {"pass": not problems, "identical": not problems and ka == kb and ea["gain"] == eb["gain"] and same_obj, "max_knob_rel": rel, "max_gain_abs": gd,
+   385	            "controls": controls, "problems": problems}
+   386	
+   387	
+   388	def compare_doubling(src, out, rid: str) -> dict:
+   389	    """Validation (d), plan draft 5: a doubling record against the registered one; exact on the flag, the seeds, and the
+   390	    discrete knobs; 1e-9 on the continuous knobs, the changes, and the held-out per-seed gains."""
+   391	    p = lambda b: Path(b) / "doubling" / (R._safe(rid) + ".json")
+   392	    a, b = read(p(src)), read(p(out))
+   393	    if a is None or b is None:
+   394	        return {"pass": False, "problems": ["a record is missing"]}
+   395	    problems = []
+   396	    need = ("incomplete", "attack_change", "reference_change", "heldout")
+   397	    if any(k not in x for x in (a, b) for k in need) or any(k not in x["heldout"] for x in (a, b) for k in ("knobs", "seeds", "gain")):
+   398	        return {"pass": False, "problems": ["missing field"]}
+   399	    if not _finite(a["attack_change"], b["attack_change"], a["reference_change"], b["reference_change"], a["heldout"]["gain"], b["heldout"]["gain"],
+   400	                   list(a["heldout"]["knobs"].values()), list(b["heldout"]["knobs"].values())):
+   401	        problems.append("nonfinite value")
+   402	    if bool(a["incomplete"]) != bool(b["incomplete"]):
+   403	        problems.append("flag differs")
+   404	    ha, hb = a["heldout"], b["heldout"]
+   405	    if ha["seeds"] != hb["seeds"]:
+   406	        problems.append("seeds differ")
+   407	    ka, kb = ha["knobs"], hb["knobs"]; disc = [k for k in ka if isinstance(ka[k], int) and not isinstance(ka[k], bool)]
+   408	    if set(ka) != set(kb) or any(ka[k] != kb[k] for k in disc):
+   409	        problems.append("discrete knob differs")
+   410	    rel = max((abs(ka[k] - kb[k]) / max(abs(ka[k]), 1e-300) for k in ka if k not in disc and k in kb), default=0.0)
+   411	    chg = max(abs(a[k] - b[k]) for k in ("attack_change", "reference_change"))
+   412	    gd = max((abs(x - y) for x, y in zip(ha["gain"], hb["gain"])), default=0.0) if len(ha["gain"]) == len(hb["gain"]) else float("inf")
+   413	    if not (rel <= KNOB_TOL and chg <= GAIN_TOL and gd <= GAIN_TOL):
+   414	        problems.append(f"tolerance exceeded (knobs {rel:.3g}, changes {chg:.3g}, gains {gd:.3g})")
+   415	    return {"pass": not problems, "max_knob_rel": rel, "max_change_abs": chg, "max_gain_abs": gd, "problems": problems}
+   416	
+   417	
+   418	def reproduce_doubling(src, out, rid: str, root: str, cfgs: dict, params: dict, salt_sha256: str) -> dict:
+   419	    """Rerun the registered doubling check of one fresh-market D2+H3 cell with the frozen stage, against copies of its inputs."""
+   420	    label, rest = rid.split("@", 1); rule = rid.split("|")[1]
+   421	    j = R.job(R.market(label, root, 0.2, cfg=cfgs[label], salt_sha256=salt_sha256), rule, "D2+H3", "profit", params=params)
+   422	    reg = read(R.path_of(src, rid))
+   423	    preflight(out, src, [j], salt_sha256, {label: {"container_hash": (reg or {}).get("provenance", {}).get("cfg_sha256")}})
+   424	    need = inputs(src, [j]); need[j["id"]] = sha_file(R.path_of(src, j["id"]))
+   425	    copy_inputs(src, out, need)
+   426	    rec = R.stage_doubling(j, out, CUTS, H4_EXCLUDED)
+   427	    write(Path(out) / "doubling" / (R._safe(rid) + ".json"),
+   428	          {"stage": "doubling", "id": rid, "provenance": j["provenance"], "upstream": {u: sha_file(R.path_of(out, u)) for u in sorted(need)}, **rec})
+   429	    rep = compare_doubling(src, out, rid); write(Path(out) / "gate.json", {"stage": "doubling gate", "cell": rid, **rep}); inventory(out)
+   430	    return rep
+   431	
+   432	
+   433	def pod_gate_ok(rep: dict, require_identical: bool) -> bool:
+   434	    """The author's decision (card touchstone-reset-repro-pass): on the pod, start the 18 cells only if the reproduction
+   435	    is bit-identical; on the Mac, the draft-5 criterion applies."""
+   436	    return bool(rep.get("identical")) if require_identical else bool(rep.get("pass"))
+   437	
+   438	
+   439	def reproduce(src, out, root: str, params: dict, salt_sha256: str, workers: int = 1) -> dict:
+   440	    """Rerun the registered headline F111 D2 search and evaluation through this script's path (input copies, freeze,
+   441	    acceptance) and compare with the registered records."""
+   442	    mkt = R.market("headline", root, 0.2, salt_sha256=salt_sha256)
+   443	    j = R.job(mkt, "F111", "D2", "profit", params=params)
+   444	    reg = read(R.path_of(src, REPRO))
+   445	    container = {"headline": {"container_hash": (reg or {}).get("provenance", {}).get("cfg_sha256")}}
+   446	    preflight(out, src, [j], salt_sha256, container)
+   447	    copy_inputs(src, out, inputs(src, [j]))
+   448	    run_stage("search", [j], out, workers); prefreeze(out, [j])
+   449	    accept(out, [j], salt_sha256, {"headline": {"container_hash": reg["provenance"]["cfg_sha256"]}})
+   450	    run_stage("evaluate", [j], out, workers)
+   451	    rep = compare(src, out); write(Path(out) / "gate.json", {"stage": "reproduction gate", "cell": REPRO, **rep}); inventory(out)
+   452	    return rep
+   453	
+   454	
+   455	def headline_jobs(root: str, params: dict, salt_sha256: str) -> list[dict]:
+   456	    """The three registered headline D2 cells (not cut; their records are in the source)."""
+   457	    mkt = R.market("headline", root, 0.2, salt_sha256=salt_sha256)
+   458	    return [R.job(mkt, r, "D2", "profit", params=params) for r in RULES]
+   459	
+   460	
+   461	def headline_diagnostics(src, out, root: str, params: dict, salt_sha256: str, report: dict) -> dict:
+   462	    """Plan section 4 at the headline market, on the Mac before the pod: 9 policies and 6 switches on the 200 seeds."""
+   463	    res = diagnostics(src, out, headline_jobs(root, params, salt_sha256), report, d2_from=src)
+   464	    write(Path(out) / "diagnostics_headline.json", res)
+   465	    return res
+   466	
+   467	
+   468	POD_STEPS = ("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory")
+   469	SPOT = "fresh0@rho0.2|F111|D2|profit"                 # plan section 4: the cell diagnosed on the pod and on the Mac
+   470	
+   471	
+   472	def diag_jobs(jobs: list[dict], which: str) -> list[dict]:
+   473	    return jobs if which == "all" else [j for j in jobs if j["id"] in which.split(",")]
+   474	
+   475	
+   476	def main(argv=None) -> int:
+   477	    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+   478	    ap.add_argument("--src", default=str(EVAL_ALL)); ap.add_argument("--out", required=True)
+   479	    ap.add_argument("--draw", default=str(ROOT / "results/v2/draw/draw.json")); ap.add_argument("--instances", default=str(ROOT / "results/v2/draw/instances.json"))
+   480	    ap.add_argument("--cfgs", default=str(ROOT / "results/v2/deviation/cfg_linux.json")); ap.add_argument("--addendum", default=str(ROOT / "results/v2/report/addendum.json"))
+   481	    ap.add_argument("--params", default=str(ROOT / "experiments/v2/params.json")); ap.add_argument("--markets", default=",".join(MARKETS))
+   482	    ap.add_argument("--stage", default="all", choices=("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory", "all"))
+   483	    ap.add_argument("--workers", type=int, default=1); ap.add_argument("--smoke", action="store_true")
+   484	    ap.add_argument("--reproduce", action="store_true", help=f"validation (a): rerun {REPRO} and compare (plan draft 5)")
+   485	    ap.add_argument("--require-identical", dest="req_id", action="store_true", help="the pod gate: exit 1 unless the reproduction is bit-identical")
+   486	    ap.add_argument("--reproduce-doubling", dest="repro_dbl", default=None, help="validation (d): a registered D2+H3 doubling cell id")
+   487	    ap.add_argument("--report", default=str(ROOT / "results/v2/report/report.json"), help="for the diagnostics stage")
+   488	    ap.add_argument("--headline-diagnostics", dest="hl_diag", action="store_true", help="plan section 4: the three headline cells, on the Mac")
+   489	    ap.add_argument("--diag-cells", dest="diag_cells", default="all", help=f"diagnostics stage: 'all' (Mac, after retrieval) or cell ids (pod: {SPOT})")
+   490	    a = ap.parse_args(argv); out = Path(a.out); check_out(out, a.src)
+   491	    from sim.records import cfg_from_dict
+   492	    root = json.loads(Path(a.draw).read_text())["hash"]; salt_sha = json.loads(Path(a.instances).read_text())["salt_sha256"]
+   493	    container = json.loads(Path(a.addendum).read_text())["deviations"]["configs"]
+   494	    cfgs = {k: cfg_from_dict(v) for k, v in json.loads(Path(a.cfgs).read_text()).items()}
+   495	    out.mkdir(parents=True, exist_ok=True); R.install_salt(root, out)
+   496	    if a.hl_diag:
+   497	        params = json.loads(Path(a.params).read_text()); j0 = headline_jobs(root, params, salt_sha)
+   498	        check_salt(out, salt_sha, j0); check_commit(j0); check_code(); check_pairing(a.src, j0)
+   499	        headline_diagnostics(a.src, out, root, params, salt_sha, json.loads(Path(a.report).read_text())); inventory(out)
+   500	        print(json.dumps({"headline_diagnostics": len(j0)})); return 0
+   501	    if a.repro_dbl:
+   502	        rep = reproduce_doubling(a.src, out, a.repro_dbl, root, cfgs, json.loads(Path(a.params).read_text()), salt_sha)
+   503	        print(json.dumps({"reproduce_doubling": a.repro_dbl, **rep}))
+   504	        return 0 if rep["pass"] else 1
+   505	    if a.reproduce:
+   506	        rep = reproduce(a.src, out, root, json.loads(Path(a.params).read_text()), salt_sha, a.workers)
+   507	        ok = pod_gate_ok(rep, a.req_id)
+   508	        print(json.dumps({"reproduce": REPRO, "require_identical": a.req_id, "gate_ok": ok, **rep}))
+   509	        return 0 if ok else 1
+   510	    jobs = build_jobs(root, cfgs, json.loads(Path(a.params).read_text()), salt_sha, tuple(a.markets.split(",")), a.smoke)
+   511	    check_configs(jobs, container); check_salt(out, salt_sha, jobs); check_commit(jobs); check_code()
+   512	    if not a.smoke:
+   513	        check_pairing(a.src, jobs)
+   514	    steps = POD_STEPS if a.stage == "all" else (a.stage,)
+   515	    for st in steps:
+   516	        if st == "inputs":
+   517	            copy_inputs(a.src, out, inputs(a.src, jobs))
+   518	        elif st == "search":
+   519	            run_stage("search", jobs, out, a.workers)
+   520	        elif st == "freeze":
+   521	            prefreeze(out, jobs)
+   522	        elif st == "diagnostics":
+   523	            dj = diag_jobs(jobs, a.diag_cells)
+   524	            write(out / ("diagnostics.json" if a.diag_cells == "all" else "diagnostics_spot.json"), diagnostics(a.src, out, dj, json.loads(Path(a.report).read_text())))
+   525	        elif st in ("evaluate", "doubling"):
+   526	            accept(out, jobs, salt_sha, container, src=a.src); run_stage(st, jobs, out, a.workers)
+   527	        else:
+   528	            inventory(out)
+   529	        print(json.dumps({"stage": st, "jobs": len(jobs)}), flush=True)
+   530	    return 0
+   531	
+   532	
+   533	if __name__ == "__main__":
+   534	    sys.exit(main())
+
+ succeeded in 0ms:
+     1	"""The reset follow-up (docs/revision/reset-experiment-plan.md, draft 4, section 3): the 18 D2 cells that cut 3 removed
+     2	(F000, F111, C* x fresh0..fresh5 at rho 0.2), run with the frozen stage functions of scripts/revision_v2.py.
+     3	
+     4	Three things of the frozen runner are bypassed, each a recorded deviation (DEVIATIONS): the manifest's cut list, the
+     5	hard-coded doubling eligibility, and the original freeze. Everything else is the frozen code: `job`, `stage_search`,
+     6	`stage_evaluate`, `stage_doubling`, reached through `revision_v2._run_one`, so the record format and the dependency sets
+     7	are the registered ones.
+     8	
+     9	Order: copy the inputs (the frozen references, the menu searches and bank sources they list, each checked against the
+    10	hash the original records hold), search, the follow-up freeze, acceptance, evaluation, acceptance, doubling, inventory.
+    11	The output directory is never results/v2/eval/all."""
+    12	from __future__ import annotations
+    13	
+    14	import argparse
+    15	import json
+    16	import shutil
+    17	import sys
+    18	from pathlib import Path
+    19	
+    20	ROOT = Path(__file__).resolve().parents[3]          # docs/revision/followup/ (code after the freeze lives under docs/)
+    21	sys.path.insert(0, str(ROOT / "scripts")); sys.path.insert(0, str(ROOT))
+    22	
+    23	import revision_v2 as R  # noqa: E402
+    24	from sim import manifest_v2 as MAN  # noqa: E402
+    25	from sim.records_v2 import read, sha_file, write  # noqa: E402
+    26	
+    27	RULES = ("F000", "F111", "C*")
+    28	MARKETS = tuple(f"fresh{i}" for i in range(6))
+    29	CUTS, H4_EXCLUDED = 3, False                        # the registered evaluation: cuts 3, H4 loaded (results/v2/draw/h4.json)
+    30	EVAL_ALL = ROOT / "results" / "v2" / "eval" / "all"
+    31	DEVIATIONS = (
+    32	    "manifest cut list bypassed: the 18 D2 cells (F000, F111, C* x fresh0..fresh5, rho 0.2) that cut 3 removed are run",
+    33	    "doubling eligibility bypassed: each of the 18 cells gets a doubling check with its held-out evaluation",
+    34	    "original freeze bypassed: this script's follow-up freeze and acceptance check replace revision_v2.accept",
+    35	)
+    36	
+    37	
+    38	def _refuse(msg: str):
+    39	    raise SystemExit(f"reset follow-up refused: {msg}")
+    40	
+    41	
+    42	def cell_ids(markets=MARKETS) -> list[str]:
+    43	    return [R.cell_id(MAN.context(m), r, "D2", "profit") for m in markets for r in RULES]
+    44	
+    45	
+    46	def restored_cells(markets=MARKETS) -> list[dict]:
+    47	    uncut = {c["id"]: c for c in MAN.cells()}; kept = {c["id"] for c in MAN.effective(CUTS, H4_EXCLUDED)}; ids = cell_ids(markets)
+    48	    if missing := [i for i in ids if i not in uncut]:
+    49	        _refuse(f"not design cells: {missing}")
+    50	    if present := [i for i in ids if i in kept]:
+    51	        _refuse(f"not removed by cut {CUTS}: {present}")
+    52	    return [uncut[i] for i in ids]
+    53	
+    54	
+    55	def check_out(out, src=None) -> None:
+    56	    o = Path(out).resolve()
+    57	    for e in {Path(EVAL_ALL).resolve()} | ({Path(src).resolve()} if src else set()):
+    58	        if o == e or e in o.parents:
+    59	            _refuse(f"the output {o} is inside {e}")
+    60	
+    61	
+    62	PAIRED_KEYS = ("runner_sha256", "salt_sha256", "cfg_sha256", "root", "seeds_train", "seeds_val", "seeds_eval", "rule_params_sha256", "context")
+    63	
+    64	
+    65	def check_pairing(src, jobs: list[dict]) -> None:
+    66	    """Each job's provenance equals its frozen reference's provenance on every key the pairing depends on (the commit may
+    67	    differ): runner, salt, configuration, root, seeds, rule parameters, context (Fable 5.2 driver review, finding 1)."""
+    68	    for j in jobs:
+    69	        ref = read(R.path_of(src, f"reference/{j['context']}/{j['rule']}"))
+    70	        if ref is None:
+    71	            _refuse(f"{j['id']}: no reference record to pair with")
+    72	        if bad := [k for k in PAIRED_KEYS if j["provenance"].get(k) != ref["provenance"].get(k)]:
+    73	            _refuse(f"{j['id']}: provenance differs from its reference in {bad}")
+    74	
+    75	
+    76	def check_commit(jobs: list[dict]) -> None:
+    77	    if bad := [j["id"] for j in jobs if j["provenance"].get("git_commit") in (None, "", "unknown")]:
+    78	        _refuse(f"no git commit recorded for {bad[:3]}")
+    79	
+    80	
+    81	def check_code() -> None:
+    82	    """The frozen runner and simulator are byte-identical to the protocol-v2 tag."""
+    83	    import subprocess
+    84	    r = subprocess.run(["git", "diff", "--quiet", "protocol-v2", "--", "scripts/revision_v2.py", "sim/"], cwd=ROOT)
+    85	    if r.returncode != 0:
+    86	        _refuse("scripts/revision_v2.py or sim/ differs from protocol-v2 (or the tag is missing)")
+    87	
+    88	
+    89	def preflight(out, src, jobs: list[dict], salt_sha256: str, container: dict | None = None) -> None:
+    90	    """Every check that must pass before any episode, on every execution path (internal review r4)."""
+    91	    check_salt(out, salt_sha256, jobs); check_commit(jobs); check_code(); check_pairing(src, jobs)
+    92	    if container is not None:
+    93	        check_configs(jobs, container)
+    94	
+    95	
+    96	def environment() -> dict:
+    97	    """The numerical stack of the run (plan draft 5): interpreter, numpy with its BLAS and LAPACK, SciPy, CMA, the CPU."""
+    98	    import platform
+    99	    import subprocess
+   100	    import numpy
+   101	    def ver(m):
+   102	        try:
+   103	            return __import__(m).__version__
+   104	        except Exception as e:
+   105	            return f"unavailable: {type(e).__name__}"
+   106	    try:
+   107	        cfg = numpy.show_config(mode="dicts")["Build Dependencies"]; blas = {k: {kk: cfg[k].get(kk) for kk in ("name", "version")} for k in ("blas", "lapack") if k in cfg}
+   108	    except Exception as e:
+   109	        blas = f"unavailable: {type(e).__name__}"
+   110	    cpu = platform.processor()
+   111	    for cmd in (["sysctl", "-n", "machdep.cpu.brand_string"], ["sh", "-c", "grep -m1 'model name' /proc/cpuinfo"]):
+   112	        try:
+   113	            r = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+   114	            if r.returncode == 0 and r.stdout.strip():
+   115	                cpu = r.stdout.strip(); break
+   116	        except Exception:
+   117	            pass
+   118	    return {"python": platform.python_version(), "numpy": numpy.__version__, "scipy": ver("scipy"), "cma": ver("cma"), "blas": blas, "cpu": cpu,
+   119	            "machine": platform.machine(), "platform": platform.platform(), "driver_sha256": sha_file(Path(__file__))}
+   120	
+   121	
+   122	def check_salt(out, salt_sha256: str, jobs: list[dict]) -> None:
+   123	    salt = Path(out) / "salt.hex"
+   124	    if not salt.exists() or R._sha(bytes.fromhex(salt.read_text().strip())) != salt_sha256:
+   125	        _refuse("the identity salt under the output is not the recorded salt")
+   126	    if bad := [j["id"] for j in jobs if j["provenance"]["salt_sha256"] != salt_sha256]:
+   127	        _refuse(f"jobs carry another salt hash: {bad}")
+   128	
+   129	
+   130	def build_jobs(root: str, cfgs: dict, params: dict, salt_sha256: str, markets=MARKETS, smoke: bool = False) -> list[dict]:
+   131	    """The frozen `job` for each restored cell, on the recorded (container) configuration of its market."""
+   132	    jobs = []
+   133	    for m in markets:
+   134	        mkt = R.market(m, root, 0.2, smoke=smoke, cfg=cfgs[m], salt_sha256=salt_sha256)
+   135	        jobs += [R.job(mkt, c["rule"], "D2", "profit", smoke=smoke, params=params, block=c["block"]) for c in restored_cells((m,))]
+   136	    return jobs
+   137	
+   138	
+   139	def _expected_reference_upstream(rid: str) -> set:
+   140	    """The registered menu and cuts-3 bank of a reference (revision_v2.expected_upstream)."""
+   141	    return R.expected_upstream(rid, [], CUTS, H4_EXCLUDED)
+   142	
+   143	
+   144	def inputs(src, jobs: list[dict]) -> dict[str, str]:
+   145	    """Every record the frozen evaluation and doubling stages read for `jobs`, with the hash the original records hold:
+   146	    the reference from the context's original freeze, its menu and bank records from the reference's `upstream`, and
+   147	    (recursively) the `upstream` of each copied search record."""
+   148	    need: dict[str, str] = {}
+   149	    for j in jobs:
+   150	        ctx = j["context"]; fr = read(R.path_of(src, f"freeze/{ctx}"))
+   151	        if fr is None:
+   152	            _refuse(f"the original freeze of {ctx} is missing")
+   153	        if "cuts" not in fr or "h4_excluded" not in fr or fr["cuts"] != CUTS or fr["h4_excluded"] != H4_EXCLUDED:
+   154	            _refuse(f"the original freeze of {ctx} does not state cuts {CUTS} with H4 loaded")
+   155	        rid = f"reference/{ctx}/{j['rule']}"
+   156	        if rid not in fr["records"]:
+   157	            _refuse(f"{rid} is not in the original freeze of {ctx}")
+   158	        ref = read(R.path_of(src, rid))
+   159	        if ref is None:
+   160	            _refuse(f"{rid} is missing in {src}")
+   161	        want = _expected_reference_upstream(rid)
+   162	        if want is not None and set(ref.get("upstream") or {}) != want:
+   163	            _refuse(f"{rid}: its dependencies are not the registered menu and cuts-{CUTS} bank")
+   164	        need[rid] = fr["records"][rid]; todo = dict(ref["upstream"])
+   165	        while todo:
+   166	            u, s = todo.popitem()
+   167	            if need.setdefault(u, s) != s:
+   168	                _refuse(f"{u}: two original records hold different hashes")
+   169	            if u not in fr["records"]:
+   170	                _refuse(f"{u}: not in the original freeze of {ctx}")
+   171	            if fr["records"][u] != s:
+   172	                _refuse(f"{u}: its hash differs from the original freeze of {ctx}")
+   173	            for k, v in ((read(R.path_of(src, u)) or {}).get("upstream") or {}).items():
+   174	                if need.get(k, v) != v or todo.get(k, v) != v:
+   175	                    _refuse(f"{k}: two original records hold different hashes")
+   176	                if k not in need:
+   177	                    todo[k] = v
+   178	    return need
+   179	
+   180	
+   181	def copy_inputs(src, out, need: dict[str, str]) -> None:
+   182	    """Copy each input read-only, checked against its recorded hash; an existing identical copy is kept."""
+   183	    for rid, sha in sorted(need.items()):
+   184	        p, q = R.path_of(src, rid), R.path_of(out, rid)
+   185	        if not p.exists():
+   186	            _refuse(f"input {rid} is missing in {src}")
+   187	        if sha_file(p) != sha:
+   188	            _refuse(f"input {rid} differs from the hash in the original records")
+   189	        if q.exists():
+   190	            if sha_file(q) != sha:
+   191	                _refuse(f"{q} exists and differs from the original {rid}")
+   192	            continue
+   193	        q.parent.mkdir(parents=True, exist_ok=True); shutil.copyfile(p, q); q.chmod(0o444)
+   194	    prev = read(Path(out) / "inputs.json")
+   195	    if prev is not None and any(prev[k] != v for k, v in need.items() if k in prev):
+   196	        _refuse("inputs.json lists other hashes for the same records")
+   197	    write(Path(out) / "inputs.json", {**(prev or {}), **need})
+   198	
+   199	
+   200	def check_configs(jobs: list[dict], container: dict) -> None:
+   201	    """Each job's configuration hash equals the recorded container hash (addendum.json deviations.configs)."""
+   202	    for j in jobs:
+   203	        label = j["mkt"]["label"]; want = (container.get(label) or {}).get("container_hash")
+   204	        if j["provenance"]["cfg_sha256"] != want:
+   205	            _refuse(f"{j['id']}: configuration hash {j['provenance']['cfg_sha256']} is not the container hash {want}")
+   206	
+   207	
+   208	def _ctx_inputs(out, ctx: str) -> dict[str, str]:
+   209	    return {r: s for r, s in (read(Path(out) / "inputs.json") or {}).items() if ctx in r}
+   210	
+   211	
+   212	def prefreeze(out, jobs: list[dict]) -> None:
+   213	    """The pre-evaluation freeze of each context: its copied inputs and its new search records, with their hashes."""
+   214	    for ctx in sorted({j["context"] for j in jobs}):
+   215	        recs = dict(_ctx_inputs(out, ctx))
+   216	        for j in (j for j in jobs if j["context"] == ctx):
+   217	            p = R.path_of(out, j["id"]); rec = read(p)
+   218	            if rec is None or rec.get("stage") != "search" or rec.get("provenance") != j["provenance"]:
+   219	                _refuse(f"{j['id']}: no current search record to freeze")
+   220	            recs[j["id"]] = sha_file(p)
+   221	        body = {"stage": "freeze", "context": ctx, "followup": True, "deviations": list(DEVIATIONS), "cuts": CUTS, "h4_excluded": H4_EXCLUDED, "records": recs}
+   222	        p = R.path_of(out, f"freeze/{ctx}"); old = read(p)
+   223	        if old is not None and old != body:
+   224	            _refuse(f"{p} exists with other records")
+   225	        if old is None:
+   226	            write(p, body)
+   227	
+   228	
+   229	def accept(out, jobs: list[dict], salt_sha256: str, container: dict, src=None) -> None:
+   230	    """Run before evaluation and before doubling: the freeze exists and every record in it, and every copied input,
+   231	    still has its hash; the identity salt and the configurations are the recorded ones; with `src`, inputs.json holds
+   232	    every input recomputed from the original records."""
+   233	    check_salt(out, salt_sha256, jobs)
+   234	    check_configs(jobs, container)
+   235	    if src is not None:
+   236	        have = read(Path(out) / "inputs.json") or {}
+   237	        if bad := sorted(r for r, s in inputs(src, jobs).items() if have.get(r) != s):
+   238	            _refuse(f"inputs.json lacks or differs on {bad[:3]}")
+   239	    for ctx in sorted({j["context"] for j in jobs}):
+   240	        fr = read(R.path_of(out, f"freeze/{ctx}"))
+   241	        if fr is None or not fr.get("followup"):
+   242	            _refuse(f"{ctx}: no follow-up freeze")
+   243	        want = {**_ctx_inputs(out, ctx), **{j["id"]: None for j in jobs if j["context"] == ctx}}
+   244	        if missing := sorted(set(want) - set(fr["records"])):
+   245	            _refuse(f"{ctx}: the freeze lacks {missing}")
+   246	        for r, sha in fr["records"].items():
+   247	            p = R.path_of(out, r)
+   248	            if not p.exists() or sha_file(p) != sha or (want.get(r) not in (None, sha)):
+   249	                _refuse(f"{ctx}: {r} differs from the freeze")
+   250	
+   251	
+   252	def run_stage(stage: str, jobs: list[dict], out, workers: int = 1) -> list[str]:
+   253	    return R._pool(stage, jobs, Path(out), workers, CUTS, H4_EXCLUDED, jobs)
+   254	
+   255	
+   256	def inventory(out) -> dict:
+   257	    """Every output file with its hash, written after the outputs, so no record lists itself."""
+   258	    out = Path(out)
+   259	    recs = {str(p.relative_to(out)): sha_file(p) for p in sorted(out.rglob("*"))
+   260	            if p.is_file() and p.name != "inventory.json" and not p.name.endswith((".lock", ".tmp"))}
+   261	    inv = {"stage": "inventory", "deviations": list(DEVIATIONS), "environment": environment(), "records": recs}
+   262	    write(out / "inventory.json", inv)
+   263	    return inv
+   264	
+   265	
+   266	def reset_stats(results, focal: int) -> dict:
+   267	    """Plan section 4: per episode, the focal provider's identity replacements, the rounds they were created, the rounds
+   268	    without a focal offer (banned or waiting), and the ban rounds imposed on its identities."""
+   269	    import numpy as np
+   270	    resets, rounds, no_offer, bans = [], [], [], []
+
+hook: PostToolUse
+hook: PostToolUse
+exec
+/bin/zsh -lc "nl -ba docs/revision/reset-experiment-plan.md | sed -n '193,215p'; nl -ba scripts/lock_v2.py | sed -n '1,230p'; cat docs/revision/roster/brief-reset-plan-r7.md; rg --files /Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2 /Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2 /Users/oemer.demirel/Projects/touchstone/results/v2/followup-diag-headline" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+   193	**Billed pod time.** One 16-vCPU pod at the recorded 0.56 USD per hour; searches with 16 workers, evaluation, doubling,
+   194	and diagnostics with at most 10 (operations ledger). Stage schedule with incomplete worker batches and equal benchmark
+   195	task times: searches, evaluation, and doubling about 1.77 hours (internal review's computation); diagnostics about 0.6
+   196	hours (105 evaluations in batches of 10); preparation 0.3 hours; idle tail 0.3 hours = **about 3.0 billed hours, about
+   197	1.66 USD**. The benchmark's unit price (0.0625 USD per unit, at its 0.108 USD per core-hour) gives about 2.10 USD; the plan
+   198	uses the larger.
+   199	
+   200	| Item | Estimate | Cap |
+   201	|---|---:|---:|
+   202	| Option A: 18 D2 cells, doubling checks, diagnostics | 1.66 to 2.10 USD | **10.00 USD** (author, 2026-11-09) |
+   203	
+   204	A failed attempt counts toward the cap; the cap leaves room for one early failure, not for a full second run. Option B (an X7-SC variant with replacement disabled) is dropped from this plan: its
+   205	constrained family, incumbents, and corner controls would need their own specification (the frozen X7-SC search inserts
+   206	D2+H3 incumbents that can replace), so it is not offered for approval.
+   207	
+   208	**Budget.** `docs/revision/budget-ledger.json`: spent 50.869 USD of the 55 USD approval limit. The author approved option A
+   209	on the board on 2026-11-09 and set the cap to 10 USD ("make the cap $10 to ensure we're not blocked by a low cap"). The
+   210	ledger needs a new category `followup` with cap 10.00 and the approval limit raised to 61 USD (50.869 + 10 = 60.869,
+   211	`python3 -c "print(50.869+10)"`). `scripts/budget_v2.py` is frozen, so the tested wrapper
+   212	`docs/revision/followup/budget_followup.py --approve 61 10 TEXT` records both, refuses a limit below spend plus the cap,
+   213	and keeps the earlier approval text. The estimate is unchanged (1.66 to 2.10 USD); the higher cap only prevents a stop from a low
+   214	cap. Stop at the cap.
+   215	
+     1	"""Protocol v2: writer and checker (design 2, 7.3, 9.6; operations plan Task 6). --write builds experiments/protocol-v2.yaml
+     2	from the promoted inputs: the hashes of the manifest, parameters, promotion record, frozen cost decision, coverage, and
+     3	predictions; the decision's branch, markets, and cuts; kappa from kappa_effective (admitted only); the H4 commitment; the
+     4	recorded spend; the block, seed, market, and cap rules. --check re-derives every value from its file. --check-commit runs
+     5	in the evaluation checkout: a clean tree, a valid signed tag protocol-v2 at HEAD, only data and documents changed since
+     6	code_commit, and --check."""
+     7	from __future__ import annotations
+     8	
+     9	import argparse
+    10	import hashlib
+    11	import json
+    12	import re
+    13	import subprocess
+    14	import sys
+    15	from pathlib import Path
+    16	
+    17	import yaml
+    18	
+    19	ROOT = Path(__file__).resolve().parents[1]
+    20	PROTOCOL = "experiments/protocol-v2.yaml"
+    21	TAG = "protocol-v2"
+    22	FILES = {"manifest_sha256": "experiments/revision-v2-manifest.yaml", "params_sha256": "experiments/v2/params.json",
+    23	         "promotion_sha256": "experiments/v2/promotion.json", "decision_sha256": "experiments/v2/benchmark/decision.json",
+    24	         "coverage_sha256": "experiments/v2/coverage.json", "predictions_sha256": "docs/revision/predictions-v2.md"}
+    25	LEDGER = "docs/revision/budget-ledger.json"
+    26	ALLOWED = ("experiments/v2/", "docs/")
+    27	ALLOWED_FILES = (PROTOCOL, PROTOCOL + ".ots")
+    28	APPROVAL_LIMIT = 40.0
+    29	
+    30	
+    31	def _sha(p: Path) -> str:
+    32	    return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+    33	
+    34	
+    35	def _json(p: Path) -> dict:
+    36	    return json.loads(Path(p).read_text())
+    37	
+    38	
+    39	def _spent(repo: Path) -> float:
+    40	    p = Path(repo) / LEDGER
+    41	    return float(sum(float(r["usd"]) for r in _json(p).get("spent", []))) if p.exists() else 0.0
+    42	
+    43	
+    44	def _choices(dec: dict, cuts: int, branch: str, markets: list[str], approval: str | None) -> list[str]:
+    45	    out = []
+    46	    if (int(cuts), branch, list(markets)) != (dec.get("cuts"), dec.get("branch"), list(dec.get("markets") or [])):
+    47	        out.append(f"decision: cuts, branch, markets ({cuts}, {branch}, {markets}) differ from the frozen decision "
+    48	                   f"({dec.get('cuts')}, {dec.get('branch')}, {dec.get('markets')})")
+    49	    if float(dec.get("total_usd") or 0.0) > APPROVAL_LIMIT and not approval:
+    50	        out.append(f"approval: the decision's total {dec.get('total_usd')} USD is above {APPROVAL_LIMIT} and needs the author's written approval")
+    51	    return out
+    52	
+    53	
+    54	def decision_file(repo, h4: dict | None) -> Path:
+    55	    """Design draft 7, 5.3: with H4 committed, the protocol binds the decision after the H4 timing."""
+    56	    b = Path(repo) / "experiments" / "v2" / "benchmark"
+    57	    return b / ("decision-h4.json" if h4 else "decision.json")
+    58	
+    59	
+    60	def _ledger_approval(repo) -> str | None:
+    61	    p = Path(repo) / LEDGER
+    62	    return ((_json(p).get("approval") or {}).get("text")) if p.exists() else None
+    63	
+    64	
+    65	def build(repo, code_commit: str, cuts: int, h4: dict | None, approval: str | None, branch: str, markets: list) -> dict:
+    66	    repo = Path(repo); df = decision_file(repo, h4)
+    67	    if not df.exists():
+    68	        raise SystemExit(f"{df.relative_to(repo)}: missing (with H4, the protocol needs the decision after the H4 timing)")
+    69	    dec = _json(df)["decision"]
+    70	    problems = _choices(dec, cuts, branch, markets, approval)
+    71	    led = _ledger_approval(repo)
+    72	    if approval and led is not None and approval != led:
+    73	        problems.append("approval: the text differs from the approval recorded in the budget ledger (budget_v2 --approve)")
+    74	    if problems:
+    75	        raise SystemExit("; ".join(problems))
+    76	    cov = _json(repo / FILES["coverage_sha256"])
+    77	    p = {"version": 2, "code_commit": str(code_commit), **{k: _sha(repo / rel) for k, rel in FILES.items()}, "decision_sha256": _sha(df), "cuts": int(cuts), "branch": branch,
+    78	         "development_markets": list(markets), "h4": dict(h4) if h4 else None,
+    79	         "kappa": {f: (cov.get(f) or {}).get("kappa_effective") for f in ("Q1", "Q4")},
+    80	         "cost": {"development_usd": dec.get("development_usd"), "evaluation_usd": dec.get("evaluation_usd"), "total_usd": dec.get("total_usd"),
+    81	                  "spent_usd": _spent(repo)},
+    82	         "approval": approval, "block": {"rule": "H = A + 144", "depth": 6, "explorers": ["blockstream.info", "mempool.space"]},
+    83	         "seeds": {"eval_range": [30_000_000, 40_000_000], "per_market": 200}, "markets": ["headline"] + [f"fresh{i}" for i in range(6)],
+    84	         "caps": {"development": 12, "evaluation": 40}}
+    85	    bad = check(repo, p)
+    86	    if bad:
+    87	        raise SystemExit("; ".join(bad))
+    88	    return p
+    89	
+    90	
+    91	def check(repo, protocol: dict) -> list[str]:
+    92	    repo = Path(repo); out = []
+    93	    files = {**FILES, "decision_sha256": decision_file(repo, protocol.get("h4")).relative_to(repo).as_posix()}
+    94	    for k, rel in files.items():
+    95	        f = repo / rel
+    96	        if not f.exists() or _sha(f) != protocol.get(k):
+    97	            out.append(f"{rel}: missing or its hash differs from the protocol's {k}")
+    98	    if out:
+    99	        return out
+   100	    from scripts.promote_v2 import derive_params, verify_promoted
+   101	    v2 = repo / "experiments" / "v2"
+   102	    out += verify_promoted(v2)
+   103	    try:
+   104	        if _json(v2 / "params.json") != derive_params(v2):
+   105	            out.append("params.json does not follow from the promoted comparator and tuned files")
+   106	    except (OSError, KeyError, ValueError) as e:
+   107	        out.append(f"params.json cannot be derived from the promoted files: {e}")
+   108	    dec = _json(repo / files["decision_sha256"])["decision"]
+   109	    out += _choices(dec, protocol.get("cuts"), protocol.get("branch"), protocol.get("development_markets") or [], protocol.get("approval"))
+   110	    led = _ledger_approval(repo)
+   111	    if protocol.get("approval") and led is not None and protocol["approval"] != led:
+   112	        out.append("approval: the text differs from the approval recorded in the budget ledger")
+   113	    cov = _json(repo / FILES["coverage_sha256"])
+   114	    if protocol.get("kappa") != {f: (cov.get(f) or {}).get("kappa_effective") for f in ("Q1", "Q4")}:
+   115	        out.append("coverage: kappa differs from kappa_effective")
+   116	    if abs(float((protocol.get("cost") or {}).get("spent_usd", -1)) - _spent(repo)) > 1e-9:
+   117	        out.append("ledger: the recorded spend differs from the protocol's spent_usd")
+   118	    h4 = protocol.get("h4")
+   119	    com = repo / "experiments" / "v2" / "h4" / "commitment.json"
+   120	    if h4 is not None and com.exists() and _json(com).get("bundle_sha256") != h4.get("bundle_sha256"):
+   121	        out.append("h4: the protocol's bundle hash differs from the author's commitment (experiments/v2/h4/commitment.json)")
+   122	    if h4 is not None and not (re.fullmatch(r"[0-9a-f]{40}", str(h4.get("commit"))) and re.fullmatch(r"[0-9a-f]{64}", str(h4.get("bundle_sha256")))):
+   123	        out.append("h4: the commitment needs a 40-hex commit and a 64-hex bundle hash")
+   124	    if protocol.get("version") != 2 or not re.fullmatch(r"[0-9a-f]{40}", str(protocol.get("code_commit"))):
+   125	        out.append("protocol: version 2 and a 40-hex code_commit are required")
+   126	    return out
+   127	
+   128	
+   129	def _git(repo: Path, *args) -> subprocess.CompletedProcess:
+   130	    return subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True)
+   131	
+   132	
+   133	def changed_paths(repo, a: str, b: str) -> list[str]:
+   134	    """Paths changed between two commits, NUL-separated so that names with quotes, braces, or spaces are exact (git quotes
+   135	    them in plain --name-only output)."""
+   136	    d = _git(Path(repo), "diff", "-z", "--name-only", a, b)
+   137	    if d.returncode != 0:
+   138	        raise ValueError(f"git diff {a} {b} failed: {d.stderr.strip()}")
+   139	    return [p for p in d.stdout.split("\0") if p]
+   140	
+   141	
+   142	def check_commit(repo) -> None:
+   143	    repo = Path(repo)
+   144	    st = _git(repo, "status", "--porcelain")
+   145	    if st.returncode != 0 or st.stdout.strip():
+   146	        raise SystemExit("the tree is not clean, or git status failed")
+   147	    if _git(repo, "tag", "-v", TAG).returncode != 0:
+   148	        raise SystemExit(f"tag {TAG} is missing, unsigned, or its signature does not verify")
+   149	    h, t = _git(repo, "rev-parse", "HEAD"), _git(repo, "rev-parse", f"{TAG}^{{commit}}")
+   150	    if h.returncode != 0 or t.returncode != 0:
+   151	        raise SystemExit("git rev-parse failed")
+   152	    head, tagged = h.stdout.strip(), t.stdout.strip()
+   153	    if not head or head != tagged:
+   154	        raise SystemExit(f"HEAD {head} is not the commit of {TAG} ({tagged})")
+   155	    protocol = yaml.safe_load((repo / PROTOCOL).read_text()); code = str(protocol["code_commit"])
+   156	    if _git(repo, "cat-file", "-e", f"{code}^{{commit}}").returncode != 0:
+   157	        raise SystemExit(f"code_commit {code} is not a commit in this checkout (shallow or foreign clone?)")
+   158	    if _git(repo, "merge-base", "--is-ancestor", code, "HEAD").returncode != 0:
+   159	        raise SystemExit(f"code_commit {code} is not an ancestor of HEAD")
+   160	    try:
+   161	        changed = changed_paths(repo, code, "HEAD")
+   162	    except ValueError as e:
+   163	        raise SystemExit(str(e))
+   164	    bad = [p for p in changed if not (p.startswith(ALLOWED) or p in ALLOWED_FILES)]
+   165	    if bad:
+   166	        raise SystemExit(f"files other than data and documents changed since code_commit: {bad}")
+   167	    problems = check(repo, protocol)
+   168	    if problems:
+   169	        raise SystemExit("; ".join(problems))
+   170	
+   171	
+   172	def main(argv=None) -> int:
+   173	    ap = argparse.ArgumentParser()
+   174	    g = ap.add_mutually_exclusive_group(required=True)
+   175	    g.add_argument("--write", action="store_true"); g.add_argument("--check", action="store_true"); g.add_argument("--check-commit", dest="check_commit", action="store_true")
+   176	    ap.add_argument("--repo", default=str(ROOT)); ap.add_argument("--code-commit", dest="code_commit"); ap.add_argument("--cuts", type=int)
+   177	    ap.add_argument("--branch"); ap.add_argument("--markets"); ap.add_argument("--h4-commit", dest="h4_commit"); ap.add_argument("--h4-sha", dest="h4_sha")
+   178	    ap.add_argument("--no-h4", dest="no_h4", action="store_true"); ap.add_argument("--approval", default=None)
+   179	    a = ap.parse_args(argv); repo = Path(a.repo)
+   180	    if a.write:
+   181	        if a.no_h4 == bool(a.h4_commit or a.h4_sha):
+   182	            raise SystemExit("give --h4-commit and --h4-sha, or --no-h4")
+   183	        h4 = None if a.no_h4 else {"commit": a.h4_commit, "bundle_sha256": a.h4_sha}
+   184	        p = build(repo, a.code_commit, a.cuts, h4, a.approval, a.branch, a.markets.split(","))
+   185	        (repo / PROTOCOL).write_text(yaml.safe_dump(p, sort_keys=False))
+   186	        return 0
+   187	    if a.check:
+   188	        problems = check(repo, yaml.safe_load((repo / PROTOCOL).read_text()))
+   189	        print("\n".join(problems) or "ok")
+   190	        return 1 if problems else 0
+   191	    check_commit(repo)
+   192	    print("ok")
+   193	    return 0
+   194	
+   195	
+   196	if __name__ == "__main__":
+   197	    sys.exit(main())
+# Reset experiment plan draft 5: internal review round 7 (read-only; no paid APIs; do not read `sealed/`, `~/touchstone-h4`, or `~/h4-session.out`; reasoning effort high; under 350 words)
+
+Rounds 4-6 rejected draft 5 (`docs/revision/roster/{sol,astra}-reset-plan-r{4,5,6}.md`). Commits since round 6: 30e5353 (identical requires equal objective values; headline diagnostics path), 8d18de4 (the author's decision on card touchstone-reset-repro-pass: the pod gate requires bit identity, `--require-identical`), d865329 (copy_inputs refuses only real conflicts). Driver `docs/revision/followup/reset_followup_v2.py`, 52 tests. Validation evidence through the corrected paths, each with gate.json and an inventory: `/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2` (headline reproduction), `.../followup-repro-doubling-v2` (doubling ground truth), `.../followup-diag-headline` (headline diagnostics, 200 seeds). Pod launcher (outside git): `/Users/oemer.demirel/Projects/touchstone/results/pods/reset_pod.sh` with input bundle `.../results/v2/followup-reset-bundle` (168 records; a smoke run of all stages against it passed); dry run passed; a tarball with a changed frozen file is refused.
+
+Check: (1) each round-6 correction is closed; (2) the saved validation evidence meets plan §8 step 3; (3) the launcher implements the plan: gate first with bit identity, stage order, workers, memory check, the between-stage cap rule with a hard stop at 1.3x (the author asked not to kill running jobs), pulls, deletion and verification, and the code guard that replaces lock_v2 --check-commit (which requires HEAD at the tag); (4) anything that should block the pod.
+
+Output exactly:
+VERDICT: accept | accept-with-caveat | reject
+CORRECTIONS: numbered, each with plan section, file:line, or "none".
+CONFIDENCE: 0 to 1.
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-diag-headline/inventory.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-diag-headline/salt.hex
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-diag-headline/diagnostics_headline.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/salt.hex
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/gate.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/doubling/fresh0@rho0.2__F111__D2+H3__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/inputs.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/reference/headline@rho0.2/F111.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/inventory.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/inputs.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/evaluate/headline@rho0.2__F111__D2__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/reference/fresh0@rho0.2/F111.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/inventory.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/gate.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/freeze/headline@rho0.2.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/salt.hex
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/search/headline@rho0.2__F010__X7-SC__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/search/headline@rho0.2__F011__D2+H3__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/search/headline@rho0.2__F011__X7-SC__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/search/headline@rho0.2__F010__D2+H3__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/search/headline@rho0.2__Cstar__D2+H3__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/search/headline@rho0.2__Cstar__X7-SC__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/search/headline@rho0.2__F001__D2+H3__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/search/headline@rho0.2__F000__X7-SC__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/search/headline@rho0.2__F000__D2+H3__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/search/headline@rho0.2__F001__X7-SC__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/search/headline@rho0.2__F111__D2+H3__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/search/headline@rho0.2__F110__X7-SC__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/search/headline@rho0.2__F110__D2+H3__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/search/headline@rho0.2__F111__X7-SC__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/search/headline@rho0.2__Cstar~S0__X7-SC__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/search/headline@rho0.2__Cstar~S0__D2+H3__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/search/headline@rho0.2__F111__D2__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/search/headline@rho0.2__F100__X7-SC__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/search/headline@rho0.2__F101__D2+H3__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/search/headline@rho0.2__F101__X7-SC__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/search/headline@rho0.2__F100__D2+H3__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/search/fresh0@rho0.2__F111__D2+H3__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/search/fresh0@rho0.2__F110__X7-SC__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/search/fresh0@rho0.2__F110__D2+H3__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/search/fresh0@rho0.2__F111__X7-SC__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/search/fresh0@rho0.2__Cstar~S0__D2+H3__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/search/fresh0@rho0.2__Cstar~S0__X7-SC__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/search/fresh0@rho0.2__F100__X7-SC__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/search/fresh0@rho0.2__F101__D2+H3__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/search/fresh0@rho0.2__F101__X7-SC__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/search/fresh0@rho0.2__F100__D2+H3__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/search/fresh0@rho0.2__F010__X7-SC__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/search/fresh0@rho0.2__F011__D2+H3__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/search/fresh0@rho0.2__F011__X7-SC__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/search/fresh0@rho0.2__F010__D2+H3__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/search/fresh0@rho0.2__Cstar__D2+H3__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/search/fresh0@rho0.2__Cstar__X7-SC__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/search/fresh0@rho0.2__F001__D2+H3__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/search/fresh0@rho0.2__F000__X7-SC__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/search/fresh0@rho0.2__F000__D2+H3__profit.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/search/fresh0@rho0.2__F001__X7-SC__profit.json
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "nl -ba docs/revision/followup/reset_followup_v2.py | sed -n '307,565p'; nl -ba docs/revision/reset-experiment-plan.md | sed -n '199,214p'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+   307	        row = {k: {"knobs": pols[k], **reset_stats(runs[k].results, cell.focal), "seeds": list(cell.seeds),
+   308	                   "normalized": [float(v) for v in runs[k].normalized], "mean_normalized": float(np.mean(runs[k].normalized))} for k in pols}
+   309	        require_zero_resets(row["d2_base"], j["id"])
+   310	        for k in ("d2h3_base", "d2h3_doubled"):
+   311	            if int(pols[k].get("x", 0)) == 0:
+   312	                row[k]["switch_x0"] = {"identical": True, "effect": 0.0}
+   313	            else:
+   314	                off = run_focal(cell, lambda k=k: fam.make(with_x(pols[k], 0)), cache)
+   315	                diff = runs[k].normalized - off.normalized
+   316	                row[k]["switch_x0"] = {"identical": False, "effect": float(np.mean(diff)), "per_seed": [float(v) for v in diff]}
+   317	        on = run_focal(cell, lambda: fam.make(with_x(pols["d2_base"], 1)), cache)
+   318	        diff = on.normalized - runs["d2_base"].normalized
+   319	        row["d2_base"]["switch_x1"] = {"effect": float(np.mean(diff)), "per_seed": [float(v) for v in diff]}
+   320	        res[f"{j['context']}|{j['rule']}"] = row
+   321	    return res
+   322	
+   323	
+   324	REPRO = "headline@rho0.2|F111|D2|profit"
+   325	
+   326	
+   327	KNOB_TOL, GAIN_TOL = 1e-9, 1e-9                      # plan draft 5, section 3 (a)
+   328	
+   329	
+   330	EXACT_PROV = ("runner_sha256", "salt_sha256", "cfg_sha256", "rule_params_sha256", "root", "seeds_train", "seeds_val", "seeds_eval", "context", "budget")
+   331	
+   332	
+   333	def _finite(*xs) -> bool:
+   334	    import math
+   335	    return all(math.isfinite(v) for x in xs for v in (x if isinstance(x, (list, tuple)) else [x]) if isinstance(v, (int, float)))
+   336	
+   337	
+   338	def compare(src, out, rid: str = REPRO) -> dict:
+   339	    """Validation (a), plan draft 5: exact on the provenance keys (the commit may differ), the episode count, the attack and
+   340	    twin archive sizes, `best_source`, the discrete knobs, the search and evaluation dependency ids, the reference hash and
+   341	    the seeds; continuous knobs within KNOB_TOL relative and per-seed gains within GAIN_TOL absolute; every value finite.
+   342	    `identical` additionally needs bit-identical knobs and gains."""
+   343	    a, b = read(R.path_of(src, rid)), read(R.path_of(out, rid)); ea, eb = read(R.eval_path(src, rid)), read(R.eval_path(out, rid))
+   344	    if None in (a, b, ea, eb):
+   345	        return {"pass": False, "identical": False, "problems": ["a record is missing"]}
+   346	    problems = []
+   347	    ka, kb = a["attack"]["best_knobs"], b["attack"]["best_knobs"]
+   348	    objs = [x.get("best_f") for x in (a["attack"], b["attack"], a.get("twin") or {}, b.get("twin") or {})] + [c.get("f") for c in a.get("controls", []) + b.get("controls", [])]
+   349	    if not _finite(list(ka.values()), list(kb.values()), ea["gain"], eb["gain"], objs) or None in objs[:2]:
+   350	        problems.append("nonfinite value")
+   351	    ta, tb = (a.get("twin") or {}).get("best_f"), (b.get("twin") or {}).get("best_f")
+   352	    if ta is None or tb is None or not abs(ta - tb) <= GAIN_TOL:
+   353	        problems.append("twin best value differs")
+   354	    ca, cb = a.get("controls", []), b.get("controls", [])
+   355	    if [c["knobs"] for c in ca] != [c["knobs"] for c in cb]:
+   356	        problems.append("control set differs")
+   357	    cd = [abs(x["f"] - y["f"]) for x, y in zip(ca, cb) if x["f"] != y["f"]]
+   358	    if set(ka) != set(kb):
+   359	        problems.append("knob names differ")
+   360	    disc = [k for k in ka if isinstance(ka[k], int) and not isinstance(ka[k], bool)]
+   361	    if any(ka[k] != kb.get(k) for k in disc):
+   362	        problems.append("discrete knob differs")
+   363	    rel = max((abs(ka[k] - kb[k]) / max(abs(ka[k]), 1e-300) for k in ka if k not in disc and k in kb), default=0.0)
+   364	    if not rel <= KNOB_TOL:
+   365	        problems.append(f"knob tolerance exceeded ({rel:.3g})")
+   366	    for k in EXACT_PROV:
+   367	        if a["provenance"].get(k) != b["provenance"].get(k):
+   368	            problems.append(f"{k} differs")
+   369	    ua, ub = ea.get("upstream") or {}, eb.get("upstream") or {}
+   370	    refs = sorted(u for u in ua if u.startswith("reference/"))
+   371	    for what, x, y in (("episode count", a.get("runs"), b.get("runs")), ("best_source", a["attack"].get("best_source"), b["attack"].get("best_source")),
+   372	                       ("archive size", len(a["attack"].get("archive", [])), len(b["attack"].get("archive", []))),
+   373	                       ("twin archive size", len((a.get("twin") or {}).get("archive", [])), len((b.get("twin") or {}).get("archive", []))),
+   374	                       ("dependency set", sorted(a.get("upstream") or {}), sorted(b.get("upstream") or {})),
+   375	                       ("evaluation dependency set", sorted(ua), sorted(ub)), ("reference hash", [ua.get(r) for r in refs], [ub.get(r) for r in refs]),
+   376	                       ("seeds", ea["seeds"], eb["seeds"])):
+   377	        if x != y:
+   378	            problems.append(f"{what} differs")
+   379	    gd = max((abs(x - y) for x, y in zip(ea["gain"], eb["gain"])), default=0.0) if len(ea["gain"]) == len(eb["gain"]) else float("inf")
+   380	    if not gd <= GAIN_TOL:
+   381	        problems.append(f"gain tolerance exceeded ({gd:.3g})")
+   382	    controls = {"differing": len(cd), "max_abs": max(cd, default=0.0)}          # reported, not gated: a near-tie in a corner policy can flip a discrete branch
+   383	    same_obj = ta == tb and not cd and a["attack"].get("best_f") == b["attack"].get("best_f")
+   384	    return {"pass": not problems, "identical": not problems and ka == kb and ea["gain"] == eb["gain"] and same_obj, "max_knob_rel": rel, "max_gain_abs": gd,
+   385	            "controls": controls, "problems": problems}
+   386	
+   387	
+   388	def compare_doubling(src, out, rid: str) -> dict:
+   389	    """Validation (d), plan draft 5: a doubling record against the registered one; exact on the flag, the seeds, and the
+   390	    discrete knobs; 1e-9 on the continuous knobs, the changes, and the held-out per-seed gains."""
+   391	    p = lambda b: Path(b) / "doubling" / (R._safe(rid) + ".json")
+   392	    a, b = read(p(src)), read(p(out))
+   393	    if a is None or b is None:
+   394	        return {"pass": False, "problems": ["a record is missing"]}
+   395	    problems = []
+   396	    need = ("incomplete", "attack_change", "reference_change", "heldout")
+   397	    if any(k not in x for x in (a, b) for k in need) or any(k not in x["heldout"] for x in (a, b) for k in ("knobs", "seeds", "gain")):
+   398	        return {"pass": False, "problems": ["missing field"]}
+   399	    if not _finite(a["attack_change"], b["attack_change"], a["reference_change"], b["reference_change"], a["heldout"]["gain"], b["heldout"]["gain"],
+   400	                   list(a["heldout"]["knobs"].values()), list(b["heldout"]["knobs"].values())):
+   401	        problems.append("nonfinite value")
+   402	    if bool(a["incomplete"]) != bool(b["incomplete"]):
+   403	        problems.append("flag differs")
+   404	    ha, hb = a["heldout"], b["heldout"]
+   405	    if ha["seeds"] != hb["seeds"]:
+   406	        problems.append("seeds differ")
+   407	    ka, kb = ha["knobs"], hb["knobs"]; disc = [k for k in ka if isinstance(ka[k], int) and not isinstance(ka[k], bool)]
+   408	    if set(ka) != set(kb) or any(ka[k] != kb[k] for k in disc):
+   409	        problems.append("discrete knob differs")
+   410	    rel = max((abs(ka[k] - kb[k]) / max(abs(ka[k]), 1e-300) for k in ka if k not in disc and k in kb), default=0.0)
+   411	    chg = max(abs(a[k] - b[k]) for k in ("attack_change", "reference_change"))
+   412	    gd = max((abs(x - y) for x, y in zip(ha["gain"], hb["gain"])), default=0.0) if len(ha["gain"]) == len(hb["gain"]) else float("inf")
+   413	    if not (rel <= KNOB_TOL and chg <= GAIN_TOL and gd <= GAIN_TOL):
+   414	        problems.append(f"tolerance exceeded (knobs {rel:.3g}, changes {chg:.3g}, gains {gd:.3g})")
+   415	    return {"pass": not problems, "max_knob_rel": rel, "max_change_abs": chg, "max_gain_abs": gd, "problems": problems}
+   416	
+   417	
+   418	def reproduce_doubling(src, out, rid: str, root: str, cfgs: dict, params: dict, salt_sha256: str) -> dict:
+   419	    """Rerun the registered doubling check of one fresh-market D2+H3 cell with the frozen stage, against copies of its inputs."""
+   420	    label, rest = rid.split("@", 1); rule = rid.split("|")[1]
+   421	    j = R.job(R.market(label, root, 0.2, cfg=cfgs[label], salt_sha256=salt_sha256), rule, "D2+H3", "profit", params=params)
+   422	    reg = read(R.path_of(src, rid))
+   423	    preflight(out, src, [j], salt_sha256, {label: {"container_hash": (reg or {}).get("provenance", {}).get("cfg_sha256")}})
+   424	    need = inputs(src, [j]); need[j["id"]] = sha_file(R.path_of(src, j["id"]))
+   425	    copy_inputs(src, out, need)
+   426	    rec = R.stage_doubling(j, out, CUTS, H4_EXCLUDED)
+   427	    write(Path(out) / "doubling" / (R._safe(rid) + ".json"),
+   428	          {"stage": "doubling", "id": rid, "provenance": j["provenance"], "upstream": {u: sha_file(R.path_of(out, u)) for u in sorted(need)}, **rec})
+   429	    rep = compare_doubling(src, out, rid); write(Path(out) / "gate.json", {"stage": "doubling gate", "cell": rid, **rep}); inventory(out)
+   430	    return rep
+   431	
+   432	
+   433	def pod_gate_ok(rep: dict, require_identical: bool) -> bool:
+   434	    """The author's decision (card touchstone-reset-repro-pass): on the pod, start the 18 cells only if the reproduction
+   435	    is bit-identical; on the Mac, the draft-5 criterion applies."""
+   436	    return bool(rep.get("identical")) if require_identical else bool(rep.get("pass"))
+   437	
+   438	
+   439	def reproduce(src, out, root: str, params: dict, salt_sha256: str, workers: int = 1) -> dict:
+   440	    """Rerun the registered headline F111 D2 search and evaluation through this script's path (input copies, freeze,
+   441	    acceptance) and compare with the registered records."""
+   442	    mkt = R.market("headline", root, 0.2, salt_sha256=salt_sha256)
+   443	    j = R.job(mkt, "F111", "D2", "profit", params=params)
+   444	    reg = read(R.path_of(src, REPRO))
+   445	    container = {"headline": {"container_hash": (reg or {}).get("provenance", {}).get("cfg_sha256")}}
+   446	    preflight(out, src, [j], salt_sha256, container)
+   447	    copy_inputs(src, out, inputs(src, [j]))
+   448	    run_stage("search", [j], out, workers); prefreeze(out, [j])
+   449	    accept(out, [j], salt_sha256, {"headline": {"container_hash": reg["provenance"]["cfg_sha256"]}})
+   450	    run_stage("evaluate", [j], out, workers)
+   451	    rep = compare(src, out); write(Path(out) / "gate.json", {"stage": "reproduction gate", "cell": REPRO, **rep}); inventory(out)
+   452	    return rep
+   453	
+   454	
+   455	def headline_jobs(root: str, params: dict, salt_sha256: str) -> list[dict]:
+   456	    """The three registered headline D2 cells (not cut; their records are in the source)."""
+   457	    mkt = R.market("headline", root, 0.2, salt_sha256=salt_sha256)
+   458	    return [R.job(mkt, r, "D2", "profit", params=params) for r in RULES]
+   459	
+   460	
+   461	def headline_diagnostics(src, out, root: str, params: dict, salt_sha256: str, report: dict) -> dict:
+   462	    """Plan section 4 at the headline market, on the Mac before the pod: 9 policies and 6 switches on the 200 seeds."""
+   463	    res = diagnostics(src, out, headline_jobs(root, params, salt_sha256), report, d2_from=src)
+   464	    write(Path(out) / "diagnostics_headline.json", res)
+   465	    return res
+   466	
+   467	
+   468	POD_STEPS = ("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory")
+   469	SPOT = "fresh0@rho0.2|F111|D2|profit"                 # plan section 4: the cell diagnosed on the pod and on the Mac
+   470	
+   471	
+   472	def diag_jobs(jobs: list[dict], which: str) -> list[dict]:
+   473	    return jobs if which == "all" else [j for j in jobs if j["id"] in which.split(",")]
+   474	
+   475	
+   476	def main(argv=None) -> int:
+   477	    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+   478	    ap.add_argument("--src", default=str(EVAL_ALL)); ap.add_argument("--out", required=True)
+   479	    ap.add_argument("--draw", default=str(ROOT / "results/v2/draw/draw.json")); ap.add_argument("--instances", default=str(ROOT / "results/v2/draw/instances.json"))
+   480	    ap.add_argument("--cfgs", default=str(ROOT / "results/v2/deviation/cfg_linux.json")); ap.add_argument("--addendum", default=str(ROOT / "results/v2/report/addendum.json"))
+   481	    ap.add_argument("--params", default=str(ROOT / "experiments/v2/params.json")); ap.add_argument("--markets", default=",".join(MARKETS))
+   482	    ap.add_argument("--stage", default="all", choices=("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory", "all"))
+   483	    ap.add_argument("--workers", type=int, default=1); ap.add_argument("--smoke", action="store_true")
+   484	    ap.add_argument("--reproduce", action="store_true", help=f"validation (a): rerun {REPRO} and compare (plan draft 5)")
+   485	    ap.add_argument("--require-identical", dest="req_id", action="store_true", help="the pod gate: exit 1 unless the reproduction is bit-identical")
+   486	    ap.add_argument("--reproduce-doubling", dest="repro_dbl", default=None, help="validation (d): a registered D2+H3 doubling cell id")
+   487	    ap.add_argument("--report", default=str(ROOT / "results/v2/report/report.json"), help="for the diagnostics stage")
+   488	    ap.add_argument("--headline-diagnostics", dest="hl_diag", action="store_true", help="plan section 4: the three headline cells, on the Mac")
+   489	    ap.add_argument("--diag-cells", dest="diag_cells", default="all", help=f"diagnostics stage: 'all' (Mac, after retrieval) or cell ids (pod: {SPOT})")
+   490	    a = ap.parse_args(argv); out = Path(a.out); check_out(out, a.src)
+   491	    from sim.records import cfg_from_dict
+   492	    root = json.loads(Path(a.draw).read_text())["hash"]; salt_sha = json.loads(Path(a.instances).read_text())["salt_sha256"]
+   493	    container = json.loads(Path(a.addendum).read_text())["deviations"]["configs"]
+   494	    cfgs = {k: cfg_from_dict(v) for k, v in json.loads(Path(a.cfgs).read_text()).items()}
+   495	    out.mkdir(parents=True, exist_ok=True); R.install_salt(root, out)
+   496	    if a.hl_diag:
+   497	        params = json.loads(Path(a.params).read_text()); j0 = headline_jobs(root, params, salt_sha)
+   498	        check_salt(out, salt_sha, j0); check_commit(j0); check_code(); check_pairing(a.src, j0)
+   499	        headline_diagnostics(a.src, out, root, params, salt_sha, json.loads(Path(a.report).read_text())); inventory(out)
+   500	        print(json.dumps({"headline_diagnostics": len(j0)})); return 0
+   501	    if a.repro_dbl:
+   502	        rep = reproduce_doubling(a.src, out, a.repro_dbl, root, cfgs, json.loads(Path(a.params).read_text()), salt_sha)
+   503	        print(json.dumps({"reproduce_doubling": a.repro_dbl, **rep}))
+   504	        return 0 if rep["pass"] else 1
+   505	    if a.reproduce:
+   506	        rep = reproduce(a.src, out, root, json.loads(Path(a.params).read_text()), salt_sha, a.workers)
+   507	        ok = pod_gate_ok(rep, a.req_id)
+   508	        print(json.dumps({"reproduce": REPRO, "require_identical": a.req_id, "gate_ok": ok, **rep}))
+   509	        return 0 if ok else 1
+   510	    jobs = build_jobs(root, cfgs, json.loads(Path(a.params).read_text()), salt_sha, tuple(a.markets.split(",")), a.smoke)
+   511	    check_configs(jobs, container); check_salt(out, salt_sha, jobs); check_commit(jobs); check_code()
+   512	    if not a.smoke:
+   513	        check_pairing(a.src, jobs)
+   514	    steps = POD_STEPS if a.stage == "all" else (a.stage,)
+   515	    for st in steps:
+   516	        if st == "inputs":
+   517	            copy_inputs(a.src, out, inputs(a.src, jobs))
+   518	        elif st == "search":
+   519	            run_stage("search", jobs, out, a.workers)
+   520	        elif st == "freeze":
+   521	            prefreeze(out, jobs)
+   522	        elif st == "diagnostics":
+   523	            dj = diag_jobs(jobs, a.diag_cells)
+   524	            write(out / ("diagnostics.json" if a.diag_cells == "all" else "diagnostics_spot.json"), diagnostics(a.src, out, dj, json.loads(Path(a.report).read_text())))
+   525	        elif st in ("evaluate", "doubling"):
+   526	            accept(out, jobs, salt_sha, container, src=a.src); run_stage(st, jobs, out, a.workers)
+   527	        else:
+   528	            inventory(out)
+   529	        print(json.dumps({"stage": st, "jobs": len(jobs)}), flush=True)
+   530	    return 0
+   531	
+   532	
+   533	if __name__ == "__main__":
+   534	    sys.exit(main())
+   199	
+   200	| Item | Estimate | Cap |
+   201	|---|---:|---:|
+   202	| Option A: 18 D2 cells, doubling checks, diagnostics | 1.66 to 2.10 USD | **10.00 USD** (author, 2026-11-09) |
+   203	
+   204	A failed attempt counts toward the cap; the cap leaves room for one early failure, not for a full second run. Option B (an X7-SC variant with replacement disabled) is dropped from this plan: its
+   205	constrained family, incumbents, and corner controls would need their own specification (the frozen X7-SC search inserts
+   206	D2+H3 incumbents that can replace), so it is not offered for approval.
+   207	
+   208	**Budget.** `docs/revision/budget-ledger.json`: spent 50.869 USD of the 55 USD approval limit. The author approved option A
+   209	on the board on 2026-11-09 and set the cap to 10 USD ("make the cap $10 to ensure we're not blocked by a low cap"). The
+   210	ledger needs a new category `followup` with cap 10.00 and the approval limit raised to 61 USD (50.869 + 10 = 60.869,
+   211	`python3 -c "print(50.869+10)"`). `scripts/budget_v2.py` is frozen, so the tested wrapper
+   212	`docs/revision/followup/budget_followup.py --approve 61 10 TEXT` records both, refuses a limit below spend plus the cap,
+   213	and keeps the earlier approval text. The estimate is unchanged (1.66 to 2.10 USD); the higher cap only prevents a stop from a low
+   214	cap. Stop at the cap.
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+The round-6 code changes are present. I found possible gaps in the launcher’s code guard and cap enforcement. I will check those gaps and verify the saved record hashes.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg -n '"'^def test_|smoke|integration|headline|identical|conflict'"' docs/revision/followup/test_reset_followup.py; rg --files /Users/oemer.demirel/Projects/touchstone/results/v2 -g '*smoke*' -g '*bundle*' -g '*reset*log*' -g '*inventory*' -g '*gate*'; nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/create16.py | head -100; rg -n 'def .*pull|rsync|delete|def .*list|def .*push' /Users/oemer.demirel/Projects/touchstone/results/pods/runpod.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+16:def test_the_18_cells_are_exactly_the_cut_d2_cells():
+25:def test_an_output_inside_eval_all_is_refused(tmp_path, monkeypatch):
+58:def test_inputs_come_from_the_original_records_hashes(tmp_path, no_expected_check):
+63:    F.copy_inputs(src, out, need)                                             # a second call reuses identical copies
+66:def test_a_changed_reference_is_refused(tmp_path, no_expected_check):
+72:def test_a_changed_menu_search_is_refused(tmp_path, no_expected_check):
+78:def test_a_missing_input_is_refused(tmp_path, no_expected_check):
+87:def test_a_reference_whose_dependencies_are_not_the_registered_menu_is_refused(tmp_path):
+93:def test_a_wrong_configuration_hash_is_refused():
+110:def test_acceptance_admits_the_follow_up_freeze(tmp_path, monkeypatch, no_expected_check):
+117:def test_acceptance_refuses_a_missing_freeze(tmp_path, monkeypatch, no_expected_check):
+123:def test_acceptance_refuses_a_changed_search_record(tmp_path, monkeypatch, no_expected_check):
+129:def test_acceptance_refuses_a_changed_copied_input(tmp_path, monkeypatch, no_expected_check):
+135:def test_acceptance_refuses_a_changed_salt(tmp_path, monkeypatch, no_expected_check):
+144:def test_the_inventory_lists_every_output_but_itself(tmp_path, monkeypatch, no_expected_check):
+151:        "seeds_train": [7], "seeds_val": [8], "seeds_eval": [1, 2], "context": "headline@rho0.2", "git_commit": "x"}
+158:                                     "upstream": eval_up or {rid: "new", "reference/headline@rho0.2/F111": "ref", "freeze/headline@rho0.2": "fz"}})
+161:def test_reproduction_criterion_exact_parts_and_tolerances(tmp_path):
+163:    rid = "headline@rho0.2|F111|D2|profit"
+167:    assert rep["pass"] and not rep["identical"] and rep["max_knob_rel"] == pytest.approx(2.6e-13, rel=1e-3)
+178:    assert F.compare(tmp_path / "a", tmp_path / "same", rid)["identical"]
+186:def test_smoke_path_for_one_fresh_cell(tmp_path):
+187:    """Validation (b): the complete path for fresh0 F111 at smoke size: input copies, search, the follow-up freeze,
+191:            "--cfgs", str(MAIN / "deviation/cfg_linux.json"), "--addendum", str(MAIN / "report/addendum.json"), "--report", str(MAIN / "report/report.json"), "--markets", "fresh0", "--smoke"]
+219:def test_f1_each_job_matches_its_reference_provenance(tmp_path):
+227:def test_f2_an_unknown_commit_is_refused():
+233:def test_f2_the_inventory_records_the_environment(tmp_path, monkeypatch, no_expected_check):
+238:def test_f5_an_output_equal_to_or_inside_the_source_is_refused(tmp_path):
+246:def test_f6_the_salt_is_checked_before_any_search(tmp_path):
+252:def test_f7_a_second_different_hash_for_a_known_record_is_refused(tmp_path, no_expected_check):
+262:def test_f7_the_original_freeze_must_be_cuts_3_with_h4(tmp_path, no_expected_check):
+268:def test_f8_acceptance_recomputes_the_inputs_from_the_source(tmp_path, monkeypatch, no_expected_check):
+287:def test_reset_stats_count_replacements_rounds_and_bans():
+296:def test_switch_knobs_set_only_x():
+304:def test_diagnostics_on_the_registered_headline_cells(tmp_path):
+305:    """The diagnostic runs on headline F111, whose D2 and D2+H3 records are registered, at smoke size (two seeds)."""
+309:    j = F.R.job(F.R.market("headline", root, 0.2, smoke=True, salt_sha256=salt), "F111", "D2", "profit", smoke=True,
+312:    row = F.diagnostics(MAIN / "eval/all", MAIN / "eval/all", [j], rep)["headline@rho0.2|F111"]
+314:    assert {"identical", "effect"} <= set(row["d2h3_base"]["switch_x0"]) and "effect" in row["d2_base"]["switch_x1"]
+317:def test_doubling_comparison_uses_the_draft5_criterion(tmp_path):
+330:def test_compare_checks_provenance_twin_dependencies_and_finiteness(tmp_path):
+333:    rid = "headline@rho0.2|F111|D2|profit"; k = {"u0": 0.5, "clip": 0}
+336:             "twin archive size": dict(twin=0), "evaluation dependency": dict(eval_up={rid: "new", "freeze/headline@rho0.2": "fz"}),
+337:             "reference hash": dict(eval_up={rid: "new", "reference/headline@rho0.2/F111": "ref2", "freeze/headline@rho0.2": "fz"}),
+343:        assert not r["pass"] and not r["identical"] and any(name in p for p in r["problems"]), (name, r["problems"])
+348:def test_f7_freeze_without_explicit_cuts_fields_is_refused(tmp_path, no_expected_check):
+354:def test_f7_copied_search_hash_must_match_the_original_freeze(tmp_path, no_expected_check):
+360:def test_reproduction_runs_the_preflight_before_any_search(tmp_path, monkeypatch):
+362:    monkeypatch.setattr(F.R, "market", lambda *a, **k: {"label": "headline"})
+363:    monkeypatch.setattr(F.R, "job", lambda *a, **k: {"id": F.REPRO, "context": "headline@rho0.2", "rule": "F111", "provenance": {}})
+373:def test_environment_names_the_numerical_stack():
+380:def test_r5_twin_best_and_objective_values_are_checked(tmp_path):
+381:    rid = "headline@rho0.2|F111|D2|profit"; k = {"u0": 0.5, "clip": 0}
+388:        assert not r["pass"] and not r["identical"] and any(name in x for x in r["problems"]), (name, r)
+394:def test_r5_doubling_comparison_rejects_nonfinite_and_missing_fields(tmp_path):
+405:def test_r5_a_copied_search_absent_from_the_original_freeze_is_refused(tmp_path, no_expected_check):
+411:def test_r5_doubling_reproduction_runs_the_preflight_first(tmp_path, monkeypatch):
+424:def test_r5_diagnostics_keep_per_seed_values_and_refuse_a_resetting_d2_winner():
+433:def test_pod_sequence_runs_diagnostics_for_the_spot_check_cell_only():
+442:def test_r6_identical_requires_equal_objective_values(tmp_path):
+443:    rid = "headline@rho0.2|F111|D2|profit"; k = {"u0": 0.5, "clip": 0}
+449:        assert r["pass"] and not r["identical"], name
+452:def test_r6_headline_diagnostics_read_the_registered_d2_winners(tmp_path, monkeypatch):
+455:    monkeypatch.setattr(F, "headline_jobs", lambda root, params, salt: [{"id": f"headline@rho0.2|{r}|D2|profit"} for r in F.RULES])
+456:    F.headline_diagnostics("SRC", tmp_path, "root", {}, "salt", {})
+457:    assert seen == {"n": 3, "d2_from": "SRC"} and (tmp_path / "diagnostics_headline.json").exists()
+460:def test_author_decision_pod_gate_requires_bit_identity(monkeypatch, tmp_path):
+461:    """Card touchstone-reset-repro-pass (2026-11-10): on the pod the reproduction must be identical, not only within tolerance."""
+462:    monkeypatch.setattr(F, "reproduce", lambda *a, **k: {"pass": True, "identical": False, "problems": []})
+463:    assert F.pod_gate_ok(F.reproduce(), require_identical=True) is False
+464:    assert F.pod_gate_ok({"pass": True, "identical": True, "problems": []}, require_identical=True) is True
+465:    assert F.pod_gate_ok({"pass": True, "identical": False, "problems": []}, require_identical=False) is True
+468:def test_copy_inputs_accepts_added_inputs_and_refuses_only_a_conflict(tmp_path, no_expected_check):
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling/gate.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-diag-headline/inventory.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/inventory.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/gate.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-v2/inventory.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-repro-doubling-v2/gate.json
+     1	import sys, json
+     2	sys.path.insert(0, "/Users/oemer.demirel/Projects/touchstone/results/pods")
+     3	from runpod import api
+     4	IMAGE = "runpod/base:0.6.2-cpu"; name = sys.argv[1]
+     5	combos = [(f, v, c) for c in ("SECURE", "COMMUNITY") for v in (16,) for f in ("cpu5c", "cpu3c", "cpu5g", "cpu3g", "cpu5m", "cpu3m")]
+     6	for f, v, c in combos:
+     7	    r = api("POST", "/pods", {"name": name, "computeType": "CPU", "cloudType": c, "cpuFlavorIds": [f], "cpuFlavorPriority": "availability",
+     8	                              "vcpuCount": v, "imageName": IMAGE, "ports": ["22/tcp"], "containerDiskInGb": 20, "env": {"OMP_NUM_THREADS": "1"}})
+     9	    if isinstance(r, dict) and r.get("id"):
+    10	        print(json.dumps({"id": r["id"], "flavor": f, "vcpu": v, "cloud": c})); sys.exit(0)
+    11	print(json.dumps({"id": ""})); sys.exit(1)
+2:  python runpod.py list | get ID | delete ID | ssh ID 'cmd' | push ID LOCAL REMOTE | pull ID REMOTE LOCAL"""
+22:def rsync(pod_id, src, dst, pull=False):
+26:    return subprocess.run(["rsync", "-az", "-e", e, a, b], capture_output=True, text=True)
+31:    elif cmd == "delete": print(api("DELETE", f"/pods/{args[0]}"))
+33:    elif cmd == "push": r = rsync(args[0], args[1], args[2]); print(r.stdout[-300:], r.stderr[-300:], "exit", r.returncode)
+34:    elif cmd == "pull": r = rsync(args[0], args[1], args[2], pull=True); print(r.stdout[-300:], r.stderr[-300:], "exit", r.returncode)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "python3 -B -c 'from pathlib import Path
+import json,hashlib
+base=Path('\\''/Users/oemer.demirel/Projects/touchstone/results/v2'\\'')
+for name in ['\\''followup-repro-v2'\\'','\\''followup-repro-doubling-v2'\\'','\\''followup-diag-headline'\\'']:
+ p=base/name; inv=json.loads((p/'\\''inventory.json'\\'').read_text()); recs=inv['\\''records'\\'']
+ bad=[r for r,h in recs.items() if not (p/r).is_file() or hashlib.sha256((p/r).read_bytes()).hexdigest()"'!=h]
+ extra=[str(f.relative_to(p)) for f in p.rglob('"'\\''*'\\'') if f.is_file() and f.name"'!='"'\\''inventory.json'\\'' and str(f.relative_to(p)) not in recs]
+ print(name,'\\''records'\\'',len(recs),'\\''bad'\\'',bad,'\\''extra'\\'',extra,'\\''env'\\'',inv['\\''environment'\\''])
+ if (p/'\\''gate.json'\\'').exists(): print('\\''gate'\\'',json.loads((p/'\\''gate.json'\\'').read_text()))
+ else: print('\\''gate absent'\\'')
+ for f in list((p/'\\''doubling'\\'').glob('\\''*.json'\\''))+list((p/'\\''evaluate'\\'').glob('\\''*.json'\\'')):
+  d=json.loads(f.read_text()); print(f.name,'\\''keys'\\'',list(d),'\\''commit'\\'',d.get('\\''provenance'\\'',{}).get('\\''git_commit'\\''),'\\''deps'\\'',len(d.get('\\''upstream'\\'',{})))
+  badup=[]
+  for u,h in d.get('\\''upstream'\\'',{}).items():
+   parts=u.split('\\''/'\\''); f2=p/parts[0]/('\\''/'\\''.join(parts[1:]).replace('\\''|'\\'','\\''__'\\'').replace('\\''*'\\'','\\''star'\\'')+'\\''.json'\\'')
+   if not f2.exists() or hashlib.sha256(f2.read_bytes()).hexdigest()"'!=h: badup.append(u)
+  print('"'\\''upstream mismatches'\\'',badup)
+ if (p/'\\''diagnostics_headline.json'\\'').exists():
+  d=json.loads((p/'\\''diagnostics_headline.json'\\'').read_text())
+  for c,row in d.items(): print(c,{k:{'\\''seeds'\\'':len(v['\\''seeds'\\'']),'\\''profits'\\'':len(v['\\''normalized'\\'']),'\\''resets'\\'':sum(v['\\''resets'\\'']),'\\''switch'\\'':list(v.get('\\''switch_x0'\\'',v.get('\\''switch_x1'\\'',{})))} for k,v in row.items()})
+'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+followup-repro-v2 records 27 bad [] extra [] env {'python': '3.12.12', 'numpy': '2.5.4', 'scipy': '1.18.1', 'cma': '4.5.0', 'blas': {'blas': {'name': 'accelerate', 'version': 'unknown'}, 'lapack': {'name': 'accelerate', 'version': 'unknown'}}, 'cpu': 'Apple M4 Max', 'machine': 'arm64', 'platform': 'macOS-27.0.1-arm64-arm-64bit', 'driver_sha256': '5b7d5efe4bcc324b092b5bed10110742a95f7d806312e3a28e8fa17896416525'}
+gate {'stage': 'reproduction gate', 'cell': 'headline@rho0.2|F111|D2|profit', 'pass': True, 'identical': False, 'max_knob_rel': 2.515335660523085e-13, 'max_gain_abs': 1.970645868709653e-14, 'controls': {'differing': 16, 'max_abs': 1.5248353502219562e-05}, 'problems': []}
+headline@rho0.2__F111__D2__profit.json keys ['stage', 'id', 'provenance', 'upstream', 'seeds', 'gain', 'eff_attack', 'eff_ref', 'net_eff_attack', 'net_eff_ref', 'profit_attack', 'profit_ref', 'audit_spend_attack', 'sstar', 'served_share_attack', 'served_share_ref', 'false_refund_focal_attack', 'false_refund_others_attack', 'false_refund_focal_ref', 'false_refund_others_ref'] commit 30e53534c528747e84ceece18379e08196ae2a82 deps 3
+upstream mismatches ['headline@rho0.2|F111|D2|profit']
+followup-repro-doubling-v2 records 25 bad [] extra [] env {'python': '3.12.12', 'numpy': '2.5.4', 'scipy': '1.18.1', 'cma': '4.5.0', 'blas': {'blas': {'name': 'accelerate', 'version': 'unknown'}, 'lapack': {'name': 'accelerate', 'version': 'unknown'}}, 'cpu': 'Apple M4 Max', 'machine': 'arm64', 'platform': 'macOS-27.0.1-arm64-arm-64bit', 'driver_sha256': '372496b2491167730523b2f09a4e8603f8e6b4a875fb9a2c4ae6863081585216'}
+gate {'stage': 'doubling gate', 'cell': 'fresh0@rho0.2|F111|D2+H3|profit', 'pass': True, 'max_knob_rel': 1.8254193168033264e-13, 'max_change_abs': 0.0, 'max_gain_abs': 2.220446049250313e-16, 'problems': []}
+fresh0@rho0.2__F111__D2+H3__profit.json keys ['stage', 'id', 'provenance', 'upstream', 'kind', 'attack_change', 'reference_change', 'incomplete', 'heldout'] commit 3ed8c53737a62044f29cbdb18526e08b9a697f17 deps 21
+upstream mismatches ['fresh0@rho0.2|C*/S0|D2+H3|profit', 'fresh0@rho0.2|C*/S0|X7-SC|profit', 'fresh0@rho0.2|C*|D2+H3|profit', 'fresh0@rho0.2|C*|X7-SC|profit', 'fresh0@rho0.2|F000|D2+H3|profit', 'fresh0@rho0.2|F000|X7-SC|profit', 'fresh0@rho0.2|F001|D2+H3|profit', 'fresh0@rho0.2|F001|X7-SC|profit', 'fresh0@rho0.2|F010|D2+H3|profit', 'fresh0@rho0.2|F010|X7-SC|profit', 'fresh0@rho0.2|F011|D2+H3|profit', 'fresh0@rho0.2|F011|X7-SC|profit', 'fresh0@rho0.2|F100|D2+H3|profit', 'fresh0@rho0.2|F100|X7-SC|profit', 'fresh0@rho0.2|F101|D2+H3|profit', 'fresh0@rho0.2|F101|X7-SC|profit', 'fresh0@rho0.2|F110|D2+H3|profit', 'fresh0@rho0.2|F110|X7-SC|profit', 'fresh0@rho0.2|F111|D2+H3|profit', 'fresh0@rho0.2|F111|X7-SC|profit']
+followup-diag-headline records 2 bad [] extra [] env {'python': '3.12.12', 'numpy': '2.5.4', 'scipy': '1.18.1', 'cma': '4.5.0', 'blas': {'blas': {'name': 'accelerate', 'version': 'unknown'}, 'lapack': {'name': 'accelerate', 'version': 'unknown'}}, 'cpu': 'Apple M4 Max', 'machine': 'arm64', 'platform': 'macOS-27.0.1-arm64-arm-64bit', 'driver_sha256': '372496b2491167730523b2f09a4e8603f8e6b4a875fb9a2c4ae6863081585216'}
+gate absent
+headline@rho0.2|F000 {'d2h3_base': {'seeds': 200, 'profits': 200, 'resets': 33350, 'switch': ['identical', 'effect', 'per_seed']}, 'd2h3_doubled': {'seeds': 200, 'profits': 200, 'resets': 33507, 'switch': ['identical', 'effect', 'per_seed']}, 'd2_base': {'seeds': 200, 'profits': 200, 'resets': 0, 'switch': ['effect', 'per_seed']}}
+headline@rho0.2|F111 {'d2h3_base': {'seeds': 200, 'profits': 200, 'resets': 1283, 'switch': ['identical', 'effect', 'per_seed']}, 'd2h3_doubled': {'seeds': 200, 'profits': 200, 'resets': 10275, 'switch': ['identical', 'effect', 'per_seed']}, 'd2_base': {'seeds': 200, 'profits': 200, 'resets': 0, 'switch': ['effect', 'per_seed']}}
+headline@rho0.2|C* {'d2h3_base': {'seeds': 200, 'profits': 200, 'resets': 2790, 'switch': ['identical', 'effect', 'per_seed']}, 'd2h3_doubled': {'seeds': 200, 'profits': 200, 'resets': 6200, 'switch': ['identical', 'effect', 'per_seed']}, 'd2_base': {'seeds': 200, 'profits': 200, 'resets': 0, 'switch': ['effect', 'per_seed']}}
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/runpod.py | sed -n '1,90p'; sed -n '186,218p' docs/revision/followup/test_reset_followup.py; git log -1 --format='%h %s'; rg -n 'reset|followup|smoke|1.3|HARD|cap' docs/revision/operations* docs/revision/budget-ledger.json" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+     1	"""Minimal Runpod REST helper. Usage:
+     2	  python runpod.py list | get ID | delete ID | ssh ID 'cmd' | push ID LOCAL REMOTE | pull ID REMOTE LOCAL"""
+     3	import json, os, re, subprocess, sys, urllib.request
+     4	KEY = re.search(r"apikey\s*=\s*'([^']+)'", open(os.path.expanduser("~/.runpod/config.toml")).read()).group(1)
+     5	SSHKEY = os.path.expanduser("~/.runpod/ssh/runpodctl-ssh-key")
+     6	BASE = "https://rest.runpod.io/v1"
+     7	def api(method, path, body=None):
+     8	    req = urllib.request.Request(BASE + path, data=json.dumps(body).encode() if body else None, method=method,
+     9	                                 headers={"Authorization": f"Bearer {KEY}", "Content-Type": "application/json", "User-Agent": "curl/8.7.1"})
+    10	    try:
+    11	        with urllib.request.urlopen(req, timeout=60) as r:
+    12	            t = r.read().decode(); return json.loads(t) if t else None
+    13	    except urllib.error.HTTPError as e:
+    14	        return {"error": e.code, "body": e.read().decode()[:500]}
+    15	def target(pod_id):
+    16	    p = api("GET", f"/pods/{pod_id}"); pm = p.get("portMappings") or {}
+    17	    return p.get("publicIp"), pm.get("22") or pm.get(22)
+    18	def ssh(pod_id, cmd, timeout=None):
+    19	    ip, port = target(pod_id)
+    20	    return subprocess.run(["ssh", "-i", SSHKEY, "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", "-o", "LogLevel=ERROR", "-o", "ConnectTimeout=20", "-p", str(port), f"root@{ip}", cmd],
+    21	                          capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
+    22	def rsync(pod_id, src, dst, pull=False):
+    23	    ip, port = target(pod_id)
+    24	    e = f"ssh -i {SSHKEY} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -p {port}"
+    25	    a, b = (f"root@{ip}:{src}", dst) if pull else (src, f"root@{ip}:{dst}")
+    26	    return subprocess.run(["rsync", "-az", "-e", e, a, b], capture_output=True, text=True)
+    27	if __name__ == "__main__":
+    28	    cmd, args = sys.argv[1], sys.argv[2:]
+    29	    if cmd == "list": print(json.dumps([{k: p.get(k) for k in ("id", "name", "desiredStatus", "publicIp", "portMappings", "costPerHr", "vcpuCount")} for p in api("GET", "/pods")], indent=1))
+    30	    elif cmd == "get": print(json.dumps(api("GET", f"/pods/{args[0]}"), indent=1)[:1500])
+    31	    elif cmd == "delete": print(api("DELETE", f"/pods/{args[0]}"))
+    32	    elif cmd == "ssh": r = ssh(args[0], args[1]); print(r.stdout, r.stderr, "exit", r.returncode)
+    33	    elif cmd == "push": r = rsync(args[0], args[1], args[2]); print(r.stdout[-300:], r.stderr[-300:], "exit", r.returncode)
+    34	    elif cmd == "pull": r = rsync(args[0], args[1], args[2], pull=True); print(r.stdout[-300:], r.stderr[-300:], "exit", r.returncode)
+def test_smoke_path_for_one_fresh_cell(tmp_path):
+    """Validation (b): the complete path for fresh0 F111 at smoke size: input copies, search, the follow-up freeze,
+    acceptance, evaluation, doubling, inventory; every dependency of the frozen stages resolves."""
+    out = tmp_path / "followup"
+    args = ["--src", str(MAIN / "eval/all"), "--out", str(out), "--draw", str(MAIN / "draw/draw.json"), "--instances", str(MAIN / "draw/instances.json"),
+            "--cfgs", str(MAIN / "deviation/cfg_linux.json"), "--addendum", str(MAIN / "report/addendum.json"), "--report", str(MAIN / "report/report.json"), "--markets", "fresh0", "--smoke"]
+    FF = F
+    real = FF.restored_cells
+    FF.restored_cells = lambda markets=FF.MARKETS: [c for c in real(markets) if c["rule"] == "F111"]
+    try:
+        assert F.main(args) == 0
+    finally:
+        FF.restored_cells = real
+    rid = "fresh0@rho0.2|F111|D2|profit"
+    ev = read(F.R.eval_path(out, rid)); db = read(out / "doubling" / (F.R._safe(rid) + ".json")); inv = read(out / "inventory.json")
+    assert ev["stage"] == "evaluate" and len(ev["gain"]) == 2 and f"freeze/{CTX}" in ev["upstream"]
+    assert db["stage"] == "doubling" and len(db["heldout"]["gain"]) == 2 and f"reference/{CTX}/F111" in db["upstream"]
+    assert inv["records"][f"evaluate/{F.R._safe(rid)}.json"] == sha_file(F.R.eval_path(out, rid))
+    dg = read(out / "diagnostics.json")[f"{CTX}|F111"]
+    assert dg["d2_base"]["knobs"]["x"] == 0 and len(dg["d2_base"]["resets"]) == 2 and "switch_x1" in dg["d2_base"]
+
+
+# ---- Fable 5.2 driver review (2026-11-10) ----
+
+PAIRED = {"runner_sha256": "r", "salt_sha256": "s", "cfg_sha256": "c", "root": "h", "seeds_train": [1], "seeds_val": [2], "seeds_eval": [3],
+          "rule_params_sha256": "p", "context": CTX, "rule": "F111", "git_commit": "d5e602e"}
+
+
+def _paired_src(tmp_path, **override):
+    src = tmp_path / "src"; write(F.R.path_of(src, f"reference/{CTX}/F111"), {"stage": "reference", "provenance": {**PAIRED, **override}})
+    return src
+
+
+d865329 Reset driver: copy_inputs refuses only real hash conflicts (TDD; found by the follow-up-2 helper); follow-up runs A and B at draft 2 (review r1 corrections, guards.py, 56 tests; helper session)
+docs/revision/budget-ledger.json:2: "caps": {
+docs/revision/budget-ledger.json:5:  "followup": 22.0
+docs/revision/budget-ledger.json:122:  "text": "Approve all follow-up simulations (reset experiment, honest churn, convergence searches, C-thr(12) on fresh markets): follow-up cap 22 USD, program limit 73 USD, \u00d6mer Demirel, 2026-11-10."
+docs/revision/budget-ledger.json:127:   "text": "Raise caps, start fresh5 now: evaluation cap 43 USD, program limit 55 USD (development cap 12 USD unchanged), \u00d6mer Demirel, 2026-11-04, chosen in the Claude Code session after the wave-1 overrun (fresh pods 4.65-4.80 USD against 4.26)."
+docs/revision/operations-ledger.md:5:`code_commit` = `627a2de9ad6c838e4228893c3107d173118d5d62` (Part A2 merged, signed).
+docs/revision/operations-ledger.md:12:- Command: `uv run python scripts/benchmark_v2.py --run --smoke --out results/v2/benchmark_smoke`
+docs/revision/operations-ledger.md:17:- Reservation: `budget_v2.py --reserve development bench 2.4` granted 3.00 USD (cap 3 USD).
+docs/revision/operations-ledger.md:24:- Output: `timings.json` (smoke false, commit 627a2de, vcpu 16, 0.56 USD/h, wall 4.54 h, markets headline and dev0).
+docs/revision/operations-ledger.md:32:- Priced alternatives from the same timings: evaluation with H4 reserve, cuts 0 to 4 = 43.88, 43.49, 40.37, 38.08, 37.68 USD; development three20k 12.54 (above the 12 USD cap), two20k 11.17, two10k 10.75 USD.
+docs/revision/operations-ledger.md:38:- Command (run by the author): `budget_v2.py --approve 52 "I approve a revision-program budget of up to 52 USD (development cap 12 USD, evaluation cap 40 USD; estimated total 49.25 USD), Ömer Demirel, 2026-10-28."`
+docs/revision/operations-ledger.md:45:- Smoke: `tune_v2.py --select comparator --markets headline,dev0 --smoke --workers 4` at 627a2de, 2 min 55 s locally, `comparator.json` written. No spend.
+docs/revision/operations-ledger.md:50:- Attempt 2 (15:38): tarball rebuilt with `tar --uid 0 --gid 0`; pods comparator (cap 2.50), `qcbt75iongrg16` B3-t (cap 2.56), `ya9hh7igi2qrhr` R3-t (cap 2.56), 16 vCPU, 0.56 USD/h; prep `git=627a2de… tuned=3 env=unset py ok`; runs started 15:38–15:39.
+docs/revision/operations-ledger.md:56:| comparator | `qyykuq3zfchhwj` 15:38–19:06 | 3 h 28 min | 1.95 USD | C* = C-mem, K 6, M 20 (recheck objective 0.1032; runner-up C-thr K 12, 0.0975) |
+docs/revision/operations-ledger.md:64:- Budget: development spent 9.76 USD (cap 12); no open reservations.
+docs/revision/operations-ledger.md:85:- Attempt 1 (19:30, pods `341v2awxhj2u66` headline, `36akr5hh8vt307` dev0): RUN FAILED at start (`UnicodeDecodeError`: the tarball carried 709 macOS AppleDouble members, read as tuning logs); both deleted and verified within 3 minutes. Guard: the launchers refuse a tarball with `._` members or non-root owners (negative test refused the bad tarball). Attempt 2 (19:3x): tarball rebuilt with `COPYFILE_DISABLE=1 tar --no-mac-metadata --uid 0 --gid 0` (0 AppleDouble, 0 non-root members), caps 1.06 USD each.
+docs/revision/operations-ledger.md:89:- Attempt 4 (headline, 20:4x): full-clone tarball at 7328b56 (history guard locally: data-only descendant True; 0 AppleDouble, 0 non-root), the driver now checks `same_code` before any episode; cap 0.55 USD.
+docs/revision/operations-ledger.md:92:- Attempt 5 (headline, 20:4x): `CODE_COMMIT` set, full-clone tarball at 7328b56, snapshot, tarball, and history guards active; cap 0.55 USD.
+docs/revision/operations-ledger.md:99:| headline | `e1na3wvb8bbi5r` 20:47–21:35 (attempt 5) | RUN OK | 0.99 USD (106 pod-minutes) | 20,000 seeds x 8 profiles, commit 7328b56, code 627a2de |
+docs/revision/operations-ledger.md:108:- Decision after the H4 timing: the first run (`--ledger docs/revision/budget-ledger.json`) stopped at development 12.73 USD because coverage was counted twice (as spent, 1.66 USD, and as remaining work, 1.31 USD): `choose_after_h4` assumes the plan's order (this decision before coverage), and the executor had run coverage first (deviation recorded above). The decision was rerun on the ledger as it stood before coverage (`docs/revision/h4-decision-record/budget-ledger-before-coverage.json`, development spent 9.76 USD), which is the state the plan's order gives; the stopped result is kept in `docs/revision/h4-decision-record/`. Result: branch two20k, cuts 3, development 11.07 USD (actual 11.42), evaluation 38.09 USD (H4 reserve 1 USD included), total 49.16 USD, approval required and covered by the recorded 52 USD approval; H4 ratio 1.002. Promoted (`promote_v2.py --kind decision_h4`): `experiments/v2/benchmark/decision-h4.json`. For the protocol reviewers: the double count and its correction are a consequence of the order deviation, not a code change.
+docs/revision/operations-ledger.md:154:- Memory: smoke stages peak at 176 MB per process; a full-size search 183 MB (2,611 s); one 200-seed evaluation 1.3 GB;
+docs/revision/operations-ledger.md:158:  about 38.0 USD, 39.0 USD with the H4 reserve, under the 40 USD cap.
+docs/revision/operations-ledger.md:186:- Budget (the author's decision, 2026-11-04: "Raise caps, start fresh5 now"): evaluation cap 43 USD, program limit 55 USD, recorded with `budget_v2.py --approve`.
+docs/revision/operations-ledger.md:193:- headline-rho1 (pod 0ubduktzwcgbpl) RUN OK, 1.129 USD; headline-rho02 (pod x9m6inn74tvs08) RUN OK, 10.814 USD. All eight evaluation pods done and deleted. Evaluation spend 39.39 USD of the 43 USD cap (sum of `budget-ledger.json` evaluation spends).
+docs/revision/operations-ledger.md:203:- Whole-paper final review round 1: Sol accept-with-caveat (5), Astra accept-with-caveat (4); caveats applied without another round (review process): release wording (no claim of a public release before publication), reproduction scope named (reproduce_deviation.py, second-test report; tables regenerated by the paper scripts), all generated tables fitted (adjustbox; 0 overfull boxes), Q4 caption names all four search-qualified markets, predictions table labels its paired values and rounds them (tested), floats placed before the bibliography. Consensus.
+docs/revision/operations-build-ledger-2026-10-26.md:2:Spec: docs/superpowers/specs/2026-10-22-revision-program-design.md (draft 6, accepted). Plan version 9, accepted round 9 (Sol, Astra). Branch claude/vigorous-villani-bbac79 from 6173cad. Part A only (Tasks 1-10); Part B operations are not executed by this run.
+docs/revision/operations-build-ledger-2026-10-26.md:6:- T2 -> T3, T5: parent-written tuning logs (all markets) consumed by coverage_v2.fixture_inputs; tuning metadata (smoke, commit, markets, budget_inner, budget_full) consumed by promotion: consistent.
+docs/revision/operations-build-ledger-2026-10-26.md:7:- T3 -> T5: coverage.json fields (smoke, commit, branch, markets, pool_size, pools, inputs_manifest, kappa_effective, validation rows) consumed by promotion: consistent.
+docs/revision/operations-build-ledger-2026-10-26.md:16:Task 1: complete (commits 6173cad..b2523fd, tests: uv run pytest tests/test_h4_check.py tests/test_h4_loader.py -q -p no:cacheprovider → 14 passed in 112.65s (0:01:52))
+docs/revision/operations-build-ledger-2026-10-26.md:51:Task 8: complete (commits ef0cd14..ec894a0, tests: uv run pytest tests/test_revision_v2.py tests/test_benchmark_v2.py -q -p no:cacheprovider → 73 passed in 871.33s (0:14:31))
+docs/revision/operations-build-ledger-2026-10-26.md:60:Task 10: complete (commits 17f6376..8d14fd3, tests: sh -c 'uv run pytest tests/test_artifact.py -q -p no:cacheprovider && uv run pytest -q -p no:cacheprovider' → 1133 passed, 1947 skipped in 3168.33s (0:52:48))
+docs/revision/operations-build-ledger-2026-10-26.md:63:K1 draw bound to the committed .ots proof bytes (parsed operations from file digest to the attested root), no saved listing (Sol 1); K2 the lowest anchor proved by a continuous header chain from the lowest examined attestation (Astra 1); K3 check_commit checks git exit codes, the commit object, and ancestry (both); K4 coverage pools checked for commit, market, branch, inputs, and the same pool hashes at select and validate; promotion checks pool commits (both); K5 final() and lock check every promoted entry against its file and derive params from checked files (both); K6 budget refuses nonfinite or negative amounts and invalid caps (both); K7 the H4 decision is written once and checked against the protocol before execution (Sol 6); K8 verify enforces complete schemas (profit fields, welfare arrays, coalition dimensions and summaries, cross keys, lengths, matrix) and a real verify-plus-report integration test (both); K9 verify requires recorded instances and protocol for fresh markets before building jobs (both); K10 the benchmark bills measured components in their actual dispatch waves, prerequisites and evaluations included (both); K11 the report includes headline whole systems, renders every section in Markdown, and --check compares both files (Astra 9); K12 artifact check compares packed registration inputs with the signed tag; reproduce verifies the tag signature, runs the artifact check, and runs the real report in the locked environment, tested with the real report (both).
+docs/revision/operations-build-ledger-2026-10-26.md:78:- Whole suite after the fix pass: 1173 passed, 1947 skipped (50 min).
+docs/revision/operations-build-ledger-2026-10-26.md:80:Closed in round 1: Sol 1-4, 9; Astra 1-3, 6 (and Astra 4 for the missing-object case). Partly closed, merged into L1-L9: L1 saved approval text on load (both); L2 decisions must carry registered_sha256 (Sol); L3 finite numeric summaries and elements (both); L4 development verify (both); L5 every git command's exit code (Astra); L6 the packed draw validated and instances bound to it (both); L7 the environment check requires applicable locked packages and the Python constraint (both); L8 Markdown intervals (both, minor); L9 run-book commands (Sol, minor). Rulings: the environment ruling rejected as implemented (L7); the K8 integration test accepted as integration evidence only (L3 adds a null-element mutation through the real verifier and report).
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg -n '"'^def (_safe|path_of|eval_path)'"' scripts/revision_v2.py; sed -n '48,90p' scripts/revision_v2.py; git log -4 --format='%h %s' 3ed8c537; rg --files /Users/oemer.demirel/Projects/touchstone/results/pods -g '*reset*' -g '*smoke*'; rg --files /Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-bundle | head -12" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+216:def _safe(s: str) -> str:
+220:def path_of(out: Path, rid: str) -> Path:
+230:def eval_path(out: Path, rid: str) -> Path:
+
+ROOT = Path(__file__).resolve().parents[1]
+STAGES = ("search", "reference", "dependent", "freeze", "evaluate", "cross", "doubling", "verify")
+CATEGORIES = ("abstain", "honest_max", "twin_search", "attack_projection", "archive_clip1", "archive_truthful_clip0", "bank")
+MENU = ("D2+H3", "X7-SC")
+SMOKE = (1, 16, 1, 2)
+DEV_ROOT = INST.DEV_ROOT
+THRESHOLD = 0.005
+
+
+# ---- context ---------------------------------------------------------------------------------------------------------
+
+def git_commit() -> str:
+    try:
+        return subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
+    except Exception:
+        return "unknown"
+
+
+def _sha(b: bytes) -> str:
+    return hashlib.sha256(b).hexdigest()
+
+
+def _sha_json(obj) -> str:
+    return _sha(json.dumps(obj, sort_keys=True, default=float).encode())
+
+
+def install_salt(root: str, out: Path) -> Path:
+    """Write the fresh root's identity salt under --out and point the harness at it before any episode."""
+    p = Path(out) / "salt.hex"; p.parent.mkdir(parents=True, exist_ok=True); p.write_text(INST.identity_salt_hex(root))
+    os.environ[SALT_ENV] = str(p)
+    return p
+
+
+@lru_cache(maxsize=4)
+def _fresh(root: str) -> tuple:
+    return tuple(m["cfg"] for m in INST.markets(root, 6))
+
+
+@lru_cache(maxsize=32)
+def _market_cfg(label: str, root: str, rho: float):
+    if label == "headline":
+        return cell_config(market_config_from_locked(load_locked()), load_calibration(ROOT / "experiments/calibration.json"), rho=rho, beta=0.05)
+3ed8c53 Reset driver: internal review r5 corrections (TDD)
+29bdc65 Internal review r2 of the Fable 5.2 revision (Sol, Astra: reject): corrections applied
+c033329 Reset plan draft 5 and driver: internal review r4 corrections (Sol, Astra: reject)
+877b808 docs: response to the Fable 5.2 review (draft, numbers from posthoc.json); r9 letter item 2 updated (reset experiment approved)
+/Users/oemer.demirel/Projects/touchstone/results/pods/reset_pod.sh
+/Users/oemer.demirel/Projects/touchstone/results/pods/snap_reset_pod_45016.sh
+/Users/oemer.demirel/Projects/touchstone/results/pods/snap_reset_pod_45347.sh
+/Users/oemer.demirel/Projects/touchstone/results/pods/reset_code.tgz
+/Users/oemer.demirel/Projects/touchstone/results/pods/snap_reset_pod_45655.sh
+/Users/oemer.demirel/Projects/touchstone/results/pods/reset_bundle.tgz
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-bundle/deviation/cfg_linux.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-bundle/draw/instances.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-bundle/draw/draw.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-bundle/eval-all/reference/fresh2@rho0.2/Cstar.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-bundle/eval-all/reference/fresh2@rho0.2/F111.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-bundle/eval-all/reference/fresh2@rho0.2/F000.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-bundle/eval-all/reference/fresh0@rho0.2/Cstar.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-bundle/eval-all/reference/fresh0@rho0.2/F111.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-bundle/eval-all/reference/fresh0@rho0.2/F000.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-bundle/eval-all/reference/fresh4@rho0.2/Cstar.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-bundle/eval-all/reference/fresh4@rho0.2/F111.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-bundle/eval-all/reference/fresh4@rho0.2/F000.json
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "python3 -B -c 'import subprocess
+from pathlib import Path
+import hashlib,ast
+f='\\''docs/revision/followup/reset_followup_v2.py'\\''
+for c in ['\\''3ed8c537'\\'','\\''30e5353'\\'','\\''8d18de4'\\'','\\''d865329'\\'']:
+ s=subprocess.check_output(['\\''git'\\'','\\''show'\\'',c+'\\'':'\\''+f]).decode()
+ t=ast.parse(s)
+ print(c,hashlib.sha256(s.encode()).hexdigest())
+ for n in t.body:
+  if isinstance(n,ast.FunctionDef) and n.name in ['\\''reproduce_doubling'\\'','\\''headline_diagnostics'\\'','\\''compare'\\'','\\''copy_inputs'\\'','\\''preflight'\\'']:
+   print(n.name,hashlib.sha256(ast.dump(n,include_attributes=False).encode()).hexdigest()[:16])
+'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+3ed8c537 18c6f073fe62c56f2be173dec991c9efb0d8e97a4995de9c102922dccda8c551
+preflight af060043193e92b7
+copy_inputs bdd46a2f2c87abdf
+compare b9d55b5b3fa735f2
+reproduce_doubling 41054b58f267e30a
+30e5353 372496b2491167730523b2f09a4e8603f8e6b4a875fb9a2c4ae6863081585216
+preflight af060043193e92b7
+copy_inputs bdd46a2f2c87abdf
+compare 1e9d3768f8016e8a
+reproduce_doubling 41054b58f267e30a
+headline_diagnostics dd68f6b5a0468e90
+8d18de4 6da8d26d4f45b7967b6800c4b7e4a944c6c064e3fb103a500da9b062d1c014b9
+preflight af060043193e92b7
+copy_inputs bdd46a2f2c87abdf
+compare 1e9d3768f8016e8a
+reproduce_doubling 41054b58f267e30a
+headline_diagnostics dd68f6b5a0468e90
+d865329 5b7d5efe4bcc324b092b5bed10110742a95f7d806312e3a28e8fa17896416525
+preflight af060043193e92b7
+copy_inputs a404e11a376b32c3
+compare 1e9d3768f8016e8a
+reproduce_doubling 41054b58f267e30a
+headline_diagnostics dd68f6b5a0468e90
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '212,236p' scripts/revision_v2.py; sed -n '1,24p' docs/revision/followup/test_reset_followup.py; bash -n /Users/oemer.demirel/Projects/touchstone/results/pods/reset_pod.sh" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+
+
+# ---- record paths ------------------------------------------------------------------------------------------------------
+
+def _safe(s: str) -> str:
+    return s.replace("|", "__").replace("/", "~").replace("*", "star")
+
+
+def path_of(out: Path, rid: str) -> Path:
+    if rid.startswith("freeze/"):
+        return Path(out) / "freeze" / (rid.split("/", 1)[1] + ".json")
+    if "|" in rid:
+        objective = rid.split("|")[3]
+        return Path(out) / ("dependent" if objective in ("W1", "total", "min") else "search") / (_safe(rid) + ".json")
+    kind, ctx, rest = rid.split("/", 2)
+    return Path(out) / kind / ctx / (_safe(rest) + ".json")
+
+
+def eval_path(out: Path, rid: str) -> Path:
+    return Path(out) / "evaluate" / (_safe(rid) + ".json")
+
+
+# ---- search adapters ---------------------------------------------------------------------------------------------------
+
+def search_family(cell: Cell, family: Family, cache: SeedCache, st: SearchSettings, twin, extra_incumbents: dict | None = None):
+"""The reset follow-up driver (docs/revision/reset-experiment-plan.md, draft 4, section 3): the 18 restored cells, the
+copied inputs with their hash checks, the refusals, the follow-up freeze and its acceptance check, and the inventory."""
+import json
+from pathlib import Path
+
+import pytest
+
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import reset_followup_v2 as F  # noqa: E402
+from sim.records_v2 import read, sha_file, write
+
+CTX = "fresh0@rho0.2"
+
+
+def test_the_18_cells_are_exactly_the_cut_d2_cells():
+    cs = F.restored_cells()
+    assert len(cs) == 18 and {c["family"] for c in cs} == {"D2"} and {c["rule"] for c in cs} == {"F000", "F111", "C*"}
+    assert {c["market"] for c in cs} == {f"fresh{i}" for i in range(6)} and {c["rho"] for c in cs} == {0.2}
+    from sim import manifest_v2 as MAN
+    kept = {c["id"] for c in MAN.effective(F.CUTS, F.H4_EXCLUDED)}
+    assert not kept & {c["id"] for c in cs}                                   # every one was removed by cut 3
+
+
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "python3 -B -c 'from pathlib import Path
+import ast,json,hashlib,types
+base=Path('\\''/Users/oemer.demirel/Projects/touchstone/results/v2'\\'')
+# Execute only pure comparison and path functions. Do not import the runner.
+def read(p):
+ return json.loads(Path(p).read_text()) if Path(p).exists() else None
+ns={'\\''Path'\\'':Path,'\\''read'\\'':read}
+tree=ast.parse(Path('\\''scripts/revision_v2.py'\\'').read_text())
+for n in tree.body:
+ if isinstance(n,ast.FunctionDef) and n.name in ['\\''_safe'\\'','\\''path_of'\\'','\\''eval_path'\\'']:
+  exec(compile(ast.Module(body=[n],type_ignores=[]),'\\''<path functions>'\\'','\\''exec'\\''),ns)
+r=types.SimpleNamespace(**{k:ns[k] for k in ['\\''path_of'\\'','\\''eval_path'\\'']})
+ns.update(R=r,REPRO='\\''headline@rho0.2|F111|D2|profit'\\'',KNOB_TOL=1e-9,GAIN_TOL=1e-9)
+tree=ast.parse(Path('\\''docs/revision/followup/reset_followup_v2.py'\\'').read_text())
+for n in tree.body:
+ if isinstance(n,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='\\''EXACT_PROV'\\'' for t in n.targets) or isinstance(n,ast.FunctionDef) and n.name in ['\\''_finite'\\'','\\''compare'\\'','\\''compare_doubling'\\'']:
+  exec(compile(ast.Module(body=[n],type_ignores=[]),'\\''<comparison functions>'\\'','\\''exec'\\''),ns)
+print('\\''headline comparison'\\'',ns['\\''compare'\\''](base/'\\''eval/all'\\'',base/'\\''followup-repro-v2'\\''))
+print('\\''doubling comparison'\\'',ns['\\''compare_doubling'\\''](base/'\\''eval/all'\\'',base/'\\''followup-repro-doubling-v2'\\'','\\''fresh0@rho0.2|F111|D2+H3|profit'\\''))
+for name in ['\\''followup-repro-v2'\\'','\\''followup-repro-doubling-v2'\\'']:
+ p=base/name; bad=[]; count=0
+ for d in ['\\''evaluate'\\'','\\''doubling'\\'']:
+  for f in (p/d).glob('\\''*.json'\\''):
+   rec=read(f)
+   for u,h in rec.get('\\''upstream'\\'',{}).items():
+    count+=1; q=r.path_of(p,u)
+    if not q.exists() or hashlib.sha256(q.read_bytes()).hexdigest()"'!=h: bad.append(u)
+ print(name,'"'\\''upstream checked'\\'',count,'\\''bad'\\'',bad)
+p=base/'\\''followup-reset-bundle/eval-all'\\''; bad=[]; count=0
+for f in p.rglob('\\''*.json'\\''):
+ for u,h in (read(f).get('\\''upstream'\\'') or {}).items():
+  count+=1; q=r.path_of(p,u)
+  if not q.exists() or hashlib.sha256(q.read_bytes()).hexdigest()"'!=h: bad.append(u)
+print('"'\\''bundle records'\\'',len(list(p.rglob('\\''*.json'\\''))),'\\''upstream checked'\\'',count,'\\''bad'\\'',bad[:5])
+'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ exited 1 in 0ms:
+Traceback (most recent call last):
+  File "<string>", line 19, in <module>
+    print('doubling comparison',ns['compare_doubling'](base/'eval/all',base/'followup-repro-doubling-v2','fresh0@rho0.2|F111|D2+H3|profit'))
+                                ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<comparison functions>", line 392, in compare_doubling
+  File "<comparison functions>", line 391, in <lambda>
+AttributeError: 'types.SimpleNamespace' object has no attribute '_safe'
+headline comparison {'pass': True, 'identical': False, 'max_knob_rel': 2.515335660523085e-13, 'max_gain_abs': 1.970645868709653e-14, 'controls': {'differing': 16, 'max_abs': 1.5248353502219562e-05}, 'problems': []}
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "python3 -B -c 'from pathlib import Path
+import ast,json,hashlib,types
+base=Path('\\''/Users/oemer.demirel/Projects/touchstone/results/v2'\\'')
+ns={'\\''Path'\\'':Path,'\\''read'\\'':lambda p:json.loads(Path(p).read_text()) if Path(p).exists() else None}
+for n in ast.parse(Path('\\''scripts/revision_v2.py'\\'').read_text()).body:
+ if isinstance(n,ast.FunctionDef) and n.name in ['\\''_safe'\\'','\\''path_of'\\'','\\''eval_path'\\'']:
+  exec(compile(ast.Module(body=[n],type_ignores=[]),'\\''<paths>'\\'','\\''exec'\\''),ns)
+r=types.SimpleNamespace(**{k:ns[k] for k in ['\\''_safe'\\'','\\''path_of'\\'','\\''eval_path'\\'']})
+ns.update(R=r,REPRO='\\''headline@rho0.2|F111|D2|profit'\\'',KNOB_TOL=1e-9,GAIN_TOL=1e-9)
+for n in ast.parse(Path('\\''docs/revision/followup/reset_followup_v2.py'\\'').read_text()).body:
+ if isinstance(n,ast.FunctionDef) and n.name in ['\\''_finite'\\'','\\''compare_doubling'\\'']:
+  exec(compile(ast.Module(body=[n],type_ignores=[]),'\\''<compare>'\\'','\\''exec'\\''),ns)
+print('\\''doubling comparison'\\'',ns['\\''compare_doubling'\\''](base/'\\''eval/all'\\'',base/'\\''followup-repro-doubling-v2'\\'','\\''fresh0@rho0.2|F111|D2+H3|profit'\\''))
+for name in ['\\''followup-repro-v2'\\'','\\''followup-repro-doubling-v2'\\'','\\''followup-reset-bundle/eval-all'\\'']:
+ p=base/name; bad=[]; count=0
+ files=list(p.rglob('\\''*.json'\\'')) if '\\''bundle'\\'' in name else list((p/'\\''evaluate'\\'').glob('\\''*.json'\\''))+list((p/'\\''doubling'\\'').glob('\\''*.json'\\''))
+ for f in files:
+  for u,h in (ns['\\''read'\\''](f).get('\\''upstream'\\'') or {}).items():
+   count+=1; q=r.path_of(p,u)
+   if not q.exists() or hashlib.sha256(q.read_bytes()).hexdigest()"'!=h: bad.append(u)
+ print(name,'"'\\''records'\\'',len(files),'\\''upstream checked'\\'',count,'\\''bad'\\'',bad[:5])
+'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 5940ms:
+doubling comparison {'pass': True, 'max_knob_rel': 1.8254193168033264e-13, 'max_change_abs': 0.0, 'max_gain_abs': 2.220446049250313e-16, 'problems': []}
+followup-repro-v2 records 1 upstream checked 3 bad []
+followup-repro-doubling-v2 records 1 upstream checked 21 bad []
+followup-reset-bundle/eval-all records 168 upstream checked 453 bad []
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+The saved reproductions pass the current comparators. Their inventories and dependency hashes match. The headline diagnostics cover all three rules on 200 seeds.
+
+The launcher still has blocking faults: it ignores transfer failures, can treat a failed STOP command as successful, and delays deletion beyond the hard cap.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "python3 -B -c 'import ast,types,sys,subprocess
+from pathlib import Path
+# Exercise only the helper'\\''s CLI dispatch with inert SSH/rsync stubs.
+tree=ast.parse(Path('\\''/Users/oemer.demirel/Projects/touchstone/results/pods/runpod.py'\\'').read_text())
+node=next(n for n in tree.body if isinstance(n,ast.If))
+for action in ['\\''ssh'\\'','\\''pull'\\'']:
+ ns={'\\''__name__'\\'':'\\''__main__'\\'','\\''sys'\\'':types.SimpleNamespace(argv=['\\''runpod.py'\\'',action,'\\''fake-id'\\'','\\''a'\\'','\\''b'\\'']),
+     '\\''ssh'\\'':lambda *args:types.SimpleNamespace(stdout='\\'''\\'',stderr='\\''simulated failure'\\'',returncode=23),
+     '\\''rsync'\\'':lambda *args,**kw:types.SimpleNamespace(stdout='\\'''\\'',stderr='\\''simulated failure'\\'',returncode=23)}
+ try:
+  exec(compile(ast.Module(body=[node],type_ignores=[]),'\\''<inert helper test>'\\'','\\''exec'\\''),ns)
+  print(action,'\\''wrapper exits normally after subprocess failure'\\'')
+ except SystemExit as e: print(action,'\\''exit'\\'',e.code)
+'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+ simulated failure exit 23
+ssh wrapper exits normally after subprocess failure
+ simulated failure exit 23
+pull wrapper exits normally after subprocess failure
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "bash -c 'set -u
+git() {
+ case \""'$*" in
+  "rev-parse HEAD") echo expected ;;
+  "rev-parse --short HEAD") echo expected ;;
+  "merge-base --is-ancestor protocol-v2 HEAD") return 0 ;;
+  "diff --name-only protocol-v2 HEAD") return 128 ;;
+  "diff --quiet protocol-v2 -- scripts/ sim/ tests/") return 0 ;;
+ esac
+}
+EXPECT=expected
+( [ "$(git rev-parse HEAD)" = "$EXPECT" ] && git merge-base --is-ancestor protocol-v2 HEAD && bad=$(git diff --name-only protocol-v2 HEAD | grep -v -e '"'\\''"'^docs/'"'\\'' -e '\\''"'^experiments/v2/'"'\\'' -e '\\''"'^paper/'"'\\'' -e '\\''"'^sealed2/h4/'"'\\'') ; [ -z \""'$bad" ] && git diff --quiet protocol-v2 -- scripts/ sim/ tests/ && echo "guard accepted despite history diff failure" )
+'"'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+guard accepted despite history diff failure
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+VERDICT: reject
+
+CORRECTIONS:
+
+1. **None — plan §§3–4, §8.3.** The round-6 corrections are closed. Both saved reproductions pass the current comparators; inventories and dependency hashes match. Headline diagnostics cover F000, F111, and C* on 200 seeds, with zero D2 resets. The diagnostics directory has no `gate.json`, contrary to the brief, but §8.3 does not require one there. The bundle contains 168 records; all 453 upstream hash checks pass. I did not rerun the writing test suite.
+
+2. **Plan §7; `results/pods/reset_pod.sh:30,86–90` — enforce the cap.** The hard deadline only triggers cleanup, which permits 25 minutes of pulls before deletion. Preparation also runs without deadline checks. Use an independent deadline guard that enforces the 1.3× limit. Check the soft deadline remotely before each stage; polling for a STOP file can permit another stage after the cap.
+
+3. **Plan §§7–8; `results/pods/runpod.py:32–34`, `reset_pod.sh:30–32,90` — propagate failures.** The helper prints SSH/rsync failures but exits successfully. An inert check confirmed this. A failed STOP command can therefore set `stopped=1`, preventing retries. Failed pulls can also precede deletion and a successful launcher exit. Propagate subprocess status, verify STOP creation, and verify retrieved files against inventories before reporting success.
+
+4. **Plan §8.4; `results/pods/reset_pod.sh:56` — verify every deletion.** The unreachable-pod retry deletes once, then clears `id` without verification. A failed deletion leaves a billed pod outside cleanup tracking. Retain each ID until deletion is verified.
+
+5. **Plan §3; `results/pods/reset_pod.sh:22` — make the code guard fail closed.** A read-only stub check showed that a failed history diff still passes. Check each Git exit status explicitly. Also check frozen working-tree paths outside `scripts/`, `sim/`, and `tests/`; commit-history checks miss uncommitted changes there.
+
+6. **None — plan §§3,7–8; `results/pods/reset_pod.sh:66–79`.** The memory check, bit-identity gate, stage order, and default worker limits match the plan.
+
+CONFIDENCE: 0.98.
+hook: Stop
+hook: Stop Completed
+tokens used
+65'188
+VERDICT: reject
+
+CORRECTIONS:
+
+1. **None — plan §§3–4, §8.3.** The round-6 corrections are closed. Both saved reproductions pass the current comparators; inventories and dependency hashes match. Headline diagnostics cover F000, F111, and C* on 200 seeds, with zero D2 resets. The diagnostics directory has no `gate.json`, contrary to the brief, but §8.3 does not require one there. The bundle contains 168 records; all 453 upstream hash checks pass. I did not rerun the writing test suite.
+
+2. **Plan §7; `results/pods/reset_pod.sh:30,86–90` — enforce the cap.** The hard deadline only triggers cleanup, which permits 25 minutes of pulls before deletion. Preparation also runs without deadline checks. Use an independent deadline guard that enforces the 1.3× limit. Check the soft deadline remotely before each stage; polling for a STOP file can permit another stage after the cap.
+
+3. **Plan §§7–8; `results/pods/runpod.py:32–34`, `reset_pod.sh:30–32,90` — propagate failures.** The helper prints SSH/rsync failures but exits successfully. An inert check confirmed this. A failed STOP command can therefore set `stopped=1`, preventing retries. Failed pulls can also precede deletion and a successful launcher exit. Propagate subprocess status, verify STOP creation, and verify retrieved files against inventories before reporting success.
+
+4. **Plan §8.4; `results/pods/reset_pod.sh:56` — verify every deletion.** The unreachable-pod retry deletes once, then clears `id` without verification. A failed deletion leaves a billed pod outside cleanup tracking. Retain each ID until deletion is verified.
+
+5. **Plan §3; `results/pods/reset_pod.sh:22` — make the code guard fail closed.** A read-only stub check showed that a failed history diff still passes. Check each Git exit status explicitly. Also check frozen working-tree paths outside `scripts/`, `sim/`, and `tests/`; commit-history checks miss uncommitted changes there.
+
+6. **None — plan §§3,7–8; `results/pods/reset_pod.sh:66–79`.** The memory check, bit-identity gate, stage order, and default worker limits match the plan.
+
+CONFIDENCE: 0.98.

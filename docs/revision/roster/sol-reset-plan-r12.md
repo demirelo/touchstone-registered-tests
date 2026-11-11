@@ -1,0 +1,9 @@
+VERDICT: reject
+CORRECTIONS:
+1. Closed — `results/pods/reset_pod.sh:105`, `results/pods/podctl.py:89`, `results/pods/podctl.py:136`: ambiguous creation stops further requests; HTTP errors receive the revised classification; settlement starts after DONE. Late-creation protection depends on the stated 30-minute service assumption and next-day console check.
+2. Closed — `results/pods/reset_pod.sh:97`, `results/pods/test_reset_pod_harness.sh:63`: the spurious KEEP_ID argument is removed; the harness tracks the watchdog PID. All 23 supplied test cases passed with in-memory substitutes. The shell syntax checks passed; this review did not rerun the harness.
+3. Blocker — `results/pods/reset_pod.sh:109`, `results/pods/reset_pod.sh:110`: a missing/null price becomes `0`. The nonempty check then leaves billing marked resolved. Offline reproduction confirmed `cph=0`, `unresolved=NO`. Require a finite, positive price; otherwise report UNRESOLVED BILLING and avoid claiming a proven spend bound.
+4. Blocker — `results/pods/podctl.py:130`, `results/pods/podctl.py:102`: the watchdog deletes late pods without incorporating their prices. Its “final spend bound” can therefore understate charges. Offline reproduction observed a late pod priced at 9 USD/h, but the final bound used 0.7 USD/h. Track observed prices and preserve unknown-price status; report an estimate when an upper bound cannot be proved. The round-11 accounting correction remains open.
+5. Partly closed — `results/pods/podctl.py:36`, `results/pods/podctl.py:54`: fractional timeouts still have a 0.01-second floor. A 0.001-second budget becomes 0.01 seconds. Pass the positive remaining budget without increasing it.
+
+CONFIDENCE: 0.98.

@@ -1,0 +1,9 @@
+VERDICT: reject
+
+CORRECTIONS:
+1. Closed — `results/pods/reset_pod.sh:97`, `reset_pod.sh:105`, `podctl.py:89`, `podctl.py:136`, `test_reset_pod_harness.sh:63`: reconciliation precedes creation; ambiguity stops further requests; HTTP errors use the corrected classification; settlement starts after DONE; the spurious KEEP_ID is removed; the harness tracks the watchdog PID. The late-creation protection remains conditional on the stated 30-minute service assumption. All 23 supplied test cases passed with offline, in-memory substitutes. The shell harness was inspected, not rerun.
+2. Blocker — `results/pods/reset_pod.sh:109`: missing or null `costPerHr` becomes `0`. Line 110 tests only whether the string is empty, so this unknown price does **not** set UNRESOLVED BILLING. Cleanup can then instruct the operator to record a finite MAXCPH bound. Preserve unknown prices and require a finite, positive price before treating accounting as resolved.
+3. Blocker — `results/pods/podctl.py:134`, `podctl.py:102`: the watchdog deletes late pods without recording their prices. After an ambiguous creation, `.acct` still contains MAXCPH, even if the late pod costs more. The final “bound” is therefore unproven. Record observed prices before deletion; retain unresolved accounting when the price is unknown. The next-day console check does not establish a price bound.
+4. Partly closed — `results/pods/podctl.py:36`, `podctl.py:54`: fractional timeouts still have a 0.01-second floor. An offline check passed 0.01 for a remaining budget of 0.001. Remove the floor and stop when no positive budget remains.
+
+CONFIDENCE: 0.99.

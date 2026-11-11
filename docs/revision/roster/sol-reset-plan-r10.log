@@ -1,0 +1,914 @@
+OpenAI Codex v0.162.1
+--------
+workdir: /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+model: gpt-6.1-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1c7d6-8a43-74b1-944b-a7570d5ba434
+--------
+user
+# Reset pod launcher: internal review round 10 (read-only; no paid APIs; do not read `sealed/`, `~/touchstone-h4`, or `~/h4-session.out`; reasoning effort high; under 300 words)
+
+Round 9 (`docs/revision/roster/{sol,astra}-reset-plan-r9.md`) rejected the launcher's pod-safety logic. It now lives in `/Users/oemer.demirel/Projects/touchstone/results/pods/podctl.py` (fail-closed listing; deletion verified within elapsed time; reconciliation true only when a successful listing shows no extra pod; a creation block from the hard deadline; a watchdog started with nohup before the first creation that, from the hard deadline, blocks creation and keeps deleting every pod named ts-r-TAG until a listing shows none, and otherwise exits only when the launcher's done file exists and no such pod is listed). Tests: `test_podctl.py` (6) with mutation checks (five deliberate defects, each caught with pytest exit 1), `test_runpod.py`. The launcher `reset_pod.sh` uses podctl for reconciliation before every attempt (fails closed), may-create before every attempt, deletion, and the watchdog; pulls are limited to the remaining recovery window and checked before each one; spend is recorded per attempt with the bound at MAXCPH. Harness `test_reset_pod_harness.sh` passes 5 scenarios with assertions on pods left and creation requests: price above the ceiling, lost creation responses, unreachable pod at the deadline, listing always failing (no creation), lost response then the hard deadline (no second creation). Known cosmetic issue: in the always-failing-listing scenario the final state label reads NOT STARTED.
+
+Check: (1) each round-9 correction is closed; (2) new defects; (3) anything that should block the pod.
+
+Output exactly:
+VERDICT: accept | accept-with-caveat | reject
+CORRECTIONS: numbered, each with file:line, or "none".
+CONFIDENCE: 0 to 1.
+
+hook: SessionStart
+hook: SessionStart Completed
+codex
+I will read both round-9 reviews, check the current code, and run the local tests. I will keep the review read-only and avoid the excluded paths and paid APIs.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg -n 'touchstone|reset_pod|podctl|reset-plan-r9' /Users/oemer.demirel/.codex/memories/MEMORY.md" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+501:# Task Group: anthropic-residency-application-writing-and-touchstone-research
+510:- rollout_summaries/2026-11-03T12-32-03-zdzn-anthropic_residency_writing_touchstone_research_plan.md (cwd=/Users/oemer.demirel/Documents/Codex/2026-11-03/why-anthropic-anthropic-sets-the-frontier, rollout_path=/Users/oemer.demirel/.codex/sessions/2026/11/03/rollout-2026-11-03T13-32-03-01a1a165-260e-7180-9d34-c9dc6bf34b4d.jsonl, updated_at=2026-11-03T13:02:09+00:00, thread_id=01a1a165-260e-7180-9d34-c9dc6bf34b4d, success; application answers finalized)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc pwd in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'ls -la /Users/oemer.demirel/Projects/touchstone/results/pods' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+total 602792
+drwxr-xr-x@ 193 oemer.demirel  staff       6176 Nov 11 00:15 .
+drwxr-xr-x@  31 oemer.demirel  staff        992 Nov  3 11:11 ..
+-rw-r--r--@   1 oemer.demirel  staff       6684 Oct 28 02:57 bench_pod.log
+-rwxr-xr-x@   1 oemer.demirel  staff       7535 Nov  2 20:47 bench_pod.sh
+-rw-r--r--@   1 oemer.demirel  staff        342 Nov  4 10:10 cfg_hash.py
+-rw-r--r--@   1 oemer.demirel  staff       1867 Nov  4 21:07 cfg_linux.sh
+-rw-r--r--@   1 oemer.demirel  staff        365 Nov  2 19:33 cov_dev0_pod.attempt1.log
+-rw-r--r--@   1 oemer.demirel  staff        453 Nov  2 19:40 cov_dev0_pod.attempt2.log
+-rw-r--r--@   1 oemer.demirel  staff       1808 Nov  2 20:52 cov_dev0_pod.log
+-rw-r--r--@   1 oemer.demirel  staff       3307 Nov  2 20:43 cov_driver.py
+-rw-r--r--@   1 oemer.demirel  staff        365 Nov  2 19:33 cov_headline_pod.attempt1.log
+-rw-r--r--@   1 oemer.demirel  staff        500 Nov  2 19:41 cov_headline_pod.attempt2.log
+-rw-r--r--@   1 oemer.demirel  staff       1440 Nov  2 20:32 cov_headline_pod.attempt3.log
+-rw-r--r--@   1 oemer.demirel  staff        339 Nov  2 20:46 cov_headline_pod.attempt4.log
+-rw-r--r--@   1 oemer.demirel  staff       1494 Nov  2 21:35 cov_headline_pod.log
+-rwxr-xr-x@   1 oemer.demirel  staff       7547 Nov  2 20:47 cov_pod.sh
+-rwxr-xr-x@   1 oemer.demirel  staff        559 Oct 16 15:46 cov_remote40.sh
+-rw-r--r--@   1 oemer.demirel  staff       1745 Oct 16 15:43 cov_watch2.log
+-rwxr-xr-x@   1 oemer.demirel  staff       1938 Oct 16 14:17 cov_watch2.sh
+-rw-r--r--@   1 oemer.demirel  staff       2455 Oct 16 20:44 cov_watch40.log
+-rwxr-xr-x@   1 oemer.demirel  staff       2110 Oct 16 15:50 cov_watch40.sh
+-rw-r--r--@   1 oemer.demirel  staff        789 Oct 27 22:24 create16.py
+-rw-r--r--@   1 oemer.demirel  staff        791 Oct 16 15:46 create_any.py
+-rwxr-xr-x@   1 oemer.demirel  staff      11478 Nov  4 10:28 eval_pod.sh
+-rw-r--r--@   1 oemer.demirel  staff   22127405 Nov  3 11:35 eval_v2.tgz
+-rwxr-xr-x@   1 oemer.demirel  staff       2480 Oct 21 11:27 explore_adopt.sh
+-rw-r--r--@   1 oemer.demirel  staff       1465 Oct 21 00:13 explore_pilot.log
+-rwxr-xr-x@   1 oemer.demirel  staff       5231 Oct 21 00:35 explore_pod.sh
+-rw-r--r--@   1 oemer.demirel  staff       2259 Oct 17 16:39 ext_watch.log
+-rwxr-xr-x@   1 oemer.demirel  staff       2742 Oct 17 11:01 ext_watch.sh
+-rw-r--r--@   1 oemer.demirel  staff       5556 Oct 19 00:14 final_watch.log
+-rwxr-xr-x@   1 oemer.demirel  staff       1734 Oct 18 22:05 final_watch.sh
+-rwxr-xr-x@   1 oemer.demirel  staff       9872 Nov  4 01:24 h4_pod.sh
+-rw-r--r--@   1 oemer.demirel  staff        529 Nov  4 01:19 h4dec.log
+-rw-r--r--@   1 oemer.demirel  staff        406 Nov  4 01:21 h4dec2.log
+-rw-r--r--@   1 oemer.demirel  staff        700 Nov  4 01:24 h4dec3.log
+-rw-r--r--@   1 oemer.demirel  staff        646 Nov  4 01:29 h4dec4.log
+drwx------@   4 oemer.demirel  staff        128 Nov  4 01:17 h4up
+-rw-r--r--@   1 oemer.demirel  staff       1580 Oct 16 15:49 launch40.log
+-rwxr-xr-x@   1 oemer.demirel  staff       3179 Oct 16 15:46 launch40.sh
+-rwxr-xr-x@   1 oemer.demirel  staff       1257 Nov  4 01:30 launch_eval.sh
+-rw-r--r--@   1 oemer.demirel  staff       1358 Oct 17 11:04 launch_ext.log
+-rwxr-xr-x@   1 oemer.demirel  staff       4403 Oct 17 10:41 launch_ext.sh
+-rw-r--r--@   1 oemer.demirel  staff        598 Oct 18 22:16 launch_final_search.log
+-rwxr-xr-x@   1 oemer.demirel  staff       3819 Oct 18 22:05 launch_final_search.sh
+-rw-r--r--@   1 oemer.demirel  staff        471 Oct 19 00:22 launch_final_stages.log
+-rwxr-xr-x@   1 oemer.demirel  staff       5201 Oct 18 22:05 launch_final_stages.sh
+-rwxr-xr-x@   1 oemer.demirel  staff        899 Oct 21 01:08 launch_robustness.sh
+-rw-r--r--@   1 oemer.demirel  staff        686 Oct 17 19:43 launch_sp_base.log
+-rw-r--r--@   1 oemer.demirel  staff        550 Oct 17 23:58 launch_sp_prop.log
+-rw-r--r--@   1 oemer.demirel  staff        551 Oct 18 17:27 launch_sp_prop3.log
+-rw-r--r--@   1 oemer.demirel  staff      20985 Oct 18 10:26 launch_sp_stages.log
+-rw-r--r--@   1 oemer.demirel  staff       6480 Oct 18 21:54 launch_sp_stages3.log
+-rwxr-xr-x@   1 oemer.demirel  staff       3853 Oct 17 19:40 launch_sweep_search.sh
+-rwxr-xr-x@   1 oemer.demirel  staff       5089 Oct 17 23:56 launch_sweep_stages.sh
+drwxr-xr-x@   5 oemer.demirel  staff        160 Oct 16 15:43 logs
+drwxr-xr-x@   8 oemer.demirel  staff        256 Oct 16 20:43 logs40
+drwxr-xr-x@   8 oemer.demirel  staff        256 Oct 17 16:39 logs_ext
+drwxr-xr-x@  10 oemer.demirel  staff        320 Oct 19 00:09 logs_final
+drwxr-xr-x@   7 oemer.demirel  staff        224 Oct 19 00:20 logs_final_stages
+drwxr-xr-x@   2 oemer.demirel  staff         64 Nov 10 23:37 logs_r_neg
+drwxr-xr-x@   2 oemer.demirel  staff         64 Nov 10 23:48 logs_r_ng
+drwxr-xr-x@   2 oemer.demirel  staff         64 Nov 10 23:37 logs_r_reset1
+drwxr-xr-x@  10 oemer.demirel  staff        320 Oct 17 21:36 logs_sp_base
+drwxr-xr-x@   8 oemer.demirel  staff        256 Oct 18 00:54 logs_sp_prop
+drwxr-xr-x@   8 oemer.demirel  staff        256 Oct 18 19:04 logs_sp_prop3
+drwxr-xr-x@   8 oemer.demirel  staff        256 Oct 18 20:26 logs_sp_stages
+drwxr-xr-x@   4 oemer.demirel  staff        128 Oct 27 22:25 logs_x_bench
+drwxr-xr-x@   4 oemer.demirel  staff        128 Nov  2 19:49 logs_x_coverage-dev0
+drwxr-xr-x@   4 oemer.demirel  staff        128 Nov  2 20:48 logs_x_coverage-headline
+drwxr-xr-x@   2 oemer.demirel  staff         64 Nov  3 11:35 logs_x_drytest
+drwxr-xr-x@   4 oemer.demirel  staff        128 Nov  4 01:33 logs_x_fresh0
+drwxr-xr-x@   4 oemer.demirel  staff        128 Nov  4 01:33 logs_x_fresh1
+drwxr-xr-x@   4 oemer.demirel  staff        128 Nov  4 01:33 logs_x_fresh2
+drwxr-xr-x@   4 oemer.demirel  staff        128 Nov  4 01:33 logs_x_fresh3
+drwxr-xr-x@   4 oemer.demirel  staff        128 Nov  4 01:35 logs_x_fresh4
+drwxr-xr-x@   4 oemer.demirel  staff        128 Nov  4 10:30 logs_x_fresh5-r4
+drwxr-xr-x@   2 oemer.demirel  staff         64 Nov  2 19:34 logs_x_guardtest
+drwxr-xr-x@   2 oemer.demirel  staff         64 Nov  4 01:18 logs_x_h4dec
+drwxr-xr-x@   2 oemer.demirel  staff         64 Nov  4 01:20 logs_x_h4dec2
+drwxr-xr-x@   2 oemer.demirel  staff         64 Nov  4 01:24 logs_x_h4dec3
+drwxr-xr-x@   4 oemer.demirel  staff        128 Nov  4 01:27 logs_x_h4dec4
+drwxr-xr-x@   2 oemer.demirel  staff         64 Nov  4 01:17 logs_x_h4dry
+drwxr-xr-x@   4 oemer.demirel  staff        128 Nov  4 01:31 logs_x_headline-rho02
+drwxr-xr-x@   4 oemer.demirel  staff        128 Nov  4 17:29 logs_x_headline-rho1
+drwxr-xr-x@   4 oemer.demirel  staff        128 Oct 20 23:22 logs_x_pilot
+drwxr-xr-x@   4 oemer.demirel  staff        128 Oct 21 08:52 logs_x_rob1
+drwxr-xr-x@   4 oemer.demirel  staff        128 Oct 22 01:15 logs_x_rob1r
+drwxr-xr-x@   4 oemer.demirel  staff        128 Oct 21 08:52 logs_x_rob2
+drwxr-xr-x@   4 oemer.demirel  staff        128 Oct 21 08:52 logs_x_rob3
+drwxr-xr-x@   4 oemer.demirel  staff        128 Oct 21 08:52 logs_x_rob4
+drwxr-xr-x@   2 oemer.demirel  staff         64 Nov  2 20:46 logs_x_t
+drwxr-xr-x@   4 oemer.demirel  staff        128 Oct 28 15:39 logs_x_tune-B3-t
+drwxr-xr-x@   4 oemer.demirel  staff        128 Oct 28 19:12 logs_x_tune-Cstar-t
+drwxr-xr-x@   4 oemer.demirel  staff        128 Oct 28 15:39 logs_x_tune-R3-t
+drwxr-xr-x@   4 oemer.demirel  staff        128 Oct 28 15:38 logs_x_tune-comparator
+-rwxr-xr-x@   1 oemer.demirel  staff       2009 Nov  8 20:11 paper_check.sh
+-rwxr-xr-x@   1 oemer.demirel  staff       2208 Nov  8 20:11 paper_commit.sh
+-rwxr-xr-x@   1 oemer.demirel  staff       1386 Nov  9 11:39 paper_pdf.sh
+-rw-r--r--@   1 oemer.demirel  staff       4732 Nov 11 00:15 podctl.py
+-rw-r--r--@   1 oemer.demirel  staff        120 Oct 16 15:49 pods40.env
+-rw-r--r--@   1 oemer.demirel  staff        119 Oct 17 11:04 pods_ext.env
+-rw-r--r--@   1 oemer.demirel  staff         80 Oct 18 22:16 pods_final.env
+-rw-r--r--@   1 oemer.demirel  staff         25 Oct 19 00:15 pods_final_stages.env
+-rw-r--r--@   1 oemer.demirel  staff         79 Oct 17 19:43 pods_sp_base.env
+-rw-r--r--@   1 oemer.demirel  staff         60 Oct 17 23:58 pods_sp_prop.env
+-rw-r--r--@   1 oemer.demirel  staff         60 Oct 18 17:27 pods_sp_prop3.env
+-rw-r--r--@   1 oemer.demirel  staff         25 Oct 18 19:10 pods_sp_stages.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Oct 27 22:25 pods_x_bench.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Nov  2 19:49 pods_x_coverage-dev0.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Nov  2 20:47 pods_x_coverage-headline.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Nov  4 01:32 pods_x_fresh0.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Nov  4 01:33 pods_x_fresh1.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Nov  4 01:33 pods_x_fresh2.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Nov  4 01:33 pods_x_fresh3.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Nov  4 01:34 pods_x_fresh4.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Nov  4 10:29 pods_x_fresh5-r4.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Nov  4 10:13 pods_x_fresh5.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Nov  4 01:18 pods_x_h4dec.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Nov  4 01:20 pods_x_h4dec2.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Nov  4 01:24 pods_x_h4dec3.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Nov  4 01:26 pods_x_h4dec4.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Nov  4 01:31 pods_x_headline-rho02.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Nov  4 17:28 pods_x_headline-rho1.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Oct 20 23:22 pods_x_pilot.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Oct 21 08:52 pods_x_rob1.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Oct 22 01:13 pods_x_rob1r.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Oct 21 08:52 pods_x_rob2.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Oct 21 08:51 pods_x_rob3.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Oct 21 08:52 pods_x_rob4.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Oct 28 15:38 pods_x_tune-B3-t.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Oct 28 19:11 pods_x_tune-Cstar-t.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Oct 28 15:39 pods_x_tune-R3-t.env
+-rw-r--r--@   1 oemer.demirel  staff         18 Oct 28 15:38 pods_x_tune-comparator.env
+-rw-r--r--@   1 oemer.demirel  staff       2997 Nov  8 20:10 post_eval.sh
+-rwxr-xr-x@   1 oemer.demirel  staff       1298 Nov 10 00:24 repro_linux.sh
+-rw-r--r--@   1 oemer.demirel  staff  211551268 Nov 10 23:37 reset_bundle.tgz
+-rw-r--r--@   1 oemer.demirel  staff   73910132 Nov 10 23:48 reset_code.tgz
+-rwxr-xr-x@   1 oemer.demirel  staff      12626 Nov 11 00:17 reset_pod.sh
+-rwxr-xr-x@   1 oemer.demirel  staff       1083 Nov  7 23:41 review_seats.sh
+-rw-r--r--@   1 oemer.demirel  staff       5595 Oct 21 17:47 robust_adopt1.log
+-rw-r--r--@   1 oemer.demirel  staff       2341 Oct 21 12:55 robust_adopt2.log
+-rw-r--r--@   1 oemer.demirel  staff       1612 Oct 21 12:25 robust_adopt3.log
+-rw-r--r--@   1 oemer.demirel  staff       4326 Oct 21 14:16 robust_adopt4.log
+-rw-r--r--@   1 oemer.demirel  staff       3845 Oct 21 11:27 robust_pod1.log
+-rw-r--r--@   1 oemer.demirel  staff        963 Oct 22 01:44 robust_pod1r.log
+-rw-r--r--@   1 oemer.demirel  staff       3883 Oct 21 11:26 robust_pod2.log
+-rw-r--r--@   1 oemer.demirel  staff       3881 Oct 21 11:26 robust_pod3.log
+-rw-r--r--@   1 oemer.demirel  staff       3880 Oct 21 11:26 robust_pod4.log
+-rw-r--r--@   1 oemer.demirel  staff      24960 Nov  4 09:53 run_fresh0.log
+-rw-r--r--@   1 oemer.demirel  staff      27024 Nov  4 09:50 run_fresh1.log
+-rw-r--r--@   1 oemer.demirel  staff      24674 Nov  4 10:07 run_fresh2.log
+-rw-r--r--@   1 oemer.demirel  staff      27079 Nov  4 09:52 run_fresh3.log
+-rw-r--r--@   1 oemer.demirel  staff      26485 Nov  4 09:52 run_fresh4.log
+-rw-r--r--@   1 oemer.demirel  staff        447 Nov  4 10:21 run_fresh5-attempt1.log
+-rw-r--r--@   1 oemer.demirel  staff        334 Nov  4 10:26 run_fresh5-r2.log
+-rw-r--r--@   1 oemer.demirel  staff        556 Nov  4 10:28 run_fresh5-r3.log
+-rw-r--r--@   1 oemer.demirel  staff      25210 Nov  4 17:24 run_fresh5-r4.log
+-rw-r--r--@   1 oemer.demirel  staff      79525 Nov  4 20:49 run_headline-rho02.log
+-rw-r--r--@   1 oemer.demirel  staff       6175 Nov  4 19:49 run_headline-rho1.log
+-rw-r--r--@   1 oemer.demirel  staff       2716 Nov 10 23:47 runpod.py
+-rw-------@   1 oemer.demirel  staff        297 Nov  3 11:35 signers_pub.txt
+-rwxr-xr-x@   1 oemer.demirel  staff      10707 Nov  4 01:30 snap_eval_pod_27986.sh
+-rwxr-xr-x@   1 oemer.demirel  staff      11478 Nov  4 17:27 snap_eval_pod_86936.sh
+-rwxr-xr-x@   1 oemer.demirel  staff      11478 Nov  4 10:28 snap_eval_pod_91608.sh
+-rwxr-xr-x@   1 oemer.demirel  staff       9036 Nov 10 23:37 snap_reset_pod_45016.sh
+-rwxr-xr-x@   1 oemer.demirel  staff       9210 Nov 10 23:37 snap_reset_pod_45347.sh
+-rwxr-xr-x@   1 oemer.demirel  staff       9210 Nov 10 23:37 snap_reset_pod_45655.sh
+-rwxr-xr-x@   1 oemer.demirel  staff      11325 Nov 10 23:48 snap_reset_pod_70892.sh
+-rwxr-xr-x@   1 oemer.demirel  staff      11325 Nov 10 23:48 snap_reset_pod_70920.sh
+-rwxr-xr-x@   1 oemer.demirel  staff      11325 Nov 10 23:48 snap_reset_pod_71195.sh
+-rwxr-xr-x@   1 oemer.demirel  staff       2003 Oct 17 19:40 sp_watch.sh
+-rw-r--r--@   1 oemer.demirel  staff       7666 Oct 17 21:41 sp_watch_base.log
+-rw-r--r--@   1 oemer.demirel  staff       4561 Oct 18 00:59 sp_watch_prop.log
+-rw-r--r--@   1 oemer.demirel  staff       7916 Oct 18 19:09 sp_watch_prop3.log
+-rw-r--r--@   1 oemer.demirel  staff        301 Nov  4 21:01 test_cfg_linux.sh
+-rw-r--r--@   1 oemer.demirel  staff       1353 Nov  3 11:35 test_eval_guards.sh
+-rw-r--r--@   1 oemer.demirel  staff        771 Nov  4 01:17 test_h4_guards.sh
+-rw-r--r--@   1 oemer.demirel  staff       3555 Nov 11 00:15 test_podctl.py
+-rw-r--r--@   1 oemer.demirel  staff       1256 Nov  4 10:10 test_prep_local.sh
+-rwxr-xr-x@   1 oemer.demirel  staff       3228 Nov 11 00:17 test_reset_pod_harness.sh
+-rw-r--r--@   1 oemer.demirel  staff        652 Nov 10 23:47 test_runpod.py
+-rw-r--r--@   1 oemer.demirel  staff        604 Nov  4 10:08 test_verify_market.sh
+-rw-r--r--@   1 oemer.demirel  staff        433 Oct 28 15:37 tune_B3-t_pod.attempt1.log
+-rw-r--r--@   1 oemer.demirel  staff       4576 Oct 28 18:38 tune_B3-t_pod.log
+-rw-r--r--@   1 oemer.demirel  staff        367 Oct 28 19:09 tune_Cstar-t_pod.attempt1.log
+-rw-r--r--@   1 oemer.demirel  staff       4931 Oct 28 22:25 tune_Cstar-t_pod.log
+-rw-r--r--@   1 oemer.demirel  staff        433 Oct 28 15:37 tune_R3-t_pod.attempt1.log
+-rw-r--r--@   1 oemer.demirel  staff       4721 Oct 28 18:45 tune_R3-t_pod.log
+-rw-r--r--@   1 oemer.demirel  staff        435 Oct 28 15:37 tune_comparator_pod.attempt1.log
+-rw-r--r--@   1 oemer.demirel  staff       5246 Oct 28 19:06 tune_comparator_pod.log
+-rwxr-xr-x@   1 oemer.demirel  staff       7512 Nov  2 20:47 tune_pod.sh
+-rwxr-xr-x@   1 oemer.demirel  staff       1544 Nov  4 10:17 verify_market.sh
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg --files -g AGENTS.md -g '*reset-plan-r9.md' -g 'reset_pod.sh' -g 'test_runpod.py' -g 'test_podctl.py' -g 'test_reset_pod_harness.sh' docs results /Users/oemer.demirel/Projects/touchstone/docs /Users/oemer.demirel/Projects/touchstone/results" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+docs/revision/roster/astra-reset-plan-r9.md
+docs/revision/roster/brief-reset-plan-r9.md
+docs/revision/roster/sol-reset-plan-r9.md
+/Users/oemer.demirel/Projects/touchstone/results/pods/test_podctl.py
+/Users/oemer.demirel/Projects/touchstone/results/pods/test_reset_pod_harness.sh
+/Users/oemer.demirel/Projects/touchstone/results/pods/reset_pod.sh
+/Users/oemer.demirel/Projects/touchstone/results/pods/test_runpod.py
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'cat docs/revision/roster/sol-reset-plan-r9.md docs/revision/roster/astra-reset-plan-r9.md' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc 'nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/podctl.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc 'nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/reset_pod.sh' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc 'for p in /AGENTS.md /Users/AGENTS.md /Users/oemer.demirel/AGENTS.md /Users/oemer.demirel/Projects/AGENTS.md /Users/oemer.demirel/Projects/touchstone/AGENTS.md /Users/oemer.demirel/Projects/touchstone/results/AGENTS.md /Users/oemer.demirel/Projects/touchstone/results/pods/AGENTS.md; do if [ -f "$p" ]; then echo "$p"; cat "$p"; fi; done' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+VERDICT: reject
+CORRECTIONS:
+1. `results/pods/reset_pod.sh:99`: Keep the watchdog active until all creation requests finish and all pods are verified absent. It currently makes one deletion pass and exits, including after deletion failures. At `:102`, reject creation after the hard deadline. Offline stubs confirmed that all three attempts can run after expiry.
+2. `results/pods/reset_pod.sh:52`: Make reconciliation fail closed. A failed listing returns success; a successful final deletion can hide an earlier failure. Require a successful listing and verified deletion of every matching pod before another creation attempt or watchdog cancellation at `:88`. Offline stubs confirmed both false-success cases and cancellation after a failed listing.
+3. `results/pods/reset_pod.sh:84`: Measure the deletion retry limit by elapsed time. Thirty iterations are not thirty minutes: each `delete_verified` call permits five rounds of two 60-second commands plus sleeps. Cleanup can run for almost six hours.
+4. `results/pods/reset_pod.sh:73`: Check the recovery cutoff before each pull and limit each timeout to the remaining time. The three pulls permit 25 minutes before the cutoff check at `:79`; the watchdog can delete the pod during that sequence.
+
+The early watchdog start, MAXCPH deadline calculation, pre-gate STOP/deadline check, and continued RUN OK recovery are present. Deletion supervision and reconciliation remain blocking defects.
+CONFIDENCE: 0.99.VERDICT: reject
+CORRECTIONS:
+1. `results/pods/reset_pod.sh:97`, `:99`, `:126`: Closed: deadlines use MAXCPH from the first request; watchdog startup precedes creation; the gate checks STOP and the soft deadline. `:71` removes the three-attempt retrieval limit after RUN OK.
+2. `results/pods/reset_pod.sh:100`, `:103`, `:110`: Blocker: the watchdog exits after one sweep, but creation and readiness continue without deadline checks. A replacement or delayed creation can appear after that sweep. Stop creation at the deadline and keep supervision active until all pending creation requests are resolved and all pods are verified deleted.
+3. `results/pods/reset_pod.sh:52`, `:87`, `:88`, `:105`: Blocker: reconciliation treats a failed list request as success, ignores deletion failures before retrying creation, and does not prevent watchdog cancellation. In-memory stubs confirmed that failed reconciliation can still produce exit 0 and cancel supervision. Require successful reconciliation before replacement or shutdown. Overlapping pods also invalidate the single-MAXCPH spending bound.
+4. `results/pods/reset_pod.sh:84`, `:100`: Deletion supervision remains incomplete. Thirty iterations are not thirty minutes: each helper call can take over eleven minutes. The watchdog itself has no sustained retry loop. Use elapsed-time limits and retain supervision after failed verification.
+5. `results/pods/reset_pod.sh:73`, `:79`: Retrieval checks its cutoff only after operations with combined timeouts of 25 minutes. Check before each operation and limit its timeout to the remaining recovery window.
+6. `results/pods/reset_pod.sh:90`: The reported spend still applies the last pod’s price to all elapsed time. Record each attempt separately.
+7. `results/pods/test_reset_pod_harness.sh:25`: Add assertions for post-deadline creation, failed reconciliation/deletion, and RUN OK recovery. Final pod count alone misses these defects.
+
+CONFIDENCE: 0.99.
+ succeeded in 0ms:
+     1	"""Pod safety primitives for the follow-up launchers (internal reviews r8-r9 of reset_pod.sh). Every function fails
+     2	closed: a failed listing counts as "pods may still exist", and success needs a successful listing that shows no pod.
+     3	Time limits are measured in elapsed seconds, never in loop counts.
+     4	
+     5	CLI (exit 0 = success):
+     6	  podctl.py reconcile NAME [KEEP_ID]          delete every pod named NAME except KEEP_ID; verified by a fresh listing
+     7	  podctl.py delete ID SECONDS                 delete one pod and verify it is gone within SECONDS
+     8	  podctl.py watchdog NAME HARD_TS DONE_FILE   from HARD_TS: write NAME.blocked, then delete every pod named NAME until a
+     9	                                              listing shows none; exits when DONE_FILE exists and no pod remains
+    10	  podctl.py may-create NAME HARD_TS           exit 0 only before HARD_TS and while NAME.blocked does not exist
+    11	  podctl.py remaining UNTIL_TS                print the seconds left (0 when past)
+    12	"""
+    13	from __future__ import annotations
+    14	
+    15	import json
+    16	import os
+    17	import subprocess
+    18	import sys
+    19	import time
+    20	
+    21	HERE = os.path.dirname(os.path.abspath(__file__))
+    22	PY = sys.executable
+    23	
+    24	
+    25	def _run(args, timeout=60):
+    26	    try:
+    27	        r = subprocess.run([PY, os.path.join(HERE, "runpod.py")] + args, capture_output=True, text=True, timeout=timeout)
+    28	        return r.returncode, r.stdout
+    29	    except subprocess.TimeoutExpired:
+    30	        return 124, ""
+    31	
+    32	
+    33	def list_pods(run=_run):
+    34	    """The pods as a list, or None when the listing failed (never an empty list on failure)."""
+    35	    rc, out = run(["list"])
+    36	    if rc != 0:
+    37	        return None
+    38	    try:
+    39	        pods = json.loads(out)
+    40	    except ValueError:
+    41	        return None
+    42	    return pods if isinstance(pods, list) else None
+    43	
+    44	
+    45	def named(pods, name):
+    46	    return [p["id"] for p in pods if p.get("name") == name]
+    47	
+    48	
+    49	def delete_verified(pid, seconds, run=_run, clock=time.time, sleep=time.sleep):
+    50	    """Delete PID until a successful listing no longer shows it, within SECONDS of elapsed time."""
+    51	    end = clock() + seconds
+    52	    while clock() < end:
+    53	        run(["delete", pid])
+    54	        pods = list_pods(run)
+    55	        if pods is not None and pid not in [p["id"] for p in pods]:
+    56	            return True
+    57	        sleep(min(15, max(0.0, end - clock())))
+    58	    return False
+    59	
+    60	
+    61	def reconcile(name, keep="", seconds=600, run=_run, clock=time.time, sleep=time.sleep):
+    62	    """Delete every pod named NAME except KEEP; True only when a successful listing shows none left."""
+    63	    end = clock() + seconds
+    64	    while clock() < end:
+    65	        pods = list_pods(run)
+    66	        if pods is not None:
+    67	            extra = [i for i in named(pods, name) if i != keep]
+    68	            if not extra:
+    69	                return True
+    70	            for i in extra:
+    71	                delete_verified(i, max(1.0, end - clock()), run, clock, sleep)
+    72	        sleep(min(15, max(0.0, end - clock())))
+    73	    return False
+    74	
+    75	
+    76	def may_create(name, hard_ts, clock=time.time, here=HERE):
+    77	    return clock() < hard_ts and not os.path.exists(os.path.join(here, f"{name}.blocked"))
+    78	
+    79	
+    80	def watchdog(name, hard_ts, done_file, run=_run, clock=time.time, sleep=time.sleep, here=HERE):
+    81	    """Before HARD_TS: exit when DONE_FILE appears and a listing shows no pod named NAME. From HARD_TS: block creation,
+    82	    then delete every pod named NAME, repeating until a successful listing shows none (no retry limit)."""
+    83	    while clock() < hard_ts:
+    84	        if os.path.exists(done_file):
+    85	            pods = list_pods(run)
+    86	            if pods is not None and not named(pods, name):
+    87	                return 0
+    88	        sleep(min(30, max(0.0, hard_ts - clock())))
+    89	    open(os.path.join(here, f"{name}.blocked"), "w").write(str(int(clock())))
+    90	    print(f"{time.strftime('%H:%M')} WATCHDOG: hard deadline; creation blocked; deleting every pod named {name}", flush=True)
+    91	    while True:
+    92	        pods = list_pods(run)
+    93	        if pods is not None:
+    94	            ids = named(pods, name)
+    95	            if not ids:
+    96	                print(f"{time.strftime('%H:%M')} WATCHDOG: no pod named {name} remains (verified)", flush=True)
+    97	                return 0
+    98	            for i in ids:
+    99	                delete_verified(i, 120, run, clock, sleep)
+   100	        sleep(30)
+   101	
+   102	
+   103	def main(argv) -> int:
+   104	    cmd, a = argv[0], argv[1:]
+   105	    if cmd == "reconcile":
+   106	        return 0 if reconcile(a[0], a[1] if len(a) > 1 else "") else 1
+   107	    if cmd == "delete":
+   108	        return 0 if delete_verified(a[0], float(a[1])) else 1
+   109	    if cmd == "watchdog":
+   110	        return watchdog(a[0], float(a[1]), a[2])
+   111	    if cmd == "may-create":
+   112	        return 0 if may_create(a[0], float(a[1])) else 1
+   113	    if cmd == "remaining":
+   114	        print(max(0, int(float(a[0]) - time.time()))); return 0
+   115	    print(__doc__); return 2
+   116	
+   117	
+   118	if __name__ == "__main__":
+   119	    sys.exit(main(sys.argv[1:]))
+
+ succeeded in 0ms:
+ succeeded in 0ms:
+     1	#!/bin/bash
+     2	# Snapshot guard: run a private copy, so an edit to this file cannot reach a running launch.
+     3	if [ -z "${LAUNCH_SNAPSHOT:-}" ]; then
+     4	  snapf="/Users/oemer.demirel/Projects/touchstone/results/pods/snap_$(basename "$0" .sh)_$$.sh"; cp "$0" "$snapf"
+     5	  LAUNCH_SNAPSHOT="$snapf" exec bash "$snapf" "$@"
+     6	fi
+     7	# Reset follow-up (docs/revision/reset-experiment-plan.md, draft 5) on one Runpod CPU pod, adapted from eval_pod.sh.
+     8	# Order on the pod: the reproduction gate (bit identity, --require-identical; the author's decision), then the 18 D2 cells
+     9	# stage by stage (inputs and search with all vCPUs; evaluate, doubling and the spot diagnostics with WEVAL workers for
+    10	# memory), then the inventory. Spending (the author: do not kill jobs): at the reserved cap the pod stops BETWEEN stages
+    11	# (a STOP file the remote script reads before each stage); only at HARD x the cap is the pod deleted mid-stage, as an
+    12	# absolute guard. An EXIT/INT/TERM trap pulls what exists, deletes the pod and verifies the deletion.
+    13	# Usage: reset_pod.sh <code_tgz> <bundle_tgz> <tag> <cap_usd> <local_out>
+    14	# Env: EXPECT (commit inside the code tarball), MAXCPH, optional WEVAL (default 10), MINMEM (default 28), HARD (default 1.3).
+    15	set -u
+    16	PY=/opt/homebrew/bin/python3; P=/Users/oemer.demirel/Projects/touchstone/results/pods
+    17	TGZ=${1:?code tarball}; BTGZ=${2:?bundle tarball}; TAG=${3:?tag}; CAP=${4:?cap_usd}; LOUT=${5:?local_out}; cd $P
+    18	EXPECT=${EXPECT:?commit}; MAXCPH=${MAXCPH:?max usd per hour}; WEVAL=${WEVAL:-10}; MINMEM=${MINMEM:-28}; HARD=${HARD:-1.3}
+    19	mkdir -p "$LOUT" logs_r_$TAG
+    20	$PY -c "import sys,tarfile; ms=tarfile.open(sys.argv[1]).getmembers(); d=[m.name for m in ms if m.name.split('/')[-1].startswith('._')]; o=[m.name for m in ms if m.uid!=0]; print('tarball guard: %d AppleDouble, %d non-root' % (len(d),len(o))); sys.exit(1 if d or o else 0)" "$TGZ" || { echo "code tarball refused"; exit 1; }
+    21	hg=$(mktemp -d); tar xzf "$TGZ" -C "$hg" 2>/dev/null || { echo "code tarball refused: cannot unpack"; exit 1; }
+    22	# Code guard (fails closed: every git call's status is checked): HEAD is EXPECT, protocol-v2 is an ancestor, the tree is
+    23	# clean, every path changed since the tag is in the code freeze's allowed paths, and scripts/, sim/, tests/ equal the tag.
+    24	guard() {
+    25	  cd "$1" || return 1
+    26	  [ "$(git rev-parse HEAD 2>/dev/null)" = "$EXPECT" ] || { echo "HEAD is not $EXPECT"; return 1; }
+    27	  git merge-base --is-ancestor protocol-v2 HEAD || { echo "protocol-v2 is not an ancestor"; return 1; }
+    28	  st=$(git status --porcelain) || { echo "git status failed"; return 1; }; [ -z "$st" ] || { echo "tree not clean: $st" | head -c 300; return 1; }
+    29	  ch=$(git diff --name-only protocol-v2 HEAD) || { echo "git diff failed"; return 1; }
+    30	  bad=$(echo "$ch" | grep -v -e '^docs/' -e '^experiments/v2/' -e '^paper/' -e '^sealed2/h4/' -e '^$' || true); [ -z "$bad" ] || { echo "changed outside the allowed paths: $bad" | head -c 300; return 1; }
+    31	  git diff --quiet protocol-v2 -- scripts/ sim/ tests/ || { echo "scripts/, sim/ or tests/ differ from protocol-v2"; return 1; }
+    32	  echo "code guard: ok at $(git rev-parse --short HEAD)"
+    33	}
+    34	( guard "$hg" ); g=$?; mv -- "$hg" ~/.Trash/hg_reset_$$
+    35	[ $g -eq 0 ] || { echo "code tarball refused"; exit 1; }
+    36	[ -n "${DRYRUN:-}" ] && { echo "dry run: guards passed; no pod created"; exit 0; }
+    37	# verify DIR: every record in DIR/inventory.json exists with its hash.
+    38	verify() { $PY - "$1" <<'PYV'
+    39	import hashlib, json, sys
+    40	from pathlib import Path
+    41	d = Path(sys.argv[1]); inv = json.loads((d / "inventory.json").read_text())
+    42	bad = [k for k, h in inv["records"].items() if not (d / k).is_file() or hashlib.sha256((d / k).read_bytes()).hexdigest() != h]
+    43	print(f"verify {d.name}: {len(inv['records'])} records, {len(bad)} bad"); sys.exit(1 if bad else 0)
+    44	PYV
+    45	}
+    46	tmo() { perl -e 'alarm shift; exec @ARGV' "$@"; }
+    47	NAME=ts-r-$TAG; DONE=$P/$NAME.done; ATT=$P/$NAME.attempts
+    48	rm_ok() { [ -e "$1" ] && mv -- "$1" ~/.Trash/"$(basename "$1").$$"; true; }
+    49	rm_ok "$DONE"; rm_ok "$P/$NAME.blocked"; : > "$ATT"
+    50	id=""; state="NOT STARTED"; rc=1; cph=0; a0=0
+    51	# Pod safety lives in podctl.py (test_podctl.py, with mutation checks): fail-closed listing, deletion verified within
+    52	# elapsed time, reconciliation, a creation block from the hard deadline, and a watchdog that runs on after this launcher
+    53	# exits, until no pod named $NAME remains.
+    54	attempt_end() { [ "$a0" -gt 0 ] && echo "${id:-none} $a0 $(date +%s) ${cph:-$MAXCPH}" >> "$ATT"; a0=0; true; }
+    55	cleanup() {
+    56	  trap - EXIT INT TERM
+    57	  if [ -n "$id" ]; then
+    58	    try=0
+    59	    while :; do   # after RUN OK: keep the pod and retry until both directories verify, or until 2 min before the hard deadline
+    60	      try=$((try+1)); ok=1
+    61	      for spec in "followup-reset/ $LOUT/followup-reset/ 900" "followup-gate/ $LOUT/followup-gate/ 300"; do
+    62	        set -- $spec; rem=$(( hard - 120 - $(date +%s) )); [ $rem -le 0 ] && { ok=0; break; }; t=$3; [ $rem -lt $t ] && t=$rem
+    63	        tmo $t $PY runpod.py pull $id /root/touchstone/results/v2/$1 "$2" >/dev/null 2>&1 || ok=0
+    64	      done
+    65	      rem=$(( hard - 120 - $(date +%s) )); [ $rem -gt 0 ] && tmo $(( rem < 300 ? rem : 300 )) $PY runpod.py pull $id /root/touchstone/results/logs/ logs_r_$TAG/ >/dev/null 2>&1
+    66	      if [ "$state" = "RUN OK" ] && [ $ok = 1 ]; then { verify "$LOUT/followup-gate" && verify "$LOUT/followup-reset"; } || ok=0; fi
+    67	      [ $ok = 1 ] && break
+    68	      echo "$(date +%H:%M) pull or verification failed (try $try)"
+    69	      if [ "$state" = "RUN OK" ]; then [ "$(date +%s)" -ge $(( hard - 120 )) ] && break; else [ $try -ge 3 ] && break; fi
+    70	      sleep 60
+    71	    done
+    72	    [ $ok = 1 ] || { [ "$state" = "RUN OK" ] && state="RUN OK BUT RECORDS NOT VERIFIED"; rc=1; }
+    73	    if $PY podctl.py delete $id 1800; then echo "$(date +%H:%M) $id deleted (verified)"; else echo "$(date +%H:%M) $id: deletion not verified in 30 min; the watchdog keeps trying"; rc=1; fi
+    74	    attempt_end
+    75	  fi
+    76	  $PY podctl.py reconcile $NAME || { echo "$(date +%H:%M) reconcile failed; the watchdog keeps trying"; rc=1; }
+    77	  touch "$DONE"     # the watchdog exits once a listing shows no pod named $NAME; after the hard deadline it keeps deleting
+    78	  $PY - "$ATT" "$MAXCPH" <<'PYS'
+    79	import sys
+    80	rows = [l.split() for l in open(sys.argv[1]) if l.strip()]
+    81	tot = sum((int(e) - int(s)) / 3600 * float(p) for _, s, e, p in rows); bound = sum((int(e) - int(s)) / 3600 * float(sys.argv[2]) for _, s, e, p in rows)
+    82	print(f"spend by attempt ({len(rows)}): {tot:.3f} USD at the recorded prices; bound {bound:.3f} USD at the ceiling (record with budget_v2.py --record)")
+    83	PYS
+    84	  echo "$(date +%H:%M) end: $state"
+    85	  exit $rc
+    86	}
+    87	trap cleanup EXIT INT TERM
+    88	# Deadlines from the first creation request at the price ceiling MAXCPH (a bound across attempts).
+    89	t0=$(date +%s); soft=$(( t0 + $($PY -c "print(int(3600*float('$CAP')/float('$MAXCPH')))") )); hard=$(( t0 + $($PY -c "print(int(3600*float('$CAP')*float('$HARD')/float('$MAXCPH')))") ))
+    90	nohup $PY podctl.py watchdog $NAME $hard "$DONE" >> logs_r_$TAG/watchdog.log 2>&1 &
+    91	disown
+    92	for attempt in 1 2 3; do
+    93	  $PY podctl.py reconcile $NAME || { state="RECONCILE FAILED BEFORE ATTEMPT $attempt"; exit 1; }
+    94	  $PY podctl.py may-create $NAME $hard || { state="CREATION BLOCKED (hard deadline)"; exit 1; }
+    95	  [ "$(date +%s)" -lt "$soft" ] || { state="SOFT DEADLINE BEFORE START"; exit 1; }
+    96	  a0=$(date +%s); cph=$MAXCPH
+    97	  out=$(tmo 120 $PY create16.py $NAME 2>/dev/null | tail -n 1); id=$(echo "$out" | $PY -c 'import sys,json; print(json.loads(sys.stdin.read()).get("id",""))' 2>/dev/null); v=$(echo "$out" | $PY -c 'import sys,json; print(json.loads(sys.stdin.read()).get("vcpu",""))' 2>/dev/null)
+    98	  if [ -z "$id" ]; then echo "$(date +%H:%M) no capacity or lost response"; attempt_end; sleep 30; continue; fi
+    99	  cph=$(tmo 60 $PY runpod.py list 2>/dev/null | $PY -c "import sys,json; print(next((p.get('costPerHr') or 0) for p in json.load(sys.stdin) if p['id']=='$id'))" 2>/dev/null)
+   100	  $PY -c "import sys; sys.exit(0 if 0<float('${cph:-0}' or 0)<=float('$MAXCPH') else 1)" || { state="PRICE ${cph:-unknown} NOT IN (0, $MAXCPH]"; exit 1; }
+   101	  up=""; while [ "$(date +%s)" -lt "$soft" ] && [ $(( $(date +%s) - a0 )) -lt 240 ]; do r=$(tmo 30 $PY runpod.py ssh $id 'echo up' 2>/dev/null | head -c 2); [ "$r" = up ] && { up=1; break; }; sleep 10; done
+   102	  [ -n "$up" ] && break
+   103	  echo "$(date +%H:%M) $id unreachable; deleting"; $PY podctl.py delete $id 600 || { state="UNREACHABLE POD NOT DELETED"; exit 1; }; attempt_end; id=""
+   104	done
+   105	[ -z "$id" ] && { state="NO POD"; exit 1; }
+   106	echo "$(date +%H:%M) pod $id ($v vCPU, $cph USD/h): soft stop in $(( soft - $(date +%s) ))s, hard stop in $(( hard - $(date +%s) ))s (cap $CAP USD)"
+   107	tmo 900 $PY runpod.py push $id $TGZ /root/rc.tgz >/dev/null 2>&1
+   108	tmo 1800 $PY runpod.py push $id $BTGZ /root/rb.tgz >/dev/null 2>&1
+   109	tmo 900 $PY runpod.py ssh $id 'mkdir -p touchstone bundle && tar xzf rc.tgz -C touchstone && tar xzf rb.tgz -C bundle && (which uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh 2>/dev/null | sh >/dev/null 2>&1); export PATH=$HOME/.local/bin:$PATH; cd touchstone && uv sync --frozen -q 2>&1 | tail -n 2; mkdir -p results/logs' >/dev/null 2>&1
+   110	chk=$(tmo 300 $PY runpod.py ssh $id "cd touchstone; export PATH=\$HOME/.local/bin:\$PATH; echo git=\$(git rev-parse HEAD 2>&1) env=\${TOUCHSTONE_IDENTITY_SALT:-unset} bundle=\$(ls /root/bundle/eval-all/freeze | wc -l); m=\$(cat /sys/fs/cgroup/memory.max 2>/dev/null || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null); case \$m in max|''|9223372036854*) m=\$(awk '/MemTotal/ {print \$2*1024}' /proc/meminfo);; esac; echo memgb=\$((m/1073741824)); echo py=\$(uv run --frozen python -c 'import platform,numpy;print(platform.python_version(),numpy.__version__)' 2>&1 | tail -n 1 | tr ' ' _)" 2>/dev/null | tr '\n' ' ')
+   111	echo "$(date +%H:%M) prep: $chk"
+   112	case "$chk" in *"git=$EXPECT"*"env=unset"*) ;; *) state="PREP FAILED"; exit 1 ;; esac
+   113	memgb=$(echo "$chk" | sed -n 's/.*memgb=\([0-9]*\).*/\1/p'); [ -n "$memgb" ] && [ "$memgb" -ge "$MINMEM" ] || { state="PREP FAILED (memory ${memgb:-unknown} GB < $MINMEM GB)"; exit 1; }
+   114	cat > /tmp/r_remote_$TAG.sh <<EOS
+   115	#!/bin/bash
+   116	cd /root/touchstone; export OMP_NUM_THREADS=1 PATH=\$HOME/.local/bin:\$PATH; unset TOUCHSTONE_IDENTITY_SALT; unset TOUCHSTONE_LOCKED
+   117	B=/root/bundle; A="--src \$B/eval-all --draw \$B/draw/draw.json --instances \$B/draw/instances.json --cfgs \$B/deviation/cfg_linux.json --addendum \$B/report/addendum.json --report \$B/report/report.json"
+   118	D=docs/revision/followup/reset_followup_v2.py
+   119	{ [ -e /root/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE gate (cap) \$(date +%H:%M)"; exit 1; }
+   120	echo "== gate start \$(date +%H:%M)"
+   121	uv run --frozen python \$D --reproduce --require-identical --out results/v2/followup-gate --workers 1 \$A >> results/logs/r_gate.log 2>&1 || { echo "== GATE FAILED \$(date +%H:%M)"; exit 1; }
+   122	echo "== gate passed (bit-identical) \$(date +%H:%M)"
+   123	for st in inputs search freeze evaluate doubling diagnostics inventory; do
+   124	  { [ -e /root/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE \$st (cap) \$(date +%H:%M)"; exit 1; }
+   125	  w=$v; case \$st in evaluate|doubling|diagnostics) w=$WEVAL ;; esac
+   126	  echo "== stage \$st start \$(date +%H:%M) workers \$w"
+   127	  uv run --frozen python \$D --stage \$st --diag-cells 'fresh0@rho0.2|F111|D2|profit' --workers \$w --out results/v2/followup-reset \$A >> results/logs/r_run.log 2>&1 || { echo "== RUN FAILED at \$st \$(date +%H:%M)"; exit 1; }
+   128	done
+   129	echo "== RUN OK \$(date +%H:%M)"
+   130	EOS
+   131	tmo 120 $PY runpod.py push $id /tmp/r_remote_$TAG.sh /root/r_remote.sh >/dev/null 2>&1
+   132	tmo 120 $PY runpod.py ssh $id "chmod +x /root/r_remote.sh; (nohup /root/r_remote.sh > /root/touchstone/results/logs/r_remote.log 2>&1 < /dev/null &)" >/dev/null 2>&1
+   133	state="RUNNING"; stopped=""
+   134	while true; do
+   135	  sleep 120
+   136	  now=$(date +%s)
+   137	  [ "$now" -ge "$hard" ] && { state="HARD DEADLINE ($HARD x cap at $MAXCPH USD/h; the watchdog deletes the pod)"; exit 1; }
+   138	  if [ "$now" -ge "$soft" ] && [ -z "$stopped" ]; then tmo 60 $PY runpod.py ssh $id 'touch /root/STOP && test -e /root/STOP' >/dev/null 2>&1 && stopped=1 && echo "$(date +%H:%M) cap reached: the pod stops after the running stage"; fi
+   139	  st=$(tmo 90 $PY runpod.py ssh $id "tail -c 240 /root/touchstone/results/logs/r_remote.log" 2>/dev/null | tr '\n' ' ')
+   140	  echo "$(date +%H:%M) [soft $(( soft - now ))s, hard $(( hard - now ))s] $st" | tail -c 320
+   141	  case "$st" in
+   142	    *"RUN OK"*) state="RUN OK"; rc=0; exit 0 ;;
+   143	    *"GATE FAILED"*) state="GATE FAILED (not bit-identical; 18 cells not started)"; exit 1 ;;
+   144	    *"RUN FAILED"*|*"STOPPED BEFORE"*) state="$(echo "$st" | grep -o '== [A-Z].*' | head -c 120)"; exit 1 ;;
+   145	  esac
+   146	done
+
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/runpod.py; nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/create16.py; nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/test_runpod.py; cat docs/revision/roster/brief-reset-plan-r9.md' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+     1	"""Minimal Runpod REST helper. Usage:
+     2	  python runpod.py list | get ID | delete ID | ssh ID 'cmd' | push ID LOCAL REMOTE | pull ID REMOTE LOCAL"""
+     3	import json, os, re, subprocess, sys, urllib.request
+     4	KEY = re.search(r"apikey\s*=\s*'([^']+)'", open(os.path.expanduser("~/.runpod/config.toml")).read()).group(1)
+     5	SSHKEY = os.path.expanduser("~/.runpod/ssh/runpodctl-ssh-key")
+     6	BASE = "https://rest.runpod.io/v1"
+     7	def api(method, path, body=None):
+     8	    req = urllib.request.Request(BASE + path, data=json.dumps(body).encode() if body else None, method=method,
+     9	                                 headers={"Authorization": f"Bearer {KEY}", "Content-Type": "application/json", "User-Agent": "curl/8.7.1"})
+    10	    try:
+    11	        with urllib.request.urlopen(req, timeout=60) as r:
+    12	            t = r.read().decode(); return json.loads(t) if t else None
+    13	    except urllib.error.HTTPError as e:
+    14	        return {"error": e.code, "body": e.read().decode()[:500]}
+    15	def target(pod_id):
+    16	    p = api("GET", f"/pods/{pod_id}"); pm = p.get("portMappings") or {}
+    17	    return p.get("publicIp"), pm.get("22") or pm.get(22)
+    18	def ssh(pod_id, cmd, timeout=None):
+    19	    ip, port = target(pod_id)
+    20	    return subprocess.run(["ssh", "-i", SSHKEY, "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", "-o", "LogLevel=ERROR", "-o", "ConnectTimeout=20", "-p", str(port), f"root@{ip}", cmd],
+    21	                          capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
+    22	def rsync(pod_id, src, dst, pull=False):
+    23	    ip, port = target(pod_id)
+    24	    e = f"ssh -i {SSHKEY} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -p {port}"
+    25	    a, b = (f"root@{ip}:{src}", dst) if pull else (src, f"root@{ip}:{dst}")
+    26	    return subprocess.run(["rsync", "-az", "-e", e, a, b], capture_output=True, text=True)
+    27	def main(argv) -> int:
+    28	    cmd, args = argv[0], argv[1:]
+    29	    if cmd == "list": print(json.dumps([{k: p.get(k) for k in ("id", "name", "desiredStatus", "publicIp", "portMappings", "costPerHr", "vcpuCount")} for p in api("GET", "/pods")], indent=1))
+    30	    elif cmd == "get": print(json.dumps(api("GET", f"/pods/{args[0]}"), indent=1)[:1500])
+    31	    elif cmd == "delete": print(api("DELETE", f"/pods/{args[0]}"))
+    32	    elif cmd == "ssh": r = ssh(args[0], args[1]); print(r.stdout, r.stderr, "exit", r.returncode); return r.returncode
+    33	    elif cmd == "push": r = rsync(args[0], args[1], args[2]); print(r.stdout[-300:], r.stderr[-300:], "exit", r.returncode); return r.returncode
+    34	    elif cmd == "pull": r = rsync(args[0], args[1], args[2], pull=True); print(r.stdout[-300:], r.stderr[-300:], "exit", r.returncode); return r.returncode
+    35	    return 0
+    36	
+    37	
+    38	if __name__ == "__main__":
+    39	    sys.exit(main(sys.argv[1:]))
+     1	import sys, json
+     2	sys.path.insert(0, "/Users/oemer.demirel/Projects/touchstone/results/pods")
+     3	from runpod import api
+     4	IMAGE = "runpod/base:0.6.2-cpu"; name = sys.argv[1]
+     5	combos = [(f, v, c) for c in ("SECURE", "COMMUNITY") for v in (16,) for f in ("cpu5c", "cpu3c", "cpu5g", "cpu3g", "cpu5m", "cpu3m")]
+     6	for f, v, c in combos:
+     7	    r = api("POST", "/pods", {"name": name, "computeType": "CPU", "cloudType": c, "cpuFlavorIds": [f], "cpuFlavorPriority": "availability",
+     8	                              "vcpuCount": v, "imageName": IMAGE, "ports": ["22/tcp"], "containerDiskInGb": 20, "env": {"OMP_NUM_THREADS": "1"}})
+     9	    if isinstance(r, dict) and r.get("id"):
+    10	        print(json.dumps({"id": r["id"], "flavor": f, "vcpu": v, "cloud": c})); sys.exit(0)
+    11	print(json.dumps({"id": ""})); sys.exit(1)
+     1	"""runpod.py propagates the exit status of ssh, push and pull (internal review r7 of the reset plan)."""
+     2	import subprocess
+     3	import runpod as RP
+     4	
+     5	
+     6	def test_ssh_push_pull_return_the_subprocess_status(monkeypatch):
+     7	    fake = lambda *a, **k: subprocess.CompletedProcess([], 255, "", "boom")
+     8	    monkeypatch.setattr(RP, "ssh", fake); monkeypatch.setattr(RP, "rsync", fake)
+     9	    for argv in (["ssh", "p", "true"], ["push", "p", "a", "b"], ["pull", "p", "a", "b"]):
+    10	        assert RP.main(argv) == 255
+    11	    ok = lambda *a, **k: subprocess.CompletedProcess([], 0, "up", "")
+    12	    monkeypatch.setattr(RP, "ssh", ok)
+    13	    assert RP.main(["ssh", "p", "echo up"]) == 0
+# Reset pod launcher: internal review round 9 (read-only; no paid APIs; do not read `sealed/`, `~/touchstone-h4`, or `~/h4-session.out`; reasoning effort high; under 300 words)
+
+Round 8 (`docs/revision/roster/{sol,astra}-reset-plan-r8.md`) rejected the launcher `/Users/oemer.demirel/Projects/touchstone/results/pods/reset_pod.sh`. Changes: the watchdog starts before the first creation request and, at the hard deadline, deletes every pod in the IDS file and any pod named ts-r-TAG; all deadlines run from the first creation request at the price ceiling MAXCPH (a bound across attempts; the actual price is recorded); creation without an id triggers reconciliation (untracked pods named ts-r-TAG are deleted and verified); after RUN OK the pod is kept and pulls plus inventory verification retry every minute until success or two minutes before the hard deadline; deletion is retried every minute for 30 minutes and the watchdog stops only after verified deletion; the remote script checks STOP and the soft deadline before the gate as well. Evidence: `results/pods/test_reset_pod_harness.sh` (offline fake runpod/create16; scenarios: price above the ceiling, lost creation response, unreachable pod with the watchdog firing during readiness; passes with no pod left), `test_runpod.py`, dry run at fdfd83e, negative tarball tests.
+
+Check: (1) each round-8 correction is closed; (2) new defects (watchdog and cleanup interaction, deadline arithmetic, reconciliation, the RUN OK retrieval loop); (3) anything that should block the pod.
+
+Output exactly:
+VERDICT: accept | accept-with-caveat | reject
+CORRECTIONS: numbered, each with file:line, or "none".
+CONFIDENCE: 0 to 1.
+
+hook: PostToolUse
+hook: PostToolUse Completed
+exec
+/bin/zsh -lc 'nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/test_podctl.py; nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/test_reset_pod_harness.sh' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+     1	"""podctl: fail-closed listing, verified deletion within elapsed time, reconciliation, creation block, sustained watchdog."""
+     2	import json
+     3	import os
+     4	
+     5	import podctl as C
+     6	
+     7	
+     8	class Fake:
+     9	    """A fake Runpod: pods by id -> name; `fail_list` listings fail; a pod in `stuck` survives `stuck[id]` deletes."""
+    10	    def __init__(self, pods=None, fail_list=0, stuck=None):
+    11	        self.pods = dict(pods or {}); self.fail_list = fail_list; self.stuck = dict(stuck or {}); self.t = 0.0; self.calls = []
+    12	    def run(self, args, timeout=60):
+    13	        self.calls.append(args[0]); self.t += 1
+    14	        if args[0] == "list":
+    15	            if self.fail_list > 0:
+    16	                self.fail_list -= 1; return 1, ""
+    17	            return 0, json.dumps([{"id": i, "name": n} for i, n in self.pods.items()])
+    18	        if args[0] == "delete":
+    19	            pid = args[1]
+    20	            if self.stuck.get(pid, 0) > 0:
+    21	                self.stuck[pid] -= 1
+    22	            else:
+    23	                self.pods.pop(pid, None)
+    24	            return 0, "{}"
+    25	        return 0, ""
+    26	    def clock(self):
+    27	        return self.t
+    28	    def sleep(self, s):
+    29	        self.t += max(s, 0.01)
+    30	
+    31	
+    32	def test_a_failed_listing_is_never_an_empty_list():
+    33	    f = Fake({"a": "ts-r-x"}, fail_list=1)
+    34	    assert C.list_pods(f.run) is None and C.list_pods(f.run) == [{"id": "a", "name": "ts-r-x"}]
+    35	
+    36	
+    37	def test_delete_is_verified_and_bounded_by_elapsed_time():
+    38	    f = Fake({"a": "n"}, stuck={"a": 2})
+    39	    assert C.delete_verified("a", 100, f.run, f.clock, f.sleep) and "a" not in f.pods
+    40	    g = Fake({"a": "n"}, stuck={"a": 10**6})
+    41	    assert not C.delete_verified("a", 50, g.run, g.clock, g.sleep) and g.t < 50 + 20     # stops by elapsed time
+    42	
+    43	
+    44	def test_reconcile_fails_closed_on_listing_failures_and_survivors():
+    45	    f = Fake({"a": "ts-r-x", "keep": "ts-r-x", "other": "else"}, fail_list=3)
+    46	    assert C.reconcile("ts-r-x", "keep", 600, f.run, f.clock, f.sleep) and set(f.pods) == {"keep", "other"}
+    47	    g = Fake({"a": "ts-r-x"}, fail_list=10**6)                                          # listing never works
+    48	    assert not C.reconcile("ts-r-x", "", 100, g.run, g.clock, g.sleep)
+    49	    h = Fake({"a": "ts-r-x"}, stuck={"a": 10**6})                                       # deletion never takes effect
+    50	    assert not C.reconcile("ts-r-x", "", 100, h.run, h.clock, h.sleep)
+    51	
+    52	
+    53	def test_creation_is_blocked_after_the_hard_deadline_or_the_block_file(tmp_path):
+    54	    assert C.may_create("n", 10, clock=lambda: 5, here=str(tmp_path))
+    55	    assert not C.may_create("n", 10, clock=lambda: 11, here=str(tmp_path))
+    56	    (tmp_path / "n.blocked").write_text("1")
+    57	    assert not C.may_create("n", 10, clock=lambda: 5, here=str(tmp_path))
+    58	
+    59	
+    60	def test_watchdog_blocks_creation_and_keeps_deleting_until_none_remain(tmp_path):
+    61	    f = Fake({"a": "ts-r-x", "b": "ts-r-x"}, fail_list=0, stuck={"a": 30}); f.t = 100
+    62	    assert C.watchdog("ts-r-x", 50, str(tmp_path / "done"), f.run, f.clock, f.sleep, here=str(tmp_path)) == 0
+    63	    assert (tmp_path / "ts-r-x.blocked").exists() and not [i for i, n in f.pods.items() if n == "ts-r-x"]
+    64	
+    65	
+    66	def test_watchdog_waits_for_done_and_an_empty_listing_before_the_deadline(tmp_path):
+    67	    f = Fake({"a": "ts-r-x"}); done = tmp_path / "done"; done.write_text("")
+    68	    calls = {"n": 0}
+    69	    def sleep(s):
+    70	        f.t += s; calls["n"] += 1
+    71	        if calls["n"] == 3:
+    72	            f.pods.clear()                                                              # the launcher deleted its pod
+    73	    assert C.watchdog("ts-r-x", 10**6, str(done), f.run, f.clock, sleep, here=str(tmp_path)) == 0
+    74	    assert not (tmp_path / "ts-r-x.blocked").exists()
+     1	#!/bin/bash
+     2	# Offline harness for reset_pod.sh with podctl.py (no real pods): fake runpod.py/create16.py keep a pod list in state.json.
+     3	# Each scenario asserts the pods left and the number of creation requests. Usage: bash test_reset_pod_harness.sh
+     4	set -u; H=$(mktemp -d); cd $H; SRC=/Users/oemer.demirel/Projects/touchstone/results/pods
+     5	sed "s#P=/Users/oemer.demirel/Projects/touchstone/results/pods#P=$H#; s#snapf=\"/Users/oemer.demirel/Projects/touchstone/results/pods/snap_#snapf=\"$H/snap_#" $SRC/reset_pod.sh > reset_pod.sh
+     6	cp $SRC/podctl.py .
+     7	cat > runpod.py <<'EOF'
+     8	import json, os, sys
+     9	S = os.path.join(os.path.dirname(os.path.abspath(__file__)), "state.json")
+    10	st = json.load(open(S)); cmd, a = sys.argv[1], sys.argv[2:]; st["log"].append(" ".join([cmd] + a[:1])); rc = 0
+    11	if cmd == "list":
+    12	    if st.get("fail_list", 0) > 0: st["fail_list"] -= 1; rc = 1; print("error")
+    13	    else: print(json.dumps([{"id": i, "name": n, "costPerHr": st["price"]} for i, n in st["pods"].items()]))
+    14	elif cmd == "delete": st["pods"].pop(a[0], None); print("{}")
+    15	elif cmd == "ssh": rc = 0 if st["up"] else 255; print("up" if st["up"] else "", "exit", rc)
+    16	elif cmd in ("push", "pull"): print("exit 0")
+    17	json.dump(st, open(S, "w")); sys.exit(rc)
+    18	EOF
+    19	cat > create16.py <<'EOF'
+    20	import json, os, sys
+    21	S = os.path.join(os.path.dirname(os.path.abspath(__file__)), "state.json"); st = json.load(open(S))
+    22	pid = "pod%d" % (len(st["log"]) + 1); st["pods"][pid] = sys.argv[1]; st["log"].append("create " + pid); json.dump(st, open(S, "w"))
+    23	print(json.dumps({"id": "" if st.get("lose") else pid, "vcpu": 16}))
+    24	EOF
+    25	mkdir -p g && (cd g && git init -q && git -c commit.gpgsign=false -c user.email=x@x -c user.name=x commit -q --allow-empty -m x && git -c tag.gpgsign=false tag protocol-v2 && COPYFILE_DISABLE=1 tar --uid 0 --gid 0 -czf ../c.tgz .)
+    26	C=$(git -C g rev-parse HEAD); echo x > b; tar czf b.tgz b; fail=0
+    27	run() { # name state cap max_creates
+    28	  echo "== $1"; echo "$2" > state.json; EXPECT=$C MAXCPH=0.70 HARD=${HARDX:-1.3} perl -e 'alarm 400; exec @ARGV' bash reset_pod.sh c.tgz b.tgz t $3 out 2>&1 | grep -v "^tarball\|code guard" | tail -3
+    29	  for i in $(seq 1 40); do pgrep -f "podctl.py watchdog ts-r-t" >/dev/null || break; sleep 3; done   # let the watchdog finish
+    30	  read left creates <<< "$(python3 -c "import json;s=json.load(open('state.json'));print(len(s['pods']), sum(1 for l in s['log'] if l.startswith('create')))")"
+    31	  echo "pods left: $left, creation requests: $creates (allowed at most $4)"; [ "$left" = 0 ] && [ "$creates" -le "$4" ] || { echo "SCENARIO FAILED"; fail=1; }; }
+    32	run "price above the ceiling" '{"pods":{},"price":0.9,"up":true,"log":[]}' 5 1
+    33	run "lost creation responses are reconciled" '{"pods":{},"price":0.56,"up":true,"log":[],"lose":true}' 5 3
+    34	HARDX=1.0 run "unreachable pod, deadline during readiness" '{"pods":{},"price":0.56,"up":false,"log":[]}' 0.004 1
+    35	run "listing always fails: no creation" '{"pods":{},"price":0.56,"up":true,"log":[],"fail_list":1000000}' 5 0
+    36	HARDX=1.0 run "lost response, then the hard deadline: no second creation" '{"pods":{},"price":0.56,"up":true,"log":[],"lose":true}' 0.004 1
+    37	cd /; mv -- $H ~/.Trash/harness_$$; [ $fail = 0 ] && echo "HARNESS OK" || { echo "HARNESS FAILED"; exit 1; }
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+The listing and reconciliation checks now fail closed, and each pull checks the remaining recovery time. Two gaps remain: the watchdog can exit while a creation request is unresolved, and deletion calls can exceed their elapsed-time limit. I will check these with in-memory stubs.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "/opt/homebrew/bin/python3 -B -c 'import builtins, io, pathlib, sys, types
+from unittest.mock import patch
+P=pathlib.Path('\\''/Users/oemer.demirel/Projects/touchstone/results/pods'\\'')
+def load(name, path):
+    m=types.ModuleType(name); m.__file__=str(path); sys.modules[name]=m
+    exec(compile(path.read_text(),str(path),'\\''exec'\\''), m.__dict__)
+    return m
+C=load('\\''podctl'\\'',P/'\\''podctl.py'\\'')
+T=load('\\''test_podctl'\\'',P/'\\''test_podctl.py'\\'')
+files={}
+class VirtualPath:
+    def __init__(self,p): self.p=p
+    def __truediv__(self,p): return VirtualPath(self.p+'\\''/'\\''+p)
+    def __str__(self): return self.p
+    def write_text(self,s): files[self.p]=s; return len(s)
+    def exists(self): return self.p in files
+class Writer(io.StringIO):
+    def __init__(self,p): super().__init__(); self.p=p
+    def write(self,s): files[self.p]=s; return super().write(s)
+def vopen(p, mode='\\''r'\\'', *a, **k):
+    if str(p).startswith('\\''/virtual/'\\''):
+        return Writer(str(p)) if '\\''w'\\'' in mode else io.StringIO(files[str(p)])
+    raise AssertionError('\\''Unexpected file access: '\\''+str(p))
+count=0
+with patch.object(C.os.path,'\\''exists'\\'',side_effect=lambda p:str(p) in files), patch('\\''builtins.open'\\'',vopen):
+    for name in sorted(n for n in vars(T) if n.startswith('\\''test_'\\'')):
+        fn=getattr(T,name)
+        if fn.__code__.co_argcount: fn(VirtualPath('\\''/virtual/'\\''+name))
+        else: fn()
+        count+=1
+print('\\''podctl existing unit tests passed:'\\'',count,'\\''(virtual filesystem)'\\'')
+with patch('\\''builtins.open'\\'',return_value=io.StringIO(\"apikey = '\\''offline-dummy'\\''\")):
+    RP=load('\\''runpod'\\'',P/'\\''runpod.py'\\'')
+TR=load('\\''test_runpod'\\'',P/'\\''test_runpod.py'\\'')
+class Patches:
+    def setattr(self,obj,name,value): setattr(obj,name,value)
+TR.test_ssh_push_pull_return_the_subprocess_status(Patches())
+print('\\''runpod unit test passed: 1 (dummy config, no network)'\\'')
+f=T.Fake(); f.t=100
+with patch.object(C.os.path,'\\''exists'\\'',return_value=False), patch('\\''builtins.open'\\'',side_effect=lambda *a,**k:io.StringIO()):
+    result=C.watchdog('\\''ts-r-x'\\'',50,'\\''/virtual/absent-done'\\'',f.run,f.clock,f.sleep,here='\\''/virtual'\\'')
+print('\\''REPRO watchdog returns'\\'',result,'\\''at'\\'',f.t,'\\''without done; pending creation may appear later'\\'')
+t=[0]
+def slow(args,timeout=60):
+    t[0]+=60
+    return (0,'\\''[]'\\'') if args[0]=='\\''list'\\'' else (0,'\\''{}'\\'')
+result=C.delete_verified('\\''late'\\'',1,slow,lambda:t[0],lambda s:None)
+print('\\''REPRO deletion budget=1 second; returned'\\'',result,'\\''after'\\'',t[0],'\\''seconds'\\'')
+clock=[0]; calls=[]
+fake=types.ModuleType('\\''runpod'\\'')
+def api(*a,**k):
+    calls.append(clock[0]); clock[0]+=60; return {'\\''error'\\'':503}
+fake.api=api
+with patch.dict(sys.modules,{'\\''runpod'\\'':fake}), patch.object(sys,'\\''argv'\\'',['\\''create16.py'\\'','\\''ts-r-x'\\'']):
+    try: load('\\''offline_create16'\\'',P/'\\''create16.py'\\'')
+    except SystemExit: pass
+print('\\''REPRO create helper POST start times='\\'',calls,'\\''; no deadline check between requests'\\'')
+'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+00:42 WATCHDOG: hard deadline; creation blocked; deleting every pod named ts-r-x
+00:42 WATCHDOG: no pod named ts-r-x remains (verified)
+podctl existing unit tests passed: 6 (virtual filesystem)
+ boom exit 255
+ boom exit 255
+ boom exit 255
+up  exit 0
+runpod unit test passed: 1 (dummy config, no network)
+00:42 WATCHDOG: hard deadline; creation blocked; deleting every pod named ts-r-x
+00:42 WATCHDOG: no pod named ts-r-x remains (verified)
+REPRO watchdog returns 0 at 101 without done; pending creation may appear later
+REPRO deletion budget=1 second; returned True after 120 seconds
+{"id": ""}
+REPRO create helper POST start times= [0, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 660] ; no deadline check between requests
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+The in-memory checks confirmed both gaps. All seven existing unit tests passed with filesystem writes and credentials stubbed. The creation helper also retries POST requests without checking the deadline. The harness has no failed-deletion or RUN OK recovery case.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "/opt/homebrew/bin/python3 -B -c 'import pathlib, sys, types
+from unittest.mock import patch
+p=pathlib.Path('\\''/Users/oemer.demirel/Projects/touchstone/results/pods/create16.py'\\'')
+fake=types.ModuleType('\\''runpod'\\''); pods=[]
+def api(method,path,body):
+    pid='\\''p'\\''+str(len(pods)+1); pods.append({'\\''id'\\'':pid,'\\''name'\\'':body['\\''name'\\'']})
+    return {'\\''error'\\'':502} if len(pods)==1 else {'\\''id'\\'':pid}
+fake.api=api
+with patch.dict(sys.modules,{'\\''runpod'\\'':fake}), patch.object(sys,'\\''argv'\\'',['\\''create16.py'\\'','\\''ts-r-x'\\'']):
+    try: exec(compile(p.read_text(),str(p),'\\''exec'\\''),{'\\''__name__'\\'':'\\''offline'\\'','\\''__file__'\\'':str(p)})
+    except SystemExit: pass
+print('\\''REPRO ambiguous first POST, successful second POST: live pod count='\\'',len(pods),'\\''pods='\\'',pods)
+'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+{"id": "p2", "flavor": "cpu3c", "vcpu": 16, "cloud": "SECURE"}
+REPRO ambiguous first POST, successful second POST: live pod count= 2 pods= [{'id': 'p1', 'name': 'ts-r-x'}, {'id': 'p2', 'name': 'ts-r-x'}]
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+VERDICT: reject
+CORRECTIONS:
+1. Closed: `results/pods/podctl.py:33` fails closed on listing errors; `podctl.py:61` requires a successful empty reconciliation; `reset_pod.sh:90` starts supervision before creation; `reset_pod.sh:62` checks and limits each pull. Per-attempt spending is present but incomplete.
+2. Blocker — `results/pods/podctl.py:95`: After the hard deadline, the watchdog exits on an empty listing without checking DONE or unresolved creation requests. An in-memory check confirmed exit without DONE. A delayed creation can then appear without supervision. Require creation settlement and verified absence before exit.
+3. Blocker — `results/pods/create16.py:6`: Internal POST retries bypass the launcher's reconciliation and deadline checks. An ambiguous first response followed by success left two pods in an offline reproduction. Check authorization and deadline before every POST; resolve ambiguous outcomes before another request. Reconcile extra pods before accepting a returned ID.
+4. Open — `results/pods/podctl.py:53`: Delete and list commands retain separate 60-second timeouts regardless of remaining time. A one-second deletion budget returned success after 120 simulated seconds. Limit each command to the remaining elapsed-time budget and reject verification after expiry.
+5. Open — `results/pods/reset_pod.sh:98`: Lost-response accounting ends before the 30-second wait and subsequent reconciliation. An untracked pod can remain billable throughout that omitted interval. Keep accounting active until verified deletion; the reported MAXCPH bound currently omits this exposure.
+6. Open — `results/pods/test_reset_pod_harness.sh:31`: Creation assertions permit zero requests in every scenario. Failed deletion and RUN OK recovery remain untested. Add required creation counts, delayed creation, ambiguous internal retries, slow commands, and recovery verification. All seven existing unit tests passed with in-memory filesystem and credential stubs.
+
+CONFIDENCE: 0.99.
+hook: Stop
+hook: Stop Completed
+tokens used
+27'774
+VERDICT: reject
+CORRECTIONS:
+1. Closed: `results/pods/podctl.py:33` fails closed on listing errors; `podctl.py:61` requires a successful empty reconciliation; `reset_pod.sh:90` starts supervision before creation; `reset_pod.sh:62` checks and limits each pull. Per-attempt spending is present but incomplete.
+2. Blocker — `results/pods/podctl.py:95`: After the hard deadline, the watchdog exits on an empty listing without checking DONE or unresolved creation requests. An in-memory check confirmed exit without DONE. A delayed creation can then appear without supervision. Require creation settlement and verified absence before exit.
+3. Blocker — `results/pods/create16.py:6`: Internal POST retries bypass the launcher's reconciliation and deadline checks. An ambiguous first response followed by success left two pods in an offline reproduction. Check authorization and deadline before every POST; resolve ambiguous outcomes before another request. Reconcile extra pods before accepting a returned ID.
+4. Open — `results/pods/podctl.py:53`: Delete and list commands retain separate 60-second timeouts regardless of remaining time. A one-second deletion budget returned success after 120 simulated seconds. Limit each command to the remaining elapsed-time budget and reject verification after expiry.
+5. Open — `results/pods/reset_pod.sh:98`: Lost-response accounting ends before the 30-second wait and subsequent reconciliation. An untracked pod can remain billable throughout that omitted interval. Keep accounting active until verified deletion; the reported MAXCPH bound currently omits this exposure.
+6. Open — `results/pods/test_reset_pod_harness.sh:31`: Creation assertions permit zero requests in every scenario. Failed deletion and RUN OK recovery remain untested. Add required creation counts, delayed creation, ambiguous internal retries, slow commands, and recovery verification. All seven existing unit tests passed with in-memory filesystem and credential stubs.
+
+CONFIDENCE: 0.99.

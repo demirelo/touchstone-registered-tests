@@ -1,0 +1,11 @@
+VERDICT: reject
+CORRECTIONS:
+1. Closed — `results/pods/create_one.py:15`, `podctl.py:33`, `podctl.py:73`, `reset_pod.sh:93`: one POST per call, failed-listing rejection, deletion-start budget checks, and per-request deadline checks are present. Nine podctl test functions and the runpod status test passed with in-memory filesystem, credential, and subprocess stubs.
+2. Blocker — `results/pods/reset_pod.sh:100`, `podctl.py:113`: empty listings do not resolve pending requests. A delayed first creation can overlap the next pod. The watchdog can also exit before a creation delayed beyond SETTLE appears. The simulated watchdog exited at 311 seconds without resolving pending creation. Require request settlement before retrying or ending supervision.
+3. Blocker — `results/pods/create_one.py:21`, `runpod.py:13`: all HTTP errors become definite refusals. An injected HTTP 504 produced `"ambiguous": false`. Treat uncertain server/gateway errors as ambiguous.
+4. Open — `results/pods/reset_pod.sh:76`: the spending bound assumes one live pod and a maximum price that creation does not enforce. Delayed requests can overlap; rejected expensive pods also incur charges. Line 78 ends accounting before possible watchdog cleanup. Mark this estimate provisional and account for overlapping pods, actual prices, and unresolved deletion.
+5. Partly closed — `results/pods/podctl.py:35`, `podctl.py:53`: late success is rejected, but timeout rounding still exceeds fractional remaining budgets. A 0.1-second budget allowed a one-second command. Pass the remaining fractional timeout.
+6. New — `results/pods/reset_pod.sh:92`, `podctl.py:122`: positional `600` is KEEP_ID, not a timeout. Remove it or introduce an explicit timeout argument.
+7. Incomplete verification — `results/pods/test_reset_pod_harness.sh:63`: process-name matching can stop unrelated watchdogs. Track each scenario’s PID and wait for termination. Rerun the isolated harness; add overlap, post-SETTLE creation, and HTTP-error cases. The harness was not rerun in this read-only review.
+
+CONFIDENCE: 0.99.

@@ -149,15 +149,25 @@ def _validate_new(out, rid: str, stage: str, prov: dict, jobs: list[dict]) -> st
     return sha_file(p)
 
 
-def _required(out, jobs: list[dict], ctx: str, src) -> dict:
-    """Every record the context's freeze must hold: exactly its bank inputs, each copy's actual hash equal to the original
-    freeze's, both searches, and its reference, each new record validated with current hashes."""
-    recs = {}
-    for r, h in bank_inputs(src, [ctx]).items():
+def check_bank_copies(out, src, contexts) -> dict:
+    """Exactly the bank inputs, each copy's actual hash equal to the original freeze's."""
+    need = bank_inputs(src, contexts)
+    for r, h in need.items():
         q = R.path_of(out, r)
         if not q.exists() or sha_file(q) != h:
             _refuse(f"{r}: the copy differs from the original freeze")
-        recs[r] = h
+    return need
+
+
+def reference_stage(jobs, out, src) -> None:
+    """Reference construction, after the bank copies are checked (also when resumed at --stage reference)."""
+    check_bank_copies(out, src, [j["context"] for j in jobs]); run_references(jobs, out)
+
+
+def _required(out, jobs: list[dict], ctx: str, src) -> dict:
+    """Every record the context's freeze must hold: exactly its bank inputs, each copy's actual hash equal to the original
+    freeze's, both searches, and its reference, each new record validated with current hashes."""
+    recs = dict(check_bank_copies(out, src, [ctx]))
     for j in (j for j in jobs if j["context"] == ctx):
         recs[j["id"]] = _validate_new(out, j["id"], "search", j["provenance"], jobs)
     rid = f"reference/{ctx}/{LABEL}"; recs[rid] = _validate_new(out, rid, "reference", _ref_provenance(jobs, ctx), jobs)
@@ -201,14 +211,22 @@ def check_spec(jobs: list[dict]) -> None:
             _refuse(f"{j['id']}: the rule specification {j['spec']} is not the runner-up's {EXPECTED_SPEC}")
 
 
-def check_run_evidence(reset_mac, reset_pod, doubling, smoke: bool) -> None:
-    """A full run needs the reset driver's reproduction gate passed on the Mac and passed bit-identically on this machine
-    (--require-identical), each bound to the current reset driver, and the saved doubling reproduction pass."""
+def check_run_evidence(reset_mac, reset_pod, doubling, smoke: bool, want: dict) -> None:
+    """A full run needs the reset driver's headline F111 D2 reproduction gate from the Mac and, bit-identical, from this
+    machine, and its fresh0 F111 D2+H3 doubling gate, each verified (guards.check_reset_evidence)."""
     if smoke:
         return
     if not (reset_mac and reset_pod and doubling):
-        _refuse("a full run needs --reset-mac, --reset-pod and --doubling-evidence")
-    G.check_reset_evidence(reset_mac, reset_pod); G.check_evidence([doubling])
+        _refuse("a full run needs the evidence directories --reset-mac, --reset-pod and --doubling-evidence")
+    G.check_reset_evidence(reset_mac, reset_pod, doubling, want)
+
+
+def evidence_want(src, root: str, cfgs: dict, params: dict, salt: str) -> dict:
+    """The inputs and budget the reset driver's two reproductions must have used, recomputed from the original records."""
+    rj = R.job(R.market("headline", root, 0.2, salt_sha256=salt), "F111", "D2", "profit", params=params)
+    dj = R.job(R.market("fresh0", root, 0.2, cfg=cfgs["fresh0"], salt_sha256=salt), "F111", "D2+H3", "profit", params=params)
+    dbl = F.inputs(src, [dj]); dbl[dj["id"]] = sha_file(R.path_of(src, dj["id"]))
+    return {"repro_inputs": F.inputs(src, [rj]), "dbl_inputs": dbl, "budget": list(rj["budget"]), "src": src}
 
 
 def run_stage(stage: str, jobs, out, workers: int = 1) -> None:
@@ -304,32 +322,42 @@ def main(argv=None) -> int:
     ap.add_argument("--workers", type=int, default=1); ap.add_argument("--smoke", action="store_true")
     ap.add_argument("--reset-mac", default=None, help="the reset reproduction gate directory from the Mac (gate.json, inventory.json)")
     ap.add_argument("--reset-pod", default=None, help="the same gate run on this pod with --require-identical")
-    ap.add_argument("--doubling-evidence", default=None, help="the saved doubling reproduction gate.json")
+    ap.add_argument("--doubling-evidence", default=None, help="the reset driver's doubling gate directory (fresh0 F111 D2+H3)")
     ap.add_argument("--site", choices=("mac", "pod"), default="pod", help="a pod run is paid and needs --started-at")
     ap.add_argument("--cap-usd", dest="cap", type=float, default=3.00); ap.add_argument("--usd-per-hour", dest="rate", type=float, default=0.56)
     ap.add_argument("--started-at", dest="started", type=float, default=None, help="pod allocation time (epoch seconds)")
-    ap.add_argument("--prior-spend-usd", dest="prior", type=float, default=0.0, help="spend of earlier failed attempts of this run")
+    ap.add_argument("--attempts", default=None, help="the launcher's attempts file (closed attempts count toward the cap); required for a paid run")
+    ap.add_argument("--ledger", default=str(ROOT / "docs/revision/budget-ledger.json"), help="recorded spend of earlier launches")
+    ap.add_argument("--run-tag", dest="run_tag", default=None, help="ledger tag prefix of this run's launches (e.g. runner-up); required for a paid run")
+    ap.add_argument("--stop-file", dest="stop_file", default=None, help="the launcher's STOP file, checked before each stage or round")
+    ap.add_argument("--soft-deadline", dest="soft", type=float, default=None, help="the launcher's soft deadline (epoch seconds)")
     a = ap.parse_args(argv); out = Path(a.out); F.check_out(out, a.src)
-    G.pin_settings(); check_run_evidence(a.reset_mac, a.reset_pod, a.doubling_evidence, a.smoke)
+    G.pin_settings()
     from sim.records import cfg_from_dict
     root = json.loads(Path(a.draw).read_text())["hash"]; salt = json.loads(Path(a.instances).read_text())["salt_sha256"]
     container = json.loads(Path(a.addendum).read_text())["deviations"]["configs"]
     cfgs = {k: cfg_from_dict(v) for k, v in json.loads(Path(a.cfgs).read_text()).items()}
+    base_params = json.loads(Path(a.params).read_text())
+    check_run_evidence(a.reset_mac, a.reset_pod, a.doubling_evidence, a.smoke,
+                       {} if a.smoke else evidence_want(a.src, root, cfgs, base_params, salt))
     out.mkdir(parents=True, exist_ok=True); R.install_salt(root, out)
     markets = tuple(a.markets.split(","))
-    jobs = build_jobs(root, cfgs, runner_up_params(json.loads(Path(a.params).read_text())), salt, markets, a.smoke)
+    jobs = build_jobs(root, cfgs, runner_up_params(base_params), salt, markets, a.smoke)
     check_spec(jobs)
     if not a.smoke:
         for j in jobs:
             G.check_budget(j, R.path_of(a.src, R.cell_id(j["context"], LABEL, j["family"], "profit")))
     preflight(out, a.src, jobs, salt, container, a.smoke)
     b = G.binding(inputs_sha=G.sha_json(bank_inputs(a.src, [j["context"] for j in jobs])), provenance={j["id"]: j["provenance"] for j in jobs},
-                  smoke=a.smoke, settings={"markets": list(markets), "spec": EXPECTED_SPEC, "cuts": CUTS}, driver_sha=sha_file(Path(__file__)))
+                  smoke=a.smoke, settings={"markets": list(markets), "spec": EXPECTED_SPEC, "cuts": CUTS}, driver_sha=sha_file(Path(__file__)),
+                  deps={"reset_followup_v2.py": sha_file(HERE.parent / "followup" / "reset_followup_v2.py"), "guards.py": sha_file(HERE / "guards.py"),
+                        "common.py": sha_file(HERE / "common.py"), "plan": sha_file(HERE / "runner-up-plan.md"), "report": sha_file(Path(a.report))})
     if not G.reusable(out / "run.json", b):
         write(out / "run.json", {"binding": b, "label": "runner-up follow-up run"})
     write(out / "label.json", {"rule_label": LABEL, "rule": "C-thr", "cred": runner_up_cred(), "source": str(LOG.relative_to(ROOT)), "deviations": list(DEVIATIONS)})
     paid = a.site == "pod" and not a.smoke
-    cost = G.paid_cost_stop(a.cap, a.rate, a.started, a.prior) if paid else G.CostStop(a.cap, a.rate, a.started if a.started is not None else __import__("time").time(), prior_usd=a.prior)
+    cost = (G.paid_cost_stop(a.cap, a.rate, a.started, a.attempts, a.ledger, a.run_tag, stop_file=a.stop_file, soft_deadline=a.soft) if paid else
+            G.CostStop(a.cap, a.rate, a.started if a.started is not None else __import__("time").time(), stop_file=a.stop_file, soft_deadline=a.soft))
     hours = stage_hours()
     files = {"driver": Path(__file__), "plan": HERE / "runner-up-plan.md", "report": Path(a.report)}
     steps = ("inputs", "search", "reference", "freeze", "evaluate", "doubling", "analysis", "inventory") if a.stage == "all" else (a.stage,)
@@ -343,7 +371,7 @@ def main(argv=None) -> int:
         elif st == "search":
             run_searches(jobs, out, a.workers)
         elif st == "reference":
-            run_references(jobs, out)
+            reference_stage(jobs, out, a.src)
         elif st == "freeze":
             prefreeze(out, jobs, a.src)
         elif st in ("evaluate", "doubling"):

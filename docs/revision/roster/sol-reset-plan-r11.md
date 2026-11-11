@@ -1,0 +1,9 @@
+VERDICT: reject
+CORRECTIONS:
+1. Closed: `results/pods/create_one.py:15` makes one POST per call. `results/pods/reset_pod.sh:92` checks reconciliation and deadlines before each request. `results/pods/podctl.py:53` limits command timeouts and rejects late verification. All 10 supplied test functions passed with offline substitutes. The shell harness was inspected but not run.
+2. Blocker — `results/pods/reset_pod.sh:100`; `results/pods/podctl.py:113`: Empty listings do not resolve pending creation requests. An offline reproduction allowed a second request after reconciliation, then showed two live pods when the first request completed. A creation delayed beyond 300 seconds can also appear after watchdog exit. Require confirmed request resolution or a documented service guarantee before retrying or ending supervision.
+3. Blocker — `results/pods/podctl.py:112`: The watchdog counts empty time before DONE exists. With the hard deadline passed and DONE appearing at second 330, it exited at second 330: zero settlement time after DONE. Start the settlement interval only after DONE exists.
+4. Blocker — `results/pods/create_one.py:21`; `results/pods/runpod.py:13`: Every HTTP error is treated as an unambiguous refusal. An injected HTTP 500 produced `"ambiguous": false`. Server errors can follow creation; classify unclear errors as ambiguous.
+5. Open — `results/pods/reset_pod.sh:78`: The printed spend bound assumes one pod and a price at or below MAXCPH. Finding 2 breaks the first assumption; the above-ceiling scenario breaks the second. Reconciliation failure at line 74 also permits a finite “bound” while billing remains unresolved. Account for overlapping pods and rejected prices, and identify unresolved billing explicitly.
+
+CONFIDENCE: 0.99.
