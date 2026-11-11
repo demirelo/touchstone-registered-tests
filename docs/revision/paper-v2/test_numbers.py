@@ -395,3 +395,17 @@ def test_reset_share_kind():
     # Reset follow-up (2026-11-11): the share S = 1 - G(D2)/G(D2+H3) is stored as `value`; it may exceed 1 (no clipping)
     assert N.KINDS["share_s"]("value", 1.05) and N.KINDS["share_s"]("value", -0.2)
     assert not N.KINDS["share_s"]("estimate", 0.5) and not N.KINDS["share_s"]("value", None) and not N.KINDS["gain"]("value", 0.5)
+
+
+def test_reset_review_r3_kinds():
+    # External review r3 (2026-11-11): the leave-one-out S range is a two-element list; the largest D2 doubling change is
+    # a gain change stored as `max_change`
+    assert N.KINDS["share_s"]("0", 0.97) and N.KINDS["share_s"]("1", 1.09)
+    assert N.KINDS["gain"]("max_change", 0.044) and not N.KINDS["gain"]("max_change", 3)
+
+
+def test_reset_reference_check_kinds():
+    # External review r3 problem 2: the reference replacement check (docs/revision/posthoc/reset_reference/)
+    assert N.KINDS["count"]("refs_with_any_reset", 17)
+    assert N.KINDS["gain"]("G_shift_pooled", 0.0005) and N.KINDS["gain"]("max_abs_replacement_value", 0.009)
+    assert N.KINDS["gain"]("max_abs_validation_mean_diff", 0.007) and N.KINDS["share_s"]("S_with_non_replacing_references", 1.05)
