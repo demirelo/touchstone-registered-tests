@@ -1046,6 +1046,30 @@
   "reset_inventory_sha256": "6f7568ce67ffb40151991ea2ac8e2a9aaf1199e72ed49a27b6d27522f1356fe6",
   "diagnostics_sha256": "a7fb4af6ee9f7bb6abf808c0ba26dda6df3db50721f5fb45cb7be7daf573ce0b"
  },
+ "headline": {
+  "I": {
+   "F000": {
+    "estimate": 0.30671013221229637,
+    "se": 0.001182901599703595
+   },
+   "F111": {
+    "estimate": 0.012407202475643187,
+    "se": 0.0009195769865258557
+   },
+   "C*": {
+    "estimate": 0.04391254994532373,
+    "se": 0.0007766691615778675
+   }
+  },
+  "G": {
+   "D2+H3": {
+    "estimate": 0.30164986971858204
+   },
+   "D2": {
+    "estimate": 0.007346939981928815
+   }
+  }
+ },
  "switches": {
   "F000": {
    "fixed_policy_x0": {

@@ -208,3 +208,18 @@ def test_switch_summary_refuses_a_d2_winner_with_resets():
     d = _diag(0.2, -0.01); d["fresh2@rho0.2|C*"]["d2_base"]["mean_resets"] = 0.01
     with pytest.raises(ValueError, match="reset"):
         RB.switch_summary(d)
+
+
+# ---- headline market (plan section 1, exploratory) ----
+
+def test_headline_i_and_gaps(tmp_path):
+    ev = tmp_path / "eval"; (ev / "evaluate").mkdir(parents=True)
+    gains = {("F000", "D2+H3"): [0.4, 0.3], ("F000", "D2"): [0.1, 0.0], ("F111", "D2+H3"): [0.05, 0.05], ("F111", "D2"): [0.04, 0.02],
+             ("C*", "D2+H3"): [0.1, 0.1], ("C*", "D2"): [0.05, 0.03]}
+    for (r, f), g in gains.items():
+        rid = f"headline@rho0.2|{r}|{f}|profit"
+        (ev / "evaluate" / (RB.safe(rid) + ".json")).write_text(json.dumps({"id": rid, "seeds": [1, 2], "gain": g}))
+    h = RB.headline(ev)
+    assert h["I"]["F000"]["estimate"] == pytest.approx(0.3) and h["I"]["F111"]["estimate"] == pytest.approx(0.02)
+    assert h["I"]["F000"]["se"] == pytest.approx(0.0)                       # paired differences 0.3, 0.3
+    assert h["G"]["D2+H3"]["estimate"] == pytest.approx(0.30) and h["G"]["D2"]["estimate"] == pytest.approx(0.02)

@@ -34,6 +34,7 @@ KINDS = {"count": lambda leaf, v: leaf in COUNT_LEAVES and isinstance(v, int) an
          "gain": lambda leaf, v: leaf in {"estimate", "gain_diff", "gain_diff_lower", "attacker_gain", "0", "1", "q1_frozen", "q1_doubled",
                                           "q4_frozen", "q4_doubled", "mean_gain", "mean", "difference", "pooled", "max_shortfall", "fresh1"} and isinstance(v, float),
          "ratio": lambda leaf, v: leaf == "relative" and isinstance(v, float),
+         "share_s": lambda leaf, v: leaf == "value" and isinstance(v, float),          # reset follow-up S (not clipped)
          "share": lambda leaf, v: leaf == "audited_share" and isinstance(v, float) and 0 <= v <= 1,
          "eff": lambda leaf, v: leaf in {"eff", "eff_lower", "efficiency", "0", "1"} and isinstance(v, float),
          "label": lambda leaf, v: isinstance(v, str)}

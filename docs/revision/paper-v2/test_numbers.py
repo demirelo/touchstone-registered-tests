@@ -389,3 +389,9 @@ def test_kinds_accept_the_followup_review_analyses():
     for leaf in ("over_threshold",):
         assert N.KINDS["count"](leaf, 6)
     assert N.KINDS["gain"]("max_shortfall", 0.021) and N.KINDS["gain"]("fresh1", -0.0147)
+
+
+def test_reset_share_kind():
+    # Reset follow-up (2026-11-11): the share S = 1 - G(D2)/G(D2+H3) is stored as `value`; it may exceed 1 (no clipping)
+    assert N.KINDS["share_s"]("value", 1.05) and N.KINDS["share_s"]("value", -0.2)
+    assert not N.KINDS["share_s"]("estimate", 0.5) and not N.KINDS["share_s"]("value", None) and not N.KINDS["gain"]("value", 0.5)

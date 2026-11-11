@@ -207,6 +207,28 @@ def switch_summary(diag: dict, markets=tuple(f"fresh{i}" for i in range(6))) -> 
     return out
 
 
+def headline(eval_all) -> dict:
+    """Plan section 1 (exploratory): at headline@rho0.2, I per rule with its paired standard error, and the B3 - R3 gaps
+    under D2+H3 and D2, from the registered evaluation records (same seeds and frozen reference per rule)."""
+    g = {}
+    for r in RULES:
+        for f in FAMS:
+            rid = f"headline@rho0.2|{r}|{f}|profit"; rec = _read(Path(eval_all) / "evaluate" / (safe(rid) + ".json"))
+            if rec is None:
+                raise ValueError(f"missing {rid}")
+            g[(r, f)] = (list(rec["seeds"]), np.asarray(rec["gain"], dtype=float))
+    seeds = g[(RULES[0], FAMS[0])][0]
+    if any(v[0] != seeds for v in g.values()):
+        raise ValueError("headline seeds differ between records")
+    out = {"I": {}, "G": {}}
+    for r in RULES:
+        d = g[(r, "D2+H3")][1] - g[(r, "D2")][1]
+        out["I"][r] = {"estimate": float(d.mean()), "se": float(d.std(ddof=1) / np.sqrt(d.size))}
+    for f in FAMS:
+        out["G"][f] = {"estimate": float(np.mean(g[("F000", f)][1] - g[("F111", f)][1]))}   # leaf name fits the paper's gain kind
+    return out
+
+
 def _fmt(est, ci, d: int = 3) -> str:
     if est is None:
         return "--"
@@ -246,6 +268,8 @@ def main(argv=None) -> int:
     res["inputs"] = {"records": str(a.records), "reset": str(a.reset), "report_sha256": hashlib.sha256(Path(a.report).read_bytes()).hexdigest(),
                      "reset_inventory_sha256": (hashlib.sha256((Path(a.reset) / "inventory.json").read_bytes()).hexdigest()
                                                 if (Path(a.reset) / "inventory.json").exists() else None)}
+    hl = Path(a.records) / "evaluate" / (safe("headline@rho0.2|F000|D2|profit") + ".json")
+    res["headline"] = headline(a.records) if hl.exists() else None          # absent only in test fixtures
     if a.diagnostics:
         res["switches"] = switch_summary(json.loads(Path(a.diagnostics).read_text()))
         res["inputs"]["diagnostics_sha256"] = hashlib.sha256(Path(a.diagnostics).read_bytes()).hexdigest()
