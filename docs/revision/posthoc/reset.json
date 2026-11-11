@@ -1043,6 +1043,183 @@
   "records": "/Users/oemer.demirel/Projects/touchstone/results/v2/eval/all",
   "reset": "/Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-pod",
   "report_sha256": "cfe8caa2fd086569c7e02720a28036cf85c7744ad06e78036d35b77faf57c82a",
-  "reset_inventory_sha256": "6f7568ce67ffb40151991ea2ac8e2a9aaf1199e72ed49a27b6d27522f1356fe6"
+  "reset_inventory_sha256": "6f7568ce67ffb40151991ea2ac8e2a9aaf1199e72ed49a27b6d27522f1356fe6",
+  "diagnostics_sha256": "a7fb4af6ee9f7bb6abf808c0ba26dda6df3db50721f5fb45cb7be7daf573ce0b"
+ },
+ "switches": {
+  "F000": {
+   "fixed_policy_x0": {
+    "markets": {
+     "fresh0": 0.2385480329886962,
+     "fresh1": 0.6189227572808907,
+     "fresh2": 0.4921495699484443,
+     "fresh3": 0.39363913204625917,
+     "fresh4": 0.351486304012317,
+     "fresh5": 0.13212200372871663
+    },
+    "pooled": 0.3711446333342207
+   },
+   "fixed_policy_x0_doubled": {
+    "markets": {
+     "fresh0": 0.2385480329886962,
+     "fresh1": 0.6189227572808907,
+     "fresh2": 0.49344820698319636,
+     "fresh3": 0.3929659696787884,
+     "fresh4": 0.3456635680311069,
+     "fresh5": 0.13352288965883008
+    },
+    "pooled": 0.37051190410358475
+   },
+   "reverse_x1": {
+    "markets": {
+     "fresh0": 0.002251714493135686,
+     "fresh1": 0.014260386287167463,
+     "fresh2": 0.006688149212624162,
+     "fresh3": 0.025425319322492698,
+     "fresh4": 0.020282137383037736,
+     "fresh5": 0.12979119519728177
+    },
+    "pooled": 0.03311648364928992
+   },
+   "d2h3_mean_resets": {
+    "markets": {
+     "fresh0": 17.745,
+     "fresh1": 182.54,
+     "fresh2": 155.375,
+     "fresh3": 167.135,
+     "fresh4": 155.195,
+     "fresh5": 8.55
+    },
+    "pooled": 114.42333333333333
+   },
+   "d2h3_p_any_reset": {
+    "markets": {
+     "fresh0": 1.0,
+     "fresh1": 1.0,
+     "fresh2": 1.0,
+     "fresh3": 1.0,
+     "fresh4": 1.0,
+     "fresh5": 1.0
+    },
+    "pooled": 1.0
+   },
+   "d2_mean_resets_max": 0.0
+  },
+  "F111": {
+   "fixed_policy_x0": {
+    "markets": {
+     "fresh0": 0.15979092018267216,
+     "fresh1": 0.07816068428702762,
+     "fresh2": 0.13786271583334941,
+     "fresh3": 0.04482091537987874,
+     "fresh4": 0.02229441726320299,
+     "fresh5": 0.1006206102817632
+    },
+    "pooled": 0.09059171053798236
+   },
+   "fixed_policy_x0_doubled": {
+    "markets": {
+     "fresh0": 0.15977798926037573,
+     "fresh1": 0.049103743863180976,
+     "fresh2": 0.05490955677288321,
+     "fresh3": 0.05000607022737568,
+     "fresh4": 0.021353813770604038,
+     "fresh5": 0.1006206102817632
+    },
+    "pooled": 0.07262863069603047
+   },
+   "reverse_x1": {
+    "markets": {
+     "fresh0": 0.008675729371414942,
+     "fresh1": 0.011766902100833592,
+     "fresh2": 0.002725928858602261,
+     "fresh3": 0.011180282190782083,
+     "fresh4": 0.003929441544929298,
+     "fresh5": 0.013335994346086878
+    },
+    "pooled": 0.00860237973544151
+   },
+   "d2h3_mean_resets": {
+    "markets": {
+     "fresh0": 51.47,
+     "fresh1": 37.08,
+     "fresh2": 37.67,
+     "fresh3": 35.815,
+     "fresh4": 8.315,
+     "fresh5": 28.485
+    },
+    "pooled": 33.13916666666666
+   },
+   "d2h3_p_any_reset": {
+    "markets": {
+     "fresh0": 1.0,
+     "fresh1": 1.0,
+     "fresh2": 1.0,
+     "fresh3": 1.0,
+     "fresh4": 0.95,
+     "fresh5": 1.0
+    },
+    "pooled": 0.9916666666666667
+   },
+   "d2_mean_resets_max": 0.0
+  },
+  "C*": {
+   "fixed_policy_x0": {
+    "markets": {
+     "fresh0": 0.24786967560094403,
+     "fresh1": 0.186036464932977,
+     "fresh2": 0.22955699715591904,
+     "fresh3": 0.0,
+     "fresh4": 0.0988821999055397,
+     "fresh5": 0.17054716800569625
+    },
+    "pooled": 0.155482084266846
+   },
+   "fixed_policy_x0_doubled": {
+    "markets": {
+     "fresh0": 0.22919928468302386,
+     "fresh1": 0.17944695449255607,
+     "fresh2": 0.23021469203539874,
+     "fresh3": 0.08540075885297477,
+     "fresh4": 0.0988821999055397,
+     "fresh5": 0.17054716800569625
+    },
+    "pooled": 0.16561517632919825
+   },
+   "reverse_x1": {
+    "markets": {
+     "fresh0": 0.03410932379906304,
+     "fresh1": 0.01080542803020035,
+     "fresh2": 0.017345611637229256,
+     "fresh3": 0.020924926974909552,
+     "fresh4": 0.016995936271853473,
+     "fresh5": 0.003485047254465238
+    },
+    "pooled": 0.017277712327953484
+   },
+   "d2h3_mean_resets": {
+    "markets": {
+     "fresh0": 20.22,
+     "fresh1": 42.46,
+     "fresh2": 15.935,
+     "fresh3": 0.0,
+     "fresh4": 11.87,
+     "fresh5": 12.65
+    },
+    "pooled": 17.18916666666667
+   },
+   "d2h3_p_any_reset": {
+    "markets": {
+     "fresh0": 1.0,
+     "fresh1": 1.0,
+     "fresh2": 1.0,
+     "fresh3": 0.0,
+     "fresh4": 1.0,
+     "fresh5": 1.0
+    },
+    "pooled": 0.8333333333333334
+   },
+   "d2_mean_resets_max": 0.0
+  }
  }
 }

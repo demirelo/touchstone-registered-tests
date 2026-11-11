@@ -184,3 +184,27 @@ def test_main_writes_json_and_table(tmp_path):
     d = json.loads(out.read_text())
     assert set(d) >= {"base", "doubled", "doubling_flags", "expectations", "label", "inputs"}
     assert (tab / "posthoc_reset.tex").exists()
+
+
+# ---- diagnostics summary (plan section 4) ----
+
+def _diag(eff0, eff1, resets_d2=0.0, mr=50.0):
+    cell = lambda e, key: {"mean_resets": mr if key == "switch_x0" else resets_d2, "p_any_reset": 1.0 if key == "switch_x0" else 0.0,
+                           "mean_ban_rounds": 3.0, key: {"effect": e, "per_seed": [e] * 4, **({"identical": False} if key == "switch_x0" else {})}}
+    return {f"{m}@rho0.2|{r}": {"d2h3_base": cell(eff0, "switch_x0"), "d2h3_doubled": cell(eff0 / 2, "switch_x0"), "d2_base": cell(eff1, "switch_x1")}
+            for m in M6 for r in RB.RULES}
+
+
+def test_switch_summary_pools_by_rule_with_equal_market_weights():
+    d = _diag(0.2, -0.01); d["fresh0@rho0.2|F000"]["d2h3_base"]["switch_x0"]["effect"] = 0.8
+    s = RB.switch_summary(d)
+    assert s["F000"]["fixed_policy_x0"]["pooled"] == pytest.approx((0.8 + 5 * 0.2) / 6)
+    assert s["F111"]["reverse_x1"]["pooled"] == pytest.approx(-0.01)
+    assert s["F111"]["fixed_policy_x0_doubled"]["pooled"] == pytest.approx(0.1)
+    assert s["F000"]["d2_mean_resets_max"] == 0.0 and s["F000"]["d2h3_mean_resets"]["pooled"] == pytest.approx(50.0)
+
+
+def test_switch_summary_refuses_a_d2_winner_with_resets():
+    d = _diag(0.2, -0.01); d["fresh2@rho0.2|C*"]["d2_base"]["mean_resets"] = 0.01
+    with pytest.raises(ValueError, match="reset"):
+        RB.switch_summary(d)

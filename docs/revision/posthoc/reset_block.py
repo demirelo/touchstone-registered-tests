@@ -185,6 +185,28 @@ def reset_block(eval_all, reset_dir, report: dict, markets, b: int = B, seed: in
             "expectations": score(base["expectation_inputs"], dbl["expectation_inputs"])}
 
 
+def switch_summary(diag: dict, markets=tuple(f"fresh{i}" for i in range(6))) -> dict:
+    """Plan section 4, per rule pooled over the markets with equal weights: the fixed-policy switch g(winner) - g(winner,
+    x = 0) of the D2+H3 winners (frozen and doubled), the reverse switch of the D2 winners (x = 1), and the reset counts.
+    Refuses if any D2 winner has a reset (the plan's stop rule)."""
+    out = {}
+    for r in RULES:
+        cells = [diag[f"{m}@rho0.2|{r}"] for m in markets]
+        bad = [m for m, c in zip(markets, cells) if c["d2_base"]["mean_resets"] != 0]
+        if bad:
+            raise ValueError(f"D2 winner of {r} has a reset at {bad}")
+        def pooled(f):
+            xs = {m: f(c) for m, c in zip(markets, cells)}
+            return {"markets": xs, "pooled": float(np.mean(list(xs.values())))}
+        out[r] = {"fixed_policy_x0": pooled(lambda c: c["d2h3_base"]["switch_x0"]["effect"]),
+                  "fixed_policy_x0_doubled": pooled(lambda c: c["d2h3_doubled"]["switch_x0"]["effect"]),
+                  "reverse_x1": pooled(lambda c: c["d2_base"]["switch_x1"]["effect"]),
+                  "d2h3_mean_resets": pooled(lambda c: c["d2h3_base"]["mean_resets"]),
+                  "d2h3_p_any_reset": pooled(lambda c: c["d2h3_base"]["p_any_reset"]),
+                  "d2_mean_resets_max": float(max(c["d2_base"]["mean_resets"] for c in cells))}
+    return out
+
+
 def _fmt(est, ci, d: int = 3) -> str:
     if est is None:
         return "--"
@@ -216,6 +238,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     for k in ("--records", "--reset", "--report", "--out", "--tables"):
         ap.add_argument(k, required=True)
+    ap.add_argument("--diagnostics", default=None, help="the Mac diagnostics.json (plan section 4)")
     ap.add_argument("--resamples", type=int, default=B); ap.add_argument("--seed", type=int, default=SEED)
     a = ap.parse_args(argv)
     markets = tuple(f"fresh{i}" for i in range(6))
@@ -223,6 +246,9 @@ def main(argv=None) -> int:
     res["inputs"] = {"records": str(a.records), "reset": str(a.reset), "report_sha256": hashlib.sha256(Path(a.report).read_bytes()).hexdigest(),
                      "reset_inventory_sha256": (hashlib.sha256((Path(a.reset) / "inventory.json").read_bytes()).hexdigest()
                                                 if (Path(a.reset) / "inventory.json").exists() else None)}
+    if a.diagnostics:
+        res["switches"] = switch_summary(json.loads(Path(a.diagnostics).read_text()))
+        res["inputs"]["diagnostics_sha256"] = hashlib.sha256(Path(a.diagnostics).read_bytes()).hexdigest()
     Path(a.out).write_text(json.dumps(res, indent=1) + "\n")
     d = Path(a.tables); d.mkdir(parents=True, exist_ok=True)
     (d / "posthoc_reset.tex").write_text(table(res).replace("C*", "C$^*$"))
