@@ -346,35 +346,101 @@ def preflight_sample(stage: str, jobs: list[dict]) -> list[dict]:
     return jobs[:1] if stage == "doubling" else []
 
 
-def _measure_child(stage: str, job: dict, out, catalog: list[dict]) -> int:
-    """Run one real stage task of `job` in a child process (its record is written as in production) and return the
-    child's peak RSS in bytes."""
+def _measure_child(stage: str, job: dict, out, catalog: list[dict]) -> dict:
+    """Run one stage task of `job` in a child process (its record is written as in production). Returns the child's peak
+    RSS in bytes and the task status: "done" for a real run, "skipped" when a valid record already existed (review r4)."""
     import pickle
     import subprocess
     jp = Path(out) / f"memory_preflight_{stage}.pkl"; jp.write_bytes(pickle.dumps((stage, job, catalog)))
     r = subprocess.run([sys.executable, str(HERE / "churn_memory.py"), "--task", str(jp), str(out)], capture_output=True, text=True)
     if r.returncode != 0:
         raise SystemExit(f"churn arm refused: memory preflight failed: {r.stderr[-300:]}")
-    return int(json.loads(r.stdout.strip().splitlines()[-1])["peak_rss_bytes"])
+    return json.loads(r.stdout.strip().splitlines()[-1])
+
+
+def _preflight_groups(stage: str, jobs: list[dict]) -> list[list[dict]]:
+    """Candidates per measurement, in job order: one group per rule for evaluate, one group for doubling."""
+    if stage == "evaluate":
+        groups: dict = {}
+        for j in jobs:
+            groups.setdefault(j.get("rule"), []).append(j)
+        return list(groups.values())
+    return [list(jobs)] if stage == "doubling" and jobs else []
+
+
+def _saved_preflight(stage: str, jobs: list[dict], out, limit: int, margin: float) -> dict | None:
+    """A saved measurement of this stage that still applies: same memory limit and margin, a positive peak taken only from
+    real runs, and measured jobs that belong to this job list. Anything else is no evidence."""
+    p = Path(out) / f"memory_preflight_{stage}.json"
+    if not p.exists():
+        return None
+    try:
+        rec = json.loads(p.read_text())
+    except ValueError:
+        return None
+    ids = {j["id"] for j in jobs}
+    ok = (rec.get("stage") == stage and rec.get("limit_bytes") == limit and rec.get("margin") == margin
+          and isinstance(rec.get("task_peak_bytes"), int) and rec["task_peak_bytes"] > 0 and rec.get("measured")
+          and set(rec["measured"]) <= ids and set(rec.get("peaks") or {}) == set(rec["measured"])
+          and rec["task_peak_bytes"] == max(rec["peaks"].values()))
+    return rec if ok else None
 
 
 def memory_preflight(stage: str, jobs: list[dict], out, requested: int, runner=None, limit: int | None = None, parent: int | None = None,
                      margin: float = 1.25) -> dict:
     """Pod-side, before a four-profile stage (plan section 7): run the sample tasks for real in child processes, take the
     largest peak, add a margin of 25 percent for variation across markets, rules and winners, and choose the workers that
-    fit the memory limit beside the parent. The measured tasks' records are kept and not run again."""
+    fit the memory limit beside the parent. The measured tasks' records are kept and not run again.
+    Review r4: a task whose record already existed ("skipped") is no measurement; the next unfinished task of the same
+    group is measured instead. A retry reuses a validated saved measurement; without either, dispatch is refused."""
     import resource
     import time
-    t0 = time.time(); runner = runner or _measure_child; sample = preflight_sample(stage, jobs)
-    peaks = {j["id"]: int(runner(stage, j, out, jobs)) for j in sample}
-    peak = max(peaks.values())
+    t0 = time.time(); runner = runner or _measure_child
     parent = parent if parent is not None else resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * (1 if sys.platform == "darwin" else 1024)
     limit = limit if limit is not None else memory_limit()
+    saved = _saved_preflight(stage, jobs, out, limit, margin)
+    if saved is not None:
+        w = plan_workers(limit, int(margin * saved["task_peak_bytes"]), parent, requested)
+        rec = {**saved, "parent_bytes": parent, "requested": requested, "workers": w, "reused": True, "seconds": time.time() - t0}
+        write(Path(out) / f"memory_preflight_{stage}.json", rec)
+        return rec
+    peaks, skipped = {}, []
+    for group in _preflight_groups(stage, jobs):
+        for j in group:
+            r = runner(stage, j, out, jobs)
+            if r.get("status") == "done":
+                peaks[j["id"]] = int(r["peak_rss_bytes"]); break
+            skipped.append(j["id"])
+        else:
+            raise SystemExit(f"churn arm refused: no memory evidence for {stage} (every task of a group was already done "
+                             f"and no saved measurement applies)")
+    peak = max(peaks.values())
     w = plan_workers(limit, int(margin * peak), parent, requested)
     rec = {"stage": stage, "limit_bytes": limit, "task_peak_bytes": peak, "peaks": peaks, "margin": margin, "parent_bytes": parent,
-           "requested": requested, "workers": w, "measured": [j["id"] for j in sample], "seconds": time.time() - t0}
+           "requested": requested, "workers": w, "measured": list(peaks), "skipped": skipped, "reused": False, "seconds": time.time() - t0}
     write(Path(out) / f"memory_preflight_{stage}.json", rec)
     return rec
+
+
+def saved_workers(out, limit) -> int | None:
+    """The lowest worker count validated on this memory limit by an earlier preflight of this output (any command)."""
+    p = Path(out) / "memory_workers.json"
+    if limit is None or not p.exists():
+        return None
+    try:
+        rec = json.loads(p.read_text())
+    except ValueError:
+        return None
+    w = rec.get("workers")
+    return w if rec.get("limit_bytes") == limit and isinstance(w, int) and w >= 1 else None
+
+
+def save_workers(out, workers: int, limit, stage: str) -> int:
+    prev = saved_workers(out, limit); w = min(workers, prev) if prev else workers
+    p = Path(out) / "memory_workers.json"; old = json.loads(p.read_text()) if p.exists() else {}
+    stages = old.get("stages", {}) if old.get("limit_bytes") == limit else {}
+    write(p, {"workers": w, "limit_bytes": limit, "stages": {**stages, stage: workers}})
+    return w
 
 
 STAGE_SECONDS = {"search": 2084.3, "evaluate": 120.0, "doubling": 997.8, "diagnostics": 60.0}   # benchmark, per job (plan section 7)
@@ -388,7 +454,9 @@ def _run_rate(out, jobs, steps, a, salt_sha, container, p, started) -> None:
     F.check_configs(jobs, container); F.check_salt(out, salt_sha, jobs); F.check_commit(jobs); F.check_code()
     if not a.smoke:
         F.check_pairing(a.src, jobs)
-    slow = 1.33 if p > 0 else 1.0; w_mem = a.workers_eval                     # the memory limit, kept for every later stage
+    slow = 1.33 if p > 0 else 1.0
+    lim = None if a.smoke else memory_limit()                                   # review r4: the limit persists across commands
+    sv = saved_workers(out, lim); w_mem = min(a.workers_eval, sv) if sv else a.workers_eval
     cap = lambda need: check_cap(started, need, a.stop_usd, a.usd_per_hour, prior_usd=a.prior_usd)
     for st in steps:
         if st == "inputs":
@@ -404,11 +472,18 @@ def _run_rate(out, jobs, steps, a, salt_sha, container, p, started) -> None:
             F.accept(out, jobs, salt_sha, container, src=a.src)
             rest = jobs
             if k:
-                mp = memory_preflight(st, jobs, out, w_mem); w_mem = mp["workers"]
+                mp = memory_preflight(st, jobs, out, w_mem)
+                w_mem = save_workers(out, min(w_mem, mp["workers"]), mp.get("limit_bytes", lim), st)
                 rest = [j for j in jobs if j["id"] not in set(mp["measured"])]
                 cap(sec * _waves(len(rest), w_mem))                             # admission again with the chosen workers
             run_stage(st, rest, out, w_mem)
         elif st == "diagnostics":
+            if not a.smoke and len(jobs) > 1:
+                sv = saved_workers(out, lim)
+                if sv is None:
+                    raise SystemExit("churn arm refused: diagnostics needs memory evidence (an evaluate or doubling preflight "
+                                     "of this output on this memory limit)")
+                w_mem = min(w_mem, sv)
             cap(STAGE_SECONDS["diagnostics"] * slow * _waves(len(jobs), w_mem))
             write(Path(out) / "diagnostics.json", diagnostics(out, jobs, w_mem))
         else:

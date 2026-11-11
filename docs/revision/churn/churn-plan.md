@@ -1,4 +1,4 @@
-# Honest-churn arm: plan (draft 4, 2026-11-11; for internal review; no spend yet)
+# Honest-churn arm: plan (draft 5, 2026-11-11; for internal review; no spend yet)
 
 **Why.** The Fable 5.2 fresh review (problem 4, `docs/revision/roster/fable52-paper-r1.md`; triage
 `docs/paper/fable52-triage.md`): in both tests the nine honest opponents never replace their identities, so after the
@@ -6,7 +6,7 @@ start a new identity almost always belongs to the deviating provider. This arm l
 identities and measures how R3's results change. The author asked on 2026-11-10 to "run all necessary sims"; nothing
 runs before this plan has internal consensus and the reservation is recorded in the budget ledger.
 
-**Status.** Draft 4. Exploratory follow-up outside the registered protocol, specified after the second test's results
+**Status.** Draft 5. Exploratory follow-up outside the registered protocol, specified after the second test's results
 were seen. Not an independent replication.
 
 **Changes from draft 3** (internal review round 3, `docs/revision/roster/{sol,astra}-churn-plan-r3.md`, both reject; and
@@ -126,8 +126,9 @@ contrast in either direction.
   A smoke-size run of the whole path for fresh0 R3 at p = 0.05, including the gate path, both winners' diagnostics, and
   the memory preflight on its output; production refuses a missing `--started`, `--gate skip`, and a separate stage
   without a saved passing gate; the worker limit fits the memory limit. All pass: `uv run pytest -q docs/revision/churn`
-  (23 passed: also the bit-identity pod gate, the preflight's real-task sample, and admission after the preflight with
-  the kept worker limit).
+  (28 passed: also the bit-identity pod gate, the preflight's real-task sample, admission after the preflight with
+  the kept worker limit, a skipped record never counted as a measurement, a retry reusing only an applicable saved
+  measurement, and the worker limit kept across separate-stage commands, the diagnostics included).
 - **(c) The p = 0 gate, first on the pod.** The driver runs fresh0 R3 D2+H3 at p = 0 through the injected path (inputs,
   search, freeze, acceptance, evaluation, doubling) into `gate-p0/`, maps the id `|churn0` to the registered id, and
   compares search and evaluation by the reset driver's `compare` and the doubling check by `compare_doubling`
@@ -196,14 +197,24 @@ the doubling stage (`memory_preflight`): real tasks in child processes, one eval
 each writing its production record (not run again); the largest peak times a margin of 1.25 for variation across
 markets, rules and winners; the cgroup limit and the parent's own peak; workers = min(current limit,
 floor((0.9 x limit - parent) / (1.25 x peak))), saved in `memory_preflight_<stage>.json`; the driver refuses if no task
-fits. The chosen limit is kept for every later stage, the diagnostics included (two profiles per task, below the
-evaluate task). **Admission and the preflight:** before a stage the cost admission covers the preflight's serial tasks
+fits. **A task whose record already exists is no measurement** (review r4): the child reports the task status, and a
+"skipped" task is replaced by the next unfinished task of the same rule (evaluate) or stage (doubling). A retry reuses a
+saved measurement only if it applies (same memory limit and margin, peaks from real runs only, measured jobs in the
+current job list); with neither, the driver refuses. **The chosen limit persists across commands:** it is saved in
+`memory_workers.json` with the memory limit, and every later command on that output (a separate stage, a resumed run)
+starts from the lowest saved limit that matches its memory limit; the diagnostics (two profiles per task, below the
+evaluate task) refuse to dispatch without such a saved limit. **Admission and the preflight:** before a stage the cost admission covers the preflight's serial tasks
 plus the remaining jobs at the current limit; after the preflight it runs again for the remaining jobs at the chosen
 limit, and stops between stages if the cap would be passed.
 
-**Billed pod time** (one 16-vCPU pod, 0.56 USD per hour): the gate cell serially, then per rate the 18 searches in two
-waves of 16 and the evaluation, doubling and diagnostics in two waves of 9, plus 0.6 hours of preparation and idle:
-**5.95 hours, 3.33 USD**.
+**Billed pod time** (one 16-vCPU pod, 0.56 USD per hour; `docs/revision/churn/churn_cost.py`): the gate cell serially,
+then per rate the 18 searches in two waves of 16; the evaluation as three serial preflight tasks plus 15 jobs in two waves
+of 9; the doubling as one serial preflight task plus 17 jobs in two waves of 9; the diagnostics in two waves of 9; plus
+0.6 hours of preparation and idle: **6.88 hours, 3.85 USD** (5.95 hours and 3.33 USD without the serial preflight tasks).
+If the preflight cuts the evaluation workers to 2, the same arithmetic gives 12.44 hours, 6.97 USD, still below the
+stop cap; the admission after each preflight recomputes the stage cost at the chosen workers. The serial tasks add
+billed time, not core-hours, so the reservation below (4.43 USD unpadded, 5.54 USD reserved) still covers the expected
+3.85 USD.
 
 **Budget** (author, 2026-11-10). The arm uses the shared ledger category `followup` (cap 22 USD for all follow-up runs).
 Before the pod: `docs/revision/followup/budget_followup.py --reserve churn-pod 4.43` (the unpadded estimate; the
@@ -241,7 +252,9 @@ verifies the deletion; the watchdog keeps deleting until no pod of this name rem
 - Timing and peek: `uv run python docs/revision/churn/churn_timing.py` (40 fresh0 evaluation seeds; 6.48, 7.34, 8.62 s).
 - Memory: `uv run python docs/revision/churn/churn_memory.py none` and `... 0.05` (981.0 and 1,084.4 MB).
 - Cost: benchmark arithmetic over `experiments/v2/benchmark/timings.json` with the measured slowdowns, the worker limits
-  above and two waves per stage (41.06 core-hours, 4.43 USD; 5.35 hours of stages plus 0.6, 5.95 billed hours, 3.33 USD).
+  above and two waves per stage (41.06 core-hours, 4.43 USD).
+- Billed time: `uv run python docs/revision/churn/churn_cost.py` (6.28 hours of stages plus 0.6, 6.88 billed hours,
+  3.85 USD; 5.95 hours, 3.33 USD without the serial preflight tasks; 12.44 hours, 6.97 USD at two evaluation workers).
 - Reselection-by-regeneration cost: `sim/manifest_v2.py` `menu_families` and `bank_rules(ctx, fam, 3, False)` over the six
   markets and three rules: 60 D2+H3 and 60 X7-SC searches per rate, 12.19 USD per rate.
-- Tests: `uv run pytest -q docs/revision/churn` (23 passed, 129 s).
+- Tests: `uv run pytest -q docs/revision/churn` (28 passed, 150 s).

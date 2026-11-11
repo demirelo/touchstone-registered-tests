@@ -100,8 +100,13 @@ def test_smoke_path_for_one_fresh_cell_under_churn(tmp_path):
     from sim.records import cfg_from_dict
     cfgs = {k: cfg_from_dict(v) for k, v in json.loads((MAIN / "deviation/cfg_linux.json").read_text()).items()}
     j = C.build_jobs(root, cfgs, json.loads((C.F.ROOT / "experiments/v2/params.json").read_text()), salt, 0.05, ("fresh0",), ("F111",), True)[0]
-    mp = C.memory_preflight("evaluate", [j], d, 9)                                              # the pod-side preflight, run on the smoke output
+    with pytest.raises(SystemExit, match="memory evidence"):                                   # r4: an existing record is no measurement
+        C.memory_preflight("evaluate", [j], d, 9)
+    ep = C.R.eval_path(d, rid); ep.rename(tmp_path / "eval_kept.json")                         # the task is unfinished again
+    mp = C.memory_preflight("evaluate", [j], d, 9)                                              # the pod-side preflight, a real child run
+    assert mp["measured"] == [rid] and not mp["reused"] and ep.exists()                        # it ran and wrote the production record
     assert mp["task_peak_bytes"] > 0 and mp["parent_bytes"] > 0 and 1 <= mp["workers"] <= 9 and read(d / "memory_preflight_evaluate.json") == mp
+    assert read(ep)["gain"] == read(tmp_path / "eval_kept.json")["gain"]
     assert inv["churn"] == 0.05 and "churn_driver_sha256" in inv["environment"]
 
 
@@ -333,7 +338,7 @@ def test_r3_preflight_measures_real_tasks_one_per_rule_and_the_doubling(tmp_path
     jobs = [{"id": f"m{i}|{r}", "rule": r, "context": f"m{i}"} for i in range(2) for r in ("F111", "C*", "F000")]
     peaks = {"F111": 2.0, "C*": 2.6, "F000": 2.2}; ran = []
     def runner(stage, job, out, catalog):
-        ran.append((stage, job["id"])); return int(peaks[job["rule"]] * 2 ** 30)
+        ran.append((stage, job["id"])); return {"peak_rss_bytes": int(peaks[job["rule"]] * 2 ** 30), "status": "done"}
     G = 2 ** 30
     ev = C.memory_preflight("evaluate", jobs, tmp_path, 9, runner=runner, limit=32 * G, parent=G)
     assert [j for s, j in ran] == ["m0|F111", "m0|C*", "m0|F000"]                              # one real task per rule
@@ -361,3 +366,84 @@ def test_r3_admission_is_rerun_after_the_preflight_and_the_reduced_workers_persi
     assert needs[2] == round(s["doubling"] * f * (1 + 9))                                      # doubling: one preflight task + 17 jobs at the kept two workers
     assert needs[3] == round(s["doubling"] * f * 9)
     assert ("evaluate", 2, 17) in runs and ("doubling", 2, 17) in runs and ("diagnostics", 2, 18) in runs   # the limit persists
+
+
+# ---- internal review round 4 (Sol, Astra: reject) ----
+
+def _rate_env(monkeypatch, tmp_path, workers_by_stage, limit=32 * 2 ** 30):
+    """_run_rate with every check stubbed; the preflight returns the given workers per stage."""
+    needs, runs, pre = [], [], []
+    monkeypatch.setattr(C, "check_cap", lambda started, need_s, *a, **k: needs.append(round(need_s)))
+    monkeypatch.setattr(C, "memory_limit", lambda: limit)
+    def mp(stage, jobs, out, req, **k):
+        pre.append((stage, req)); return {"workers": min(req, workers_by_stage[stage]), "measured": [jobs[0]["id"]], "limit_bytes": limit, "seconds": 1.0}
+    monkeypatch.setattr(C, "memory_preflight", mp)
+    monkeypatch.setattr(C, "run_stage", lambda st, jobs, out, w: runs.append((st, w, len(jobs))))
+    monkeypatch.setattr(C.F, "accept", lambda *a, **k: None)
+    monkeypatch.setattr(C, "diagnostics", lambda out, jobs, w: runs.append(("diagnostics", w, len(jobs))) or {})
+    for f in ("check_configs", "check_salt", "check_commit", "check_code", "check_pairing"):
+        monkeypatch.setattr(C.F, f, lambda *a, **k: None)
+    a = NS(smoke=False, src="s", workers_search=16, workers_eval=9, stop_usd=8.0, usd_per_hour=0.56, prior_usd=0.0)
+    jobs = [{"id": f"j{i}", "churn": 0.05, "rule": ("F111", "C*", "F000")[i % 3]} for i in range(18)]
+    return a, jobs, needs, runs, pre
+
+
+def test_r4_a_skipped_record_is_never_a_memory_measurement(tmp_path):
+    # Review r4: on resume, _run_one returns "skipped" for a valid record, so the child measures no real task.
+    jobs = [{"id": f"m{i}|{r}", "rule": r} for i in range(3) for r in ("F111", "C*", "F000")]
+    G = 2 ** 30; peaks = {"F111": 2.0, "C*": 2.6, "F000": 2.2}; ran = []
+    done_before = {"m0|F111", "m0|C*"}                                                         # records left by a crashed earlier attempt
+    def runner(stage, job, out, catalog):
+        ran.append(job["id"])
+        if job["id"] in done_before:
+            return {"peak_rss_bytes": int(0.3 * G), "status": "skipped"}
+        return {"peak_rss_bytes": int(peaks[job["rule"]] * G), "status": "done"}
+    ev = C.memory_preflight("evaluate", jobs, tmp_path, 9, runner=runner, limit=32 * G, parent=G)
+    assert "m0|F111" in ran and "m0|C*" in ran                                                 # the skipped attempts happened
+    assert ran == ["m0|F111", "m1|F111", "m0|C*", "m1|C*", "m0|F000"]                          # each was replaced by a real task
+    assert ev["task_peak_bytes"] == int(2.6 * G) and ev["measured"] == ["m1|F111", "m1|C*", "m0|F000"]
+    assert all(v >= int(2.0 * G) for v in ev["peaks"].values())
+
+
+def test_r4_a_rule_with_only_skipped_records_and_no_saved_peak_is_refused(tmp_path):
+    jobs = [{"id": f"m{i}|F111", "rule": "F111"} for i in range(2)]; called = []
+    def runner(stage, job, out, catalog):
+        called.append(job["id"]); return {"peak_rss_bytes": 1, "status": "skipped"}
+    with pytest.raises(SystemExit, match="memory evidence"):
+        C.memory_preflight("evaluate", jobs, tmp_path, 9, runner=runner, limit=32 * 2 ** 30, parent=2 ** 30)
+    assert called == ["m0|F111", "m1|F111"]
+
+
+def test_r4_a_partial_stage_retry_reuses_the_validated_saved_peak(tmp_path):
+    jobs = [{"id": f"m{i}|{r}", "rule": r} for i in range(2) for r in ("F111", "C*")]; G = 2 ** 30
+    first = C.memory_preflight("evaluate", jobs, tmp_path, 9, runner=lambda s, j, o, c: {"peak_rss_bytes": int(2.6 * G), "status": "done"},
+                               limit=32 * G, parent=G)
+    assert (tmp_path / "memory_preflight_evaluate.json").exists()                               # the retry finds a saved measurement
+    called = []
+    def runner(stage, job, out, catalog):
+        called.append(job["id"]); return {"peak_rss_bytes": 1, "status": "skipped"}
+    again = C.memory_preflight("evaluate", jobs, tmp_path, 9, runner=runner, limit=32 * G, parent=G)
+    assert called == [] and again["task_peak_bytes"] == first["task_peak_bytes"] and again["workers"] == first["workers"] and again["reused"]
+    with pytest.raises(SystemExit, match="memory evidence"):                                   # a saved peak from another memory limit does not apply
+        C.memory_preflight("evaluate", jobs, tmp_path, 9, runner=runner, limit=64 * G, parent=G)
+
+
+def test_r4_the_worker_limit_persists_across_separate_stage_commands(tmp_path, monkeypatch):
+    a, jobs, needs, runs, pre = _rate_env(monkeypatch, tmp_path, {"evaluate": 2, "doubling": 5})
+    C._run_rate(tmp_path, jobs, ("evaluate",), a, "salt", {}, 0.05, started=1.0)
+    assert ("evaluate", 2, 17) in runs
+    C._run_rate(tmp_path, jobs, ("diagnostics",), a, "salt", {}, 0.05, started=1.0)          # a separate command
+    assert runs[-1] == ("diagnostics", 2, 18)
+    C._run_rate(tmp_path, jobs, ("doubling",), a, "salt", {}, 0.05, started=1.0)
+    assert pre[-1] == ("doubling", 2) and runs[-1] == ("doubling", 2, 17)                     # the lowest limit is kept
+
+
+def test_r4_diagnostics_without_memory_evidence_is_refused(tmp_path, monkeypatch):
+    a, jobs, needs, runs, pre = _rate_env(monkeypatch, tmp_path, {"evaluate": 2, "doubling": 2})
+    with pytest.raises(SystemExit, match="memory evidence"):
+        C._run_rate(tmp_path, jobs, ("diagnostics",), a, "salt", {}, 0.05, started=1.0)
+    assert not runs
+    C._run_rate(tmp_path, jobs, ("evaluate",), a, "salt", {}, 0.05, started=1.0)
+    monkeypatch.setattr(C, "memory_limit", lambda: 64 * 2 ** 30)                              # another pod: the saved limit does not apply
+    with pytest.raises(SystemExit, match="memory evidence"):
+        C._run_rate(tmp_path, jobs, ("diagnostics",), a, "salt", {}, 0.05, started=1.0)
