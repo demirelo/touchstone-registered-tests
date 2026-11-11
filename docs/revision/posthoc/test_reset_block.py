@@ -101,7 +101,7 @@ def test_missing_cell_is_reported_not_imputed():
 def test_seed_mismatch_refused(tmp_path):
     ev, rs = _write(tmp_path, seeds_d2=list(range(1, 41)))
     with pytest.raises(ValueError, match="seeds"):
-        RB.load(ev, rs, _report(tmp_path, ev), M6)
+        RB.load(ev, rs, _report(tmp_path, ev), M6, n_seeds=40)
 
 
 def test_expectation_scoring_met_failed_not_established():
@@ -146,7 +146,7 @@ def _report(tmp, ev, n=40):
 
 def test_load_reads_base_and_doubled_and_flags(tmp_path):
     ev, rs = _write(tmp_path)
-    L = RB.load(ev, rs, _report(tmp_path, ev), M6)
+    L = RB.load(ev, rs, _report(tmp_path, ev), M6, n_seeds=40)
     assert np.allclose(L["base"]["fresh0"]["D2"]["F000"], 0.1) and np.allclose(L["doubled"]["fresh0"]["D2"]["F000"], 0.2)
     assert np.allclose(L["doubled"]["fresh0"]["D2+H3"]["C*"], 0.3)
     f = L["flags"]["fresh0|F000|D2"]
@@ -157,7 +157,7 @@ def test_doubled_d2h3_seeds_must_match(tmp_path):
     ev, rs = _write(tmp_path); rep = _report(tmp_path, ev)
     rep["doubling"]["fresh4@rho0.2|F111|D2+H3|profit"]["heldout"]["seeds"] = list(range(1, 41))
     with pytest.raises(ValueError, match="seeds"):
-        RB.load(ev, rs, rep, M6)
+        RB.load(ev, rs, rep, M6, n_seeds=40)
 
 
 # ---- table and command line ----
@@ -180,7 +180,7 @@ def test_table_prints_not_defined_for_an_undefined_share():
 def test_main_writes_json_and_table(tmp_path):
     ev, rs = _write(tmp_path); rep = tmp_path / "report.json"; rep.write_text(json.dumps(_report(tmp_path, ev)))
     out, tab = tmp_path / "reset.json", tmp_path / "tables"
-    assert RB.main(["--records", str(ev), "--reset", str(rs), "--report", str(rep), "--out", str(out), "--tables", str(tab), "--resamples", "49"]) == 0
+    assert RB.main(["--records", str(ev), "--reset", str(rs), "--report", str(rep), "--out", str(out), "--tables", str(tab), "--resamples", "49", "--n-seeds", "40"]) == 0
     d = json.loads(out.read_text())
     assert set(d) >= {"base", "doubled", "doubling_flags", "expectations", "label", "inputs"}
     assert (tab / "posthoc_reset.tex").exists()
@@ -219,7 +219,51 @@ def test_headline_i_and_gaps(tmp_path):
     for (r, f), g in gains.items():
         rid = f"headline@rho0.2|{r}|{f}|profit"
         (ev / "evaluate" / (RB.safe(rid) + ".json")).write_text(json.dumps({"id": rid, "seeds": [1, 2], "gain": g}))
-    h = RB.headline(ev)
+    h = RB.headline(ev, n_seeds=2)
     assert h["I"]["F000"]["estimate"] == pytest.approx(0.3) and h["I"]["F111"]["estimate"] == pytest.approx(0.02)
     assert h["I"]["F000"]["se"] == pytest.approx(0.0)                       # paired differences 0.3, 0.3
     assert h["G"]["D2+H3"]["estimate"] == pytest.approx(0.30) and h["G"]["D2"]["estimate"] == pytest.approx(0.02)
+
+
+# ---- internal review r1 (Sol 1-2, Astra 1-2) ----
+
+def test_a_wholly_missing_market_is_reported_and_withholds_pooled_results():
+    c = _cells(); del c["fresh5"]
+    r = RB.analyse(c, b=99, seed=1, markets=M6)
+    assert {f"fresh5|{x}|{f}" for x in RB.RULES for f in RB.FAMS} <= set(r["missing"])
+    assert r["S"]["pooled"]["value"] is None and r["G"]["D2+H3"]["pooled"]["estimate"] is None
+    assert r["expectation_inputs"]["all_markets"]["B3-R3"] is None and r["expectation_inputs"]["S"] is None
+
+
+def test_load_keeps_a_market_with_no_records(tmp_path):
+    ev, rs = _write(tmp_path)
+    for p in list((ev / "evaluate").glob("fresh2*")) + list((rs / "evaluate").glob("fresh2*")):
+        p.unlink()
+    L = RB.load(ev, rs, _report(tmp_path, ev), M6, n_seeds=40)
+    assert "fresh2" in L["base"] and L["base"]["fresh2"] == {}
+
+
+@pytest.mark.parametrize("bad", ["short", "dupe", "nan", "count"])
+def test_load_rejects_malformed_records(tmp_path, bad):
+    ev, rs = _write(tmp_path); p = rs / "evaluate" / (RB.safe("fresh1@rho0.2|F111|D2|profit") + ".json"); d = json.loads(p.read_text())
+    if bad == "short":
+        d["gain"] = d["gain"][:-1]
+    elif bad == "dupe":
+        for root in (ev, rs):                              # same duplicated seed list everywhere, so only uniqueness fails
+            for q in (root / "evaluate").glob("fresh1*"):
+                e = json.loads(q.read_text()); e["seeds"] = [1] + e["seeds"][1:]; q.write_text(json.dumps(e))
+        d = json.loads(p.read_text())
+    elif bad == "nan":
+        d["gain"][3] = float("nan")
+    p.write_text(json.dumps(d))
+    with pytest.raises(ValueError):
+        RB.load(ev, rs, _report(tmp_path, ev), M6, n_seeds=(41 if bad == "count" else 40))
+
+
+def test_valid_names_each_defect():
+    ok = {"seeds": [1, 2, 3], "gain": [0.1, 0.2, 0.3]}
+    assert RB._valid(ok, "x", 3).shape == (3,)
+    for src, msg in (({"seeds": [1, 1, 3], "gain": [0.1, 0.2, 0.3]}, "duplicate"), ({"seeds": [1, 2, 3], "gain": [0.1, 0.2]}, "gains for"),
+                     ({"seeds": [1, 2, 3], "gain": [0.1, float("inf"), 0.3]}, "non-finite"), (ok, "expected 4")):
+        with pytest.raises(ValueError, match=msg):
+            RB._valid(src, "x", 4 if msg == "expected 4" else 3)

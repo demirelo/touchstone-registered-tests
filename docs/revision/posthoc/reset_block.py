@@ -29,10 +29,22 @@ def _read(p: Path):
     return json.loads(p.read_text()) if p.exists() else None
 
 
-def load(eval_all, reset_dir, report: dict, markets) -> dict:
+def _valid(src: dict, rid: str, n_seeds: int) -> np.ndarray:
+    """Internal review r1: one-dimensional finite gains, one per seed, unique seeds, the expected seed count."""
+    g = np.asarray(src["gain"], dtype=float); seeds = list(src["seeds"])
+    if g.ndim != 1 or g.size != len(seeds) or len(seeds) != n_seeds:
+        raise ValueError(f"{rid}: {g.size} gains for {len(seeds)} seeds (expected {n_seeds})")
+    if len(set(seeds)) != len(seeds):
+        raise ValueError(f"{rid}: duplicate seed identifiers")
+    if not np.all(np.isfinite(g)):
+        raise ValueError(f"{rid}: non-finite gain")
+    return g
+
+
+def load(eval_all, reset_dir, report: dict, markets, n_seeds: int = 200) -> dict:
     """Base and doubled per-seed gains, {version: {market: {family: {rule: array}}}}, plus the D2 doubling flags.
     Refuses if the seeds of a market differ between any rule, family or version (the pairing needs one seed list)."""
-    base, dbl, flags = {}, {}, {}
+    base, dbl, flags = {m: {} for m in markets}, {m: {} for m in markets}, {}   # a market with no record stays, empty
     for m in markets:
         seeds = None
         for fam in FAMS:
@@ -53,7 +65,7 @@ def load(eval_all, reset_dir, report: dict, markets) -> dict:
                         seeds = list(src["seeds"])
                     elif list(src["seeds"]) != seeds:
                         raise ValueError(f"seeds of {rid} ({ver}) differ from the market's seed list")
-                    store.setdefault(m, {}).setdefault(fam, {})[rule] = np.asarray(src["gain"], dtype=float)
+                    store[m].setdefault(fam, {})[rule] = _valid(src, f"{rid} ({ver})", n_seeds)
     return {"base": base, "doubled": dbl, "flags": flags}
 
 
@@ -113,9 +125,9 @@ def _have(pm, key):
 def _boot(cells: dict, markets, b: int, rng) -> list[dict]:
     """b replicates; each replicate draws one index vector per market, shared by every rule and family of that market."""
     reps = []
-    n = {m: len(next(iter(next(iter(cells[m].values())).values()))) for m in markets}
+    n = {m: next((len(a) for f in cells[m].values() for a in f.values()), 0) for m in markets}
     for _ in range(b):
-        reps.append({m: _market_stats(cells[m], rng.integers(0, n[m], n[m])) for m in markets})
+        reps.append({m: (_market_stats(cells[m], rng.integers(0, n[m], n[m])) if n[m] else {}) for m in markets})
     return reps
 
 
@@ -136,8 +148,11 @@ def _gated_share(pm_point, reps, markets) -> dict:
             "denominator_lower_bound": lb[0]}
 
 
-def analyse(cells: dict, b: int = B, seed: int = SEED) -> dict:
-    """Point estimates with paired percentile intervals, the gated share, market sensitivity and expectation inputs."""
+def analyse(cells: dict, b: int = B, seed: int = SEED, markets=None) -> dict:
+    """Point estimates with paired percentile intervals, the gated share, market sensitivity and expectation inputs.
+    `markets` names the expected markets; an absent one is kept empty, so its cells are reported missing (review r1)."""
+    if markets is not None:
+        cells = {m: cells.get(m, {}) for m in markets}
     cells, missing = _complete(cells); ms = tuple(cells)
     pm = {m: _market_stats(cells[m]) for m in ms}
     reps = _boot(cells, ms, b, np.random.default_rng(seed))
@@ -177,9 +192,9 @@ def score(base: dict, dbl: dict) -> dict:
     return out
 
 
-def reset_block(eval_all, reset_dir, report: dict, markets, b: int = B, seed: int = SEED) -> dict:
-    L = load(eval_all, reset_dir, report, markets)
-    base, dbl = analyse(L["base"], b, seed), analyse(L["doubled"], b, seed)
+def reset_block(eval_all, reset_dir, report: dict, markets, b: int = B, seed: int = SEED, n_seeds: int = 200) -> dict:
+    L = load(eval_all, reset_dir, report, markets, n_seeds)
+    base, dbl = analyse(L["base"], b, seed, markets), analyse(L["doubled"], b, seed, markets)
     return {"label": "exploratory follow-up (reset experiment plan draft 5); descriptive, not registered",
             "base": base, "doubled": dbl, "doubling_flags": L["flags"],
             "expectations": score(base["expectation_inputs"], dbl["expectation_inputs"])}
@@ -207,7 +222,7 @@ def switch_summary(diag: dict, markets=tuple(f"fresh{i}" for i in range(6))) -> 
     return out
 
 
-def headline(eval_all) -> dict:
+def headline(eval_all, n_seeds: int = 200) -> dict:
     """Plan section 1 (exploratory): at headline@rho0.2, I per rule with its paired standard error, and the B3 - R3 gaps
     under D2+H3 and D2, from the registered evaluation records (same seeds and frozen reference per rule)."""
     g = {}
@@ -216,7 +231,7 @@ def headline(eval_all) -> dict:
             rid = f"headline@rho0.2|{r}|{f}|profit"; rec = _read(Path(eval_all) / "evaluate" / (safe(rid) + ".json"))
             if rec is None:
                 raise ValueError(f"missing {rid}")
-            g[(r, f)] = (list(rec["seeds"]), np.asarray(rec["gain"], dtype=float))
+            g[(r, f)] = (list(rec["seeds"]), _valid(rec, rid, n_seeds))
     seeds = g[(RULES[0], FAMS[0])][0]
     if any(v[0] != seeds for v in g.values()):
         raise ValueError("headline seeds differ between records")
@@ -261,15 +276,16 @@ def main(argv=None) -> int:
     for k in ("--records", "--reset", "--report", "--out", "--tables"):
         ap.add_argument(k, required=True)
     ap.add_argument("--diagnostics", default=None, help="the Mac diagnostics.json (plan section 4)")
+    ap.add_argument("--n-seeds", dest="n_seeds", type=int, default=200, help="evaluation seeds per record")
     ap.add_argument("--resamples", type=int, default=B); ap.add_argument("--seed", type=int, default=SEED)
     a = ap.parse_args(argv)
     markets = tuple(f"fresh{i}" for i in range(6))
-    res = reset_block(a.records, a.reset, json.loads(Path(a.report).read_text()), markets, a.resamples, a.seed)
+    res = reset_block(a.records, a.reset, json.loads(Path(a.report).read_text()), markets, a.resamples, a.seed, a.n_seeds)
     res["inputs"] = {"records": str(a.records), "reset": str(a.reset), "report_sha256": hashlib.sha256(Path(a.report).read_bytes()).hexdigest(),
                      "reset_inventory_sha256": (hashlib.sha256((Path(a.reset) / "inventory.json").read_bytes()).hexdigest()
                                                 if (Path(a.reset) / "inventory.json").exists() else None)}
     hl = Path(a.records) / "evaluate" / (safe("headline@rho0.2|F000|D2|profit") + ".json")
-    res["headline"] = headline(a.records) if hl.exists() else None          # absent only in test fixtures
+    res["headline"] = headline(a.records, a.n_seeds) if hl.exists() else None          # absent only in test fixtures
     if a.diagnostics:
         res["switches"] = switch_summary(json.loads(Path(a.diagnostics).read_text()))
         res["inputs"]["diagnostics_sha256"] = hashlib.sha256(Path(a.diagnostics).read_bytes()).hexdigest()

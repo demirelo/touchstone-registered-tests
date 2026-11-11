@@ -1,0 +1,2235 @@
+OpenAI Codex v0.162.1
+--------
+workdir: /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+model: gpt-6-astra
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1cbb0-afb3-7643-864c-38a95e26e8f5
+--------
+user
+# Reset follow-up: analysis code and paper change, internal review round 1 (read-only; no paid APIs; do not read `sealed/`, `~/touchstone-h4`, or `~/h4-session.out`; reasoning effort high; under 400 words)
+
+The reset pod ran (gate bit-identical; 18 D2 cells; records in `/Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-pod/`, inventory verified, 228 records 0 bad). Mac diagnostics with the pod's code: `/Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-mac-diag/` (`spot_compare.json`: the spot cell matches the pod, counts exact, max abs diff 2.2e-16).
+
+Spec: `docs/revision/reset-experiment-plan.md` sections 1, 2, 4, 5, 6, 8 (steps 5 and 6). Commits to review: 3e286c1, 41bafd2, 05d1240, 0f62b18 (`git show`).
+
+Files:
+- `docs/revision/posthoc/reset_block.py` and `test_reset_block.py` (20 tests): loading, paired bootstrap, gated S, leave-one-out, sign counts, expectation scoring, switch summary, headline values, table, CLI.
+- `docs/revision/posthoc/reset.json` (output) and `docs/revision/paper-v2/tables/posthoc_reset.tex`.
+- `docs/revision/paper-v2/main.tex`: the paragraph "Identity replacement and the B3--R3 gap (exploratory follow-up)" and `tab:ph-reset`; `sites.json` (29 new `rs_*` sites); `numbers_v2.py` (new kind `share_s`) and `test_numbers.py`.
+
+Rulings to accept or reject:
+1. A separate module with its own command line, not new code inside `posthoc_v2.py` (plan step 6 says "a new reset block in posthoc_v2.py"); posthoc.json and its tables are untouched.
+2. Bootstrap seed 20261109 (the plan fixes no seed).
+3. The paper sentence "Within the D2 family, at the fixed parameters and search budgets, most of the estimated B3 minus R3 gap under the prescribed searches disappears when the attacker cannot replace its identity" is used because the pooled-S expectation scored "met" (plan section 6).
+
+Check:
+(1) Each statistic of plan section 5 and each scoring rule of section 6 is implemented as written (pairing: one index vector per market for every rule and family; pooled = mean of six market means; gate on the lower bound of pooled G(D2+H3) > 0.05, also per leave-one-out; base and doubled separately; met / failed / not established; missing or undefined reported separately).
+(2) The loaded records are the right ones (D2+H3 from `results/v2/eval/all`, D2 from the pod, doubled D2+H3 from `report.json` doubling heldout, doubled D2 from the pod's doubling records) and the seeds checks are sound.
+(3) Every number in the paragraph and table matches `reset.json`, and the prose claims nothing the plan forbids (it is a descriptive follow-up specified after the headline contrast was seen; no confirmatory claim; I is a difference of two prescribed searches).
+(4) Defects the tests miss.
+
+Output exactly:
+VERDICT: accept | accept-with-caveat | reject
+CORRECTIONS: numbered, each with file:line, or "none".
+CONFIDENCE: 0 to 1.
+
+2026-11-11T17:38:37.137151Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: HTTP error: 426 Upgrade Required, url: ws://127.0.0.1:11434/api/codex/v1/responses
+2026-11-11T17:38:37.518780Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: HTTP error: 426 Upgrade Required, url: ws://127.0.0.1:11434/api/codex/v1/responses
+2026-11-11T17:38:37.908192Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: HTTP error: 426 Upgrade Required, url: ws://127.0.0.1:11434/api/codex/v1/responses
+hook: SessionStart
+hook: SessionStart Completed
+codex
+I will check the four commits against the plan, source records, and paper values. I will use read-only commands and avoid the excluded paths and paid APIs.
+
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg -n 'touchstone|reset-experiment|reset_block' /Users/oemer.demirel/.codex/memories/MEMORY.md" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+501:# Task Group: anthropic-residency-application-writing-and-touchstone-research
+510:- rollout_summaries/2026-11-03T12-32-03-zdzn-anthropic_residency_writing_touchstone_research_plan.md (cwd=/Users/oemer.demirel/Documents/Codex/2026-11-03/why-anthropic-anthropic-sets-the-frontier, rollout_path=/Users/oemer.demirel/.codex/sessions/2026/11/03/rollout-2026-11-03T13-32-03-01a1a165-260e-7180-9d34-c9dc6bf34b4d.jsonl, updated_at=2026-11-03T13:02:09+00:00, thread_id=01a1a165-260e-7180-9d34-c9dc6bf34b4d, success; application answers finalized)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+exec
+/bin/zsh -lc 'git status --short && git show --stat --oneline 3e286c1 41bafd2 05d1240 0f62b18' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+?? docs/revision/roster/astra-reset-results-r1.log
+?? docs/revision/roster/sol-reset-results-r1.log
+3e286c1 Reset block of the post-hoc analysis (plan draft 5, sections 5-6), tests first, before any result is computed
+ docs/revision/posthoc/reset_block.py      | 235 ++++++++++++++++++++++++++++++
+ docs/revision/posthoc/test_reset_block.py | 186 +++++++++++++++++++++++
+ 2 files changed, 421 insertions(+)
+41bafd2 Reset follow-up results: reset block on the pod records (results/v2/followup-reset-pod), 9,999 resamples
+ docs/revision/paper-v2/tables/posthoc_reset.tex |   16 +
+ docs/revision/posthoc/reset.json                | 1048 +++++++++++++++++++++++
+ 2 files changed, 1064 insertions(+)
+05d1240 Reset block: switch summary of the Mac diagnostics (plan section 4), tests first; spot check vs pod passed
+ docs/revision/posthoc/reset.json          | 179 +++++++++++++++++++++++++++++-
+ docs/revision/posthoc/reset_block.py      |  26 +++++
+ docs/revision/posthoc/test_reset_block.py |  24 ++++
+ 3 files changed, 228 insertions(+), 1 deletion(-)
+0f62b18 Paper: reset follow-up paragraph and table (tab:ph-reset) in section 9, with the headline numbers of plan section 1
+ docs/revision/paper-v2/floats.json        |   2 +-
+ docs/revision/paper-v2/main.tex           |   6 ++
+ docs/revision/paper-v2/numbers.tex        |  29 ++++++
+ docs/revision/paper-v2/numbers_v2.py      |   1 +
+ docs/revision/paper-v2/sites.json         | 145 ++++++++++++++++++++++++++++++
+ docs/revision/paper-v2/test_numbers.py    |   6 ++
+ docs/revision/posthoc/reset.json          |  24 +++++
+ docs/revision/posthoc/reset_block.py      |  24 +++++
+ docs/revision/posthoc/test_reset_block.py |  15 ++++
+ 9 files changed, 251 insertions(+), 1 deletion(-)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'cat docs/revision/reset-experiment-plan.md' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc 'nl -ba docs/revision/posthoc/reset_block.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc 'nl -ba docs/revision/posthoc/test_reset_block.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+     1	"""The reset block of the post-hoc analysis (docs/revision/reset-experiment-plan.md, draft 5, sections 5 and 6).
+     2	
+     3	I(r, m) = mean over the evaluation seeds of g(D2+H3 winner) - g(D2 winner), both against the frozen reference of (r, m).
+     4	Rules: B3 = F000, R3 = F111, C*. Gaps G(fam) = g_B3 - g_R3 under one family. Share S = 1 - G(D2) / G(D2+H3), pooled,
+     5	reported only if the lower bound of pooled G(D2+H3) exceeds 0.05. Intervals: paired seed bootstrap, percentile 95%,
+     6	the same resampled seed indices for every rule and family of a market; pooled = equal-weight mean of the market means,
+     7	seeds resampled independently within each market. Descriptive; no test, no registered decision changes.
+     8	"""
+     9	from __future__ import annotations
+    10	
+    11	import json
+    12	from pathlib import Path
+    13	
+    14	import numpy as np
+    15	
+    16	RULES = ("F000", "F111", "C*")
+    17	FAMS = ("D2+H3", "D2")
+    18	B = 9999
+    19	SEED = 20261109                       # fixed bootstrap seed (the plan's date of specification)
+    20	GATE = 0.05
+    21	CONTRASTS = {"B3-R3": ("F000", "F111"), "C*-R3": ("C*", "F111")}
+    22	
+    23	
+    24	def safe(rid: str) -> str:
+    25	    return rid.replace("|", "__").replace("/", "~").replace("*", "star")      # revision_v2._safe
+    26	
+    27	
+    28	def _read(p: Path):
+    29	    return json.loads(p.read_text()) if p.exists() else None
+    30	
+    31	
+    32	def load(eval_all, reset_dir, report: dict, markets) -> dict:
+    33	    """Base and doubled per-seed gains, {version: {market: {family: {rule: array}}}}, plus the D2 doubling flags.
+    34	    Refuses if the seeds of a market differ between any rule, family or version (the pairing needs one seed list)."""
+    35	    base, dbl, flags = {}, {}, {}
+    36	    for m in markets:
+    37	        seeds = None
+    38	        for fam in FAMS:
+    39	            for rule in RULES:
+    40	                rid = f"{m}@rho0.2|{rule}|{fam}|profit"
+    41	                root = Path(eval_all) if fam == "D2+H3" else Path(reset_dir)
+    42	                r = _read(root / "evaluate" / (safe(rid) + ".json"))
+    43	                if fam == "D2+H3":
+    44	                    h = report.get("doubling", {}).get(rid)
+    45	                else:
+    46	                    d = _read(Path(reset_dir) / "doubling" / (safe(rid) + ".json")); h = d
+    47	                    if d is not None:
+    48	                        flags[f"{m}|{rule}|D2"] = {k: d[k] for k in ("attack_change", "reference_change", "incomplete")}
+    49	                for ver, src, store in (("base", r, base), ("doubled", (h or {}).get("heldout"), dbl)):
+    50	                    if src is None:
+    51	                        continue
+    52	                    if seeds is None:
+    53	                        seeds = list(src["seeds"])
+    54	                    elif list(src["seeds"]) != seeds:
+    55	                        raise ValueError(f"seeds of {rid} ({ver}) differ from the market's seed list")
+    56	                    store.setdefault(m, {}).setdefault(fam, {})[rule] = np.asarray(src["gain"], dtype=float)
+    57	    return {"base": base, "doubled": dbl, "flags": flags}
+    58	
+    59	
+    60	def _complete(cells: dict) -> tuple[dict, list]:
+    61	    """Markets with every rule and family, and the list of missing cells (reported, never imputed)."""
+    62	    ok, missing = {}, []
+    63	    for m, v in cells.items():
+    64	        miss = [f"{m}|{r}|{f}" for f in FAMS for r in RULES if r not in v.get(f, {})]
+    65	        missing += miss
+    66	        ok[m] = v
+    67	    return ok, missing
+    68	
+    69	
+    70	def _market_stats(v: dict, idx=None) -> dict:
+    71	    """Per-market means of the statistics for one market (optionally on resampled seed indices)."""
+    72	    g = {f: {r: (a if idx is None else a[idx]) for r, a in v.get(f, {}).items()} for f in FAMS}
+    73	    out = {}
+    74	    for r in RULES:
+    75	        if r in g["D2+H3"] and r in g["D2"]:
+    76	            out[("I", r)] = float(np.mean(g["D2+H3"][r] - g["D2"][r]))
+    77	    for name, (a, b) in CONTRASTS.items():
+    78	        if ("I", a) in out and ("I", b) in out:
+    79	            out[("C", name)] = out[("I", a)] - out[("I", b)]
+    80	    for f in FAMS:
+    81	        if "F000" in g[f] and "F111" in g[f]:
+    82	            out[("G", f)] = float(np.mean(g[f]["F000"] - g[f]["F111"]))
+    83	    return out
+    84	
+    85	
+    86	def _pool(per_market: dict, key, markets) -> float | None:
+    87	    xs = [per_market[m][key] for m in markets if key in per_market[m]]
+    88	    return float(np.mean(xs)) if xs and len(xs) == len(markets) else None
+    89	
+    90	
+    91	def _share(gd2, gd2h3):
+    92	    return None if gd2 is None or gd2h3 is None or gd2h3 == 0 else 1 - gd2 / gd2h3
+    93	
+    94	
+    95	def statistics(cells: dict) -> dict:
+    96	    """Point estimates: per market and pooled (pooled only over markets where the statistic exists in all of them)."""
+    97	    pm = {m: _market_stats(v) for m, v in cells.items()}; ms = tuple(cells)
+    98	    res = {"I": {}, "contrast": {}, "G": {}}
+    99	    for r in RULES:
+   100	        res["I"][r] = {"markets": {m: pm[m][("I", r)] for m in ms if ("I", r) in pm[m]}, "pooled": _pool(pm, ("I", r), _have(pm, ("I", r)))}
+   101	    for c in CONTRASTS:
+   102	        res["contrast"][c] = {"markets": {m: pm[m][("C", c)] for m in ms if ("C", c) in pm[m]}, "pooled": _pool(pm, ("C", c), _have(pm, ("C", c)))}
+   103	    for f in FAMS:
+   104	        res["G"][f] = {"markets": {m: pm[m][("G", f)] for m in ms if ("G", f) in pm[m]}, "pooled": _pool(pm, ("G", f), _have(pm, ("G", f)))}
+   105	    res["S"] = {"pooled": _share(res["G"]["D2"]["pooled"], res["G"]["D2+H3"]["pooled"])}
+   106	    return res
+   107	
+   108	
+   109	def _have(pm, key):
+   110	    return tuple(m for m in pm if key in pm[m])
+   111	
+   112	
+   113	def _boot(cells: dict, markets, b: int, rng) -> list[dict]:
+   114	    """b replicates; each replicate draws one index vector per market, shared by every rule and family of that market."""
+   115	    reps = []
+   116	    n = {m: len(next(iter(next(iter(cells[m].values())).values()))) for m in markets}
+   117	    for _ in range(b):
+   118	        reps.append({m: _market_stats(cells[m], rng.integers(0, n[m], n[m])) for m in markets})
+   119	    return reps
+   120	
+   121	
+   122	def _ci(xs):
+   123	    xs = np.asarray([x for x in xs if x is not None], dtype=float)
+   124	    return [float(np.percentile(xs, 2.5)), float(np.percentile(xs, 97.5))] if xs.size else None
+   125	
+   126	
+   127	def _gated_share(pm_point, reps, markets) -> dict:
+   128	    """S over `markets` with its denominator gate (lower bound of pooled G(D2+H3) over the same markets above 0.05)."""
+   129	    g1 = _pool(pm_point, ("G", "D2+H3"), markets); g0 = _pool(pm_point, ("G", "D2"), markets)
+   130	    lb = _ci([_pool(r, ("G", "D2+H3"), markets) for r in reps])
+   131	    if g1 is None or g0 is None or lb is None:
+   132	        return {"value": None, "reason": "not defined: a cell is missing", "ci95": None}
+   133	    if not lb[0] > GATE:
+   134	        return {"value": None, "reason": f"not defined: lower bound of pooled G(D2+H3) {lb[0]:.4f} <= {GATE}", "ci95": None}
+   135	    return {"value": _share(g0, g1), "reason": "defined", "ci95": _ci([_share(_pool(r, ("G", "D2"), markets), _pool(r, ("G", "D2+H3"), markets)) for r in reps]),
+   136	            "denominator_lower_bound": lb[0]}
+   137	
+   138	
+   139	def analyse(cells: dict, b: int = B, seed: int = SEED) -> dict:
+   140	    """Point estimates with paired percentile intervals, the gated share, market sensitivity and expectation inputs."""
+   141	    cells, missing = _complete(cells); ms = tuple(cells)
+   142	    pm = {m: _market_stats(cells[m]) for m in ms}
+   143	    reps = _boot(cells, ms, b, np.random.default_rng(seed))
+   144	    res = {"missing": missing, "bootstrap": {"resamples": b, "seed": seed, "interval": "percentile 95%"}}
+   145	
+   146	    def block(kind, key_of, names):
+   147	        out = {}
+   148	        for nm in names:
+   149	            k = key_of(nm); have = _have(pm, k)
+   150	            out[nm] = {"markets": {m: {"estimate": pm[m][k], "ci95": _ci([r[m].get(k) for r in reps])} for m in have},
+   151	                       "pooled": {"estimate": _pool(pm, k, have) if len(have) == len(ms) else None,
+   152	                                  "ci95": _ci([_pool(r, k, have) for r in reps]) if len(have) == len(ms) else None}}
+   153	        return out
+   154	    res["I"] = block("I", lambda r: ("I", r), RULES)
+   155	    res["contrast"] = block("C", lambda c: ("C", c), tuple(CONTRASTS))
+   156	    res["G"] = block("G", lambda f: ("G", f), FAMS)
+   157	    res["S"] = {"pooled": _gated_share(pm, reps, ms)}
+   158	    signs = {c: {"positive": int(sum(1 for m in ms if pm[m].get(("C", c), 0) > 0)), "n": int(sum(1 for m in ms if ("C", c) in pm[m]))} for c in CONTRASTS}
+   159	    loo = {m: _gated_share(pm, reps, tuple(x for x in ms if x != m)) for m in ms} if len(ms) > 1 else {}
+   160	    res["sensitivity"] = {"signs": signs, "S_leave_one_out": loo}
+   161	    six = len(ms) == 6
+   162	    res["expectation_inputs"] = {"all_markets": {c: (signs[c]["positive"] == 6 if six and signs[c]["n"] == 6 else None) for c in CONTRASTS},
+   163	                                 "S": res["S"]["pooled"]["value"]}
+   164	    return res
+   165	
+   166	
+   167	def score(base: dict, dbl: dict) -> dict:
+   168	    """Plan section 6: met if it holds under both the base and the doubled searches, failed if under neither,
+   169	    not established (search-sensitive) if they disagree; undefined S and missing cells are reported as such."""
+   170	    def one(a, b):
+   171	        if a is None or b is None:
+   172	            return "missing cell"
+   173	        return "met" if a and b else "failed" if not a and not b else "not established (search-sensitive)"
+   174	    out = {f"{c} on all six": one(base["all_markets"][c], dbl["all_markets"][c]) for c in CONTRASTS}
+   175	    sb, sd = base["S"], dbl["S"]
+   176	    out["pooled S > 0.5"] = "S not defined" if sb is None or sd is None else one(sb > 0.5, sd > 0.5)
+   177	    return out
+   178	
+   179	
+   180	def reset_block(eval_all, reset_dir, report: dict, markets, b: int = B, seed: int = SEED) -> dict:
+   181	    L = load(eval_all, reset_dir, report, markets)
+   182	    base, dbl = analyse(L["base"], b, seed), analyse(L["doubled"], b, seed)
+   183	    return {"label": "exploratory follow-up (reset experiment plan draft 5); descriptive, not registered",
+   184	            "base": base, "doubled": dbl, "doubling_flags": L["flags"],
+   185	            "expectations": score(base["expectation_inputs"], dbl["expectation_inputs"])}
+   186	
+   187	
+   188	def switch_summary(diag: dict, markets=tuple(f"fresh{i}" for i in range(6))) -> dict:
+   189	    """Plan section 4, per rule pooled over the markets with equal weights: the fixed-policy switch g(winner) - g(winner,
+   190	    x = 0) of the D2+H3 winners (frozen and doubled), the reverse switch of the D2 winners (x = 1), and the reset counts.
+   191	    Refuses if any D2 winner has a reset (the plan's stop rule)."""
+   192	    out = {}
+   193	    for r in RULES:
+   194	        cells = [diag[f"{m}@rho0.2|{r}"] for m in markets]
+   195	        bad = [m for m, c in zip(markets, cells) if c["d2_base"]["mean_resets"] != 0]
+   196	        if bad:
+   197	            raise ValueError(f"D2 winner of {r} has a reset at {bad}")
+   198	        def pooled(f):
+   199	            xs = {m: f(c) for m, c in zip(markets, cells)}
+   200	            return {"markets": xs, "pooled": float(np.mean(list(xs.values())))}
+   201	        out[r] = {"fixed_policy_x0": pooled(lambda c: c["d2h3_base"]["switch_x0"]["effect"]),
+   202	                  "fixed_policy_x0_doubled": pooled(lambda c: c["d2h3_doubled"]["switch_x0"]["effect"]),
+   203	                  "reverse_x1": pooled(lambda c: c["d2_base"]["switch_x1"]["effect"]),
+   204	                  "d2h3_mean_resets": pooled(lambda c: c["d2h3_base"]["mean_resets"]),
+   205	                  "d2h3_p_any_reset": pooled(lambda c: c["d2h3_base"]["p_any_reset"]),
+   206	                  "d2_mean_resets_max": float(max(c["d2_base"]["mean_resets"] for c in cells))}
+   207	    return out
+   208	
+   209	
+   210	def headline(eval_all) -> dict:
+   211	    """Plan section 1 (exploratory): at headline@rho0.2, I per rule with its paired standard error, and the B3 - R3 gaps
+   212	    under D2+H3 and D2, from the registered evaluation records (same seeds and frozen reference per rule)."""
+   213	    g = {}
+   214	    for r in RULES:
+   215	        for f in FAMS:
+   216	            rid = f"headline@rho0.2|{r}|{f}|profit"; rec = _read(Path(eval_all) / "evaluate" / (safe(rid) + ".json"))
+   217	            if rec is None:
+   218	                raise ValueError(f"missing {rid}")
+   219	            g[(r, f)] = (list(rec["seeds"]), np.asarray(rec["gain"], dtype=float))
+   220	    seeds = g[(RULES[0], FAMS[0])][0]
+   221	    if any(v[0] != seeds for v in g.values()):
+   222	        raise ValueError("headline seeds differ between records")
+   223	    out = {"I": {}, "G": {}}
+   224	    for r in RULES:
+   225	        d = g[(r, "D2+H3")][1] - g[(r, "D2")][1]
+   226	        out["I"][r] = {"estimate": float(d.mean()), "se": float(d.std(ddof=1) / np.sqrt(d.size))}
+   227	    for f in FAMS:
+   228	        out["G"][f] = {"estimate": float(np.mean(g[("F000", f)][1] - g[("F111", f)][1]))}   # leaf name fits the paper's gain kind
+   229	    return out
+   230	
+   231	
+   232	def _fmt(est, ci, d: int = 3) -> str:
+   233	    if est is None:
+   234	        return "--"
+   235	    return f"{est:.{d}f}" + (f" [{ci[0]:.{d}f}, {ci[1]:.{d}f}]" if ci else "")
+   236	
+   237	
+   238	ROWS = (("I(B3)", "I", "F000"), ("I(R3)", "I", "F111"), ("I(C*)", "I", "C*"), ("I(B3) - I(R3)", "contrast", "B3-R3"),
+   239	        ("I(C*) - I(R3)", "contrast", "C*-R3"), ("G(D2+H3)", "G", "D2+H3"), ("G(D2)", "G", "D2"))
+   240	
+   241	
+   242	def table(res: dict) -> str:
+   243	    """Pooled statistics (equal market weights) with 95% paired percentile intervals, frozen and doubled searches."""
+   244	    lines = ["\\begin{tabular}{lll}", "\\hline", "Statistic & frozen searches & doubled searches \\\\", "\\hline"]
+   245	    for label, kind, key in ROWS:
+   246	        cells = [_fmt(res[v][kind][key]["pooled"]["estimate"], res[v][kind][key]["pooled"]["ci95"]) for v in ("base", "doubled")]
+   247	        lines.append(f"{label} & {cells[0]} & {cells[1]} \\\\")
+   248	    s = [res[v]["S"]["pooled"] for v in ("base", "doubled")]
+   249	    lines.append("S & " + " & ".join(_fmt(x["value"], x["ci95"], 2) if x["value"] is not None else "not defined" for x in s) + " \\\\")
+   250	    for c in CONTRASTS:
+   251	        lines.append(f"markets with {c.replace('B3-R3', 'I(B3) > I(R3)').replace('C*-R3', 'I(C*) > I(R3)')} & "
+   252	                     + " & ".join(f"{res[v]['sensitivity']['signs'][c]['positive']} of {res[v]['sensitivity']['signs'][c]['n']}" for v in ("base", "doubled")) + " \\\\")
+   253	    lines += ["\\hline", "\\end{tabular}"]
+   254	    return "\n".join(lines) + "\n"
+   255	
+   256	
+   257	def main(argv=None) -> int:
+   258	    import argparse
+   259	    import hashlib
+   260	    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+   261	    for k in ("--records", "--reset", "--report", "--out", "--tables"):
+   262	        ap.add_argument(k, required=True)
+   263	    ap.add_argument("--diagnostics", default=None, help="the Mac diagnostics.json (plan section 4)")
+   264	    ap.add_argument("--resamples", type=int, default=B); ap.add_argument("--seed", type=int, default=SEED)
+   265	    a = ap.parse_args(argv)
+   266	    markets = tuple(f"fresh{i}" for i in range(6))
+   267	    res = reset_block(a.records, a.reset, json.loads(Path(a.report).read_text()), markets, a.resamples, a.seed)
+   268	    res["inputs"] = {"records": str(a.records), "reset": str(a.reset), "report_sha256": hashlib.sha256(Path(a.report).read_bytes()).hexdigest(),
+   269	                     "reset_inventory_sha256": (hashlib.sha256((Path(a.reset) / "inventory.json").read_bytes()).hexdigest()
+   270	                                                if (Path(a.reset) / "inventory.json").exists() else None)}
+   271	    hl = Path(a.records) / "evaluate" / (safe("headline@rho0.2|F000|D2|profit") + ".json")
+   272	    res["headline"] = headline(a.records) if hl.exists() else None          # absent only in test fixtures
+   273	    if a.diagnostics:
+   274	        res["switches"] = switch_summary(json.loads(Path(a.diagnostics).read_text()))
+   275	        res["inputs"]["diagnostics_sha256"] = hashlib.sha256(Path(a.diagnostics).read_bytes()).hexdigest()
+   276	    Path(a.out).write_text(json.dumps(res, indent=1) + "\n")
+   277	    d = Path(a.tables); d.mkdir(parents=True, exist_ok=True)
+   278	    (d / "posthoc_reset.tex").write_text(table(res).replace("C*", "C$^*$"))
+   279	    print(json.dumps(res["expectations"], indent=1))
+   280	    return 0
+   281	
+   282	
+   283	if __name__ == "__main__":
+   284	    import sys
+   285	    sys.exit(main())
+
+ succeeded in 0ms:
+# Reset experiment: plan (draft 5, 2026-11-10; draft 4 had internal consensus and the author's approval, cap 10 USD; no spend yet)
+
+**Why.** The round-9 fresh reviewer (problem 2, `docs/paper/external-review-r9.md`): the gain is excess profit when
+identity replacement is available; it does not show how much of that profit comes from the ability to replace an
+identity. This plan measures that, within the searched D2 family, on the second test's markets.
+
+**Draft 5** (2026-11-10) applies the Fable 5.2 driver review (`docs/revision/roster/fable52-reset-driver-r1.md`, triage
+`docs/paper/fable52-triage.md`): a reproduction criterion that a cross-platform run can meet, a pod gate, the driver's
+location under `docs/`, the diagnostics built and run free before the pod, a doubling ground truth, and clarified scoring.
+It needs one internal review round.
+
+**Status.** Draft 4 applied the round-3 caveats (`docs/revision/roster/{sol,astra}-reset-plan-r{1,2,3}.md`; round 3: both accept-with-caveat).
+After consensus: a decision card for the author. Nothing runs before the author approves the spend. This file is frozen
+(commit hash in the operations ledger) before any paid cell starts.
+
+## 1. What already exists (free; seen before this plan)
+
+The D2+H3 family is D2 plus one binary knob `x` (`sim/policies/identity.py`: `x = 1` exits in the round after a failed
+audit and re-enters under a fresh identity; `x = 0` is plain D2). Design 8.1 listed D2 on all seven markets ("Matched core
+extras"); budget cut 3 removed the fresh-market D2 cells, so D2 was run at the headline market only. At `headline@rho0.2`,
+same 200 evaluation seeds, same frozen reference per rule (checked: `seeds` and reference `upstream` hashes equal):
+
+| Rule | g(D2+H3) | g(D2) | I = g(D2+H3) - g(D2) | Paired SE of I | D2+H3 doubling check |
+|---|---:|---:|---:|---:|---|
+| B2 | 0.5851 | 0.0027 | 0.5824 | 0.0011 | not scheduled |
+| B3 (F000) | 0.3502 | 0.0435 | 0.3067 | 0.0012 | flagged |
+| R3 (F111) | 0.0486 | 0.0361 | 0.0124 | 0.0009 | flagged |
+| C* | 0.0872 | 0.0433 | 0.0439 | 0.0008 | not flagged |
+
+Source: `results/v2/eval/all/evaluate/headline@rho0.2__{rule}__{D2+H3,D2}__profit.json`, field `gain`; flags from
+`report.json` `search_flagged`; the D2 cells had no scheduled doubling check. At `headline@rho1`, R3 and C* are in the
+terminal-reserve collapse and I is 0.0025.
+
+Reading, exploratory: at the headline market the D2+H3 search leaves about 0.31 more gain than the D2 search against B3,
+and about 0.01 against R3; the B3 - R3 gap is 0.302 under D2+H3 and 0.007 under D2.
+
+## 2. Estimand
+
+For rule r in {B3 (F000), R3 (F111), C*} and fresh market m:
+
+I(r, m) = mean over the 200 evaluation seeds of g(D2+H3 winner) - g(D2 winner),
+
+both against the same frozen truthful reference of (r, m), so the reference term cancels. **I is a difference between two
+prescribed finite searches over nested families (D2 within D2+H3), not an identified optimal value of replacement and not
+a system-wide prohibition of replacement.** The two searches differ in dimension, Sobol starts, and corner sets (D2 128,
+D2+H3 256 corner vectors), with the same restart and evaluation budgets; the two winners can differ in every knob, not
+only `x`. A negative I can come from search error. The fixed-policy diagnostic in section 4 separates the switch from
+re-optimisation.
+
+## 3. Cells and execution contract
+
+- **New search cells.** D2 x {F000, F111, C*} x fresh0..fresh5 at rho 0.2: 18 cells, exactly the design-8.1 cells that cut
+  3 removed, with their registered settings (D2 knob space and budget, the market's training seeds for search, its 200
+  evaluation seeds), each with a doubling check (design 6.5, held-out evaluation of the doubled winner on the same seeds).
+- **Driver.** A separate follow-up script (`docs/revision/followup/reset_followup_v2.py`, under `docs/` because the code
+  freeze allows changes only there; written and tested before any spend) that
+  imports the frozen stage functions of `scripts/revision_v2.py` at the protocol-v2 tag (`job`, `stage_search`, the
+  evaluation and doubling stages) and builds the 18 jobs from the uncut cell list. It bypasses only three things, each
+  recorded as a deviation: the fixed manifest path and cut list (`sim/manifest_v2.py` `effective`), the hard-coded doubling
+  eligibility (`doublings`), and the original freeze. It writes to a new directory (`results/v2/followup-reset/`) and
+  never writes to `results/v2/eval/all`.
+- **Inputs the frozen stages read.** The search, evaluation, and doubling stages read their dependencies from the output
+  directory (`menu()`, `reference_of()`, `select_reference()`). Before any episode, the driver copies into the new
+  directory, read-only, every record those stages read for the 18 cells: the frozen reference records, the search
+  records and bank-source records that build each (context, rule) menu, and the original cuts-3 bank membership. It
+  takes the list from the `upstream` fields of the existing records and checks each copy's SHA-256 against them; it
+  refuses on any missing record or mismatch.
+- **Two freezes.** A pre-evaluation freeze after the 18 searches: selected policies, references, configurations, seeds,
+  and search records, with their hashes (the frozen evaluation stage requires it). Evaluation and doubling then run
+  against that freeze, and a final inventory lists every output record with its hash. The inventory is written after
+  the outputs, so no record hashes itself.
+- **Freeze validator.** The frozen `run()` calls `accept()`, which requires the original manifest's full record set, so it
+  cannot admit the 18 restored cells. The driver therefore has its own acceptance check, run before evaluation and before
+  doubling: every record of the follow-up dependency set (the copied inputs, the 18 search records, the pre-evaluation
+  freeze) exists and matches its hash; the identity-salt hash matches; each new job's configuration hash equals the
+  recorded container hash. Copied records keep their original provenance, including their recorded configuration
+  hashes. Tests: it refuses a missing freeze, a changed selected-policy record, a changed salt, and a changed copied input.
+- **References in doubling.** The held-out gain of a doubled winner uses the unchanged frozen reference. Any reference
+  reselection the doubling stage computes is recorded as a diagnostic only.
+- **References.** The existing frozen reference records are read, not re-selected; the driver refuses to start if any
+  reference file's SHA-256 differs from the hash in the original records' `upstream`.
+- **Configurations.** Linux pods from the same image as the evaluation; before any episode the driver checks that each
+  fresh market's configuration hash equals the recorded container hash (`addendum.json` `deviations.configs`), so the
+  new cells use the same configurations as the D2+H3 records they are paired with (the recorded 1-ulp deviation stays as
+  it is).
+- **Pairing and code checks (draft 5).** Before any episode the driver refuses a job whose runner, salt, configuration,
+  root, seeds, rule parameters, or context differ from its frozen reference's provenance; an unknown commit; a runner or
+  `sim/` that differs from protocol-v2; an output inside `--src` or `eval/all`; and a salt mismatch. The inventory records
+  Python, numpy, machine, platform, and the driver's hash.
+- **Validation before spend (free, on the Mac).** (a) Reproduction of the registered `headline@rho0.2|F111|D2` search and
+  evaluation. Draft 4 required identical knobs and per-seed gains. Measured on 2026-11-09/10: a Mac arm64 run and a Linux
+  amd64 container run both match on configuration, salt, runner, budget, rule parameters, episode count (15,660), archive
+  sizes, and the twin result, with selected knobs equal to 2.6e-13 relative and per-seed gains to 2.0e-14; evaluating the
+  registered knobs on the Mac gives per-seed gains within 5e-17 of the record (102 of 200 seeds bit-identical). The
+  evaluation of fixed knobs is not always this close: one of the 128 corner controls of the Mac rerun differs by 1.5e-5
+  with identical knobs (the other 127 within 2e-18), consistent with a near-tie flipping a discrete branch in an episode;
+  in the Linux container all 128 controls are bit-identical to the record. The drift source is therefore not isolated to
+  the optimiser. Last-bit
+  arithmetic differences grow through the search; these runs did not reproduce bit identity across platforms, and the
+  draft-4 rule is replaced as a recorded deviation. **Draft-5 criterion** (`compare()`). Exact: the provenance keys runner, salt, configuration, rule
+  parameters, root, training, validation and evaluation seeds, context and budget (the commit may differ); the episode
+  count; the attack and twin archive sizes; `best_source`; the discrete knobs; the search and evaluation dependency ids;
+  the reference hash; the control set (knobs in order). Within 1e-9: the twin's best value. Reported, not gated: the
+  corner controls' objective values (count and largest difference), because a near-tie in a non-selected corner policy
+  can flip a discrete branch. Finite: the knobs, the attack, twin and control objective values, and the per-seed gains. Tolerance: continuous knobs within 1e-9 relative and per-seed
+  gains within 1e-9 absolute (about 10^4 times the drift measured, and far below the paired standard error of about
+  0.0009). The Mac runs pass this criterion. **Pod gate:** the pod first reruns the same reproduction (about 0.34 USD of
+  billed time: 2,084 s search plus evaluation at 0.56 USD per hour); the author decided (card `touchstone-reset-repro-pass`,
+  2026-11-10) that the 18 cells start only if the pod's reproduction is bit-identical (`--reproduce --require-identical`);
+  any difference stops the pod and is reported. The draft-5 criterion applies to the Mac validations (`identical` requires bit-equal knobs, gains, twin value,
+  attack objective and every control value). The reproduction path runs every pre-episode check
+  (salt, commit, code, pairing, configuration) before its search and saves `gate.json` and an inventory with the
+  environment (Python, numpy with BLAS and LAPACK, SciPy, CMA, CPU). (b) An
+  integration test runs the complete path (input copies, search, pre-evaluation freeze, evaluation, doubling, inventory)
+  for one fresh-market cell at smoke size, including the driver's acceptance check, which proves every dependency
+  resolves (passed, 2026-11-09). (d) Doubling ground truth: the driver's doubling stage reruns the registered doubling
+  check of `fresh0@rho0.2|F111|D2+H3|profit` on the Mac (`--reproduce-doubling`), after the full preflight, saving a record with provenance and dependency
+  hashes, `gate.json`, and an inventory; compared by `compare_doubling()`: required fields present; finite values; exact on
+  the flag, the seeds and the discrete knobs; 1e-9 on the continuous held-out knobs, the attack and reference
+  changes, and the held-out per-seed gains. The saved result must pass before any pod is created. (c) Unit tests: the driver refuses a
+  changed reference hash, a missing input record, a wrong configuration hash, and an output directory inside `eval/all`.
+
+## 4. Diagnostics (evaluation only, no search)
+
+For three rules on seven markets: the base and doubled D2+H3 winners (42 policies) and the base D2 winners (21; the doubled
+D2 winners are not included), on the 200 evaluation seeds, re-run with reset and ban instrumentation (63 single-policy
+evaluations; the existing gain records carry no reset counts, so none is reused); the selected `x`; per episode the number of resets, the probability of at least one reset, the rounds of resets,
+and the rounds spent banned. Check that every D2 winner has zero resets. **Reverse switch (draft 5):** each of the 18 D2 winners re-evaluated with
+`x = 1` and every other knob unchanged (18 more evaluations). The diagnostics are built and tested in the driver (`diagnostics`
+stage) before any pod. Order: the instrumentation is validated on the registered headline cells before the pod; the
+diagnostics of the 18 new D2 winners and their reverse switches run on the Mac after the pod's records are retrieved.
+Construction: a D2 winner is embedded in D2+H3 by adding `x` (0 for itself, 1 for the reverse switch); each switch is
+the mean difference of normalised profits on the evaluation seeds, the reference cancelling. Resets are the focal
+provider's identities of generation 1 or more; ban rounds are the ban lengths imposed on its identities; rounds without
+an offer are counted separately. Saved per policy: the seed identifiers, the per-seed normalised profits, the per-seed switch differences, and the
+reset and ban counts per episode; a D2 winner with any reset stops the run. Spot check: `fresh0@rho0.2|F111` is also
+diagnosed on the pod (`--diag-cells`); the Mac's reset and ban counts must equal the pod's exactly, and its numerical
+values must
+meet the draft-5 tolerance against it. **Fixed-policy switch:** each of the 42 D2+H3
+winners re-evaluated with `x` set to 0 and every other knob unchanged (42 more; a winner that already has `x = 0` is
+reported as identical and not re-run); g(winner) - g(winner, x = 0) is the effect of the switch
+without re-optimisation, reported beside I.
+
+## 5. Analysis (fixed now)
+
+- **Intervals.** Per market: paired seed bootstrap (9,999 resamples, percentile, 95%), the same resampled seed indices for
+  every rule and family of that market, so contrasts across rules stay paired. Pooled: equal market weights; in each
+  replicate, seeds are resampled independently within each market and the pooled statistic is the mean of the six market
+  means; percentile interval. Nominal and descriptive; conditional on the six markets and the frozen policies and
+  references.
+- **Statistics.** I(r, m) and pooled I(r); the contrasts I(B3) - I(R3) and I(C*) - I(R3); the absolute gaps
+  G(D2+H3) = g_B3 - g_R3 under D2+H3 and G(D2) under D2, pooled.
+- **Share.** S = 1 - pooled G(D2) / pooled G(D2+H3), a ratio of pooled contrasts, computed in every bootstrap replicate.
+  S is reported only if the lower bound of pooled G(D2+H3) exceeds 0.05; otherwise "not defined". No clipping; S can be
+  negative or above 1. The absolute gaps are always reported beside it.
+- **Market sensitivity (draft 5).** The sign count of I(B3) - I(R3) and I(C*) - I(R3) over the six markets, and S with
+  each market left out in turn (six values), each with its own five-market denominator gate (lower bound of the
+  five-market pooled G(D2+H3) above 0.05; otherwise that value is "not defined"), for the base and the doubled results
+  separately. A nested best-of sensitivity (the better of the D2 and D2+H3 winners per cell) is deferred: it is not
+  part of this plan.
+- **Doubling flags.** For each D2 cell, the attack change and the reference-reselection change of its doubling check are
+  reported separately.
+- **Doubled versions** of the same statistics, as in the paper's `tab:ph-doubled`. The base (frozen) searches are primary,
+  as in the paper; the doubled versions are reported beside them.
+- No confirmatory test, no multiplicity family, no change to any registered decision.
+
+## 6. Pre-specified expectations and labels
+
+Written before any fresh D2 result exists. **The six markets, their seeds, and their D2+H3 outcomes were already observed;
+only the D2 outcomes are unseen.** This is a descriptive follow-up specified on 2026-11-09 after the round-9 review and
+after the headline contrast was seen, not an independent replication.
+
+Expectations: on all six fresh markets (each market counted; a single market against it fails the expectation), I(B3) > I(R3) and I(C*) > I(R3); pooled S defined and greater than 0.5. Expectations are
+scored on point estimates (this is a descriptive follow-up; "met" does not mean that an interval excludes the threshold),
+with the denominator gate of section 5 applied separately to the base and the doubled results. Each expectation is
+scored as met, failed, or not established: **met** if it holds under both the base and the doubled searches; **failed** if
+it fails under both; **not established (search-sensitive)** if the two disagree. An undefined S and a missing cell are
+reported as such, separately from failures. A failure is not read as evidence for any particular cause (search error and
+mixed outcomes are possible). Only if the pooled-S expectation is met may the paper say: within the D2 family, at the
+fixed parameters and search budgets, most of the estimated B3 - R3 gap under the prescribed searches disappears when the
+attacker cannot replace its identity.
+
+## 7. Cost
+
+**Work.** Measured benchmark (`experiments/v2/benchmark/timings.json`): one unit = a headline D2+H3 cell, 0.579
+core-hours. Per D2 cell: 1 unit + 160 further seeds (0.046) + doubling with held-out evaluation (0.479); 18 cells = 27.45
+units. Diagnostics: 63 instrumented evaluations + up to 42 switch evaluations = up to 105 single-policy evaluations of
+200 episodes, priced conservatively at the profit-evaluation stage's cost for 200 seeds (0.058 units each, although that
+stage evaluates more than one profile) = about 6.1 units. Total about 33.6 units = **about 19.4 core-hours**. Draft 5
+moves the diagnostics to the Mac (free) and adds the pod gate (about 0.34 USD); the pod estimate below is kept as an
+upper bound.
+
+**Billed pod time.** One 16-vCPU pod at the recorded 0.56 USD per hour; searches with 16 workers, evaluation, doubling,
+and diagnostics with at most 10 (operations ledger). Stage schedule with incomplete worker batches and equal benchmark
+task times: searches, evaluation, and doubling about 1.77 hours (internal review's computation); diagnostics about 0.6
+hours (105 evaluations in batches of 10); preparation 0.3 hours; idle tail 0.3 hours = **about 3.0 billed hours, about
+1.66 USD**. The benchmark's unit price (0.0625 USD per unit, at its 0.108 USD per core-hour) gives about 2.10 USD; the plan
+uses the larger.
+
+| Item | Estimate | Cap |
+|---|---:|---:|
+| Option A: 18 D2 cells, doubling checks, diagnostics | 1.66 to 2.10 USD | **10.00 USD** (author, 2026-11-09) |
+
+A failed attempt counts toward the cap; the cap leaves room for one early failure, not for a full second run. Option B (an X7-SC variant with replacement disabled) is dropped from this plan: its
+constrained family, incumbents, and corner controls would need their own specification (the frozen X7-SC search inserts
+D2+H3 incumbents that can replace), so it is not offered for approval.
+
+**Budget.** `docs/revision/budget-ledger.json`: spent 50.869 USD of the 55 USD approval limit. The author approved option A
+on the board on 2026-11-09 and set the cap to 10 USD ("make the cap $10 to ensure we're not blocked by a low cap"). The
+ledger needs a new category `followup` with cap 10.00 and the approval limit raised to 61 USD (50.869 + 10 = 60.869,
+`python3 -c "print(50.869+10)"`). `scripts/budget_v2.py` is frozen, so the tested wrapper
+`docs/revision/followup/budget_followup.py --approve 61 10 TEXT` records both, refuses a limit below spend plus the cap,
+and keeps the earlier approval text. The estimate is unchanged (1.66 to 2.10 USD); the higher cap only prevents a stop from a low
+cap. Stop at the cap.
+
+## 8. Steps
+
+1. Internal review of this plan to consensus; freeze it (commit).
+2. Decision card: approved on 2026-11-09, cap 10 USD (card `touchstone-reset-spend`).
+3. On approval: write and test the driver (TDD); on the Mac (free), validations (a), (b) and (d) must pass through the
+   corrected paths (preflight run, record with provenance and dependency hashes, `gate.json` and an inventory saved in a
+   new directory each: `results/v2/followup-repro-v2`, `results/v2/followup-repro-doubling-v2`); earlier passes on the
+   older path do not count and the diagnostics are validated on the registered headline
+   cells, all before any pod is created.
+4. One pod: the reproduction gate first (bit identity, `--require-identical`; stop and report on any difference), then `--stage all` with
+   `--diag-cells fresh0@rho0.2|F111|D2|profit` (inputs, search, freeze, evaluate, doubling, spot diagnostics, inventory);
+   records retrieved, the pod deleted and the deletion verified, the spend recorded.
+   Launcher rule (launcher review r11): an ambiguous creation answer ends the launch with no further request; the watchdog
+   deletes any late pod and settles for 30 minutes. After any launch that ends UNRESOLVED, check the Runpod console for
+   pods named ts-r-TAG the next day and relaunch only after that check. Spend record (launcher review r16): the account
+   balance difference, `podctl.py spend ts-r-TAG`, at least one hour after the watchdog ends; it can only overstate the
+   spend (other usage on the account is included), provided no deposit or credit was added in the window. The author
+   confirms that on the Runpod billing page before the record enters the ledger (r17); a balance that rose is refused.
+   The next launch with the same name is refused until the spend is recorded. The launcher's numbers are estimates.
+5. On the Mac after retrieval: the diagnostics of all 18 D2 winners and their reverse switches (`--stage diagnostics`),
+   checked against the pod's spot-check cell. The three headline cells (registered D2 records) run on the Mac before the
+   pod (`--headline-diagnostics`, 200 seeds); with the 18 fresh cells this gives the 63 policies and 42 switch
+   comparisons of section 4 plus the 21 reverse switches.
+6. Analysis: a new `reset` block in `posthoc_v2.py` (tested first), a table, and a paragraph in section 9 with sites; the
+   section-1 headline numbers enter at the same time, labelled exploratory.
+7. Internal review of the paper change, then the next external package.
+
+ succeeded in 0ms:
+     1	"""Tests of the reset block (docs/revision/reset-experiment-plan.md, draft 5, sections 5 and 6), written before the code."""
+     2	import json
+     3	import sys
+     4	from pathlib import Path
+     5	
+     6	import numpy as np
+     7	import pytest
+     8	
+     9	sys.path.insert(0, str(Path(__file__).resolve().parent))
+    10	import reset_block as RB  # noqa: E402
+    11	
+    12	M6 = tuple(f"fresh{i}" for i in range(6))
+    13	
+    14	
+    15	def _cells(i_b3=0.3, i_r3=0.01, i_c=0.05, g_r3_d2h3=0.05, g_r3_d2=0.03, n=40, noise=0.0, seed=0):
+    16	    """Synthetic per-seed gains: D2+H3 gains are D2 gains plus I; B3-R3 gap under D2 is 0.01 by construction."""
+    17	    rng = np.random.default_rng(seed); cells = {}
+    18	    for m in M6:
+    19	        e = rng.normal(0, noise, n) if noise else np.zeros(n)
+    20	        d2 = {"F111": g_r3_d2 + e, "F000": g_r3_d2 + 0.01 + e, "C*": g_r3_d2 + 0.005 + e}
+    21	        d2h3 = {"F111": d2["F111"] + i_r3, "F000": d2["F000"] + i_b3, "C*": d2["C*"] + i_c}
+    22	        cells[m] = {"D2+H3": d2h3, "D2": d2}
+    23	    return cells
+    24	
+    25	
+    26	def test_point_estimates_of_i_contrasts_gaps_and_share():
+    27	    s = RB.statistics(_cells())
+    28	    assert s["I"]["F000"]["pooled"] == pytest.approx(0.3) and s["I"]["F111"]["pooled"] == pytest.approx(0.01)
+    29	    assert s["contrast"]["B3-R3"]["pooled"] == pytest.approx(0.29) and s["contrast"]["C*-R3"]["pooled"] == pytest.approx(0.04)
+    30	    assert s["G"]["D2"]["pooled"] == pytest.approx(0.01) and s["G"]["D2+H3"]["pooled"] == pytest.approx(0.30)
+    31	    assert s["S"]["pooled"] == pytest.approx(1 - 0.01 / 0.30)
+    32	
+    33	
+    34	def test_pooled_is_the_equal_weight_mean_of_market_means():
+    35	    c = _cells(); c["fresh0"]["D2+H3"]["F000"] = c["fresh0"]["D2+H3"]["F000"] + 0.6   # I(B3) = 0.9 at fresh0 only
+    36	    s = RB.statistics(c)
+    37	    assert s["I"]["F000"]["markets"]["fresh0"] == pytest.approx(0.9)
+    38	    assert s["I"]["F000"]["pooled"] == pytest.approx((0.9 + 5 * 0.3) / 6)
+    39	
+    40	
+    41	def test_share_undefined_when_the_denominator_lower_bound_is_at_or_below_005():
+    42	    c = _cells(i_b3=0.04, i_r3=0.01, noise=0.02)          # pooled G(D2+H3) = 0.04: lower bound below 0.05
+    43	    r = RB.analyse(c, b=999, seed=1)
+    44	    assert r["S"]["pooled"]["value"] is None and r["S"]["pooled"]["reason"].startswith("not defined")
+    45	    assert r["G"]["D2+H3"]["pooled"]["estimate"] == pytest.approx(0.04)  # the gaps are reported anyway
+    46	
+    47	
+    48	def test_share_defined_and_not_clipped():
+    49	    c = _cells(i_b3=0.3, i_r3=0.01)
+    50	    for m in M6:                                           # G(D2) negative, so S > 1
+    51	        c[m]["D2"]["F000"] = c[m]["D2"]["F111"] - 0.05; c[m]["D2+H3"]["F000"] = c[m]["D2"]["F000"] + 0.3
+    52	    r = RB.analyse(c, b=199, seed=1)
+    53	    assert r["S"]["pooled"]["value"] > 1
+    54	
+    55	
+    56	def test_bootstrap_uses_the_same_seed_indices_for_every_rule_and_family_of_a_market():
+    57	    c = _cells(noise=0.05, seed=3)                         # identical noise in every rule and family of a market
+    58	    r = RB.analyse(c, b=499, seed=2)
+    59	    lo, hi = r["G"]["D2"]["pooled"]["ci95"]               # the shared noise cancels in a paired contrast
+    60	    assert hi - lo == pytest.approx(0.0, abs=1e-12)
+    61	    lo, hi = r["I"]["F000"]["pooled"]["ci95"]
+    62	    assert hi - lo == pytest.approx(0.0, abs=1e-12)
+    63	
+    64	
+    65	def test_bootstrap_is_reproducible_and_has_9999_resamples_by_default():
+    66	    assert RB.B == 9999
+    67	    c = _cells(noise=0.05, seed=4)
+    68	    for m in M6:                                           # break the pairing so intervals have width
+    69	        c[m]["D2"]["F111"] = c[m]["D2"]["F111"] + np.random.default_rng(9).normal(0, 0.05, 40)
+    70	    a, b = RB.analyse(c, b=299, seed=5), RB.analyse(c, b=299, seed=5)
+    71	    assert a["G"]["D2"]["pooled"]["ci95"] == b["G"]["D2"]["pooled"]["ci95"]
+    72	    lo, hi = a["G"]["D2"]["pooled"]["ci95"]
+    73	    assert lo < a["G"]["D2"]["pooled"]["estimate"] < hi
+    74	
+    75	
+    76	def test_market_sensitivity_sign_counts_and_leave_one_out_share():
+    77	    c = _cells(); c["fresh2"]["D2+H3"]["F000"] = c["fresh2"]["D2"]["F000"] - 0.02     # I(B3) < I(R3) at fresh2
+    78	    r = RB.analyse(c, b=199, seed=1)
+    79	    assert r["sensitivity"]["signs"]["B3-R3"] == {"positive": 5, "n": 6}
+    80	    assert r["sensitivity"]["signs"]["C*-R3"] == {"positive": 6, "n": 6}
+    81	    loo = r["sensitivity"]["S_leave_one_out"]
+    82	    assert set(loo) == set(M6) and all(v["value"] is not None for v in loo.values())
+    83	
+    84	
+    85	def test_leave_one_out_has_its_own_five_market_gate():
+    86	    c = _cells(i_b3=0.3)
+    87	    for m in M6[1:]:                                       # only fresh0 carries a B3 - R3 gap under D2+H3
+    88	        c[m]["D2+H3"]["F000"] = c[m]["D2+H3"]["F111"] + 0.0
+    89	    r = RB.analyse(c, b=199, seed=1)
+    90	    assert r["sensitivity"]["S_leave_one_out"]["fresh0"]["value"] is None     # five markets left: no gap
+    91	    assert r["sensitivity"]["S_leave_one_out"]["fresh1"]["value"] is not None  # fresh0 kept: 0.30 / 5 = 0.06 > 0.05
+    92	
+    93	
+    94	def test_missing_cell_is_reported_not_imputed():
+    95	    c = _cells(); del c["fresh3"]["D2"]["C*"]
+    96	    r = RB.analyse(c, b=99, seed=1)
+    97	    assert "fresh3|C*|D2" in r["missing"]
+    98	    assert "fresh3" not in r["I"]["C*"]["markets"]
+    99	
+   100	
+   101	def test_seed_mismatch_refused(tmp_path):
+   102	    ev, rs = _write(tmp_path, seeds_d2=list(range(1, 41)))
+   103	    with pytest.raises(ValueError, match="seeds"):
+   104	        RB.load(ev, rs, _report(tmp_path, ev), M6)
+   105	
+   106	
+   107	def test_expectation_scoring_met_failed_not_established():
+   108	    base = {"all_markets": {"B3-R3": True, "C*-R3": True}, "S": 0.8}
+   109	    dbl = {"all_markets": {"B3-R3": True, "C*-R3": False}, "S": 0.4}
+   110	    e = RB.score(base, dbl)
+   111	    assert e["B3-R3 on all six"] == "met"
+   112	    assert e["C*-R3 on all six"] == "not established (search-sensitive)"
+   113	    assert e["pooled S > 0.5"] == "not established (search-sensitive)"
+   114	    e = RB.score({"all_markets": {"B3-R3": False, "C*-R3": False}, "S": None}, {"all_markets": {"B3-R3": False, "C*-R3": False}, "S": None})
+   115	    assert e["B3-R3 on all six"] == "failed" and e["pooled S > 0.5"] == "S not defined"
+   116	
+   117	
+   118	def test_expectations_need_all_six_markets():
+   119	    c = _cells(); del c["fresh1"]["D2"]["F000"]
+   120	    r = RB.analyse(c, b=99, seed=1)
+   121	    assert r["expectation_inputs"]["all_markets"]["B3-R3"] is None    # a missing cell is not a pass
+   122	
+   123	
+   124	# ---- loading from records ----
+   125	
+   126	def _write(tmp, seeds_d2=None, n=40):
+   127	    ev, rs = tmp / "eval", tmp / "reset"
+   128	    for d in (ev / "evaluate", rs / "evaluate", rs / "doubling"):
+   129	        d.mkdir(parents=True, exist_ok=True)
+   130	    seeds = list(range(n))
+   131	    for m in M6:
+   132	        for rule in RB.RULES:
+   133	            for fam, root, s in (("D2+H3", ev, seeds), ("D2", rs, seeds_d2 or seeds)):
+   134	                rid = f"{m}@rho0.2|{rule}|{fam}|profit"
+   135	                (root / "evaluate" / (RB.safe(rid) + ".json")).write_text(json.dumps({"id": rid, "seeds": s, "gain": [0.1] * n}))
+   136	            rid = f"{m}@rho0.2|{rule}|D2|profit"
+   137	            (rs / "doubling" / (RB.safe(rid) + ".json")).write_text(json.dumps({"id": rid, "attack_change": 0.01, "reference_change": 0.0,
+   138	                                                                                "incomplete": False, "heldout": {"seeds": seeds_d2 or seeds, "gain": [0.2] * n}}))
+   139	    return ev, rs
+   140	
+   141	
+   142	def _report(tmp, ev, n=40):
+   143	    return {"doubling": {f"{m}@rho0.2|{r}|D2+H3|profit": {"attack_change": 0.0, "reference_change": 0.0, "incomplete": False,
+   144	                                                          "heldout": {"seeds": list(range(n)), "gain": [0.3] * n}} for m in M6 for r in RB.RULES}}
+   145	
+   146	
+   147	def test_load_reads_base_and_doubled_and_flags(tmp_path):
+   148	    ev, rs = _write(tmp_path)
+   149	    L = RB.load(ev, rs, _report(tmp_path, ev), M6)
+   150	    assert np.allclose(L["base"]["fresh0"]["D2"]["F000"], 0.1) and np.allclose(L["doubled"]["fresh0"]["D2"]["F000"], 0.2)
+   151	    assert np.allclose(L["doubled"]["fresh0"]["D2+H3"]["C*"], 0.3)
+   152	    f = L["flags"]["fresh0|F000|D2"]
+   153	    assert f == {"attack_change": 0.01, "reference_change": 0.0, "incomplete": False}
+   154	
+   155	
+   156	def test_doubled_d2h3_seeds_must_match(tmp_path):
+   157	    ev, rs = _write(tmp_path); rep = _report(tmp_path, ev)
+   158	    rep["doubling"]["fresh4@rho0.2|F111|D2+H3|profit"]["heldout"]["seeds"] = list(range(1, 41))
+   159	    with pytest.raises(ValueError, match="seeds"):
+   160	        RB.load(ev, rs, rep, M6)
+   161	
+   162	
+   163	# ---- table and command line ----
+   164	
+   165	def test_table_lists_base_and_doubled_rows_with_intervals():
+   166	    c = _cells(noise=0.02, seed=7)
+   167	    r = {"base": RB.analyse(c, b=99, seed=1), "doubled": RB.analyse(c, b=99, seed=1), "expectations": {}}
+   168	    t = RB.table(r)
+   169	    assert "\\begin{tabular}" in t and "I(B3)" in t and "G(D2+H3)" in t and "S" in t
+   170	    assert t.count("frozen") >= 1 and t.count("doubled") >= 1
+   171	    assert "0.300" in t                                   # pooled I(B3) to three decimals
+   172	
+   173	
+   174	def test_table_prints_not_defined_for_an_undefined_share():
+   175	    c = _cells(i_b3=0.04, noise=0.02)
+   176	    r = {"base": RB.analyse(c, b=99, seed=1), "doubled": RB.analyse(c, b=99, seed=1), "expectations": {}}
+   177	    assert "not defined" in RB.table(r)
+   178	
+   179	
+   180	def test_main_writes_json_and_table(tmp_path):
+   181	    ev, rs = _write(tmp_path); rep = tmp_path / "report.json"; rep.write_text(json.dumps(_report(tmp_path, ev)))
+   182	    out, tab = tmp_path / "reset.json", tmp_path / "tables"
+   183	    assert RB.main(["--records", str(ev), "--reset", str(rs), "--report", str(rep), "--out", str(out), "--tables", str(tab), "--resamples", "49"]) == 0
+   184	    d = json.loads(out.read_text())
+   185	    assert set(d) >= {"base", "doubled", "doubling_flags", "expectations", "label", "inputs"}
+   186	    assert (tab / "posthoc_reset.tex").exists()
+   187	
+   188	
+   189	# ---- diagnostics summary (plan section 4) ----
+   190	
+   191	def _diag(eff0, eff1, resets_d2=0.0, mr=50.0):
+   192	    cell = lambda e, key: {"mean_resets": mr if key == "switch_x0" else resets_d2, "p_any_reset": 1.0 if key == "switch_x0" else 0.0,
+   193	                           "mean_ban_rounds": 3.0, key: {"effect": e, "per_seed": [e] * 4, **({"identical": False} if key == "switch_x0" else {})}}
+   194	    return {f"{m}@rho0.2|{r}": {"d2h3_base": cell(eff0, "switch_x0"), "d2h3_doubled": cell(eff0 / 2, "switch_x0"), "d2_base": cell(eff1, "switch_x1")}
+   195	            for m in M6 for r in RB.RULES}
+   196	
+   197	
+   198	def test_switch_summary_pools_by_rule_with_equal_market_weights():
+   199	    d = _diag(0.2, -0.01); d["fresh0@rho0.2|F000"]["d2h3_base"]["switch_x0"]["effect"] = 0.8
+   200	    s = RB.switch_summary(d)
+   201	    assert s["F000"]["fixed_policy_x0"]["pooled"] == pytest.approx((0.8 + 5 * 0.2) / 6)
+   202	    assert s["F111"]["reverse_x1"]["pooled"] == pytest.approx(-0.01)
+   203	    assert s["F111"]["fixed_policy_x0_doubled"]["pooled"] == pytest.approx(0.1)
+   204	    assert s["F000"]["d2_mean_resets_max"] == 0.0 and s["F000"]["d2h3_mean_resets"]["pooled"] == pytest.approx(50.0)
+   205	
+   206	
+   207	def test_switch_summary_refuses_a_d2_winner_with_resets():
+   208	    d = _diag(0.2, -0.01); d["fresh2@rho0.2|C*"]["d2_base"]["mean_resets"] = 0.01
+   209	    with pytest.raises(ValueError, match="reset"):
+   210	        RB.switch_summary(d)
+   211	
+   212	
+   213	# ---- headline market (plan section 1, exploratory) ----
+   214	
+   215	def test_headline_i_and_gaps(tmp_path):
+   216	    ev = tmp_path / "eval"; (ev / "evaluate").mkdir(parents=True)
+   217	    gains = {("F000", "D2+H3"): [0.4, 0.3], ("F000", "D2"): [0.1, 0.0], ("F111", "D2+H3"): [0.05, 0.05], ("F111", "D2"): [0.04, 0.02],
+   218	             ("C*", "D2+H3"): [0.1, 0.1], ("C*", "D2"): [0.05, 0.03]}
+   219	    for (r, f), g in gains.items():
+   220	        rid = f"headline@rho0.2|{r}|{f}|profit"
+   221	        (ev / "evaluate" / (RB.safe(rid) + ".json")).write_text(json.dumps({"id": rid, "seeds": [1, 2], "gain": g}))
+   222	    h = RB.headline(ev)
+   223	    assert h["I"]["F000"]["estimate"] == pytest.approx(0.3) and h["I"]["F111"]["estimate"] == pytest.approx(0.02)
+   224	    assert h["I"]["F000"]["se"] == pytest.approx(0.0)                       # paired differences 0.3, 0.3
+   225	    assert h["G"]["D2+H3"]["estimate"] == pytest.approx(0.30) and h["G"]["D2"]["estimate"] == pytest.approx(0.02)
+
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+exec
+/bin/zsh -lc 'git show 0f62b18 -- docs/revision/paper-v2/main.tex docs/revision/paper-v2/numbers_v2.py docs/revision/paper-v2/test_numbers.py && git show 05d1240 -- docs/revision/posthoc/reset_block.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+commit 0f62b1806f4804fa3dbba10c2fa78ad15866ef28
+Author: Ömer Demirel <7556489+demirelo@users.noreply.github.com>
+Date:   Wed Nov 11 18:36:49 2026 +0100
+
+    Paper: reset follow-up paragraph and table (tab:ph-reset) in section 9, with the headline numbers of plan section 1
+    
+    Numbers through 29 new sites from docs/revision/posthoc/reset.json (paper_check.sh and paper_commit.sh pass --extra
+    reset=); new site kind share_s for S (may exceed 1, not clipped), tested; reset_block.headline (tested) gives the
+    section-1 values (I 0.3067, 0.0124, 0.0439; gaps 0.302, 0.007), equal to the plan. Labelled exploratory follow-up.
+    Internal review pending.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+diff --git a/docs/revision/paper-v2/main.tex b/docs/revision/paper-v2/main.tex
+index 03e1a06..4560500 100644
+--- a/docs/revision/paper-v2/main.tex
++++ b/docs/revision/paper-v2/main.tex
+@@ -237,6 +237,12 @@ The registered estimates and decisions below come from the report that the tagge
+ \caption{Q4: per-market lower bounds against the registered thresholds.}\label{fig:q4}
+ \end{figure}
+ 
++\paragraph{Identity replacement and the B3--R3 gap (exploratory follow-up).} D2+H3 is D2 plus one switch $x$ that lets the attacker leave after a failed audit and return under a new identity. At the headline market, the D2+H3 search leaves \site{rs_hl_b3} more gain against B3 than the D2 search, and \site{rs_hl_r3} more against R3, so the B3 minus R3 gap is \site{rs_hl_g1} under D2+H3 and \site{rs_hl_g0} under D2. To see whether this holds on the six fresh markets, we ran after the report the D2 cells that budget cut~\const{3} had removed (B3, R3, and C$^*$ at $\rho=\const{0.2}$, each with a doubling check), under a plan and expectations written before any fresh D2 result existed but after the headline contrast was seen. This is a descriptive follow-up, not an independent replication, and it changes no registered decision. Pooled over the six markets with equal weights, the B3 minus R3 gap is \site{rs_g1} (\const{95}\% paired seed-bootstrap interval [\site{rs_g1_lo}, \site{rs_g1_hi}]) under D2+H3 and \site{rs_g0} ([\site{rs_g0_lo}, \site{rs_g0_hi}]) under D2 (doubled searches: \site{rs_g1_d} and \site{rs_g0_d}). The share of the gap that disappears without replacement, $S = \const{1} - G(\mathrm{D2})/G(\mathrm{D2{+}H3})$, is \site{rs_s} (doubled searches: \site{rs_s_d}); a value above one means the gap reverses slightly under D2. Replacement, $I = g(\mathrm{D2{+}H3}) - g(\mathrm{D2})$, adds \site{rs_i_b3} to the attacker's gain against B3, \site{rs_i_r3} against R3, and \site{rs_i_c} against C$^*$. The expectations set in advance score as follows. $I(\mathrm{B3}) > I(\mathrm{R3})$ on every market: ``\site{rs_exp_b}'' (\site{rs_sign_b} markets with the frozen searches, \site{rs_sign_bd} with the doubled ones). $I(\mathrm{C}^*) > I(\mathrm{R3})$ on every market: ``\site{rs_exp_c}'' (\site{rs_sign_c} and \site{rs_sign_cd} markets; fresh3 gives \site{rs_f3_c} with the frozen searches). Pooled $S > \const{0.5}$: ``\site{rs_exp_s}''. Within the D2 family, at the fixed parameters and search budgets, most of the estimated B3 minus R3 gap under the prescribed searches disappears when the attacker cannot replace its identity. The two searched winners can differ in every knob, not only $x$. With every other knob held fixed, switching replacement off in the D2+H3 winner lowers the gain by \site{rs_fx_b3} against B3 and \site{rs_fx_r3} against R3, and switching it on in the D2 winner raises the gain by only \site{rs_rev_b3} and \site{rs_rev_r3}. No D2 winner replaces its identity. $S$ is a ratio of two searched gaps and carries their search error (Table~\ref{tab:ph-reset}).
++\begin{table}[t]\centering\small
++\adjustbox{max width=\linewidth}{\input{tables/posthoc_reset.tex}}
++\caption{Exploratory follow-up, after the report: replacement $I = g(\mathrm{D2{+}H3}) - g(\mathrm{D2})$ per rule, its contrasts, the B3 minus R3 gaps $G$ under each family, and the share $S$, pooled over the six fresh markets with equal weights, with paired seed-bootstrap percentile intervals; frozen and doubled searches. $S$ is shown only when the lower bound of the pooled D2+H3 gap exceeds the preset floor.}\label{tab:ph-reset}
++\end{table}
++
+ \paragraph{Which parts of R3 matter (Q2).} Under separately searched D2+H3 attacks, pooled over the fresh markets, the main effects on the gain are \site{r_q2_p} for the priority phase P and \site{r_q2_g} for newest-first residual targeting G, both reductions, and \site{r_q2_s} for pacing S, a small increase (X7-SC: \site{r_q2_s_x}). The two targeting parts are substitutes: the PG factorial contrast, half the difference between G's conditional effects, is \site{r_q2_pg}; G changes the gain by \site{r_q2_g_p0} without the priority phase and by only \site{r_q2_g_p1} with it, and the priority phase changes it by only \site{r_q2_p_g1} once G is in place (averaged over both pacing settings). R3's own comparison, $F_{111}$ minus $F_{011}$ (exploratory, from the evaluation records), is \site{r_dp} pooled: exactly zero on four markets, where both rules leave the attacker the same gain, and nonzero on fresh1 (\site{r_dp_f1}) and fresh3. Against the fixed attacks, the priority phase's effect given newest-first targeting is larger (\site{r_q2_fixed_pg1} under D2+H3 and \site{r_q2_fixed_pg1_x} under X7-SC, averaged over pacing), though still small next to newest-first targeting's effect without the priority phase (above). In the pooled, separately searched comparisons, given newest-first targeting the priority phase adds little at these audit ratios and capacities; at a lower audit ratio or a larger attacker capacity, half of a round's audits may no longer cover one provider's jobs, and the substitution need not hold. In the pooled contrasts, either P or G alone accounts for most of the measured reduction; adding the other contributes little. The pattern also appears in the fixed-attack contrasts averaged over the eight selected attacks (P: \site{r_q2_fixed_p}). Our registered conjectures (P negligible, the targeting parts additive, S helpful) failed as scored (Table~\ref{tab:predictions}); the stricter eligibility reading of Table~\ref{tab:pred-eligibility} leaves them not assessed, with the estimates unchanged. X7-SC agrees (Table~\ref{tab:q2-x7sc}).
+ 
+ \begin{table}[t]\centering\small
+diff --git a/docs/revision/paper-v2/numbers_v2.py b/docs/revision/paper-v2/numbers_v2.py
+index 38df432..36ac708 100644
+--- a/docs/revision/paper-v2/numbers_v2.py
++++ b/docs/revision/paper-v2/numbers_v2.py
+@@ -34,6 +34,7 @@ KINDS = {"count": lambda leaf, v: leaf in COUNT_LEAVES and isinstance(v, int) an
+          "gain": lambda leaf, v: leaf in {"estimate", "gain_diff", "gain_diff_lower", "attacker_gain", "0", "1", "q1_frozen", "q1_doubled",
+                                           "q4_frozen", "q4_doubled", "mean_gain", "mean", "difference", "pooled", "max_shortfall", "fresh1"} and isinstance(v, float),
+          "ratio": lambda leaf, v: leaf == "relative" and isinstance(v, float),
++         "share_s": lambda leaf, v: leaf == "value" and isinstance(v, float),          # reset follow-up S (not clipped)
+          "share": lambda leaf, v: leaf == "audited_share" and isinstance(v, float) and 0 <= v <= 1,
+          "eff": lambda leaf, v: leaf in {"eff", "eff_lower", "efficiency", "0", "1"} and isinstance(v, float),
+          "label": lambda leaf, v: isinstance(v, str)}
+diff --git a/docs/revision/paper-v2/test_numbers.py b/docs/revision/paper-v2/test_numbers.py
+index 6dbde6f..7d36f51 100644
+--- a/docs/revision/paper-v2/test_numbers.py
++++ b/docs/revision/paper-v2/test_numbers.py
+@@ -389,3 +389,9 @@ def test_kinds_accept_the_followup_review_analyses():
+     for leaf in ("over_threshold",):
+         assert N.KINDS["count"](leaf, 6)
+     assert N.KINDS["gain"]("max_shortfall", 0.021) and N.KINDS["gain"]("fresh1", -0.0147)
++
++
++def test_reset_share_kind():
++    # Reset follow-up (2026-11-11): the share S = 1 - G(D2)/G(D2+H3) is stored as `value`; it may exceed 1 (no clipping)
++    assert N.KINDS["share_s"]("value", 1.05) and N.KINDS["share_s"]("value", -0.2)
++    assert not N.KINDS["share_s"]("estimate", 0.5) and not N.KINDS["share_s"]("value", None) and not N.KINDS["gain"]("value", 0.5)
+commit 05d124014ac52070ba7d3698a09e078690de728a
+Author: Ömer Demirel <7556489+demirelo@users.noreply.github.com>
+Date:   Wed Nov 11 18:28:45 2026 +0100
+
+    Reset block: switch summary of the Mac diagnostics (plan section 4), tests first; spot check vs pod passed
+    
+    Mac diagnostics of the 18 D2 winners with the pod's code (fdfd83e), results/v2/followup-reset-mac-diag: no D2 winner
+    has a reset; the spot cell fresh0@rho0.2|F111 matches the pod with exact counts and max abs diff 2.2e-16 (spot_compare.json).
+    Fixed-policy switch (D2+H3 winner, x -> 0), pooled: B3 0.371, R3 0.091, C* 0.156; reverse switch (D2 winner, x -> 1):
+    0.033, 0.009, 0.017. 19 tests.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+diff --git a/docs/revision/posthoc/reset_block.py b/docs/revision/posthoc/reset_block.py
+index 4183f2b..fef216f 100644
+--- a/docs/revision/posthoc/reset_block.py
++++ b/docs/revision/posthoc/reset_block.py
+@@ -185,6 +185,28 @@ def reset_block(eval_all, reset_dir, report: dict, markets, b: int = B, seed: in
+             "expectations": score(base["expectation_inputs"], dbl["expectation_inputs"])}
+ 
+ 
++def switch_summary(diag: dict, markets=tuple(f"fresh{i}" for i in range(6))) -> dict:
++    """Plan section 4, per rule pooled over the markets with equal weights: the fixed-policy switch g(winner) - g(winner,
++    x = 0) of the D2+H3 winners (frozen and doubled), the reverse switch of the D2 winners (x = 1), and the reset counts.
++    Refuses if any D2 winner has a reset (the plan's stop rule)."""
++    out = {}
++    for r in RULES:
++        cells = [diag[f"{m}@rho0.2|{r}"] for m in markets]
++        bad = [m for m, c in zip(markets, cells) if c["d2_base"]["mean_resets"] != 0]
++        if bad:
++            raise ValueError(f"D2 winner of {r} has a reset at {bad}")
++        def pooled(f):
++            xs = {m: f(c) for m, c in zip(markets, cells)}
++            return {"markets": xs, "pooled": float(np.mean(list(xs.values())))}
++        out[r] = {"fixed_policy_x0": pooled(lambda c: c["d2h3_base"]["switch_x0"]["effect"]),
++                  "fixed_policy_x0_doubled": pooled(lambda c: c["d2h3_doubled"]["switch_x0"]["effect"]),
++                  "reverse_x1": pooled(lambda c: c["d2_base"]["switch_x1"]["effect"]),
++                  "d2h3_mean_resets": pooled(lambda c: c["d2h3_base"]["mean_resets"]),
++                  "d2h3_p_any_reset": pooled(lambda c: c["d2h3_base"]["p_any_reset"]),
++                  "d2_mean_resets_max": float(max(c["d2_base"]["mean_resets"] for c in cells))}
++    return out
++
++
+ def _fmt(est, ci, d: int = 3) -> str:
+     if est is None:
+         return "--"
+@@ -216,6 +238,7 @@ def main(argv=None) -> int:
+     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+     for k in ("--records", "--reset", "--report", "--out", "--tables"):
+         ap.add_argument(k, required=True)
++    ap.add_argument("--diagnostics", default=None, help="the Mac diagnostics.json (plan section 4)")
+     ap.add_argument("--resamples", type=int, default=B); ap.add_argument("--seed", type=int, default=SEED)
+     a = ap.parse_args(argv)
+     markets = tuple(f"fresh{i}" for i in range(6))
+@@ -223,6 +246,9 @@ def main(argv=None) -> int:
+     res["inputs"] = {"records": str(a.records), "reset": str(a.reset), "report_sha256": hashlib.sha256(Path(a.report).read_bytes()).hexdigest(),
+                      "reset_inventory_sha256": (hashlib.sha256((Path(a.reset) / "inventory.json").read_bytes()).hexdigest()
+                                                 if (Path(a.reset) / "inventory.json").exists() else None)}
++    if a.diagnostics:
++        res["switches"] = switch_summary(json.loads(Path(a.diagnostics).read_text()))
++        res["inputs"]["diagnostics_sha256"] = hashlib.sha256(Path(a.diagnostics).read_bytes()).hexdigest()
+     Path(a.out).write_text(json.dumps(res, indent=1) + "\n")
+     d = Path(a.tables); d.mkdir(parents=True, exist_ok=True)
+     (d / "posthoc_reset.tex").write_text(table(res).replace("C*", "C$^*$"))
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'nl -ba docs/revision/posthoc/reset_block.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+     1	"""The reset block of the post-hoc analysis (docs/revision/reset-experiment-plan.md, draft 5, sections 5 and 6).
+     2	
+     3	I(r, m) = mean over the evaluation seeds of g(D2+H3 winner) - g(D2 winner), both against the frozen reference of (r, m).
+     4	Rules: B3 = F000, R3 = F111, C*. Gaps G(fam) = g_B3 - g_R3 under one family. Share S = 1 - G(D2) / G(D2+H3), pooled,
+     5	reported only if the lower bound of pooled G(D2+H3) exceeds 0.05. Intervals: paired seed bootstrap, percentile 95%,
+     6	the same resampled seed indices for every rule and family of a market; pooled = equal-weight mean of the market means,
+     7	seeds resampled independently within each market. Descriptive; no test, no registered decision changes.
+     8	"""
+     9	from __future__ import annotations
+    10	
+    11	import json
+    12	from pathlib import Path
+    13	
+    14	import numpy as np
+    15	
+    16	RULES = ("F000", "F111", "C*")
+    17	FAMS = ("D2+H3", "D2")
+    18	B = 9999
+    19	SEED = 20261109                       # fixed bootstrap seed (the plan's date of specification)
+    20	GATE = 0.05
+    21	CONTRASTS = {"B3-R3": ("F000", "F111"), "C*-R3": ("C*", "F111")}
+    22	
+    23	
+    24	def safe(rid: str) -> str:
+    25	    return rid.replace("|", "__").replace("/", "~").replace("*", "star")      # revision_v2._safe
+    26	
+    27	
+    28	def _read(p: Path):
+    29	    return json.loads(p.read_text()) if p.exists() else None
+    30	
+    31	
+    32	def load(eval_all, reset_dir, report: dict, markets) -> dict:
+    33	    """Base and doubled per-seed gains, {version: {market: {family: {rule: array}}}}, plus the D2 doubling flags.
+    34	    Refuses if the seeds of a market differ between any rule, family or version (the pairing needs one seed list)."""
+    35	    base, dbl, flags = {}, {}, {}
+    36	    for m in markets:
+    37	        seeds = None
+    38	        for fam in FAMS:
+    39	            for rule in RULES:
+    40	                rid = f"{m}@rho0.2|{rule}|{fam}|profit"
+    41	                root = Path(eval_all) if fam == "D2+H3" else Path(reset_dir)
+    42	                r = _read(root / "evaluate" / (safe(rid) + ".json"))
+    43	                if fam == "D2+H3":
+    44	                    h = report.get("doubling", {}).get(rid)
+    45	                else:
+    46	                    d = _read(Path(reset_dir) / "doubling" / (safe(rid) + ".json")); h = d
+    47	                    if d is not None:
+    48	                        flags[f"{m}|{rule}|D2"] = {k: d[k] for k in ("attack_change", "reference_change", "incomplete")}
+    49	                for ver, src, store in (("base", r, base), ("doubled", (h or {}).get("heldout"), dbl)):
+    50	                    if src is None:
+    51	                        continue
+    52	                    if seeds is None:
+    53	                        seeds = list(src["seeds"])
+    54	                    elif list(src["seeds"]) != seeds:
+    55	                        raise ValueError(f"seeds of {rid} ({ver}) differ from the market's seed list")
+    56	                    store.setdefault(m, {}).setdefault(fam, {})[rule] = np.asarray(src["gain"], dtype=float)
+    57	    return {"base": base, "doubled": dbl, "flags": flags}
+    58	
+    59	
+    60	def _complete(cells: dict) -> tuple[dict, list]:
+    61	    """Markets with every rule and family, and the list of missing cells (reported, never imputed)."""
+    62	    ok, missing = {}, []
+    63	    for m, v in cells.items():
+    64	        miss = [f"{m}|{r}|{f}" for f in FAMS for r in RULES if r not in v.get(f, {})]
+    65	        missing += miss
+    66	        ok[m] = v
+    67	    return ok, missing
+    68	
+    69	
+    70	def _market_stats(v: dict, idx=None) -> dict:
+    71	    """Per-market means of the statistics for one market (optionally on resampled seed indices)."""
+    72	    g = {f: {r: (a if idx is None else a[idx]) for r, a in v.get(f, {}).items()} for f in FAMS}
+    73	    out = {}
+    74	    for r in RULES:
+    75	        if r in g["D2+H3"] and r in g["D2"]:
+    76	            out[("I", r)] = float(np.mean(g["D2+H3"][r] - g["D2"][r]))
+    77	    for name, (a, b) in CONTRASTS.items():
+    78	        if ("I", a) in out and ("I", b) in out:
+    79	            out[("C", name)] = out[("I", a)] - out[("I", b)]
+    80	    for f in FAMS:
+    81	        if "F000" in g[f] and "F111" in g[f]:
+    82	            out[("G", f)] = float(np.mean(g[f]["F000"] - g[f]["F111"]))
+    83	    return out
+    84	
+    85	
+    86	def _pool(per_market: dict, key, markets) -> float | None:
+    87	    xs = [per_market[m][key] for m in markets if key in per_market[m]]
+    88	    return float(np.mean(xs)) if xs and len(xs) == len(markets) else None
+    89	
+    90	
+    91	def _share(gd2, gd2h3):
+    92	    return None if gd2 is None or gd2h3 is None or gd2h3 == 0 else 1 - gd2 / gd2h3
+    93	
+    94	
+    95	def statistics(cells: dict) -> dict:
+    96	    """Point estimates: per market and pooled (pooled only over markets where the statistic exists in all of them)."""
+    97	    pm = {m: _market_stats(v) for m, v in cells.items()}; ms = tuple(cells)
+    98	    res = {"I": {}, "contrast": {}, "G": {}}
+    99	    for r in RULES:
+   100	        res["I"][r] = {"markets": {m: pm[m][("I", r)] for m in ms if ("I", r) in pm[m]}, "pooled": _pool(pm, ("I", r), _have(pm, ("I", r)))}
+   101	    for c in CONTRASTS:
+   102	        res["contrast"][c] = {"markets": {m: pm[m][("C", c)] for m in ms if ("C", c) in pm[m]}, "pooled": _pool(pm, ("C", c), _have(pm, ("C", c)))}
+   103	    for f in FAMS:
+   104	        res["G"][f] = {"markets": {m: pm[m][("G", f)] for m in ms if ("G", f) in pm[m]}, "pooled": _pool(pm, ("G", f), _have(pm, ("G", f)))}
+   105	    res["S"] = {"pooled": _share(res["G"]["D2"]["pooled"], res["G"]["D2+H3"]["pooled"])}
+   106	    return res
+   107	
+   108	
+   109	def _have(pm, key):
+   110	    return tuple(m for m in pm if key in pm[m])
+   111	
+   112	
+   113	def _boot(cells: dict, markets, b: int, rng) -> list[dict]:
+   114	    """b replicates; each replicate draws one index vector per market, shared by every rule and family of that market."""
+   115	    reps = []
+   116	    n = {m: len(next(iter(next(iter(cells[m].values())).values()))) for m in markets}
+   117	    for _ in range(b):
+   118	        reps.append({m: _market_stats(cells[m], rng.integers(0, n[m], n[m])) for m in markets})
+   119	    return reps
+   120	
+   121	
+   122	def _ci(xs):
+   123	    xs = np.asarray([x for x in xs if x is not None], dtype=float)
+   124	    return [float(np.percentile(xs, 2.5)), float(np.percentile(xs, 97.5))] if xs.size else None
+   125	
+   126	
+   127	def _gated_share(pm_point, reps, markets) -> dict:
+   128	    """S over `markets` with its denominator gate (lower bound of pooled G(D2+H3) over the same markets above 0.05)."""
+   129	    g1 = _pool(pm_point, ("G", "D2+H3"), markets); g0 = _pool(pm_point, ("G", "D2"), markets)
+   130	    lb = _ci([_pool(r, ("G", "D2+H3"), markets) for r in reps])
+   131	    if g1 is None or g0 is None or lb is None:
+   132	        return {"value": None, "reason": "not defined: a cell is missing", "ci95": None}
+   133	    if not lb[0] > GATE:
+   134	        return {"value": None, "reason": f"not defined: lower bound of pooled G(D2+H3) {lb[0]:.4f} <= {GATE}", "ci95": None}
+   135	    return {"value": _share(g0, g1), "reason": "defined", "ci95": _ci([_share(_pool(r, ("G", "D2"), markets), _pool(r, ("G", "D2+H3"), markets)) for r in reps]),
+   136	            "denominator_lower_bound": lb[0]}
+   137	
+   138	
+   139	def analyse(cells: dict, b: int = B, seed: int = SEED) -> dict:
+   140	    """Point estimates with paired percentile intervals, the gated share, market sensitivity and expectation inputs."""
+   141	    cells, missing = _complete(cells); ms = tuple(cells)
+   142	    pm = {m: _market_stats(cells[m]) for m in ms}
+   143	    reps = _boot(cells, ms, b, np.random.default_rng(seed))
+   144	    res = {"missing": missing, "bootstrap": {"resamples": b, "seed": seed, "interval": "percentile 95%"}}
+   145	
+   146	    def block(kind, key_of, names):
+   147	        out = {}
+   148	        for nm in names:
+   149	            k = key_of(nm); have = _have(pm, k)
+   150	            out[nm] = {"markets": {m: {"estimate": pm[m][k], "ci95": _ci([r[m].get(k) for r in reps])} for m in have},
+   151	                       "pooled": {"estimate": _pool(pm, k, have) if len(have) == len(ms) else None,
+   152	                                  "ci95": _ci([_pool(r, k, have) for r in reps]) if len(have) == len(ms) else None}}
+   153	        return out
+   154	    res["I"] = block("I", lambda r: ("I", r), RULES)
+   155	    res["contrast"] = block("C", lambda c: ("C", c), tuple(CONTRASTS))
+   156	    res["G"] = block("G", lambda f: ("G", f), FAMS)
+   157	    res["S"] = {"pooled": _gated_share(pm, reps, ms)}
+   158	    signs = {c: {"positive": int(sum(1 for m in ms if pm[m].get(("C", c), 0) > 0)), "n": int(sum(1 for m in ms if ("C", c) in pm[m]))} for c in CONTRASTS}
+   159	    loo = {m: _gated_share(pm, reps, tuple(x for x in ms if x != m)) for m in ms} if len(ms) > 1 else {}
+   160	    res["sensitivity"] = {"signs": signs, "S_leave_one_out": loo}
+   161	    six = len(ms) == 6
+   162	    res["expectation_inputs"] = {"all_markets": {c: (signs[c]["positive"] == 6 if six and signs[c]["n"] == 6 else None) for c in CONTRASTS},
+   163	                                 "S": res["S"]["pooled"]["value"]}
+   164	    return res
+   165	
+   166	
+   167	def score(base: dict, dbl: dict) -> dict:
+   168	    """Plan section 6: met if it holds under both the base and the doubled searches, failed if under neither,
+   169	    not established (search-sensitive) if they disagree; undefined S and missing cells are reported as such."""
+   170	    def one(a, b):
+   171	        if a is None or b is None:
+   172	            return "missing cell"
+   173	        return "met" if a and b else "failed" if not a and not b else "not established (search-sensitive)"
+   174	    out = {f"{c} on all six": one(base["all_markets"][c], dbl["all_markets"][c]) for c in CONTRASTS}
+   175	    sb, sd = base["S"], dbl["S"]
+   176	    out["pooled S > 0.5"] = "S not defined" if sb is None or sd is None else one(sb > 0.5, sd > 0.5)
+   177	    return out
+   178	
+   179	
+   180	def reset_block(eval_all, reset_dir, report: dict, markets, b: int = B, seed: int = SEED) -> dict:
+   181	    L = load(eval_all, reset_dir, report, markets)
+   182	    base, dbl = analyse(L["base"], b, seed), analyse(L["doubled"], b, seed)
+   183	    return {"label": "exploratory follow-up (reset experiment plan draft 5); descriptive, not registered",
+   184	            "base": base, "doubled": dbl, "doubling_flags": L["flags"],
+   185	            "expectations": score(base["expectation_inputs"], dbl["expectation_inputs"])}
+   186	
+   187	
+   188	def switch_summary(diag: dict, markets=tuple(f"fresh{i}" for i in range(6))) -> dict:
+   189	    """Plan section 4, per rule pooled over the markets with equal weights: the fixed-policy switch g(winner) - g(winner,
+   190	    x = 0) of the D2+H3 winners (frozen and doubled), the reverse switch of the D2 winners (x = 1), and the reset counts.
+   191	    Refuses if any D2 winner has a reset (the plan's stop rule)."""
+   192	    out = {}
+   193	    for r in RULES:
+   194	        cells = [diag[f"{m}@rho0.2|{r}"] for m in markets]
+   195	        bad = [m for m, c in zip(markets, cells) if c["d2_base"]["mean_resets"] != 0]
+   196	        if bad:
+   197	            raise ValueError(f"D2 winner of {r} has a reset at {bad}")
+   198	        def pooled(f):
+   199	            xs = {m: f(c) for m, c in zip(markets, cells)}
+   200	            return {"markets": xs, "pooled": float(np.mean(list(xs.values())))}
+   201	        out[r] = {"fixed_policy_x0": pooled(lambda c: c["d2h3_base"]["switch_x0"]["effect"]),
+   202	                  "fixed_policy_x0_doubled": pooled(lambda c: c["d2h3_doubled"]["switch_x0"]["effect"]),
+   203	                  "reverse_x1": pooled(lambda c: c["d2_base"]["switch_x1"]["effect"]),
+   204	                  "d2h3_mean_resets": pooled(lambda c: c["d2h3_base"]["mean_resets"]),
+   205	                  "d2h3_p_any_reset": pooled(lambda c: c["d2h3_base"]["p_any_reset"]),
+   206	                  "d2_mean_resets_max": float(max(c["d2_base"]["mean_resets"] for c in cells))}
+   207	    return out
+   208	
+   209	
+   210	def headline(eval_all) -> dict:
+   211	    """Plan section 1 (exploratory): at headline@rho0.2, I per rule with its paired standard error, and the B3 - R3 gaps
+   212	    under D2+H3 and D2, from the registered evaluation records (same seeds and frozen reference per rule)."""
+   213	    g = {}
+   214	    for r in RULES:
+   215	        for f in FAMS:
+   216	            rid = f"headline@rho0.2|{r}|{f}|profit"; rec = _read(Path(eval_all) / "evaluate" / (safe(rid) + ".json"))
+   217	            if rec is None:
+   218	                raise ValueError(f"missing {rid}")
+   219	            g[(r, f)] = (list(rec["seeds"]), np.asarray(rec["gain"], dtype=float))
+   220	    seeds = g[(RULES[0], FAMS[0])][0]
+   221	    if any(v[0] != seeds for v in g.values()):
+   222	        raise ValueError("headline seeds differ between records")
+   223	    out = {"I": {}, "G": {}}
+   224	    for r in RULES:
+   225	        d = g[(r, "D2+H3")][1] - g[(r, "D2")][1]
+   226	        out["I"][r] = {"estimate": float(d.mean()), "se": float(d.std(ddof=1) / np.sqrt(d.size))}
+   227	    for f in FAMS:
+   228	        out["G"][f] = {"estimate": float(np.mean(g[("F000", f)][1] - g[("F111", f)][1]))}   # leaf name fits the paper's gain kind
+   229	    return out
+   230	
+   231	
+   232	def _fmt(est, ci, d: int = 3) -> str:
+   233	    if est is None:
+   234	        return "--"
+   235	    return f"{est:.{d}f}" + (f" [{ci[0]:.{d}f}, {ci[1]:.{d}f}]" if ci else "")
+   236	
+   237	
+   238	ROWS = (("I(B3)", "I", "F000"), ("I(R3)", "I", "F111"), ("I(C*)", "I", "C*"), ("I(B3) - I(R3)", "contrast", "B3-R3"),
+   239	        ("I(C*) - I(R3)", "contrast", "C*-R3"), ("G(D2+H3)", "G", "D2+H3"), ("G(D2)", "G", "D2"))
+   240	
+   241	
+   242	def table(res: dict) -> str:
+   243	    """Pooled statistics (equal market weights) with 95% paired percentile intervals, frozen and doubled searches."""
+   244	    lines = ["\\begin{tabular}{lll}", "\\hline", "Statistic & frozen searches & doubled searches \\\\", "\\hline"]
+   245	    for label, kind, key in ROWS:
+   246	        cells = [_fmt(res[v][kind][key]["pooled"]["estimate"], res[v][kind][key]["pooled"]["ci95"]) for v in ("base", "doubled")]
+   247	        lines.append(f"{label} & {cells[0]} & {cells[1]} \\\\")
+   248	    s = [res[v]["S"]["pooled"] for v in ("base", "doubled")]
+   249	    lines.append("S & " + " & ".join(_fmt(x["value"], x["ci95"], 2) if x["value"] is not None else "not defined" for x in s) + " \\\\")
+   250	    for c in CONTRASTS:
+   251	        lines.append(f"markets with {c.replace('B3-R3', 'I(B3) > I(R3)').replace('C*-R3', 'I(C*) > I(R3)')} & "
+   252	                     + " & ".join(f"{res[v]['sensitivity']['signs'][c]['positive']} of {res[v]['sensitivity']['signs'][c]['n']}" for v in ("base", "doubled")) + " \\\\")
+   253	    lines += ["\\hline", "\\end{tabular}"]
+   254	    return "\n".join(lines) + "\n"
+   255	
+   256	
+   257	def main(argv=None) -> int:
+   258	    import argparse
+   259	    import hashlib
+   260	    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+   261	    for k in ("--records", "--reset", "--report", "--out", "--tables"):
+   262	        ap.add_argument(k, required=True)
+   263	    ap.add_argument("--diagnostics", default=None, help="the Mac diagnostics.json (plan section 4)")
+   264	    ap.add_argument("--resamples", type=int, default=B); ap.add_argument("--seed", type=int, default=SEED)
+   265	    a = ap.parse_args(argv)
+   266	    markets = tuple(f"fresh{i}" for i in range(6))
+   267	    res = reset_block(a.records, a.reset, json.loads(Path(a.report).read_text()), markets, a.resamples, a.seed)
+   268	    res["inputs"] = {"records": str(a.records), "reset": str(a.reset), "report_sha256": hashlib.sha256(Path(a.report).read_bytes()).hexdigest(),
+   269	                     "reset_inventory_sha256": (hashlib.sha256((Path(a.reset) / "inventory.json").read_bytes()).hexdigest()
+   270	                                                if (Path(a.reset) / "inventory.json").exists() else None)}
+   271	    hl = Path(a.records) / "evaluate" / (safe("headline@rho0.2|F000|D2|profit") + ".json")
+   272	    res["headline"] = headline(a.records) if hl.exists() else None          # absent only in test fixtures
+   273	    if a.diagnostics:
+   274	        res["switches"] = switch_summary(json.loads(Path(a.diagnostics).read_text()))
+   275	        res["inputs"]["diagnostics_sha256"] = hashlib.sha256(Path(a.diagnostics).read_bytes()).hexdigest()
+   276	    Path(a.out).write_text(json.dumps(res, indent=1) + "\n")
+   277	    d = Path(a.tables); d.mkdir(parents=True, exist_ok=True)
+   278	    (d / "posthoc_reset.tex").write_text(table(res).replace("C*", "C$^*$"))
+   279	    print(json.dumps(res["expectations"], indent=1))
+   280	    return 0
+   281	
+   282	
+   283	if __name__ == "__main__":
+   284	    import sys
+   285	    sys.exit(main())
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '1,124p' docs/revision/posthoc/test_reset_block.py && sed -n '1,210p' docs/revision/paper-v2/numbers_v2.py && tail -n 12 docs/revision/reset-experiment-plan.md" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+"""Tests of the reset block (docs/revision/reset-experiment-plan.md, draft 5, sections 5 and 6), written before the code."""
+import json
+import sys
+from pathlib import Path
+
+import numpy as np
+import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import reset_block as RB  # noqa: E402
+
+M6 = tuple(f"fresh{i}" for i in range(6))
+
+
+def _cells(i_b3=0.3, i_r3=0.01, i_c=0.05, g_r3_d2h3=0.05, g_r3_d2=0.03, n=40, noise=0.0, seed=0):
+    """Synthetic per-seed gains: D2+H3 gains are D2 gains plus I; B3-R3 gap under D2 is 0.01 by construction."""
+    rng = np.random.default_rng(seed); cells = {}
+    for m in M6:
+        e = rng.normal(0, noise, n) if noise else np.zeros(n)
+        d2 = {"F111": g_r3_d2 + e, "F000": g_r3_d2 + 0.01 + e, "C*": g_r3_d2 + 0.005 + e}
+        d2h3 = {"F111": d2["F111"] + i_r3, "F000": d2["F000"] + i_b3, "C*": d2["C*"] + i_c}
+        cells[m] = {"D2+H3": d2h3, "D2": d2}
+    return cells
+
+
+def test_point_estimates_of_i_contrasts_gaps_and_share():
+    s = RB.statistics(_cells())
+    assert s["I"]["F000"]["pooled"] == pytest.approx(0.3) and s["I"]["F111"]["pooled"] == pytest.approx(0.01)
+    assert s["contrast"]["B3-R3"]["pooled"] == pytest.approx(0.29) and s["contrast"]["C*-R3"]["pooled"] == pytest.approx(0.04)
+    assert s["G"]["D2"]["pooled"] == pytest.approx(0.01) and s["G"]["D2+H3"]["pooled"] == pytest.approx(0.30)
+    assert s["S"]["pooled"] == pytest.approx(1 - 0.01 / 0.30)
+
+
+def test_pooled_is_the_equal_weight_mean_of_market_means():
+    c = _cells(); c["fresh0"]["D2+H3"]["F000"] = c["fresh0"]["D2+H3"]["F000"] + 0.6   # I(B3) = 0.9 at fresh0 only
+    s = RB.statistics(c)
+    assert s["I"]["F000"]["markets"]["fresh0"] == pytest.approx(0.9)
+    assert s["I"]["F000"]["pooled"] == pytest.approx((0.9 + 5 * 0.3) / 6)
+
+
+def test_share_undefined_when_the_denominator_lower_bound_is_at_or_below_005():
+    c = _cells(i_b3=0.04, i_r3=0.01, noise=0.02)          # pooled G(D2+H3) = 0.04: lower bound below 0.05
+    r = RB.analyse(c, b=999, seed=1)
+    assert r["S"]["pooled"]["value"] is None and r["S"]["pooled"]["reason"].startswith("not defined")
+    assert r["G"]["D2+H3"]["pooled"]["estimate"] == pytest.approx(0.04)  # the gaps are reported anyway
+
+
+def test_share_defined_and_not_clipped():
+    c = _cells(i_b3=0.3, i_r3=0.01)
+    for m in M6:                                           # G(D2) negative, so S > 1
+        c[m]["D2"]["F000"] = c[m]["D2"]["F111"] - 0.05; c[m]["D2+H3"]["F000"] = c[m]["D2"]["F000"] + 0.3
+    r = RB.analyse(c, b=199, seed=1)
+    assert r["S"]["pooled"]["value"] > 1
+
+
+def test_bootstrap_uses_the_same_seed_indices_for_every_rule_and_family_of_a_market():
+    c = _cells(noise=0.05, seed=3)                         # identical noise in every rule and family of a market
+    r = RB.analyse(c, b=499, seed=2)
+    lo, hi = r["G"]["D2"]["pooled"]["ci95"]               # the shared noise cancels in a paired contrast
+    assert hi - lo == pytest.approx(0.0, abs=1e-12)
+    lo, hi = r["I"]["F000"]["pooled"]["ci95"]
+    assert hi - lo == pytest.approx(0.0, abs=1e-12)
+
+
+def test_bootstrap_is_reproducible_and_has_9999_resamples_by_default():
+    assert RB.B == 9999
+    c = _cells(noise=0.05, seed=4)
+    for m in M6:                                           # break the pairing so intervals have width
+        c[m]["D2"]["F111"] = c[m]["D2"]["F111"] + np.random.default_rng(9).normal(0, 0.05, 40)
+    a, b = RB.analyse(c, b=299, seed=5), RB.analyse(c, b=299, seed=5)
+    assert a["G"]["D2"]["pooled"]["ci95"] == b["G"]["D2"]["pooled"]["ci95"]
+    lo, hi = a["G"]["D2"]["pooled"]["ci95"]
+    assert lo < a["G"]["D2"]["pooled"]["estimate"] < hi
+
+
+def test_market_sensitivity_sign_counts_and_leave_one_out_share():
+    c = _cells(); c["fresh2"]["D2+H3"]["F000"] = c["fresh2"]["D2"]["F000"] - 0.02     # I(B3) < I(R3) at fresh2
+    r = RB.analyse(c, b=199, seed=1)
+    assert r["sensitivity"]["signs"]["B3-R3"] == {"positive": 5, "n": 6}
+    assert r["sensitivity"]["signs"]["C*-R3"] == {"positive": 6, "n": 6}
+    loo = r["sensitivity"]["S_leave_one_out"]
+    assert set(loo) == set(M6) and all(v["value"] is not None for v in loo.values())
+
+
+def test_leave_one_out_has_its_own_five_market_gate():
+    c = _cells(i_b3=0.3)
+    for m in M6[1:]:                                       # only fresh0 carries a B3 - R3 gap under D2+H3
+        c[m]["D2+H3"]["F000"] = c[m]["D2+H3"]["F111"] + 0.0
+    r = RB.analyse(c, b=199, seed=1)
+    assert r["sensitivity"]["S_leave_one_out"]["fresh0"]["value"] is None     # five markets left: no gap
+    assert r["sensitivity"]["S_leave_one_out"]["fresh1"]["value"] is not None  # fresh0 kept: 0.30 / 5 = 0.06 > 0.05
+
+
+def test_missing_cell_is_reported_not_imputed():
+    c = _cells(); del c["fresh3"]["D2"]["C*"]
+    r = RB.analyse(c, b=99, seed=1)
+    assert "fresh3|C*|D2" in r["missing"]
+    assert "fresh3" not in r["I"]["C*"]["markets"]
+
+
+def test_seed_mismatch_refused(tmp_path):
+    ev, rs = _write(tmp_path, seeds_d2=list(range(1, 41)))
+    with pytest.raises(ValueError, match="seeds"):
+        RB.load(ev, rs, _report(tmp_path, ev), M6)
+
+
+def test_expectation_scoring_met_failed_not_established():
+    base = {"all_markets": {"B3-R3": True, "C*-R3": True}, "S": 0.8}
+    dbl = {"all_markets": {"B3-R3": True, "C*-R3": False}, "S": 0.4}
+    e = RB.score(base, dbl)
+    assert e["B3-R3 on all six"] == "met"
+    assert e["C*-R3 on all six"] == "not established (search-sensitive)"
+    assert e["pooled S > 0.5"] == "not established (search-sensitive)"
+    e = RB.score({"all_markets": {"B3-R3": False, "C*-R3": False}, "S": None}, {"all_markets": {"B3-R3": False, "C*-R3": False}, "S": None})
+    assert e["B3-R3 on all six"] == "failed" and e["pooled S > 0.5"] == "S not defined"
+
+
+def test_expectations_need_all_six_markets():
+    c = _cells(); del c["fresh1"]["D2"]["F000"]
+    r = RB.analyse(c, b=99, seed=1)
+    assert r["expectation_inputs"]["all_markets"]["B3-R3"] is None    # a missing cell is not a pass
+
+
+# ---- loading from records ----
+"""Evaluation-2 numbers for the paper, generated from report.json (paper draft 9 outline, "Rules for the text").
+
+--write flattens report.json into one LaTeX macro per path: the text writes \\rv{q4.k} or \\rv{q1.tests.C*-F111|D2+H3.estimate}.
+--check fails when a path used in the text is not in the report, when numbers.tex is stale, or when a bare decimal
+number (decimal, integer, or percentage, outside identifiers such as F111) appears between `% BEGIN-EV2` and `% END-EV2` (evaluation-2 result text must use macros)."""
+from __future__ import annotations
+
+import argparse
+import json
+import math
+import re
+import sys
+from pathlib import Path
+
+DIGITS = 3
+BARE = re.compile(r"(?<![A-Za-z0-9_.])-?(?:\d+(?:\.\d+)?|\.\d+)%?")       # decimals, integers, percentages; not F111, X7-SC, D2+H3
+# Stripped before the bare-number scan: \const{} (protocol constants, marked explicitly) and arguments of references.
+EXEMPT = re.compile(r"_\{[0-9]+\}|_[0-9]|\\(?:const|evone)\{[^}]*\}|\\(?:ref|eqref|cite|citep|citet|label|input|include|includegraphics|url|href)(?:\[[^\]]*\])?\{[^}]*\}")
+USE = re.compile(r"\\rv\{([^}]*)\}")
+USEK = re.compile(r"\\rvk\{(\w+)\}\{([^}]*)\}")
+SITE = re.compile(r"\\site\{([^}]*)\}")
+SECTION = re.compile(r"\\section\*?\s*\{([^}]*)\}(?:\s*\\label\{sec:([^}]*)\})?")
+FULL = ("abstract", "results")       # sections that must lie wholly inside result regions
+NOBARE = REQUIRED = ("abstract", "intro", "results", "discussion", "conclusion")   # no unmarked number outside regions; captions likewise
+LABEL = re.compile(r"\\label\{sec:([^}]*)\}")
+COMMENT = re.compile(r"(?<!\\)%.*")
+INPUT = re.compile(r"\\(?:input|include)\{([^}]*)\}")
+P_LEAVES = {"p", "p_gain", "p_eff", "calibrated", "holm_adjusted", "calibrated_gain", "calibrated_eff"}
+# Kinds for prose in result regions: the field name and the value type must fit the sentence's statistic.
+COUNT_LEAVES = {"k", "fulfilled", "failed", "not assessed",           # Q4's k; the prediction tallies (score_v2.py)
+                "positive", "n", "embedded_identical", "cells", "flagged", "checks", "over_threshold"}    # Fable 5.2 review counts (posthoc)
+KINDS = {"count": lambda leaf, v: leaf in COUNT_LEAVES and isinstance(v, int) and not isinstance(v, bool),
+         "p": lambda leaf, v: leaf in P_LEAVES and isinstance(v, float) and 0 <= v <= 1,
+         "gain": lambda leaf, v: leaf in {"estimate", "gain_diff", "gain_diff_lower", "attacker_gain", "0", "1", "q1_frozen", "q1_doubled",
+                                          "q4_frozen", "q4_doubled", "mean_gain", "mean", "difference", "pooled", "max_shortfall", "fresh1"} and isinstance(v, float),
+         "ratio": lambda leaf, v: leaf == "relative" and isinstance(v, float),
+         "share_s": lambda leaf, v: leaf == "value" and isinstance(v, float),          # reset follow-up S (not clipped)
+         "share": lambda leaf, v: leaf == "audited_share" and isinstance(v, float) and 0 <= v <= 1,
+         "eff": lambda leaf, v: leaf in {"eff", "eff_lower", "efficiency", "0", "1"} and isinstance(v, float),
+         "label": lambda leaf, v: isinstance(v, str)}
+HEADER = "% Generated by docs/revision/paper-v2/numbers_v2.py from report.json; do not edit.\n"
+PREAMBLE = "\\providecommand{\\const}[1]{#1}\n\\providecommand{\\evone}[1]{#1}\n\\providecommand{\\rvk}[2]{\\rv{#2}}\n\\providecommand{\\site}[1]{\\ifcsname site@#1\\endcsname\\csname site@#1\\endcsname\\else\\textbf{??#1}\\fi}\n\\providecommand{\\rv}[1]{\\ifcsname rv@#1\\endcsname\\csname rv@#1\\endcsname\\else\\textbf{??#1}\\fi}\n"
+
+
+def _fmt(v) -> str:
+    if v is None:
+        return "n/a"
+    if isinstance(v, bool):
+        return "yes" if v else "no"
+    if isinstance(v, int):
+        return str(v)
+    if isinstance(v, float):
+        if not math.isfinite(v):
+            raise ValueError(f"nonfinite value in the report: {v}")
+        s = f"{v:.{DIGITS}f}"
+        return f"\\ensuremath{{{s}}}" if s.startswith("-") else s
+    return re.sub(r"([&%$#_{}])", r"\\\1", str(v))
+
+
+def _fmt_p(v) -> str:
+    """p-values: four significant digits; small values in scientific form, so a nonzero p never prints as 0.000."""
+    if isinstance(v, bool) or not isinstance(v, (int, float)):
+        return _fmt(v)
+    if not math.isfinite(v):
+        raise ValueError(f"nonfinite value in the report: {v}")
+    s = f"{float(v):.4g}"
+    if "e" in s:
+        m, e = s.split("e")
+        return f"\\ensuremath{{{m}\\times10^{{{int(e)}}}}}"
+    return s
+
+
+def flat(report, prefix: str = "") -> dict:
+    """Report path to raw value."""
+    out = {}
+    items = report.items() if isinstance(report, dict) else enumerate(report)
+    for k, v in items:
+        path = f"{prefix}{k}"
+        out.update(flat(v, path + ".")) if isinstance(v, (dict, list)) else out.__setitem__(path, v)
+    return out
+
+
+def _is_p(path: str) -> bool:
+    parts = path.split(".")
+    return parts[-1] in P_LEAVES or (len(parts) >= 2 and parts[-2] in P_LEAVES)
+
+
+def macros(report: dict) -> dict:
+    return {p: (_fmt_p(v) if _is_p(p) else _fmt(v)) for p, v in flat(report).items()}
+
+
+def render(report: dict, sites: dict | None = None) -> str:
+    m = macros(report)
+    # With a site manifest the text uses only \\site{}, so only site macros are written (the full path list ran to
+    # 219k lines and overflowed pdfLaTeX's string pool, 2026-11-05).
+    lines = [] if sites is not None else [f"\\expandafter\\def\\csname rv@{p}\\endcsname{{{v}}}" for p, v in sorted(m.items())]
+    lines += [f"\\expandafter\\def\\csname site@{n}\\endcsname{{{m.get(d['path'], '??' + n)}}}" for n, d in sorted((sites or {}).items())]
+    return HEADER + PREAMBLE + "\n".join(lines) + "\n"
+
+
+def _sites(path) -> dict | None:
+    """The result-site manifest: site name -> {path, kind, section}; read from beside the given file when present."""
+    f = Path(path).parent / "sites.json"
+    return json.loads(f.read_text()) if f.exists() else None
+
+
+def load(report_path, extra: dict | None = None) -> dict:
+    """report.json at the top level; each extra source (name -> path: cells.json, scoring.json) under its own name."""
+    data = json.loads(Path(report_path).read_text())
+    for name, path in (extra or {}).items():
+        if name in data:
+            raise ValueError(f"extra source name {name} collides with a report key")
+        data[name] = json.loads(Path(path).read_text())
+    return data
+
+
+def write(report_path, numbers_path, extra: dict | None = None) -> None:
+    Path(numbers_path).write_text(render(load(report_path, extra), _sites(numbers_path)))
+
+
+def _blocks(tex: str) -> tuple[list[str], list[str]]:
+    blocks, problems, cur = [], [], None
+    for n, line in enumerate(tex.splitlines(), 1):
+        s = line.strip()
+        if s == "% BEGIN-EV2":
+            if cur is not None:
+                problems.append(f"line {n}: nested BEGIN-EV2")
+            cur = []
+        elif s == "% END-EV2":
+            if cur is None:
+                problems.append(f"line {n}: END-EV2 without BEGIN-EV2")
+            else:
+                blocks.append("\n".join(cur)); cur = None
+        elif cur is not None and not s.startswith("%"):
+            cur.append(line)
+    if cur is not None:
+        problems.append("unclosed BEGIN-EV2 block")
+    return blocks, problems
+
+
+def strip_comments(text: str) -> str:
+    """Remove LaTeX comments (a % after an even number of backslashes), keeping the region marker lines."""
+    out = []
+    for line in text.splitlines():
+        if line.strip() in ("% BEGIN-EV2", "% END-EV2"):
+            out.append(line.strip()); continue
+        cut, i = len(line), 0
+        while i < len(line):
+            if line[i] == "%":
+                k = i
+                while k > 0 and line[k - 1] == "\\":
+                    k -= 1
+                if (i - k) % 2 == 0:
+                    cut = i; break
+            i += 1
+        out.append(line[:cut])
+    return "\n".join(out) + "\n"
+
+
+def sources(tex_path, numbers_path=None) -> str:
+    """The text with every \\input or \\include file inlined, except the generated numbers file and generated tables
+    (checked by tables_v2.py --check)."""
+    base = Path(tex_path).parent; skip = {Path(numbers_path).name} if numbers_path else set()
+    def inline(m):
+        name = m.group(1); f = base / (name if name.endswith(".tex") else name + ".tex")
+        if f.name in skip or name.startswith("tables/") or not f.exists():
+            return m.group(0)
+        return sources(f, numbers_path)
+    return INPUT.sub(inline, strip_comments(Path(tex_path).read_text()))      # comments first: a commented \\input is not followed
+
+
+def _report_numbers(raw: dict) -> set:
+    return {f"{v:.3f}" for v in raw.values() if isinstance(v, float) and not isinstance(v, bool) and math.isfinite(v)}
+
+
+def check(report_path, numbers_path, tex_path, extra: dict | None = None) -> list[str]:
+    report = load(report_path, extra); known = macros(report); raw = flat(report)
+    tex = sources(tex_path, numbers_path); problems = []
+    sites = _sites(tex_path)
+    if not Path(numbers_path).exists() or Path(numbers_path).read_text() != render(report, sites):
+        problems.append(f"{numbers_path}: stale or missing; run --write")
+    used = set(USE.findall(tex)) | {p for _, p in USEK.findall(tex)}
+    problems += [f"unknown report path in the text: {p}" for p in sorted(used) if p not in known]
+    for kind, p in USEK.findall(tex):
+        if kind not in KINDS:
+            problems.append(f"unknown kind {kind} for {p}")
+        elif p in raw and not KINDS[kind](p.split(".")[-1], raw[p]):
+            problems.append(f"kind {kind} does not fit {p} (value {raw[p]!r})")
+    blocks, bp = _blocks(tex); problems += bp
+    for b in blocks:
+        problems += [f"plain \\rv in an evaluation-2 block (use \\rvk with a kind): {p}" for p in USE.findall(b)]
+        bare = BARE.findall(EXEMPT.sub("", USEK.sub("", USE.sub("", b))))
+        problems += [f"bare number in an evaluation-2 block: {x}" for x in bare]
+    outside = tex
+    for b in blocks:
+        outside = outside.replace(b, "")
+    if sites is not None:
+        problems += [f"\\rv{{{p}}} used with a site manifest (sites.json): use \\site{{}}" for p in USE.findall(tex)]
+        problems += [f"\\rv{{{p}}} used with a site manifest (sites.json): use \\site{{}}" for _, p in USEK.findall(tex)]
+        return problems + _site_checks(tex, sites, raw, known, outside, tex_path)
+    vals = _report_numbers(raw)
+    for x in BARE.findall(EXEMPT.sub("", USEK.sub("", USE.sub("", outside)))):
+        if re.fullmatch(r"-?\d*\.\d{3,}", x) and f"{float(x):.3f}" in vals:
+            problems.append(f"number outside the evaluation-2 regions equals a report value (mark it, or wrap evaluation-1 values in \\evone): {x}")
+    return problems
+
+
+def _scan(tex: str):
+    """Per line of comment-free text: (section key, inside a result region, text), and problems. Every \\section needs
+    a \\label{sec:...} on its line or the next; sec: labels elsewhere are refused and do not change the section."""
+   pods named ts-r-TAG the next day and relaunch only after that check. Spend record (launcher review r16): the account
+   balance difference, `podctl.py spend ts-r-TAG`, at least one hour after the watchdog ends; it can only overstate the
+   spend (other usage on the account is included), provided no deposit or credit was added in the window. The author
+   confirms that on the Runpod billing page before the record enters the ledger (r17); a balance that rose is refused.
+   The next launch with the same name is refused until the spend is recorded. The launcher's numbers are estimates.
+5. On the Mac after retrieval: the diagnostics of all 18 D2 winners and their reverse switches (`--stage diagnostics`),
+   checked against the pod's spot-check cell. The three headline cells (registered D2 records) run on the Mac before the
+   pod (`--headline-diagnostics`, 200 seeds); with the 18 fresh cells this gives the 63 policies and 42 switch
+   comparisons of section 4 plus the 21 reverse switches.
+6. Analysis: a new `reset` block in `posthoc_v2.py` (tested first), a table, and a paragraph in section 9 with sites; the
+   section-1 headline numbers enter at the same time, labelled exploratory.
+7. Internal review of the paper change, then the next external package.
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+The bootstrap code uses the required pairing and separate denominator gates. I found a possible gap when an entire market is missing. I will test that case and check the saved output against the source records.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "python3 -B -c 'import json; from pathlib import Path; j=json.loads(Path(\"docs/revision/posthoc/reset.json\").read_text()); print(\"inputs\",j[\"inputs\"]); print(\"expectations\",j[\"expectations\"]); print(\"headline\",j[\"headline\"]); print(Path(\"docs/revision/paper-v2/tables/posthoc_reset.tex\").read_text()); print({v: {k:j[v][k] for k in (\"missing\",\"S\",\"sensitivity\")} for v in (\"base\",\"doubled\")}); s=json.loads(Path(\"docs/revision/paper-v2/sites.json\").read_text()); print({k:v for k,v in s.items() if k.startswith(\"rs_\")})'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+inputs {'records': '/Users/oemer.demirel/Projects/touchstone/results/v2/eval/all', 'reset': '/Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-pod', 'report_sha256': 'cfe8caa2fd086569c7e02720a28036cf85c7744ad06e78036d35b77faf57c82a', 'reset_inventory_sha256': '6f7568ce67ffb40151991ea2ac8e2a9aaf1199e72ed49a27b6d27522f1356fe6', 'diagnostics_sha256': 'a7fb4af6ee9f7bb6abf808c0ba26dda6df3db50721f5fb45cb7be7daf573ce0b'}
+expectations {'B3-R3 on all six': 'met', 'C*-R3 on all six': 'not established (search-sensitive)', 'pooled S > 0.5': 'met'}
+headline {'I': {'F000': {'estimate': 0.30671013221229637, 'se': 0.001182901599703595}, 'F111': {'estimate': 0.012407202475643187, 'se': 0.0009195769865258557}, 'C*': {'estimate': 0.04391254994532373, 'se': 0.0007766691615778675}}, 'G': {'D2+H3': {'estimate': 0.30164986971858204}, 'D2': {'estimate': 0.007346939981928815}}}
+\begin{tabular}{lll}
+\hline
+Statistic & frozen searches & doubled searches \\
+\hline
+I(B3) & 0.228 [0.226, 0.229] & 0.221 [0.219, 0.222] \\
+I(R3) & 0.045 [0.044, 0.046] & 0.047 [0.046, 0.048] \\
+I(C$^*$) & 0.069 [0.068, 0.070] & 0.080 [0.079, 0.082] \\
+I(B3) - I(R3) & 0.183 [0.181, 0.184] & 0.173 [0.172, 0.175] \\
+I(C$^*$) - I(R3) & 0.024 [0.023, 0.025] & 0.033 [0.032, 0.035] \\
+G(D2+H3) & 0.173 [0.172, 0.175] & 0.170 [0.168, 0.171] \\
+G(D2) & -0.009 [-0.011, -0.008] & -0.004 [-0.005, -0.002] \\
+S & 1.05 [1.04, 1.06] & 1.02 [1.01, 1.03] \\
+markets with I(B3) > I(R3) & 6 of 6 & 6 of 6 \\
+markets with I(C$^*$) > I(R3) & 5 of 6 & 6 of 6 \\
+\hline
+\end{tabular}
+
+{'base': {'missing': [], 'S': {'pooled': {'value': 1.0528629435196029, 'reason': 'defined', 'ci95': [1.043330830072829, 1.0619788324460995], 'denominator_lower_bound': 0.17208828656170708}}, 'sensitivity': {'signs': {'B3-R3': {'positive': 6, 'n': 6}, 'C*-R3': {'positive': 5, 'n': 6}}, 'S_leave_one_out': {'fresh0': {'value': 1.0317820258906123, 'reason': 'defined', 'ci95': [1.022142507750503, 1.04111009053819], 'denominator_lower_bound': 0.19823804687447802}, 'fresh1': {'value': 1.092676137495701, 'reason': 'defined', 'ci95': [1.075232975857962, 1.1095713081044891], 'denominator_lower_bound': 0.11279135052392694}, 'fresh2': {'value': 1.0668892117594524, 'reason': 'defined', 'ci95': [1.0570193630069904, 1.0764092674487913], 'denominator_lower_bound': 0.19524389234724576}, 'fresh3': {'value': 1.0738090522514552, 'reason': 'defined', 'ci95': [1.0611811516631207, 1.08604649542052], 'denominator_lower_bound': 0.15404293233716473}, 'fresh4': {'value': 1.0778385883366504, 'reason': 'defined', 'ci95': [1.0698254196493961, 1.0856406525408209], 'denominator_lower_bound': 0.1704836118713187}, 'fresh5': {'value': 1.0003827694564371, 'reason': 'defined', 'ci95': [0.9929508863320968, 1.0075169784407425], 'denominator_lower_bound': 0.2011198019479746}}}}, 'doubled': {'missing': [], 'S': {'pooled': {'value': 1.021504164697488, 'reason': 'defined', 'ci95': [1.0117089397141348, 1.0310791267420096], 'denominator_lower_bound': 0.16849008045890132}}, 'sensitivity': {'signs': {'B3-R3': {'positive': 6, 'n': 6}, 'C*-R3': {'positive': 6, 'n': 6}}, 'S_leave_one_out': {'fresh0': {'value': 1.035141152475243, 'reason': 'defined', 'ci95': [1.0253411621466217, 1.0446410446259489], 'denominator_lower_bound': 0.19391898401842728}, 'fresh1': {'value': 1.0357370519317008, 'reason': 'defined', 'ci95': [1.0176620023872536, 1.0533300183123586], 'denominator_lower_bound': 0.109639143474251}, 'fresh2': {'value': 1.0316380009417834, 'reason': 'defined', 'ci95': [1.0213472658730083, 1.0415500692817306], 'denominator_lower_bound': 0.18883092521471817}, 'fresh3': {'value': 1.0320759743115777, 'reason': 'defined', 'ci95': [1.019029103816652, 1.0448501641171792], 'denominator_lower_bound': 0.15009710033615214}, 'fresh4': {'value': 1.0391048374829184, 'reason': 'defined', 'ci95': [1.0307104536072378, 1.047317205830155], 'denominator_lower_bound': 0.1710608684121786}, 'fresh5': {'value': 0.9670216470847972, 'reason': 'defined', 'ci95': [0.9591143494799405, 0.9746808732242602], 'denominator_lower_bound': 0.1967838657151326}}}}}
+{'rs_hl_b3': {'path': 'reset.headline.I.F000.estimate', 'kind': 'gain', 'section': 'results'}, 'rs_hl_r3': {'path': 'reset.headline.I.F111.estimate', 'kind': 'gain', 'section': 'results'}, 'rs_hl_g1': {'path': 'reset.headline.G.D2+H3.estimate', 'kind': 'gain', 'section': 'results'}, 'rs_hl_g0': {'path': 'reset.headline.G.D2.estimate', 'kind': 'gain', 'section': 'results'}, 'rs_g1': {'path': 'reset.base.G.D2+H3.pooled.estimate', 'kind': 'gain', 'section': 'results'}, 'rs_g1_lo': {'path': 'reset.base.G.D2+H3.pooled.ci95.0', 'kind': 'gain', 'section': 'results'}, 'rs_g1_hi': {'path': 'reset.base.G.D2+H3.pooled.ci95.1', 'kind': 'gain', 'section': 'results'}, 'rs_g0': {'path': 'reset.base.G.D2.pooled.estimate', 'kind': 'gain', 'section': 'results'}, 'rs_g0_lo': {'path': 'reset.base.G.D2.pooled.ci95.0', 'kind': 'gain', 'section': 'results'}, 'rs_g0_hi': {'path': 'reset.base.G.D2.pooled.ci95.1', 'kind': 'gain', 'section': 'results'}, 'rs_s': {'path': 'reset.base.S.pooled.value', 'kind': 'share_s', 'section': 'results'}, 'rs_s_d': {'path': 'reset.doubled.S.pooled.value', 'kind': 'share_s', 'section': 'results'}, 'rs_g1_d': {'path': 'reset.doubled.G.D2+H3.pooled.estimate', 'kind': 'gain', 'section': 'results'}, 'rs_g0_d': {'path': 'reset.doubled.G.D2.pooled.estimate', 'kind': 'gain', 'section': 'results'}, 'rs_i_b3': {'path': 'reset.base.I.F000.pooled.estimate', 'kind': 'gain', 'section': 'results'}, 'rs_i_r3': {'path': 'reset.base.I.F111.pooled.estimate', 'kind': 'gain', 'section': 'results'}, 'rs_i_c': {'path': 'reset.base.I.C*.pooled.estimate', 'kind': 'gain', 'section': 'results'}, 'rs_sign_b': {'path': 'reset.base.sensitivity.signs.B3-R3.positive', 'kind': 'count', 'section': 'results'}, 'rs_sign_bd': {'path': 'reset.doubled.sensitivity.signs.B3-R3.positive', 'kind': 'count', 'section': 'results'}, 'rs_sign_c': {'path': 'reset.base.sensitivity.signs.C*-R3.positive', 'kind': 'count', 'section': 'results'}, 'rs_sign_cd': {'path': 'reset.doubled.sensitivity.signs.C*-R3.positive', 'kind': 'count', 'section': 'results'}, 'rs_f3_c': {'path': 'reset.base.contrast.C*-R3.markets.fresh3.estimate', 'kind': 'gain', 'section': 'results'}, 'rs_exp_b': {'path': 'reset.expectations.B3-R3 on all six', 'kind': 'label', 'section': 'results'}, 'rs_exp_c': {'path': 'reset.expectations.C*-R3 on all six', 'kind': 'label', 'section': 'results'}, 'rs_exp_s': {'path': 'reset.expectations.pooled S > 0.5', 'kind': 'label', 'section': 'results'}, 'rs_fx_b3': {'path': 'reset.switches.F000.fixed_policy_x0.pooled', 'kind': 'gain', 'section': 'results'}, 'rs_fx_r3': {'path': 'reset.switches.F111.fixed_policy_x0.pooled', 'kind': 'gain', 'section': 'results'}, 'rs_rev_b3': {'path': 'reset.switches.F000.reverse_x1.pooled', 'kind': 'gain', 'section': 'results'}, 'rs_rev_r3': {'path': 'reset.switches.F111.reverse_x1.pooled', 'kind': 'gain', 'section': 'results'}}
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'git show 3e286c1 --format=fuller -- docs/revision/posthoc/reset_block.py && git show 41bafd2 --format=fuller -- docs/revision/paper-v2/tables/posthoc_reset.tex' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+commit 3e286c11a44ee97103d60ea3d72808e5997dfc11
+Author:     Ömer Demirel <7556489+demirelo@users.noreply.github.com>
+AuthorDate: Wed Nov 11 17:47:33 2026 +0100
+Commit:     Ömer Demirel <7556489+demirelo@users.noreply.github.com>
+CommitDate: Wed Nov 11 17:47:33 2026 +0100
+
+    Reset block of the post-hoc analysis (plan draft 5, sections 5-6), tests first, before any result is computed
+    
+    Separate module docs/revision/posthoc/reset_block.py with its own command line (ruling: keeps posthoc_v2.py's
+    registered outputs untouched; the plan's 'block in posthoc_v2.py' is met by output, not by file). Paired seed
+    bootstrap (9,999, percentile, seed 20261109), one index vector per market shared by every rule and family; pooled
+    equal market weights; S gated on the lower bound of pooled G(D2+H3) > 0.05; leave-one-out S with five-market gates;
+    sign counts; doubled versions; expectation scoring met / failed / not established. 17 tests.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+diff --git a/docs/revision/posthoc/reset_block.py b/docs/revision/posthoc/reset_block.py
+new file mode 100644
+index 0000000..4183f2b
+--- /dev/null
++++ b/docs/revision/posthoc/reset_block.py
+@@ -0,0 +1,235 @@
++"""The reset block of the post-hoc analysis (docs/revision/reset-experiment-plan.md, draft 5, sections 5 and 6).
++
++I(r, m) = mean over the evaluation seeds of g(D2+H3 winner) - g(D2 winner), both against the frozen reference of (r, m).
++Rules: B3 = F000, R3 = F111, C*. Gaps G(fam) = g_B3 - g_R3 under one family. Share S = 1 - G(D2) / G(D2+H3), pooled,
++reported only if the lower bound of pooled G(D2+H3) exceeds 0.05. Intervals: paired seed bootstrap, percentile 95%,
++the same resampled seed indices for every rule and family of a market; pooled = equal-weight mean of the market means,
++seeds resampled independently within each market. Descriptive; no test, no registered decision changes.
++"""
++from __future__ import annotations
++
++import json
++from pathlib import Path
++
++import numpy as np
++
++RULES = ("F000", "F111", "C*")
++FAMS = ("D2+H3", "D2")
++B = 9999
++SEED = 20261109                       # fixed bootstrap seed (the plan's date of specification)
++GATE = 0.05
++CONTRASTS = {"B3-R3": ("F000", "F111"), "C*-R3": ("C*", "F111")}
++
++
++def safe(rid: str) -> str:
++    return rid.replace("|", "__").replace("/", "~").replace("*", "star")      # revision_v2._safe
++
++
++def _read(p: Path):
++    return json.loads(p.read_text()) if p.exists() else None
++
++
++def load(eval_all, reset_dir, report: dict, markets) -> dict:
++    """Base and doubled per-seed gains, {version: {market: {family: {rule: array}}}}, plus the D2 doubling flags.
++    Refuses if the seeds of a market differ between any rule, family or version (the pairing needs one seed list)."""
++    base, dbl, flags = {}, {}, {}
++    for m in markets:
++        seeds = None
++        for fam in FAMS:
++            for rule in RULES:
++                rid = f"{m}@rho0.2|{rule}|{fam}|profit"
++                root = Path(eval_all) if fam == "D2+H3" else Path(reset_dir)
++                r = _read(root / "evaluate" / (safe(rid) + ".json"))
++                if fam == "D2+H3":
++                    h = report.get("doubling", {}).get(rid)
++                else:
++                    d = _read(Path(reset_dir) / "doubling" / (safe(rid) + ".json")); h = d
++                    if d is not None:
++                        flags[f"{m}|{rule}|D2"] = {k: d[k] for k in ("attack_change", "reference_change", "incomplete")}
++                for ver, src, store in (("base", r, base), ("doubled", (h or {}).get("heldout"), dbl)):
++                    if src is None:
++                        continue
++                    if seeds is None:
++                        seeds = list(src["seeds"])
++                    elif list(src["seeds"]) != seeds:
++                        raise ValueError(f"seeds of {rid} ({ver}) differ from the market's seed list")
++                    store.setdefault(m, {}).setdefault(fam, {})[rule] = np.asarray(src["gain"], dtype=float)
++    return {"base": base, "doubled": dbl, "flags": flags}
++
++
++def _complete(cells: dict) -> tuple[dict, list]:
++    """Markets with every rule and family, and the list of missing cells (reported, never imputed)."""
++    ok, missing = {}, []
++    for m, v in cells.items():
++        miss = [f"{m}|{r}|{f}" for f in FAMS for r in RULES if r not in v.get(f, {})]
++        missing += miss
++        ok[m] = v
++    return ok, missing
++
++
++def _market_stats(v: dict, idx=None) -> dict:
++    """Per-market means of the statistics for one market (optionally on resampled seed indices)."""
++    g = {f: {r: (a if idx is None else a[idx]) for r, a in v.get(f, {}).items()} for f in FAMS}
++    out = {}
++    for r in RULES:
++        if r in g["D2+H3"] and r in g["D2"]:
++            out[("I", r)] = float(np.mean(g["D2+H3"][r] - g["D2"][r]))
++    for name, (a, b) in CONTRASTS.items():
++        if ("I", a) in out and ("I", b) in out:
++            out[("C", name)] = out[("I", a)] - out[("I", b)]
++    for f in FAMS:
++        if "F000" in g[f] and "F111" in g[f]:
++            out[("G", f)] = float(np.mean(g[f]["F000"] - g[f]["F111"]))
++    return out
++
++
++def _pool(per_market: dict, key, markets) -> float | None:
++    xs = [per_market[m][key] for m in markets if key in per_market[m]]
++    return float(np.mean(xs)) if xs and len(xs) == len(markets) else None
++
++
++def _share(gd2, gd2h3):
++    return None if gd2 is None or gd2h3 is None or gd2h3 == 0 else 1 - gd2 / gd2h3
++
++
++def statistics(cells: dict) -> dict:
++    """Point estimates: per market and pooled (pooled only over markets where the statistic exists in all of them)."""
++    pm = {m: _market_stats(v) for m, v in cells.items()}; ms = tuple(cells)
++    res = {"I": {}, "contrast": {}, "G": {}}
++    for r in RULES:
++        res["I"][r] = {"markets": {m: pm[m][("I", r)] for m in ms if ("I", r) in pm[m]}, "pooled": _pool(pm, ("I", r), _have(pm, ("I", r)))}
++    for c in CONTRASTS:
++        res["contrast"][c] = {"markets": {m: pm[m][("C", c)] for m in ms if ("C", c) in pm[m]}, "pooled": _pool(pm, ("C", c), _have(pm, ("C", c)))}
++    for f in FAMS:
++        res["G"][f] = {"markets": {m: pm[m][("G", f)] for m in ms if ("G", f) in pm[m]}, "pooled": _pool(pm, ("G", f), _have(pm, ("G", f)))}
++    res["S"] = {"pooled": _share(res["G"]["D2"]["pooled"], res["G"]["D2+H3"]["pooled"])}
++    return res
++
++
++def _have(pm, key):
++    return tuple(m for m in pm if key in pm[m])
++
++
++def _boot(cells: dict, markets, b: int, rng) -> list[dict]:
++    """b replicates; each replicate draws one index vector per market, shared by every rule and family of that market."""
++    reps = []
++    n = {m: len(next(iter(next(iter(cells[m].values())).values()))) for m in markets}
++    for _ in range(b):
++        reps.append({m: _market_stats(cells[m], rng.integers(0, n[m], n[m])) for m in markets})
++    return reps
++
++
++def _ci(xs):
++    xs = np.asarray([x for x in xs if x is not None], dtype=float)
++    return [float(np.percentile(xs, 2.5)), float(np.percentile(xs, 97.5))] if xs.size else None
++
++
++def _gated_share(pm_point, reps, markets) -> dict:
++    """S over `markets` with its denominator gate (lower bound of pooled G(D2+H3) over the same markets above 0.05)."""
++    g1 = _pool(pm_point, ("G", "D2+H3"), markets); g0 = _pool(pm_point, ("G", "D2"), markets)
++    lb = _ci([_pool(r, ("G", "D2+H3"), markets) for r in reps])
++    if g1 is None or g0 is None or lb is None:
++        return {"value": None, "reason": "not defined: a cell is missing", "ci95": None}
++    if not lb[0] > GATE:
++        return {"value": None, "reason": f"not defined: lower bound of pooled G(D2+H3) {lb[0]:.4f} <= {GATE}", "ci95": None}
++    return {"value": _share(g0, g1), "reason": "defined", "ci95": _ci([_share(_pool(r, ("G", "D2"), markets), _pool(r, ("G", "D2+H3"), markets)) for r in reps]),
++            "denominator_lower_bound": lb[0]}
++
++
++def analyse(cells: dict, b: int = B, seed: int = SEED) -> dict:
++    """Point estimates with paired percentile intervals, the gated share, market sensitivity and expectation inputs."""
++    cells, missing = _complete(cells); ms = tuple(cells)
++    pm = {m: _market_stats(cells[m]) for m in ms}
++    reps = _boot(cells, ms, b, np.random.default_rng(seed))
++    res = {"missing": missing, "bootstrap": {"resamples": b, "seed": seed, "interval": "percentile 95%"}}
++
++    def block(kind, key_of, names):
++        out = {}
++        for nm in names:
++            k = key_of(nm); have = _have(pm, k)
++            out[nm] = {"markets": {m: {"estimate": pm[m][k], "ci95": _ci([r[m].get(k) for r in reps])} for m in have},
++                       "pooled": {"estimate": _pool(pm, k, have) if len(have) == len(ms) else None,
++                                  "ci95": _ci([_pool(r, k, have) for r in reps]) if len(have) == len(ms) else None}}
++        return out
++    res["I"] = block("I", lambda r: ("I", r), RULES)
++    res["contrast"] = block("C", lambda c: ("C", c), tuple(CONTRASTS))
++    res["G"] = block("G", lambda f: ("G", f), FAMS)
++    res["S"] = {"pooled": _gated_share(pm, reps, ms)}
++    signs = {c: {"positive": int(sum(1 for m in ms if pm[m].get(("C", c), 0) > 0)), "n": int(sum(1 for m in ms if ("C", c) in pm[m]))} for c in CONTRASTS}
++    loo = {m: _gated_share(pm, reps, tuple(x for x in ms if x != m)) for m in ms} if len(ms) > 1 else {}
++    res["sensitivity"] = {"signs": signs, "S_leave_one_out": loo}
++    six = len(ms) == 6
++    res["expectation_inputs"] = {"all_markets": {c: (signs[c]["positive"] == 6 if six and signs[c]["n"] == 6 else None) for c in CONTRASTS},
++                                 "S": res["S"]["pooled"]["value"]}
++    return res
++
++
++def score(base: dict, dbl: dict) -> dict:
++    """Plan section 6: met if it holds under both the base and the doubled searches, failed if under neither,
++    not established (search-sensitive) if they disagree; undefined S and missing cells are reported as such."""
++    def one(a, b):
++        if a is None or b is None:
++            return "missing cell"
++        return "met" if a and b else "failed" if not a and not b else "not established (search-sensitive)"
++    out = {f"{c} on all six": one(base["all_markets"][c], dbl["all_markets"][c]) for c in CONTRASTS}
++    sb, sd = base["S"], dbl["S"]
++    out["pooled S > 0.5"] = "S not defined" if sb is None or sd is None else one(sb > 0.5, sd > 0.5)
++    return out
++
++
++def reset_block(eval_all, reset_dir, report: dict, markets, b: int = B, seed: int = SEED) -> dict:
++    L = load(eval_all, reset_dir, report, markets)
++    base, dbl = analyse(L["base"], b, seed), analyse(L["doubled"], b, seed)
++    return {"label": "exploratory follow-up (reset experiment plan draft 5); descriptive, not registered",
++            "base": base, "doubled": dbl, "doubling_flags": L["flags"],
++            "expectations": score(base["expectation_inputs"], dbl["expectation_inputs"])}
++
++
++def _fmt(est, ci, d: int = 3) -> str:
++    if est is None:
++        return "--"
++    return f"{est:.{d}f}" + (f" [{ci[0]:.{d}f}, {ci[1]:.{d}f}]" if ci else "")
++
++
++ROWS = (("I(B3)", "I", "F000"), ("I(R3)", "I", "F111"), ("I(C*)", "I", "C*"), ("I(B3) - I(R3)", "contrast", "B3-R3"),
++        ("I(C*) - I(R3)", "contrast", "C*-R3"), ("G(D2+H3)", "G", "D2+H3"), ("G(D2)", "G", "D2"))
++
++
++def table(res: dict) -> str:
++    """Pooled statistics (equal market weights) with 95% paired percentile intervals, frozen and doubled searches."""
++    lines = ["\\begin{tabular}{lll}", "\\hline", "Statistic & frozen searches & doubled searches \\\\", "\\hline"]
++    for label, kind, key in ROWS:
++        cells = [_fmt(res[v][kind][key]["pooled"]["estimate"], res[v][kind][key]["pooled"]["ci95"]) for v in ("base", "doubled")]
++        lines.append(f"{label} & {cells[0]} & {cells[1]} \\\\")
++    s = [res[v]["S"]["pooled"] for v in ("base", "doubled")]
++    lines.append("S & " + " & ".join(_fmt(x["value"], x["ci95"], 2) if x["value"] is not None else "not defined" for x in s) + " \\\\")
++    for c in CONTRASTS:
++        lines.append(f"markets with {c.replace('B3-R3', 'I(B3) > I(R3)').replace('C*-R3', 'I(C*) > I(R3)')} & "
++                     + " & ".join(f"{res[v]['sensitivity']['signs'][c]['positive']} of {res[v]['sensitivity']['signs'][c]['n']}" for v in ("base", "doubled")) + " \\\\")
++    lines += ["\\hline", "\\end{tabular}"]
++    return "\n".join(lines) + "\n"
++
++
++def main(argv=None) -> int:
++    import argparse
++    import hashlib
++    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
++    for k in ("--records", "--reset", "--report", "--out", "--tables"):
++        ap.add_argument(k, required=True)
++    ap.add_argument("--resamples", type=int, default=B); ap.add_argument("--seed", type=int, default=SEED)
++    a = ap.parse_args(argv)
++    markets = tuple(f"fresh{i}" for i in range(6))
++    res = reset_block(a.records, a.reset, json.loads(Path(a.report).read_text()), markets, a.resamples, a.seed)
++    res["inputs"] = {"records": str(a.records), "reset": str(a.reset), "report_sha256": hashlib.sha256(Path(a.report).read_bytes()).hexdigest(),
++                     "reset_inventory_sha256": (hashlib.sha256((Path(a.reset) / "inventory.json").read_bytes()).hexdigest()
++                                                if (Path(a.reset) / "inventory.json").exists() else None)}
++    Path(a.out).write_text(json.dumps(res, indent=1) + "\n")
++    d = Path(a.tables); d.mkdir(parents=True, exist_ok=True)
++    (d / "posthoc_reset.tex").write_text(table(res).replace("C*", "C$^*$"))
++    print(json.dumps(res["expectations"], indent=1))
++    return 0
++
++
++if __name__ == "__main__":
++    import sys
++    sys.exit(main())
+commit 41bafd29552d0fd2f47bf57739d5751886626c13
+Author:     Ömer Demirel <7556489+demirelo@users.noreply.github.com>
+AuthorDate: Wed Nov 11 17:48:02 2026 +0100
+Commit:     Ömer Demirel <7556489+demirelo@users.noreply.github.com>
+CommitDate: Wed Nov 11 17:48:02 2026 +0100
+
+    Reset follow-up results: reset block on the pod records (results/v2/followup-reset-pod), 9,999 resamples
+    
+    Expectations (plan section 6): B3-R3 on all six met; C*-R3 on all six not established (frozen 5 of 6, fresh3
+    -0.041; doubled 6 of 6); pooled S > 0.5 met (frozen 1.05, doubled 1.02). G(D2+H3) equals posthoc.json q4 exactly.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+diff --git a/docs/revision/paper-v2/tables/posthoc_reset.tex b/docs/revision/paper-v2/tables/posthoc_reset.tex
+new file mode 100644
+index 0000000..5d91c3d
+--- /dev/null
++++ b/docs/revision/paper-v2/tables/posthoc_reset.tex
+@@ -0,0 +1,16 @@
++\begin{tabular}{lll}
++\hline
++Statistic & frozen searches & doubled searches \\
++\hline
++I(B3) & 0.228 [0.226, 0.229] & 0.221 [0.219, 0.222] \\
++I(R3) & 0.045 [0.044, 0.046] & 0.047 [0.046, 0.048] \\
++I(C$^*$) & 0.069 [0.068, 0.070] & 0.080 [0.079, 0.082] \\
++I(B3) - I(R3) & 0.183 [0.181, 0.184] & 0.173 [0.172, 0.175] \\
++I(C$^*$) - I(R3) & 0.024 [0.023, 0.025] & 0.033 [0.032, 0.035] \\
++G(D2+H3) & 0.173 [0.172, 0.175] & 0.170 [0.168, 0.171] \\
++G(D2) & -0.009 [-0.011, -0.008] & -0.004 [-0.005, -0.002] \\
++S & 1.05 [1.04, 1.06] & 1.02 [1.01, 1.03] \\
++markets with I(B3) > I(R3) & 6 of 6 & 6 of 6 \\
++markets with I(C$^*$) > I(R3) & 5 of 6 & 6 of 6 \\
++\hline
++\end{tabular}
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg --files docs/revision /Users/oemer.demirel/Projects/touchstone/results/v2/eval/all /Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-mac-diag -g 'report.json' -g 'diagnostics.json' -g 'spot_compare.json' -g 'paper_check.sh' -g 'paper_commit.sh' -g '"'!roster/**'"'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-mac-diag/spot_compare.json
+/Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-mac-diag/diagnostics.json
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "python3 -B -c 'import sys,inspect; sys.path.insert(0,\"docs/revision/posthoc\"); import test_reset_block as t; passed=[]
+for name,f in vars(t).copy().items():
+ if name.startswith(\"test_\") and not inspect.signature(f).parameters: f(); passed.append(name)
+print(\"Read-only no-fixture tests passed:\",len(passed))
+c=t._cells(); del c[\"fresh5\"]; a=t.RB.analyse(c,b=99,seed=1); print(\"missing-market repro\",a[\"missing\"],a[\"S\"],t.RB.score(a[\"expectation_inputs\"],a[\"expectation_inputs\"]))'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ exited 1 in 0ms:
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import sys,inspect; sys.path.insert(0,"docs/revision/posthoc"); import test_reset_block as t; passed=[]
+                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/docs/revision/posthoc/test_reset_block.py", line 6, in <module>
+    import numpy as np
+ModuleNotFoundError: No module named 'numpy'. Did you mean: 'runpy'?
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'ls -d /Users/oemer.demirel/Projects/touchstone/.venv* /Users/oemer.demirel/Projects/touchstone/results/v2/*/report.json /Users/oemer.demirel/Projects/touchstone/results/v2/report.json' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ exited 1 in 0ms:
+ls: /Users/oemer.demirel/Projects/touchstone/results/v2/report.json: No such file or directory
+/Users/oemer.demirel/Projects/touchstone/.venv
+/Users/oemer.demirel/Projects/touchstone/results/v2/report/report.json
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg -n 'report.json|python|venv' scripts/paper_check.sh scripts/paper_commit.sh pyproject.toml docs/revision/posthoc/README*" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ exited 1 in 0ms:
+zsh:1: no matches found: docs/revision/posthoc/README*
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "/Users/oemer.demirel/Projects/touchstone/.venv/bin/python -B -c 'import sys,inspect; sys.path.insert(0,\"docs/revision/posthoc\"); import test_reset_block as t; passed=[]
+for name,f in vars(t).copy().items():
+ if name.startswith(\"test_\") and not inspect.signature(f).parameters: f(); passed.append(name)
+print(\"Read-only no-fixture tests passed:\",len(passed))
+c=t._cells(); del c[\"fresh5\"]; a=t.RB.analyse(c,b=99,seed=1); print(\"missing-market repro\",a[\"missing\"],a[\"S\"],t.RB.score(a[\"expectation_inputs\"],a[\"expectation_inputs\"]))'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 658ms:
+Read-only no-fixture tests passed: 15
+missing-market repro [] {'pooled': {'value': 0.9666666666666667, 'reason': 'defined', 'ci95': [0.9666666666666667, 0.9666666666666667], 'denominator_lower_bound': 0.3}} {'B3-R3 on all six': 'missing cell', 'C*-R3 on all six': 'missing cell', 'pooled S > 0.5': 'met'}
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "python3 -B -c 'import json; from pathlib import Path; root=Path(\"/Users/oemer.demirel/Projects/touchstone/results/v2\"); r=json.loads((root/\"eval/all/evaluate/fresh0@rho0.2__F111__D2+H3__profit.json\").read_text()); print(\"eval keys\",list(r));print(\"provenance\",r.get(\"provenance\")); print(\"upstream\",r.get(\"upstream\")); d=json.loads((root/\"followup-reset-pod/doubling/fresh0@rho0.2__F111__D2__profit.json\").read_text());print(\"double keys\",list(d));print(\"heldout keys\",list(d[\"heldout\"])); print(\"spot\",(root/\"followup-reset-mac-diag/spot_compare.json\").read_text())'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+eval keys ['stage', 'id', 'provenance', 'upstream', 'seeds', 'gain', 'eff_attack', 'eff_ref', 'net_eff_attack', 'net_eff_ref', 'profit_attack', 'profit_ref', 'audit_spend_attack', 'sstar', 'served_share_attack', 'served_share_ref', 'false_refund_focal_attack', 'false_refund_others_attack', 'false_refund_focal_ref', 'false_refund_others_ref']
+provenance {'git_commit': 'd5e602e2bac44248c352985a5f1c647929252d0d', 'runner_sha256': 'afe7c26e810ef855288b8dc8211c7b32ac6b18461b2b9f722fc5e9d1a4ee35fd', 'cfg_sha256': '65b364cea67db322d69f6c907d622c898e43166480267b3e761ed3ba2c580315', 'salt_sha256': 'c245f8900fc17efc60cb2fe23a7da364d1b959485ec9bfc1ed5cb6f7f73ce300', 'root': '00000000000000000000942ae8d55e64fab0faacd2c292687bb278af461d9d58', 'seeds_train': [1000, 1001, 1002, 1003, 1004], 'seeds_val': [2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019], 'seeds_eval': [31514083, 32787965, 36728121, 38703536, 36965772, 36873769, 31471096, 34250228, 34812140, 32290115, 33818954, 31140090, 31593324, 31411337, 31474454, 31360842, 36809370, 30053490, 39941746, 37790044, 35721506, 31821380, 32476076, 39898204, 36288982, 37068173, 34471069, 36292736, 34015150, 30123748, 36932961, 30459750, 30904721, 34984953, 31943090, 31024126, 31436186, 39900690, 36291633, 31605377, 35473878, 33511739, 38879317, 36845554, 30276032, 31623787, 34091061, 37277732, 37588012, 31796652, 38429446, 31265672, 39111171, 38534902, 38497981, 30791784, 36364351, 33584208, 33739947, 36883381, 32656266, 38371901, 32085714, 36743916, 37465820, 35582341, 33850733, 35518732, 31868816, 39022655, 36762432, 35822444, 33921277, 39686580, 39414932, 30482913, 31068487, 33010953, 32803568, 32014894, 38449300, 36591567, 31975729, 39016798, 39301163, 39075148, 32999532, 30038292, 35291610, 33069052, 39060480, 31693050, 34214915, 37079086, 30680173, 31528173, 32590430, 33240568, 31581384, 34861677, 33675942, 30837018, 37631118, 37768897, 35608244, 35467263, 38729570, 34880185, 32292461, 38994271, 33352698, 31594262, 32454224, 37281986, 36566347, 35189988, 35694152, 39253067, 33416857, 30066209, 38506423, 34560624, 38855419, 33032570, 37432932, 38271169, 37469643, 36358543, 31280260, 33560632, 31916318, 30821384, 38378503, 36437992, 38815826, 37972207, 38419614, 38872310, 33654600, 36663504, 31940164, 31885353, 33178789, 31621096, 39188426, 39718969, 36035222, 31566264, 30175647, 38644552, 32369187, 39060872, 35318763, 32823172, 30028825, 32999978, 30566887, 38115396, 36088204, 39517401, 31057578, 30045526, 37926804, 39925901, 37168534, 39883520, 35300972, 38763816, 37053457, 36923309, 30221806, 32235595, 32739751, 31218448, 32580003, 32677494, 35524131, 38297645, 37743769, 33870430, 39116580, 35827248, 39626292, 33524096, 36163415, 37254557, 38658628, 35931473, 35019438, 38475007, 39286021, 34289636, 32657478, 36912449, 38692074, 38379697, 35078774, 39376076, 36322207, 35269652], 'context': 'fresh0@rho0.2', 'budget': [5, 300, 5, 200], 'rule_params_sha256': '4b209b6f7076695d15c7dad94563ad20601b992682d490b0c973b7d43808a5a4', 'id': 'fresh0@rho0.2|F111|D2+H3|profit'}
+upstream {'freeze/fresh0@rho0.2': '96f60aacabfacbe68917f93a75dd0b55a328d523d4b89ea6cb548d2f1b724590', 'fresh0@rho0.2|F111|D2+H3|profit': '5ef422fae3c399cb0aca2e248ac55df8c3de0db6259d3ab0497f098f93b1bfb0', 'reference/fresh0@rho0.2/F111': '242d46623389b6baab29411123982f109bf04edc63ca103e9d2a9dbe56c3d91f'}
+double keys ['stage', 'id', 'provenance', 'upstream', 'kind', 'attack_change', 'reference_change', 'incomplete', 'heldout']
+heldout keys ['knobs', 'seeds', 'gain', 'eff_attack', 'eff_ref', 'net_eff_attack', 'net_eff_ref', 'profit_attack', 'profit_ref', 'audit_spend_attack', 'sstar', 'served_share_attack', 'served_share_ref', 'false_refund_focal_attack', 'false_refund_others_attack', 'false_refund_focal_ref', 'false_refund_others_ref']
+spot {
+ "cell": "fresh0@rho0.2|F111",
+ "counts_exact": true,
+ "mismatches": [],
+ "max_abs_diff": 2.220446049250313e-16,
+ "tolerance": 1e-09,
+ "pass": true,
+ "mac_sha256": "a7fb4af6ee9f7bb6abf808c0ba26dda6df3db50721f5fb45cb7be7daf573ce0b",
+ "pod_spot_sha256": "597d7f66402706784e3615f317c23a6c3b37a562ca6cea52d0a19f091e8f94a2",
+ "code": "fdfd83e968726df21b53eec998251827ff1b28c3 (reset_code.tgz, unpacked in results/pods/mac_diag)"
+}
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "/Users/oemer.demirel/Projects/touchstone/.venv/bin/python -B -c 'import json,sys,hashlib; from pathlib import Path; sys.path.insert(0,\"docs/revision/posthoc\"); import reset_block as r; sys.path.insert(0,\"docs/revision/paper-v2\"); import numbers_v2 as n
+root=Path(\"/Users/oemer.demirel/Projects/touchstone/results/v2\"); saved=json.loads(Path(\"docs/revision/posthoc/reset.json\").read_text()); report=root/\"report/report.json\"; d=root/\"followup-reset-mac-diag/diagnostics.json\"; inp=saved[\"inputs\"]
+for k,p in [(\"report_sha256\",report),(\"reset_inventory_sha256\",root/\"followup-reset-pod/inventory.json\"),(\"diagnostics_sha256\",d)]: print(k,hashlib.sha256(p.read_bytes()).hexdigest()==inp[k])
+res=r.reset_block(inp[\"records\"],inp[\"reset\"],json.loads(report.read_text()),tuple(f\"fresh{i}\" for i in range(6)))
+for k,v in res.items(): print(\"recomputed\",k,v==saved[k])
+print(\"headline\",r.headline(inp[\"records\"])==saved[\"headline\"]); print(\"switches\",r.switch_summary(json.loads(d.read_text()))==saved[\"switches\"]); print(\"table\",r.table(res).replace(\"C*\",\"C"'$''^*$")==Path("docs/revision/paper-v2/tables/posthoc_reset.tex").read_text())
+sites=json.loads(Path("docs/revision/paper-v2/sites.json").read_text()); macros=n.macros({"reset":saved}); actual=Path("docs/revision/paper-v2/numbers.tex").read_text(); checked=[]
+for k,v in sites.items():
+ if k.startswith("rs_"):
+  assert n.KINDS[v["kind"]](v["path"].split(".")[-1],n.flat({"reset":saved})[v["path"]]); assert "'"\\\\csname site@\"+k+\"\\\\endcsname{\"+macros[v[\"path\"]]+\"}\" in actual; checked.append(k)
+print(\"site macros checked\",len(checked))'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 2645ms:
+report_sha256 True
+reset_inventory_sha256 True
+diagnostics_sha256 True
+recomputed label True
+recomputed base True
+recomputed doubled True
+recomputed doubling_flags True
+recomputed expectations True
+headline True
+switches True
+table True
+site macros checked 29
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "/Users/oemer.demirel/Projects/touchstone/.venv/bin/python -B -c 'import json,sys,numpy as np; from pathlib import Path; sys.path.insert(0,\"docs/revision/posthoc\"); import reset_block as r
+root=Path(\"/Users/oemer.demirel/Projects/touchstone/results/v2\"); ev=root/\"eval/all\"; pod=root/\"followup-reset-pod\"; rep=json.loads((root/\"report/report.json\").read_text()); counts=0
+for m in [f\"fresh{i}\" for i in range(6)]:
+ expected=None
+ for rule in r.RULES:
+  records=[]
+  for fam,p in [(\"D2+H3\",ev),(\"D2\",pod)]:
+   rid=f\"{m}@rho0.2|{rule}|{fam}|profit\"; rec=json.loads((p/\"evaluate\"/(r.safe(rid)+\".json\")).read_text()); assert rec[\"id\"]==rid; records.append(rec)
+   double=rep[\"doubling\"][rid] if fam==\"D2+H3\" else json.loads((pod/\"doubling\"/(r.safe(rid)+\".json\")).read_text())
+   for src in [rec,double[\"heldout\"]]:
+    seeds=src[\"seeds\"]; a=np.asarray(src[\"gain\"]); assert len(seeds)==len(set(seeds))==200 and a.shape==(200,) and np.isfinite(a).all(); expected=seeds if expected is None else expected; assert seeds==expected; counts+=1
+  ref=f\"reference/{m}@rho0.2/{rule}\"; assert records[0][\"upstream\"][ref]==records[1][\"upstream\"][ref]
+  for key in [\"runner_sha256\",\"cfg_sha256\",\"salt_sha256\",\"root\",\"seeds_train\",\"seeds_val\",\"seeds_eval\",\"context\",\"rule_params_sha256\"]: assert records[0][\"provenance\"][key]==records[1][\"provenance\"][key],(m,rule,key)
+print(\"verified arrays\",counts,\"unique seeds, shapes, finiteness, ordered pairing; 18 paired references and provenance match\")
+original=r._read
+def short(p):
+ x=original(p)
+ if x is not None:
+  if \"gain\" in x: x[\"gain\"]=x[\"gain\"][:-1]
+  if x.get(\"heldout\"): x[\"heldout\"][\"gain\"]=x[\"heldout\"][\"gain\"][:-1]
+ return x
+r._read=short
+for x in rep[\"doubling\"].values():
+ if x.get(\"heldout\"): x[\"heldout\"][\"gain\"]=x[\"heldout\"][\"gain\"][:-1]
+loaded=r.load(ev,pod,rep,[f\"fresh{i}\" for i in range(6)]); result=r.analyse(loaded[\"base\"],b=9); print(\"truncated-gain repro accepted\",len(loaded[\"base\"][\"fresh0\"][\"D2\"][\"F000\"]),\"gains with 200 seeds\",result[\"missing\"])
+'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ exited 1 in 0ms:
+Traceback (most recent call last):
+  File "<string>", line 24, in <module>
+verified arrays 72 unique seeds, shapes, finiteness, ordered pairing; 18 paired references and provenance match
+KeyError: 'gain'
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+The source records reproduce `reset.json` exactly, including both 9,999-resample analyses. All 29 paper values and the table match. The 72 gain arrays have the correct seeds and lengths. A separate test confirms a defect: if a whole market is missing, the code can still label pooled S “met.”
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "/Users/oemer.demirel/Projects/touchstone/.venv/bin/python -B -c 'import json,sys; from pathlib import Path; sys.path.insert(0,\"docs/revision/posthoc\"); import reset_block as r
+root=Path(\"/Users/oemer.demirel/Projects/touchstone/results/v2\"); rep=json.loads((root/\"report/report.json\").read_text()); original=r._read
+def short(p):
+ x=original(p)
+ if x is not None:
+  if \"gain\" in x: x[\"gain\"]=x[\"gain\"][:-1]
+  if \"gain\" in (x.get(\"heldout\") or {}): x[\"heldout\"][\"gain\"]=x[\"heldout\"][\"gain\"][:-1]
+ return x
+r._read=short
+for x in rep[\"doubling\"].values():
+ if \"gain\" in (x.get(\"heldout\") or {}): x[\"heldout\"][\"gain\"]=x[\"heldout\"][\"gain\"][:-1]
+loaded=r.load(root/\"eval/all\",root/\"followup-reset-pod\",rep,[f\"fresh{i}\" for i in range(6)]); result=r.analyse(loaded[\"base\"],b=9); print(\"truncated-gain repro accepted\",len(loaded[\"base\"][\"fresh0\"][\"D2\"][\"F000\"]),\"gains with 200 seeds\",result[\"missing\"])
+'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+truncated-gain repro accepted 199 gains with 200 seeds []
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'git diff 3e286c1''^ 0f62b18 --name-only && nl -ba docs/revision/paper-v2/main.tex | sed -n '"'238,247p' && rg -n 'reset|posthoc' scripts/paper_check.sh scripts/paper_commit.sh" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ exited 2 in 0ms:
+docs/revision/paper-v2/floats.json
+docs/revision/paper-v2/main.tex
+docs/revision/paper-v2/numbers.tex
+docs/revision/paper-v2/numbers_v2.py
+docs/revision/paper-v2/sites.json
+docs/revision/paper-v2/tables/posthoc_reset.tex
+docs/revision/paper-v2/test_numbers.py
+docs/revision/posthoc/reset.json
+docs/revision/posthoc/reset_block.py
+docs/revision/posthoc/test_reset_block.py
+   238	\end{figure}
+   239	
+   240	\paragraph{Identity replacement and the B3--R3 gap (exploratory follow-up).} D2+H3 is D2 plus one switch $x$ that lets the attacker leave after a failed audit and return under a new identity. At the headline market, the D2+H3 search leaves \site{rs_hl_b3} more gain against B3 than the D2 search, and \site{rs_hl_r3} more against R3, so the B3 minus R3 gap is \site{rs_hl_g1} under D2+H3 and \site{rs_hl_g0} under D2. To see whether this holds on the six fresh markets, we ran after the report the D2 cells that budget cut~\const{3} had removed (B3, R3, and C$^*$ at $\rho=\const{0.2}$, each with a doubling check), under a plan and expectations written before any fresh D2 result existed but after the headline contrast was seen. This is a descriptive follow-up, not an independent replication, and it changes no registered decision. Pooled over the six markets with equal weights, the B3 minus R3 gap is \site{rs_g1} (\const{95}\% paired seed-bootstrap interval [\site{rs_g1_lo}, \site{rs_g1_hi}]) under D2+H3 and \site{rs_g0} ([\site{rs_g0_lo}, \site{rs_g0_hi}]) under D2 (doubled searches: \site{rs_g1_d} and \site{rs_g0_d}). The share of the gap that disappears without replacement, $S = \const{1} - G(\mathrm{D2})/G(\mathrm{D2{+}H3})$, is \site{rs_s} (doubled searches: \site{rs_s_d}); a value above one means the gap reverses slightly under D2. Replacement, $I = g(\mathrm{D2{+}H3}) - g(\mathrm{D2})$, adds \site{rs_i_b3} to the attacker's gain against B3, \site{rs_i_r3} against R3, and \site{rs_i_c} against C$^*$. The expectations set in advance score as follows. $I(\mathrm{B3}) > I(\mathrm{R3})$ on every market: ``\site{rs_exp_b}'' (\site{rs_sign_b} markets with the frozen searches, \site{rs_sign_bd} with the doubled ones). $I(\mathrm{C}^*) > I(\mathrm{R3})$ on every market: ``\site{rs_exp_c}'' (\site{rs_sign_c} and \site{rs_sign_cd} markets; fresh3 gives \site{rs_f3_c} with the frozen searches). Pooled $S > \const{0.5}$: ``\site{rs_exp_s}''. Within the D2 family, at the fixed parameters and search budgets, most of the estimated B3 minus R3 gap under the prescribed searches disappears when the attacker cannot replace its identity. The two searched winners can differ in every knob, not only $x$. With every other knob held fixed, switching replacement off in the D2+H3 winner lowers the gain by \site{rs_fx_b3} against B3 and \site{rs_fx_r3} against R3, and switching it on in the D2 winner raises the gain by only \site{rs_rev_b3} and \site{rs_rev_r3}. No D2 winner replaces its identity. $S$ is a ratio of two searched gaps and carries their search error (Table~\ref{tab:ph-reset}).
+   241	\begin{table}[t]\centering\small
+   242	\adjustbox{max width=\linewidth}{\input{tables/posthoc_reset.tex}}
+   243	\caption{Exploratory follow-up, after the report: replacement $I = g(\mathrm{D2{+}H3}) - g(\mathrm{D2})$ per rule, its contrasts, the B3 minus R3 gaps $G$ under each family, and the share $S$, pooled over the six fresh markets with equal weights, with paired seed-bootstrap percentile intervals; frozen and doubled searches. $S$ is shown only when the lower bound of the pooled D2+H3 gap exceeds the preset floor.}\label{tab:ph-reset}
+   244	\end{table}
+   245	
+   246	\paragraph{Which parts of R3 matter (Q2).} Under separately searched D2+H3 attacks, pooled over the fresh markets, the main effects on the gain are \site{r_q2_p} for the priority phase P and \site{r_q2_g} for newest-first residual targeting G, both reductions, and \site{r_q2_s} for pacing S, a small increase (X7-SC: \site{r_q2_s_x}). The two targeting parts are substitutes: the PG factorial contrast, half the difference between G's conditional effects, is \site{r_q2_pg}; G changes the gain by \site{r_q2_g_p0} without the priority phase and by only \site{r_q2_g_p1} with it, and the priority phase changes it by only \site{r_q2_p_g1} once G is in place (averaged over both pacing settings). R3's own comparison, $F_{111}$ minus $F_{011}$ (exploratory, from the evaluation records), is \site{r_dp} pooled: exactly zero on four markets, where both rules leave the attacker the same gain, and nonzero on fresh1 (\site{r_dp_f1}) and fresh3. Against the fixed attacks, the priority phase's effect given newest-first targeting is larger (\site{r_q2_fixed_pg1} under D2+H3 and \site{r_q2_fixed_pg1_x} under X7-SC, averaged over pacing), though still small next to newest-first targeting's effect without the priority phase (above). In the pooled, separately searched comparisons, given newest-first targeting the priority phase adds little at these audit ratios and capacities; at a lower audit ratio or a larger attacker capacity, half of a round's audits may no longer cover one provider's jobs, and the substitution need not hold. In the pooled contrasts, either P or G alone accounts for most of the measured reduction; adding the other contributes little. The pattern also appears in the fixed-attack contrasts averaged over the eight selected attacks (P: \site{r_q2_fixed_p}). Our registered conjectures (P negligible, the targeting parts additive, S helpful) failed as scored (Table~\ref{tab:predictions}); the stricter eligibility reading of Table~\ref{tab:pred-eligibility} leaves them not assessed, with the estimates unchanged. X7-SC agrees (Table~\ref{tab:q2-x7sc}).
+   247	
+rg: scripts/paper_check.sh: No such file or directory (os error 2)
+rg: scripts/paper_commit.sh: No such file or directory (os error 2)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "python3 -B -c 'import json; from pathlib import Path; p=Path(\"/Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-mac-diag/diagnostics.json\"); d=json.loads(p.read_text()); print(\"diagnostic cells\",len(d),list(d)); c=next(iter(d.values())); print({k:list(v) if isinstance(v,dict) else type(v).__name__ for k,v in c.items()}); p=Path(\"/Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-pod/doubling/fresh0@rho0.2__F111__D2__profit.json\"); d=json.loads(p.read_text());print(\"doubling ref\",{k:v for k,v in d[\"upstream\"].items() if k.startswith(\"reference/\")})'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+diagnostic cells 18 ['fresh0@rho0.2|F000', 'fresh0@rho0.2|F111', 'fresh0@rho0.2|C*', 'fresh1@rho0.2|F000', 'fresh1@rho0.2|F111', 'fresh1@rho0.2|C*', 'fresh2@rho0.2|F000', 'fresh2@rho0.2|F111', 'fresh2@rho0.2|C*', 'fresh3@rho0.2|F000', 'fresh3@rho0.2|F111', 'fresh3@rho0.2|C*', 'fresh4@rho0.2|F000', 'fresh4@rho0.2|F111', 'fresh4@rho0.2|C*', 'fresh5@rho0.2|F000', 'fresh5@rho0.2|F111', 'fresh5@rho0.2|C*']
+{'d2h3_base': ['knobs', 'resets', 'reset_rounds', 'no_offer_rounds', 'ban_rounds', 'mean_resets', 'p_any_reset', 'mean_no_offer_rounds', 'mean_ban_rounds', 'seeds', 'normalized', 'mean_normalized', 'switch_x0'], 'd2h3_doubled': ['knobs', 'resets', 'reset_rounds', 'no_offer_rounds', 'ban_rounds', 'mean_resets', 'p_any_reset', 'mean_no_offer_rounds', 'mean_ban_rounds', 'seeds', 'normalized', 'mean_normalized', 'switch_x0'], 'd2_base': ['knobs', 'resets', 'reset_rounds', 'no_offer_rounds', 'ban_rounds', 'mean_resets', 'p_any_reset', 'mean_no_offer_rounds', 'mean_ban_rounds', 'seeds', 'normalized', 'mean_normalized', 'switch_x1']}
+doubling ref {'reference/fresh0@rho0.2/F111': '242d46623389b6baab29411123982f109bf04edc63ca103e9d2a9dbe56c3d91f'}
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg --files docs/revision scripts -g '*paper*check*' -g '*paper*commit*' -g '*AGENTS.md'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ exited 1 in 0ms:
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+VERDICT: accept-with-caveat
+
+CORRECTIONS:
+
+1. `docs/revision/posthoc/reset_block.py:141` — Preserve the six expected markets when records are missing. `_complete()` only inspects markets present in the input. Removing an entire market produces `missing: []`, pools five markets, computes four-market leave-one-out values, and can score pooled S as “met”. I reproduced this case. Report the missing cells and withhold affected statistics and scores. Add a whole-market omission test.
+
+2. `docs/revision/posthoc/reset_block.py:52` — Validate gain arrays against seed lists: one-dimensional, finite, equal lengths, unique seed identifiers, and 200 observations for production records. Matching seed lists alone is insufficient. I reproduced acceptance of 199 gains paired with 200 seed identifiers. Add malformed-record tests. The actual 72 input arrays pass these checks; their ordered seeds match, and the 18 base reference pairs and relevant provenance agree.
+
+3. `docs/revision/paper-v2/main.tex:240` — Replace “Replacement … adds” with “The difference between the two prescribed searches … is”. Apply the same terminology to the caption at line 243. State explicitly that I does not identify the optimal value of replacement. The later qualification about different knobs helps but leaves the initial attribution ambiguous.
+
+Rulings 1–3 are acceptable: the separate module preserves the requested analysis, the plan fixes no bootstrap seed, and the reproduced pooled-S scores permit the specified conclusion. Both 9,999-resample analyses, headline values, switches, flags, expectations, table, and all 29 paper values match the saved output exactly. The existing posthoc output and tables are unchanged. Fifteen tests that require no file writes passed; the missing-market and malformed-array cases are not covered.
+
+CONFIDENCE: 0.97
+hook: Stop
+hook: Stop Completed
+tokens used
+66'966
+VERDICT: accept-with-caveat
+
+CORRECTIONS:
+
+1. `docs/revision/posthoc/reset_block.py:141` — Preserve the six expected markets when records are missing. `_complete()` only inspects markets present in the input. Removing an entire market produces `missing: []`, pools five markets, computes four-market leave-one-out values, and can score pooled S as “met”. I reproduced this case. Report the missing cells and withhold affected statistics and scores. Add a whole-market omission test.
+
+2. `docs/revision/posthoc/reset_block.py:52` — Validate gain arrays against seed lists: one-dimensional, finite, equal lengths, unique seed identifiers, and 200 observations for production records. Matching seed lists alone is insufficient. I reproduced acceptance of 199 gains paired with 200 seed identifiers. Add malformed-record tests. The actual 72 input arrays pass these checks; their ordered seeds match, and the 18 base reference pairs and relevant provenance agree.
+
+3. `docs/revision/paper-v2/main.tex:240` — Replace “Replacement … adds” with “The difference between the two prescribed searches … is”. Apply the same terminology to the caption at line 243. State explicitly that I does not identify the optimal value of replacement. The later qualification about different knobs helps but leaves the initial attribution ambiguous.
+
+Rulings 1–3 are acceptable: the separate module preserves the requested analysis, the plan fixes no bootstrap seed, and the reproduced pooled-S scores permit the specified conclusion. Both 9,999-resample analyses, headline values, switches, flags, expectations, table, and all 29 paper values match the saved output exactly. The existing posthoc output and tables are unchanged. Fifteen tests that require no file writes passed; the missing-market and malformed-array cases are not covered.
+
+CONFIDENCE: 0.97
