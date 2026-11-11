@@ -1071,7 +1071,7 @@
      "n": 6
     }
    },
-   "nesting_failures": {
+   "heldout_order_reversals": {
     "fresh3|C*": -0.002394382502148192,
     "fresh4|F111": -0.00595836443677368
    }
@@ -1106,7 +1106,7 @@
      "n": 6
     }
    },
-   "nesting_failures": {}
+   "heldout_order_reversals": {}
   },
   "flags": {
    "flagged": 3,

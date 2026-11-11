@@ -83,3 +83,10 @@ Guard: tests `test_r12_settle_counts_only_after_done`, `test_r12_creation_answer
 - **Mistake:** `RESPONSE.md` for the Fable round-3 package said the priority-phase text uses "inside search error". The paper has no such words; Fable found the gap. The package's ledger copy also had no reset entry, so the plan-before-results timing was not checkable.
 - **Guard:** before a review package is sent, every quoted or paraphrased paper claim in its response note is checked with `grep` on main.tex, and the package includes the commits that prove timing (plan freeze, analysis code, pod gate record).
 - **Guard, strengthened (same day):** `docs/revision/check_response_quotes.py` (tests in `test_check_response_quotes.py`, including the round-3 phrase as the negative case) must print "quotes ok" on a response note before its package is zipped. A response note shows each claimed paper change as a quotation, so that the check covers it. Phrases quoted only as removed wording are listed by the check and confirmed by hand.
+
+## 2026-11-11: two mistakes found by external review r12
+
+- **Mistake 1:** I adopted Fable r3's "nesting failure" reading of a negative held-out I, and its rule that the doubled value is "more reliable", although the paper's own X7-SC caveat says held-out order need not follow nesting. Sol and Astra did not catch it either.
+- **Guard 1:** every internal-review brief for text written in response to a reviewer now asks: "Does any adopted reviewer inference contradict a qualification the paper already states? Quote both." (Written rule; the brief template is `docs/revision/roster/brief-*.md`.)
+- **Mistake 2:** the round-12 response note said every change was text or analysis on existing records, but the reference check ran new Mac evaluations.
+- **Guard 2:** a response note classifies each change as text, analysis on existing records, or new evaluation; `check_response_quotes.py` does not cover this, so the brief for the package's last internal check asks for it explicitly.

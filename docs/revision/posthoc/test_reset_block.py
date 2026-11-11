@@ -298,9 +298,9 @@ def test_market_t_interval_of_cstar_minus_r3_gain_per_family():
     assert r["Cstar_minus_R3"]["D2"]["positive"] == 3
 
 
-def test_nesting_lists_cells_where_d2h3_falls_below_d2():
+def test_heldout_order_reversals_list_cells_where_d2h3_falls_below_d2():
     c = _cells(); c["fresh3"]["D2+H3"]["C*"] = c["fresh3"]["D2"]["C*"] - 0.002
-    assert RB.market_level(c)["nesting_failures"] == {"fresh3|C*": pytest.approx(-0.002)}
+    assert RB.market_level(c)["heldout_order_reversals"] == {"fresh3|C*": pytest.approx(-0.002)}
 
 
 def test_flag_summary_counts_incomplete_cells_and_their_largest_change():

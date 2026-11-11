@@ -201,13 +201,14 @@ def _t95(xs) -> dict:
 
 def market_level(cells: dict) -> dict:
     """External review r3 (Fable 5.2), exploratory: G(D2) and the C* - R3 gain difference per family as market-level t
-    intervals with sign counts, and the cells where the D2+H3 winner falls below the D2 winner (I < 0, a nesting failure,
-    since D2 is inside D2+H3)."""
+    intervals with sign counts, and the cells where the evaluated D2+H3 winner earns less than the evaluated D2 winner
+    (I < 0). External review r12: nesting orders optimal training values, not the held-out gains of two training-selected
+    winners, so these are held-out order reversals (finite search or training-evaluation differences), not nesting failures."""
     ms = [m for m in cells if all(r in cells[m].get(f, {}) for f in FAMS for r in RULES)]
     gd2 = [float(np.mean(cells[m]["D2"]["F000"] - cells[m]["D2"]["F111"])) for m in ms]
     cs = {f: _t95([float(np.mean(cells[m][f]["C*"] - cells[m][f]["F111"])) for m in ms]) for f in FAMS}
     nest = {f"{m}|{r}": float(np.mean(cells[m]["D2+H3"][r] - cells[m]["D2"][r])) for m in ms for r in RULES}
-    return {"G_D2": _t95(gd2), "Cstar_minus_R3": cs, "nesting_failures": {k: v for k, v in nest.items() if v < 0}}
+    return {"G_D2": _t95(gd2), "Cstar_minus_R3": cs, "heldout_order_reversals": {k: v for k, v in nest.items() if v < 0}}
 
 
 def flag_summary(flags: dict) -> dict:

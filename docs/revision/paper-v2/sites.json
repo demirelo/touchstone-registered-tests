@@ -1003,5 +1003,35 @@
   "path": "refcheck.summary.max_abs_validation_mean_diff",
   "kind": "gain",
   "section": "results"
+ },
+ "abs_rs_g1": {
+  "path": "reset.base.G.D2+H3.pooled.estimate",
+  "kind": "gain",
+  "section": "abstract"
+ },
+ "abs_rs_g0": {
+  "path": "reset.base.G.D2.pooled.estimate",
+  "kind": "gain",
+  "section": "abstract"
+ },
+ "abs_rs_cr1": {
+  "path": "reset.review_r3.base.Cstar_minus_R3.D2+H3.estimate",
+  "kind": "gain",
+  "section": "abstract"
+ },
+ "abs_rs_cr0": {
+  "path": "reset.review_r3.base.Cstar_minus_R3.D2.estimate",
+  "kind": "gain",
+  "section": "abstract"
+ },
+ "rs_fx_c": {
+  "path": "reset.switches.C*.fixed_policy_x0.pooled",
+  "kind": "gain",
+  "section": "results"
+ },
+ "rs_rev_c": {
+  "path": "reset.switches.C*.reverse_x1.pooled",
+  "kind": "gain",
+  "section": "results"
  }
 }
