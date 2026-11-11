@@ -4,7 +4,13 @@
   "evaluation": 43.0,
   "followup": 22.0
  },
- "reservations": [],
+ "reservations": [
+  {
+   "op": "followup",
+   "tag": "reset-pod",
+   "cap": 6.5
+  }
+ ],
  "spent": [
   {
    "op": "development",
