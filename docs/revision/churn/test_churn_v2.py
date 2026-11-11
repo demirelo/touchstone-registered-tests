@@ -365,7 +365,7 @@ def test_r3_admission_is_rerun_after_the_preflight_and_the_reduced_workers_persi
     assert needs[1] == round(s["evaluate"] * f * 9)                                            # rerun after the preflight: 17 remaining jobs at two workers
     assert needs[2] == round(s["doubling"] * f * (1 + 9))                                      # doubling: one preflight task + 17 jobs at the kept two workers
     assert needs[3] == round(s["doubling"] * f * 9)
-    assert ("evaluate", 2, 17) in runs and ("doubling", 2, 17) in runs and ("diagnostics", 2, 18) in runs   # the limit persists
+    assert ("evaluate", 2, 18) in runs and ("doubling", 2, 18) in runs and ("diagnostics", 2, 18) in runs   # the limit persists; r5: all dispatched
 
 
 # ---- internal review round 4 (Sol, Astra: reject) ----
@@ -431,11 +431,11 @@ def test_r4_a_partial_stage_retry_reuses_the_validated_saved_peak(tmp_path):
 def test_r4_the_worker_limit_persists_across_separate_stage_commands(tmp_path, monkeypatch):
     a, jobs, needs, runs, pre = _rate_env(monkeypatch, tmp_path, {"evaluate": 2, "doubling": 5})
     C._run_rate(tmp_path, jobs, ("evaluate",), a, "salt", {}, 0.05, started=1.0)
-    assert ("evaluate", 2, 17) in runs
+    assert ("evaluate", 2, 18) in runs
     C._run_rate(tmp_path, jobs, ("diagnostics",), a, "salt", {}, 0.05, started=1.0)          # a separate command
     assert runs[-1] == ("diagnostics", 2, 18)
     C._run_rate(tmp_path, jobs, ("doubling",), a, "salt", {}, 0.05, started=1.0)
-    assert pre[-1] == ("doubling", 2) and runs[-1] == ("doubling", 2, 17)                     # the lowest limit is kept
+    assert pre[-1] == ("doubling", 2) and runs[-1] == ("doubling", 2, 18)                     # the lowest limit is kept
 
 
 def test_r4_diagnostics_without_memory_evidence_is_refused(tmp_path, monkeypatch):
@@ -447,3 +447,39 @@ def test_r4_diagnostics_without_memory_evidence_is_refused(tmp_path, monkeypatch
     monkeypatch.setattr(C, "memory_limit", lambda: 64 * 2 ** 30)                              # another pod: the saved limit does not apply
     with pytest.raises(SystemExit, match="memory evidence"):
         C._run_rate(tmp_path, jobs, ("diagnostics",), a, "salt", {}, 0.05, started=1.0)
+
+
+# ---- internal review round 5 (Sol, Astra: reject) ----
+
+def test_r5_a_saved_measurement_must_cover_every_current_rule(tmp_path):
+    G = 2 ** 30; done = lambda s, j, o, c: {"peak_rss_bytes": int(2.0 * G), "status": "done"}
+    f111 = [{"id": f"m{i}|F111", "rule": "F111"} for i in range(2)]
+    C.memory_preflight("evaluate", f111, tmp_path, 9, runner=done, limit=32 * G, parent=G)
+    allr = f111 + [{"id": f"m{i}|{r}", "rule": r} for i in range(2) for r in ("C*", "F000")]
+    called = []
+    def runner(stage, job, out, catalog):
+        called.append(job["rule"]); return {"peak_rss_bytes": int(2.6 * G), "status": "done"}
+    ev = C.memory_preflight("evaluate", allr, tmp_path, 9, runner=runner, limit=32 * G, parent=G)
+    assert {"C*", "F000"} <= set(called) and not ev["reused"] and ev["task_peak_bytes"] == int(2.6 * G)
+
+
+def test_r5_an_older_saved_record_without_run_evidence_is_rejected(tmp_path):
+    G = 2 ** 30; jobs = [{"id": "m0|F111", "rule": "F111"}]
+    old = {"stage": "evaluate", "limit_bytes": 32 * G, "task_peak_bytes": int(0.3 * G), "peaks": {"m0|F111": int(0.3 * G)},
+           "margin": 1.25, "measured": ["m0|F111"], "workers": 9}                               # draft-4 format: a skipped task looked the same
+    (tmp_path / "memory_preflight_evaluate.json").write_text(json.dumps(old))
+    called = []
+    def runner(stage, job, out, catalog):
+        called.append(job["id"]); return {"peak_rss_bytes": 1, "status": "skipped"}
+    with pytest.raises(SystemExit, match="memory evidence"):
+        C.memory_preflight("evaluate", jobs, tmp_path, 9, runner=runner, limit=32 * G, parent=G)
+    assert called == ["m0|F111"]                                                               # the old record was not reused
+
+
+@pytest.mark.parametrize("reused", [True, False])
+def test_r5_measured_jobs_are_still_dispatched_so_missing_records_are_recomputed(tmp_path, monkeypatch, reused):
+    a, jobs, needs, runs, pre = _rate_env(monkeypatch, tmp_path, {"evaluate": 2, "doubling": 2})
+    real = C.memory_preflight
+    monkeypatch.setattr(C, "memory_preflight", lambda *x, **k: {**real(*x, **k), "reused": reused})
+    C._run_rate(tmp_path, jobs, ("evaluate", "doubling"), a, "salt", {}, 0.05, started=1.0)
+    assert pre and ("evaluate", 2, 18) in runs and ("doubling", 2, 18) in runs                # every job passes through _run_one

@@ -59,3 +59,7 @@ Guard: `test_r11_watchdog_before_the_deadline_settles_so_a_delayed_creation_is_d
 ## 2026-11-11: churn memory preflight measured reused records; worker limit reset per command (churn review r4)
 Mistake: the pod-side preflight took peak memory from a child whose task was "skipped" (a valid record existed), so it could admit too many workers; the reduced worker limit lived only inside one `_run_rate` call, so a separate diagnostics command ran at nine workers. The smoke test itself asserted on a skipped measurement and passed.
 Guard: the child reports the task status and `memory_preflight` refuses skipped measurements; `memory_workers.json` keeps the lowest limit per memory limit; tests `test_r4_*` (5, seen RED) and the smoke test now assert the refusal on an existing record and a real child run. Rule: a resource measurement must prove the measured work ran (status, record written), not only that a number came back.
+
+## 2026-11-11: churn r5, a reuse path trusted records it could not verify
+Mistake: the r4 fix reused a saved memory measurement without checking rule coverage or that draft-4 records carried real-run evidence, and it removed measured jobs from dispatch, so a missing record would stay missing.
+Guard: versioned preflight record with per-task "done" statuses and rule coverage; every job goes through `_run_one`; tests `test_r5_*` (4, seen RED). Rule: a cache or reuse path must validate the same things the fresh path proves, and must never stand in for the production record check.

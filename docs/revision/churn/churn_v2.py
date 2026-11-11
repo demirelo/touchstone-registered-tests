@@ -368,6 +368,9 @@ def _preflight_groups(stage: str, jobs: list[dict]) -> list[list[dict]]:
     return [list(jobs)] if stage == "doubling" and jobs else []
 
 
+PREFLIGHT_VERSION = 2   # review r5: draft-4 records (no run status) are never reused
+
+
 def _saved_preflight(stage: str, jobs: list[dict], out, limit: int, margin: float) -> dict | None:
     """A saved measurement of this stage that still applies: same memory limit and margin, a positive peak taken only from
     real runs, and measured jobs that belong to this job list. Anything else is no evidence."""
@@ -378,8 +381,12 @@ def _saved_preflight(stage: str, jobs: list[dict], out, limit: int, margin: floa
         rec = json.loads(p.read_text())
     except ValueError:
         return None
-    ids = {j["id"] for j in jobs}
-    ok = (rec.get("stage") == stage and rec.get("limit_bytes") == limit and rec.get("margin") == margin
+    ids = {j["id"] for j in jobs}; rule_of = {j["id"]: j.get("rule") for j in jobs}
+    meas = rec.get("measured") or []
+    covered = (stage != "evaluate") or ({rule_of.get(i) for i in meas} == {j.get("rule") for j in jobs})   # review r5
+    ok = (rec.get("version") == PREFLIGHT_VERSION and covered
+          and rec.get("statuses") == {i: "done" for i in meas}                         # explicit real-run evidence (r5)
+          and rec.get("stage") == stage and rec.get("limit_bytes") == limit and rec.get("margin") == margin
           and isinstance(rec.get("task_peak_bytes"), int) and rec["task_peak_bytes"] > 0 and rec.get("measured")
           and set(rec["measured"]) <= ids and set(rec.get("peaks") or {}) == set(rec["measured"])
           and rec["task_peak_bytes"] == max(rec["peaks"].values()))
@@ -416,7 +423,8 @@ def memory_preflight(stage: str, jobs: list[dict], out, requested: int, runner=N
                              f"and no saved measurement applies)")
     peak = max(peaks.values())
     w = plan_workers(limit, int(margin * peak), parent, requested)
-    rec = {"stage": stage, "limit_bytes": limit, "task_peak_bytes": peak, "peaks": peaks, "margin": margin, "parent_bytes": parent,
+    rec = {"version": PREFLIGHT_VERSION, "statuses": {i: "done" for i in peaks},
+           "stage": stage, "limit_bytes": limit, "task_peak_bytes": peak, "peaks": peaks, "margin": margin, "parent_bytes": parent,
            "requested": requested, "workers": w, "measured": list(peaks), "skipped": skipped, "reused": False, "seconds": time.time() - t0}
     write(Path(out) / f"memory_preflight_{stage}.json", rec)
     return rec
@@ -470,13 +478,13 @@ def _run_rate(out, jobs, steps, a, salt_sha, container, p, started) -> None:
             k = len(preflight_sample(st, jobs)) if (not a.smoke and len(jobs) > 1) else 0
             cap(sec * (k + _waves(len(jobs) - k, w_mem)))                       # admission includes the serial preflight tasks
             F.accept(out, jobs, salt_sha, container, src=a.src)
-            rest = jobs
             if k:
                 mp = memory_preflight(st, jobs, out, w_mem)
                 w_mem = save_workers(out, min(w_mem, mp["workers"]), mp.get("limit_bytes", lim), st)
-                rest = [j for j in jobs if j["id"] not in set(mp["measured"])]
-                cap(sec * _waves(len(rest), w_mem))                             # admission again with the chosen workers
-            run_stage(st, rest, out, w_mem)
+                fresh = set() if mp.get("reused") else set(mp["measured"])      # just run in this command: their records exist
+                cap(sec * _waves(len(jobs) - len(fresh), w_mem))                 # admission again with the chosen workers
+            run_stage(st, jobs, out, w_mem)       # review r5: every job passes through _run_one, which skips a valid record
+                                                  # and recomputes a missing or damaged one
         elif st == "diagnostics":
             if not a.smoke and len(jobs) > 1:
                 sv = saved_workers(out, lim)

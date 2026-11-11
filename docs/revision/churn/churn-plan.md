@@ -1,4 +1,4 @@
-# Honest-churn arm: plan (draft 5, 2026-11-11; for internal review; no spend yet)
+# Honest-churn arm: plan (draft 6, 2026-11-11; for internal review; no spend yet)
 
 **Why.** The Fable 5.2 fresh review (problem 4, `docs/revision/roster/fable52-paper-r1.md`; triage
 `docs/paper/fable52-triage.md`): in both tests the nine honest opponents never replace their identities, so after the
@@ -6,7 +6,7 @@ start a new identity almost always belongs to the deviating provider. This arm l
 identities and measures how R3's results change. The author asked on 2026-11-10 to "run all necessary sims"; nothing
 runs before this plan has internal consensus and the reservation is recorded in the budget ledger.
 
-**Status.** Draft 5. Exploratory follow-up outside the registered protocol, specified after the second test's results
+**Status.** Draft 6. Exploratory follow-up outside the registered protocol, specified after the second test's results
 were seen. Not an independent replication.
 
 **Changes from draft 3** (internal review round 3, `docs/revision/roster/{sol,astra}-churn-plan-r3.md`, both reject; and
@@ -126,9 +126,10 @@ contrast in either direction.
   A smoke-size run of the whole path for fresh0 R3 at p = 0.05, including the gate path, both winners' diagnostics, and
   the memory preflight on its output; production refuses a missing `--started`, `--gate skip`, and a separate stage
   without a saved passing gate; the worker limit fits the memory limit. All pass: `uv run pytest -q docs/revision/churn`
-  (28 passed: also the bit-identity pod gate, the preflight's real-task sample, admission after the preflight with
+  (32 passed: also the bit-identity pod gate, the preflight's real-task sample, admission after the preflight with
   the kept worker limit, a skipped record never counted as a measurement, a retry reusing only an applicable saved
-  measurement, and the worker limit kept across separate-stage commands, the diagnostics included).
+  measurement, and the worker limit kept across separate-stage commands, the diagnostics included; round 5: rule coverage
+  of a reused measurement, rejection of older records, and dispatch of measured jobs).
 - **(c) The p = 0 gate, first on the pod.** The driver runs fresh0 R3 D2+H3 at p = 0 through the injected path (inputs,
   search, freeze, acceptance, evaluation, doubling) into `gate-p0/`, maps the id `|churn0` to the registered id, and
   compares search and evaluation by the reset driver's `compare` and the doubling check by `compare_doubling`
@@ -199,8 +200,11 @@ markets, rules and winners; the cgroup limit and the parent's own peak; workers 
 floor((0.9 x limit - parent) / (1.25 x peak))), saved in `memory_preflight_<stage>.json`; the driver refuses if no task
 fits. **A task whose record already exists is no measurement** (review r4): the child reports the task status, and a
 "skipped" task is replaced by the next unfinished task of the same rule (evaluate) or stage (doubling). A retry reuses a
-saved measurement only if it applies (same memory limit and margin, peaks from real runs only, measured jobs in the
-current job list); with neither, the driver refuses. **The chosen limit persists across commands:** it is saved in
+saved measurement only if it applies (record version 2 with an explicit "done" status for every measured task, so
+draft-4 records are never reused; same memory limit and margin; measured jobs in the current job list; for the
+evaluation, a measurement for every current rule); with neither, the driver refuses. **A measurement never removes a
+job from dispatch** (review r5): every job of the stage passes through `_run_one`, which skips a valid record and
+recomputes a missing or damaged one; only the cost admission counts the tasks measured in the same command as done. **The chosen limit persists across commands:** it is saved in
 `memory_workers.json` with the memory limit, and every later command on that output (a separate stage, a resumed run)
 starts from the lowest saved limit that matches its memory limit; the diagnostics (two profiles per task, below the
 evaluate task) refuse to dispatch without such a saved limit. **Admission and the preflight:** before a stage the cost admission covers the preflight's serial tasks
@@ -257,4 +261,4 @@ verifies the deletion; the watchdog keeps deleting until no pod of this name rem
   3.85 USD; 5.95 hours, 3.33 USD without the serial preflight tasks; 12.44 hours, 6.97 USD at two evaluation workers).
 - Reselection-by-regeneration cost: `sim/manifest_v2.py` `menu_families` and `bank_rules(ctx, fam, 3, False)` over the six
   markets and three rules: 60 D2+H3 and 60 X7-SC searches per rate, 12.19 USD per rate.
-- Tests: `uv run pytest -q docs/revision/churn` (28 passed, 150 s).
+- Tests: `uv run pytest -q docs/revision/churn` (32 passed, 146 s).
