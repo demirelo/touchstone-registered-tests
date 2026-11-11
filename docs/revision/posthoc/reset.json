@@ -1039,6 +1039,90 @@
   "C*-R3 on all six": "not established (search-sensitive)",
   "pooled S > 0.5": "met"
  },
+ "review_r3": {
+  "label": "added after external review r3 (Fable 5.2); exploratory",
+  "base": {
+   "G_D2": {
+    "estimate": -0.009166167763323746,
+    "t95": [
+     -0.03605368542875052,
+     0.017721349902103035
+    ],
+    "positive": 3,
+    "n": 6
+   },
+   "Cstar_minus_R3": {
+    "D2+H3": {
+     "estimate": 0.02072000551319045,
+     "t95": [
+      -0.012788594399382455,
+      0.054228605425763354
+     ],
+     "positive": 5,
+     "n": 6
+    },
+    "D2": {
+     "estimate": -0.0032437591056501958,
+     "t95": [
+      -0.018370959082185393,
+      0.011883440870885002
+     ],
+     "positive": 4,
+     "n": 6
+    }
+   },
+   "nesting_failures": {
+    "fresh3|C*": -0.002394382502148192,
+    "fresh4|F111": -0.00595836443677368
+   }
+  },
+  "doubled": {
+   "G_D2": {
+    "estimate": -0.0036513381164181963,
+    "t95": [
+     -0.030493572712105132,
+     0.023190896479268742
+    ],
+    "positive": 4,
+    "n": 6
+   },
+   "Cstar_minus_R3": {
+    "D2+H3": {
+     "estimate": 0.029624480023365915,
+     "t95": [
+      0.013944171912784544,
+      0.04530478813394728
+     ],
+     "positive": 6,
+     "n": 6
+    },
+    "D2": {
+     "estimate": -0.0034659288379068442,
+     "t95": [
+      -0.026145873641485188,
+      0.0192140159656715
+     ],
+     "positive": 5,
+     "n": 6
+    }
+   },
+   "nesting_failures": {}
+  },
+  "flags": {
+   "flagged": 3,
+   "n": 18,
+   "max_change": 0.0440885093681303,
+   "cells": [
+    "fresh0|C*|D2",
+    "fresh0|F000|D2",
+    "fresh5|C*|D2"
+   ]
+  },
+  "S_leave_one_out_range": [
+   0.9670216470847972,
+   1.092676137495701
+  ]
+ },
  "inputs": {
   "records": "/Users/oemer.demirel/Projects/touchstone/results/v2/eval/all",
   "reset": "/Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-pod",

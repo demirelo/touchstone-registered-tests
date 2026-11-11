@@ -192,12 +192,45 @@ def score(base: dict, dbl: dict) -> dict:
     return out
 
 
+def _t95(xs) -> dict:
+    """External review r3: a t interval over the market values (the markets as a sample), beside the seed intervals."""
+    from scipy import stats
+    x = np.asarray(xs, dtype=float); h = float(stats.t.ppf(0.975, x.size - 1) * x.std(ddof=1) / np.sqrt(x.size))
+    return {"estimate": float(x.mean()), "t95": [float(x.mean()) - h, float(x.mean()) + h], "positive": int((x > 0).sum()), "n": int(x.size)}
+
+
+def market_level(cells: dict) -> dict:
+    """External review r3 (Fable 5.2), exploratory: G(D2) and the C* - R3 gain difference per family as market-level t
+    intervals with sign counts, and the cells where the D2+H3 winner falls below the D2 winner (I < 0, a nesting failure,
+    since D2 is inside D2+H3)."""
+    ms = [m for m in cells if all(r in cells[m].get(f, {}) for f in FAMS for r in RULES)]
+    gd2 = [float(np.mean(cells[m]["D2"]["F000"] - cells[m]["D2"]["F111"])) for m in ms]
+    cs = {f: _t95([float(np.mean(cells[m][f]["C*"] - cells[m][f]["F111"])) for m in ms]) for f in FAMS}
+    nest = {f"{m}|{r}": float(np.mean(cells[m]["D2+H3"][r] - cells[m]["D2"][r])) for m in ms for r in RULES}
+    return {"G_D2": _t95(gd2), "Cstar_minus_R3": cs, "nesting_failures": {k: v for k, v in nest.items() if v < 0}}
+
+
+def flag_summary(flags: dict) -> dict:
+    """The D2 doubling flags (plan section 5: reported separately): a cell is flagged when its doubling check is incomplete."""
+    cells = sorted(k for k, v in flags.items() if v["incomplete"])
+    return {"flagged": len(cells), "n": len(flags), "max_change": max((flags[k]["attack_change"] for k in cells), default=None), "cells": cells}
+
+
+def loo_range(res: dict) -> list:
+    """The range of the defined leave-one-out shares over the frozen and doubled searches."""
+    v = [x["value"] for k in ("base", "doubled") for x in res[k]["sensitivity"]["S_leave_one_out"].values() if x["value"] is not None]
+    return [min(v), max(v)] if v else None
+
+
 def reset_block(eval_all, reset_dir, report: dict, markets, b: int = B, seed: int = SEED, n_seeds: int = 200) -> dict:
     L = load(eval_all, reset_dir, report, markets, n_seeds)
     base, dbl = analyse(L["base"], b, seed, markets), analyse(L["doubled"], b, seed, markets)
     return {"label": "exploratory follow-up (reset experiment plan draft 5); descriptive, not registered",
             "base": base, "doubled": dbl, "doubling_flags": L["flags"],
-            "expectations": score(base["expectation_inputs"], dbl["expectation_inputs"])}
+            "expectations": score(base["expectation_inputs"], dbl["expectation_inputs"]),
+            "review_r3": {"label": "added after external review r3 (Fable 5.2); exploratory",
+                          "base": market_level(L["base"]), "doubled": market_level(L["doubled"]), "flags": flag_summary(L["flags"]),
+                          "S_leave_one_out_range": loo_range({"base": base, "doubled": dbl})}}
 
 
 def switch_summary(diag: dict, markets=tuple(f"fresh{i}" for i in range(6))) -> dict:
@@ -265,6 +298,10 @@ def table(res: dict) -> str:
     for c in CONTRASTS:
         lines.append(f"markets with {c.replace('B3-R3', 'I(B3) > I(R3)').replace('C*-R3', 'I(C*) > I(R3)')} & "
                      + " & ".join(f"{res[v]['sensitivity']['signs'][c]['positive']} of {res[v]['sensitivity']['signs'][c]['n']}" for v in ("base", "doubled")) + " \\\\")
+    lines.append("\\hline")
+    for m in res["base"]["G"]["D2"]["markets"]:          # external review r3: the per-market gaps behind the pooled share
+        cells = [" / ".join(f"{res[v]['G'][f]['markets'][m]['estimate']:.3f}" for f in FAMS) for v in ("base", "doubled")]
+        lines.append(f"G(D2+H3) / G(D2), {m} & {cells[0]} & {cells[1]} \\\\")
     lines += ["\\hline", "\\end{tabular}"]
     return "\n".join(lines) + "\n"
 

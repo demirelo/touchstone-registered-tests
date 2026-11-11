@@ -267,3 +267,59 @@ def test_valid_names_each_defect():
                      ({"seeds": [1, 2, 3], "gain": [0.1, float("inf"), 0.3]}, "non-finite"), (ok, "expected 4")):
         with pytest.raises(ValueError, match=msg):
             RB._valid(src, "x", 4 if msg == "expected 4" else 3)
+
+
+# External review r3 (Fable 5.2): market-level checks, written before the code.
+def _spread_cells():
+    """G(D2) per market = 0.01 * (k - 2) for fresh{k}: -0.02, -0.01, 0, 0.01, 0.02, 0.03; C* - R3 gain under D2 the same."""
+    c = _cells()
+    for k, m in enumerate(M6):
+        c[m]["D2"]["F000"] = c[m]["D2"]["F111"] + 0.01 * (k - 2)
+        c[m]["D2"]["C*"] = c[m]["D2"]["F111"] + 0.01 * (k - 2)
+        c[m]["D2+H3"]["F000"] = c[m]["D2"]["F000"] + 0.3
+        c[m]["D2+H3"]["C*"] = c[m]["D2"]["C*"] + 0.05
+    return c
+
+
+def test_market_t_interval_of_g_d2_and_positive_count():
+    from scipy import stats
+    c = _spread_cells(); x = np.array([0.01 * (k - 2) for k in range(6)])
+    r = RB.market_level(c)
+    h = stats.t.ppf(0.975, 5) * x.std(ddof=1) / np.sqrt(6)
+    assert r["G_D2"]["estimate"] == pytest.approx(x.mean())
+    assert r["G_D2"]["t95"] == pytest.approx([x.mean() - h, x.mean() + h])
+    assert r["G_D2"]["positive"] == 3 and r["G_D2"]["n"] == 6          # zero is not positive
+
+
+def test_market_t_interval_of_cstar_minus_r3_gain_per_family():
+    r = RB.market_level(_spread_cells())
+    assert r["Cstar_minus_R3"]["D2"]["estimate"] == pytest.approx(0.005)
+    assert r["Cstar_minus_R3"]["D2+H3"]["estimate"] == pytest.approx(0.005 + 0.05 - 0.01)
+    assert r["Cstar_minus_R3"]["D2"]["positive"] == 3
+
+
+def test_nesting_lists_cells_where_d2h3_falls_below_d2():
+    c = _cells(); c["fresh3"]["D2+H3"]["C*"] = c["fresh3"]["D2"]["C*"] - 0.002
+    assert RB.market_level(c)["nesting_failures"] == {"fresh3|C*": pytest.approx(-0.002)}
+
+
+def test_flag_summary_counts_incomplete_cells_and_their_largest_change():
+    flags = {"a|F000|D2": {"attack_change": 0.036, "reference_change": 0.0, "incomplete": True},
+             "b|C*|D2": {"attack_change": 0.044, "reference_change": 0.0, "incomplete": True},
+             "c|F111|D2": {"attack_change": 0.001, "reference_change": 0.0, "incomplete": False}}
+    s = RB.flag_summary(flags)
+    assert s == {"flagged": 2, "n": 3, "max_change": pytest.approx(0.044), "cells": ["a|F000|D2", "b|C*|D2"]}
+
+
+def test_leave_one_out_range_over_both_versions():
+    res = {"base": {"sensitivity": {"S_leave_one_out": {"m0": {"value": 1.03}, "m1": {"value": None}, "m2": {"value": 0.97}}}},
+           "doubled": {"sensitivity": {"S_leave_one_out": {"m0": {"value": 1.09}, "m1": {"value": 1.0}}}}}
+    assert RB.loo_range(res) == pytest.approx([0.97, 1.09])
+
+
+def test_table_lists_the_per_market_gaps_under_both_families():
+    c = _spread_cells()
+    r = {"base": RB.analyse(c, b=99, seed=1), "doubled": RB.analyse(c, b=99, seed=1), "expectations": {}}
+    t = RB.table(r)
+    assert "G(D2+H3) / G(D2), fresh0 & 0.270 / -0.020 & 0.270 / -0.020" in t
+    assert "G(D2+H3) / G(D2), fresh5 & 0.320 / 0.030" in t
