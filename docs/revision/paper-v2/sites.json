@@ -994,11 +994,6 @@
   "kind": "gain",
   "section": "results"
  },
- "rs_ref_dg": {
-  "path": "refcheck.summary.G_shift_pooled",
-  "kind": "gain",
-  "section": "results"
- },
  "rs_ref_s": {
   "path": "refcheck.summary.S_with_non_replacing_references",
   "kind": "share_s",

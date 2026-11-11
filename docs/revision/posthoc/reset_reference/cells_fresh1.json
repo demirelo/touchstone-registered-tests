@@ -1,0 +1,71 @@
+{
+ "fresh1@rho0.2|F000": {
+  "name": "archive_clip1",
+  "family": "D2+H3",
+  "knobs": {
+   "u0": 1.1452369123098317e-19,
+   "m0": 0.999961755166374,
+   "s": 0.2942781835469029,
+   "d": 8.618859508121627e-05,
+   "r": 0.017646383774414038,
+   "w": 0.19476355654492963,
+   "x": 1,
+   "clip": 1
+  },
+  "mean_resets": 0.135,
+  "p_any_reset": 0.12,
+  "mean_ban_rounds": 1.35,
+  "ref_mean_normalized": 0.12232898822023688,
+  "validation_mean_diff": -6.597832434467945e-06,
+  "validation_seeds_differing": 4,
+  "validation_max_abs_diff": 0.0006652532504992509,
+  "ref_no_replace_mean_normalized": 0.12152182208068739,
+  "replacement_value_to_reference": 0.000807166139549495
+ },
+ "fresh1@rho0.2|F111": {
+  "name": "twin_search",
+  "family": "D2+H3",
+  "knobs": {
+   "u0": 1.0345140687325212e-19,
+   "m0": 0.9999974563020058,
+   "s": 0.06894724404366001,
+   "d": 5.867436694319301e-05,
+   "r": 7.278545460878811e-22,
+   "w": 0.22666676349985224,
+   "x": 1,
+   "clip": 1
+  },
+  "mean_resets": 0.125,
+  "p_any_reset": 0.11,
+  "mean_ban_rounds": 1.25,
+  "ref_mean_normalized": 0.12129049498822939,
+  "validation_mean_diff": 3.889183838132193e-08,
+  "validation_seeds_differing": 6,
+  "validation_max_abs_diff": 0.0006677039510021437,
+  "ref_no_replace_mean_normalized": 0.1208087066274039,
+  "replacement_value_to_reference": 0.00048178836082549137
+ },
+ "fresh1@rho0.2|C*": {
+  "name": "twin_search",
+  "family": "D2+H3",
+  "knobs": {
+   "u0": 1.0345140687325212e-19,
+   "m0": 0.9999974563020058,
+   "s": 0.06894724404366001,
+   "d": 5.867436694319301e-05,
+   "r": 7.278545460878811e-22,
+   "w": 0.22666676349985224,
+   "x": 1,
+   "clip": 1
+  },
+  "mean_resets": 0.15,
+  "p_any_reset": 0.145,
+  "mean_ban_rounds": 1.5,
+  "ref_mean_normalized": 0.12129536818656274,
+  "validation_mean_diff": 4.5625901969649426e-05,
+  "validation_seeds_differing": 5,
+  "validation_max_abs_diff": 0.007793578194406889,
+  "ref_no_replace_mean_normalized": 0.12031789533295631,
+  "replacement_value_to_reference": 0.0009774728536064287
+ }
+}

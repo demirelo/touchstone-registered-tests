@@ -1,0 +1,1569 @@
+OpenAI Codex v0.162.1
+--------
+workdir: /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+model: gpt-6.1-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1cc46-a620-72c0-aaf3-3b985371315d
+--------
+user
+# Paper changes after Fable 5.2 external review r3: internal review round 1 (read-only; no paid APIs; do not read `sealed/`, `~/touchstone-h4`, or `~/h4-session.out`; reasoning effort high; under 400 words)
+
+The external review is `docs/revision/roster/fable52-paper-r3.md` (WEIS 2/5 upper end). It found the reset follow-up reproducible and asked for fixes on existing records (its section 5, problems 1 to 7; problem 8, length, is the separate venue cut). Commits to review: 37ace39 (reset block market-level checks, tests first) and bd2dadf (paper text, number sites, kinds, ledger entry, and the reference check in `docs/revision/posthoc/reset_reference/`). Use `git show`. Data: `/Users/oemer.demirel/Projects/touchstone/results/v2/eval/all/`, `/Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-pod/`, `/Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-mac-diag/diagnostics.json`. PDF: `/private/tmp/claude-502/-Users-oemer-demirel-Projects-touchstone/a48c0006-982d-4d16-9bac-5ae26e145fac/scratchpad/pdf_fable3/main.pdf` (33 pages). The paper gate passes.
+
+Rulings to accept or reject:
+1. Problem 2 (the truthful reference may replace): checked by running the 18 frozen references on the Mac with reset counting (`ref_resets.py`), and again with replacement disabled (X7-SC: h_R = T and lambda = 1; D2+H3: x = 0). The Mac does not reproduce the Linux reference profits seed for seed (largest mean difference 0.007, on fresh4 B3, which is also the largest replacement value, 0.009). The paper reports the pooled shift (0.0005) and S (1.050) with that caveat. No re-evaluation on Linux.
+2. The leave-one-out range and the Mac check numbers use new number kinds (`share_s` leaves "0", "1", "S_with_non_replacing_references"; gain leaves "max_change", "G_shift_pooled", "max_abs_replacement_value", "max_abs_validation_mean_diff"; count leaf "refs_with_any_reset").
+3. The abstract and conclusion each get one sentence labelled exploratory. The conclusion says that without replacement neither gap "is distinguishable from zero across the six markets".
+
+Check:
+(1) Each new number against the data. Recompute the G(D2) and C* minus R3 market t intervals and sign counts, the leave-one-out range, the flags (3 of 18, 0.044), the nesting values, the fresh0 G(D2) frozen and doubled values, and the reference summary from `reset_reference.json`.
+(2) Whether each Fable r3 problem 1 to 7 is resolved, and whether `ref_resets.py` measures what the paper says. Is the no-replacement mapping right (see `sim/policies/x7.py` and `sim/policies/identity.py`)? Does a reference shift move G(D2+H3) and G(D2) equally?
+(3) Overclaims or errors in the changed lines, in particular the abstract sentence ("R3's measured advantage lies in the replacement channel"), the S reading, and the reference sentence.
+
+Output exactly:
+VERDICT: accept | accept-with-caveat | reject
+CORRECTIONS: numbered, each with a main.tex line, file, or site name, or "none".
+CONFIDENCE: 0 to 1.
+
+2026-11-11T20:22:25.082243Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: HTTP error: 426 Upgrade Required, url: ws://127.0.0.1:11434/api/codex/v1/responses
+hook: SessionStart
+hook: SessionStart Completed
+codex
+I will inspect both commits, recompute the requested values from the allowed data, and check the changed claims against Fable r3.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg -n 'touchstone|Fable|fable52|reset_reference' /Users/oemer.demirel/.codex/memories/MEMORY.md" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+501:# Task Group: anthropic-residency-application-writing-and-touchstone-research
+510:- rollout_summaries/2026-11-03T12-32-03-zdzn-anthropic_residency_writing_touchstone_research_plan.md (cwd=/Users/oemer.demirel/Documents/Codex/2026-11-03/why-anthropic-anthropic-sets-the-frontier, rollout_path=/Users/oemer.demirel/.codex/sessions/2026/11/03/rollout-2026-11-03T13-32-03-01a1a165-260e-7180-9d34-c9dc6bf34b4d.jsonl, updated_at=2026-11-03T13:02:09+00:00, thread_id=01a1a165-260e-7180-9d34-c9dc6bf34b4d, success; application answers finalized)
+2593:- V12, e58a780246f74949740327ed95e5cf942cfc40bd, 158 records, lifecycle-policy, honest-admin, Fable-excluded, OpenRouter, V12-133878, PR-57, Foundry, invariant-tests
+2639:- When the user says "do not use Fable at this time," exclude Fable and do not count historical Fable output as consensus; preserve the requested roster and require explicit final ACCEPT/REJECT votes from counted seats. [Task 1]
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'git status --short; git show --stat 37ace39; git show --stat bd2dadf' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+?? docs/revision/roster/astra-paper-fable52r3-r1.log
+?? docs/revision/roster/sol-paper-fable52r3-r1.log
+commit 37ace39e52b4061e1727fc3233247ab0e52473aa
+Author: Ömer Demirel <7556489+demirelo@users.noreply.github.com>
+Date:   Wed Nov 11 21:12:17 2026 +0100
+
+    Reset block: market-level checks after external review r3 (Fable 5.2), tests first
+    
+    G(D2) t interval over markets [-0.036, 0.018] (3 of 6 positive; doubled 4 of 6), C* - R3 gain under D2 [-0.018, 0.012],
+    nesting failures fresh3 C* and fresh4 R3 (frozen only), D2 doubling flags 3 of 18 (max 0.044), leave-one-out S 0.97-1.09,
+    per-market gaps in the table. Existing reset.json fields unchanged. 33 tests.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+ docs/revision/paper-v2/tables/posthoc_reset.tex |  7 +++
+ docs/revision/posthoc/reset.json                | 84 +++++++++++++++++++++++++
+ docs/revision/posthoc/reset_block.py            | 39 +++++++++++-
+ docs/revision/posthoc/test_reset_block.py       | 56 +++++++++++++++++
+ 4 files changed, 185 insertions(+), 1 deletion(-)
+commit bd2dadf1f63c5adcac37a80dbdb6b4fec3443fbd
+Author: Ömer Demirel <7556489+demirelo@users.noreply.github.com>
+Date:   Wed Nov 11 21:22:03 2026 +0100
+
+    Paper: external review r3 (Fable 5.2) fixes on existing records
+    
+    Problem 1: the two 'would need a matched comparison' sentences and Table 1 point to the exploratory follow-up; one
+    exploratory sentence in the abstract and the conclusion. Problem 2: 17 of 18 frozen truthful references replace an
+    identity; disabling it shifts the pooled gaps by 0.0005 and S to 1.050 (Mac check, docs/revision/posthoc/reset_reference/).
+    Problem 3: S above 1 read as a D2 gap not distinguishable from zero (3 of 6 positive, market t interval, fresh5, LOO range);
+    C* - R3 under D2. Problems 4-6: D2 doubling flags, nesting failures, per-market gaps. Problem 7: timing entry in the
+    operations ledger. Round-2 leftovers: results-in-brief sign sentence, priority value within search error. Gate ok; 33 pages.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+ docs/revision/operations-ledger.md                 |   9 +
+ docs/revision/paper-v2/main.tex                    |  16 +-
+ docs/revision/paper-v2/numbers.tex                 |  26 ++
+ docs/revision/paper-v2/numbers_v2.py               |   7 +-
+ docs/revision/paper-v2/sites.json                  | 130 ++++++
+ docs/revision/paper-v2/test_numbers.py             |  14 +
+ .../revision/posthoc/reset_reference/ref_resets.py |  64 +++
+ .../posthoc/reset_reference/reset_reference.json   | 504 +++++++++++++++++++++
+ 8 files changed, 759 insertions(+), 11 deletions(-)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'cat docs/revision/roster/fable52-paper-r3.md' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+claude-fable-5-2
+
+**→ Ambition.** The cheapest outside check of the reset result is a table of the replacement switch `x` in each of the 18 frozen truthful references. The reference records are not in this folder, so I could not make it (new problem 2).
+
+## 1. Files read
+
+- **Read in full:** `PROMPT.md`, `PREVIOUS_REVIEW.md`, `RESPONSE.md`, `main.pdf` (32 pages, in two ranges), `reset-experiment-plan.md`, `reset_block.py`, `reset.json`, `posthoc_reset.tex`.
+- **Read by program (all fields that I use):** `records/eval_all/evaluate/` (24 records), `records/reset/evaluate/` (18), `records/reset/doubling/` (18), `records/report.json` (`doubling` block), `records/diagnostics.json`, `records/spot_compare.json`, `records/reset/inventory.json`, `records/reset/inputs.json`.
+- **Read in part:** `posthoc.json` (`nesting`, `direct_priority`, `honest_cost`, `market_level`, `envelope_interval`), `posthoc_v2.py` (`direct_priority`), `revision-program-design.md` (section 6.4 and search hits), `operations-ledger.md` (search hits and last entries), `reset_followup_v2.py` (search hits only).
+- **Run:** the reproduction command, the 27 tests of `test_reset_block.py` (27 passed), and my own recomputation script. All output went to the scratch folder.
+- **Not opened this round:** `predictions-v2.md`, `protocol-v2.yaml`, `report.md`, `addendum.md`, `stability-result.json`, `audit.json`, `audit_v2.py`, `eligibility.json`, `scoring.json`, `score_v2.py`, `test_scoring.py`, `lottery_seeds.csv`, `lottery_train.csv`, `h4-family.py`, `h4-containment.md`. I make no new claim about them.
+- **No network.** I could not check any DOI online. References [5], [8], [15] and [27] are dated 2025 or 2026, and I cannot confirm them.
+
+## 2. Summary verdict
+
+The revision resolves most round-2 text problems. The reset follow-up is honest, follows its plan, and reproduces exactly: every value in Table 11 and in the Section 9 paragraph matches the records. Its main sentence is supported, and it holds on each of the six markets, not only pooled.
+
+Three things weaken it. The pooled "reversal" under D2 (S above 1) comes from one cell. The paper does not report the D2 doubling flags that the plan requires. The result appears only in one paragraph, while two other sentences still say that no such comparison exists.
+
+The follow-up explains R3's advantage over B3. It does not change the main claim, and it makes the missing honest-churn arm more important.
+
+Scores: **WEIS 2/5 (upper end), AAMAS 2/5, EC 1/5.**
+
+## 3. Follow-through on round-2 problems 1 to 9
+
+| # | Problem | Status | Revised sentence (page) | What remains |
+|---|---|---|---|---|
+| 1 | Sign versus size | Resolved | "The direction is therefore fairly stable across these analyses, while the size is not: every upper end is near the margin, so the equivalence label is the most fragile part" (p. 13) | "Results in brief" (p. 3) still says only "with the frozen searches the difference varies in sign across markets". |
+| 2 | Under-searched X7-SC cells | Partly resolved | "in 6 of 21 cells the X7-SC winner's evaluated gain falls short of the better of the frozen and doubled D2+H3 winners on the same seeds by more than the doubling threshold (at most 0.021)" (p. 18) | I reproduced 6 of 21 and 0.0211 (`posthoc.json` `nesting`). The cause needs Run B. |
+| 3 | Comparator arithmetic | Partly resolved | "This is a two-stage screen: it selects the winner among the two finalists and does not rank all twelve configurations at full budget." (p. 6) | Text is right. The evidence needs Run A. |
+| 4 | Symmetric substitution | Resolved | "at a lower audit ratio or a larger attacker capacity, half of a round's audits may no longer cover one provider's jobs, and the substitution need not hold" (p. 15) | None. |
+| 5 | Priority value below search error | Partly resolved | "R3's own comparison, F111 minus F011 (exploratory, from the evaluation records), is −0.003 pooled: exactly zero on four markets" (p. 15) | I reproduced −0.0029 (`posthoc.json` `direct_priority`). The abstract still gives the bare value "−0.003". I did not find the words "inside search error" that `RESPONSE.md` reports. |
+| 6 | Welfare attack loses money | Resolved | "while earning less than the truthful reference against R3 (gain −0.094)" (abstract) | None. |
+| 7 | Corollary conditions | Resolved | "against honest rivals whose play does not depend on the focal identity and with re-entry before the next allocation" (p. 2 and p. 27) | The abstract gives the rival condition and "can return at once". That is sufficient. |
+| 8 | Deciding cells of the comparator table | Partly resolved | Table 25 now has the columns "Deciding cell" and "Its efficiency" (p. 28) | The score is still not recomputable. Efficiency minus score is 0.8893 for C-mem(6,20) inner and 0.8903 for C-thr(12) full (my arithmetic). State the formula. |
+| 9 | Third finding quoted C*'s lowest bin | Resolved | "the replacement's profit per round under R3 differs from that under C* by a fraction of −0.044" (abstract) | Reproduced: −0.0442 (`posthoc.json` `honest_cost`). |
+
+## 4. The reset follow-up
+
+### (a) Plan fidelity
+
+The analysis implements plan sections 2, 5 and 6 as written.
+
+- **Estimands.** I, G and S in `_market_stats` and `_share` match plan sections 2 and 5. S is a ratio of pooled gaps, computed in every replicate, with no clipping.
+- **Pairing.** One index vector per market and replicate serves every rule and family. Markets are resampled independently. The pooled value is the mean of six market means.
+- **Pairing of records (my check).** For all 18 cells, the D2 record and its D2+H3 partner agree on runner hash, configuration hash, salt, root, seeds, budget, rule parameters, reference hash, and the `profit_ref` values. The D2 records carry commit `fdfd83e`; the runner hash equals the registered one.
+- **Gate.** `_gated_share` applies the 0.05 floor to the lower bound of pooled G(D2+H3), separately for frozen and doubled searches.
+- **Leave-one-out.** Six values, each with its own five-market gate, for frozen and doubled.
+- **Sign counts and scoring.** Counts are per market on point estimates. "Met" needs both versions; disagreement gives "not established (search-sensitive)".
+- **Tests.** 27 passed (`pytest test_reset_block.py`).
+
+Deviations and limits:
+
+- **The paper omits the D2 doubling flags.** Plan section 5 says they "are reported separately". `reset.json` has them; the paragraph and Table 11 do not. Three of 18 D2 cells are flagged: fresh0 B3 (0.036), fresh0 C* (0.009), fresh5 C* (0.044) (`records/reset/doubling/*`, `attack_change`).
+- **The paper omits the leave-one-out values.** They are in `reset.json` only.
+- **Plan section 4** asks for the fixed-policy switch "beside I". The paper gives B3 and R3 only. C* is 0.155 and 0.017 (`reset.json` `switches`).
+- **Timing is not checkable.** The plan says its freeze hash is in the operations ledger. The ledger copy here ends on 2026-11-05 and has no reset entry. I cannot confirm that the plan and the analysis code came before the results.
+
+### (b) Reproduction
+
+The command reproduced `reset.json` exactly, except the `inputs` paths, and `posthoc_reset.tex` byte for byte. "Recomputation" means my own script on the records, with different code and bootstrap seed 12345.
+
+| Item | Paper value | My value | Source |
+|---|---|---|---|
+| Headline I(B3), I(R3) | 0.307, 0.012 | 0.3067, 0.0124, reproduced | Recomputation, `eval_all` headline records |
+| Headline gap under D2+H3, D2 | 0.302, 0.007 | 0.3016, 0.0073, reproduced | Same |
+| G(D2+H3) frozen | 0.173 [0.172, 0.175] | 0.1734 [0.1721, 0.1747], reproduced | Recomputation |
+| G(D2) frozen | −0.009 [−0.011, −0.008] | −0.0092 [−0.0107, −0.0076], reproduced | Recomputation |
+| G doubled | 0.170 and −0.004 | 0.1698 and −0.0037, reproduced | Recomputation |
+| S frozen | 1.053; table 1.05 [1.04, 1.06] | 1.0529 [1.044, 1.062], reproduced | Recomputation |
+| S doubled | 1.022; table 1.02 [1.01, 1.03] | 1.0215 [1.012, 1.031], reproduced | Recomputation |
+| I(B3), I(R3), I(C*) frozen | 0.228, 0.045, 0.069 | 0.2276, 0.0450, 0.0690, reproduced | Recomputation |
+| I doubled | 0.221, 0.047, 0.080 | 0.2206, 0.0471, 0.0802, reproduced | Recomputation |
+| I(B3) − I(R3) | 0.183; doubled 0.173 | 0.1826; 0.1734, reproduced | Recomputation |
+| I(C*) − I(R3) | 0.024; doubled 0.033 | 0.0240; 0.0331, reproduced | Recomputation |
+| Markets with I(B3) > I(R3) | 6 and 6 | 6 and 6, reproduced | Recomputation |
+| Markets with I(C*) > I(R3) | 5 and 6 | 5 and 6, reproduced | Recomputation |
+| fresh3 contrast, frozen | −0.041 | −0.0407, reproduced | `reset.json` `contrast` |
+| Switch off, D2+H3 winner | 0.371 (B3), 0.091 (R3) | 0.3711, 0.0906, reproduced | `diagnostics.json`, pooled by me |
+| Switch on, D2 winner | 0.033, 0.009 | 0.0331, 0.0086, reproduced | Same |
+| "No D2 winner replaces its identity" | zero resets | 0.0 in all 18 cells, reproduced | `diagnostics.json` `d2_base.mean_resets` |
+| Expectation labels | met; not established; met | Same, reproduced | Command output |
+| Table 5, B3 − R3 columns | six frozen and six doubled values | All 12 reproduced | Recomputation |
+| Pod reproduced a registered record bit for bit | stated in `RESPONSE.md` | Not checkable | No gate record in the folder |
+| Mac against pod spot check | pass | Pass, largest difference 2.2e-16 | `spot_compare.json` (read, not rerun) |
+
+### (c) Interpretation
+
+**The main sentence is supported.** Quote (p. 15): "most of the estimated B3 minus R3 gap under the prescribed searches disappears when the attacker cannot replace its identity." The plan permits it because pooled S above 0.5 is met in both versions.
+
+It also holds per market, which the paper does not say. Per-market S is 1.56, 1.00, 0.81, 0.99, 0.94, 3.02 with frozen searches. With doubled searches it is 0.70, 1.00, 0.88, 0.99, 0.93, 3.01 (my computation). The lowest value is 0.70.
+
+**I is described correctly.** Quote (p. 15): "The difference between the two prescribed searches ... it does not identify the optimal value of replacement." The text also says "The two searched winners can differ in every knob, not only x."
+
+**The exploratory label is correct.** Quote (p. 14): "after the headline contrast and the six fresh-market D2+H3 outcomes had been seen. This is a descriptive follow-up, not an independent replication, and it changes no registered decision."
+
+**The explanation of S above 1 is correct arithmetic but an incomplete reading.** Quote (p. 15): "a value above one means the gap reverses slightly under D2."
+
+- The pooled G(D2) of −0.0092 is one cell. Without fresh5, the five-market G(D2) is −0.0001 and S is 1.0004 (`reset.json` `S_leave_one_out`).
+- On fresh5, the D2 winner against B3 has a gain of −0.028. It earns less than the truthful reference and is banned for 59.6 of 200 rounds (`diagnostics.json`). Its doubling check shows no change.
+- G(D2) is positive on 3 of 6 markets (frozen) and 4 of 6 (doubled). A t interval over the six market values is [−0.036, 0.018] (my computation).
+- The printed intervals, [−0.011, −0.008] for G(D2) and [1.04, 1.06] for S, show seed noise only. A reader can take them to mean that S is above 1. The data do not show that.
+- Correct reading: under D2 the gap is not different from zero, and its sign is not established.
+
+**The expectations had little risk (my reasoning).** When the plan was written, G(D2+H3) of 0.173 and the headline D2 gap of 0.007 were known. "S above 0.5" was close to certain. The paper discloses the timing, so this is a weight, not an error.
+
+### (d) Contribution
+
+It explains the main claim; it does not change it.
+
+- **What it adds.** In these searches, R3's whole advantage over B3 is in the replacement channel. Under D2 the pooled gains are 0.011 (B3), 0.020 (R3) and 0.017 (C*) (my computation). The three rules are not distinguishable.
+- **One more result is in the records but not in the paper.** The Q1 difference also goes away under D2. C* minus R3 is 0.021 under D2+H3 and −0.003 under D2, with a market t interval of [−0.018, 0.012] (my computation). I(C*) − I(R3) carries this implicitly; the paper should say it.
+- **It agrees with Corollary 1.** Under B3 the ban costs nothing with replacement and is a real cost without it.
+- **It limits scope.** Without free identities, R3 shows no measured benefit over B3, and its cost on honest newcomers stays.
+- **It raises the weight of the honest-churn gap (my reasoning).** All of R3's measured value is in the channel that honest churn would contaminate.
+- Q1, Q4, and all registered decisions are unchanged.
+
+## 5. New problems, ranked
+
+**1 → The paper contradicts its own follow-up. (Text only.)**
+- Quote (p. 5): "it does not isolate how much of that profit comes from the ability to replace an identity, which would need a matched comparison with replacement disabled."
+- Quote (p. 26): "it does not isolate the marginal benefit of being allowed to replace identities, which would need a matched comparison with replacement disabled."
+- Section 9 now reports that comparison within the D2 family. Table 1 still says D2 ran "second test: headline only".
+- The abstract, contributions, Section 10 and conclusion do not mention the follow-up.
+- Fix: change both sentences to point to the Section 9 paragraph with its limits. Correct Table 1. Add one sentence to the abstract and one to the conclusion, labelled exploratory.
+
+**2 → The truthful reference may replace its identity; the D2 attacker cannot. (Analysis on existing records.)**
+- Quote (p. 5): "a truthful focal provider may also replace after a false failure."
+- The reference menu includes truthful projections of D2+H3 winners (`revision-program-design.md` section 6.4). These can keep `x = 1`.
+- The reference cancels in I. It does not cancel in G, because each rule has its own reference.
+- If B3's reference replaces and R3's does not, G(D2) is biased downward and S upward (my reasoning). I could not check this; the reference records are not in the folder.
+- Three D2 winners have negative gain: fresh0 B3 (−0.002, a truthful projection, `clip = 1`), fresh2 R3 (−0.006, `clip = 1`), and fresh5 B3 (−0.028). The first two are what this bias would produce.
+- Fix: report `x` and the source of each of the 18 frozen references. If any has `x = 1`, add "while its truthful reference can" to the main sentence and re-evaluate those references with `x = 0`.
+
+**3 → S above 1 reads as a finding; it is one cell. (Text only, with one analysis on existing records.)**
+- See section 4(c).
+- Fix: replace "the gap reverses slightly under D2" with "under D2 the gap is not different from zero (3 of 6 markets positive; 4 of 6 with doubled searches)". Add the leave-one-out range, 0.97 to 1.09 over both versions. Add a market-level t interval beside the seed interval, as the Q1 paragraph does.
+
+**4 → The D2 doubling flags are missing, and the check missed a bad cell. (Text only.)**
+- Plan section 5 requires the flags. Three of 18 cells are flagged, with changes up to 0.044.
+- That is larger than G(D2) on every market except fresh5.
+- The fresh5 B3 winner earns less than the reference and is not flagged. So an unflagged D2 cell is not a converged cell.
+- Fix: report "3 of 18 flagged, largest change 0.044" in the paragraph. State that fresh0 G(D2) changes sign under doubling (−0.023 to +0.012).
+
+**5 → Two frozen D2+H3 cells violate nesting against D2. (Analysis on existing records.)**
+- D2 is inside D2+H3, so I cannot be negative for a complete search.
+- I is −0.0024 on fresh3 for C* and −0.0060 on fresh4 for R3 (frozen).
+- The D2 winner with `x = 1` beats the frozen D2+H3 winner by 0.023 and 0.010 on the same seeds (my computation from `diagnostics.json`). The doubled searches remove both.
+- The paper reports only the fresh3 contrast. The plan deferred a best-of sensitivity.
+- Fix: list the two cells as nesting failures. For the C* contrast, state that the doubled value (0.033, 6 of 6) is the more reliable one.
+
+**6 → Pooling hides that the share is weakly determined where the gap is small. (Text only.)**
+- G(D2+H3) is 0.469 and 0.263 on fresh1 and fresh3. It is 0.041, 0.057 and 0.027 on fresh0, fresh2 and fresh5.
+- On those three markets the gap is similar in size to the D2 doubling changes. Those are the Q4-failing markets.
+- Fix: add the per-market G pairs to Table 11 or to the text.
+
+**7 → The timing claims have no record in the package. (Text only.)**
+- Quote (p. 14): "under a plan and expectations written before any fresh D2 result existed."
+- Fix: add the plan's freeze commit, the analysis-code commit and the pod gate record to the ledger copy.
+
+**8 → Length. (Text only.)**
+- The paper is now 32 pages; it was 30. The round-2 request for a short version is not met.
+
+## 6. Open runs, ranked
+
+**1. Honest-churn arm. Changes my score most.**
+- Either outcome moves WEIS to 3. The reset result raises its value, because R3's whole measured advantage is in the replacement channel.
+- It needs B3, R3 and C*, at least two churn rates, and the fresh markets.
+- **It must be done before a WEIS submission.** Without it, the title claim is tested only in a world where every newcomer is the attacker.
+
+**2. Run A, the runner-up comparator. Changes the Q1 claim, and the score by a small amount.**
+- If the difference falls to near zero, finding (i) becomes "no measurable difference". If it stays near 0.02, "R3 lower" gains support.
+- Strongly recommended before WEIS, but not required, if the comparator caveat stays in the abstract.
+- Add the D2 cells for the runner-up, to extend the reset comparison.
+
+**3. Run B, searches to convergence. Matters for AAMAS only.**
+- Extend it to the D2 cells: the three flagged cells and fresh5 B3 (new problem 4).
+- Not required for WEIS.
+
+## 7. Decision
+
+| Venue | Score (1 to 5) | Acceptance probability | Confidence | Change that moves it most |
+|---|---|---|---|---|
+| WEIS 2027 | 2 (upper end) | 28% | Medium | The honest-churn arm on the fresh markets, with the paper cut to about 12 pages around the reset result and that arm |
+| AAMAS main track | 2 | 10% | Medium | Run B on every flagged and nesting-short cell, D2 cells included, plus the honest-churn arm |
+| ACM EC | 1 | 3% | High | A theorem on age-ranked audits under a quota with free identities; no planned simulation helps |
+
+I do not know the WEIS 2027 deadline or page limit. Verify both.
+
+**Next action:** fix new problems 1, 3 and 4 in the text, and make the reference table of problem 2. All four use existing records.
+
+hook: PostToolUse
+exec
+/bin/zsh -lc "rg --files -g AGENTS.md -g '*reset*' docs/revision/posthoc sim /Users/oemer.demirel/Projects/touchstone/results/v2/eval/all /Users/oemer.demirel/Projects/touchstone/results/v2/followup-reset-pod" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+docs/revision/posthoc/reset_block.py
+docs/revision/posthoc/reset.json
+docs/revision/posthoc/test_reset_block.py
+docs/revision/posthoc/reset_reference/ref_resets.py
+docs/revision/posthoc/reset_reference/reset_reference.json
+
+exec
+/bin/zsh -lc 'git show 37ace39 -- docs/revision/posthoc/reset_block.py docs/revision/posthoc/test_reset_block.py docs/revision/paper-v2/tables/posthoc_reset.tex' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc 'git show bd2dadf -- docs/revision/paper-v2/main.tex docs/revision/paper-v2/numbers_v2.py docs/revision/paper-v2/test_numbers.py docs/revision/posthoc/reset_reference/ref_resets.py docs/revision/operations-ledger.md' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+commit 37ace39e52b4061e1727fc3233247ab0e52473aa
+Author: Ömer Demirel <7556489+demirelo@users.noreply.github.com>
+Date:   Wed Nov 11 21:12:17 2026 +0100
+
+    Reset block: market-level checks after external review r3 (Fable 5.2), tests first
+    
+    G(D2) t interval over markets [-0.036, 0.018] (3 of 6 positive; doubled 4 of 6), C* - R3 gain under D2 [-0.018, 0.012],
+    nesting failures fresh3 C* and fresh4 R3 (frozen only), D2 doubling flags 3 of 18 (max 0.044), leave-one-out S 0.97-1.09,
+    per-market gaps in the table. Existing reset.json fields unchanged. 33 tests.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+diff --git a/docs/revision/paper-v2/tables/posthoc_reset.tex b/docs/revision/paper-v2/tables/posthoc_reset.tex
+index 5d91c3d..0ddb807 100644
+--- a/docs/revision/paper-v2/tables/posthoc_reset.tex
++++ b/docs/revision/paper-v2/tables/posthoc_reset.tex
+@@ -13,4 +13,11 @@ S & 1.05 [1.04, 1.06] & 1.02 [1.01, 1.03] \\
+ markets with I(B3) > I(R3) & 6 of 6 & 6 of 6 \\
+ markets with I(C$^*$) > I(R3) & 5 of 6 & 6 of 6 \\
+ \hline
++G(D2+H3) / G(D2), fresh0 & 0.041 / -0.023 & 0.041 / 0.012 \\
++G(D2+H3) / G(D2), fresh1 & 0.469 / -0.002 & 0.463 / -0.002 \\
++G(D2+H3) / G(D2), fresh2 & 0.057 / 0.011 & 0.067 / 0.008 \\
++G(D2+H3) / G(D2), fresh3 & 0.263 / 0.002 & 0.261 / 0.002 \\
++G(D2+H3) / G(D2), fresh4 & 0.183 / 0.012 & 0.159 / 0.012 \\
++G(D2+H3) / G(D2), fresh5 & 0.027 / -0.055 & 0.027 / -0.055 \\
++\hline
+ \end{tabular}
+diff --git a/docs/revision/posthoc/reset_block.py b/docs/revision/posthoc/reset_block.py
+index 559084c..aa3a445 100644
+--- a/docs/revision/posthoc/reset_block.py
++++ b/docs/revision/posthoc/reset_block.py
+@@ -192,12 +192,45 @@ def score(base: dict, dbl: dict) -> dict:
+     return out
+ 
+ 
++def _t95(xs) -> dict:
++    """External review r3: a t interval over the market values (the markets as a sample), beside the seed intervals."""
++    from scipy import stats
++    x = np.asarray(xs, dtype=float); h = float(stats.t.ppf(0.975, x.size - 1) * x.std(ddof=1) / np.sqrt(x.size))
++    return {"estimate": float(x.mean()), "t95": [float(x.mean()) - h, float(x.mean()) + h], "positive": int((x > 0).sum()), "n": int(x.size)}
++
++
++def market_level(cells: dict) -> dict:
++    """External review r3 (Fable 5.2), exploratory: G(D2) and the C* - R3 gain difference per family as market-level t
++    intervals with sign counts, and the cells where the D2+H3 winner falls below the D2 winner (I < 0, a nesting failure,
++    since D2 is inside D2+H3)."""
++    ms = [m for m in cells if all(r in cells[m].get(f, {}) for f in FAMS for r in RULES)]
++    gd2 = [float(np.mean(cells[m]["D2"]["F000"] - cells[m]["D2"]["F111"])) for m in ms]
++    cs = {f: _t95([float(np.mean(cells[m][f]["C*"] - cells[m][f]["F111"])) for m in ms]) for f in FAMS}
++    nest = {f"{m}|{r}": float(np.mean(cells[m]["D2+H3"][r] - cells[m]["D2"][r])) for m in ms for r in RULES}
++    return {"G_D2": _t95(gd2), "Cstar_minus_R3": cs, "nesting_failures": {k: v for k, v in nest.items() if v < 0}}
++
++
++def flag_summary(flags: dict) -> dict:
++    """The D2 doubling flags (plan section 5: reported separately): a cell is flagged when its doubling check is incomplete."""
++    cells = sorted(k for k, v in flags.items() if v["incomplete"])
++    return {"flagged": len(cells), "n": len(flags), "max_change": max((flags[k]["attack_change"] for k in cells), default=None), "cells": cells}
++
++
++def loo_range(res: dict) -> list:
++    """The range of the defined leave-one-out shares over the frozen and doubled searches."""
++    v = [x["value"] for k in ("base", "doubled") for x in res[k]["sensitivity"]["S_leave_one_out"].values() if x["value"] is not None]
++    return [min(v), max(v)] if v else None
++
++
+ def reset_block(eval_all, reset_dir, report: dict, markets, b: int = B, seed: int = SEED, n_seeds: int = 200) -> dict:
+     L = load(eval_all, reset_dir, report, markets, n_seeds)
+     base, dbl = analyse(L["base"], b, seed, markets), analyse(L["doubled"], b, seed, markets)
+     return {"label": "exploratory follow-up (reset experiment plan draft 5); descriptive, not registered",
+             "base": base, "doubled": dbl, "doubling_flags": L["flags"],
+-            "expectations": score(base["expectation_inputs"], dbl["expectation_inputs"])}
++            "expectations": score(base["expectation_inputs"], dbl["expectation_inputs"]),
++            "review_r3": {"label": "added after external review r3 (Fable 5.2); exploratory",
++                          "base": market_level(L["base"]), "doubled": market_level(L["doubled"]), "flags": flag_summary(L["flags"]),
++                          "S_leave_one_out_range": loo_range({"base": base, "doubled": dbl})}}
+ 
+ 
+ def switch_summary(diag: dict, markets=tuple(f"fresh{i}" for i in range(6))) -> dict:
+@@ -265,6 +298,10 @@ def table(res: dict) -> str:
+     for c in CONTRASTS:
+         lines.append(f"markets with {c.replace('B3-R3', 'I(B3) > I(R3)').replace('C*-R3', 'I(C*) > I(R3)')} & "
+                      + " & ".join(f"{res[v]['sensitivity']['signs'][c]['positive']} of {res[v]['sensitivity']['signs'][c]['n']}" for v in ("base", "doubled")) + " \\\\")
++    lines.append("\\hline")
++    for m in res["base"]["G"]["D2"]["markets"]:          # external review r3: the per-market gaps behind the pooled share
++        cells = [" / ".join(f"{res[v]['G'][f]['markets'][m]['estimate']:.3f}" for f in FAMS) for v in ("base", "doubled")]
++        lines.append(f"G(D2+H3) / G(D2), {m} & {cells[0]} & {cells[1]} \\\\")
+     lines += ["\\hline", "\\end{tabular}"]
+     return "\n".join(lines) + "\n"
+ 
+diff --git a/docs/revision/posthoc/test_reset_block.py b/docs/revision/posthoc/test_reset_block.py
+index 1d20a60..cf3a3be 100644
+--- a/docs/revision/posthoc/test_reset_block.py
++++ b/docs/revision/posthoc/test_reset_block.py
+@@ -267,3 +267,59 @@ def test_valid_names_each_defect():
+                      ({"seeds": [1, 2, 3], "gain": [0.1, float("inf"), 0.3]}, "non-finite"), (ok, "expected 4")):
+         with pytest.raises(ValueError, match=msg):
+             RB._valid(src, "x", 4 if msg == "expected 4" else 3)
++
++
++# External review r3 (Fable 5.2): market-level checks, written before the code.
++def _spread_cells():
++    """G(D2) per market = 0.01 * (k - 2) for fresh{k}: -0.02, -0.01, 0, 0.01, 0.02, 0.03; C* - R3 gain under D2 the same."""
++    c = _cells()
++    for k, m in enumerate(M6):
++        c[m]["D2"]["F000"] = c[m]["D2"]["F111"] + 0.01 * (k - 2)
++        c[m]["D2"]["C*"] = c[m]["D2"]["F111"] + 0.01 * (k - 2)
++        c[m]["D2+H3"]["F000"] = c[m]["D2"]["F000"] + 0.3
++        c[m]["D2+H3"]["C*"] = c[m]["D2"]["C*"] + 0.05
++    return c
++
++
++def test_market_t_interval_of_g_d2_and_positive_count():
++    from scipy import stats
++    c = _spread_cells(); x = np.array([0.01 * (k - 2) for k in range(6)])
++    r = RB.market_level(c)
++    h = stats.t.ppf(0.975, 5) * x.std(ddof=1) / np.sqrt(6)
++    assert r["G_D2"]["estimate"] == pytest.approx(x.mean())
++    assert r["G_D2"]["t95"] == pytest.approx([x.mean() - h, x.mean() + h])
++    assert r["G_D2"]["positive"] == 3 and r["G_D2"]["n"] == 6          # zero is not positive
++
++
++def test_market_t_interval_of_cstar_minus_r3_gain_per_family():
++    r = RB.market_level(_spread_cells())
++    assert r["Cstar_minus_R3"]["D2"]["estimate"] == pytest.approx(0.005)
++    assert r["Cstar_minus_R3"]["D2+H3"]["estimate"] == pytest.approx(0.005 + 0.05 - 0.01)
++    assert r["Cstar_minus_R3"]["D2"]["positive"] == 3
++
++
++def test_nesting_lists_cells_where_d2h3_falls_below_d2():
++    c = _cells(); c["fresh3"]["D2+H3"]["C*"] = c["fresh3"]["D2"]["C*"] - 0.002
++    assert RB.market_level(c)["nesting_failures"] == {"fresh3|C*": pytest.approx(-0.002)}
++
++
++def test_flag_summary_counts_incomplete_cells_and_their_largest_change():
++    flags = {"a|F000|D2": {"attack_change": 0.036, "reference_change": 0.0, "incomplete": True},
++             "b|C*|D2": {"attack_change": 0.044, "reference_change": 0.0, "incomplete": True},
++             "c|F111|D2": {"attack_change": 0.001, "reference_change": 0.0, "incomplete": False}}
++    s = RB.flag_summary(flags)
++    assert s == {"flagged": 2, "n": 3, "max_change": pytest.approx(0.044), "cells": ["a|F000|D2", "b|C*|D2"]}
++
++
++def test_leave_one_out_range_over_both_versions():
++    res = {"base": {"sensitivity": {"S_leave_one_out": {"m0": {"value": 1.03}, "m1": {"value": None}, "m2": {"value": 0.97}}}},
++           "doubled": {"sensitivity": {"S_leave_one_out": {"m0": {"value": 1.09}, "m1": {"value": 1.0}}}}}
++    assert RB.loo_range(res) == pytest.approx([0.97, 1.09])
++
++
++def test_table_lists_the_per_market_gaps_under_both_families():
++    c = _spread_cells()
++    r = {"base": RB.analyse(c, b=99, seed=1), "doubled": RB.analyse(c, b=99, seed=1), "expectations": {}}
++    t = RB.table(r)
++    assert "G(D2+H3) / G(D2), fresh0 & 0.270 / -0.020 & 0.270 / -0.020" in t
++    assert "G(D2+H3) / G(D2), fresh5 & 0.320 / 0.030" in t
+
+ succeeded in 0ms:
+commit bd2dadf1f63c5adcac37a80dbdb6b4fec3443fbd
+Author: Ömer Demirel <7556489+demirelo@users.noreply.github.com>
+Date:   Wed Nov 11 21:22:03 2026 +0100
+
+    Paper: external review r3 (Fable 5.2) fixes on existing records
+    
+    Problem 1: the two 'would need a matched comparison' sentences and Table 1 point to the exploratory follow-up; one
+    exploratory sentence in the abstract and the conclusion. Problem 2: 17 of 18 frozen truthful references replace an
+    identity; disabling it shifts the pooled gaps by 0.0005 and S to 1.050 (Mac check, docs/revision/posthoc/reset_reference/).
+    Problem 3: S above 1 read as a D2 gap not distinguishable from zero (3 of 6 positive, market t interval, fresh5, LOO range);
+    C* - R3 under D2. Problems 4-6: D2 doubling flags, nesting failures, per-market gaps. Problem 7: timing entry in the
+    operations ledger. Round-2 leftovers: results-in-brief sign sentence, priority value within search error. Gate ok; 33 pages.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+diff --git a/docs/revision/operations-ledger.md b/docs/revision/operations-ledger.md
+index fd24f9b..739c2ef 100644
+--- a/docs/revision/operations-ledger.md
++++ b/docs/revision/operations-ledger.md
+@@ -203,3 +203,12 @@ Astra accept-with-caveat; the one caveat (Holm citation) is resolved in 06c75e9
+ - Whole-paper final review round 1: Sol accept-with-caveat (5), Astra accept-with-caveat (4); caveats applied without another round (review process): release wording (no claim of a public release before publication), reproduction scope named (reproduce_deviation.py, second-test report; tables regenerated by the paper scripts), all generated tables fitted (adjustbox; 0 overfull boxes), Q4 caption names all four search-qualified markets, predictions table labels its paired values and rounds them (tested), floats placed before the bibliography. Consensus.
+ - 2026-11-05 00:24: final artifact `results/v2/release/touchstone-v2.tar.gz` (sha256 f6cf682bda2fa5883ff35de00bea2228f2ee8e0c7f2b91168532968fec10812c) assembled after the last paper change (8dd9e5e); `artifact_v2.py --check` ok; `reproduce_deviation.py` on a clean clone at tag protocol-v2: ok. Log `results/v2/release/run.log`. Remaining: the author publishes (repository, GitHub release with the tarball, Zenodo DOI); the paper's availability sentence then gets the URL and DOI.
+ - Paper revision after external review round 4: internal review round 1 Sol and Astra reject (fixed in 6b826df); round 2 Sol and Astra accept-with-caveat (Q3-f pair names, five-decimal pairs, four-decimal single values; applied, tested). Consensus.
++
++## Reset follow-up (exploratory, after the report; 2026-11-11, times UTC)
++
++- Plan: `docs/revision/reset-experiment-plan.md`, last changed in 140b906 (2026-11-11 05:52), before the pod started. Draft 5 with its expectations was accepted by Sol and Astra on 2026-11-10 (1ac85d0, 30e5353, 8d18de4). The six fresh-market D2+H3 outcomes and the headline contrast were known when the plan was written.
++- Pod 9f87o4yf78ioj9 (16 vCPU): launched 13:43; reproduction gate 13:45 to 14:18 on `headline@rho0.2|F111|D2|profit`, bit-identical (`results/v2/followup-reset-pod-gate/gate.json`, sha256 b78d282768abf929...); search, freeze, evaluation, doubling, inventory; RUN OK (27 and 201 records verified, 0 bad); pod deleted and verified. Records retrieved to `results/v2/followup-reset-pod/`.
++- Diagnostics (plan section 4) on the Mac with the pod's code, 16:41 to 17:27; one spot cell matches the pod (`results/v2/followup-reset-mac-diag/spot_compare.json`, max abs diff 2.2e-16).
++- Analysis code `docs/revision/posthoc/reset_block.py` with its tests committed in 3e286c1 (16:47:33); its first run on the records committed in 41bafd2 (16:48:02). The records were on disk before the code commit; the block was not run on them before it.
++- Spend: 1.65 USD balance difference (`results/pods/ts-r-reset.spent`), entered in the follow-up ledger only after the author's billing-page check.
++- External review r3 (Fable 5.2) asked for market-level checks; added in 37ace39 as a labelled exploratory block (`review_r3`), existing fields unchanged.
+diff --git a/docs/revision/paper-v2/main.tex b/docs/revision/paper-v2/main.tex
+index 76d09f0..675baff 100644
+--- a/docs/revision/paper-v2/main.tex
++++ b/docs/revision/paper-v2/main.tex
+@@ -18,7 +18,7 @@
+ \begin{abstract}
+ % BEGIN-EV2
+ A buyer of computation can check only a sample of delivered jobs, and a sanctioned provider can return at once under a new identity. In a repeated procurement market with noisy delivery, costly exact audits, refunds, finite bans, and free identity replacement, we show that for the uniform-audit baselines B2 and B3 with refund-and-ban enforcement the ban costs nothing, because replacement restores eligibility and the payoff-relevant future states, given honest rivals whose play does not depend on the focal identity. The rule we study, R3, audits every job of a new identity while the budget allows and then keeps targeting the newest identities. A registered test compares it with a verified-history comparator, C$^*$, at matched budget and sanctions on six markets drawn after the lock from a Bitcoin block hash.
+-Four findings. First, pooled over the six markets, R3 and C$^*$ are ``\site{abs_q1_cat}'' within a pre-set margin of $\pm\const{0.05}$ (C$^*$ minus R3 under D2+H3 attacks: \site{abs_q1_est}); exploratory $t$ intervals over the six market differences are [\site{abs_ml_lo}, \site{abs_ml_hi}] with the frozen searches, [\site{abs_ml_dlo}, \site{abs_ml_dhi}] with the doubled searches, and [\site{abs_env_lo}, \site{abs_env_hi}] with each rule's strongest family, so the direction is fairly stable but the size, and with it the equivalence label, is fragile and not established beyond these markets; the second attack family repeated the first family's winner in \site{abs_x7_same} of \site{abs_x7_cells} cells. Second, R3's two targeting parts substitute for each other: either alone accounts for most of the pooled reduction in the attacker's gain, and in R3's own comparison (with and without the priority window, under D2+H3) the window changes the gain by \site{abs_dp}. Third, at the headline market the targeting also falls on an honest newcomer: R3 audits \site{abs_hon_r3_1} of a replacement identity's jobs in its second ten rounds, C$^*$ \site{abs_hon_cs_1} in the same bin, and the replacement's profit per round under R3 differs from that under C$^*$ by a fraction of \site{abs_hon_rel}. Fourth, under D2+H3, R3 lowers the attacker's gain relative to uniform audits on every fresh market, but the registered replication passes on \site{abs_q4_k} of six; at the headline market, welfare attacks lower all three rules' gross efficiency to about \site{abs_q3_w0} while earning less than the truthful reference against R3 (gain \site{abs_q3_w0g}).
++Four findings. First, pooled over the six markets, R3 and C$^*$ are ``\site{abs_q1_cat}'' within a pre-set margin of $\pm\const{0.05}$ (C$^*$ minus R3 under D2+H3 attacks: \site{abs_q1_est}); exploratory $t$ intervals over the six market differences are [\site{abs_ml_lo}, \site{abs_ml_hi}] with the frozen searches, [\site{abs_ml_dlo}, \site{abs_ml_dhi}] with the doubled searches, and [\site{abs_env_lo}, \site{abs_env_hi}] with each rule's strongest family, so the direction is fairly stable but the size, and with it the equivalence label, is fragile and not established beyond these markets; the second attack family repeated the first family's winner in \site{abs_x7_same} of \site{abs_x7_cells} cells. Second, R3's two targeting parts substitute for each other: either alone accounts for most of the pooled reduction in the attacker's gain, and in R3's own comparison (with and without the priority window, under D2+H3) the window changes the gain by \site{abs_dp}, which is within search error. Third, at the headline market the targeting also falls on an honest newcomer: R3 audits \site{abs_hon_r3_1} of a replacement identity's jobs in its second ten rounds, C$^*$ \site{abs_hon_cs_1} in the same bin, and the replacement's profit per round under R3 differs from that under C$^*$ by a fraction of \site{abs_hon_rel}. Fourth, under D2+H3, R3 lowers the attacker's gain relative to uniform audits on every fresh market, but the registered replication passes on \site{abs_q4_k} of six; at the headline market, welfare attacks lower all three rules' gross efficiency to about \site{abs_q3_w0} while earning less than the truthful reference against R3 (gain \site{abs_q3_w0g}). An exploratory follow-up after the report, specified after these outcomes were seen, finds that within the D2 family most of the estimated B3 minus R3 gap, and the C$^*$ minus R3 difference, disappear when the attacker cannot replace its identity, so R3's measured advantage lies in the replacement channel.
+ The claims hold for the prescribed searches and frozen references, the evaluated markets, fixed parameters, the searched families, and honest opponents that never replace their identities, so honest churn is untested; C$^*$ was selected in development on gross efficiency in effect.
+ % END-EV2
+ \end{abstract}
+@@ -37,7 +37,7 @@ We study what checking alone can do when the usual remedies against cheap identi
+ 
+ \paragraph{Contributions.} Three findings lead. (i) On the six fresh markets, the prescribed searches classified R3 and the development-selected verified-history comparator as pooled-equivalent in attacker gain within the pre-set materiality margin of $\pm0.05$; the second Q1 family mostly repeats the first, and the classification is established for these six markets, not for the neighbourhood. (ii) In the measured factorial contrasts, R3's priority phase and its newest-first targeting substitute for each other: either alone accounts for most of the reduction in the attacker's gain, so given newest-first targeting the priority phase is close to redundant. (iii) In a registered diagnostic, R3 keeps auditing an honest provider's replacement identity well after its window, at a measured cost in that provider's profit per round: the targeting that works against the attacker also burdens honest newcomers. Supporting these are a conditional analysis of when free replacement makes a ban costless, measured failure boundaries (stronger and independently authored attackers, coalitions, the terminal-reserve collapse and a tested repair), and two registered tests whose original failure, amendments, and fresh-market replication are documented in a record to be released with the paper.
+ % BEGIN-EV2
+-\paragraph{Results in brief.} Q1: pooled over the six fresh markets, R3 and C$^*$ are ``\site{int_q1_cat}'' within the registered margin under X7-SC, and likewise under D2+H3 (the two families are close to one test, since X7-SC mostly selected the embedded D2+H3 winner): R3 is not materially better than the development-selected verified-history comparator at the same budget, and with the frozen searches the difference varies in sign across markets. Q2: in the pooled factorial contrasts, the priority phase and newest-first targeting each lower the measured gain (main effects \site{int_q2_p} and \site{int_q2_g}), and either one alone accounts for most of the reduction. Q3: the training-selected attack envelopes have lower measured gains against R3 than against B3 on every evaluated market, a finite-search comparison that does not establish robustness to the searched families; the selected unconstrained welfare attack lowers R3's gross efficiency to \site{int_q3_w0}, and exploratory lotteries over existing attacks, selected on the evaluation records, reach efficiency well below the \site{int_w1} of the registered W1 search at non-negative estimated gain, with public-family attacks alone; the W1 search therefore supplies no efficiency bound for randomised policies, and the mixtures' population profitability is not established. Q4: the B3--R3 comparison passes on \site{int_q4_k} of six fresh markets, all three passes qualified by search flags; on the other three, R3's estimated advantage is positive but below the registered threshold.
++\paragraph{Results in brief.} Q1: pooled over the six fresh markets, R3 and C$^*$ are ``\site{int_q1_cat}'' within the registered margin under X7-SC, and likewise under D2+H3 (the two families are close to one test, since X7-SC mostly selected the embedded D2+H3 winner): R3 is not materially better than the development-selected verified-history comparator at the same budget, and with the frozen searches the difference varies in sign across markets, while under D2+H3 with the doubled searches, and with each rule's strongest family, it is positive on every market. Q2: in the pooled factorial contrasts, the priority phase and newest-first targeting each lower the measured gain (main effects \site{int_q2_p} and \site{int_q2_g}), and either one alone accounts for most of the reduction. Q3: the training-selected attack envelopes have lower measured gains against R3 than against B3 on every evaluated market, a finite-search comparison that does not establish robustness to the searched families; the selected unconstrained welfare attack lowers R3's gross efficiency to \site{int_q3_w0}, and exploratory lotteries over existing attacks, selected on the evaluation records, reach efficiency well below the \site{int_w1} of the registered W1 search at non-negative estimated gain, with public-family attacks alone; the W1 search therefore supplies no efficiency bound for randomised policies, and the mixtures' population profitability is not established. Q4: the B3--R3 comparison passes on \site{int_q4_k} of six fresh markets, all three passes qualified by search flags; on the other three, R3's estimated advantage is positive but below the registered threshold.
+ % END-EV2
+ 
+ \section{Related work}\label{sec:related}
+@@ -64,7 +64,7 @@ We study what checking alone can do when the usual remedies against cheap identi
+ 
+ \paragraph{Admissible rules.} A rule reads only the current offers and job values, the audit results it bought, its own memory, and the configuration. Payments are funded by buyer escrow. The only consequences are a refund of up to the escrow of an audited job that failed; a ban of the identity for at most 50 rounds; holding back up to three rounds of an identity's receipts as a bond; and allocation priority and audit selection as functions of the allowed inputs. There are no entry fees, no collateral before receipts, no identity certification, and no consequences for unaudited jobs.
+ 
+-\paragraph{Benchmark and metrics.} One focal provider deviates while the others play honestly at full effort with truthful claims; this is a unilateral deviation, not an equilibrium. For a seed with first-best surplus $S^*$, the focal provider's \emph{gain} is its profit under the attack minus its profit under a selected truthful reference, divided by $S^*/N$. \emph{Gross efficiency} is $(W + \text{audit cost})/S^*$, with $W$ the realised social surplus net of audit cost; net efficiency is $W/S^*$. Gain is a difference of two searched values, so search error can bias it either way. It is excess profit when replacement is available; it does not isolate how much of that profit comes from the ability to replace an identity, which would need a matched comparison with replacement disabled. The second test adds two objectives at its headline market: welfare attacks that minimise gross efficiency, without a constraint (W0) or subject to a nonnegative mean normalised gain over the attacker's reference on the training seeds (W1), whose profitability is then called supported only if its nominal 95\% lower bound on the evaluation seeds is nonnegative; and coalitions of two or five providers, scored by the total gain $G_{\mathrm{tot}}$ and by the worst member's mean gain $G_{\min}$, both against a coordinated truthful reference. Coalition results say nothing about coalition stability.
++\paragraph{Benchmark and metrics.} One focal provider deviates while the others play honestly at full effort with truthful claims; this is a unilateral deviation, not an equilibrium. For a seed with first-best surplus $S^*$, the focal provider's \emph{gain} is its profit under the attack minus its profit under a selected truthful reference, divided by $S^*/N$. \emph{Gross efficiency} is $(W + \text{audit cost})/S^*$, with $W$ the realised social surplus net of audit cost; net efficiency is $W/S^*$. Gain is a difference of two searched values, so search error can bias it either way. It is excess profit when replacement is available; it does not isolate how much of that profit comes from the ability to replace an identity; Section~\ref{sec:results} reports an exploratory matched comparison with replacement disabled, within the D2 family only. The second test adds two objectives at its headline market: welfare attacks that minimise gross efficiency, without a constraint (W0) or subject to a nonnegative mean normalised gain over the attacker's reference on the training seeds (W1), whose profitability is then called supported only if its nominal 95\% lower bound on the evaluation seeds is nonnegative; and coalitions of two or five providers, scored by the total gain $G_{\mathrm{tot}}$ and by the worst member's mean gain $G_{\min}$, both against a coordinated truthful reference. Coalition results say nothing about coalition stability.
+ 
+ \section{The audit rules we compare}\label{sec:rules}
+ \paragraph{Baselines.} B2 posts prices for three claim tiers, allocates by those prices, and audits uniformly. B3 allocates each job, in descending order of value, to the offer with remaining capacity and the highest nonnegative score $v_j c_i - \mathrm{bid}_i$, pays $v_j c_i - s_{2,j}$ with $s_{2,j}$ the highest score among the other eligible offers (zero if there is none), and audits uniformly at random among served jobs, spread over the rounds. Both refund a failed job and ban its identity for $L$ rounds.
+@@ -114,7 +114,7 @@ Every unilateral attacker family reads only the provider's own history across it
+ \begin{table}[t]\centering\small
+ \begin{tabular}{@{}lp{\const{0.46}\linewidth}lp{\const{0.22}\linewidth}@{}}\toprule
+ Family & What it does and observes & Knobs & Where \\\midrule
+-D2 & Adaptive claim markup that falls after a failed audit and recovers otherwise; own history & \const{7} & both tests; second test: headline only \\
++D2 & Adaptive claim markup that falls after a failed audit and recovers otherwise; own history & \const{7} & both tests; second test: headline only, and the six fresh markets in an exploratory follow-up after the report \\
+ D2+H3 & D2 with a searched option to replace the identity after a failed audit & \const{8} & both tests; second test: all seven markets \\
+ H2 & Sealed family written in a separate session; contains D2, no exit or re-entry & sealed & first test \\
+ X7-SC & State-conditioned: fresh, established, and terminal phases from its own audit exposure and pass count; reset or wait out a ban; voluntary exit & \const{15} & second test, all seven markets \\
+@@ -237,10 +237,10 @@ The registered estimates and decisions below come from the report that the tagge
+ \caption{Q4: per-market lower bounds against the registered thresholds.}\label{fig:q4}
+ \end{figure}
+ 
+-\paragraph{Identity replacement and the B3--R3 gap (exploratory follow-up).} D2+H3 is D2 plus one switch $x$ that lets the attacker leave after a failed audit and return under a new identity. At the headline market, the D2+H3 search leaves \site{rs_hl_b3} more gain against B3 than the D2 search, and \site{rs_hl_r3} more against R3, so the B3 minus R3 gap is \site{rs_hl_g1} under D2+H3 and \site{rs_hl_g0} under D2. To see whether this holds on the six fresh markets, we ran after the report the D2 cells that budget cut~\const{3} had removed (B3, R3, and C$^*$ at $\rho=\const{0.2}$, each with a doubling check), under a plan and expectations written before any fresh D2 result existed, but after the headline contrast and the six fresh-market D2+H3 outcomes had been seen. This is a descriptive follow-up, not an independent replication, and it changes no registered decision. Pooled over the six markets with equal weights, the B3 minus R3 gap is \site{rs_g1} (\const{95}\% paired seed-bootstrap interval [\site{rs_g1_lo}, \site{rs_g1_hi}]) under D2+H3 and \site{rs_g0} ([\site{rs_g0_lo}, \site{rs_g0_hi}]) under D2 (doubled searches: \site{rs_g1_d} and \site{rs_g0_d}). The share of the gap that disappears without replacement, $S = \const{1} - G(\mathrm{D2})/G(\mathrm{D2{+}H3})$, is \site{rs_s} (doubled searches: \site{rs_s_d}); a value above one means the gap reverses slightly under D2. The difference between the two prescribed searches, $I = g(\mathrm{D2{+}H3}) - g(\mathrm{D2})$, is \site{rs_i_b3} against B3, \site{rs_i_r3} against R3, and \site{rs_i_c} against C$^*$; it does not identify the optimal value of replacement. The expectations set in advance score as follows. $I(\mathrm{B3}) > I(\mathrm{R3})$ on every market: ``\site{rs_exp_b}'' (\site{rs_sign_b} markets with the frozen searches, \site{rs_sign_bd} with the doubled ones). $I(\mathrm{C}^*) > I(\mathrm{R3})$ on every market: ``\site{rs_exp_c}'' (\site{rs_sign_c} and \site{rs_sign_cd} markets; fresh3 gives \site{rs_f3_c} with the frozen searches). Pooled $S > \const{0.5}$: ``\site{rs_exp_s}''. Within the D2 family, at the fixed parameters and search budgets, most of the estimated B3 minus R3 gap under the prescribed searches disappears when the attacker cannot replace its identity. The two searched winners can differ in every knob, not only $x$. With every other knob held fixed, switching replacement off in the D2+H3 winner lowers the gain by \site{rs_fx_b3} against B3 and \site{rs_fx_r3} against R3, and switching it on in the D2 winner raises the gain by only \site{rs_rev_b3} and \site{rs_rev_r3}. No D2 winner replaces its identity. $S$ is a ratio of two searched gaps and carries their search error (Table~\ref{tab:ph-reset}).
++\paragraph{Identity replacement and the B3--R3 gap (exploratory follow-up).} D2+H3 is D2 plus one switch $x$ that lets the attacker leave after a failed audit and return under a new identity. At the headline market, the D2+H3 search leaves \site{rs_hl_b3} more gain against B3 than the D2 search, and \site{rs_hl_r3} more against R3, so the B3 minus R3 gap is \site{rs_hl_g1} under D2+H3 and \site{rs_hl_g0} under D2. To see whether this holds on the six fresh markets, we ran after the report the D2 cells that budget cut~\const{3} had removed (B3, R3, and C$^*$ at $\rho=\const{0.2}$, each with a doubling check), under a plan and expectations written before any fresh D2 result existed, but after the headline contrast and the six fresh-market D2+H3 outcomes had been seen. This is a descriptive follow-up, not an independent replication, and it changes no registered decision. Pooled over the six markets with equal weights, the B3 minus R3 gap is \site{rs_g1} (\const{95}\% paired seed-bootstrap interval [\site{rs_g1_lo}, \site{rs_g1_hi}]) under D2+H3 and \site{rs_g0} ([\site{rs_g0_lo}, \site{rs_g0_hi}]) under D2 (doubled searches: \site{rs_g1_d} and \site{rs_g0_d}). The share of the gap that disappears without replacement, $S = \const{1} - G(\mathrm{D2})/G(\mathrm{D2{+}H3})$, is \site{rs_s} (doubled searches: \site{rs_s_d}). It exceeds one because the pooled D2 gap is slightly negative, but that gap is not distinguishable from zero: it is positive on \site{rs_gd0_pos} of the six markets (\site{rs_gd0_pos_d} with the doubled searches), the exploratory $t$ interval over the six market values is [\site{rs_gd0_t_lo}, \site{rs_gd0_t_hi}], and most of its negative value comes from fresh5 (without fresh5, $S$ is \site{rs_s_loo5}). The seed intervals above hold the six markets fixed; leaving out one market at a time gives $S$ from \site{rs_loo_lo} to \site{rs_loo_hi} over both search versions, and Table~\ref{tab:ph-reset} lists the gaps per market. The same holds for the Q1 contrast: the pooled C$^*$ minus R3 gain difference is \site{rs_cr1} under D2+H3 and \site{rs_cr0} under D2 ($t$ interval [\site{rs_cr0_lo}, \site{rs_cr0_hi}]; doubled searches [\site{rs_cr0_dlo}, \site{rs_cr0_dhi}]). The difference between the two prescribed searches, $I = g(\mathrm{D2{+}H3}) - g(\mathrm{D2})$, is \site{rs_i_b3} against B3, \site{rs_i_r3} against R3, and \site{rs_i_c} against C$^*$; it does not identify the optimal value of replacement. The expectations set in advance score as follows. $I(\mathrm{B3}) > I(\mathrm{R3})$ on every market: ``\site{rs_exp_b}'' (\site{rs_sign_b} markets with the frozen searches, \site{rs_sign_bd} with the doubled ones). $I(\mathrm{C}^*) > I(\mathrm{R3})$ on every market: ``\site{rs_exp_c}'' (\site{rs_sign_c} and \site{rs_sign_cd} markets; fresh3 gives \site{rs_f3_c} with the frozen searches). Pooled $S > \const{0.5}$: ``\site{rs_exp_s}''. Within the D2 family, at the fixed parameters and search budgets, most of the estimated B3 minus R3 gap under the prescribed searches disappears when the attacker cannot replace its identity. The two searched winners can differ in every knob, not only $x$. With every other knob held fixed, switching replacement off in the D2+H3 winner lowers the gain by \site{rs_fx_b3} against B3 and \site{rs_fx_r3} against R3, and switching it on in the D2 winner raises the gain by only \site{rs_rev_b3} and \site{rs_rev_r3}. No D2 winner replaces its identity. The truthful references can: \site{rs_ref_any} of the \site{rs_ref_n} frozen references replace an identity on the evaluation seeds. Each rule's reference cancels in $I$ but not in $G$. Disabling replacement in every reference changes no reference's profit by more than \site{rs_ref_max}, shifts the pooled gaps by \site{rs_ref_dg}, and leaves $S$ at \site{rs_ref_s} (exploratory check on the Mac, which reproduces the stored reference profits on average to within \site{rs_ref_val}, not seed for seed). $S$ is a ratio of two searched gaps and carries their search error (Table~\ref{tab:ph-reset}). \site{rs_flag} of the \site{rs_flag_n} D2 doubling checks are flagged (largest change \site{rs_flag_max}), and on fresh0 the D2 gap moves from \site{rs_f0_g0} to \site{rs_f0_g0_d} under doubling; an unflagged cell is not a converged one. With the frozen searches, two cells violate the nesting of D2 in D2+H3: $I$ is \site{rs_nest_c} for C$^*$ on fresh3 and \site{rs_nest_r} for R3 on fresh4. The doubled searches remove both, so for the C$^*$ contrast the doubled value is the more reliable one.
+ \begin{table}[t]\centering\small
+ \adjustbox{max width=\linewidth}{\input{tables/posthoc_reset.tex}}
+-\caption{Exploratory follow-up, after the report: the difference between the two prescribed searches, $I = g(\mathrm{D2{+}H3}) - g(\mathrm{D2})$, per rule, its contrasts, the B3 minus R3 gaps $G$ under each family, and the share $S$, pooled over the six fresh markets with equal weights, with paired seed-bootstrap percentile intervals; frozen and doubled searches. $S$ is shown only when the lower bound of the pooled D2+H3 gap exceeds the preset floor.}\label{tab:ph-reset}
++\caption{Exploratory follow-up, after the report: the difference between the two prescribed searches, $I = g(\mathrm{D2{+}H3}) - g(\mathrm{D2})$, per rule, its contrasts, the B3 minus R3 gaps $G$ under each family, and the share $S$, pooled over the six fresh markets with equal weights, with paired seed-bootstrap percentile intervals; frozen and doubled searches. $S$ is shown only when the lower bound of the pooled D2+H3 gap exceeds the preset floor. The lower block gives the gaps per market (D2+H3 / D2).}\label{tab:ph-reset}
+ \end{table}
+ 
+ \paragraph{Which parts of R3 matter (Q2).} Under separately searched D2+H3 attacks, pooled over the fresh markets, the main effects on the gain are \site{r_q2_p} for the priority phase P and \site{r_q2_g} for newest-first residual targeting G, both reductions, and \site{r_q2_s} for pacing S, a small increase (X7-SC: \site{r_q2_s_x}). The two targeting parts are substitutes: the PG factorial contrast, half the difference between G's conditional effects, is \site{r_q2_pg}; G changes the gain by \site{r_q2_g_p0} without the priority phase and by only \site{r_q2_g_p1} with it, and the priority phase changes it by only \site{r_q2_p_g1} once G is in place (averaged over both pacing settings). R3's own comparison, $F_{111}$ minus $F_{011}$ (exploratory, from the evaluation records), is \site{r_dp} pooled: exactly zero on four markets, where both rules leave the attacker the same gain, and nonzero on fresh1 (\site{r_dp_f1}) and fresh3. Against the fixed attacks, the priority phase's effect given newest-first targeting is larger (\site{r_q2_fixed_pg1} under D2+H3 and \site{r_q2_fixed_pg1_x} under X7-SC, averaged over pacing), though still small next to newest-first targeting's effect without the priority phase (above). In the pooled, separately searched comparisons, given newest-first targeting the priority phase adds little at these audit ratios and capacities; at a lower audit ratio or a larger attacker capacity, half of a round's audits may no longer cover one provider's jobs, and the substitution need not hold. In the pooled contrasts, either P or G alone accounts for most of the measured reduction; adding the other contributes little. The pattern also appears in the fixed-attack contrasts averaged over the eight selected attacks (P: \site{r_q2_fixed_p}). Our registered conjectures (P negligible, the targeting parts additive, S helpful) failed as scored (Table~\ref{tab:predictions}); the stricter eligibility reading of Table~\ref{tab:pred-eligibility} leaves them not assessed, with the estimates unchanged. X7-SC agrees (Table~\ref{tab:q2-x7sc}).
+@@ -328,7 +328,7 @@ The registered estimates and decisions below come from the report that the tagge
+ 
+ \section{What the results show and what they do not}\label{sec:discussion}
+ % BEGIN-EV2
+-\paragraph{What the two tests support together.} At the fixed parameters, the prescribed D2+H3 searches yield a lower measured gain for R3 than for B3 on every sampled market, with R3's registered efficiency condition met. The gain is measured against each rule's frozen truthful reference; it does not isolate the marginal benefit of being allowed to replace identities, which would need a matched comparison with replacement disabled. The registered comparison does not establish that margin across all six sampled fresh markets. The pooled factorial contrasts and the comparison with C$^*$ support a measured benefit shared by more than one targeting design; they do not establish the same ordering for every variant on every market. At $\rho = \const{0.2}$, pacing slightly raises the measured gain while changing efficiency little; at $\rho = \const{1}$, the terminal reserve that pacing adds exhausts the allowance and causes R3's collapse, which the capped schedule only partly repairs.
++\paragraph{What the two tests support together.} At the fixed parameters, the prescribed D2+H3 searches yield a lower measured gain for R3 than for B3 on every sampled market, with R3's registered efficiency condition met. The gain is measured against each rule's frozen truthful reference; it does not isolate the marginal benefit of being allowed to replace identities beyond the exploratory D2-family comparison of Section~\ref{sec:results}, which holds the parameters and search budgets fixed and compares two separately searched winners. The registered comparison does not establish that margin across all six sampled fresh markets. The pooled factorial contrasts and the comparison with C$^*$ support a measured benefit shared by more than one targeting design; they do not establish the same ordering for every variant on every market. At $\rho = \const{0.2}$, pacing slightly raises the measured gain while changing efficiency little; at $\rho = \const{1}$, the terminal reserve that pacing adds exhausts the allowance and causes R3's collapse, which the capped schedule only partly repairs.
+ 
+ \paragraph{What they do not support.} The selected unconstrained welfare attacks lower the gross efficiency of all three core rules by a similar amount while earning less than the truthful reference against R3 and C$^*$; that is a loss relative to honest play, not necessarily a negative profit. Exploratory mixtures expose policies omitted by the prescribed W1 search that have substantially lower empirical efficiency at non-negative estimated gain; their population profitability remains unestablished, and the favourable W1 result for R3 and C$^*$ is not a lower bound on efficiency. Robustness to the searched families is not established: the doubling checks find missed improvements but cannot bound the remaining gap, and several decisions hold only for the prescribed search procedure. The fresh-market configurations differ from the registered ones in the last binary digit; re-evaluating the frozen policies and references with the registered configurations leaves every Q1 and Q4 decision unchanged, a check that does not repeat search or reference selection.
+ % END-EV2
+@@ -338,7 +338,7 @@ The registered estimates and decisions below come from the report that the tagge
+ 
+ \section{Conclusion}\label{sec:conclusion}
+ % BEGIN-EV2
+-For the uniform-audit baselines B2 and B3 with refund-and-ban enforcement and no bonds, against honest rivals whose play does not depend on the focal identity and with re-entry before the next allocation, free replacement removes the ban's continuation cost. At the fixed parameters, the prescribed D2+H3 searches yield a lower measured gain for R3 than for B3 on every sampled market, but the registered gain-and-efficiency comparison passes on only three of six fresh markets, all three qualified by search flags. R3 and the development-selected verified-history comparator are pooled-equivalent within the pre-set margin in the six sampled markets under both Q1 families, which are close to one test; with the frozen searches the difference varies in sign across markets (under D2+H3 with the doubled searches, and with each rule's strongest family, it is positive on all six), and this analysis does not establish the ordering for the neighbourhood. At the headline market, the selected unconstrained welfare attacks yield gross efficiency of about \site{c_w0} against all three core rules and earn less than the truthful reference against R3 and C$^*$. The registered W1 search found no profitable welfare attack (gross efficiency near \site{c_w1}); exploratory mixtures of a welfare attack and a profitable attack reach lower efficiency at non-negative estimated gain, so it supplies no efficiency bound for randomised policies. These conclusions concern frozen searches and references, with interval calibration admitted on development fixtures. The record of both tests, including the original failure, the amendments, the deviations, and the failed predictions, will be released with the paper.
++For the uniform-audit baselines B2 and B3 with refund-and-ban enforcement and no bonds, against honest rivals whose play does not depend on the focal identity and with re-entry before the next allocation, free replacement removes the ban's continuation cost. At the fixed parameters, the prescribed D2+H3 searches yield a lower measured gain for R3 than for B3 on every sampled market, but the registered gain-and-efficiency comparison passes on only three of six fresh markets, all three qualified by search flags. R3 and the development-selected verified-history comparator are pooled-equivalent within the pre-set margin in the six sampled markets under both Q1 families, which are close to one test; with the frozen searches the difference varies in sign across markets (under D2+H3 with the doubled searches, and with each rule's strongest family, it is positive on all six), and this analysis does not establish the ordering for the neighbourhood. At the headline market, the selected unconstrained welfare attacks yield gross efficiency of about \site{c_w0} against all three core rules and earn less than the truthful reference against R3 and C$^*$. The registered W1 search found no profitable welfare attack (gross efficiency near \site{c_w1}); exploratory mixtures of a welfare attack and a profitable attack reach lower efficiency at non-negative estimated gain, so it supplies no efficiency bound for randomised policies. An exploratory follow-up places R3's measured advantage over B3, and C$^*$'s difference from R3, in the replacement channel: without replacement, under the D2 family, neither gap is distinguishable from zero across the six markets. These conclusions concern frozen searches and references, with interval calibration admitted on development fixtures. The record of both tests, including the original failure, the amendments, the deviations, and the failed predictions, will be released with the paper.
+ % END-EV2
+ 
+ \paragraph{Availability.} The paper artifact will have its own release commit and archive hash. It identifies the frozen evaluation code by the signed tag \texttt{protocol-v2} and preserves the original tagged-code report. It contains the code, the tuned files, all records of both tests (including incomplete, failed, and cut cells), the market generator, the block headers, the released H4 bundle, and the deviation evidence, and, separately dated, the decision-stability re-evaluation, the exploratory post hoc analyses with the per-seed evaluation and training inputs of the lottery analysis, the prediction-scoring correction with its regression test, the inference audit, and the paper sources. One command (\texttt{docs/revision/deviation/reproduce\_deviation.py}) checks the artifact against the tag and reproduces the second test's report under the disclosed configuration substitution; the paper's second-test tables and figures are regenerated from the tagged report, the disclosed stability output, and the exploratory post hoc and audit outputs by the scripts in \texttt{docs/revision/paper-v2}, \texttt{docs/revision/posthoc}, and \texttt{docs/revision/audit}, and the first test's records and verdict are in the release as recorded in October~\const{2026}.
+diff --git a/docs/revision/paper-v2/numbers_v2.py b/docs/revision/paper-v2/numbers_v2.py
+index 36ac708..aee3852 100644
+--- a/docs/revision/paper-v2/numbers_v2.py
++++ b/docs/revision/paper-v2/numbers_v2.py
+@@ -28,13 +28,14 @@ INPUT = re.compile(r"\\(?:input|include)\{([^}]*)\}")
+ P_LEAVES = {"p", "p_gain", "p_eff", "calibrated", "holm_adjusted", "calibrated_gain", "calibrated_eff"}
+ # Kinds for prose in result regions: the field name and the value type must fit the sentence's statistic.
+ COUNT_LEAVES = {"k", "fulfilled", "failed", "not assessed",           # Q4's k; the prediction tallies (score_v2.py)
+-                "positive", "n", "embedded_identical", "cells", "flagged", "checks", "over_threshold"}    # Fable 5.2 review counts (posthoc)
++                "positive", "n", "embedded_identical", "cells", "flagged", "checks", "over_threshold", "refs_with_any_reset"}    # Fable 5.2 review counts (posthoc)
+ KINDS = {"count": lambda leaf, v: leaf in COUNT_LEAVES and isinstance(v, int) and not isinstance(v, bool),
+          "p": lambda leaf, v: leaf in P_LEAVES and isinstance(v, float) and 0 <= v <= 1,
+          "gain": lambda leaf, v: leaf in {"estimate", "gain_diff", "gain_diff_lower", "attacker_gain", "0", "1", "q1_frozen", "q1_doubled",
+-                                          "q4_frozen", "q4_doubled", "mean_gain", "mean", "difference", "pooled", "max_shortfall", "fresh1"} and isinstance(v, float),
++                                          "q4_frozen", "q4_doubled", "mean_gain", "mean", "difference", "pooled", "max_shortfall", "fresh1", "max_change", "G_shift_pooled",
++                                          "max_abs_replacement_value", "max_abs_validation_mean_diff"} and isinstance(v, float),
+          "ratio": lambda leaf, v: leaf == "relative" and isinstance(v, float),
+-         "share_s": lambda leaf, v: leaf == "value" and isinstance(v, float),          # reset follow-up S (not clipped)
++         "share_s": lambda leaf, v: leaf in {"value", "0", "1", "S_with_non_replacing_references"} and isinstance(v, float),   # reset follow-up S (not clipped); "0"/"1": the leave-one-out range
+          "share": lambda leaf, v: leaf == "audited_share" and isinstance(v, float) and 0 <= v <= 1,
+          "eff": lambda leaf, v: leaf in {"eff", "eff_lower", "efficiency", "0", "1"} and isinstance(v, float),
+          "label": lambda leaf, v: isinstance(v, str)}
+diff --git a/docs/revision/paper-v2/test_numbers.py b/docs/revision/paper-v2/test_numbers.py
+index 7d36f51..e076b05 100644
+--- a/docs/revision/paper-v2/test_numbers.py
++++ b/docs/revision/paper-v2/test_numbers.py
+@@ -395,3 +395,17 @@ def test_reset_share_kind():
+     # Reset follow-up (2026-11-11): the share S = 1 - G(D2)/G(D2+H3) is stored as `value`; it may exceed 1 (no clipping)
+     assert N.KINDS["share_s"]("value", 1.05) and N.KINDS["share_s"]("value", -0.2)
+     assert not N.KINDS["share_s"]("estimate", 0.5) and not N.KINDS["share_s"]("value", None) and not N.KINDS["gain"]("value", 0.5)
++
++
++def test_reset_review_r3_kinds():
++    # External review r3 (2026-11-11): the leave-one-out S range is a two-element list; the largest D2 doubling change is
++    # a gain change stored as `max_change`
++    assert N.KINDS["share_s"]("0", 0.97) and N.KINDS["share_s"]("1", 1.09)
++    assert N.KINDS["gain"]("max_change", 0.044) and not N.KINDS["gain"]("max_change", 3)
++
++
++def test_reset_reference_check_kinds():
++    # External review r3 problem 2: the reference replacement check (docs/revision/posthoc/reset_reference/)
++    assert N.KINDS["count"]("refs_with_any_reset", 17)
++    assert N.KINDS["gain"]("G_shift_pooled", 0.0005) and N.KINDS["gain"]("max_abs_replacement_value", 0.009)
++    assert N.KINDS["gain"]("max_abs_validation_mean_diff", 0.007) and N.KINDS["share_s"]("S_with_non_replacing_references", 1.05)
+diff --git a/docs/revision/posthoc/reset_reference/ref_resets.py b/docs/revision/posthoc/reset_reference/ref_resets.py
+new file mode 100644
+index 0000000..344e8fe
+--- /dev/null
++++ b/docs/revision/posthoc/reset_reference/ref_resets.py
+@@ -0,0 +1,64 @@
++"""Fable r3 problem 2: do the 18 frozen truthful references replace their identity on the evaluation seeds?
++For each (market, rule): the chosen reference candidate, its family and knobs, reset counts, and (if it resets) the
++reference's mean normalised profit with replacement disabled. Validation: reference normalised profit per seed must equal
++the D2 winner's normalised profit (Mac diagnostics) minus the stored D2 gain."""
++import json, sys
++from pathlib import Path
++import numpy as np
++
++T0 = Path(sys.argv[1]); B = Path(sys.argv[2]); POD = Path(sys.argv[3]); DIAG = Path(sys.argv[4]); OUT = Path(sys.argv[5]); ONLY = sys.argv[6] if len(sys.argv) > 6 else None
++sys.path.insert(0, str(T0 / "docs/revision/followup"))
++import reset_followup_v2 as F  # noqa: E402
++R = F.R
++from sim.cell import SeedCache, run_focal  # noqa: E402
++from sim.records_v2 import read  # noqa: E402
++from sim.records import cfg_from_dict  # noqa: E402
++
++root = json.loads((B / "draw/draw.json").read_text())["hash"]
++salt = json.loads((B / "draw/instances.json").read_text())["salt_sha256"]
++cfgs = {k: cfg_from_dict(v) for k, v in json.loads((B / "deviation/cfg_linux.json").read_text()).items()}
++params = json.loads((T0 / "experiments/v2/params.json").read_text())
++jobs = F.build_jobs(root, cfgs, params, salt)
++diag = json.loads(DIAG.read_text())
++
++
++def no_replace(family, knobs, T):
++    if family == "X7-SC":
++        return {**knobs, "h_R": float(T), "lambda": 1.0}
++    if "x" in knobs:
++        return {**knobs, "x": 0}
++    return None
++
++
++res = {}
++for j in jobs:
++    ctx, rule = j["context"], j["rule"]
++    if ONLY and not ctx.startswith(ONLY + "@"):
++        continue
++    ref = read(B / "eval-all" / "reference" / ctx / (rule.replace("*", "star") + ".json"))
++    cand = ref["candidates"][ref["choice"]]
++    T, L = R.constants(j); cell = R.eval_cell(j); cache = SeedCache()
++    fam = R.family_for(cand["family"], T, L) if cand.get("family") else None
++    row = {"name": cand["name"], "family": cand.get("family"), "knobs": cand.get("knobs")}
++    if fam is None:
++        row["note"] = "no family (abstain or honest policy)"; res[f"{ctx}|{rule}"] = row; continue
++    run = run_focal(cell, lambda: fam.make(dict(cand["knobs"])), cache)
++    st = F.reset_stats(run.results, cell.focal)
++    norm = np.asarray(run.normalized, float)
++    d2 = np.asarray(diag[f"{ctx}|{rule}"]["d2_base"]["normalized"], float)
++    gain = np.asarray(json.loads((POD / "evaluate" / (j["id"].replace("|", "__").replace("*", "star") + ".json")).read_text())["gain"], float)
++    row.update({k: st[k] for k in ("mean_resets", "p_any_reset", "mean_ban_rounds")})
++    row["ref_mean_normalized"] = float(norm.mean())
++    ev = json.loads((POD / "evaluate" / (j["id"].replace("|", "__").replace("*", "star") + ".json")).read_text())
++    scale = np.asarray(ev["sstar"], float) / cell.cfg.N; pr = np.asarray(ev["profit_ref"], float) / scale
++    row["validation_mean_diff"] = float(np.mean(norm - pr)); row["validation_seeds_differing"] = int((np.abs(norm - pr) > 1e-9).sum())
++    row["validation_max_abs_diff"] = float(np.max(np.abs(norm - pr)))
++    if st["mean_resets"] > 0:
++        k0 = no_replace(cand["family"], cand["knobs"], T)
++        off = run_focal(cell, lambda: fam.make(dict(k0)), cache)
++        row["ref_no_replace_mean_normalized"] = float(np.mean(off.normalized))
++        row["replacement_value_to_reference"] = float(norm.mean() - np.mean(off.normalized))
++    res[f"{ctx}|{rule}"] = row
++    print(ctx, rule, row["name"], row["family"], "clip", (cand.get("knobs") or {}).get("clip"), "resets", row["mean_resets"],
++          "valid_mean", f"{row['validation_mean_diff']:.1e}", "n_diff", row["validation_seeds_differing"], "repl_value", row.get("replacement_value_to_reference"), flush=True)
++OUT.write_text(json.dumps(res, indent=1) + "\n")
+
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'git show bd2dadf -- docs/revision/paper-v2/main.tex' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+commit bd2dadf1f63c5adcac37a80dbdb6b4fec3443fbd
+Author: Ömer Demirel <7556489+demirelo@users.noreply.github.com>
+Date:   Wed Nov 11 21:22:03 2026 +0100
+
+    Paper: external review r3 (Fable 5.2) fixes on existing records
+    
+    Problem 1: the two 'would need a matched comparison' sentences and Table 1 point to the exploratory follow-up; one
+    exploratory sentence in the abstract and the conclusion. Problem 2: 17 of 18 frozen truthful references replace an
+    identity; disabling it shifts the pooled gaps by 0.0005 and S to 1.050 (Mac check, docs/revision/posthoc/reset_reference/).
+    Problem 3: S above 1 read as a D2 gap not distinguishable from zero (3 of 6 positive, market t interval, fresh5, LOO range);
+    C* - R3 under D2. Problems 4-6: D2 doubling flags, nesting failures, per-market gaps. Problem 7: timing entry in the
+    operations ledger. Round-2 leftovers: results-in-brief sign sentence, priority value within search error. Gate ok; 33 pages.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+diff --git a/docs/revision/paper-v2/main.tex b/docs/revision/paper-v2/main.tex
+index 76d09f0..675baff 100644
+--- a/docs/revision/paper-v2/main.tex
++++ b/docs/revision/paper-v2/main.tex
+@@ -18,7 +18,7 @@
+ \begin{abstract}
+ % BEGIN-EV2
+ A buyer of computation can check only a sample of delivered jobs, and a sanctioned provider can return at once under a new identity. In a repeated procurement market with noisy delivery, costly exact audits, refunds, finite bans, and free identity replacement, we show that for the uniform-audit baselines B2 and B3 with refund-and-ban enforcement the ban costs nothing, because replacement restores eligibility and the payoff-relevant future states, given honest rivals whose play does not depend on the focal identity. The rule we study, R3, audits every job of a new identity while the budget allows and then keeps targeting the newest identities. A registered test compares it with a verified-history comparator, C$^*$, at matched budget and sanctions on six markets drawn after the lock from a Bitcoin block hash.
+-Four findings. First, pooled over the six markets, R3 and C$^*$ are ``\site{abs_q1_cat}'' within a pre-set margin of $\pm\const{0.05}$ (C$^*$ minus R3 under D2+H3 attacks: \site{abs_q1_est}); exploratory $t$ intervals over the six market differences are [\site{abs_ml_lo}, \site{abs_ml_hi}] with the frozen searches, [\site{abs_ml_dlo}, \site{abs_ml_dhi}] with the doubled searches, and [\site{abs_env_lo}, \site{abs_env_hi}] with each rule's strongest family, so the direction is fairly stable but the size, and with it the equivalence label, is fragile and not established beyond these markets; the second attack family repeated the first family's winner in \site{abs_x7_same} of \site{abs_x7_cells} cells. Second, R3's two targeting parts substitute for each other: either alone accounts for most of the pooled reduction in the attacker's gain, and in R3's own comparison (with and without the priority window, under D2+H3) the window changes the gain by \site{abs_dp}. Third, at the headline market the targeting also falls on an honest newcomer: R3 audits \site{abs_hon_r3_1} of a replacement identity's jobs in its second ten rounds, C$^*$ \site{abs_hon_cs_1} in the same bin, and the replacement's profit per round under R3 differs from that under C$^*$ by a fraction of \site{abs_hon_rel}. Fourth, under D2+H3, R3 lowers the attacker's gain relative to uniform audits on every fresh market, but the registered replication passes on \site{abs_q4_k} of six; at the headline market, welfare attacks lower all three rules' gross efficiency to about \site{abs_q3_w0} while earning less than the truthful reference against R3 (gain \site{abs_q3_w0g}).
++Four findings. First, pooled over the six markets, R3 and C$^*$ are ``\site{abs_q1_cat}'' within a pre-set margin of $\pm\const{0.05}$ (C$^*$ minus R3 under D2+H3 attacks: \site{abs_q1_est}); exploratory $t$ intervals over the six market differences are [\site{abs_ml_lo}, \site{abs_ml_hi}] with the frozen searches, [\site{abs_ml_dlo}, \site{abs_ml_dhi}] with the doubled searches, and [\site{abs_env_lo}, \site{abs_env_hi}] with each rule's strongest family, so the direction is fairly stable but the size, and with it the equivalence label, is fragile and not established beyond these markets; the second attack family repeated the first family's winner in \site{abs_x7_same} of \site{abs_x7_cells} cells. Second, R3's two targeting parts substitute for each other: either alone accounts for most of the pooled reduction in the attacker's gain, and in R3's own comparison (with and without the priority window, under D2+H3) the window changes the gain by \site{abs_dp}, which is within search error. Third, at the headline market the targeting also falls on an honest newcomer: R3 audits \site{abs_hon_r3_1} of a replacement identity's jobs in its second ten rounds, C$^*$ \site{abs_hon_cs_1} in the same bin, and the replacement's profit per round under R3 differs from that under C$^*$ by a fraction of \site{abs_hon_rel}. Fourth, under D2+H3, R3 lowers the attacker's gain relative to uniform audits on every fresh market, but the registered replication passes on \site{abs_q4_k} of six; at the headline market, welfare attacks lower all three rules' gross efficiency to about \site{abs_q3_w0} while earning less than the truthful reference against R3 (gain \site{abs_q3_w0g}). An exploratory follow-up after the report, specified after these outcomes were seen, finds that within the D2 family most of the estimated B3 minus R3 gap, and the C$^*$ minus R3 difference, disappear when the attacker cannot replace its identity, so R3's measured advantage lies in the replacement channel.
+ The claims hold for the prescribed searches and frozen references, the evaluated markets, fixed parameters, the searched families, and honest opponents that never replace their identities, so honest churn is untested; C$^*$ was selected in development on gross efficiency in effect.
+ % END-EV2
+ \end{abstract}
+@@ -37,7 +37,7 @@ We study what checking alone can do when the usual remedies against cheap identi
+ 
+ \paragraph{Contributions.} Three findings lead. (i) On the six fresh markets, the prescribed searches classified R3 and the development-selected verified-history comparator as pooled-equivalent in attacker gain within the pre-set materiality margin of $\pm0.05$; the second Q1 family mostly repeats the first, and the classification is established for these six markets, not for the neighbourhood. (ii) In the measured factorial contrasts, R3's priority phase and its newest-first targeting substitute for each other: either alone accounts for most of the reduction in the attacker's gain, so given newest-first targeting the priority phase is close to redundant. (iii) In a registered diagnostic, R3 keeps auditing an honest provider's replacement identity well after its window, at a measured cost in that provider's profit per round: the targeting that works against the attacker also burdens honest newcomers. Supporting these are a conditional analysis of when free replacement makes a ban costless, measured failure boundaries (stronger and independently authored attackers, coalitions, the terminal-reserve collapse and a tested repair), and two registered tests whose original failure, amendments, and fresh-market replication are documented in a record to be released with the paper.
+ % BEGIN-EV2
+-\paragraph{Results in brief.} Q1: pooled over the six fresh markets, R3 and C$^*$ are ``\site{int_q1_cat}'' within the registered margin under X7-SC, and likewise under D2+H3 (the two families are close to one test, since X7-SC mostly selected the embedded D2+H3 winner): R3 is not materially better than the development-selected verified-history comparator at the same budget, and with the frozen searches the difference varies in sign across markets. Q2: in the pooled factorial contrasts, the priority phase and newest-first targeting each lower the measured gain (main effects \site{int_q2_p} and \site{int_q2_g}), and either one alone accounts for most of the reduction. Q3: the training-selected attack envelopes have lower measured gains against R3 than against B3 on every evaluated market, a finite-search comparison that does not establish robustness to the searched families; the selected unconstrained welfare attack lowers R3's gross efficiency to \site{int_q3_w0}, and exploratory lotteries over existing attacks, selected on the evaluation records, reach efficiency well below the \site{int_w1} of the registered W1 search at non-negative estimated gain, with public-family attacks alone; the W1 search therefore supplies no efficiency bound for randomised policies, and the mixtures' population profitability is not established. Q4: the B3--R3 comparison passes on \site{int_q4_k} of six fresh markets, all three passes qualified by search flags; on the other three, R3's estimated advantage is positive but below the registered threshold.
++\paragraph{Results in brief.} Q1: pooled over the six fresh markets, R3 and C$^*$ are ``\site{int_q1_cat}'' within the registered margin under X7-SC, and likewise under D2+H3 (the two families are close to one test, since X7-SC mostly selected the embedded D2+H3 winner): R3 is not materially better than the development-selected verified-history comparator at the same budget, and with the frozen searches the difference varies in sign across markets, while under D2+H3 with the doubled searches, and with each rule's strongest family, it is positive on every market. Q2: in the pooled factorial contrasts, the priority phase and newest-first targeting each lower the measured gain (main effects \site{int_q2_p} and \site{int_q2_g}), and either one alone accounts for most of the reduction. Q3: the training-selected attack envelopes have lower measured gains against R3 than against B3 on every evaluated market, a finite-search comparison that does not establish robustness to the searched families; the selected unconstrained welfare attack lowers R3's gross efficiency to \site{int_q3_w0}, and exploratory lotteries over existing attacks, selected on the evaluation records, reach efficiency well below the \site{int_w1} of the registered W1 search at non-negative estimated gain, with public-family attacks alone; the W1 search therefore supplies no efficiency bound for randomised policies, and the mixtures' population profitability is not established. Q4: the B3--R3 comparison passes on \site{int_q4_k} of six fresh markets, all three passes qualified by search flags; on the other three, R3's estimated advantage is positive but below the registered threshold.
+ % END-EV2
+ 
+ \section{Related work}\label{sec:related}
+@@ -64,7 +64,7 @@ We study what checking alone can do when the usual remedies against cheap identi
+ 
+ \paragraph{Admissible rules.} A rule reads only the current offers and job values, the audit results it bought, its own memory, and the configuration. Payments are funded by buyer escrow. The only consequences are a refund of up to the escrow of an audited job that failed; a ban of the identity for at most 50 rounds; holding back up to three rounds of an identity's receipts as a bond; and allocation priority and audit selection as functions of the allowed inputs. There are no entry fees, no collateral before receipts, no identity certification, and no consequences for unaudited jobs.
+ 
+-\paragraph{Benchmark and metrics.} One focal provider deviates while the others play honestly at full effort with truthful claims; this is a unilateral deviation, not an equilibrium. For a seed with first-best surplus $S^*$, the focal provider's \emph{gain} is its profit under the attack minus its profit under a selected truthful reference, divided by $S^*/N$. \emph{Gross efficiency} is $(W + \text{audit cost})/S^*$, with $W$ the realised social surplus net of audit cost; net efficiency is $W/S^*$. Gain is a difference of two searched values, so search error can bias it either way. It is excess profit when replacement is available; it does not isolate how much of that profit comes from the ability to replace an identity, which would need a matched comparison with replacement disabled. The second test adds two objectives at its headline market: welfare attacks that minimise gross efficiency, without a constraint (W0) or subject to a nonnegative mean normalised gain over the attacker's reference on the training seeds (W1), whose profitability is then called supported only if its nominal 95\% lower bound on the evaluation seeds is nonnegative; and coalitions of two or five providers, scored by the total gain $G_{\mathrm{tot}}$ and by the worst member's mean gain $G_{\min}$, both against a coordinated truthful reference. Coalition results say nothing about coalition stability.
++\paragraph{Benchmark and metrics.} One focal provider deviates while the others play honestly at full effort with truthful claims; this is a unilateral deviation, not an equilibrium. For a seed with first-best surplus $S^*$, the focal provider's \emph{gain} is its profit under the attack minus its profit under a selected truthful reference, divided by $S^*/N$. \emph{Gross efficiency} is $(W + \text{audit cost})/S^*$, with $W$ the realised social surplus net of audit cost; net efficiency is $W/S^*$. Gain is a difference of two searched values, so search error can bias it either way. It is excess profit when replacement is available; it does not isolate how much of that profit comes from the ability to replace an identity; Section~\ref{sec:results} reports an exploratory matched comparison with replacement disabled, within the D2 family only. The second test adds two objectives at its headline market: welfare attacks that minimise gross efficiency, without a constraint (W0) or subject to a nonnegative mean normalised gain over the attacker's reference on the training seeds (W1), whose profitability is then called supported only if its nominal 95\% lower bound on the evaluation seeds is nonnegative; and coalitions of two or five providers, scored by the total gain $G_{\mathrm{tot}}$ and by the worst member's mean gain $G_{\min}$, both against a coordinated truthful reference. Coalition results say nothing about coalition stability.
+ 
+ \section{The audit rules we compare}\label{sec:rules}
+ \paragraph{Baselines.} B2 posts prices for three claim tiers, allocates by those prices, and audits uniformly. B3 allocates each job, in descending order of value, to the offer with remaining capacity and the highest nonnegative score $v_j c_i - \mathrm{bid}_i$, pays $v_j c_i - s_{2,j}$ with $s_{2,j}$ the highest score among the other eligible offers (zero if there is none), and audits uniformly at random among served jobs, spread over the rounds. Both refund a failed job and ban its identity for $L$ rounds.
+@@ -114,7 +114,7 @@ Every unilateral attacker family reads only the provider's own history across it
+ \begin{table}[t]\centering\small
+ \begin{tabular}{@{}lp{\const{0.46}\linewidth}lp{\const{0.22}\linewidth}@{}}\toprule
+ Family & What it does and observes & Knobs & Where \\\midrule
+-D2 & Adaptive claim markup that falls after a failed audit and recovers otherwise; own history & \const{7} & both tests; second test: headline only \\
++D2 & Adaptive claim markup that falls after a failed audit and recovers otherwise; own history & \const{7} & both tests; second test: headline only, and the six fresh markets in an exploratory follow-up after the report \\
+ D2+H3 & D2 with a searched option to replace the identity after a failed audit & \const{8} & both tests; second test: all seven markets \\
+ H2 & Sealed family written in a separate session; contains D2, no exit or re-entry & sealed & first test \\
+ X7-SC & State-conditioned: fresh, established, and terminal phases from its own audit exposure and pass count; reset or wait out a ban; voluntary exit & \const{15} & second test, all seven markets \\
+@@ -237,10 +237,10 @@ The registered estimates and decisions below come from the report that the tagge
+ \caption{Q4: per-market lower bounds against the registered thresholds.}\label{fig:q4}
+ \end{figure}
+ 
+-\paragraph{Identity replacement and the B3--R3 gap (exploratory follow-up).} D2+H3 is D2 plus one switch $x$ that lets the attacker leave after a failed audit and return under a new identity. At the headline market, the D2+H3 search leaves \site{rs_hl_b3} more gain against B3 than the D2 search, and \site{rs_hl_r3} more against R3, so the B3 minus R3 gap is \site{rs_hl_g1} under D2+H3 and \site{rs_hl_g0} under D2. To see whether this holds on the six fresh markets, we ran after the report the D2 cells that budget cut~\const{3} had removed (B3, R3, and C$^*$ at $\rho=\const{0.2}$, each with a doubling check), under a plan and expectations written before any fresh D2 result existed, but after the headline contrast and the six fresh-market D2+H3 outcomes had been seen. This is a descriptive follow-up, not an independent replication, and it changes no registered decision. Pooled over the six markets with equal weights, the B3 minus R3 gap is \site{rs_g1} (\const{95}\% paired seed-bootstrap interval [\site{rs_g1_lo}, \site{rs_g1_hi}]) under D2+H3 and \site{rs_g0} ([\site{rs_g0_lo}, \site{rs_g0_hi}]) under D2 (doubled searches: \site{rs_g1_d} and \site{rs_g0_d}). The share of the gap that disappears without replacement, $S = \const{1} - G(\mathrm{D2})/G(\mathrm{D2{+}H3})$, is \site{rs_s} (doubled searches: \site{rs_s_d}); a value above one means the gap reverses slightly under D2. The difference between the two prescribed searches, $I = g(\mathrm{D2{+}H3}) - g(\mathrm{D2})$, is \site{rs_i_b3} against B3, \site{rs_i_r3} against R3, and \site{rs_i_c} against C$^*$; it does not identify the optimal value of replacement. The expectations set in advance score as follows. $I(\mathrm{B3}) > I(\mathrm{R3})$ on every market: ``\site{rs_exp_b}'' (\site{rs_sign_b} markets with the frozen searches, \site{rs_sign_bd} with the doubled ones). $I(\mathrm{C}^*) > I(\mathrm{R3})$ on every market: ``\site{rs_exp_c}'' (\site{rs_sign_c} and \site{rs_sign_cd} markets; fresh3 gives \site{rs_f3_c} with the frozen searches). Pooled $S > \const{0.5}$: ``\site{rs_exp_s}''. Within the D2 family, at the fixed parameters and search budgets, most of the estimated B3 minus R3 gap under the prescribed searches disappears when the attacker cannot replace its identity. The two searched winners can differ in every knob, not only $x$. With every other knob held fixed, switching replacement off in the D2+H3 winner lowers the gain by \site{rs_fx_b3} against B3 and \site{rs_fx_r3} against R3, and switching it on in the D2 winner raises the gain by only \site{rs_rev_b3} and \site{rs_rev_r3}. No D2 winner replaces its identity. $S$ is a ratio of two searched gaps and carries their search error (Table~\ref{tab:ph-reset}).
++\paragraph{Identity replacement and the B3--R3 gap (exploratory follow-up).} D2+H3 is D2 plus one switch $x$ that lets the attacker leave after a failed audit and return under a new identity. At the headline market, the D2+H3 search leaves \site{rs_hl_b3} more gain against B3 than the D2 search, and \site{rs_hl_r3} more against R3, so the B3 minus R3 gap is \site{rs_hl_g1} under D2+H3 and \site{rs_hl_g0} under D2. To see whether this holds on the six fresh markets, we ran after the report the D2 cells that budget cut~\const{3} had removed (B3, R3, and C$^*$ at $\rho=\const{0.2}$, each with a doubling check), under a plan and expectations written before any fresh D2 result existed, but after the headline contrast and the six fresh-market D2+H3 outcomes had been seen. This is a descriptive follow-up, not an independent replication, and it changes no registered decision. Pooled over the six markets with equal weights, the B3 minus R3 gap is \site{rs_g1} (\const{95}\% paired seed-bootstrap interval [\site{rs_g1_lo}, \site{rs_g1_hi}]) under D2+H3 and \site{rs_g0} ([\site{rs_g0_lo}, \site{rs_g0_hi}]) under D2 (doubled searches: \site{rs_g1_d} and \site{rs_g0_d}). The share of the gap that disappears without replacement, $S = \const{1} - G(\mathrm{D2})/G(\mathrm{D2{+}H3})$, is \site{rs_s} (doubled searches: \site{rs_s_d}). It exceeds one because the pooled D2 gap is slightly negative, but that gap is not distinguishable from zero: it is positive on \site{rs_gd0_pos} of the six markets (\site{rs_gd0_pos_d} with the doubled searches), the exploratory $t$ interval over the six market values is [\site{rs_gd0_t_lo}, \site{rs_gd0_t_hi}], and most of its negative value comes from fresh5 (without fresh5, $S$ is \site{rs_s_loo5}). The seed intervals above hold the six markets fixed; leaving out one market at a time gives $S$ from \site{rs_loo_lo} to \site{rs_loo_hi} over both search versions, and Table~\ref{tab:ph-reset} lists the gaps per market. The same holds for the Q1 contrast: the pooled C$^*$ minus R3 gain difference is \site{rs_cr1} under D2+H3 and \site{rs_cr0} under D2 ($t$ interval [\site{rs_cr0_lo}, \site{rs_cr0_hi}]; doubled searches [\site{rs_cr0_dlo}, \site{rs_cr0_dhi}]). The difference between the two prescribed searches, $I = g(\mathrm{D2{+}H3}) - g(\mathrm{D2})$, is \site{rs_i_b3} against B3, \site{rs_i_r3} against R3, and \site{rs_i_c} against C$^*$; it does not identify the optimal value of replacement. The expectations set in advance score as follows. $I(\mathrm{B3}) > I(\mathrm{R3})$ on every market: ``\site{rs_exp_b}'' (\site{rs_sign_b} markets with the frozen searches, \site{rs_sign_bd} with the doubled ones). $I(\mathrm{C}^*) > I(\mathrm{R3})$ on every market: ``\site{rs_exp_c}'' (\site{rs_sign_c} and \site{rs_sign_cd} markets; fresh3 gives \site{rs_f3_c} with the frozen searches). Pooled $S > \const{0.5}$: ``\site{rs_exp_s}''. Within the D2 family, at the fixed parameters and search budgets, most of the estimated B3 minus R3 gap under the prescribed searches disappears when the attacker cannot replace its identity. The two searched winners can differ in every knob, not only $x$. With every other knob held fixed, switching replacement off in the D2+H3 winner lowers the gain by \site{rs_fx_b3} against B3 and \site{rs_fx_r3} against R3, and switching it on in the D2 winner raises the gain by only \site{rs_rev_b3} and \site{rs_rev_r3}. No D2 winner replaces its identity. The truthful references can: \site{rs_ref_any} of the \site{rs_ref_n} frozen references replace an identity on the evaluation seeds. Each rule's reference cancels in $I$ but not in $G$. Disabling replacement in every reference changes no reference's profit by more than \site{rs_ref_max}, shifts the pooled gaps by \site{rs_ref_dg}, and leaves $S$ at \site{rs_ref_s} (exploratory check on the Mac, which reproduces the stored reference profits on average to within \site{rs_ref_val}, not seed for seed). $S$ is a ratio of two searched gaps and carries their search error (Table~\ref{tab:ph-reset}). \site{rs_flag} of the \site{rs_flag_n} D2 doubling checks are flagged (largest change \site{rs_flag_max}), and on fresh0 the D2 gap moves from \site{rs_f0_g0} to \site{rs_f0_g0_d} under doubling; an unflagged cell is not a converged one. With the frozen searches, two cells violate the nesting of D2 in D2+H3: $I$ is \site{rs_nest_c} for C$^*$ on fresh3 and \site{rs_nest_r} for R3 on fresh4. The doubled searches remove both, so for the C$^*$ contrast the doubled value is the more reliable one.
+ \begin{table}[t]\centering\small
+ \adjustbox{max width=\linewidth}{\input{tables/posthoc_reset.tex}}
+-\caption{Exploratory follow-up, after the report: the difference between the two prescribed searches, $I = g(\mathrm{D2{+}H3}) - g(\mathrm{D2})$, per rule, its contrasts, the B3 minus R3 gaps $G$ under each family, and the share $S$, pooled over the six fresh markets with equal weights, with paired seed-bootstrap percentile intervals; frozen and doubled searches. $S$ is shown only when the lower bound of the pooled D2+H3 gap exceeds the preset floor.}\label{tab:ph-reset}
++\caption{Exploratory follow-up, after the report: the difference between the two prescribed searches, $I = g(\mathrm{D2{+}H3}) - g(\mathrm{D2})$, per rule, its contrasts, the B3 minus R3 gaps $G$ under each family, and the share $S$, pooled over the six fresh markets with equal weights, with paired seed-bootstrap percentile intervals; frozen and doubled searches. $S$ is shown only when the lower bound of the pooled D2+H3 gap exceeds the preset floor. The lower block gives the gaps per market (D2+H3 / D2).}\label{tab:ph-reset}
+ \end{table}
+ 
+ \paragraph{Which parts of R3 matter (Q2).} Under separately searched D2+H3 attacks, pooled over the fresh markets, the main effects on the gain are \site{r_q2_p} for the priority phase P and \site{r_q2_g} for newest-first residual targeting G, both reductions, and \site{r_q2_s} for pacing S, a small increase (X7-SC: \site{r_q2_s_x}). The two targeting parts are substitutes: the PG factorial contrast, half the difference between G's conditional effects, is \site{r_q2_pg}; G changes the gain by \site{r_q2_g_p0} without the priority phase and by only \site{r_q2_g_p1} with it, and the priority phase changes it by only \site{r_q2_p_g1} once G is in place (averaged over both pacing settings). R3's own comparison, $F_{111}$ minus $F_{011}$ (exploratory, from the evaluation records), is \site{r_dp} pooled: exactly zero on four markets, where both rules leave the attacker the same gain, and nonzero on fresh1 (\site{r_dp_f1}) and fresh3. Against the fixed attacks, the priority phase's effect given newest-first targeting is larger (\site{r_q2_fixed_pg1} under D2+H3 and \site{r_q2_fixed_pg1_x} under X7-SC, averaged over pacing), though still small next to newest-first targeting's effect without the priority phase (above). In the pooled, separately searched comparisons, given newest-first targeting the priority phase adds little at these audit ratios and capacities; at a lower audit ratio or a larger attacker capacity, half of a round's audits may no longer cover one provider's jobs, and the substitution need not hold. In the pooled contrasts, either P or G alone accounts for most of the measured reduction; adding the other contributes little. The pattern also appears in the fixed-attack contrasts averaged over the eight selected attacks (P: \site{r_q2_fixed_p}). Our registered conjectures (P negligible, the targeting parts additive, S helpful) failed as scored (Table~\ref{tab:predictions}); the stricter eligibility reading of Table~\ref{tab:pred-eligibility} leaves them not assessed, with the estimates unchanged. X7-SC agrees (Table~\ref{tab:q2-x7sc}).
+@@ -328,7 +328,7 @@ The registered estimates and decisions below come from the report that the tagge
+ 
+ \section{What the results show and what they do not}\label{sec:discussion}
+ % BEGIN-EV2
+-\paragraph{What the two tests support together.} At the fixed parameters, the prescribed D2+H3 searches yield a lower measured gain for R3 than for B3 on every sampled market, with R3's registered efficiency condition met. The gain is measured against each rule's frozen truthful reference; it does not isolate the marginal benefit of being allowed to replace identities, which would need a matched comparison with replacement disabled. The registered comparison does not establish that margin across all six sampled fresh markets. The pooled factorial contrasts and the comparison with C$^*$ support a measured benefit shared by more than one targeting design; they do not establish the same ordering for every variant on every market. At $\rho = \const{0.2}$, pacing slightly raises the measured gain while changing efficiency little; at $\rho = \const{1}$, the terminal reserve that pacing adds exhausts the allowance and causes R3's collapse, which the capped schedule only partly repairs.
++\paragraph{What the two tests support together.} At the fixed parameters, the prescribed D2+H3 searches yield a lower measured gain for R3 than for B3 on every sampled market, with R3's registered efficiency condition met. The gain is measured against each rule's frozen truthful reference; it does not isolate the marginal benefit of being allowed to replace identities beyond the exploratory D2-family comparison of Section~\ref{sec:results}, which holds the parameters and search budgets fixed and compares two separately searched winners. The registered comparison does not establish that margin across all six sampled fresh markets. The pooled factorial contrasts and the comparison with C$^*$ support a measured benefit shared by more than one targeting design; they do not establish the same ordering for every variant on every market. At $\rho = \const{0.2}$, pacing slightly raises the measured gain while changing efficiency little; at $\rho = \const{1}$, the terminal reserve that pacing adds exhausts the allowance and causes R3's collapse, which the capped schedule only partly repairs.
+ 
+ \paragraph{What they do not support.} The selected unconstrained welfare attacks lower the gross efficiency of all three core rules by a similar amount while earning less than the truthful reference against R3 and C$^*$; that is a loss relative to honest play, not necessarily a negative profit. Exploratory mixtures expose policies omitted by the prescribed W1 search that have substantially lower empirical efficiency at non-negative estimated gain; their population profitability remains unestablished, and the favourable W1 result for R3 and C$^*$ is not a lower bound on efficiency. Robustness to the searched families is not established: the doubling checks find missed improvements but cannot bound the remaining gap, and several decisions hold only for the prescribed search procedure. The fresh-market configurations differ from the registered ones in the last binary digit; re-evaluating the frozen policies and references with the registered configurations leaves every Q1 and Q4 decision unchanged, a check that does not repeat search or reference selection.
+ % END-EV2
+@@ -338,7 +338,7 @@ The registered estimates and decisions below come from the report that the tagge
+ 
+ \section{Conclusion}\label{sec:conclusion}
+ % BEGIN-EV2
+-For the uniform-audit baselines B2 and B3 with refund-and-ban enforcement and no bonds, against honest rivals whose play does not depend on the focal identity and with re-entry before the next allocation, free replacement removes the ban's continuation cost. At the fixed parameters, the prescribed D2+H3 searches yield a lower measured gain for R3 than for B3 on every sampled market, but the registered gain-and-efficiency comparison passes on only three of six fresh markets, all three qualified by search flags. R3 and the development-selected verified-history comparator are pooled-equivalent within the pre-set margin in the six sampled markets under both Q1 families, which are close to one test; with the frozen searches the difference varies in sign across markets (under D2+H3 with the doubled searches, and with each rule's strongest family, it is positive on all six), and this analysis does not establish the ordering for the neighbourhood. At the headline market, the selected unconstrained welfare attacks yield gross efficiency of about \site{c_w0} against all three core rules and earn less than the truthful reference against R3 and C$^*$. The registered W1 search found no profitable welfare attack (gross efficiency near \site{c_w1}); exploratory mixtures of a welfare attack and a profitable attack reach lower efficiency at non-negative estimated gain, so it supplies no efficiency bound for randomised policies. These conclusions concern frozen searches and references, with interval calibration admitted on development fixtures. The record of both tests, including the original failure, the amendments, the deviations, and the failed predictions, will be released with the paper.
++For the uniform-audit baselines B2 and B3 with refund-and-ban enforcement and no bonds, against honest rivals whose play does not depend on the focal identity and with re-entry before the next allocation, free replacement removes the ban's continuation cost. At the fixed parameters, the prescribed D2+H3 searches yield a lower measured gain for R3 than for B3 on every sampled market, but the registered gain-and-efficiency comparison passes on only three of six fresh markets, all three qualified by search flags. R3 and the development-selected verified-history comparator are pooled-equivalent within the pre-set margin in the six sampled markets under both Q1 families, which are close to one test; with the frozen searches the difference varies in sign across markets (under D2+H3 with the doubled searches, and with each rule's strongest family, it is positive on all six), and this analysis does not establish the ordering for the neighbourhood. At the headline market, the selected unconstrained welfare attacks yield gross efficiency of about \site{c_w0} against all three core rules and earn less than the truthful reference against R3 and C$^*$. The registered W1 search found no profitable welfare attack (gross efficiency near \site{c_w1}); exploratory mixtures of a welfare attack and a profitable attack reach lower efficiency at non-negative estimated gain, so it supplies no efficiency bound for randomised policies. An exploratory follow-up places R3's measured advantage over B3, and C$^*$'s difference from R3, in the replacement channel: without replacement, under the D2 family, neither gap is distinguishable from zero across the six markets. These conclusions concern frozen searches and references, with interval calibration admitted on development fixtures. The record of both tests, including the original failure, the amendments, the deviations, and the failed predictions, will be released with the paper.
+ % END-EV2
+ 
+ \paragraph{Availability.} The paper artifact will have its own release commit and archive hash. It identifies the frozen evaluation code by the signed tag \texttt{protocol-v2} and preserves the original tagged-code report. It contains the code, the tuned files, all records of both tests (including incomplete, failed, and cut cells), the market generator, the block headers, the released H4 bundle, and the deviation evidence, and, separately dated, the decision-stability re-evaluation, the exploratory post hoc analyses with the per-seed evaluation and training inputs of the lottery analysis, the prediction-scoring correction with its regression test, the inference audit, and the paper sources. One command (\texttt{docs/revision/deviation/reproduce\_deviation.py}) checks the artifact against the tag and reproduces the second test's report under the disclosed configuration substitution; the paper's second-test tables and figures are regenerated from the tagged report, the disclosed stability output, and the exploratory post hoc and audit outputs by the scripts in \texttt{docs/revision/paper-v2}, \texttt{docs/revision/posthoc}, and \texttt{docs/revision/audit}, and the first test's records and verdict are in the release as recorded in October~\const{2026}.
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'cat docs/revision/posthoc/reset_reference/ref_resets.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+"""Fable r3 problem 2: do the 18 frozen truthful references replace their identity on the evaluation seeds?
+For each (market, rule): the chosen reference candidate, its family and knobs, reset counts, and (if it resets) the
+reference's mean normalised profit with replacement disabled. Validation: reference normalised profit per seed must equal
+the D2 winner's normalised profit (Mac diagnostics) minus the stored D2 gain."""
+import json, sys
+from pathlib import Path
+import numpy as np
+
+T0 = Path(sys.argv[1]); B = Path(sys.argv[2]); POD = Path(sys.argv[3]); DIAG = Path(sys.argv[4]); OUT = Path(sys.argv[5]); ONLY = sys.argv[6] if len(sys.argv) > 6 else None
+sys.path.insert(0, str(T0 / "docs/revision/followup"))
+import reset_followup_v2 as F  # noqa: E402
+R = F.R
+from sim.cell import SeedCache, run_focal  # noqa: E402
+from sim.records_v2 import read  # noqa: E402
+from sim.records import cfg_from_dict  # noqa: E402
+
+root = json.loads((B / "draw/draw.json").read_text())["hash"]
+salt = json.loads((B / "draw/instances.json").read_text())["salt_sha256"]
+cfgs = {k: cfg_from_dict(v) for k, v in json.loads((B / "deviation/cfg_linux.json").read_text()).items()}
+params = json.loads((T0 / "experiments/v2/params.json").read_text())
+jobs = F.build_jobs(root, cfgs, params, salt)
+diag = json.loads(DIAG.read_text())
+
+
+def no_replace(family, knobs, T):
+    if family == "X7-SC":
+        return {**knobs, "h_R": float(T), "lambda": 1.0}
+    if "x" in knobs:
+        return {**knobs, "x": 0}
+    return None
+
+
+res = {}
+for j in jobs:
+    ctx, rule = j["context"], j["rule"]
+    if ONLY and not ctx.startswith(ONLY + "@"):
+        continue
+    ref = read(B / "eval-all" / "reference" / ctx / (rule.replace("*", "star") + ".json"))
+    cand = ref["candidates"][ref["choice"]]
+    T, L = R.constants(j); cell = R.eval_cell(j); cache = SeedCache()
+    fam = R.family_for(cand["family"], T, L) if cand.get("family") else None
+    row = {"name": cand["name"], "family": cand.get("family"), "knobs": cand.get("knobs")}
+    if fam is None:
+        row["note"] = "no family (abstain or honest policy)"; res[f"{ctx}|{rule}"] = row; continue
+    run = run_focal(cell, lambda: fam.make(dict(cand["knobs"])), cache)
+    st = F.reset_stats(run.results, cell.focal)
+    norm = np.asarray(run.normalized, float)
+    d2 = np.asarray(diag[f"{ctx}|{rule}"]["d2_base"]["normalized"], float)
+    gain = np.asarray(json.loads((POD / "evaluate" / (j["id"].replace("|", "__").replace("*", "star") + ".json")).read_text())["gain"], float)
+    row.update({k: st[k] for k in ("mean_resets", "p_any_reset", "mean_ban_rounds")})
+    row["ref_mean_normalized"] = float(norm.mean())
+    ev = json.loads((POD / "evaluate" / (j["id"].replace("|", "__").replace("*", "star") + ".json")).read_text())
+    scale = np.asarray(ev["sstar"], float) / cell.cfg.N; pr = np.asarray(ev["profit_ref"], float) / scale
+    row["validation_mean_diff"] = float(np.mean(norm - pr)); row["validation_seeds_differing"] = int((np.abs(norm - pr) > 1e-9).sum())
+    row["validation_max_abs_diff"] = float(np.max(np.abs(norm - pr)))
+    if st["mean_resets"] > 0:
+        k0 = no_replace(cand["family"], cand["knobs"], T)
+        off = run_focal(cell, lambda: fam.make(dict(k0)), cache)
+        row["ref_no_replace_mean_normalized"] = float(np.mean(off.normalized))
+        row["replacement_value_to_reference"] = float(norm.mean() - np.mean(off.normalized))
+    res[f"{ctx}|{rule}"] = row
+    print(ctx, rule, row["name"], row["family"], "clip", (cand.get("knobs") or {}).get("clip"), "resets", row["mean_resets"],
+          "valid_mean", f"{row['validation_mean_diff']:.1e}", "n_diff", row["validation_seeds_differing"], "repl_value", row.get("replacement_value_to_reference"), flush=True)
+OUT.write_text(json.dumps(res, indent=1) + "\n")
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '1,205p' docs/revision/posthoc/reset_block.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+"""The reset block of the post-hoc analysis (docs/revision/reset-experiment-plan.md, draft 5, sections 5 and 6).
+
+I(r, m) = mean over the evaluation seeds of g(D2+H3 winner) - g(D2 winner), both against the frozen reference of (r, m).
+Rules: B3 = F000, R3 = F111, C*. Gaps G(fam) = g_B3 - g_R3 under one family. Share S = 1 - G(D2) / G(D2+H3), pooled,
+reported only if the lower bound of pooled G(D2+H3) exceeds 0.05. Intervals: paired seed bootstrap, percentile 95%,
+the same resampled seed indices for every rule and family of a market; pooled = equal-weight mean of the market means,
+seeds resampled independently within each market. Descriptive; no test, no registered decision changes.
+"""
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import numpy as np
+
+RULES = ("F000", "F111", "C*")
+FAMS = ("D2+H3", "D2")
+B = 9999
+SEED = 20261109                       # fixed bootstrap seed (the plan's date of specification)
+GATE = 0.05
+CONTRASTS = {"B3-R3": ("F000", "F111"), "C*-R3": ("C*", "F111")}
+
+
+def safe(rid: str) -> str:
+    return rid.replace("|", "__").replace("/", "~").replace("*", "star")      # revision_v2._safe
+
+
+def _read(p: Path):
+    return json.loads(p.read_text()) if p.exists() else None
+
+
+def _valid(src: dict, rid: str, n_seeds: int) -> np.ndarray:
+    """Internal review r1: one-dimensional finite gains, one per seed, unique seeds, the expected seed count."""
+    g = np.asarray(src["gain"], dtype=float); seeds = list(src["seeds"])
+    if g.ndim != 1 or g.size != len(seeds) or len(seeds) != n_seeds:
+        raise ValueError(f"{rid}: {g.size} gains for {len(seeds)} seeds (expected {n_seeds})")
+    if len(set(seeds)) != len(seeds):
+        raise ValueError(f"{rid}: duplicate seed identifiers")
+    if not np.all(np.isfinite(g)):
+        raise ValueError(f"{rid}: non-finite gain")
+    return g
+
+
+def load(eval_all, reset_dir, report: dict, markets, n_seeds: int = 200) -> dict:
+    """Base and doubled per-seed gains, {version: {market: {family: {rule: array}}}}, plus the D2 doubling flags.
+    Refuses if the seeds of a market differ between any rule, family or version (the pairing needs one seed list)."""
+    base, dbl, flags = {m: {} for m in markets}, {m: {} for m in markets}, {}   # a market with no record stays, empty
+    for m in markets:
+        seeds = None
+        for fam in FAMS:
+            for rule in RULES:
+                rid = f"{m}@rho0.2|{rule}|{fam}|profit"
+                root = Path(eval_all) if fam == "D2+H3" else Path(reset_dir)
+                r = _read(root / "evaluate" / (safe(rid) + ".json"))
+                if fam == "D2+H3":
+                    h = report.get("doubling", {}).get(rid)
+                else:
+                    d = _read(Path(reset_dir) / "doubling" / (safe(rid) + ".json")); h = d
+                    if d is not None:
+                        flags[f"{m}|{rule}|D2"] = {k: d[k] for k in ("attack_change", "reference_change", "incomplete")}
+                for ver, src, store in (("base", r, base), ("doubled", (h or {}).get("heldout"), dbl)):
+                    if src is None:
+                        continue
+                    if seeds is None:
+                        seeds = list(src["seeds"])
+                    elif list(src["seeds"]) != seeds:
+                        raise ValueError(f"seeds of {rid} ({ver}) differ from the market's seed list")
+                    store[m].setdefault(fam, {})[rule] = _valid(src, f"{rid} ({ver})", n_seeds)
+    return {"base": base, "doubled": dbl, "flags": flags}
+
+
+def _complete(cells: dict) -> tuple[dict, list]:
+    """Markets with every rule and family, and the list of missing cells (reported, never imputed)."""
+    ok, missing = {}, []
+    for m, v in cells.items():
+        miss = [f"{m}|{r}|{f}" for f in FAMS for r in RULES if r not in v.get(f, {})]
+        missing += miss
+        ok[m] = v
+    return ok, missing
+
+
+def _market_stats(v: dict, idx=None) -> dict:
+    """Per-market means of the statistics for one market (optionally on resampled seed indices)."""
+    g = {f: {r: (a if idx is None else a[idx]) for r, a in v.get(f, {}).items()} for f in FAMS}
+    out = {}
+    for r in RULES:
+        if r in g["D2+H3"] and r in g["D2"]:
+            out[("I", r)] = float(np.mean(g["D2+H3"][r] - g["D2"][r]))
+    for name, (a, b) in CONTRASTS.items():
+        if ("I", a) in out and ("I", b) in out:
+            out[("C", name)] = out[("I", a)] - out[("I", b)]
+    for f in FAMS:
+        if "F000" in g[f] and "F111" in g[f]:
+            out[("G", f)] = float(np.mean(g[f]["F000"] - g[f]["F111"]))
+    return out
+
+
+def _pool(per_market: dict, key, markets) -> float | None:
+    xs = [per_market[m][key] for m in markets if key in per_market[m]]
+    return float(np.mean(xs)) if xs and len(xs) == len(markets) else None
+
+
+def _share(gd2, gd2h3):
+    return None if gd2 is None or gd2h3 is None or gd2h3 == 0 else 1 - gd2 / gd2h3
+
+
+def statistics(cells: dict) -> dict:
+    """Point estimates: per market and pooled (pooled only over markets where the statistic exists in all of them)."""
+    pm = {m: _market_stats(v) for m, v in cells.items()}; ms = tuple(cells)
+    res = {"I": {}, "contrast": {}, "G": {}}
+    for r in RULES:
+        res["I"][r] = {"markets": {m: pm[m][("I", r)] for m in ms if ("I", r) in pm[m]}, "pooled": _pool(pm, ("I", r), _have(pm, ("I", r)))}
+    for c in CONTRASTS:
+        res["contrast"][c] = {"markets": {m: pm[m][("C", c)] for m in ms if ("C", c) in pm[m]}, "pooled": _pool(pm, ("C", c), _have(pm, ("C", c)))}
+    for f in FAMS:
+        res["G"][f] = {"markets": {m: pm[m][("G", f)] for m in ms if ("G", f) in pm[m]}, "pooled": _pool(pm, ("G", f), _have(pm, ("G", f)))}
+    res["S"] = {"pooled": _share(res["G"]["D2"]["pooled"], res["G"]["D2+H3"]["pooled"])}
+    return res
+
+
+def _have(pm, key):
+    return tuple(m for m in pm if key in pm[m])
+
+
+def _boot(cells: dict, markets, b: int, rng) -> list[dict]:
+    """b replicates; each replicate draws one index vector per market, shared by every rule and family of that market."""
+    reps = []
+    n = {m: next((len(a) for f in cells[m].values() for a in f.values()), 0) for m in markets}
+    for _ in range(b):
+        reps.append({m: (_market_stats(cells[m], rng.integers(0, n[m], n[m])) if n[m] else {}) for m in markets})
+    return reps
+
+
+def _ci(xs):
+    xs = np.asarray([x for x in xs if x is not None], dtype=float)
+    return [float(np.percentile(xs, 2.5)), float(np.percentile(xs, 97.5))] if xs.size else None
+
+
+def _gated_share(pm_point, reps, markets) -> dict:
+    """S over `markets` with its denominator gate (lower bound of pooled G(D2+H3) over the same markets above 0.05)."""
+    g1 = _pool(pm_point, ("G", "D2+H3"), markets); g0 = _pool(pm_point, ("G", "D2"), markets)
+    lb = _ci([_pool(r, ("G", "D2+H3"), markets) for r in reps])
+    if g1 is None or g0 is None or lb is None:
+        return {"value": None, "reason": "not defined: a cell is missing", "ci95": None}
+    if not lb[0] > GATE:
+        return {"value": None, "reason": f"not defined: lower bound of pooled G(D2+H3) {lb[0]:.4f} <= {GATE}", "ci95": None}
+    return {"value": _share(g0, g1), "reason": "defined", "ci95": _ci([_share(_pool(r, ("G", "D2"), markets), _pool(r, ("G", "D2+H3"), markets)) for r in reps]),
+            "denominator_lower_bound": lb[0]}
+
+
+def analyse(cells: dict, b: int = B, seed: int = SEED, markets=None) -> dict:
+    """Point estimates with paired percentile intervals, the gated share, market sensitivity and expectation inputs.
+    `markets` names the expected markets; an absent one is kept empty, so its cells are reported missing (review r1)."""
+    if markets is not None:
+        cells = {m: cells.get(m, {}) for m in markets}
+    cells, missing = _complete(cells); ms = tuple(cells)
+    pm = {m: _market_stats(cells[m]) for m in ms}
+    reps = _boot(cells, ms, b, np.random.default_rng(seed))
+    res = {"missing": missing, "bootstrap": {"resamples": b, "seed": seed, "interval": "percentile 95%"}}
+
+    def block(kind, key_of, names):
+        out = {}
+        for nm in names:
+            k = key_of(nm); have = _have(pm, k)
+            out[nm] = {"markets": {m: {"estimate": pm[m][k], "ci95": _ci([r[m].get(k) for r in reps])} for m in have},
+                       "pooled": {"estimate": _pool(pm, k, have) if len(have) == len(ms) else None,
+                                  "ci95": _ci([_pool(r, k, have) for r in reps]) if len(have) == len(ms) else None}}
+        return out
+    res["I"] = block("I", lambda r: ("I", r), RULES)
+    res["contrast"] = block("C", lambda c: ("C", c), tuple(CONTRASTS))
+    res["G"] = block("G", lambda f: ("G", f), FAMS)
+    res["S"] = {"pooled": _gated_share(pm, reps, ms)}
+    signs = {c: {"positive": int(sum(1 for m in ms if pm[m].get(("C", c), 0) > 0)), "n": int(sum(1 for m in ms if ("C", c) in pm[m]))} for c in CONTRASTS}
+    loo = {m: _gated_share(pm, reps, tuple(x for x in ms if x != m)) for m in ms} if len(ms) > 1 else {}
+    res["sensitivity"] = {"signs": signs, "S_leave_one_out": loo}
+    six = len(ms) == 6
+    res["expectation_inputs"] = {"all_markets": {c: (signs[c]["positive"] == 6 if six and signs[c]["n"] == 6 else None) for c in CONTRASTS},
+                                 "S": res["S"]["pooled"]["value"]}
+    return res
+
+
+def score(base: dict, dbl: dict) -> dict:
+    """Plan section 6: met if it holds under both the base and the doubled searches, failed if under neither,
+    not established (search-sensitive) if they disagree; undefined S and missing cells are reported as such."""
+    def one(a, b):
+        if a is None or b is None:
+            return "missing cell"
+        return "met" if a and b else "failed" if not a and not b else "not established (search-sensitive)"
+    out = {f"{c} on all six": one(base["all_markets"][c], dbl["all_markets"][c]) for c in CONTRASTS}
+    sb, sd = base["S"], dbl["S"]
+    out["pooled S > 0.5"] = "S not defined" if sb is None or sd is None else one(sb > 0.5, sd > 0.5)
+    return out
+
+
+def _t95(xs) -> dict:
+    """External review r3: a t interval over the market values (the markets as a sample), beside the seed intervals."""
+    from scipy import stats
+    x = np.asarray(xs, dtype=float); h = float(stats.t.ppf(0.975, x.size - 1) * x.std(ddof=1) / np.sqrt(x.size))
+    return {"estimate": float(x.mean()), "t95": [float(x.mean()) - h, float(x.mean()) + h], "positive": int((x > 0).sum()), "n": int(x.size)}
+
+
+def market_level(cells: dict) -> dict:
+    """External review r3 (Fable 5.2), exploratory: G(D2) and the C* - R3 gain difference per family as market-level t
+    intervals with sign counts, and the cells where the D2+H3 winner falls below the D2 winner (I < 0, a nesting failure,
+    since D2 is inside D2+H3)."""
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg --files -g 'AGENTS.md' -g '*x7*' -g '*identity*' -g '*eval*' sim scripts" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+sim/policies/identity.py
+sim/policies/x7.py
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '240,246p' docs/revision/paper-v2/main.tex" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+\paragraph{Identity replacement and the B3--R3 gap (exploratory follow-up).} D2+H3 is D2 plus one switch $x$ that lets the attacker leave after a failed audit and return under a new identity. At the headline market, the D2+H3 search leaves \site{rs_hl_b3} more gain against B3 than the D2 search, and \site{rs_hl_r3} more against R3, so the B3 minus R3 gap is \site{rs_hl_g1} under D2+H3 and \site{rs_hl_g0} under D2. To see whether this holds on the six fresh markets, we ran after the report the D2 cells that budget cut~\const{3} had removed (B3, R3, and C$^*$ at $\rho=\const{0.2}$, each with a doubling check), under a plan and expectations written before any fresh D2 result existed, but after the headline contrast and the six fresh-market D2+H3 outcomes had been seen. This is a descriptive follow-up, not an independent replication, and it changes no registered decision. Pooled over the six markets with equal weights, the B3 minus R3 gap is \site{rs_g1} (\const{95}\% paired seed-bootstrap interval [\site{rs_g1_lo}, \site{rs_g1_hi}]) under D2+H3 and \site{rs_g0} ([\site{rs_g0_lo}, \site{rs_g0_hi}]) under D2 (doubled searches: \site{rs_g1_d} and \site{rs_g0_d}). The share of the gap that disappears without replacement, $S = \const{1} - G(\mathrm{D2})/G(\mathrm{D2{+}H3})$, is \site{rs_s} (doubled searches: \site{rs_s_d}). It exceeds one because the pooled D2 gap is slightly negative, but that gap is not distinguishable from zero: it is positive on \site{rs_gd0_pos} of the six markets (\site{rs_gd0_pos_d} with the doubled searches), the exploratory $t$ interval over the six market values is [\site{rs_gd0_t_lo}, \site{rs_gd0_t_hi}], and most of its negative value comes from fresh5 (without fresh5, $S$ is \site{rs_s_loo5}). The seed intervals above hold the six markets fixed; leaving out one market at a time gives $S$ from \site{rs_loo_lo} to \site{rs_loo_hi} over both search versions, and Table~\ref{tab:ph-reset} lists the gaps per market. The same holds for the Q1 contrast: the pooled C$^*$ minus R3 gain difference is \site{rs_cr1} under D2+H3 and \site{rs_cr0} under D2 ($t$ interval [\site{rs_cr0_lo}, \site{rs_cr0_hi}]; doubled searches [\site{rs_cr0_dlo}, \site{rs_cr0_dhi}]). The difference between the two prescribed searches, $I = g(\mathrm{D2{+}H3}) - g(\mathrm{D2})$, is \site{rs_i_b3} against B3, \site{rs_i_r3} against R3, and \site{rs_i_c} against C$^*$; it does not identify the optimal value of replacement. The expectations set in advance score as follows. $I(\mathrm{B3}) > I(\mathrm{R3})$ on every market: ``\site{rs_exp_b}'' (\site{rs_sign_b} markets with the frozen searches, \site{rs_sign_bd} with the doubled ones). $I(\mathrm{C}^*) > I(\mathrm{R3})$ on every market: ``\site{rs_exp_c}'' (\site{rs_sign_c} and \site{rs_sign_cd} markets; fresh3 gives \site{rs_f3_c} with the frozen searches). Pooled $S > \const{0.5}$: ``\site{rs_exp_s}''. Within the D2 family, at the fixed parameters and search budgets, most of the estimated B3 minus R3 gap under the prescribed searches disappears when the attacker cannot replace its identity. The two searched winners can differ in every knob, not only $x$. With every other knob held fixed, switching replacement off in the D2+H3 winner lowers the gain by \site{rs_fx_b3} against B3 and \site{rs_fx_r3} against R3, and switching it on in the D2 winner raises the gain by only \site{rs_rev_b3} and \site{rs_rev_r3}. No D2 winner replaces its identity. The truthful references can: \site{rs_ref_any} of the \site{rs_ref_n} frozen references replace an identity on the evaluation seeds. Each rule's reference cancels in $I$ but not in $G$. Disabling replacement in every reference changes no reference's profit by more than \site{rs_ref_max}, shifts the pooled gaps by \site{rs_ref_dg}, and leaves $S$ at \site{rs_ref_s} (exploratory check on the Mac, which reproduces the stored reference profits on average to within \site{rs_ref_val}, not seed for seed). $S$ is a ratio of two searched gaps and carries their search error (Table~\ref{tab:ph-reset}). \site{rs_flag} of the \site{rs_flag_n} D2 doubling checks are flagged (largest change \site{rs_flag_max}), and on fresh0 the D2 gap moves from \site{rs_f0_g0} to \site{rs_f0_g0_d} under doubling; an unflagged cell is not a converged one. With the frozen searches, two cells violate the nesting of D2 in D2+H3: $I$ is \site{rs_nest_c} for C$^*$ on fresh3 and \site{rs_nest_r} for R3 on fresh4. The doubled searches remove both, so for the C$^*$ contrast the doubled value is the more reliable one.
+\begin{table}[t]\centering\small
+\adjustbox{max width=\linewidth}{\input{tables/posthoc_reset.tex}}
+\caption{Exploratory follow-up, after the report: the difference between the two prescribed searches, $I = g(\mathrm{D2{+}H3}) - g(\mathrm{D2})$, per rule, its contrasts, the B3 minus R3 gaps $G$ under each family, and the share $S$, pooled over the six fresh markets with equal weights, with paired seed-bootstrap percentile intervals; frozen and doubled searches. $S$ is shown only when the lower bound of the pooled D2+H3 gap exceeds the preset floor. The lower block gives the gaps per market (D2+H3 / D2).}\label{tab:ph-reset}
+\end{table}
+
+\paragraph{Which parts of R3 matter (Q2).} Under separately searched D2+H3 attacks, pooled over the fresh markets, the main effects on the gain are \site{r_q2_p} for the priority phase P and \site{r_q2_g} for newest-first residual targeting G, both reductions, and \site{r_q2_s} for pacing S, a small increase (X7-SC: \site{r_q2_s_x}). The two targeting parts are substitutes: the PG factorial contrast, half the difference between G's conditional effects, is \site{r_q2_pg}; G changes the gain by \site{r_q2_g_p0} without the priority phase and by only \site{r_q2_g_p1} with it, and the priority phase changes it by only \site{r_q2_p_g1} once G is in place (averaged over both pacing settings). R3's own comparison, $F_{111}$ minus $F_{011}$ (exploratory, from the evaluation records), is \site{r_dp} pooled: exactly zero on four markets, where both rules leave the attacker the same gain, and nonzero on fresh1 (\site{r_dp_f1}) and fresh3. Against the fixed attacks, the priority phase's effect given newest-first targeting is larger (\site{r_q2_fixed_pg1} under D2+H3 and \site{r_q2_fixed_pg1_x} under X7-SC, averaged over pacing), though still small next to newest-first targeting's effect without the priority phase (above). In the pooled, separately searched comparisons, given newest-first targeting the priority phase adds little at these audit ratios and capacities; at a lower audit ratio or a larger attacker capacity, half of a round's audits may no longer cover one provider's jobs, and the substitution need not hold. In the pooled contrasts, either P or G alone accounts for most of the measured reduction; adding the other contributes little. The pattern also appears in the fixed-attack contrasts averaged over the eight selected attacks (P: \site{r_q2_fixed_p}). Our registered conjectures (P negligible, the targeting parts additive, S helpful) failed as scored (Table~\ref{tab:predictions}); the stricter eligibility reading of Table~\ref{tab:pred-eligibility} leaves them not assessed, with the estimates unchanged. X7-SC agrees (Table~\ref{tab:q2-x7sc}).
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'cat sim/policies/x7.py sim/policies/identity.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+"""X7-SC, the state-conditioned attack family (design 5.2). D2's markup recurrence, persisting across identities as in
+D2+H3; phase multipliers for fresh, established, and terminal rounds, where a phase reads the identity's age and its own
+passed audits; a reset after a failed audit unless the remaining horizon is at most h_R; a voluntary reset when the
+identity's own audit rate over its last L rounds exceeds lambda. Reads only the provider view and the rule's public
+constants T and L, injected at construction. Per round: (1) markup update from round t - 1, once; (2) failure trigger;
+(3) voluntary trigger if no failure trigger; (4) exit and new creation round t; (5) phase of the identity that serves in
+round t; (6) action. The harness asks for the action before it creates the replacement and applies the exit before the
+offer, so the exit round's action is the replacement's."""
+from __future__ import annotations
+
+from scipy.stats import qmc
+
+from ..mechanisms.base import Offer
+from .base import Action, ProviderView
+from .families import Family, exact_key
+
+KNOBS = ("u0", "m0", "s", "d", "r", "w", "k_F", "k_T", "a_F", "n_P", "h_R", "a_R", "e_P", "lambda", "clip")
+SOBOL_SEED = 20261028
+X7_CORNER_COUNT = 771                                # distinct corners and projections for 15 knobs with scipy 1.18.1 (design 5.2)
+FRESH, ESTABLISHED, TERMINAL = "fresh", "established", "terminal"
+
+
+class X7Policy:
+    name = "x7_state_conditioned"
+
+    def __init__(self, u0, m0, s, d, r, w, k_F, k_T, a_F, n_P, h_R, a_R, e_P, lam, clip, T: int, L: int) -> None:
+        self.T, self.L = int(T), int(L)
+        vals = dict(u0=u0, m0=m0, s=s, d=d, r=r, w=w, k_F=k_F, k_T=k_T, a_F=a_F, n_P=n_P, h_R=h_R, a_R=a_R, e_P=e_P, lam=lam)
+        dom = dict(u0=(0, 1), m0=(0, 1), s=(0, 0.3), d=(0, 1), r=(0, 0.2), w=(0, 2), k_F=(0, 1), k_T=(0, 2), a_F=(0, 60), n_P=(0, 30),
+                   h_R=(0, self.T), a_R=(0, self.T), e_P=(0, 1), lam=(0, 1))
+        for k, v in vals.items():
+            if not (dom[k][0] <= float(v) <= dom[k][1]):
+                raise ValueError(f"X7-SC knob {k} outside its domain")
+        if isinstance(clip, bool) or clip not in (0, 1) or int(clip) != clip:
+            raise ValueError("clip must be exactly 0 or 1")
+        for k, v in vals.items():
+            setattr(self, k, float(v))
+        self.clip = int(clip)
+        self.m = float(m0)
+        self.c = 0                                   # creation round of the current identity
+        self.p_own = 0                               # passes since the identity's last failure (design draft 7, 5.2)
+        self._p_upto = 0                             # rounds of history already folded into p_own
+        self.waiting = False                         # a failure was rejected by the age gate and the identity has not served since
+        self._last_t: int | None = None
+        self._last: Action | None = None
+        self.resets_failure = self.resets_voluntary = 0
+        self.last_phase: str | None = None
+
+    def _update_markup(self, view: ProviderView) -> None:
+        h = view.history
+        if self._last_t is not None and view.t > self._last_t and h.failed:
+            banned_last = bool(h.banned_until) and h.banned_until[-1] > view.t - 1
+            if h.failed[-1] > 0:
+                self.m *= (1.0 - self.d)
+            elif not banned_last:
+                self.m = min(self.m0, self.m + self.r * self.m0)
+
+    def _window(self, view: ProviderView, lo: int) -> tuple[int, int, int]:
+        h, t = view.history, view.t
+        rng = range(max(lo, 0), t)
+        return sum(h.served[k] for k in rng), sum(h.audited[k] for k in rng), sum(h.failed[k] for k in rng)
+
+    def _update_p_own(self, view: ProviderView) -> None:
+        """Batch update of the identity's pass count after each round's audit results, as C's credibility state."""
+        h = view.history
+        for k in range(max(self._p_upto, self.c), view.t):
+            self.p_own = 0 if h.failed[k] > 0 else self.p_own + (h.audited[k] - h.failed[k])
+        self._p_upto = max(self._p_upto, view.t)
+
+    def act(self, view: ProviderView) -> Action:
+        t = int(view.t)
+        if self._last_t == t and self._last is not None:
+            return self._last
+        self._update_markup(view)
+        self._update_p_own(view)
+        h = view.history
+        exit_ = False
+        failed_last = bool(h.failed) and h.failed[-1] > 0
+        if self.waiting and h.served and h.served[-1] >= 1 and not failed_last:
+            self.waiting = False                     # the identity has served again after waiting out its ban
+        banned_now = bool(h.banned_until) and h.banned_until[-1] > t
+        if failed_last and self.T - t > self.h_R and (t - self.c) < self.a_R:
+            exit_ = True; self.resets_failure += 1
+        elif failed_last and self.T - t > self.h_R:
+            self.waiting = True                      # the age gate rejected the reset: wait, keep age and pass history
+        elif not self.waiting and not banned_now:
+            served, audited, _ = self._window(view, max(self.c, t - self.L))
+            if served >= 1 and audited / served > self.lam:
+                exit_ = True; self.resets_voluntary += 1
+        if exit_:
+            self.c = t; self.p_own = 0; self._p_upto = t; self.waiting = False
+        served_w, audited_w, _ = self._window(view, max(self.c, t - self.L))
+        exposed = served_w >= 1 and audited_w / served_w > self.e_P
+        if self.T - t <= self.L:
+            phase = TERMINAL
+        elif (t - self.c) < self.a_F or self.p_own < self.n_P or exposed:
+            phase = FRESH
+        else:
+            phase = ESTABLISHED
+        k = {FRESH: self.k_F, ESTABLISHED: 1.0, TERMINAL: self.k_T}[phase]
+        p = view.params
+        effort = p.q_max * (1.0 - min(1.0, k * self.u0))
+        claim = min(1.0, max(0.0, effort + k * self.m - self.s))
+        if self.clip:
+            claim = min(claim, effort)
+        self.last_phase, self._last_t = phase, t
+        self._last = Action(effort=effort, offer=Offer(claim=claim, bid=(1.0 + self.w) * (p.a + p.b * effort)), exit=exit_)
+        return self._last
+
+
+def x7_family(T: int, L: int) -> Family:
+    bounds = {"u0": (0.0, 1.0), "m0": (0.0, 1.0), "s": (0.0, 0.3), "d": (0.0, 1.0), "r": (0.0, 0.2), "w": (0.0, 2.0), "k_F": (0.0, 1.0),
+              "k_T": (0.0, 2.0), "a_F": (0.0, 60.0), "n_P": (0.0, 30.0), "h_R": (0.0, float(T)), "a_R": (0.0, float(T)), "e_P": (0.0, 1.0),
+              "lambda": (0.0, 1.0)}
+
+    def factory(**k):
+        k = dict(k); k["lam"] = k.pop("lambda")
+        return X7Policy(**k, T=T, L=L)
+    return Family("X7-SC", KNOBS, bounds, factory)
+
+
+def embed_h3(knobs: dict, T: int) -> dict:
+    """D2+H3 knobs (with x) to the X7-SC point with identical behaviour."""
+    return {"u0": knobs["u0"], "m0": knobs["m0"], "s": knobs["s"], "d": knobs["d"], "r": knobs["r"], "w": knobs["w"], "k_F": 1.0,
+            "k_T": 1.0, "a_F": 0.0, "n_P": 0.0, "h_R": 0.0 if int(knobs["x"]) else float(T), "a_R": float(T), "e_P": 1.0, "lambda": 1.0,
+            "clip": knobs["clip"]}
+
+
+def _corner(fam: Family, bits) -> dict:
+    return {n: (int(b) if fam.is_binary(n) else float(fam.bounds[n][int(b)])) for n, b in zip(fam.knobs, bits)}
+
+
+def x7_corners(fam: Family) -> list[dict]:
+    """For any family (X7-SC and H4, design draft 7): 512 scrambled-Sobol corners (bit 1 when a coordinate is >= 0.5), de-duplicated in order, then the all-low and
+    all-high corners if absent (a bounded diagnostic, not exhaustive coverage)."""
+    pts = qmc.Sobol(d=len(fam.knobs), scramble=True, seed=SOBOL_SEED).random_base2(9)
+    out, seen = [], set()
+    for row in pts:
+        k = _corner(fam, row >= 0.5); key = exact_key(k)
+        if key not in seen:
+            seen.add(key); out.append(k)
+    for bits in ([0] * len(fam.knobs), [1] * len(fam.knobs)):
+        k = _corner(fam, bits); key = exact_key(k)
+        if key not in seen:
+            seen.add(key); out.append(k)
+    return out
+
+
+def corner_vectors(fam: Family) -> list[dict]:
+    """The corners and their truthful projections, de-duplicated by exact key across both."""
+    out, seen = [], set()
+    for k in x7_corners(fam) + [fam.project(c) for c in x7_corners(fam)]:
+        key = exact_key(k)
+        if key not in seen:
+            seen.add(key); out.append(k)
+    return out
+from __future__ import annotations
+
+from dataclasses import replace
+
+from .base import Action, ProviderView
+
+
+class IdentityReplacement:
+    """H3 (spec 6.2): behave like the wrapped policy, and exit in the round
+    after a failed audit so the entity re-enters under a fresh identity in that
+    round (exits take effect when made, Task 2)."""
+
+    def __init__(self, policy) -> None:
+        self.policy = policy
+        self.name = f"h3({getattr(policy, 'name', 'policy')})"
+
+    def act(self, view: ProviderView) -> Action:
+        a = self.policy.act(view)
+        failed_last = bool(view.history.failed) and view.history.failed[-1] > 0
+        return Action(effort=a.effort, offer=a.offer, exit=a.exit or failed_last)
+
+
+def h3_family(family):
+    """The family with one more binary knob x: x = 1 wraps the policy in IdentityReplacement,
+    x = 0 leaves it unwrapped, so the honest point (x = 0, clip = 1) is honest-max."""
+    base_factory = family.factory
+
+    def factory(**k):
+        k = dict(k); x = int(k.pop("x"))
+        p = base_factory(**k)
+        return IdentityReplacement(p) if x else p
+    knobs = tuple(n for n in family.knobs if n != "clip") + ("x", "clip")
+    return replace(family, name=f"{family.name}+H3", knobs=knobs, factory=factory)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'git show bd2dadf -- docs/revision/paper-v2/numbers_v2.py docs/revision/paper-v2/test_numbers.py docs/revision/paper-v2/numbers.tex docs/revision/paper-v2/sites.json' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+commit bd2dadf1f63c5adcac37a80dbdb6b4fec3443fbd
+Author: Ömer Demirel <7556489+demirelo@users.noreply.github.com>
+Date:   Wed Nov 11 21:22:03 2026 +0100
+
+    Paper: external review r3 (Fable 5.2) fixes on existing records
+    
+    Problem 1: the two 'would need a matched comparison' sentences and Table 1 point to the exploratory follow-up; one
+    exploratory sentence in the abstract and the conclusion. Problem 2: 17 of 18 frozen truthful references replace an
+    identity; disabling it shifts the pooled gaps by 0.0005 and S to 1.050 (Mac check, docs/revision/posthoc/reset_reference/).
+    Problem 3: S above 1 read as a D2 gap not distinguishable from zero (3 of 6 positive, market t interval, fresh5, LOO range);
+    C* - R3 under D2. Problems 4-6: D2 doubling flags, nesting failures, per-market gaps. Problem 7: timing entry in the
+    operations ledger. Round-2 leftovers: results-in-brief sign sentence, priority value within search error. Gate ok; 33 pages.
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+diff --git a/docs/revision/paper-v2/numbers.tex b/docs/revision/paper-v2/numbers.tex
+index 0be9623..a972dd5 100644
+--- a/docs/revision/paper-v2/numbers.tex
++++ b/docs/revision/paper-v2/numbers.tex
+@@ -151,10 +151,21 @@
+ \expandafter\def\csname site@r_x7_all_n\endcsname{14}
+ \expandafter\def\csname site@r_x7_cells\endcsname{12}
+ \expandafter\def\csname site@r_x7_same\endcsname{10}
++\expandafter\def\csname site@rs_cr0\endcsname{\ensuremath{-0.003}}
++\expandafter\def\csname site@rs_cr0_dhi\endcsname{0.019}
++\expandafter\def\csname site@rs_cr0_dlo\endcsname{\ensuremath{-0.026}}
++\expandafter\def\csname site@rs_cr0_hi\endcsname{0.012}
++\expandafter\def\csname site@rs_cr0_lo\endcsname{\ensuremath{-0.018}}
++\expandafter\def\csname site@rs_cr1\endcsname{0.021}
+ \expandafter\def\csname site@rs_exp_b\endcsname{met}
+ \expandafter\def\csname site@rs_exp_c\endcsname{not established (search-sensitive)}
+ \expandafter\def\csname site@rs_exp_s\endcsname{met}
++\expandafter\def\csname site@rs_f0_g0\endcsname{\ensuremath{-0.023}}
++\expandafter\def\csname site@rs_f0_g0_d\endcsname{0.012}
+ \expandafter\def\csname site@rs_f3_c\endcsname{\ensuremath{-0.041}}
++\expandafter\def\csname site@rs_flag\endcsname{3}
++\expandafter\def\csname site@rs_flag_max\endcsname{0.044}
++\expandafter\def\csname site@rs_flag_n\endcsname{18}
+ \expandafter\def\csname site@rs_fx_b3\endcsname{0.371}
+ \expandafter\def\csname site@rs_fx_r3\endcsname{0.091}
+ \expandafter\def\csname site@rs_g0\endcsname{\ensuremath{-0.009}}
+@@ -165,6 +176,10 @@
+ \expandafter\def\csname site@rs_g1_d\endcsname{0.170}
+ \expandafter\def\csname site@rs_g1_hi\endcsname{0.175}
+ \expandafter\def\csname site@rs_g1_lo\endcsname{0.172}
++\expandafter\def\csname site@rs_gd0_pos\endcsname{3}
++\expandafter\def\csname site@rs_gd0_pos_d\endcsname{4}
++\expandafter\def\csname site@rs_gd0_t_hi\endcsname{0.018}
++\expandafter\def\csname site@rs_gd0_t_lo\endcsname{\ensuremath{-0.036}}
+ \expandafter\def\csname site@rs_hl_b3\endcsname{0.307}
+ \expandafter\def\csname site@rs_hl_g0\endcsname{0.007}
+ \expandafter\def\csname site@rs_hl_g1\endcsname{0.302}
+@@ -172,10 +187,21 @@
+ \expandafter\def\csname site@rs_i_b3\endcsname{0.228}
+ \expandafter\def\csname site@rs_i_c\endcsname{0.069}
+ \expandafter\def\csname site@rs_i_r3\endcsname{0.045}
++\expandafter\def\csname site@rs_loo_hi\endcsname{1.093}
++\expandafter\def\csname site@rs_loo_lo\endcsname{0.967}
++\expandafter\def\csname site@rs_nest_c\endcsname{\ensuremath{-0.002}}
++\expandafter\def\csname site@rs_nest_r\endcsname{\ensuremath{-0.006}}
++\expandafter\def\csname site@rs_ref_any\endcsname{17}
++\expandafter\def\csname site@rs_ref_dg\endcsname{0.001}
++\expandafter\def\csname site@rs_ref_max\endcsname{0.009}
++\expandafter\def\csname site@rs_ref_n\endcsname{18}
++\expandafter\def\csname site@rs_ref_s\endcsname{1.050}
++\expandafter\def\csname site@rs_ref_val\endcsname{0.007}
+ \expandafter\def\csname site@rs_rev_b3\endcsname{0.033}
+ \expandafter\def\csname site@rs_rev_r3\endcsname{0.009}
+ \expandafter\def\csname site@rs_s\endcsname{1.053}
+ \expandafter\def\csname site@rs_s_d\endcsname{1.022}
++\expandafter\def\csname site@rs_s_loo5\endcsname{1.000}
+ \expandafter\def\csname site@rs_sign_b\endcsname{6}
+ \expandafter\def\csname site@rs_sign_bd\endcsname{6}
+ \expandafter\def\csname site@rs_sign_c\endcsname{5}
+diff --git a/docs/revision/paper-v2/numbers_v2.py b/docs/revision/paper-v2/numbers_v2.py
+index 36ac708..aee3852 100644
+--- a/docs/revision/paper-v2/numbers_v2.py
++++ b/docs/revision/paper-v2/numbers_v2.py
+@@ -28,13 +28,14 @@ INPUT = re.compile(r"\\(?:input|include)\{([^}]*)\}")
+ P_LEAVES = {"p", "p_gain", "p_eff", "calibrated", "holm_adjusted", "calibrated_gain", "calibrated_eff"}
+ # Kinds for prose in result regions: the field name and the value type must fit the sentence's statistic.
+ COUNT_LEAVES = {"k", "fulfilled", "failed", "not assessed",           # Q4's k; the prediction tallies (score_v2.py)
+-                "positive", "n", "embedded_identical", "cells", "flagged", "checks", "over_threshold"}    # Fable 5.2 review counts (posthoc)
++                "positive", "n", "embedded_identical", "cells", "flagged", "checks", "over_threshold", "refs_with_any_reset"}    # Fable 5.2 review counts (posthoc)
+ KINDS = {"count": lambda leaf, v: leaf in COUNT_LEAVES and isinstance(v, int) and not isinstance(v, bool),
+          "p": lambda leaf, v: leaf in P_LEAVES and isinstance(v, float) and 0 <= v <= 1,
+          "gain": lambda leaf, v: leaf in {"estimate", "gain_diff", "gain_diff_lower", "attacker_gain", "0", "1", "q1_frozen", "q1_doubled",
+-                                          "q4_frozen", "q4_doubled", "mean_gain", "mean", "difference", "pooled", "max_shortfall", "fresh1"} and isinstance(v, float),
++                                          "q4_frozen", "q4_doubled", "mean_gain", "mean", "difference", "pooled", "max_shortfall", "fresh1", "max_change", "G_shift_pooled",
++                                          "max_abs_replacement_value", "max_abs_validation_mean_diff"} and isinstance(v, float),
+          "ratio": lambda leaf, v: leaf == "relative" and isinstance(v, float),
+-         "share_s": lambda leaf, v: leaf == "value" and isinstance(v, float),          # reset follow-up S (not clipped)
++         "share_s": lambda leaf, v: leaf in {"value", "0", "1", "S_with_non_replacing_references"} and isinstance(v, float),   # reset follow-up S (not clipped); "0"/"1": the leave-one-out range
+          "share": lambda leaf, v: leaf == "audited_share" and isinstance(v, float) and 0 <= v <= 1,
+          "eff": lambda leaf, v: leaf in {"eff", "eff_lower", "efficiency", "0", "1"} and isinstance(v, float),
+          "label": lambda leaf, v: isinstance(v, str)}
+diff --git a/docs/revision/paper-v2/sites.json b/docs/revision/paper-v2/sites.json
+index 578d3ba..a697704 100644
+--- a/docs/revision/paper-v2/sites.json
++++ b/docs/revision/paper-v2/sites.json
+@@ -878,5 +878,135 @@
+   "path": "reset.switches.F111.reverse_x1.pooled",
+   "kind": "gain",
+   "section": "results"
++ },
++ "rs_gd0_pos": {
++  "path": "reset.review_r3.base.G_D2.positive",
++  "kind": "count",
++  "section": "results"
++ },
++ "rs_gd0_pos_d": {
++  "path": "reset.review_r3.doubled.G_D2.positive",
++  "kind": "count",
++  "section": "results"
++ },
++ "rs_gd0_t_lo": {
++  "path": "reset.review_r3.base.G_D2.t95.0",
++  "kind": "gain",
++  "section": "results"
++ },
++ "rs_gd0_t_hi": {
++  "path": "reset.review_r3.base.G_D2.t95.1",
++  "kind": "gain",
++  "section": "results"
++ },
++ "rs_s_loo5": {
++  "path": "reset.base.sensitivity.S_leave_one_out.fresh5.value",
++  "kind": "share_s",
++  "section": "results"
++ },
++ "rs_loo_lo": {
++  "path": "reset.review_r3.S_leave_one_out_range.0",
++  "kind": "share_s",
++  "section": "results"
++ },
++ "rs_loo_hi": {
++  "path": "reset.review_r3.S_leave_one_out_range.1",
++  "kind": "share_s",
++  "section": "results"
++ },
++ "rs_flag": {
++  "path": "reset.review_r3.flags.flagged",
++  "kind": "count",
++  "section": "results"
++ },
++ "rs_flag_n": {
++  "path": "reset.review_r3.flags.n",
++  "kind": "count",
++  "section": "results"
++ },
++ "rs_flag_max": {
++  "path": "reset.review_r3.flags.max_change",
++  "kind": "gain",
++  "section": "results"
++ },
++ "rs_f0_g0": {
++  "path": "reset.base.G.D2.markets.fresh0.estimate",
++  "kind": "gain",
++  "section": "results"
++ },
++ "rs_f0_g0_d": {
++  "path": "reset.doubled.G.D2.markets.fresh0.estimate",
++  "kind": "gain",
++  "section": "results"
++ },
++ "rs_nest_c": {
++  "path": "reset.base.I.C*.markets.fresh3.estimate",
++  "kind": "gain",
++  "section": "results"
++ },
++ "rs_nest_r": {
++  "path": "reset.base.I.F111.markets.fresh4.estimate",
++  "kind": "gain",
++  "section": "results"
++ },
++ "rs_cr1": {
++  "path": "reset.review_r3.base.Cstar_minus_R3.D2+H3.estimate",
++  "kind": "gain",
++  "section": "results"
++ },
++ "rs_cr0": {
++  "path": "reset.review_r3.base.Cstar_minus_R3.D2.estimate",
++  "kind": "gain",
++  "section": "results"
++ },
++ "rs_cr0_lo": {
++  "path": "reset.review_r3.base.Cstar_minus_R3.D2.t95.0",
++  "kind": "gain",
++  "section": "results"
++ },
++ "rs_cr0_hi": {
++  "path": "reset.review_r3.base.Cstar_minus_R3.D2.t95.1",
++  "kind": "gain",
++  "section": "results"
++ },
++ "rs_cr0_dlo": {
++  "path": "reset.review_r3.doubled.Cstar_minus_R3.D2.t95.0",
++  "kind": "gain",
++  "section": "results"
++ },
++ "rs_cr0_dhi": {
++  "path": "reset.review_r3.doubled.Cstar_minus_R3.D2.t95.1",
++  "kind": "gain",
++  "section": "results"
++ },
++ "rs_ref_any": {
++  "path": "refcheck.summary.refs_with_any_reset",
++  "kind": "count",
++  "section": "results"
++ },
++ "rs_ref_n": {
++  "path": "refcheck.summary.n",
++  "kind": "count",
++  "section": "results"
++ },
++ "rs_ref_max": {
++  "path": "refcheck.summary.max_abs_replacement_value",
++  "kind": "gain",
++  "section": "results"
++ },
++ "rs_ref_dg": {
++  "path": "refcheck.summary.G_shift_pooled",
++  "kind": "gain",
++  "section": "results"
++ },
++ "rs_ref_s": {
++  "path": "refcheck.summary.S_with_non_replacing_references",
++  "kind": "share_s",
++  "section": "results"
++ },
++ "rs_ref_val": {
++  "path": "refcheck.summary.max_abs_validation_mean_diff",
++  "kind": "gain",
++  "section": "results"
+  }
+ }
+diff --git a/docs/revision/paper-v2/test_numbers.py b/docs/revision/paper-v2/test_numbers.py
+index 7d36f51..e076b05 100644
+--- a/docs/revision/paper-v2/test_numbers.py
++++ b/docs/revision/paper-v2/test_numbers.py
+@@ -395,3 +395,17 @@ def test_reset_share_kind():
+     # Reset follow-up (2026-11-11): the share S = 1 - G(D2)/G(D2+H3) is stored as `value`; it may exceed 1 (no clipping)
+     assert N.KINDS["share_s"]("value", 1.05) and N.KINDS["share_s"]("value", -0.2)
+     assert not N.KINDS["share_s"]("estimate", 0.5) and not N.KINDS["share_s"]("value", None) and not N.KINDS["gain"]("value", 0.5)
++
++
++def test_reset_review_r3_kinds():
++    # External review r3 (2026-11-11): the leave-one-out S range is a two-element list; the largest D2 doubling change is
++    # a gain change stored as `max_change`
++    assert N.KINDS["share_s"]("0", 0.97) and N.KINDS["share_s"]("1", 1.09)
++    assert N.KINDS["gain"]("max_change", 0.044) and not N.KINDS["gain"]("max_change", 3)
++
++
++def test_reset_reference_check_kinds():
++    # External review r3 problem 2: the reference replacement check (docs/revision/posthoc/reset_reference/)
++    assert N.KINDS["count"]("refs_with_any_reset", 17)
++    assert N.KINDS["gain"]("G_shift_pooled", 0.0005) and N.KINDS["gain"]("max_abs_replacement_value", 0.009)
++    assert N.KINDS["gain"]("max_abs_validation_mean_diff", 0.007) and N.KINDS["share_s"]("S_with_non_replacing_references", 1.05)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+ERROR: {"detail":"Bad Request"}
+ERROR: {"detail":"Bad Request"}
+tokens used
+67'790

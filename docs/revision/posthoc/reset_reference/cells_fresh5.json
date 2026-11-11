@@ -1,0 +1,83 @@
+{
+ "fresh5@rho0.2|F000": {
+  "name": "twin_search",
+  "family": "D2+H3",
+  "knobs": {
+   "u0": 1.0307399716970385e-14,
+   "m0": 0.07109104771426904,
+   "s": 0.008704328342306854,
+   "d": 0.9977240561463474,
+   "r": 6.504906417368811e-07,
+   "w": 0.6113455709652001,
+   "x": 0,
+   "clip": 1
+  },
+  "mean_resets": 0.0,
+  "p_any_reset": 0.0,
+  "mean_ban_rounds": 1.9,
+  "ref_mean_normalized": 0.34451395267112317,
+  "validation_mean_diff": -1.1102230246251566e-18,
+  "validation_seeds_differing": 0,
+  "validation_max_abs_diff": 1.6653345369377348e-16
+ },
+ "fresh5@rho0.2|F111": {
+  "name": "archive_clip1",
+  "family": "X7-SC",
+  "knobs": {
+   "u0": 1.0615477699838071e-15,
+   "m0": 0.04048224725441742,
+   "s": 6.369124701969968e-07,
+   "d": 0.999935808570831,
+   "r": 0.1744463187919077,
+   "w": 0.6096925732074262,
+   "k_F": 0.03250463321704226,
+   "k_T": 0.5050247468782413,
+   "a_F": 59.9999992705294,
+   "n_P": 29.478619487104734,
+   "h_R": 199.7282751849212,
+   "a_R": 58.756128651701815,
+   "e_P": 0.0005345777387845274,
+   "lambda": 0.9602273282967353,
+   "clip": 1
+  },
+  "mean_resets": 0.06,
+  "p_any_reset": 0.025,
+  "mean_ban_rounds": 1.8,
+  "ref_mean_normalized": 0.3460613526429158,
+  "validation_mean_diff": -5.551115123125783e-19,
+  "validation_seeds_differing": 0,
+  "validation_max_abs_diff": 1.1102230246251565e-16,
+  "ref_no_replace_mean_normalized": 0.3460613526429158,
+  "replacement_value_to_reference": 0.0
+ },
+ "fresh5@rho0.2|C*": {
+  "name": "twin_search",
+  "family": "X7-SC",
+  "knobs": {
+   "u0": 7.253809226867158e-09,
+   "m0": 0.008851997992019826,
+   "s": 7.609171205879084e-07,
+   "d": 0.6195023473243696,
+   "r": 0.001233089520164542,
+   "w": 0.6115121655435021,
+   "k_F": 0.002502826174032274,
+   "k_T": 0.0651503962511264,
+   "a_F": 6.207749633152118,
+   "n_P": 12.949643637915031,
+   "h_R": 174.52270332361766,
+   "a_R": 192.52262052821771,
+   "e_P": 2.330504376329881e-05,
+   "lambda": 0.997534036829576,
+   "clip": 1
+  },
+  "mean_resets": 18.185,
+  "p_any_reset": 0.18,
+  "mean_ban_rounds": 3.0,
+  "ref_mean_normalized": 0.3445770524965725,
+  "validation_mean_diff": -0.00011744738510263114,
+  "validation_seeds_differing": 21,
+  "validation_max_abs_diff": 0.037123199541032326,
+  "ref_no_replace_mean_normalized": 0.3452070024971479,
+  "replacement_value_to_reference": -0.0006299500005754188
+ }
+}
