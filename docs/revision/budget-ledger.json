@@ -4,13 +4,7 @@
   "evaluation": 43.0,
   "followup": 72.0
  },
- "reservations": [
-  {
-   "op": "followup",
-   "tag": "churn-pod",
-   "cap": 10.4
-  }
- ],
+ "reservations": [],
  "spent": [
   {
    "op": "development",
@@ -126,6 +120,11 @@
    "op": "followup",
    "tag": "reset-pod",
    "usd": 1.65
+  },
+  {
+   "op": "followup",
+   "tag": "churn-pod",
+   "usd": 4.99
   }
  ],
  "approval": {
