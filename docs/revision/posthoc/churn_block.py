@@ -173,7 +173,8 @@ def analyse(data: dict, b: int = B, seed: int = SEED) -> dict:
 
 
 def flag_summary(flags: dict) -> dict:
-    return {"cells": len(flags), "incomplete": sorted(k for k, f in flags.items() if f.get("incomplete")),
+    inc = sorted(k for k, f in flags.items() if f.get("incomplete"))
+    return {"cells": len(flags), "incomplete_n": len(inc), "incomplete": sorted(k for k, f in flags.items() if f.get("incomplete")),
             "attack_changed": sorted(k for k, f in flags.items() if f.get("attack_change")),
             "reference_changed": sorted(k for k, f in flags.items() if f.get("reference_change"))}
 
@@ -254,7 +255,8 @@ def _fmt(e, d: int = 3) -> str:
     if p["estimate"] is None:
         return "--"
     lo, hi = p["ci95"] or (None, None)
-    return f"{p['estimate']:.{d}f}" + ("" if lo is None else f" [{lo:.{d}f}, {hi:.{d}f}]")
+    n = lambda x: f"{x:.{d}f}".replace("-", "$-$")          # a typeset minus, not a hyphen
+    return n(p["estimate"]) + ("" if lo is None else f" [{n(lo)}, {n(hi)}]")
 
 
 def table(res: dict) -> str:
@@ -264,7 +266,7 @@ def table(res: dict) -> str:
     for v in VERS:
         for c in CONDS:
             b = res[v][c]
-            lines.append(f"{v} & {name[c]} & " + " & ".join([_fmt(b["g"][r]) for r in RULES] + [_fmt(b["d"]), _fmt(b["q"])]) + " \\\\")
+            lines.append(f"{'frozen' if v == 'base' else v} & {name[c]} & " + " & ".join([_fmt(b["g"][r]) for r in RULES] + [_fmt(b["d"]), _fmt(b["q"])]) + " \\\\")
     lines += ["\\bottomrule", "\\end{tabular}"]
     return "\n".join(lines) + "\n"
 
@@ -300,7 +302,7 @@ def main(argv=None) -> int:
         out["inputs"]["posthoc_sha256"] = _sha(Path(a.posthoc))
     Path(a.out).write_text(json.dumps(out, indent=1) + "\n")
     d = Path(a.tables); d.mkdir(parents=True, exist_ok=True)
-    (d / "churn_pooled.tex").write_text(table(res))
+    (d / "posthoc_churn.tex").write_text(table(res).replace("C*", "C$^*$"))
     return 0
 
 

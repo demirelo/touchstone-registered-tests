@@ -5207,6 +5207,7 @@
  },
  "flag_summary": {
   "cells": 36,
+  "incomplete_n": 13,
   "incomplete": [
    "0.01|fresh1|C*",
    "0.01|fresh1|F111",

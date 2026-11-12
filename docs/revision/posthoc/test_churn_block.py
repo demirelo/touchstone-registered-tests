@@ -156,6 +156,7 @@ def test_reselection_flags_per_cell(tmp_path):
     f = data["flags"]["0.05|fresh0|F111"]
     assert f == {"attack_change": 0.012, "reference_change": -0.003, "incomplete": True}
     assert CB.flag_summary(data["flags"])["incomplete"] == ["0.05|fresh0|F111"]
+    assert CB.flag_summary(data["flags"])["incomplete_n"] == 1
 
 
 def _scores(tmp_path, shift, b=99):
@@ -231,4 +232,5 @@ def test_cli_writes_the_result_with_input_hashes_and_a_table(tmp_path):
     res = json.loads(out.read_text())
     assert res["label"].startswith("exploratory follow-up") and len(res["inputs"]["report_sha256"]) == 64
     assert set(res["expectations"]) == {"1", "2", "3", "4"}
-    assert (tab / "churn_pooled.tex").read_text().count("\\\\") >= 6
+    t = (tab / "posthoc_churn.tex").read_text()
+    assert t.count("\\\\") >= 6 and "C$^*$" in t and "C*" not in t.replace("C$^*$", "")

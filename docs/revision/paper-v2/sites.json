@@ -1033,5 +1033,205 @@
   "path": "reset.switches.C*.reverse_x1.pooled",
   "kind": "gain",
   "section": "results"
+ },
+ "ch_reps1": {
+  "path": "churn.diagnostics.0.01.F111|base.honest_replacements_per_episode",
+  "kind": "per_episode",
+  "section": "results"
+ },
+ "ch_reps5": {
+  "path": "churn.diagnostics.0.05.F111|base.honest_replacements_per_episode",
+  "kind": "per_episode",
+  "section": "results"
+ },
+ "ch_r3_0": {
+  "path": "churn.statistics.base.0.g.F111.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_r3_5": {
+  "path": "churn.statistics.base.0.05.g.F111.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_r3_5_lo": {
+  "path": "churn.statistics.base.0.05.g.F111.pooled.ci95.0",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_r3_5_hi": {
+  "path": "churn.statistics.base.0.05.g.F111.pooled.ci95.1",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_c_0": {
+  "path": "churn.statistics.base.0.g.C*.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_c_5": {
+  "path": "churn.statistics.base.0.05.g.C*.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_b_0": {
+  "path": "churn.statistics.base.0.g.F000.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_b_5": {
+  "path": "churn.statistics.base.0.05.g.F000.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_d_0": {
+  "path": "churn.statistics.base.0.d.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_d_5": {
+  "path": "churn.statistics.base.0.05.d.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_d_5_lo": {
+  "path": "churn.statistics.base.0.05.d.pooled.ci95.0",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_d_5_hi": {
+  "path": "churn.statistics.base.0.05.d.pooled.ci95.1",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_d_5_neg": {
+  "path": "churn.statistics.base.0.05.d.signs.negative",
+  "kind": "count",
+  "section": "results"
+ },
+ "ch_q_5": {
+  "path": "churn.statistics.base.0.05.q.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_q_5_lo": {
+  "path": "churn.statistics.base.0.05.q.pooled.ci95.0",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_q_5_hi": {
+  "path": "churn.statistics.base.0.05.q.pooled.ci95.1",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_q_5_neg": {
+  "path": "churn.statistics.base.0.05.q.signs.negative",
+  "kind": "count",
+  "section": "results"
+ },
+ "ch_pa_5": {
+  "path": "churn.statistics.base.0.05.change.profit.F111.attack.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_pr_5": {
+  "path": "churn.statistics.base.0.05.change.profit.F111.reference.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_pr_5_lo": {
+  "path": "churn.statistics.base.0.05.change.profit.F111.reference.pooled.ci95.0",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_pr_5_hi": {
+  "path": "churn.statistics.base.0.05.change.profit.F111.reference.pooled.ci95.1",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_d_1": {
+  "path": "churn.statistics.base.0.01.d.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_d_1_lo": {
+  "path": "churn.statistics.base.0.01.d.pooled.ci95.0",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_d_1_hi": {
+  "path": "churn.statistics.base.0.01.d.pooled.ci95.1",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_d_1_d": {
+  "path": "churn.statistics.doubled.0.01.d.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_q_1": {
+  "path": "churn.statistics.base.0.01.q.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_new_r3": {
+  "path": "churn.diagnostics.0.05.F111|base.focal_newest_first_offer",
+  "kind": "age_share",
+  "section": "results"
+ },
+ "ch_new_c": {
+  "path": "churn.diagnostics.0.05.C*|base.focal_newest_first_offer",
+  "kind": "age_share",
+  "section": "results"
+ },
+ "ch_new_b": {
+  "path": "churn.diagnostics.0.05.F000|base.focal_newest_first_offer",
+  "kind": "age_share",
+  "section": "results"
+ },
+ "ch_sh_r3": {
+  "path": "churn.diagnostics.0.05.F111|base.pooled_bins.honest_replacement.0.share",
+  "kind": "age_share",
+  "section": "results"
+ },
+ "ch_sh_c": {
+  "path": "churn.diagnostics.0.05.C*|base.pooled_bins.honest_replacement.0.share",
+  "kind": "age_share",
+  "section": "results"
+ },
+ "ch_sh_b": {
+  "path": "churn.diagnostics.0.05.F000|base.pooled_bins.honest_replacement.0.share",
+  "kind": "age_share",
+  "section": "results"
+ },
+ "ch_e1": {
+  "path": "churn.expectations.1.verdict",
+  "kind": "label",
+  "section": "results"
+ },
+ "ch_e2": {
+  "path": "churn.expectations.2.verdict",
+  "kind": "label",
+  "section": "results"
+ },
+ "ch_e3": {
+  "path": "churn.expectations.3.verdict",
+  "kind": "label",
+  "section": "results"
+ },
+ "ch_e4": {
+  "path": "churn.expectations.4.verdict",
+  "kind": "label",
+  "section": "results"
+ },
+ "ch_inc": {
+  "path": "churn.flag_summary.incomplete_n",
+  "kind": "count",
+  "section": "results"
+ },
+ "ch_inc_n": {
+  "path": "churn.flag_summary.cells",
+  "kind": "count",
+  "section": "results"
  }
 }

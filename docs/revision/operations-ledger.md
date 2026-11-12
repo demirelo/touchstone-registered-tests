@@ -212,3 +212,11 @@ Astra accept-with-caveat; the one caveat (Holm citation) is resolved in 06c75e9 
 - Analysis code `docs/revision/posthoc/reset_block.py` with its tests committed in 3e286c1 (16:47:33); its first run on the records committed in 41bafd2 (16:48:02). The records were on disk before the code commit; the block was not run on them before it.
 - Spend: 1.65 USD balance difference (`results/pods/ts-r-reset.spent`), entered in the follow-up ledger only after the author's billing-page check.
 - External review r3 (Fable 5.2) asked for market-level checks; added in 37ace39 as a labelled exploratory block (`review_r3`), existing fields unchanged.
+
+## Honest-churn follow-up (exploratory, after the report; 2026-11-12, times UTC)
+
+- Plan: `docs/revision/churn/churn-plan.md`, draft 6, consensus before any churn search; the author started the arm on the board ("Start the honest-churn arm now") and added 50 USD on 2026-11-12 (ledger approval, limit 123 USD; the arm's stop cap stayed 8 USD, reservation 10.40 USD).
+- Launcher `docs/revision/churn/churn_pod.sh` (from the reviewed reset launcher): review r1 Sol and Astra reject (fixed in 41cb0f9, harness 20 of 20); r2 Sol and Astra accept-with-caveat, caveats applied (ef17139, harness 21 of 21). Dry-run guard ok at ef17139.
+- Pod l1z4ehbliw376o (16 vCPU, 0.56 USD/h): requested 11:46; p = 0 gate 11:48 to 12:33, bit-identical; search 12:33 to 16:37; freeze and evaluate to 17:06; doubling to 20:24; diagnostics to 20:34; inventory; RUN OK 20:34. Records verified (gate-p0 31, p0.01 206, p0.05 206; 0 bad; run.json ok); pod deleted and verified 20:38; account pod list empty. Records in `results/v2/followup-churn/followup-churn/`. Stages ran about 20 to 25 percent longer than the cost model.
+- Analysis code `docs/revision/posthoc/churn_block.py` with its tests committed in c15580d, before any run on the churn records; a first run on a wrong no-churn directory (the churn bundle holds only the gate cell) wrote a partial result that was discarded; an input guard followed in c398a97 (lesson); the first run on the registered inputs was committed in cd64fc3. It reproduces the registered no-churn values exactly; expectations 1 to 4 all met.
+- Spend: pending (`podctl.py spend ts-c-churn` an hour after the watchdog ended at 20:43, then the author's billing-page check).
