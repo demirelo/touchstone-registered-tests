@@ -1,0 +1,2182 @@
+OpenAI Codex v0.162.1
+--------
+workdir: /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+model: gpt-6-astra
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1cec2-3919-76c0-83ba-52418671f96a
+--------
+user
+# Honest-churn launcher: internal review round 2 (read-only; no paid APIs; do not read `sealed/`, `~/touchstone-h4`, or `~/h4-session.out`; reasoning effort high; under 350 words)
+
+The churn arm's plan (draft 6, `docs/revision/churn/churn-plan.md`) reached consensus earlier; its driver is `docs/revision/churn/churn_v2.py` (32 tests pass). Its launcher draft predated the reset launcher's review rounds r9 to r18, so the launcher was regenerated from the final, reviewed `reset_pod.sh` with a small set of edits.
+
+Files:
+- `docs/revision/churn/churn_pod.sh` (the launcher; installed copy `results/pods/churn_pod.sh`, identical) and the reviewed base `/Users/oemer.demirel/Projects/touchstone/results/pods/reset_pod.sh`. Review the diff: `diff /Users/oemer.demirel/Projects/touchstone/results/pods/reset_pod.sh docs/revision/churn/churn_pod.sh`.
+- `docs/revision/churn/test_churn_pod_harness.sh` (20 checks: the 14 of the reset harness, a driver cap stop at a stage and at the gate, a negative and an infinite PRIOR, an accounting scenario with PRIOR 2 and one deleted attempt, and the generated remote script executed with a stub driver) and its log `/Users/oemer.demirel/Projects/touchstone/results/pods/logs_harness/churn_harness4.log`.
+- The bundle `/Users/oemer.demirel/Projects/touchstone/results/v2/followup-churn-bundle/` (the reset bundle plus the registered fresh0 R3 D2+H3 evaluate and doubling records for the gate); a read-only check with the driver's own functions found all 138 inputs with matching hashes, pairing and configs ok.
+- The reservation in `docs/revision/budget-ledger.json` (churn-pod, 10.40 USD = 1.3 x the 8 USD stop cap; the plan's 4.43 USD estimate padded to 5.54 would not cover the watchdog bound).
+
+Round 1 (Sol and Astra: reject; outputs `docs/revision/roster/{sol,astra}-churn-launcher-r1.md`). Changes since (diff against the round-1 copy: `git diff 4d963a3 -- docs/revision/churn/`):
+- Deadlines net of PRIOR (soft CAP - PRIOR, hard HARD x CAP - PRIOR); PRIOR must be finite and below the cap.
+- Each attempt's start is taken immediately before its creation request; the driver's --started is the live pod's request time; deleted-attempt charges are rounded up.
+- The gate log is classified like the stage log: a cap refusal is "STOPPED BEFORE gate (cap, driver admission)", GATE FAILED only when the driver prints "the p = 0 gate failed", any other error RUN FAILED at gate.
+- The remote script is written to a private mktemp path; its root is a variable (default /root) so the harness can execute it.
+- The plan's reservation and spend text are amended to the 10.40 USD reservation and balance-based records.
+- The author added 50 USD on 2026-11-12 (ledger approval: follow-up cap 72 USD, program limit 123 USD). The churn arm's stop cap stays 8 USD and its reservation 10.40 USD; this is context, not a ruling.
+
+Rulings to accept or reject:
+1. CAP passed to the launcher is the plan's stop cap, 8 USD (soft deadline at the price ceiling; watchdog at 1.3 x).
+2. The driver's `--prior-usd` gets PRIOR (recorded spend of earlier launches, set by the operator) plus this launch's deleted attempts at the ceiling from their request times, rounded up; both deadlines are net of PRIOR.
+3. A driver cap refusal (at the gate or a stage) is reported as "STOPPED BEFORE <stage> (cap, driver admission)" by matching "stopped between stages" in the last 5 log lines; anything else is RUN FAILED.
+
+Check: (0) each round-1 correction is resolved; (1) every edit preserves the reset launcher's safety behaviour (creation, price, watchdog, deletion, locks, spend records); (2) the remote script calls the churn driver correctly (gate only first with --require-identical; stages; flags; output dir; the verify paths gate-p0, p0.01, p0.05 match what the driver writes, including where each inventory lies); (3) the harness exercises the new paths and passes; (4) defects the harness misses.
+
+Output exactly:
+VERDICT: accept | accept-with-caveat | reject
+CORRECTIONS: numbered, each with file:line, or "none".
+CONFIDENCE: 0 to 1.
+
+2026-11-12T07:56:38.123514Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: HTTP error: 426 Upgrade Required, url: ws://127.0.0.1:11434/api/codex/v1/responses
+2026-11-12T07:56:38.946383Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: HTTP error: 426 Upgrade Required, url: ws://127.0.0.1:11434/api/codex/v1/responses
+hook: SessionStart
+hook: SessionStart Completed
+codex
+I will compare both launchers, check the earlier findings, and run the local harness. I will keep the review read-only and avoid the prohibited paths and paid APIs.
+
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'pwd; git status --short' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+?? docs/paper/astra-pro-ext12-triage.md
+?? docs/revision/roster/astra-churn-launcher-r2.log
+?? docs/revision/roster/sol-churn-launcher-r2.log
+
+exec
+/bin/zsh -lc "rg -n 'touchstone|churn' /Users/oemer.demirel/.codex/memories/MEMORY.md" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+38:- Symptom: Astro build errors with `Cannot find module '@rollup/rollup-darwin-arm64'` -> run `npm install && npm run build`, then remove unrelated lockfile churn before finalizing. [Task 1]
+221:# Task Group: researchos-public-demo-realistic-churn-study
+226:## Task 1: Redesign and publish a realistic public churn-study demo
+230:- rollout_summaries/2026-11-06T10-21-00-6Yvt-redesign_public_demo_realistic_churn_study.md (cwd=/Users/oemer.demirel/Documents/ChatGPT/researchos, rollout_path=/Users/oemer.demirel/.codex/sessions/2026/11/06/rollout-2026-11-06T11-21-00-01a1b060-4152-7a40-bcd5-386dfb1c082f.jsonl, updated_at=2026-11-06T22:21:46+00:00, thread_id=01a1b060-4152-7a40-bcd5-386dfb1c082f, success; visual browser inspection unavailable)
+234:- ResearchOS, public demo, churn study, synthetic data, `tools/build_public_demo.py`, `tools/public_demo/experiment.py`, GitHub Pages, SHA-256, PR #20
+242:- `tools/public_demo/experiment.py` computes the synthetic churn experiment; `tools/build_public_demo.py` builds it; `tools/public_demo/index.html`, `demo.css`, and `demo.js` implement the UI. The builder requires an empty output directory, labels data synthetic, packages reproducible ZIPs, and produces a SHA-256 manifest. [Task 1]
+541:# Task Group: anthropic-residency-application-writing-and-touchstone-research
+550:- rollout_summaries/2026-11-03T12-32-03-zdzn-anthropic_residency_writing_touchstone_research_plan.md (cwd=/Users/oemer.demirel/Documents/Codex/2026-11-03/why-anthropic-anthropic-sets-the-frontier, rollout_path=/Users/oemer.demirel/.codex/sessions/2026/11/03/rollout-2026-11-03T13-32-03-01a1a165-260e-7180-9d34-c9dc6bf34b4d.jsonl, updated_at=2026-11-03T13:02:09+00:00, thread_id=01a1a165-260e-7180-9d34-c9dc6bf34b4d, success; application answers finalized)
+
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'diff -u /Users/oemer.demirel/Projects/touchstone/results/pods/reset_pod.sh docs/revision/churn/churn_pod.sh' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ exited 1 in 0ms:
+--- /Users/oemer.demirel/Projects/touchstone/results/pods/reset_pod.sh	2026-11-11 06:08:17
++++ docs/revision/churn/churn_pod.sh	2026-11-12 08:56:24
+@@ -4,22 +4,28 @@
+   snapf="/Users/oemer.demirel/Projects/touchstone/results/pods/snap_$(basename "$0" .sh)_$$.sh"; cp "$0" "$snapf"
+   LAUNCH_SNAPSHOT="$snapf" exec bash "$snapf" "$@"
+ fi
+-# Reset follow-up (docs/revision/reset-experiment-plan.md, draft 5) on one Runpod CPU pod, adapted from eval_pod.sh.
+-# Order on the pod: the reproduction gate (bit identity, --require-identical; the author's decision), then the 18 D2 cells
+-# stage by stage (inputs and search with all vCPUs; evaluate, doubling and the spot diagnostics with WEVAL workers for
+-# memory), then the inventory. Spending (the author: do not kill jobs): at the reserved cap the pod stops BETWEEN stages
++# Honest-churn arm (docs/revision/churn/churn-plan.md, draft 6) on one Runpod CPU pod: generated from reset_pod.sh after
++# its review rounds r9-r18 (pod safety, launch lock, spend records unchanged). Order on the pod: the p = 0 gate through the
++# churn path (bit identity, --require-identical; the author's decision), then the 36 churn cells (two rates) stage by
++# stage (search with all vCPUs; evaluate, doubling and diagnostics with at most WEVAL workers, the driver's memory
++# preflight may choose fewer), then the inventory. The driver also refuses a stage whose admission would pass the cap
++# (allocation time, actual price, and PRIOR plus this launch's failed attempts at the ceiling). Spending (the author: do not kill jobs): at the reserved cap the pod stops BETWEEN stages
+ # (a STOP file the remote script reads before each stage); only at HARD x the cap is the pod deleted mid-stage, as an
+ # absolute guard. An EXIT/INT/TERM trap pulls what exists (only if the run started), deletes the pod and verifies it.
+ # Spend (r16): the record is the account balance difference (podctl.py spend NAME, at least an hour after the watchdog
+ # ends); this launcher prints only estimates. One launch per NAME at a time (NAME.launchlock; the watchdog releases it).
+-# Usage: reset_pod.sh <code_tgz> <bundle_tgz> <tag> <cap_usd> <local_out>   (no spaces in paths)
+-# Env: EXPECT (commit inside the code tarball), MAXCPH, optional WEVAL (default 10), MINMEM (default 28), HARD (default 1.3).
++# Usage: churn_pod.sh <code_tgz> <bundle_tgz> <tag> <cap_usd> <local_out>   (no spaces in paths)
++# Env: EXPECT (commit inside the code tarball), MAXCPH, optional WEVAL (default 9), MINMEM (default 28), HARD (default 1.3),
++# PRIOR (USD recorded for earlier launches of this arm, default 0).
+ set -u
+ PY=/opt/homebrew/bin/python3; P=/Users/oemer.demirel/Projects/touchstone/results/pods
+ TGZ=${1:?code tarball}; BTGZ=${2:?bundle tarball}; TAG=${3:?tag}; CAP=${4:?cap_usd}; LOUT=${5:?local_out}; cd $P
+ case "$TGZ$BTGZ$TAG$LOUT" in *[[:space:]]*) echo "refused: a path or tag contains whitespace"; exit 1 ;; esac
+-EXPECT=${EXPECT:?commit}; MAXCPH=${MAXCPH:?max usd per hour}; WEVAL=${WEVAL:-10}; MINMEM=${MINMEM:-28}; HARD=${HARD:-1.3}
+-mkdir -p "$LOUT" logs_r_$TAG
++EXPECT=${EXPECT:?commit}; MAXCPH=${MAXCPH:?max usd per hour}; WEVAL=${WEVAL:-9}; MINMEM=${MINMEM:-28}; HARD=${HARD:-1.3}; PRIOR=${PRIOR:-0}
++$PY -c "import math,sys; x=float(sys.argv[1]); sys.exit(0 if math.isfinite(x) and x >= 0 else 1)" "$PRIOR" 2>/dev/null || { echo "refused: PRIOR must be a non-negative number"; exit 1; }
++# PRIOR counts against both deadlines (r1 review), so the arm's bound stays HARD x CAP across launches.
++$PY -c "import sys; sys.exit(0 if float(sys.argv[1]) < float(sys.argv[2]) else 1)" "$PRIOR" "$CAP" 2>/dev/null || { echo "refused: PRIOR must be below the cap"; exit 1; }
++mkdir -p "$LOUT" logs_c_$TAG
+ $PY -c "import sys,tarfile; ms=tarfile.open(sys.argv[1]).getmembers(); d=[m.name for m in ms if m.name.split('/')[-1].startswith('._')]; o=[m.name for m in ms if m.uid!=0]; print('tarball guard: %d AppleDouble, %d non-root' % (len(d),len(o))); sys.exit(1 if d or o else 0)" "$TGZ" || { echo "code tarball refused"; exit 1; }
+ hg=$(mktemp -d); tar xzf "$TGZ" -C "$hg" 2>/dev/null || { echo "code tarball refused: cannot unpack"; exit 1; }
+ # Code guard (fails closed: every git call's status is checked): HEAD is EXPECT, protocol-v2 is an ancestor, the tree is
+@@ -34,7 +40,7 @@
+   git diff --quiet protocol-v2 -- scripts/ sim/ tests/ || { echo "scripts/, sim/ or tests/ differ from protocol-v2"; return 1; }
+   echo "code guard: ok at $(git rev-parse --short HEAD)"
+ }
+-( guard "$hg" ); g=$?; mv -- "$hg" ~/.Trash/hg_reset_$$
++( guard "$hg" ); g=$?; mv -- "$hg" ~/.Trash/hg_churn_$$
+ [ $g -eq 0 ] || { echo "code tarball refused"; exit 1; }
+ [ -n "${DRYRUN:-}" ] && { echo "dry run: guards passed; no pod created"; exit 0; }
+ # verify DIR: every record in DIR/inventory.json exists with its hash.
+@@ -47,7 +53,7 @@
+ PYV
+ }
+ tmo() { perl -e 'alarm shift; exec @ARGV' "$@"; }
+-NAME=ts-r-$TAG; DONE=$P/$NAME.done; ATT=$P/$NAME.attempts
++NAME=ts-c-$TAG; DONE=$P/$NAME.done; ATT=$P/$NAME.attempts
+ rm_ok() { [ -e "$1" ] && mv -- "$1" ~/.Trash/"$(basename "$1").$$"; true; }
+ # One launch per NAME: the lock is taken before any marker changes; the watchdog (the last process) releases it.
+ mkdir "$P/$NAME.launchlock" 2>/dev/null || { echo "LOCKED: $NAME.launchlock exists (another launch or its watchdog still runs; remove it only after checking)"; exit 1; }
+@@ -74,13 +80,13 @@
+     try=0
+     while :; do   # after RUN OK: keep the pod and retry until both directories verify, or until 2 min before the hard deadline
+       try=$((try+1)); ok=1
+-      for d in followup-reset followup-gate; do
+-        t=900; [ $d = followup-gate ] && t=300
++      for d in followup-churn; do
++        t=1800
+         rem=$(( hard - 120 - $(date +%s) )); [ $rem -le 0 ] && { ok=0; break; }; [ $rem -lt $t ] && t=$rem
+         tmo $t $PY runpod.py pull $id "/root/touchstone/results/v2/$d/" "$LOUT/$d/" >/dev/null 2>&1 || ok=0
+       done
+-      rem=$(( hard - 120 - $(date +%s) )); [ $rem -gt 0 ] && tmo $(( rem < 300 ? rem : 300 )) $PY runpod.py pull $id /root/touchstone/results/logs/ logs_r_$TAG/ >/dev/null 2>&1
+-      if [ "$state" = "RUN OK" ] && [ $ok = 1 ]; then { verify "$LOUT/followup-gate" && verify "$LOUT/followup-reset"; } || ok=0; fi
++      rem=$(( hard - 120 - $(date +%s) )); [ $rem -gt 0 ] && tmo $(( rem < 300 ? rem : 300 )) $PY runpod.py pull $id /root/touchstone/results/logs/ logs_c_$TAG/ >/dev/null 2>&1
++      if [ "$state" = "RUN OK" ] && [ $ok = 1 ]; then { verify "$LOUT/followup-churn/gate-p0" && verify "$LOUT/followup-churn/p0.01" && verify "$LOUT/followup-churn/p0.05"; } || ok=0; fi
+       [ $ok = 1 ] && break
+       echo "$(date +%H:%M) pull or verification failed (try $try)"
+       if [ "$state" = "RUN OK" ]; then [ "$(date +%s)" -ge $(( hard - 120 )) ] && break; else [ $try -ge 3 ] && break; fi
+@@ -102,15 +108,16 @@
+     mkdir -p "$P/spend_records" && mv -- "$P/$NAME.bal0" "$P/spend_records/$NAME.$(date +%s).bal0.unused"
+   fi
+   [ "$tfirst" -gt 0 ] && echo "$(date +%H:%M) spend estimate so far (not a record): $(( $(date +%s) - tfirst ))s at the ceiling $MAXCPH USD/h = $($PY -c "import math; print(math.ceil(($(date +%s)-$tfirst)/3600*float('$MAXCPH')*1000)/1000)") USD (pod events in $ATT)"
+-  [ "$req" -gt 0 ] && echo "$(date +%H:%M) record the spend with: podctl.py spend $NAME (at least 1 h after the watchdog ends; logs_r_$TAG/watchdog.log)"
++  [ "$req" -gt 0 ] && echo "$(date +%H:%M) record the spend with: podctl.py spend $NAME (at least 1 h after the watchdog ends; logs_c_$TAG/watchdog.log)"
+   [ -n "$unresolved" ] && { echo "$(date +%H:%M) UNRESOLVED: check the Runpod console the next day before any relaunch (plan step 4)"; rc=1; }
+   echo "$(date +%H:%M) end: $state"
+   exit $rc
+ }
+ trap cleanup EXIT INT TERM
+-# Deadlines from the first creation request at the price ceiling MAXCPH (a bound across attempts).
+-t0=$(date +%s); soft=$(( t0 + $($PY -c "print(int(3600*float('$CAP')/float('$MAXCPH')))") )); hard=$(( t0 + $($PY -c "print(int(3600*float('$CAP')*float('$HARD')/float('$MAXCPH')))") ))
+-nohup $PY podctl.py watchdog $NAME $hard "$DONE" >> logs_r_$TAG/watchdog.log 2>&1 &
++# Deadlines from the first creation request at the price ceiling MAXCPH (a bound across attempts), less PRIOR: the
++# soft deadline leaves CAP - PRIOR, the hard deadline HARD x CAP - PRIOR (r1 review).
++t0=$(date +%s); soft=$(( t0 + $($PY -c "print(int(3600*(float('$CAP')-float('$PRIOR'))/float('$MAXCPH')))") )); hard=$(( t0 + $($PY -c "print(int(3600*(float('$CAP')*float('$HARD')-float('$PRIOR'))/float('$MAXCPH')))") ))
++nohup $PY podctl.py watchdog $NAME $hard "$DONE" >> logs_c_$TAG/watchdog.log 2>&1 &
+ wd=$!; echo $wd > "$P/$NAME.wdpid"; disown
+ sleep 1; kill -0 "$wd" 2>/dev/null || { state="WATCHDOG DID NOT START"; exit 1; }
+ # One creation request at a time (create_one.py, no hidden retries). Before EVERY request: reconciliation must succeed (no
+@@ -127,7 +134,7 @@
+   [ "$tfirst" -gt 0 ] || tfirst=$(date +%s)
+   cph=0; id=""
+   { echo pending > "$P/$NAME.request" && grep -qx pending "$P/$NAME.request"; } || { state="CANNOT WRITE $NAME.request BEFORE REQUEST $((req+1))"; exit 1; }
+-  req=$((req+1))
++  req=$((req+1)); rq0=$(date +%s)   # billing may start with the request (r1 review): every charge counts from here
+   out=$(tmo 120 $PY create_one.py $NAME $(( (req-1) % 12 )) 2>/dev/null | tail -n 1)
+   id=$(echo "$out" | $PY -c 'import sys,json; print(json.loads(sys.stdin.read()).get("id",""))' 2>/dev/null)
+   amb=$(echo "$out" | $PY -c 'import sys,json; d=json.loads(sys.stdin.read() or "{}"); print(1 if d.get("ambiguous", True) else 0)' 2>/dev/null || echo 1)
+@@ -136,7 +143,7 @@
+     echo clear > "$P/$NAME.request"; continue
+   fi
+   echo clear > "$P/$NAME.request"
+-  v=16; echo "$id $(date +%s) start" >> "$ATT"
++  v=16; a0=$rq0; echo "$id $rq0 start" >> "$ATT"
+   # Only a finite positive price at or below the ceiling is accepted; otherwise (above, missing, null, zero, failed
+   # listing, timeout) the pod is deleted at once, with no retrieval (r15); the balance difference records what it cost.
+   cph=$(tmo 60 $PY podctl.py price $id 2>/dev/null) || cph=""
+@@ -144,7 +151,7 @@
+     state="PRICE ${cph:-unknown} NOT IN (0, $MAXCPH]"; echo "$(date +%H:%M) $id: $state; deleting"
+     $PY podctl.py delete $id 600 && { echo "$id $(date +%s) deleted" >> "$ATT"; id=""; }; exit 1
+   fi
+-  a0=$(date +%s); up=""; while [ "$(date +%s)" -lt "$soft" ] && [ $(( $(date +%s) - a0 )) -lt 240 ]; do r=$(tmo 30 $PY runpod.py ssh $id 'echo up' 2>/dev/null | head -c 2); [ "$r" = up ] && { up=1; break; }; sleep 10; done
++  u0=$(date +%s); up=""; while [ "$(date +%s)" -lt "$soft" ] && [ $(( $(date +%s) - u0 )) -lt 240 ]; do r=$(tmo 30 $PY runpod.py ssh $id 'echo up' 2>/dev/null | head -c 2); [ "$r" = up ] && { up=1; break; }; sleep 10; done
+   [ -n "$up" ] && break
+   echo "$(date +%H:%M) $id unreachable; deleting"; $PY podctl.py delete $id 600 || { state="UNREACHABLE POD NOT DELETED"; exit 1; }; echo "$id $(date +%s) deleted" >> "$ATT"; id=""; tries=$((tries+1))
+ done
+@@ -157,25 +164,44 @@
+ echo "$(date +%H:%M) prep: $chk"
+ case "$chk" in *"git=$EXPECT"*"env=unset"*) ;; *) state="PREP FAILED"; exit 1 ;; esac
+ memgb=$(echo "$chk" | sed -n 's/.*memgb=\([0-9]*\).*/\1/p'); [ -n "$memgb" ] && [ "$memgb" -ge "$MINMEM" ] || { state="PREP FAILED (memory ${memgb:-unknown} GB < $MINMEM GB)"; exit 1; }
+-cat > /tmp/r_remote_$TAG.sh <<EOS
++# Charges before this pod, for the driver's cap admission: PRIOR (earlier launches, recorded) plus this launch's
++# deleted attempts at the ceiling MAXCPH (an upper bound; the balance difference records the real spend).
++PRIORT=$($PY - "$ATT" "$MAXCPH" "$PRIOR" <<'PYA'
++import math, sys
++start, tot = {}, float(sys.argv[3])
++for l in open(sys.argv[1]):
++    f = l.split()
++    if len(f) == 3 and f[2] == "start": start[f[0]] = int(f[1])
++    elif len(f) == 3 and f[2] == "deleted" and f[0] in start: tot += (int(f[1]) - start.pop(f[0])) / 3600 * float(sys.argv[2])
++print(math.ceil(tot * 10000) / 10000)   # rounded up, never down (r1 review)
++PYA
++) || { state="PRIOR CHARGES UNKNOWN"; exit 1; }
++RS=$(mktemp "/tmp/${NAME}_remote.XXXXXX") || { state="CANNOT WRITE THE REMOTE SCRIPT"; exit 1; }   # private path (r1 review)
++cat > "$RS" <<EOS
+ #!/bin/bash
++R=\${REMOTE_ROOT:-/root}   # the pod's root; the offline harness runs this script under another root with a stub driver
+ echo "== remote started \$(date +%H:%M)"
+-cd /root/touchstone; export OMP_NUM_THREADS=1 PATH=\$HOME/.local/bin:\$PATH; unset TOUCHSTONE_IDENTITY_SALT; unset TOUCHSTONE_LOCKED
+-B=/root/bundle; A="--src \$B/eval-all --draw \$B/draw/draw.json --instances \$B/draw/instances.json --cfgs \$B/deviation/cfg_linux.json --addendum \$B/report/addendum.json --report \$B/report/report.json"
+-D=docs/revision/followup/reset_followup_v2.py
+-{ [ -e /root/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE gate (cap) \$(date +%H:%M)"; exit 1; }
++cd \$R/touchstone || { echo "== RUN FAILED at setup \$(date +%H:%M)"; exit 1; }; export OMP_NUM_THREADS=1 PATH=\$HOME/.local/bin:\$PATH; unset TOUCHSTONE_IDENTITY_SALT; unset TOUCHSTONE_LOCKED
++B=\$R/bundle; A="--src \$B/eval-all --draw \$B/draw/draw.json --instances \$B/draw/instances.json --cfgs \$B/deviation/cfg_linux.json --addendum \$B/report/addendum.json --started $a0 --usd-per-hour $cph --prior-usd $PRIORT --stop-usd $CAP --require-identical"
++D=docs/revision/churn/churn_v2.py
++{ [ -e \$R/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE gate (cap) \$(date +%H:%M)"; exit 1; }
+ echo "== gate start \$(date +%H:%M)"
+-uv run --frozen python \$D --reproduce --require-identical --out results/v2/followup-gate --workers 1 \$A >> results/logs/r_gate.log 2>&1 || { echo "== GATE FAILED \$(date +%H:%M)"; exit 1; }
++# the gate passes the same cap admission as the stages: a refusal is a stop, a failed gate is GATE FAILED only when the
++# driver says so, and any other error is RUN FAILED (r1 review)
++uv run --frozen python \$D --gate only --out results/v2/followup-churn \$A >> results/logs/c_gate.log 2>&1 || {
++  if tail -n 5 results/logs/c_gate.log | grep -q "stopped between stages"; then echo "== STOPPED BEFORE gate (cap, driver admission) \$(date +%H:%M)"
++  elif tail -n 5 results/logs/c_gate.log | grep -q "the p = 0 gate failed"; then echo "== GATE FAILED \$(date +%H:%M)"
++  else echo "== RUN FAILED at gate \$(date +%H:%M)"; fi; exit 1; }
+ echo "== gate passed (bit-identical) \$(date +%H:%M)"
+ for st in inputs search freeze evaluate doubling diagnostics inventory; do
+-  { [ -e /root/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE \$st (cap) \$(date +%H:%M)"; exit 1; }
+-  w=$v; case \$st in evaluate|doubling|diagnostics) w=$WEVAL ;; esac
+-  echo "== stage \$st start \$(date +%H:%M) workers \$w"
+-  uv run --frozen python \$D --stage \$st --diag-cells 'fresh0@rho0.2|F111|D2|profit' --workers \$w --out results/v2/followup-reset \$A >> results/logs/r_run.log 2>&1 || { echo "== RUN FAILED at \$st \$(date +%H:%M)"; exit 1; }
++  { [ -e \$R/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE \$st (cap) \$(date +%H:%M)"; exit 1; }
++  echo "== stage \$st start \$(date +%H:%M) workers search $v, evaluation at most $WEVAL"
++  uv run --frozen python \$D --stage \$st --workers-search $v --workers-eval $WEVAL --out results/v2/followup-churn \$A >> results/logs/c_run.log 2>&1 || {
++    if tail -n 5 results/logs/c_run.log | grep -q "stopped between stages"; then echo "== STOPPED BEFORE \$st (cap, driver admission) \$(date +%H:%M)"; else echo "== RUN FAILED at \$st \$(date +%H:%M)"; fi; exit 1; }
+ done
+ echo "== RUN OK \$(date +%H:%M)"
+ EOS
+-tmo 120 $PY runpod.py push $id /tmp/r_remote_$TAG.sh /root/r_remote.sh >/dev/null 2>&1 || { state="UPLOAD FAILED (remote script)"; exit 1; }
++tmo 120 $PY runpod.py push $id "$RS" /root/r_remote.sh >/dev/null 2>&1 || { state="UPLOAD FAILED (remote script)"; exit 1; }
+ tmo 120 $PY runpod.py ssh $id "chmod +x /root/r_remote.sh && (nohup /root/r_remote.sh > /root/touchstone/results/logs/r_remote.log 2>&1 < /dev/null &)" >/dev/null 2>&1 || { state="REMOTE START FAILED"; exit 1; }
+ # the run counts as started only when the remote script's first line is in its log (r16)
+ for i in 1 2 3 4 5 6; do sleep 10; tmo 30 $PY runpod.py ssh $id "grep -q 'remote started' /root/touchstone/results/logs/r_remote.log" >/dev/null 2>&1 && { started=1; break; }; done
+@@ -190,7 +216,7 @@
+   echo "$(date +%H:%M) [soft $(( soft - now ))s, hard $(( hard - now ))s] $st" | tail -c 320
+   case "$st" in
+     *"RUN OK"*) state="RUN OK"; rc=0; exit 0 ;;
+-    *"GATE FAILED"*) state="GATE FAILED (not bit-identical; 18 cells not started)"; exit 1 ;;
+-    *"RUN FAILED"*|*"STOPPED BEFORE"*) state="$(echo "$st" | grep -o '== [A-Z].*' | head -c 120)"; exit 1 ;;
++    *"GATE FAILED"*) state="GATE FAILED (the driver reports the p = 0 gate failed: not passing or not bit-identical; churn cells not started)"; exit 1 ;;
++    *"RUN FAILED"*|*"STOPPED BEFORE"*) state="$(echo "$st" | grep -o '== [A-Z].*' | head -c 120 | sed "s/[[:space:]]*\$//")"; exit 1 ;;
+   esac
+ done
+
+hook: PostToolUse
+exec
+/bin/zsh -lc 'nl -ba docs/revision/churn/test_churn_pod_harness.sh; cat /Users/oemer.demirel/Projects/touchstone/results/pods/logs_harness/churn_harness4.log' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+     1	#!/bin/bash
+     2	# Offline harness for churn_pod.sh (derived from test_reset_pod_harness.sh) with podctl.py and create_one.py (no real pods). A fake runpod.py keeps pods, pending
+     3	# (delayed) creations and stuck deletions in state.json; a fake create_one.py makes one request per call. Every fake
+     4	# holds an exclusive lock on state.json for its whole read-modify-write (r15). Each scenario asserts: the pods left (0),
+     5	# the exact number of creation requests, the launcher exit status, the end state (an anchored pattern), that the
+     6	# watchdog ended by itself (unless the scenario expects it to stay, fail-closed) and released the launch lock, and, where
+     7	# stated, a watchdog log line, a launcher output line, and a line that must not appear (NOTOUT).
+     8	set -u; H=$(mktemp -d); cd $H; SRC=/Users/oemer.demirel/Projects/touchstone/results/pods
+     9	sed "s#P=/Users/oemer.demirel/Projects/touchstone/results/pods#P=$H#; s#snapf=\"/Users/oemer.demirel/Projects/touchstone/results/pods/snap_#snapf=\"$H/snap_#" $SRC/churn_pod.sh > churn_pod.sh
+    10	cp $SRC/podctl.py .
+    11	mkdir -p g && (cd g && git init -q && git -c commit.gpgsign=false -c user.email=x@x -c user.name=x commit -q --allow-empty -m x && git -c tag.gpgsign=false tag protocol-v2 && COPYFILE_DISABLE=1 tar --uid 0 --gid 0 -czf ../c.tgz .)
+    12	C=$(git -C g rev-parse HEAD); echo x > b; tar czf b.tgz b; export HC=$C
+    13	# prepared remote outputs with inventories, for the RUN OK scenario
+    14	python3 - <<'EOF'
+    15	import hashlib, json, os
+    16	for d in ("remote/followup-churn/gate-p0", "remote/followup-churn/p0.01", "remote/followup-churn/p0.05"):
+    17	    os.makedirs(d, exist_ok=True); open(f"{d}/r.json", "w").write('{"x": 1}')
+    18	    json.dump({"records": {"r.json": hashlib.sha256(open(f"{d}/r.json", "rb").read()).hexdigest()}}, open(f"{d}/inventory.json", "w"))
+    19	EOF
+    20	cat > runpod.py <<'EOF'
+    21	import fcntl, json, os, shutil, sys
+    22	H = os.path.dirname(os.path.abspath(__file__)); S = os.path.join(H, "state.json")
+    23	L = open(S + ".lock", "w"); fcntl.flock(L, fcntl.LOCK_EX)    # held until exit: one transaction per call
+    24	st = json.load(open(S)); cmd, a = sys.argv[1], sys.argv[2:]; st["log"].append(" ".join([cmd] + a[:1])); rc = 0
+    25	for p in list(st.get("pending", {})):                       # delayed creations appear after a countdown of calls
+    26	    st["pending"][p][1] -= 1
+    27	    if st["pending"][p][1] <= 0: st["pods"][p] = st["pending"].pop(p)[0]
+    28	if cmd == "list":
+    29	    if st.get("fail_list", 0) > 0: st["fail_list"] -= 1; rc = 1; print("error")
+    30	    else: print(json.dumps([{"id": i, "name": n, "costPerHr": st["price"]} for i, n in st["pods"].items()]))
+    31	elif cmd == "balance":
+    32	    if st.get("bal_fail"): rc = 1; print("error")
+    33	    else: print(json.dumps({"balance": 100.0, "spendPerHr": 0}))
+    34	elif cmd == "delete":
+    35	    if st.get("stuck", {}).get(a[0], 0) > 0: st["stuck"][a[0]] -= 1
+    36	    else: st["pods"].pop(a[0], None)
+    37	    print("{}")
+    38	elif cmd == "ssh":
+    39	    c = a[1] if len(a) > 1 else ""
+    40	    down = st.get("down_first") and st.get("created") and a[0] == st["created"][0][0]   # the first pod never answers
+    41	    if not st["up"] or down: rc = 255; print("")
+    42	    elif "git rev-parse" in c: print(f"git={os.environ.get('HC','')} env=unset bundle=6 memgb=64 py=x")
+    43	    elif "tail -c 240" in c: print("== RUN OK" if st.get("runok") else st.get("remote_tail", "== stage search"))
+    44	    else: print("up")
+    45	elif cmd == "push":
+    46	    if st.get("push_fail"): rc = 1; print("exit 1")
+    47	    else:
+    48	        if a[2].endswith("r_remote.sh"): shutil.copy(a[1], os.path.join(H, "pushed_r_remote.sh"))   # kept for the remote checks
+    49	        print("exit 0")
+    50	elif cmd == "pull":
+    51	    src, dst = a[1], a[2]
+    52	    for k in ("followup-churn",):
+    53	        if k in src:
+    54	            shutil.copytree(os.path.join(H, "remote", k), dst, dirs_exist_ok=True)
+    55	            if st.get("corrupt_pulls", 0) > 0:
+    56	                st["corrupt_pulls"] -= 1; open(os.path.join(dst, "p0.01", "r.json"), "w").write("corrupt")
+    57	json.dump(st, open(S, "w")); sys.exit(rc)
+    58	EOF
+    59	cat > create_one.py <<'EOF'
+    60	import fcntl, json, os, signal, subprocess, sys
+    61	S = os.path.join(os.path.dirname(os.path.abspath(__file__)), "state.json")
+    62	L = open(S + ".lock", "w"); fcntl.flock(L, fcntl.LOCK_EX)
+    63	st = json.load(open(S))
+    64	import time
+    65	pid = "pod%d" % (len(st["log"]) + 1); st["log"].append("create " + pid); st.setdefault("created", []).append([pid, time.time()])
+    66	if st.get("delay"): st.setdefault("pending", {})[pid] = [sys.argv[1], st["delay"]]
+    67	else: st["pods"][pid] = sys.argv[1]
+    68	if st.get("stuck_next"): st.setdefault("stuck", {})[pid] = 40; st["stuck_next"] = False
+    69	amb = bool(st.get("lose")); term = bool(st.get("term")); json.dump(st, open(S, "w")); L.close()
+    70	if term:   # a stop during creation (r15): TERM the launcher while this request is outstanding; it answers nothing
+    71	    p = os.getppid(); top = None   # the topmost process running the launcher snapshot (subshells share its command line)
+    72	    while p > 1:
+    73	        cmd = subprocess.run(["ps", "-o", "command=", "-p", str(p)], capture_output=True, text=True).stdout
+    74	        if "snap_churn_pod" in cmd: top = p
+    75	        p = int(subprocess.run(["ps", "-o", "ppid=", "-p", str(p)], capture_output=True, text=True).stdout.strip() or 1)
+    76	    if top: os.kill(top, signal.SIGTERM)
+    77	    sys.exit(1)
+    78	print(json.dumps({"id": "" if amb else pid, "ambiguous": amb, "vcpu": 16}))
+    79	EOF
+    80	fail=0; ran=0; TOTAL=20
+    81	run() { # name state cap creates rc [end-pattern] [watchdog-log-substring] [launcher-output-substring]
+    82	  [ -n "${ONLY:-}" ] && ! echo "$1" | grep -q "$ONLY" && return 0   # smoke runs only; a full run sets no ONLY
+    83	  ran=$((ran+1)); echo "== $1"; echo "$2" > state.json; mkdir -p logs_c_t junk; : > logs_c_t/watchdog.log; : > ts-c-t.wdpid
+    84	  for f in ts-c-t.bal0 ts-c-t.spent ts-c-t.wdend; do [ -e $f ] && mv -- $f junk/$f.$ran; done   # isolation: one launch per scenario
+    85	  [ -n "${PRELOCK:-}" ] && mkdir ts-c-t.launchlock
+    86	  [ -n "${PREBAL:-}" ] && echo "100.0 0.0" > ts-c-t.bal0
+    87	  [ -n "${EMPTYSPENT:-}" ] && : > ts-c-t.spent
+    88	  EXPECT=$C MAXCPH=0.70 HARD=${HARDX:-1.3} PRIOR=${PRIORV:-0} perl -e 'alarm 1500; exec @ARGV' bash churn_pod.sh c.tgz b.tgz t $3 out > run.out 2>&1; lrc=$?
+    89	  out=$(grep -v "^tarball\|code guard" run.out); echo "$out" | tail -3
+    90	  # wait for THIS scenario's watchdog by its PID (r11); the settle while a request is pending is 30 minutes
+    91	  wd=$(cat ts-c-t.wdpid 2>/dev/null); alive=""
+    92	  for i in $(seq 1 ${WAITW:-800}); do [ -n "$wd" ] && kill -0 "$wd" 2>/dev/null || break; sleep 3; done
+    93	  if [ -n "$wd" ] && kill -0 "$wd" 2>/dev/null; then alive=1; kill "$wd"; sleep 1; echo "watchdog $wd still running; stopped"; fi
+    94	  read left creates <<< "$(python3 -c "import json;s=json.load(open('state.json'));print(len(s['pods'])+len(s.get('pending',{})), sum(1 for l in s['log'] if l.startswith('create')))")"
+    95	  echo "pods left: $left, creation requests: $creates (expected $4), exit $lrc (expected $5)"; tail -1 logs_c_t/watchdog.log
+    96	  [ "$left" = 0 ] && [ "$creates" = "$4" ] && [ "$lrc" = "$5" ] || { echo "SCENARIO FAILED"; fail=1; }
+    97	  [ -z "${6:-}" ] || echo "$out" | grep -Eq "^[0-9]{2}:[0-9]{2} end: ($6)\$" || { echo "SCENARIO FAILED (end line is not: $6)"; fail=1; }
+    98	  [ -z "${7:-}" ] || grep -q "$7" logs_c_t/watchdog.log || { echo "SCENARIO FAILED (watchdog log lacks: $7)"; fail=1; }
+    99	  [ -z "${8:-}" ] || echo "$out" | grep -Eq "$8" || { echo "SCENARIO FAILED (launcher output lacks: $8)"; fail=1; }
+   100	  [ -z "${NOTOUT:-}" ] || ! { echo "$out"; cat logs_c_t/watchdog.log; } | grep -q "$NOTOUT" || { echo "SCENARIO FAILED (output contains: $NOTOUT)"; fail=1; }
+   101	  if [ -n "${WD_ALIVE:-}" ]; then [ -n "$alive" ] || { echo "SCENARIO FAILED (the watchdog should have stayed, fail-closed)"; fail=1; }
+   102	  elif [ -n "$alive" ]; then echo "SCENARIO FAILED (the watchdog did not end by itself)"; fail=1; fi
+   103	  if [ -z "${PRELOCK:-}" ] && [ -z "$alive" ] && [ -d ts-c-t.launchlock ]; then echo "SCENARIO FAILED (launch lock not released)"; fail=1; fi
+   104	  [ -z "${PREBAL:-}" ] || [ -e ts-c-t.bal0 ] || { echo "SCENARIO FAILED (the previous spend baseline was not kept)"; fail=1; }
+   105	  python3 podctl.py unlock ts-c-t >/dev/null 2>&1; true; }   # test isolation only (a held or stale lock)
+   106	NOTOUT="pull or verification failed" run "price above the ceiling: deleted at once, no retrieval" '{"pods":{},"price":0.9,"up":true,"log":[]}' 5 1 1 "PRICE 0.9 NOT IN \(0, 0.70\]"
+   107	NOTOUT="pull or verification failed" run "null price: deleted at once (r12)" '{"pods":{},"price":null,"up":true,"log":[]}' 5 1 1 "PRICE unknown NOT IN \(0, 0.70\]"
+   108	run "an ambiguous answer ends creation: one request, no retry" '{"pods":{},"price":0.56,"up":true,"log":[],"lose":true}' 5 1 1 "AMBIGUOUS CREATION ANSWER \(no retry\)" "for 1800s" "UNRESOLVED"
+   109	run "a pod created long after an ambiguous answer (beyond 300 s) is deleted by the watchdog" '{"pods":{},"price":0.56,"up":true,"log":[],"lose":true,"delay":20}' 5 1 1 "AMBIGUOUS CREATION ANSWER \(no retry\)" "WATCHDOG: deleting"
+   110	run "a stop during creation leaves the request pending; the late pod is deleted (r15)" '{"pods":{},"price":0.56,"up":true,"log":[],"term":true,"delay":20}' 5 1 1 "NOT STARTED" "for 1800s" "outstanding or ambiguous"
+   111	HARDX=1.0 run "unreachable pod at the deadline" '{"pods":{},"price":0.56,"up":false,"log":[]}' 0.004 1 1 "CREATION BLOCKED \(hard deadline\)|SOFT DEADLINE BEFORE START|NO POD"
+   112	HARDX=1.0 run "deletion keeps failing: the watchdog deletes after the deadline" '{"pods":{},"price":0.56,"up":false,"log":[],"stuck_next":true}' 0.004 1 1 "UNREACHABLE POD NOT DELETED|CREATION BLOCKED \(hard deadline\)|SOFT DEADLINE BEFORE START|NO POD" "WATCHDOG: deleting"
+   113	WD_ALIVE=1 WAITW=20 run "listing always fails: no creation; the watchdog stays (fail-closed)" '{"pods":{},"price":0.56,"up":true,"log":[],"fail_list":1000000}' 5 0 1 "RECONCILE FAILED BEFORE REQUEST 1"
+   114	PRELOCK=1 run "a held launch lock refuses the launch (r15)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 5 0 1 "" "" "^LOCKED: ts-c-t.launchlock exists"
+   115	PREBAL=1 run "an unrecorded previous spend refuses the launch and keeps its baseline (r16)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 5 0 1 "" "" "^refused: the previous launch's spend is not recorded"
+   116	PREBAL=1 EMPTYSPENT=1 run "an empty spend record does not count as recorded (r17)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 5 0 1 "" "" "^refused: the previous launch's spend is not recorded"
+   117	run "unknown balance: no creation, lock released (r16)" '{"pods":{},"price":0.56,"up":true,"log":[],"bal_fail":true}' 5 0 1 "" "" "^refused: account balance unknown$"
+   118	NOTOUT="pull or verification failed" run "upload failure stops the run before it starts (r15)" '{"pods":{},"price":0.56,"up":true,"log":[],"push_fail":true}' 5 1 1 "UPLOAD FAILED \(code\)"
+   119	run "RUN OK with one corrupt pull: retried until verified" '{"pods":{},"price":0.56,"up":true,"log":[],"runok":true,"corrupt_pulls":1}' 5 1 0 "RUN OK" "" "podctl.py spend ts-c-t"
+   120	run "the driver's cap admission stops the run between stages (churn)" '{"pods":{},"price":0.56,"up":true,"log":[],"remote_tail":"== STOPPED BEFORE search (cap, driver admission) 12:00"}' 5 1 1 "== STOPPED BEFORE search \(cap, driver admission\) 12:00"
+   121	PRIORV=-1 run "a negative PRIOR refuses the launch before any marker (churn)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 5 0 1 "" "" "^refused: PRIOR must be a non-negative number"
+   122	PRIORV=inf run "an infinite PRIOR refuses the launch before any marker (churn r1)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 5 0 1 "" "" "^refused: PRIOR must be a non-negative number"
+   123	run "a gate cap refusal is a stop, not a gate failure (churn r1)" '{"pods":{},"price":0.56,"up":true,"log":[],"remote_tail":"== STOPPED BEFORE gate (cap, driver admission) 12:00"}' 5 1 1 "== STOPPED BEFORE gate \(cap, driver admission\) 12:00"
+   124	# Accounting (churn r1): PRIOR 2 of a 5 USD cap, and a first pod that never answers (deleted after 240 s). The deadlines
+   125	# leave CAP - PRIOR and HARD x CAP - PRIOR; --prior-usd is PRIOR plus the deleted attempt from its request time at the
+   126	# ceiling, rounded up; --started is the live pod's request time, not later than its creation.
+   127	PRIORV=2 run "PRIOR and a deleted attempt count against the deadlines and the driver's admission (churn r1)" '{"pods":{},"price":0.56,"up":true,"log":[],"down_first":true,"remote_tail":"== STOPPED BEFORE search (cap, driver admission) 12:00"}' 5 2 1 "== STOPPED BEFORE search \(cap, driver admission\) 12:00"
+   128	python3 - "$H" <<'PYC' || { echo "SCENARIO FAILED (accounting)"; fail=1; }
+   129	import json, re, sys
+   130	H = sys.argv[1]; out = open(f"{H}/run.out").read(); sc = open(f"{H}/pushed_r_remote.sh").read()
+   131	st = json.load(open(f"{H}/state.json")); att = [l.split() for l in open(f"{H}/ts-c-t.attempts")]
+   132	m = re.search(r"soft stop in (\d+)s, hard stop in (\d+)s", out); soft, hard = int(m[1]), int(m[2])
+   133	assert soft <= int(3600 * 3 / 0.70) and hard <= int(3600 * (6.5 - 2) / 0.70), (soft, hard)
+   134	assert soft > int(3600 * 3 / 0.70) - 900, soft                     # less PRIOR, not less something larger
+   135	starts = {f[0]: int(f[1]) for f in att if f[2] == "start"}; dels = {f[0]: int(f[1]) for f in att if f[2] == "deleted"}
+   136	(p1, c1), (p2, c2) = st["created"][0], st["created"][1]
+   137	raw = 2 + (dels[p1] - starts[p1]) / 3600 * 0.70
+   138	prior = float(re.search(r"--prior-usd (\S+)", sc)[1]); started = int(re.search(r"--started (\d+)", sc)[1])
+   139	assert raw <= prior < raw + 0.0002, (prior, raw)
+   140	assert dels[p1] - starts[p1] >= 240 and starts[p1] <= c1, (starts, c1)
+   141	assert started == starts[p2] and started <= c2, (started, starts, c2)
+   142	assert re.search(r"--stop-usd 5 ", sc) and "--require-identical" in sc and "--usd-per-hour 0.56" in sc
+   143	print(f"accounting ok: soft {soft}s, hard {hard}s, prior-usd {prior} (raw {raw:.5f}), started = request time")
+   144	PYC
+   145	# The generated remote script, executed under a scratch root with a stub driver (churn r1): every classification, the
+   146	# driver's calls in order, and the STOP file.
+   147	ran=$((ran+1)); echo "== the generated remote script with a stub driver (churn r1)"
+   148	mkdir -p stubbin junk
+   149	printf '%s\n' '#!/bin/bash' \
+   150	  '# stub for `uv run --frozen python <driver> ...`: logs the call, then acts as $STUB says ("gate=cap", "search=crash", ...)' \
+   151	  'echo "$*" >> "$REMOTE_ROOT/calls.log"' \
+   152	  'what=gate; prev=""; for i in "$@"; do [ "$prev" = "--stage" ] && what=$i; prev=$i; done' \
+   153	  'case " $STUB " in' \
+   154	  '  *" $what=cap "*) echo "SystemExit: churn arm stopped between stages: 4.10 USD billed + 1.00 USD for the next stage would pass the 5.00 USD cap"; exit 1 ;;' \
+   155	  '  *" $what=fail "*) echo "{\"gate_ok\": false}"; echo "churn arm stopped: the p = 0 gate failed"; exit 1 ;;' \
+   156	  '  *" $what=crash "*) echo "Traceback (most recent call last): ValueError"; exit 1 ;;' \
+   157	  'esac; exit 0' > stubbin/uv
+   158	chmod +x stubbin/uv
+   159	rcheck() { # STUB expected-last-line [STOPFILE]
+   160	  rr=$(mktemp -d); mkdir -p $rr/touchstone/results/logs $rr/bundle $rr/.local/bin; cp stubbin/uv $rr/.local/bin/uv; [ -n "${3:-}" ] && touch $rr/STOP
+   161	  last=$(REMOTE_ROOT=$rr HOME=$rr STUB="$1" bash pushed_r_remote.sh 2>&1 | tail -n 1)
+   162	  echo "$last" | grep -Eq "^$2 [0-9]{2}:[0-9]{2}\$" || { echo "SCENARIO FAILED (remote, STUB='$1': last line '$last', expected '$2')"; fail=1; }
+   163	  RCALLS=$(cat $rr/calls.log 2>/dev/null); mv -- $rr junk/rr.$RANDOM; }
+   164	rcheck "gate=cap" "== STOPPED BEFORE gate \(cap, driver admission\)"
+   165	rcheck "gate=fail" "== GATE FAILED"
+   166	rcheck "gate=crash" "== RUN FAILED at gate"
+   167	rcheck "search=cap" "== STOPPED BEFORE search \(cap, driver admission\)"
+   168	rcheck "freeze=crash" "== RUN FAILED at freeze"
+   169	rcheck "" "== STOPPED BEFORE gate \(cap\)" stop
+   170	rcheck "" "== RUN OK"
+   171	python3 - "$RCALLS" <<'PYR' || { echo "SCENARIO FAILED (remote driver calls)"; fail=1; }
+   172	import sys
+   173	c = [l.split() for l in sys.argv[1].splitlines()]
+   174	assert len(c) == 8, len(c)
+   175	assert all(x[:4] == ["run", "--frozen", "python", "docs/revision/churn/churn_v2.py"] for x in c)
+   176	g = " ".join(c[0]); assert "--gate only" in g and "--require-identical" in g and "--out results/v2/followup-churn" in g and "--stage" not in g
+   177	st = [x[x.index("--stage") + 1] for x in c[1:]]; assert st == ["inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory"], st
+   178	for x in c[1:]:
+   179	    j = " ".join(x); assert "--workers-search 16" in j and "--workers-eval 9" in j and "--require-identical" in j and "--out results/v2/followup-churn" in j
+   180	print("remote ok: 7 classifications, gate then 7 stages with the expected flags")
+   181	PYR
+   182	cd /; mv -- $H ~/.Trash/harness_$$
+   183	# a filtered (ONLY) run can never pass: the gate needs every scenario (r16)
+   184	if [ $fail != 0 ]; then echo "HARNESS FAILED"; exit 1; elif [ $ran != $TOTAL ]; then echo "HARNESS PARTIAL ($ran of $TOTAL scenarios ran)"; exit 2; else echo "HARNESS OK ($ran of $TOTAL scenarios)"; fi
+== price above the ceiling: deleted at once, no retrieval
+05:05 spend estimate so far (not a record): 0s at the ceiling 0.70 USD/h = 0.0 USD (pod events in /var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.2ZvG8ZsVjv/ts-c-t.attempts)
+05:05 record the spend with: podctl.py spend ts-c-t (at least 1 h after the watchdog ends; logs_c_t/watchdog.log)
+05:05 end: PRICE 0.9 NOT IN (0, 0.70]
+pods left: 0, creation requests: 1 (expected 1), exit 1 (expected 1)
+05:10 WATCHDOG: no pod named ts-c-t for 300s after the launcher was done; record the spend with `podctl.py spend ts-c-t` from 3600s after now
+== null price: deleted at once (r12)
+05:10 spend estimate so far (not a record): 0s at the ceiling 0.70 USD/h = 0.0 USD (pod events in /var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.2ZvG8ZsVjv/ts-c-t.attempts)
+05:10 record the spend with: podctl.py spend ts-c-t (at least 1 h after the watchdog ends; logs_c_t/watchdog.log)
+05:10 end: PRICE unknown NOT IN (0, 0.70]
+pods left: 0, creation requests: 1 (expected 1), exit 1 (expected 1)
+05:16 WATCHDOG: no pod named ts-c-t for 300s after the launcher was done; record the spend with `podctl.py spend ts-c-t` from 3600s after now
+== an ambiguous answer ends creation: one request, no retry
+05:16 record the spend with: podctl.py spend ts-c-t (at least 1 h after the watchdog ends; logs_c_t/watchdog.log)
+05:16 UNRESOLVED: check the Runpod console the next day before any relaunch (plan step 4)
+05:16 end: AMBIGUOUS CREATION ANSWER (no retry)
+pods left: 0, creation requests: 1 (expected 1), exit 1 (expected 1)
+05:47 WATCHDOG: no pod named ts-c-t for 1800s after the launcher was done; record the spend with `podctl.py spend ts-c-t` from 3600s after now
+== a pod created long after an ambiguous answer (beyond 300 s) is deleted by the watchdog
+05:47 record the spend with: podctl.py spend ts-c-t (at least 1 h after the watchdog ends; logs_c_t/watchdog.log)
+05:47 UNRESOLVED: check the Runpod console the next day before any relaunch (plan step 4)
+05:47 end: AMBIGUOUS CREATION ANSWER (no retry)
+pods left: 0, creation requests: 1 (expected 1), exit 1 (expected 1)
+06:27 WATCHDOG: no pod named ts-c-t for 1800s after the launcher was done; record the spend with `podctl.py spend ts-c-t` from 3600s after now
+== a stop during creation leaves the request pending; the late pod is deleted (r15)
+06:27 record the spend with: podctl.py spend ts-c-t (at least 1 h after the watchdog ends; logs_c_t/watchdog.log)
+06:27 UNRESOLVED: check the Runpod console the next day before any relaunch (plan step 4)
+06:27 end: NOT STARTED
+pods left: 0, creation requests: 1 (expected 1), exit 1 (expected 1)
+07:07 WATCHDOG: no pod named ts-c-t for 1800s after the launcher was done; record the spend with `podctl.py spend ts-c-t` from 3600s after now
+== unreachable pod at the deadline
+07:07 spend estimate so far (not a record): 21s at the ceiling 0.70 USD/h = 0.005 USD (pod events in /var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.2ZvG8ZsVjv/ts-c-t.attempts)
+07:07 record the spend with: podctl.py spend ts-c-t (at least 1 h after the watchdog ends; logs_c_t/watchdog.log)
+07:07 end: CREATION BLOCKED (hard deadline)
+pods left: 0, creation requests: 1 (expected 1), exit 1 (expected 1)
+07:13 WATCHDOG: no pod named ts-c-t for 300s after the launcher was done; record the spend with `podctl.py spend ts-c-t` from 3600s after now
+== deletion keeps failing: the watchdog deletes after the deadline
+07:18 spend estimate so far (not a record): 352s at the ceiling 0.70 USD/h = 0.069 USD (pod events in /var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.2ZvG8ZsVjv/ts-c-t.attempts)
+07:18 record the spend with: podctl.py spend ts-c-t (at least 1 h after the watchdog ends; logs_c_t/watchdog.log)
+07:18 end: CREATION BLOCKED (hard deadline)
+pods left: 0, creation requests: 1 (expected 1), exit 1 (expected 1)
+07:24 WATCHDOG: no pod named ts-c-t for 300s after the launcher was done; record the spend with `podctl.py spend ts-c-t` from 3600s after now
+== listing always fails: no creation; the watchdog stays (fail-closed)
+07:44 reconcile failed; the watchdog keeps trying
+07:44 UNRESOLVED: check the Runpod console the next day before any relaunch (plan step 4)
+07:44 end: RECONCILE FAILED BEFORE REQUEST 1
+watchdog 94634 still running; stopped
+pods left: 0, creation requests: 0 (expected 0), exit 1 (expected 1)
+== a held launch lock refuses the launch (r15)
+LOCKED: ts-c-t.launchlock exists (another launch or its watchdog still runs; remove it only after checking)
+pods left: 0, creation requests: 0 (expected 0), exit 1 (expected 1)
+== an unrecorded previous spend refuses the launch and keeps its baseline (r16)
+refused: the previous launch's spend is not recorded (podctl.py spend ts-c-t)
+pods left: 0, creation requests: 0 (expected 0), exit 1 (expected 1)
+== an empty spend record does not count as recorded (r17)
+refused: the previous launch's spend is not recorded (podctl.py spend ts-c-t)
+pods left: 0, creation requests: 0 (expected 0), exit 1 (expected 1)
+== unknown balance: no creation, lock released (r16)
+refused: account balance unknown
+pods left: 0, creation requests: 0 (expected 0), exit 1 (expected 1)
+== upload failure stops the run before it starts (r15)
+07:45 spend estimate so far (not a record): 1s at the ceiling 0.70 USD/h = 0.001 USD (pod events in /var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.2ZvG8ZsVjv/ts-c-t.attempts)
+07:45 record the spend with: podctl.py spend ts-c-t (at least 1 h after the watchdog ends; logs_c_t/watchdog.log)
+07:45 end: UPLOAD FAILED (code)
+pods left: 0, creation requests: 1 (expected 1), exit 1 (expected 1)
+07:51 WATCHDOG: no pod named ts-c-t for 300s after the launcher was done; record the spend with `podctl.py spend ts-c-t` from 3600s after now
+== RUN OK with one corrupt pull: retried until verified
+07:54 spend estimate so far (not a record): 191s at the ceiling 0.70 USD/h = 0.038 USD (pod events in /var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.2ZvG8ZsVjv/ts-c-t.attempts)
+07:54 record the spend with: podctl.py spend ts-c-t (at least 1 h after the watchdog ends; logs_c_t/watchdog.log)
+07:54 end: RUN OK
+pods left: 0, creation requests: 1 (expected 1), exit 0 (expected 0)
+07:59 WATCHDOG: no pod named ts-c-t for 300s after the launcher was done; record the spend with `podctl.py spend ts-c-t` from 3600s after now
+== the driver's cap admission stops the run between stages (churn)
+08:01 spend estimate so far (not a record): 131s at the ceiling 0.70 USD/h = 0.026 USD (pod events in /var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.2ZvG8ZsVjv/ts-c-t.attempts)
+08:01 record the spend with: podctl.py spend ts-c-t (at least 1 h after the watchdog ends; logs_c_t/watchdog.log)
+08:01 end: == STOPPED BEFORE search (cap, driver admission) 12:00
+pods left: 0, creation requests: 1 (expected 1), exit 1 (expected 1)
+08:07 WATCHDOG: no pod named ts-c-t for 300s after the launcher was done; record the spend with `podctl.py spend ts-c-t` from 3600s after now
+== a negative PRIOR refuses the launch before any marker (churn)
+refused: PRIOR must be a non-negative number
+pods left: 0, creation requests: 0 (expected 0), exit 1 (expected 1)
+== an infinite PRIOR refuses the launch before any marker (churn r1)
+refused: PRIOR must be a non-negative number
+pods left: 0, creation requests: 0 (expected 0), exit 1 (expected 1)
+== a gate cap refusal is a stop, not a gate failure (churn r1)
+08:09 spend estimate so far (not a record): 131s at the ceiling 0.70 USD/h = 0.026 USD (pod events in /var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.2ZvG8ZsVjv/ts-c-t.attempts)
+08:09 record the spend with: podctl.py spend ts-c-t (at least 1 h after the watchdog ends; logs_c_t/watchdog.log)
+08:09 end: == STOPPED BEFORE gate (cap, driver admission) 12:00
+pods left: 0, creation requests: 1 (expected 1), exit 1 (expected 1)
+08:23 WATCHDOG: no pod named ts-c-t for 300s after the launcher was done; record the spend with `podctl.py spend ts-c-t` from 3600s after now
+== PRIOR and a deleted attempt count against the deadlines and the driver's admission (churn r1)
+08:51 spend estimate so far (not a record): 1658s at the ceiling 0.70 USD/h = 0.323 USD (pod events in /var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.2ZvG8ZsVjv/ts-c-t.attempts)
+08:51 record the spend with: podctl.py spend ts-c-t (at least 1 h after the watchdog ends; logs_c_t/watchdog.log)
+08:51 end: == STOPPED BEFORE search (cap, driver admission) 12:00
+pods left: 0, creation requests: 2 (expected 2), exit 1 (expected 1)
+08:56 WATCHDOG: no pod named ts-c-t for 300s after the launcher was done; record the spend with `podctl.py spend ts-c-t` from 3600s after now
+accounting ok: soft 15090s, hard 22804s, prior-usd 2.0654 (raw 2.06533), started = request time
+== the generated remote script with a stub driver (churn r1)
+remote ok: 7 classifications, gate then 7 stages with the expected flags
+HARNESS OK (20 of 20 scenarios)
+
+hook: PostToolUse
+exec
+/bin/zsh -lc 'cat docs/revision/roster/sol-churn-launcher-r1.md docs/revision/roster/astra-churn-launcher-r1.md; git diff 4d963a3 -- docs/revision/churn/' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+VERDICT: reject
+
+CORRECTIONS:
+1. docs/revision/churn/churn_pod.sh:116 — The deadlines ignore PRIOR. With PRIOR=3, the watchdog permits another 10.40 USD, so the arm’s bound becomes 13.40 USD. Subtract recorded prior spend from the remaining soft and hard allowances, or reserve the larger cumulative bound. Ruling 1 holds for a fresh launch only.
+
+2. docs/revision/churn/churn_pod.sh:143 — Attempt accounting starts after creation returns; `--started` uses `a0`, set after the price check at line 151. Both omit potentially billed time. Record a conservative start immediately before each creation request. Use it for deleted-attempt charges and the current driver’s `--started`. Ruling 2’s formula is correct, but its timestamps undercount.
+
+3. docs/revision/churn/churn_pod.sh:184 — A gate-stage cap refusal becomes `GATE FAILED`, then “not bit-identical” at line 209. A read-only reproduction confirmed this with PRIOR=7.90. Apply the cap-refusal classification to `c_gate.log` and report `STOPPED BEFORE gate (cap, driver admission)`. Ruling 3 is incomplete.
+
+4. docs/revision/churn/churn_pod.sh:176 — `/tmp/r_remote_$TAG.sh` collides with the reset launcher’s temporary script. Their different launch locks permit concurrent launches with the same TAG; either can upload the other’s script. Use a private temporary path that includes NAME and a unique suffix.
+
+5. docs/revision/churn/test_churn_pod_harness.sh:116 — The new cap scenario supplies the final status text through `remote_tail`; it does not execute driver admission or log classification. Add tests for the generated remote script, gate cap refusal, prior/deleted-attempt accounting, and separate temporary paths. The saved log reports 16/16 passes; shell syntax and installed-copy equality pass. I did not rerun the file-writing harness under the read-only constraint.
+
+CONFIDENCE: 0.95.VERDICT: reject
+
+CORRECTIONS:
+1. `docs/revision/churn/churn_pod.sh:151`: Fix the billing start time. `a0` is set after the price check; attempt records also start after creation returns (`:143`). Capture each request’s start time before creation and use it conservatively for both accounting paths. Keep CAP=8 and PRIOR plus deleted-attempt charges, but do not round charges downward (`:173`). An isolated check confirmed that the omitted time can change a cap refusal into admission.
+2. `docs/revision/churn/churn_pod.sh:184`: Classify gate cap refusals too. The gate calls the same admission function, but every nonzero exit becomes “GATE FAILED,” then “not bit-identical” (`:209`). Report cap refusals as STOPPED; report other execution errors as RUN FAILED. Claim an identity mismatch only when the gate result establishes it.
+3. `docs/revision/churn/test_churn_pod_harness.sh:116`: Test the generated remote script with a stub driver. This scenario injects the final STOPPED message through fake SSH (`:42`); it never exercises the driver invocation or five-line matcher. Add gate and stage cap refusals, ordinary failures, positive PRIOR, and failed-attempt accounting. The supplied log reports 16/16 passes; I did not rerun the write-producing harness under the read-only constraint. The launcher copies match, shell syntax passes, and all three inventory paths match the driver.
+4. `docs/revision/churn/churn_pod.sh:25`: Require finite PRIOR. Positive infinity currently passes validation and allows pod creation before the driver refuses admission.
+5. `docs/revision/churn/churn-plan.md:224`: Replace the obsolete 5.54 USD reservation instruction with the approved 10.40 USD reservation. Update `:239` to describe account-balance spend records and ceiling-based attempt estimates. The ledger already records 10.40 USD correctly.
+
+CONFIDENCE: 0.97.diff --git a/docs/revision/churn/churn-plan.md b/docs/revision/churn/churn-plan.md
+index 0590ddd..684d595 100644
+--- a/docs/revision/churn/churn-plan.md
++++ b/docs/revision/churn/churn-plan.md
+@@ -217,12 +217,12 @@ of 9; the doubling as one serial preflight task plus 17 jobs in two waves of 9;
+ 0.6 hours of preparation and idle: **6.88 hours, 3.85 USD** (5.95 hours and 3.33 USD without the serial preflight tasks).
+ If the preflight cuts the evaluation workers to 2, the same arithmetic gives 12.44 hours, 6.97 USD, still below the
+ stop cap; the admission after each preflight recomputes the stage cost at the chosen workers. The serial tasks add
+-billed time, not core-hours, so the reservation below (4.43 USD unpadded, 5.54 USD reserved) still covers the expected
+-3.85 USD.
++billed time, not core-hours, so the reservation below still covers the expected 3.85 USD.
+ 
+ **Budget** (author, 2026-11-10). The arm uses the shared ledger category `followup` (cap 22 USD for all follow-up runs).
+-Before the pod: `docs/revision/followup/budget_followup.py --reserve churn-pod 4.43` (the unpadded estimate; the
+-wrapper reserves 4.43 x 1.25 = 5.54 USD). **Stop cap 8.00 USD, an estimate-based stage-admission limit.** No running
++Before the pod: `docs/revision/followup/budget_followup.py --reserve churn-pod 8.32` (amended 2026-11-12, launcher review
++r1: the wrapper reserves 8.32 x 1.25 = 10.40 USD, the watchdog bound of 1.3 x the stop cap; the earlier 4.43 USD
++estimate padded to 5.54 USD would not cover that bound). **Stop cap 8.00 USD, an estimate-based stage-admission limit.** No running
+ stage is ever killed (author, 2026-11-10): before each stage the driver adds the pod time billed since allocation at the
+ pod's actual hourly price, the charges of earlier failed attempts, and the stage's estimate, and stops between stages
+ if the sum would pass the cap, then reports. Production runs refuse to start without `--started` (the allocation time)
+@@ -236,10 +236,12 @@ stages, each started only if no STOP file exists and the soft deadline has not p
+ the ceiling, net of earlier attempts' charges); at the soft deadline it writes STOP, so the pod stops after the running
+ stage. **The one exception to "no running stage is killed":** the `podctl.py` watchdog deletes the pod at 1.3 times the
+ cap at the price ceiling (10.40 USD at most for this arm), also mid-stage, as an absolute guard against a hung pod. Spend
+-is recorded per attempt (pod id, start, end, recorded price) in the launcher's attempts file, which persists across
+-launches; the summary gives the spend at the recorded prices and the bound at the ceiling. The launcher passes to the
+-driver the current attempt's allocation time, the recorded price, and the earlier attempts' charges at their recorded
+-prices. An EXIT, INT or TERM trap pulls the records, verifies them against the inventories, deletes the pod, and
++(amended 2026-11-12, launcher review r1) is recorded as the account balance difference (`podctl.py spend NAME`, at
++least an hour after the watchdog ends); the launcher prints only estimates. Its attempts file holds each pod's id,
++request time and deletion time. The launcher passes to the driver the live pod's request time as `--started`, its
++actual price, and as `--prior-usd` the operator's `PRIOR` (recorded spend of earlier launches of this arm) plus this
++launch's deleted attempts charged at the ceiling from their request times, rounded up. Both deadlines are net of
++`PRIOR`, so the 10.40 USD bound holds across launches. An EXIT, INT or TERM trap pulls the records, verifies them against the inventories, deletes the pod, and
+ verifies the deletion; the watchdog keeps deleting until no pod of this name remains.
+ 
+ ## 8. Steps
+diff --git a/docs/revision/churn/churn_pod.sh b/docs/revision/churn/churn_pod.sh
+index fff77f3..503bcaf 100644
+--- a/docs/revision/churn/churn_pod.sh
++++ b/docs/revision/churn/churn_pod.sh
+@@ -22,7 +22,9 @@ PY=/opt/homebrew/bin/python3; P=/Users/oemer.demirel/Projects/touchstone/results
+ TGZ=${1:?code tarball}; BTGZ=${2:?bundle tarball}; TAG=${3:?tag}; CAP=${4:?cap_usd}; LOUT=${5:?local_out}; cd $P
+ case "$TGZ$BTGZ$TAG$LOUT" in *[[:space:]]*) echo "refused: a path or tag contains whitespace"; exit 1 ;; esac
+ EXPECT=${EXPECT:?commit}; MAXCPH=${MAXCPH:?max usd per hour}; WEVAL=${WEVAL:-9}; MINMEM=${MINMEM:-28}; HARD=${HARD:-1.3}; PRIOR=${PRIOR:-0}
+-$PY -c "import sys; sys.exit(0 if float(sys.argv[1]) >= 0 else 1)" "$PRIOR" 2>/dev/null || { echo "refused: PRIOR must be a non-negative number"; exit 1; }
++$PY -c "import math,sys; x=float(sys.argv[1]); sys.exit(0 if math.isfinite(x) and x >= 0 else 1)" "$PRIOR" 2>/dev/null || { echo "refused: PRIOR must be a non-negative number"; exit 1; }
++# PRIOR counts against both deadlines (r1 review), so the arm's bound stays HARD x CAP across launches.
++$PY -c "import sys; sys.exit(0 if float(sys.argv[1]) < float(sys.argv[2]) else 1)" "$PRIOR" "$CAP" 2>/dev/null || { echo "refused: PRIOR must be below the cap"; exit 1; }
+ mkdir -p "$LOUT" logs_c_$TAG
+ $PY -c "import sys,tarfile; ms=tarfile.open(sys.argv[1]).getmembers(); d=[m.name for m in ms if m.name.split('/')[-1].startswith('._')]; o=[m.name for m in ms if m.uid!=0]; print('tarball guard: %d AppleDouble, %d non-root' % (len(d),len(o))); sys.exit(1 if d or o else 0)" "$TGZ" || { echo "code tarball refused"; exit 1; }
+ hg=$(mktemp -d); tar xzf "$TGZ" -C "$hg" 2>/dev/null || { echo "code tarball refused: cannot unpack"; exit 1; }
+@@ -112,8 +114,9 @@ cleanup() {
+   exit $rc
+ }
+ trap cleanup EXIT INT TERM
+-# Deadlines from the first creation request at the price ceiling MAXCPH (a bound across attempts).
+-t0=$(date +%s); soft=$(( t0 + $($PY -c "print(int(3600*float('$CAP')/float('$MAXCPH')))") )); hard=$(( t0 + $($PY -c "print(int(3600*float('$CAP')*float('$HARD')/float('$MAXCPH')))") ))
++# Deadlines from the first creation request at the price ceiling MAXCPH (a bound across attempts), less PRIOR: the
++# soft deadline leaves CAP - PRIOR, the hard deadline HARD x CAP - PRIOR (r1 review).
++t0=$(date +%s); soft=$(( t0 + $($PY -c "print(int(3600*(float('$CAP')-float('$PRIOR'))/float('$MAXCPH')))") )); hard=$(( t0 + $($PY -c "print(int(3600*(float('$CAP')*float('$HARD')-float('$PRIOR'))/float('$MAXCPH')))") ))
+ nohup $PY podctl.py watchdog $NAME $hard "$DONE" >> logs_c_$TAG/watchdog.log 2>&1 &
+ wd=$!; echo $wd > "$P/$NAME.wdpid"; disown
+ sleep 1; kill -0 "$wd" 2>/dev/null || { state="WATCHDOG DID NOT START"; exit 1; }
+@@ -131,7 +134,7 @@ while [ $tries -lt 3 ] && [ $req -lt 36 ]; do
+   [ "$tfirst" -gt 0 ] || tfirst=$(date +%s)
+   cph=0; id=""
+   { echo pending > "$P/$NAME.request" && grep -qx pending "$P/$NAME.request"; } || { state="CANNOT WRITE $NAME.request BEFORE REQUEST $((req+1))"; exit 1; }
+-  req=$((req+1))
++  req=$((req+1)); rq0=$(date +%s)   # billing may start with the request (r1 review): every charge counts from here
+   out=$(tmo 120 $PY create_one.py $NAME $(( (req-1) % 12 )) 2>/dev/null | tail -n 1)
+   id=$(echo "$out" | $PY -c 'import sys,json; print(json.loads(sys.stdin.read()).get("id",""))' 2>/dev/null)
+   amb=$(echo "$out" | $PY -c 'import sys,json; d=json.loads(sys.stdin.read() or "{}"); print(1 if d.get("ambiguous", True) else 0)' 2>/dev/null || echo 1)
+@@ -140,7 +143,7 @@ while [ $tries -lt 3 ] && [ $req -lt 36 ]; do
+     echo clear > "$P/$NAME.request"; continue
+   fi
+   echo clear > "$P/$NAME.request"
+-  v=16; echo "$id $(date +%s) start" >> "$ATT"
++  v=16; a0=$rq0; echo "$id $rq0 start" >> "$ATT"
+   # Only a finite positive price at or below the ceiling is accepted; otherwise (above, missing, null, zero, failed
+   # listing, timeout) the pod is deleted at once, with no retrieval (r15); the balance difference records what it cost.
+   cph=$(tmo 60 $PY podctl.py price $id 2>/dev/null) || cph=""
+@@ -148,7 +151,7 @@ while [ $tries -lt 3 ] && [ $req -lt 36 ]; do
+     state="PRICE ${cph:-unknown} NOT IN (0, $MAXCPH]"; echo "$(date +%H:%M) $id: $state; deleting"
+     $PY podctl.py delete $id 600 && { echo "$id $(date +%s) deleted" >> "$ATT"; id=""; }; exit 1
+   fi
+-  a0=$(date +%s); up=""; while [ "$(date +%s)" -lt "$soft" ] && [ $(( $(date +%s) - a0 )) -lt 240 ]; do r=$(tmo 30 $PY runpod.py ssh $id 'echo up' 2>/dev/null | head -c 2); [ "$r" = up ] && { up=1; break; }; sleep 10; done
++  u0=$(date +%s); up=""; while [ "$(date +%s)" -lt "$soft" ] && [ $(( $(date +%s) - u0 )) -lt 240 ]; do r=$(tmo 30 $PY runpod.py ssh $id 'echo up' 2>/dev/null | head -c 2); [ "$r" = up ] && { up=1; break; }; sleep 10; done
+   [ -n "$up" ] && break
+   echo "$(date +%H:%M) $id unreachable; deleting"; $PY podctl.py delete $id 600 || { state="UNREACHABLE POD NOT DELETED"; exit 1; }; echo "$id $(date +%s) deleted" >> "$ATT"; id=""; tries=$((tries+1))
+ done
+@@ -164,34 +167,41 @@ memgb=$(echo "$chk" | sed -n 's/.*memgb=\([0-9]*\).*/\1/p'); [ -n "$memgb" ] &&
+ # Charges before this pod, for the driver's cap admission: PRIOR (earlier launches, recorded) plus this launch's
+ # deleted attempts at the ceiling MAXCPH (an upper bound; the balance difference records the real spend).
+ PRIORT=$($PY - "$ATT" "$MAXCPH" "$PRIOR" <<'PYA'
+-import sys
++import math, sys
+ start, tot = {}, float(sys.argv[3])
+ for l in open(sys.argv[1]):
+     f = l.split()
+     if len(f) == 3 and f[2] == "start": start[f[0]] = int(f[1])
+     elif len(f) == 3 and f[2] == "deleted" and f[0] in start: tot += (int(f[1]) - start.pop(f[0])) / 3600 * float(sys.argv[2])
+-print(round(tot, 4))
++print(math.ceil(tot * 10000) / 10000)   # rounded up, never down (r1 review)
+ PYA
+ ) || { state="PRIOR CHARGES UNKNOWN"; exit 1; }
+-cat > /tmp/r_remote_$TAG.sh <<EOS
++RS=$(mktemp "/tmp/${NAME}_remote.XXXXXX") || { state="CANNOT WRITE THE REMOTE SCRIPT"; exit 1; }   # private path (r1 review)
++cat > "$RS" <<EOS
+ #!/bin/bash
++R=\${REMOTE_ROOT:-/root}   # the pod's root; the offline harness runs this script under another root with a stub driver
+ echo "== remote started \$(date +%H:%M)"
+-cd /root/touchstone; export OMP_NUM_THREADS=1 PATH=\$HOME/.local/bin:\$PATH; unset TOUCHSTONE_IDENTITY_SALT; unset TOUCHSTONE_LOCKED
+-B=/root/bundle; A="--src \$B/eval-all --draw \$B/draw/draw.json --instances \$B/draw/instances.json --cfgs \$B/deviation/cfg_linux.json --addendum \$B/report/addendum.json --started $a0 --usd-per-hour $cph --prior-usd $PRIORT --stop-usd $CAP --require-identical"
++cd \$R/touchstone || { echo "== RUN FAILED at setup \$(date +%H:%M)"; exit 1; }; export OMP_NUM_THREADS=1 PATH=\$HOME/.local/bin:\$PATH; unset TOUCHSTONE_IDENTITY_SALT; unset TOUCHSTONE_LOCKED
++B=\$R/bundle; A="--src \$B/eval-all --draw \$B/draw/draw.json --instances \$B/draw/instances.json --cfgs \$B/deviation/cfg_linux.json --addendum \$B/report/addendum.json --started $a0 --usd-per-hour $cph --prior-usd $PRIORT --stop-usd $CAP --require-identical"
+ D=docs/revision/churn/churn_v2.py
+-{ [ -e /root/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE gate (cap) \$(date +%H:%M)"; exit 1; }
++{ [ -e \$R/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE gate (cap) \$(date +%H:%M)"; exit 1; }
+ echo "== gate start \$(date +%H:%M)"
+-uv run --frozen python \$D --gate only --out results/v2/followup-churn \$A >> results/logs/c_gate.log 2>&1 || { echo "== GATE FAILED \$(date +%H:%M)"; exit 1; }
++# the gate passes the same cap admission as the stages: a refusal is a stop, a failed gate is GATE FAILED only when the
++# driver says so, and any other error is RUN FAILED (r1 review)
++uv run --frozen python \$D --gate only --out results/v2/followup-churn \$A >> results/logs/c_gate.log 2>&1 || {
++  if tail -n 5 results/logs/c_gate.log | grep -q "stopped between stages"; then echo "== STOPPED BEFORE gate (cap, driver admission) \$(date +%H:%M)"
++  elif tail -n 5 results/logs/c_gate.log | grep -q "the p = 0 gate failed"; then echo "== GATE FAILED \$(date +%H:%M)"
++  else echo "== RUN FAILED at gate \$(date +%H:%M)"; fi; exit 1; }
+ echo "== gate passed (bit-identical) \$(date +%H:%M)"
+ for st in inputs search freeze evaluate doubling diagnostics inventory; do
+-  { [ -e /root/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE \$st (cap) \$(date +%H:%M)"; exit 1; }
++  { [ -e \$R/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE \$st (cap) \$(date +%H:%M)"; exit 1; }
+   echo "== stage \$st start \$(date +%H:%M) workers search $v, evaluation at most $WEVAL"
+   uv run --frozen python \$D --stage \$st --workers-search $v --workers-eval $WEVAL --out results/v2/followup-churn \$A >> results/logs/c_run.log 2>&1 || {
+     if tail -n 5 results/logs/c_run.log | grep -q "stopped between stages"; then echo "== STOPPED BEFORE \$st (cap, driver admission) \$(date +%H:%M)"; else echo "== RUN FAILED at \$st \$(date +%H:%M)"; fi; exit 1; }
+ done
+ echo "== RUN OK \$(date +%H:%M)"
+ EOS
+-tmo 120 $PY runpod.py push $id /tmp/r_remote_$TAG.sh /root/r_remote.sh >/dev/null 2>&1 || { state="UPLOAD FAILED (remote script)"; exit 1; }
++tmo 120 $PY runpod.py push $id "$RS" /root/r_remote.sh >/dev/null 2>&1 || { state="UPLOAD FAILED (remote script)"; exit 1; }
+ tmo 120 $PY runpod.py ssh $id "chmod +x /root/r_remote.sh && (nohup /root/r_remote.sh > /root/touchstone/results/logs/r_remote.log 2>&1 < /dev/null &)" >/dev/null 2>&1 || { state="REMOTE START FAILED"; exit 1; }
+ # the run counts as started only when the remote script's first line is in its log (r16)
+ for i in 1 2 3 4 5 6; do sleep 10; tmo 30 $PY runpod.py ssh $id "grep -q 'remote started' /root/touchstone/results/logs/r_remote.log" >/dev/null 2>&1 && { started=1; break; }; done
+@@ -206,7 +216,7 @@ while true; do
+   echo "$(date +%H:%M) [soft $(( soft - now ))s, hard $(( hard - now ))s] $st" | tail -c 320
+   case "$st" in
+     *"RUN OK"*) state="RUN OK"; rc=0; exit 0 ;;
+-    *"GATE FAILED"*) state="GATE FAILED (p = 0 gate not bit-identical; churn cells not started)"; exit 1 ;;
++    *"GATE FAILED"*) state="GATE FAILED (the driver reports the p = 0 gate failed: not passing or not bit-identical; churn cells not started)"; exit 1 ;;
+     *"RUN FAILED"*|*"STOPPED BEFORE"*) state="$(echo "$st" | grep -o '== [A-Z].*' | head -c 120 | sed "s/[[:space:]]*\$//")"; exit 1 ;;
+   esac
+ done
+diff --git a/docs/revision/churn/test_churn_pod_harness.sh b/docs/revision/churn/test_churn_pod_harness.sh
+index 8147974..8e8897b 100644
+--- a/docs/revision/churn/test_churn_pod_harness.sh
++++ b/docs/revision/churn/test_churn_pod_harness.sh
+@@ -37,13 +37,16 @@ elif cmd == "delete":
+     print("{}")
+ elif cmd == "ssh":
+     c = a[1] if len(a) > 1 else ""
+-    if not st["up"]: rc = 255; print("")
++    down = st.get("down_first") and st.get("created") and a[0] == st["created"][0][0]   # the first pod never answers
++    if not st["up"] or down: rc = 255; print("")
+     elif "git rev-parse" in c: print(f"git={os.environ.get('HC','')} env=unset bundle=6 memgb=64 py=x")
+     elif "tail -c 240" in c: print("== RUN OK" if st.get("runok") else st.get("remote_tail", "== stage search"))
+     else: print("up")
+ elif cmd == "push":
+     if st.get("push_fail"): rc = 1; print("exit 1")
+-    else: print("exit 0")
++    else:
++        if a[2].endswith("r_remote.sh"): shutil.copy(a[1], os.path.join(H, "pushed_r_remote.sh"))   # kept for the remote checks
++        print("exit 0")
+ elif cmd == "pull":
+     src, dst = a[1], a[2]
+     for k in ("followup-churn",):
+@@ -58,7 +61,8 @@ import fcntl, json, os, signal, subprocess, sys
+ S = os.path.join(os.path.dirname(os.path.abspath(__file__)), "state.json")
+ L = open(S + ".lock", "w"); fcntl.flock(L, fcntl.LOCK_EX)
+ st = json.load(open(S))
+-pid = "pod%d" % (len(st["log"]) + 1); st["log"].append("create " + pid)
++import time
++pid = "pod%d" % (len(st["log"]) + 1); st["log"].append("create " + pid); st.setdefault("created", []).append([pid, time.time()])
+ if st.get("delay"): st.setdefault("pending", {})[pid] = [sys.argv[1], st["delay"]]
+ else: st["pods"][pid] = sys.argv[1]
+ if st.get("stuck_next"): st.setdefault("stuck", {})[pid] = 40; st["stuck_next"] = False
+@@ -73,7 +77,7 @@ if term:   # a stop during creation (r15): TERM the launcher while this request
+     sys.exit(1)
+ print(json.dumps({"id": "" if amb else pid, "ambiguous": amb, "vcpu": 16}))
+ EOF
+-fail=0; ran=0; TOTAL=16
++fail=0; ran=0; TOTAL=20
+ run() { # name state cap creates rc [end-pattern] [watchdog-log-substring] [launcher-output-substring]
+   [ -n "${ONLY:-}" ] && ! echo "$1" | grep -q "$ONLY" && return 0   # smoke runs only; a full run sets no ONLY
+   ran=$((ran+1)); echo "== $1"; echo "$2" > state.json; mkdir -p logs_c_t junk; : > logs_c_t/watchdog.log; : > ts-c-t.wdpid
+@@ -115,6 +119,66 @@ NOTOUT="pull or verification failed" run "upload failure stops the run before it
+ run "RUN OK with one corrupt pull: retried until verified" '{"pods":{},"price":0.56,"up":true,"log":[],"runok":true,"corrupt_pulls":1}' 5 1 0 "RUN OK" "" "podctl.py spend ts-c-t"
+ run "the driver's cap admission stops the run between stages (churn)" '{"pods":{},"price":0.56,"up":true,"log":[],"remote_tail":"== STOPPED BEFORE search (cap, driver admission) 12:00"}' 5 1 1 "== STOPPED BEFORE search \(cap, driver admission\) 12:00"
+ PRIORV=-1 run "a negative PRIOR refuses the launch before any marker (churn)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 5 0 1 "" "" "^refused: PRIOR must be a non-negative number"
++PRIORV=inf run "an infinite PRIOR refuses the launch before any marker (churn r1)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 5 0 1 "" "" "^refused: PRIOR must be a non-negative number"
++run "a gate cap refusal is a stop, not a gate failure (churn r1)" '{"pods":{},"price":0.56,"up":true,"log":[],"remote_tail":"== STOPPED BEFORE gate (cap, driver admission) 12:00"}' 5 1 1 "== STOPPED BEFORE gate \(cap, driver admission\) 12:00"
++# Accounting (churn r1): PRIOR 2 of a 5 USD cap, and a first pod that never answers (deleted after 240 s). The deadlines
++# leave CAP - PRIOR and HARD x CAP - PRIOR; --prior-usd is PRIOR plus the deleted attempt from its request time at the
++# ceiling, rounded up; --started is the live pod's request time, not later than its creation.
++PRIORV=2 run "PRIOR and a deleted attempt count against the deadlines and the driver's admission (churn r1)" '{"pods":{},"price":0.56,"up":true,"log":[],"down_first":true,"remote_tail":"== STOPPED BEFORE search (cap, driver admission) 12:00"}' 5 2 1 "== STOPPED BEFORE search \(cap, driver admission\) 12:00"
++python3 - "$H" <<'PYC' || { echo "SCENARIO FAILED (accounting)"; fail=1; }
++import json, re, sys
++H = sys.argv[1]; out = open(f"{H}/run.out").read(); sc = open(f"{H}/pushed_r_remote.sh").read()
++st = json.load(open(f"{H}/state.json")); att = [l.split() for l in open(f"{H}/ts-c-t.attempts")]
++m = re.search(r"soft stop in (\d+)s, hard stop in (\d+)s", out); soft, hard = int(m[1]), int(m[2])
++assert soft <= int(3600 * 3 / 0.70) and hard <= int(3600 * (6.5 - 2) / 0.70), (soft, hard)
++assert soft > int(3600 * 3 / 0.70) - 900, soft                     # less PRIOR, not less something larger
++starts = {f[0]: int(f[1]) for f in att if f[2] == "start"}; dels = {f[0]: int(f[1]) for f in att if f[2] == "deleted"}
++(p1, c1), (p2, c2) = st["created"][0], st["created"][1]
++raw = 2 + (dels[p1] - starts[p1]) / 3600 * 0.70
++prior = float(re.search(r"--prior-usd (\S+)", sc)[1]); started = int(re.search(r"--started (\d+)", sc)[1])
++assert raw <= prior < raw + 0.0002, (prior, raw)
++assert dels[p1] - starts[p1] >= 240 and starts[p1] <= c1, (starts, c1)
++assert started == starts[p2] and started <= c2, (started, starts, c2)
++assert re.search(r"--stop-usd 5 ", sc) and "--require-identical" in sc and "--usd-per-hour 0.56" in sc
++print(f"accounting ok: soft {soft}s, hard {hard}s, prior-usd {prior} (raw {raw:.5f}), started = request time")
++PYC
++# The generated remote script, executed under a scratch root with a stub driver (churn r1): every classification, the
++# driver's calls in order, and the STOP file.
++ran=$((ran+1)); echo "== the generated remote script with a stub driver (churn r1)"
++mkdir -p stubbin junk
++printf '%s\n' '#!/bin/bash' \
++  '# stub for `uv run --frozen python <driver> ...`: logs the call, then acts as $STUB says ("gate=cap", "search=crash", ...)' \
++  'echo "$*" >> "$REMOTE_ROOT/calls.log"' \
++  'what=gate; prev=""; for i in "$@"; do [ "$prev" = "--stage" ] && what=$i; prev=$i; done' \
++  'case " $STUB " in' \
++  '  *" $what=cap "*) echo "SystemExit: churn arm stopped between stages: 4.10 USD billed + 1.00 USD for the next stage would pass the 5.00 USD cap"; exit 1 ;;' \
++  '  *" $what=fail "*) echo "{\"gate_ok\": false}"; echo "churn arm stopped: the p = 0 gate failed"; exit 1 ;;' \
++  '  *" $what=crash "*) echo "Traceback (most recent call last): ValueError"; exit 1 ;;' \
++  'esac; exit 0' > stubbin/uv
++chmod +x stubbin/uv
++rcheck() { # STUB expected-last-line [STOPFILE]
++  rr=$(mktemp -d); mkdir -p $rr/touchstone/results/logs $rr/bundle $rr/.local/bin; cp stubbin/uv $rr/.local/bin/uv; [ -n "${3:-}" ] && touch $rr/STOP
++  last=$(REMOTE_ROOT=$rr HOME=$rr STUB="$1" bash pushed_r_remote.sh 2>&1 | tail -n 1)
++  echo "$last" | grep -Eq "^$2 [0-9]{2}:[0-9]{2}\$" || { echo "SCENARIO FAILED (remote, STUB='$1': last line '$last', expected '$2')"; fail=1; }
++  RCALLS=$(cat $rr/calls.log 2>/dev/null); mv -- $rr junk/rr.$RANDOM; }
++rcheck "gate=cap" "== STOPPED BEFORE gate \(cap, driver admission\)"
++rcheck "gate=fail" "== GATE FAILED"
++rcheck "gate=crash" "== RUN FAILED at gate"
++rcheck "search=cap" "== STOPPED BEFORE search \(cap, driver admission\)"
++rcheck "freeze=crash" "== RUN FAILED at freeze"
++rcheck "" "== STOPPED BEFORE gate \(cap\)" stop
++rcheck "" "== RUN OK"
++python3 - "$RCALLS" <<'PYR' || { echo "SCENARIO FAILED (remote driver calls)"; fail=1; }
++import sys
++c = [l.split() for l in sys.argv[1].splitlines()]
++assert len(c) == 8, len(c)
++assert all(x[:4] == ["run", "--frozen", "python", "docs/revision/churn/churn_v2.py"] for x in c)
++g = " ".join(c[0]); assert "--gate only" in g and "--require-identical" in g and "--out results/v2/followup-churn" in g and "--stage" not in g
++st = [x[x.index("--stage") + 1] for x in c[1:]]; assert st == ["inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory"], st
++for x in c[1:]:
++    j = " ".join(x); assert "--workers-search 16" in j and "--workers-eval 9" in j and "--require-identical" in j and "--out results/v2/followup-churn" in j
++print("remote ok: 7 classifications, gate then 7 stages with the expected flags")
++PYR
+ cd /; mv -- $H ~/.Trash/harness_$$
+ # a filtered (ONLY) run can never pass: the gate needs every scenario (r16)
+ if [ $fail != 0 ]; then echo "HARNESS FAILED"; exit 1; elif [ $ran != $TOTAL ]; then echo "HARNESS PARTIAL ($ran of $TOTAL scenarios ran)"; exit 2; else echo "HARNESS OK ($ran of $TOTAL scenarios)"; fi
+
+hook: PostToolUse Completed
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'cat docs/revision/roster/astra-churn-launcher-r1.md; nl -ba docs/revision/churn/churn_pod.sh' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+VERDICT: reject
+
+CORRECTIONS:
+1. `docs/revision/churn/churn_pod.sh:151`: Fix the billing start time. `a0` is set after the price check; attempt records also start after creation returns (`:143`). Capture each request’s start time before creation and use it conservatively for both accounting paths. Keep CAP=8 and PRIOR plus deleted-attempt charges, but do not round charges downward (`:173`). An isolated check confirmed that the omitted time can change a cap refusal into admission.
+2. `docs/revision/churn/churn_pod.sh:184`: Classify gate cap refusals too. The gate calls the same admission function, but every nonzero exit becomes “GATE FAILED,” then “not bit-identical” (`:209`). Report cap refusals as STOPPED; report other execution errors as RUN FAILED. Claim an identity mismatch only when the gate result establishes it.
+3. `docs/revision/churn/test_churn_pod_harness.sh:116`: Test the generated remote script with a stub driver. This scenario injects the final STOPPED message through fake SSH (`:42`); it never exercises the driver invocation or five-line matcher. Add gate and stage cap refusals, ordinary failures, positive PRIOR, and failed-attempt accounting. The supplied log reports 16/16 passes; I did not rerun the write-producing harness under the read-only constraint. The launcher copies match, shell syntax passes, and all three inventory paths match the driver.
+4. `docs/revision/churn/churn_pod.sh:25`: Require finite PRIOR. Positive infinity currently passes validation and allows pod creation before the driver refuses admission.
+5. `docs/revision/churn/churn-plan.md:224`: Replace the obsolete 5.54 USD reservation instruction with the approved 10.40 USD reservation. Update `:239` to describe account-balance spend records and ceiling-based attempt estimates. The ledger already records 10.40 USD correctly.
+
+CONFIDENCE: 0.97.     1	#!/bin/bash
+     2	# Snapshot guard: run a private copy, so an edit to this file cannot reach a running launch.
+     3	if [ -z "${LAUNCH_SNAPSHOT:-}" ]; then
+     4	  snapf="/Users/oemer.demirel/Projects/touchstone/results/pods/snap_$(basename "$0" .sh)_$$.sh"; cp "$0" "$snapf"
+     5	  LAUNCH_SNAPSHOT="$snapf" exec bash "$snapf" "$@"
+     6	fi
+     7	# Honest-churn arm (docs/revision/churn/churn-plan.md, draft 6) on one Runpod CPU pod: generated from reset_pod.sh after
+     8	# its review rounds r9-r18 (pod safety, launch lock, spend records unchanged). Order on the pod: the p = 0 gate through the
+     9	# churn path (bit identity, --require-identical; the author's decision), then the 36 churn cells (two rates) stage by
+    10	# stage (search with all vCPUs; evaluate, doubling and diagnostics with at most WEVAL workers, the driver's memory
+    11	# preflight may choose fewer), then the inventory. The driver also refuses a stage whose admission would pass the cap
+    12	# (allocation time, actual price, and PRIOR plus this launch's failed attempts at the ceiling). Spending (the author: do not kill jobs): at the reserved cap the pod stops BETWEEN stages
+    13	# (a STOP file the remote script reads before each stage); only at HARD x the cap is the pod deleted mid-stage, as an
+    14	# absolute guard. An EXIT/INT/TERM trap pulls what exists (only if the run started), deletes the pod and verifies it.
+    15	# Spend (r16): the record is the account balance difference (podctl.py spend NAME, at least an hour after the watchdog
+    16	# ends); this launcher prints only estimates. One launch per NAME at a time (NAME.launchlock; the watchdog releases it).
+    17	# Usage: churn_pod.sh <code_tgz> <bundle_tgz> <tag> <cap_usd> <local_out>   (no spaces in paths)
+    18	# Env: EXPECT (commit inside the code tarball), MAXCPH, optional WEVAL (default 9), MINMEM (default 28), HARD (default 1.3),
+    19	# PRIOR (USD recorded for earlier launches of this arm, default 0).
+    20	set -u
+    21	PY=/opt/homebrew/bin/python3; P=/Users/oemer.demirel/Projects/touchstone/results/pods
+    22	TGZ=${1:?code tarball}; BTGZ=${2:?bundle tarball}; TAG=${3:?tag}; CAP=${4:?cap_usd}; LOUT=${5:?local_out}; cd $P
+    23	case "$TGZ$BTGZ$TAG$LOUT" in *[[:space:]]*) echo "refused: a path or tag contains whitespace"; exit 1 ;; esac
+    24	EXPECT=${EXPECT:?commit}; MAXCPH=${MAXCPH:?max usd per hour}; WEVAL=${WEVAL:-9}; MINMEM=${MINMEM:-28}; HARD=${HARD:-1.3}; PRIOR=${PRIOR:-0}
+    25	$PY -c "import math,sys; x=float(sys.argv[1]); sys.exit(0 if math.isfinite(x) and x >= 0 else 1)" "$PRIOR" 2>/dev/null || { echo "refused: PRIOR must be a non-negative number"; exit 1; }
+    26	# PRIOR counts against both deadlines (r1 review), so the arm's bound stays HARD x CAP across launches.
+    27	$PY -c "import sys; sys.exit(0 if float(sys.argv[1]) < float(sys.argv[2]) else 1)" "$PRIOR" "$CAP" 2>/dev/null || { echo "refused: PRIOR must be below the cap"; exit 1; }
+    28	mkdir -p "$LOUT" logs_c_$TAG
+    29	$PY -c "import sys,tarfile; ms=tarfile.open(sys.argv[1]).getmembers(); d=[m.name for m in ms if m.name.split('/')[-1].startswith('._')]; o=[m.name for m in ms if m.uid!=0]; print('tarball guard: %d AppleDouble, %d non-root' % (len(d),len(o))); sys.exit(1 if d or o else 0)" "$TGZ" || { echo "code tarball refused"; exit 1; }
+    30	hg=$(mktemp -d); tar xzf "$TGZ" -C "$hg" 2>/dev/null || { echo "code tarball refused: cannot unpack"; exit 1; }
+    31	# Code guard (fails closed: every git call's status is checked): HEAD is EXPECT, protocol-v2 is an ancestor, the tree is
+    32	# clean, every path changed since the tag is in the code freeze's allowed paths, and scripts/, sim/, tests/ equal the tag.
+    33	guard() {
+    34	  cd "$1" || return 1
+    35	  [ "$(git rev-parse HEAD 2>/dev/null)" = "$EXPECT" ] || { echo "HEAD is not $EXPECT"; return 1; }
+    36	  git merge-base --is-ancestor protocol-v2 HEAD || { echo "protocol-v2 is not an ancestor"; return 1; }
+    37	  st=$(git status --porcelain) || { echo "git status failed"; return 1; }; [ -z "$st" ] || { echo "tree not clean: $st" | head -c 300; return 1; }
+    38	  ch=$(git diff --name-only protocol-v2 HEAD) || { echo "git diff failed"; return 1; }
+    39	  bad=$(echo "$ch" | grep -v -e '^docs/' -e '^experiments/v2/' -e '^paper/' -e '^sealed2/h4/' -e '^$' || true); [ -z "$bad" ] || { echo "changed outside the allowed paths: $bad" | head -c 300; return 1; }
+    40	  git diff --quiet protocol-v2 -- scripts/ sim/ tests/ || { echo "scripts/, sim/ or tests/ differ from protocol-v2"; return 1; }
+    41	  echo "code guard: ok at $(git rev-parse --short HEAD)"
+    42	}
+    43	( guard "$hg" ); g=$?; mv -- "$hg" ~/.Trash/hg_churn_$$
+    44	[ $g -eq 0 ] || { echo "code tarball refused"; exit 1; }
+    45	[ -n "${DRYRUN:-}" ] && { echo "dry run: guards passed; no pod created"; exit 0; }
+    46	# verify DIR: every record in DIR/inventory.json exists with its hash.
+    47	verify() { $PY - "$1" <<'PYV'
+    48	import hashlib, json, sys
+    49	from pathlib import Path
+    50	d = Path(sys.argv[1]); inv = json.loads((d / "inventory.json").read_text())
+    51	bad = [k for k, h in inv["records"].items() if not (d / k).is_file() or hashlib.sha256((d / k).read_bytes()).hexdigest() != h]
+    52	print(f"verify {d.name}: {len(inv['records'])} records, {len(bad)} bad"); sys.exit(1 if bad else 0)
+    53	PYV
+    54	}
+    55	tmo() { perl -e 'alarm shift; exec @ARGV' "$@"; }
+    56	NAME=ts-c-$TAG; DONE=$P/$NAME.done; ATT=$P/$NAME.attempts
+    57	rm_ok() { [ -e "$1" ] && mv -- "$1" ~/.Trash/"$(basename "$1").$$"; true; }
+    58	# One launch per NAME: the lock is taken before any marker changes; the watchdog (the last process) releases it.
+    59	mkdir "$P/$NAME.launchlock" 2>/dev/null || { echo "LOCKED: $NAME.launchlock exists (another launch or its watchdog still runs; remove it only after checking)"; exit 1; }
+    60	unlock() { $PY podctl.py unlock $NAME >/dev/null 2>&1; }
+    61	# Spend records are never overwritten (r16): a launch is refused while the previous launch's spend is unrecorded; a
+    62	# recorded one (NAME.spent, written by podctl.py spend) is moved with its inputs to spend_records/NAME.<time>/.
+    63	spent_ok() { grep -Eq '^[0-9]+(\.[0-9]+)? USD ' "$P/$NAME.spent" 2>/dev/null; }   # a complete record only (r17)
+    64	if [ -e "$P/$NAME.bal0" ] && ! spent_ok; then echo "refused: the previous launch's spend is not recorded (podctl.py spend $NAME)"; unlock; exit 1; fi
+    65	if [ -e "$P/$NAME.spent" ] && ! spent_ok; then echo "refused: $NAME.spent is not a complete spend record"; unlock; exit 1; fi
+    66	if spent_ok; then
+    67	  arch="$P/spend_records/$NAME.$(date +%s)"; mkdir -p "$arch" || { echo "refused: cannot archive the spend record"; unlock; exit 1; }
+    68	  for f in bal0 wdend spent attempts; do [ -e "$P/$NAME.$f" ] && { mv -- "$P/$NAME.$f" "$arch/" || { echo "refused: cannot archive $NAME.$f"; unlock; exit 1; }; }; done
+    69	fi
+    70	for f in "$DONE" "$P/$NAME.blocked" "$P/$NAME.request" "$P/$NAME.wdend" "$P/$NAME.ambiguous" "$P/$NAME.acct" "$P/$NAME.unpriced"; do rm_ok "$f"; done; : > "$ATT"
+    71	b0=$(tmo 90 $PY podctl.py balance) || { echo "refused: account balance unknown"; unlock; exit 1; }
+    72	echo "$b0" > "$P/$NAME.bal0" && [ -s "$P/$NAME.bal0" ] || { echo "refused: cannot write $NAME.bal0"; unlock; exit 1; }
+    73	id=""; state="NOT STARTED"; rc=1; cph=0; a0=0; tfirst=0; unresolved=""; started=""; req=0; wd=""
+    74	# Pod safety lives in podctl.py (test_podctl.py): fail-closed listing, deletion verified within
+    75	# elapsed time, reconciliation, a creation block from the hard deadline, and a watchdog that runs on after this launcher
+    76	# exits, until no pod named $NAME remains.
+    77	cleanup() {
+    78	  trap - EXIT INT TERM
+    79	  if [ -n "$id" ] && [ -n "$started" ]; then
+    80	    try=0
+    81	    while :; do   # after RUN OK: keep the pod and retry until both directories verify, or until 2 min before the hard deadline
+    82	      try=$((try+1)); ok=1
+    83	      for d in followup-churn; do
+    84	        t=1800
+    85	        rem=$(( hard - 120 - $(date +%s) )); [ $rem -le 0 ] && { ok=0; break; }; [ $rem -lt $t ] && t=$rem
+    86	        tmo $t $PY runpod.py pull $id "/root/touchstone/results/v2/$d/" "$LOUT/$d/" >/dev/null 2>&1 || ok=0
+    87	      done
+    88	      rem=$(( hard - 120 - $(date +%s) )); [ $rem -gt 0 ] && tmo $(( rem < 300 ? rem : 300 )) $PY runpod.py pull $id /root/touchstone/results/logs/ logs_c_$TAG/ >/dev/null 2>&1
+    89	      if [ "$state" = "RUN OK" ] && [ $ok = 1 ]; then { verify "$LOUT/followup-churn/gate-p0" && verify "$LOUT/followup-churn/p0.01" && verify "$LOUT/followup-churn/p0.05"; } || ok=0; fi
+    90	      [ $ok = 1 ] && break
+    91	      echo "$(date +%H:%M) pull or verification failed (try $try)"
+    92	      if [ "$state" = "RUN OK" ]; then [ "$(date +%s)" -ge $(( hard - 120 )) ] && break; else [ $try -ge 3 ] && break; fi
+    93	      sleep 60
+    94	    done
+    95	    [ $ok = 1 ] || { [ "$state" = "RUN OK" ] && state="RUN OK BUT RECORDS NOT VERIFIED"; rc=1; }
+    96	  fi
+    97	  if [ -n "$id" ]; then
+    98	    if $PY podctl.py delete $id 1800; then echo "$(date +%H:%M) $id deleted (verified)"; echo "$id $(date +%s) deleted" >> "$ATT"; else echo "$(date +%H:%M) $id: deletion not verified in 30 min; the watchdog keeps trying (billing may continue)"; rc=1; unresolved=1; fi
+    99	  fi
+   100	  $PY podctl.py reconcile $NAME || { echo "$(date +%H:%M) reconcile failed; the watchdog keeps trying"; rc=1; unresolved=1; }
+   101	  grep -qx pending "$P/$NAME.request" 2>/dev/null && { echo "$(date +%H:%M) a creation request is outstanding or ambiguous; the watchdog settles for 30 minutes"; unresolved=1; }
+   102	  touch "$DONE"     # the watchdog then deletes any orphan pod and exits only after its settle time of empty listings
+   103	  if [ -z "$wd" ] || ! kill -0 "$wd" 2>/dev/null; then
+   104	    echo "$(date +%H:%M) WATCHDOG NOT RUNNING"; rc=1
+   105	    if [ $req = 0 ]; then unlock; else unresolved=1; echo "$(date +%H:%M) $NAME.launchlock kept: no process deletes a late pod; check the Runpod console"; fi
+   106	  fi
+   107	  if [ "$req" = 0 ] && [ -e "$P/$NAME.bal0" ]; then   # no request was sent: nothing to record; keep the baseline as unused
+   108	    mkdir -p "$P/spend_records" && mv -- "$P/$NAME.bal0" "$P/spend_records/$NAME.$(date +%s).bal0.unused"
+   109	  fi
+   110	  [ "$tfirst" -gt 0 ] && echo "$(date +%H:%M) spend estimate so far (not a record): $(( $(date +%s) - tfirst ))s at the ceiling $MAXCPH USD/h = $($PY -c "import math; print(math.ceil(($(date +%s)-$tfirst)/3600*float('$MAXCPH')*1000)/1000)") USD (pod events in $ATT)"
+   111	  [ "$req" -gt 0 ] && echo "$(date +%H:%M) record the spend with: podctl.py spend $NAME (at least 1 h after the watchdog ends; logs_c_$TAG/watchdog.log)"
+   112	  [ -n "$unresolved" ] && { echo "$(date +%H:%M) UNRESOLVED: check the Runpod console the next day before any relaunch (plan step 4)"; rc=1; }
+   113	  echo "$(date +%H:%M) end: $state"
+   114	  exit $rc
+   115	}
+   116	trap cleanup EXIT INT TERM
+   117	# Deadlines from the first creation request at the price ceiling MAXCPH (a bound across attempts), less PRIOR: the
+   118	# soft deadline leaves CAP - PRIOR, the hard deadline HARD x CAP - PRIOR (r1 review).
+   119	t0=$(date +%s); soft=$(( t0 + $($PY -c "print(int(3600*(float('$CAP')-float('$PRIOR'))/float('$MAXCPH')))") )); hard=$(( t0 + $($PY -c "print(int(3600*(float('$CAP')*float('$HARD')-float('$PRIOR'))/float('$MAXCPH')))") ))
+   120	nohup $PY podctl.py watchdog $NAME $hard "$DONE" >> logs_c_$TAG/watchdog.log 2>&1 &
+   121	wd=$!; echo $wd > "$P/$NAME.wdpid"; disown
+   122	sleep 1; kill -0 "$wd" 2>/dev/null || { state="WATCHDOG DID NOT START"; exit 1; }
+   123	# One creation request at a time (create_one.py, no hidden retries). Before EVERY request: reconciliation must succeed (no
+   124	# untracked pod), the watchdog must allow creation, and the soft deadline must be ahead. An unambiguous refusal (HTTP 4xx,
+   125	# e.g. no capacity) tries the next flavor. An AMBIGUOUS answer ends creation for this launch (r11): no further request,
+   126	# so two pods can never overlap. NAME.request is "pending" from before each request until a clear answer (r15), so a stop
+   127	# during creation also makes the watchdog delete a late pod and settle for 30 minutes.
+   128	tries=0
+   129	while [ $tries -lt 3 ] && [ $req -lt 36 ]; do
+   130	  kill -0 "$wd" 2>/dev/null || { state="WATCHDOG NOT RUNNING BEFORE REQUEST $((req+1))"; exit 1; }
+   131	  $PY podctl.py reconcile $NAME || { state="RECONCILE FAILED BEFORE REQUEST $((req+1))"; exit 1; }
+   132	  $PY podctl.py may-create $NAME $hard || { state="CREATION BLOCKED (hard deadline)"; exit 1; }
+   133	  [ "$(date +%s)" -lt "$soft" ] || { state="SOFT DEADLINE BEFORE START"; exit 1; }
+   134	  [ "$tfirst" -gt 0 ] || tfirst=$(date +%s)
+   135	  cph=0; id=""
+   136	  { echo pending > "$P/$NAME.request" && grep -qx pending "$P/$NAME.request"; } || { state="CANNOT WRITE $NAME.request BEFORE REQUEST $((req+1))"; exit 1; }
+   137	  req=$((req+1)); rq0=$(date +%s)   # billing may start with the request (r1 review): every charge counts from here
+   138	  out=$(tmo 120 $PY create_one.py $NAME $(( (req-1) % 12 )) 2>/dev/null | tail -n 1)
+   139	  id=$(echo "$out" | $PY -c 'import sys,json; print(json.loads(sys.stdin.read()).get("id",""))' 2>/dev/null)
+   140	  amb=$(echo "$out" | $PY -c 'import sys,json; d=json.loads(sys.stdin.read() or "{}"); print(1 if d.get("ambiguous", True) else 0)' 2>/dev/null || echo 1)
+   141	  if [ -z "$id" ]; then
+   142	    if [ "$amb" = 1 ]; then echo "$(date +%H:%M) ambiguous creation answer; no further request"; state="AMBIGUOUS CREATION ANSWER (no retry)"; exit 1; fi
+   143	    echo clear > "$P/$NAME.request"; continue
+   144	  fi
+   145	  echo clear > "$P/$NAME.request"
+   146	  v=16; a0=$rq0; echo "$id $rq0 start" >> "$ATT"
+   147	  # Only a finite positive price at or below the ceiling is accepted; otherwise (above, missing, null, zero, failed
+   148	  # listing, timeout) the pod is deleted at once, with no retrieval (r15); the balance difference records what it cost.
+   149	  cph=$(tmo 60 $PY podctl.py price $id 2>/dev/null) || cph=""
+   150	  if ! $PY -c "import sys; sys.exit(0 if 0<float(sys.argv[1])<=float(sys.argv[2]) else 1)" "${cph:-0}" "$MAXCPH" 2>/dev/null; then
+   151	    state="PRICE ${cph:-unknown} NOT IN (0, $MAXCPH]"; echo "$(date +%H:%M) $id: $state; deleting"
+   152	    $PY podctl.py delete $id 600 && { echo "$id $(date +%s) deleted" >> "$ATT"; id=""; }; exit 1
+   153	  fi
+   154	  u0=$(date +%s); up=""; while [ "$(date +%s)" -lt "$soft" ] && [ $(( $(date +%s) - u0 )) -lt 240 ]; do r=$(tmo 30 $PY runpod.py ssh $id 'echo up' 2>/dev/null | head -c 2); [ "$r" = up ] && { up=1; break; }; sleep 10; done
+   155	  [ -n "$up" ] && break
+   156	  echo "$(date +%H:%M) $id unreachable; deleting"; $PY podctl.py delete $id 600 || { state="UNREACHABLE POD NOT DELETED"; exit 1; }; echo "$id $(date +%s) deleted" >> "$ATT"; id=""; tries=$((tries+1))
+   157	done
+   158	[ -z "$id" ] && { state="NO POD"; exit 1; }
+   159	echo "$(date +%H:%M) pod $id ($v vCPU, $cph USD/h): soft stop in $(( soft - $(date +%s) ))s, hard stop in $(( hard - $(date +%s) ))s (cap $CAP USD)"
+   160	tmo 900 $PY runpod.py push $id $TGZ /root/rc.tgz >/dev/null 2>&1 || { state="UPLOAD FAILED (code)"; exit 1; }
+   161	tmo 1800 $PY runpod.py push $id $BTGZ /root/rb.tgz >/dev/null 2>&1 || { state="UPLOAD FAILED (bundle)"; exit 1; }
+   162	tmo 900 $PY runpod.py ssh $id 'set -e; mkdir -p touchstone bundle; tar xzf rc.tgz -C touchstone; tar xzf rb.tgz -C bundle; which uv >/dev/null || { curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1; }; export PATH=$HOME/.local/bin:$PATH; cd touchstone; uv sync --frozen -q; mkdir -p results/logs' >/dev/null 2>&1 || { state="PREP FAILED (unpack or sync)"; exit 1; }
+   163	chk=$(tmo 300 $PY runpod.py ssh $id "cd touchstone; export PATH=\$HOME/.local/bin:\$PATH; echo git=\$(git rev-parse HEAD 2>&1) env=\${TOUCHSTONE_IDENTITY_SALT:-unset} bundle=\$(ls /root/bundle/eval-all/freeze | wc -l); m=\$(cat /sys/fs/cgroup/memory.max 2>/dev/null || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null); case \$m in max|''|9223372036854*) m=\$(awk '/MemTotal/ {print \$2*1024}' /proc/meminfo);; esac; echo memgb=\$((m/1073741824)); echo py=\$(uv run --frozen python -c 'import platform,numpy;print(platform.python_version(),numpy.__version__)' 2>&1 | tail -n 1 | tr ' ' _)" 2>/dev/null | tr '\n' ' ')
+   164	echo "$(date +%H:%M) prep: $chk"
+   165	case "$chk" in *"git=$EXPECT"*"env=unset"*) ;; *) state="PREP FAILED"; exit 1 ;; esac
+   166	memgb=$(echo "$chk" | sed -n 's/.*memgb=\([0-9]*\).*/\1/p'); [ -n "$memgb" ] && [ "$memgb" -ge "$MINMEM" ] || { state="PREP FAILED (memory ${memgb:-unknown} GB < $MINMEM GB)"; exit 1; }
+   167	# Charges before this pod, for the driver's cap admission: PRIOR (earlier launches, recorded) plus this launch's
+   168	# deleted attempts at the ceiling MAXCPH (an upper bound; the balance difference records the real spend).
+   169	PRIORT=$($PY - "$ATT" "$MAXCPH" "$PRIOR" <<'PYA'
+   170	import math, sys
+   171	start, tot = {}, float(sys.argv[3])
+   172	for l in open(sys.argv[1]):
+   173	    f = l.split()
+   174	    if len(f) == 3 and f[2] == "start": start[f[0]] = int(f[1])
+   175	    elif len(f) == 3 and f[2] == "deleted" and f[0] in start: tot += (int(f[1]) - start.pop(f[0])) / 3600 * float(sys.argv[2])
+   176	print(math.ceil(tot * 10000) / 10000)   # rounded up, never down (r1 review)
+   177	PYA
+   178	) || { state="PRIOR CHARGES UNKNOWN"; exit 1; }
+   179	RS=$(mktemp "/tmp/${NAME}_remote.XXXXXX") || { state="CANNOT WRITE THE REMOTE SCRIPT"; exit 1; }   # private path (r1 review)
+   180	cat > "$RS" <<EOS
+   181	#!/bin/bash
+   182	R=\${REMOTE_ROOT:-/root}   # the pod's root; the offline harness runs this script under another root with a stub driver
+   183	echo "== remote started \$(date +%H:%M)"
+   184	cd \$R/touchstone || { echo "== RUN FAILED at setup \$(date +%H:%M)"; exit 1; }; export OMP_NUM_THREADS=1 PATH=\$HOME/.local/bin:\$PATH; unset TOUCHSTONE_IDENTITY_SALT; unset TOUCHSTONE_LOCKED
+   185	B=\$R/bundle; A="--src \$B/eval-all --draw \$B/draw/draw.json --instances \$B/draw/instances.json --cfgs \$B/deviation/cfg_linux.json --addendum \$B/report/addendum.json --started $a0 --usd-per-hour $cph --prior-usd $PRIORT --stop-usd $CAP --require-identical"
+   186	D=docs/revision/churn/churn_v2.py
+   187	{ [ -e \$R/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE gate (cap) \$(date +%H:%M)"; exit 1; }
+   188	echo "== gate start \$(date +%H:%M)"
+   189	# the gate passes the same cap admission as the stages: a refusal is a stop, a failed gate is GATE FAILED only when the
+   190	# driver says so, and any other error is RUN FAILED (r1 review)
+   191	uv run --frozen python \$D --gate only --out results/v2/followup-churn \$A >> results/logs/c_gate.log 2>&1 || {
+   192	  if tail -n 5 results/logs/c_gate.log | grep -q "stopped between stages"; then echo "== STOPPED BEFORE gate (cap, driver admission) \$(date +%H:%M)"
+   193	  elif tail -n 5 results/logs/c_gate.log | grep -q "the p = 0 gate failed"; then echo "== GATE FAILED \$(date +%H:%M)"
+   194	  else echo "== RUN FAILED at gate \$(date +%H:%M)"; fi; exit 1; }
+   195	echo "== gate passed (bit-identical) \$(date +%H:%M)"
+   196	for st in inputs search freeze evaluate doubling diagnostics inventory; do
+   197	  { [ -e \$R/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE \$st (cap) \$(date +%H:%M)"; exit 1; }
+   198	  echo "== stage \$st start \$(date +%H:%M) workers search $v, evaluation at most $WEVAL"
+   199	  uv run --frozen python \$D --stage \$st --workers-search $v --workers-eval $WEVAL --out results/v2/followup-churn \$A >> results/logs/c_run.log 2>&1 || {
+   200	    if tail -n 5 results/logs/c_run.log | grep -q "stopped between stages"; then echo "== STOPPED BEFORE \$st (cap, driver admission) \$(date +%H:%M)"; else echo "== RUN FAILED at \$st \$(date +%H:%M)"; fi; exit 1; }
+   201	done
+   202	echo "== RUN OK \$(date +%H:%M)"
+   203	EOS
+   204	tmo 120 $PY runpod.py push $id "$RS" /root/r_remote.sh >/dev/null 2>&1 || { state="UPLOAD FAILED (remote script)"; exit 1; }
+   205	tmo 120 $PY runpod.py ssh $id "chmod +x /root/r_remote.sh && (nohup /root/r_remote.sh > /root/touchstone/results/logs/r_remote.log 2>&1 < /dev/null &)" >/dev/null 2>&1 || { state="REMOTE START FAILED"; exit 1; }
+   206	# the run counts as started only when the remote script's first line is in its log (r16)
+   207	for i in 1 2 3 4 5 6; do sleep 10; tmo 30 $PY runpod.py ssh $id "grep -q 'remote started' /root/touchstone/results/logs/r_remote.log" >/dev/null 2>&1 && { started=1; break; }; done
+   208	[ -n "$started" ] || { state="REMOTE START FAILED (no start line)"; exit 1; }
+   209	state="RUNNING"; stopped=""
+   210	while true; do
+   211	  sleep 120
+   212	  now=$(date +%s)
+   213	  [ "$now" -ge "$hard" ] && { state="HARD DEADLINE ($HARD x cap at $MAXCPH USD/h; the watchdog deletes the pod)"; exit 1; }
+   214	  if [ "$now" -ge "$soft" ] && [ -z "$stopped" ]; then tmo 60 $PY runpod.py ssh $id 'touch /root/STOP && test -e /root/STOP' >/dev/null 2>&1 && stopped=1 && echo "$(date +%H:%M) cap reached: the pod stops after the running stage"; fi
+   215	  st=$(tmo 90 $PY runpod.py ssh $id "tail -c 240 /root/touchstone/results/logs/r_remote.log" 2>/dev/null | tr '\n' ' ')
+   216	  echo "$(date +%H:%M) [soft $(( soft - now ))s, hard $(( hard - now ))s] $st" | tail -c 320
+   217	  case "$st" in
+   218	    *"RUN OK"*) state="RUN OK"; rc=0; exit 0 ;;
+   219	    *"GATE FAILED"*) state="GATE FAILED (the driver reports the p = 0 gate failed: not passing or not bit-identical; churn cells not started)"; exit 1 ;;
+   220	    *"RUN FAILED"*|*"STOPPED BEFORE"*) state="$(echo "$st" | grep -o '== [A-Z].*' | head -c 120 | sed "s/[[:space:]]*\$//")"; exit 1 ;;
+   221	  esac
+   222	done
+
+hook: PostToolUse
+hook: PostToolUse Completed
+exec
+/bin/zsh -lc "nl -ba docs/revision/churn/test_churn_pod_harness.sh | sed -n '1,105p'; rg -n 'gate-p0|inventory|gate_ok|require.identical|started|prior.usd|stop.usd|stopped between stages|gate failed|def main|add_argument|def gate' docs/revision/churn/churn_v2.py; rg -n 'reservation|10.40|5.54|4.43|balance|churn-pod|72|123' docs/revision/churn/churn-plan.md docs/revision/budget-ledger.json" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+     1	#!/bin/bash
+     2	# Offline harness for churn_pod.sh (derived from test_reset_pod_harness.sh) with podctl.py and create_one.py (no real pods). A fake runpod.py keeps pods, pending
+     3	# (delayed) creations and stuck deletions in state.json; a fake create_one.py makes one request per call. Every fake
+     4	# holds an exclusive lock on state.json for its whole read-modify-write (r15). Each scenario asserts: the pods left (0),
+     5	# the exact number of creation requests, the launcher exit status, the end state (an anchored pattern), that the
+     6	# watchdog ended by itself (unless the scenario expects it to stay, fail-closed) and released the launch lock, and, where
+     7	# stated, a watchdog log line, a launcher output line, and a line that must not appear (NOTOUT).
+     8	set -u; H=$(mktemp -d); cd $H; SRC=/Users/oemer.demirel/Projects/touchstone/results/pods
+     9	sed "s#P=/Users/oemer.demirel/Projects/touchstone/results/pods#P=$H#; s#snapf=\"/Users/oemer.demirel/Projects/touchstone/results/pods/snap_#snapf=\"$H/snap_#" $SRC/churn_pod.sh > churn_pod.sh
+    10	cp $SRC/podctl.py .
+    11	mkdir -p g && (cd g && git init -q && git -c commit.gpgsign=false -c user.email=x@x -c user.name=x commit -q --allow-empty -m x && git -c tag.gpgsign=false tag protocol-v2 && COPYFILE_DISABLE=1 tar --uid 0 --gid 0 -czf ../c.tgz .)
+    12	C=$(git -C g rev-parse HEAD); echo x > b; tar czf b.tgz b; export HC=$C
+    13	# prepared remote outputs with inventories, for the RUN OK scenario
+    14	python3 - <<'EOF'
+    15	import hashlib, json, os
+    16	for d in ("remote/followup-churn/gate-p0", "remote/followup-churn/p0.01", "remote/followup-churn/p0.05"):
+    17	    os.makedirs(d, exist_ok=True); open(f"{d}/r.json", "w").write('{"x": 1}')
+    18	    json.dump({"records": {"r.json": hashlib.sha256(open(f"{d}/r.json", "rb").read()).hexdigest()}}, open(f"{d}/inventory.json", "w"))
+    19	EOF
+    20	cat > runpod.py <<'EOF'
+    21	import fcntl, json, os, shutil, sys
+    22	H = os.path.dirname(os.path.abspath(__file__)); S = os.path.join(H, "state.json")
+    23	L = open(S + ".lock", "w"); fcntl.flock(L, fcntl.LOCK_EX)    # held until exit: one transaction per call
+    24	st = json.load(open(S)); cmd, a = sys.argv[1], sys.argv[2:]; st["log"].append(" ".join([cmd] + a[:1])); rc = 0
+    25	for p in list(st.get("pending", {})):                       # delayed creations appear after a countdown of calls
+    26	    st["pending"][p][1] -= 1
+    27	    if st["pending"][p][1] <= 0: st["pods"][p] = st["pending"].pop(p)[0]
+    28	if cmd == "list":
+    29	    if st.get("fail_list", 0) > 0: st["fail_list"] -= 1; rc = 1; print("error")
+    30	    else: print(json.dumps([{"id": i, "name": n, "costPerHr": st["price"]} for i, n in st["pods"].items()]))
+    31	elif cmd == "balance":
+    32	    if st.get("bal_fail"): rc = 1; print("error")
+    33	    else: print(json.dumps({"balance": 100.0, "spendPerHr": 0}))
+    34	elif cmd == "delete":
+    35	    if st.get("stuck", {}).get(a[0], 0) > 0: st["stuck"][a[0]] -= 1
+    36	    else: st["pods"].pop(a[0], None)
+    37	    print("{}")
+    38	elif cmd == "ssh":
+    39	    c = a[1] if len(a) > 1 else ""
+    40	    down = st.get("down_first") and st.get("created") and a[0] == st["created"][0][0]   # the first pod never answers
+    41	    if not st["up"] or down: rc = 255; print("")
+    42	    elif "git rev-parse" in c: print(f"git={os.environ.get('HC','')} env=unset bundle=6 memgb=64 py=x")
+    43	    elif "tail -c 240" in c: print("== RUN OK" if st.get("runok") else st.get("remote_tail", "== stage search"))
+    44	    else: print("up")
+    45	elif cmd == "push":
+    46	    if st.get("push_fail"): rc = 1; print("exit 1")
+    47	    else:
+    48	        if a[2].endswith("r_remote.sh"): shutil.copy(a[1], os.path.join(H, "pushed_r_remote.sh"))   # kept for the remote checks
+    49	        print("exit 0")
+    50	elif cmd == "pull":
+    51	    src, dst = a[1], a[2]
+    52	    for k in ("followup-churn",):
+    53	        if k in src:
+    54	            shutil.copytree(os.path.join(H, "remote", k), dst, dirs_exist_ok=True)
+    55	            if st.get("corrupt_pulls", 0) > 0:
+    56	                st["corrupt_pulls"] -= 1; open(os.path.join(dst, "p0.01", "r.json"), "w").write("corrupt")
+    57	json.dump(st, open(S, "w")); sys.exit(rc)
+    58	EOF
+    59	cat > create_one.py <<'EOF'
+    60	import fcntl, json, os, signal, subprocess, sys
+    61	S = os.path.join(os.path.dirname(os.path.abspath(__file__)), "state.json")
+    62	L = open(S + ".lock", "w"); fcntl.flock(L, fcntl.LOCK_EX)
+    63	st = json.load(open(S))
+    64	import time
+    65	pid = "pod%d" % (len(st["log"]) + 1); st["log"].append("create " + pid); st.setdefault("created", []).append([pid, time.time()])
+    66	if st.get("delay"): st.setdefault("pending", {})[pid] = [sys.argv[1], st["delay"]]
+    67	else: st["pods"][pid] = sys.argv[1]
+    68	if st.get("stuck_next"): st.setdefault("stuck", {})[pid] = 40; st["stuck_next"] = False
+    69	amb = bool(st.get("lose")); term = bool(st.get("term")); json.dump(st, open(S, "w")); L.close()
+    70	if term:   # a stop during creation (r15): TERM the launcher while this request is outstanding; it answers nothing
+    71	    p = os.getppid(); top = None   # the topmost process running the launcher snapshot (subshells share its command line)
+    72	    while p > 1:
+    73	        cmd = subprocess.run(["ps", "-o", "command=", "-p", str(p)], capture_output=True, text=True).stdout
+    74	        if "snap_churn_pod" in cmd: top = p
+    75	        p = int(subprocess.run(["ps", "-o", "ppid=", "-p", str(p)], capture_output=True, text=True).stdout.strip() or 1)
+    76	    if top: os.kill(top, signal.SIGTERM)
+    77	    sys.exit(1)
+    78	print(json.dumps({"id": "" if amb else pid, "ambiguous": amb, "vcpu": 16}))
+    79	EOF
+    80	fail=0; ran=0; TOTAL=20
+    81	run() { # name state cap creates rc [end-pattern] [watchdog-log-substring] [launcher-output-substring]
+    82	  [ -n "${ONLY:-}" ] && ! echo "$1" | grep -q "$ONLY" && return 0   # smoke runs only; a full run sets no ONLY
+    83	  ran=$((ran+1)); echo "== $1"; echo "$2" > state.json; mkdir -p logs_c_t junk; : > logs_c_t/watchdog.log; : > ts-c-t.wdpid
+    84	  for f in ts-c-t.bal0 ts-c-t.spent ts-c-t.wdend; do [ -e $f ] && mv -- $f junk/$f.$ran; done   # isolation: one launch per scenario
+    85	  [ -n "${PRELOCK:-}" ] && mkdir ts-c-t.launchlock
+    86	  [ -n "${PREBAL:-}" ] && echo "100.0 0.0" > ts-c-t.bal0
+    87	  [ -n "${EMPTYSPENT:-}" ] && : > ts-c-t.spent
+    88	  EXPECT=$C MAXCPH=0.70 HARD=${HARDX:-1.3} PRIOR=${PRIORV:-0} perl -e 'alarm 1500; exec @ARGV' bash churn_pod.sh c.tgz b.tgz t $3 out > run.out 2>&1; lrc=$?
+    89	  out=$(grep -v "^tarball\|code guard" run.out); echo "$out" | tail -3
+    90	  # wait for THIS scenario's watchdog by its PID (r11); the settle while a request is pending is 30 minutes
+    91	  wd=$(cat ts-c-t.wdpid 2>/dev/null); alive=""
+    92	  for i in $(seq 1 ${WAITW:-800}); do [ -n "$wd" ] && kill -0 "$wd" 2>/dev/null || break; sleep 3; done
+    93	  if [ -n "$wd" ] && kill -0 "$wd" 2>/dev/null; then alive=1; kill "$wd"; sleep 1; echo "watchdog $wd still running; stopped"; fi
+    94	  read left creates <<< "$(python3 -c "import json;s=json.load(open('state.json'));print(len(s['pods'])+len(s.get('pending',{})), sum(1 for l in s['log'] if l.startswith('create')))")"
+    95	  echo "pods left: $left, creation requests: $creates (expected $4), exit $lrc (expected $5)"; tail -1 logs_c_t/watchdog.log
+    96	  [ "$left" = 0 ] && [ "$creates" = "$4" ] && [ "$lrc" = "$5" ] || { echo "SCENARIO FAILED"; fail=1; }
+    97	  [ -z "${6:-}" ] || echo "$out" | grep -Eq "^[0-9]{2}:[0-9]{2} end: ($6)\$" || { echo "SCENARIO FAILED (end line is not: $6)"; fail=1; }
+    98	  [ -z "${7:-}" ] || grep -q "$7" logs_c_t/watchdog.log || { echo "SCENARIO FAILED (watchdog log lacks: $7)"; fail=1; }
+    99	  [ -z "${8:-}" ] || echo "$out" | grep -Eq "$8" || { echo "SCENARIO FAILED (launcher output lacks: $8)"; fail=1; }
+   100	  [ -z "${NOTOUT:-}" ] || ! { echo "$out"; cat logs_c_t/watchdog.log; } | grep -q "$NOTOUT" || { echo "SCENARIO FAILED (output contains: $NOTOUT)"; fail=1; }
+   101	  if [ -n "${WD_ALIVE:-}" ]; then [ -n "$alive" ] || { echo "SCENARIO FAILED (the watchdog should have stayed, fail-closed)"; fail=1; }
+   102	  elif [ -n "$alive" ]; then echo "SCENARIO FAILED (the watchdog did not end by itself)"; fail=1; fi
+   103	  if [ -z "${PRELOCK:-}" ] && [ -z "$alive" ] && [ -d ts-c-t.launchlock ]; then echo "SCENARIO FAILED (launch lock not released)"; fail=1; fi
+   104	  [ -z "${PREBAL:-}" ] || [ -e ts-c-t.bal0 ] || { echo "SCENARIO FAILED (the previous spend baseline was not kept)"; fail=1; }
+   105	  python3 podctl.py unlock ts-c-t >/dev/null 2>&1; true; }   # test isolation only (a held or stale lock)
+256:def gate_compare(src, out, rid: str, cid: str, require_identical: bool = False) -> dict:
+263:    res = {"stage": "churn p=0 gate", "registered": rid, "churn": cid, "pass": ok, "identical": same, "require_identical": bool(require_identical),
+264:           "gate_ok": F.pod_gate_ok({"pass": ok, "identical": same}, require_identical), "search": s, "doubling": d}
+272:def check_started(started, now: float | None = None) -> None:
+277:    if started is None or not isinstance(started, (int, float)) or not math.isfinite(started) or not (1.6e9 < float(started) <= now):
+278:        raise SystemExit(f"churn arm refused: --started must be the pod's allocation time in epoch seconds, got {started!r}")
+281:def check_cap(started: float | None, need_s: float, cap: float = STOP_USD, usd_per_hour: float = POD_USD_PER_HOUR, now: float | None = None,
+282:              prior_usd: float = 0.0) -> None:
+284:    the pod time billed since `started`, plus the charges of earlier failed attempts (`prior_usd`), plus the stage's
+288:    if started is None:
+290:    spent = float(prior_usd) + ((now if now is not None else time.time()) - float(started)) / 3600 * usd_per_hour
+293:        raise SystemExit(f"churn arm stopped between stages: {spent:.2f} USD billed + {need:.2f} USD for the next stage would pass the {cap:.2f} USD cap")
+296:def inventory(out, p: float) -> dict:
+297:    inv = F.inventory(out)
+299:    write(Path(out) / "inventory.json", inv)
+303:def require_gate(base, require_identical: bool = False) -> dict:
+305:    (`require_identical`) that criterion is bit identity (the author's decision, card touchstone-reset-repro-pass)."""
+306:    g = read(Path(base) / "gate-p0" / "gate.json"); inv = read(Path(base) / "gate-p0" / "inventory.json")
+308:    if not g or not g.get("pass") or not g.get("gate_ok", g.get("pass")) or g.get("registered") != want or g.get("churn") != f"{want}|churn0":
+310:    if require_identical and not (g.get("require_identical") and g.get("gate_ok") and g.get("identical")):
+461:def _run_rate(out, jobs, steps, a, salt_sha, container, p, started) -> None:
+468:    cap = lambda need: check_cap(started, need, a.stop_usd, a.usd_per_hour, prior_usd=a.prior_usd)
+498:            inventory(out, p)
+502:def main(argv=None) -> int:
+504:    ap.add_argument("--src", default=str(F.EVAL_ALL)); ap.add_argument("--out", required=True)
+505:    ap.add_argument("--draw", default=str(F.ROOT / "results/v2/draw/draw.json")); ap.add_argument("--instances", default=str(F.ROOT / "results/v2/draw/instances.json"))
+506:    ap.add_argument("--cfgs", default=str(F.ROOT / "results/v2/deviation/cfg_linux.json")); ap.add_argument("--addendum", default=str(F.ROOT / "results/v2/report/addendum.json"))
+507:    ap.add_argument("--params", default=str(F.ROOT / "experiments/v2/params.json")); ap.add_argument("--markets", default=",".join(MARKETS))
+508:    ap.add_argument("--rules", default=",".join(RULES)); ap.add_argument("--rates", default=",".join(f"{p:g}" for p in RATES))
+509:    ap.add_argument("--stage", default="all", choices=("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory", "all"))
+510:    ap.add_argument("--workers-search", dest="workers_search", type=int, default=16); ap.add_argument("--workers-eval", dest="workers_eval", type=int, default=9)
+511:    ap.add_argument("--started", type=float, default=None, help="epoch seconds of pod allocation; spend is billed from it")
+512:    ap.add_argument("--stop-usd", dest="stop_usd", type=float, default=STOP_USD)
+513:    ap.add_argument("--usd-per-hour", dest="usd_per_hour", type=float, default=None, help="the pod's actual hourly price (required in production)")
+514:    ap.add_argument("--prior-usd", dest="prior_usd", type=float, default=0.0, help="charges of earlier failed attempts of this arm")
+515:    ap.add_argument("--gate", choices=("first", "only", "skip"), default="first", help="the p = 0 reproduction gate (plan section 3 c)")
+516:    ap.add_argument("--require-identical", dest="req_id", action="store_true", help="the pod gate: bit identity (the author's decision)")
+517:    ap.add_argument("--smoke", action="store_true")
+520:        check_started(a.started)
+528:        write(base / "run.json", {"started": a.started, "usd_per_hour": a.usd_per_hour, "prior_usd": a.prior_usd, "stop_usd": a.stop_usd})
+536:    steps = ("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory") if a.stage == "all" else (a.stage,)
+539:        out = base / "gate-p0"; out.mkdir(parents=True, exist_ok=True); R.install_salt(root, out)
+541:        _run_rate(out, jobs, ("inputs", "search", "freeze", "evaluate", "doubling", "inventory"), a, salt_sha, container, 0.0, a.started)
+543:        g = gate_compare(a.src, out, rid, jobs[0]["id"], a.req_id); inventory(out, 0.0)
+544:        print(json.dumps({"gate_ok": g["gate_ok"], "identical": g["identical"], "search": g["search"].get("problems"), "doubling": g["doubling"].get("problems")}), flush=True)
+545:        if not g["gate_ok"] and not a.smoke:
+546:            print("churn arm stopped: the p = 0 gate failed", file=sys.stderr)
+549:            return 0 if g["gate_ok"] else 1
+555:        _run_rate(out, jobs, steps, a, salt_sha, container, p, a.started)
+docs/revision/budget-ledger.json:5:  "followup": 72.0
+docs/revision/budget-ledger.json:7: "reservations": [
+docs/revision/budget-ledger.json:10:   "tag": "churn-pod",
+docs/revision/budget-ledger.json:132:  "limit": 123.0,
+docs/revision/budget-ledger.json:133:  "text": "Assume an additional 50 USD to finish the compute: follow-up cap 22 -> 72 USD, program limit 73 -> 123 USD (development and evaluation caps unchanged), \u00d6mer Demirel, 2026-11-12, given in the Claude Code session while the churn launcher was in review."
+docs/revision/churn/churn-plan.md:7:runs before this plan has internal consensus and the reservation is recorded in the budget ledger.
+docs/revision/churn/churn-plan.md:31:2. The reservation command passes the unpadded estimate, 4.43 USD; the wrapper applies the factor 1.25.
+docs/revision/churn/churn-plan.md:48:3. Blocker: worker limits per stage, a memory check, the gate and the diagnostics in the billed time, a reservation in
+docs/revision/churn/churn-plan.md:191:cells plus the gate cell: **41.1 core-hours, 4.43 USD** at the benchmark price.
+docs/revision/churn/churn-plan.md:220:billed time, not core-hours, so the reservation below still covers the expected 3.85 USD.
+docs/revision/churn/churn-plan.md:223:Before the pod: `docs/revision/followup/budget_followup.py --reserve churn-pod 8.32` (amended 2026-11-12, launcher review
+docs/revision/churn/churn-plan.md:224:r1: the wrapper reserves 8.32 x 1.25 = 10.40 USD, the watchdog bound of 1.3 x the stop cap; the earlier 4.43 USD
+docs/revision/churn/churn-plan.md:225:estimate padded to 5.54 USD would not cover that bound). **Stop cap 8.00 USD, an estimate-based stage-admission limit.** No running
+docs/revision/churn/churn-plan.md:238:cap at the price ceiling (10.40 USD at most for this arm), also mid-stage, as an absolute guard against a hung pod. Spend
+docs/revision/churn/churn-plan.md:239:(amended 2026-11-12, launcher review r1) is recorded as the account balance difference (`podctl.py spend NAME`, at
+docs/revision/churn/churn-plan.md:244:`PRIOR`, so the 10.40 USD bound holds across launches. An EXIT, INT or TERM trap pulls the records, verifies them against the inventories, deletes the pod, and
+docs/revision/churn/churn-plan.md:250:2. The author's approval of the follow-up limit is recorded; the reservation of 5.54 USD under `followup`.
+docs/revision/churn/churn-plan.md:257:  (C* 0.0856, R3 0.0649; C* - R3 0.02072 base, 0.02962 doubled; B3 - R3 0.1734 base, 0.1698 doubled).
+docs/revision/churn/churn-plan.md:261:  above and two waves per stage (41.06 core-hours, 4.43 USD).
+
+hook: PostToolUse
+exec
+/bin/zsh -lc 'git diff 4d963a3 -- docs/revision/churn/churn-plan.md; cmp docs/revision/churn/churn_pod.sh /Users/oemer.demirel/Projects/touchstone/results/pods/churn_pod.sh; bash -n docs/revision/churn/churn_pod.sh docs/revision/churn/test_churn_pod_harness.sh' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+diff --git a/docs/revision/churn/churn-plan.md b/docs/revision/churn/churn-plan.md
+index 0590ddd..684d595 100644
+--- a/docs/revision/churn/churn-plan.md
++++ b/docs/revision/churn/churn-plan.md
+@@ -217,12 +217,12 @@ of 9; the doubling as one serial preflight task plus 17 jobs in two waves of 9;
+ 0.6 hours of preparation and idle: **6.88 hours, 3.85 USD** (5.95 hours and 3.33 USD without the serial preflight tasks).
+ If the preflight cuts the evaluation workers to 2, the same arithmetic gives 12.44 hours, 6.97 USD, still below the
+ stop cap; the admission after each preflight recomputes the stage cost at the chosen workers. The serial tasks add
+-billed time, not core-hours, so the reservation below (4.43 USD unpadded, 5.54 USD reserved) still covers the expected
+-3.85 USD.
++billed time, not core-hours, so the reservation below still covers the expected 3.85 USD.
+ 
+ **Budget** (author, 2026-11-10). The arm uses the shared ledger category `followup` (cap 22 USD for all follow-up runs).
+-Before the pod: `docs/revision/followup/budget_followup.py --reserve churn-pod 4.43` (the unpadded estimate; the
+-wrapper reserves 4.43 x 1.25 = 5.54 USD). **Stop cap 8.00 USD, an estimate-based stage-admission limit.** No running
++Before the pod: `docs/revision/followup/budget_followup.py --reserve churn-pod 8.32` (amended 2026-11-12, launcher review
++r1: the wrapper reserves 8.32 x 1.25 = 10.40 USD, the watchdog bound of 1.3 x the stop cap; the earlier 4.43 USD
++estimate padded to 5.54 USD would not cover that bound). **Stop cap 8.00 USD, an estimate-based stage-admission limit.** No running
+ stage is ever killed (author, 2026-11-10): before each stage the driver adds the pod time billed since allocation at the
+ pod's actual hourly price, the charges of earlier failed attempts, and the stage's estimate, and stops between stages
+ if the sum would pass the cap, then reports. Production runs refuse to start without `--started` (the allocation time)
+@@ -236,10 +236,12 @@ stages, each started only if no STOP file exists and the soft deadline has not p
+ the ceiling, net of earlier attempts' charges); at the soft deadline it writes STOP, so the pod stops after the running
+ stage. **The one exception to "no running stage is killed":** the `podctl.py` watchdog deletes the pod at 1.3 times the
+ cap at the price ceiling (10.40 USD at most for this arm), also mid-stage, as an absolute guard against a hung pod. Spend
+-is recorded per attempt (pod id, start, end, recorded price) in the launcher's attempts file, which persists across
+-launches; the summary gives the spend at the recorded prices and the bound at the ceiling. The launcher passes to the
+-driver the current attempt's allocation time, the recorded price, and the earlier attempts' charges at their recorded
+-prices. An EXIT, INT or TERM trap pulls the records, verifies them against the inventories, deletes the pod, and
++(amended 2026-11-12, launcher review r1) is recorded as the account balance difference (`podctl.py spend NAME`, at
++least an hour after the watchdog ends); the launcher prints only estimates. Its attempts file holds each pod's id,
++request time and deletion time. The launcher passes to the driver the live pod's request time as `--started`, its
++actual price, and as `--prior-usd` the operator's `PRIOR` (recorded spend of earlier launches of this arm) plus this
++launch's deleted attempts charged at the ceiling from their request times, rounded up. Both deadlines are net of
++`PRIOR`, so the 10.40 USD bound holds across launches. An EXIT, INT or TERM trap pulls the records, verifies them against the inventories, deletes the pod, and
+ verifies the deletion; the watchdog keeps deleting until no pod of this name remains.
+ 
+ ## 8. Steps
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+codex
+The launcher now addresses the round-1 accounting and gate-status findings. The saved harness log reports 20/20 passes. The harness writes temporary files, so I will not rerun it under this read-only constraint. I am checking the driver calls and inventory paths.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '1,95p' docs/revision/churn/churn_v2.py; nl -ba docs/revision/churn/churn_v2.py | sed -n '250,330p;455,570p'; nl -ba docs/revision/churn/churn-plan.md | sed -n '16,39p;220,255p'; sed -n '1,17p' docs/revision/churn/test_churn_pod_harness.sh" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+"""The honest-churn arm (docs/revision/churn/churn-plan.md, draft 1): the nine honest opponents also retire their identity
+and re-enter under a fresh one with probability p per round, so the newest identity no longer marks the deviating
+provider. D2+H3 attacks against R3 (F111), C* and B3 (F000) on the six fresh markets at rho 0.2, for each churn rate,
+searched, evaluated and doubled with the frozen stage functions of scripts/revision_v2.py.
+
+The frozen code is not edited (code freeze 627a2de). Churn enters through `Cell.others`: `install()` wraps
+`revision_v2.train_cell`, which `eval_cell` also calls, so every stage that builds a cell for a churn job (search, twin
+search, reference menu in the doubling diagnostic, evaluation) runs with churning opponents. Process pools install the
+wrapper in their initialiser. A churn decision is drawn from the episode's per-round, per-entity policy seed, so it is
+deterministic and identical across the three rules on the same seed.
+
+Churn job ids carry the suffix `|churn<p>`, so they never collide with the registered D2+H3 records that the frozen
+reference menus read. The frozen truthful reference of each (market, rule) is reused, not reselected, and every
+reference episode runs under the same churn (see the plan, section 3). Each churn rate writes to its own directory."""
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from concurrent.futures import ProcessPoolExecutor
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent / "followup"))
+
+import reset_followup_v2 as F  # noqa: E402  (also puts the repository and scripts/ on the path)
+from sim.mechanisms.base import Offer  # noqa: E402
+from sim.policies.base import Action  # noqa: E402
+from sim.records_v2 import read, sha_file, write  # noqa: E402
+
+R = F.R
+RULES = ("F111", "C*", "F000")
+MARKETS = F.MARKETS
+RATES = (0.01, 0.05)
+AGE_EDGES = (0, 10, 20, 50, 200)
+DEVIATIONS = (
+    "follow-up beyond the registered manifest: honest opponents churn with probability p per round (not in the protocol)",
+    "the frozen truthful reference of each (market, rule) is reused and re-evaluated under churn, not reselected",
+    "doubling checks for every churn cell; the original freeze is replaced by this script's freeze and acceptance check",
+)
+
+
+class HonestChurn:
+    """Honest-max delivery and offer; retires its identity and re-enters under a fresh one with probability p per round."""
+
+    def __init__(self, p: float) -> None:
+        self.p = float(p); self.name = f"honest_churn({self.p:g})"
+
+    def act(self, view) -> Action:
+        q = view.params.q_max
+        return Action(effort=q, offer=Offer(claim=q, bid=view.params.a + view.params.b * q), exit=bool(self.p > 0 and view.rng.random() < self.p))
+
+
+def _churn_factory(p: float):
+    return lambda: HonestChurn(p)
+
+
+_ORIG: dict = {}
+_REF_CACHE: dict = {}
+
+
+def install() -> None:
+    """Wrap three revision_v2 names (idempotent): `train_cell`, so a job with a `churn` rate gets churning opponents in
+    every cell built from it; `select_reference`, so a cell with churning opponents never reuses a candidate's stored
+    no-churn training profits (internal review r1, blocker 1); and `reference_of`, so a churn job's frozen reference
+    carries its training-seed score evaluated under the same churn, which the doubling stage's reference_change subtracts."""
+    if _ORIG:
+        return
+    _ORIG.update(train_cell=R.train_cell, select_reference=R.select_reference, reference_of=R.reference_of)
+
+    def train_cell(job, others=()):
+        cell = _ORIG["train_cell"](job, others)
+        p = job.get("churn")
+        if p is None or others:
+            return cell
+        from dataclasses import replace
+        return replace(cell, others=tuple((e, _churn_factory(p)) for e in range(cell.cfg.N) if e != cell.focal))
+
+    def select_reference(cell, candidates, cache):
+        if cell.others:
+            from dataclasses import replace
+            candidates = [c if c.name == "abstain" else replace(c, known_profit=None, known_normalized=None) for c in candidates]
+        return _ORIG["select_reference"](cell, candidates, cache)
+
+    def reference_of(job, out):
+        cand, rrec, path = _ORIG["reference_of"](job, out)
+        if job.get("churn") is None:
+            return cand, rrec, path
+        key = (job["id"], str(path))
+        if key not in _REF_CACHE:
+            from sim.cell import SeedCache, run_focal
+            fr = run_focal(R.train_cell(job), cand.policy_factory, SeedCache())
+            _REF_CACHE[key] = [float(x) for x in fr.normalized]
+        return cand, {**rrec, "per_seed_normalized": list(_REF_CACHE[key]), "churn_reevaluated": True}, path
+
+   250	        up = {(rid if k == cid else k): v for k, v in (ev.get("upstream") or {}).items()}
+   251	        write(R.eval_path(view, rid), {**ev, "id": rid, "upstream": up})
+   252	    if db is not None:
+   253	        write(Path(view) / "doubling" / (R._safe(rid) + ".json"), {**db, "id": rid})
+   254	
+   255	
+   256	def gate_compare(src, out, rid: str, cid: str, require_identical: bool = False) -> dict:
+   257	    """The p = 0 gate (plan draft 2, section 3 c): the churn cell `cid` at p = 0 against the registered cell `rid`, by the
+   258	    reset driver's draft-5 criteria for the search and evaluation (`compare`) and the doubling check (`compare_doubling`)."""
+   259	    view = Path(out) / "gate_view"; _mapped_view(out, view, cid, rid)
+   260	    s, d = F.compare(src, view, rid), F.compare_doubling(src, view, rid)
+   261	    ok = bool(s["pass"] and d["pass"])
+   262	    same = bool(ok and s.get("identical") and d.get("max_knob_rel") == 0 and d.get("max_change_abs") == 0 and d.get("max_gain_abs") == 0)
+   263	    res = {"stage": "churn p=0 gate", "registered": rid, "churn": cid, "pass": ok, "identical": same, "require_identical": bool(require_identical),
+   264	           "gate_ok": F.pod_gate_ok({"pass": ok, "identical": same}, require_identical), "search": s, "doubling": d}
+   265	    write(Path(out) / "gate.json", res)
+   266	    return res
+   267	
+   268	
+   269	STOP_USD, POD_USD_PER_HOUR = 8.00, 0.56            # author, 2026-11-10: stop cap 8 USD for this arm (category followup)
+   270	
+   271	
+   272	def check_started(started, now: float | None = None) -> None:
+   273	    """Production runs need the pod's allocation time (epoch seconds, in the past)."""
+   274	    import math
+   275	    import time
+   276	    now = time.time() if now is None else now
+   277	    if started is None or not isinstance(started, (int, float)) or not math.isfinite(started) or not (1.6e9 < float(started) <= now):
+   278	        raise SystemExit(f"churn arm refused: --started must be the pod's allocation time in epoch seconds, got {started!r}")
+   279	
+   280	
+   281	def check_cap(started: float | None, need_s: float, cap: float = STOP_USD, usd_per_hour: float = POD_USD_PER_HOUR, now: float | None = None,
+   282	              prior_usd: float = 0.0) -> None:
+   283	    """An estimate-based stage-admission limit. No running stage is ever killed (author, 2026-11-10): before each stage,
+   284	    the pod time billed since `started`, plus the charges of earlier failed attempts (`prior_usd`), plus the stage's
+   285	    estimate, is compared with the cap, and the driver stops between stages if it would be passed. A stage that overruns
+   286	    its estimate can therefore end above the cap; pod deletion on completion or failure is the launcher's job."""
+   287	    import time
+   288	    if started is None:
+   289	        return
+   290	    spent = float(prior_usd) + ((now if now is not None else time.time()) - float(started)) / 3600 * usd_per_hour
+   291	    need = float(need_s) / 3600 * usd_per_hour
+   292	    if spent + need > cap:
+   293	        raise SystemExit(f"churn arm stopped between stages: {spent:.2f} USD billed + {need:.2f} USD for the next stage would pass the {cap:.2f} USD cap")
+   294	
+   295	
+   296	def inventory(out, p: float) -> dict:
+   297	    inv = F.inventory(out)
+   298	    inv["environment"]["churn_driver_sha256"] = sha_file(Path(__file__)); inv["churn"] = float(p); inv["deviations"] = list(DEVIATIONS)
+   299	    write(Path(out) / "inventory.json", inv)
+   300	    return inv
+   301	
+   302	
+   303	def require_gate(base, require_identical: bool = False) -> dict:
+   304	    """Every production churn stage needs a saved p = 0 gate of this driver version that passed its criterion; on the pod
+   305	    (`require_identical`) that criterion is bit identity (the author's decision, card touchstone-reset-repro-pass)."""
+   306	    g = read(Path(base) / "gate-p0" / "gate.json"); inv = read(Path(base) / "gate-p0" / "inventory.json")
+   307	    want = R.cell_id(f"{GATE_CELL[0]}@rho0.2", GATE_CELL[1], "D2+H3", "profit")
+   308	    if not g or not g.get("pass") or not g.get("gate_ok", g.get("pass")) or g.get("registered") != want or g.get("churn") != f"{want}|churn0":
+   309	        raise SystemExit("churn arm refused: no saved passing p = 0 gate for this cell")
+   310	    if require_identical and not (g.get("require_identical") and g.get("gate_ok") and g.get("identical")):
+   311	        raise SystemExit("churn arm refused: the saved gate is not a bit-identical pod gate")
+   312	    if not inv or inv.get("environment", {}).get("churn_driver_sha256") != sha_file(Path(__file__)):
+   313	        raise SystemExit("churn arm refused: the saved gate was run by another driver version")
+   314	    return g
+   315	
+   316	
+   317	def plan_workers(limit: int, task_peak: int, parent: int, requested: int, headroom: float = 0.9) -> int:
+   318	    """Workers for the four-profile stages that fit the memory limit: floor((headroom x limit - parent) / task peak)."""
+   319	    n = int((headroom * limit - parent) // task_peak)
+   320	    if n < 1:
+   321	        raise SystemExit(f"churn arm refused: memory limit {limit} bytes holds no {task_peak}-byte task")
+   322	    return min(int(requested), n)
+   323	
+   324	
+   325	def memory_limit() -> int:
+   326	    """The cgroup memory limit (v2 or v1), else the physical memory."""
+   327	    import os
+   328	    for f in ("/sys/fs/cgroup/memory.max", "/sys/fs/cgroup/memory/memory.limit_in_bytes"):
+   329	        try:
+   330	            v = Path(f).read_text().strip()
+   455	
+   456	
+   457	def _waves(n: int, w: int) -> int:
+   458	    return -(-n // max(1, w)) if n > 0 else 0
+   459	
+   460	
+   461	def _run_rate(out, jobs, steps, a, salt_sha, container, p, started) -> None:
+   462	    F.check_configs(jobs, container); F.check_salt(out, salt_sha, jobs); F.check_commit(jobs); F.check_code()
+   463	    if not a.smoke:
+   464	        F.check_pairing(a.src, jobs)
+   465	    slow = 1.33 if p > 0 else 1.0
+   466	    lim = None if a.smoke else memory_limit()                                   # review r4: the limit persists across commands
+   467	    sv = saved_workers(out, lim); w_mem = min(a.workers_eval, sv) if sv else a.workers_eval
+   468	    cap = lambda need: check_cap(started, need, a.stop_usd, a.usd_per_hour, prior_usd=a.prior_usd)
+   469	    for st in steps:
+   470	        if st == "inputs":
+   471	            F.copy_inputs(a.src, out, F.inputs(a.src, jobs))
+   472	        elif st == "search":
+   473	            cap(STAGE_SECONDS["search"] * slow * _waves(len(jobs), a.workers_search)); run_stage("search", jobs, out, a.workers_search)
+   474	        elif st == "freeze":
+   475	            F.prefreeze(out, jobs)
+   476	        elif st in ("evaluate", "doubling"):
+   477	            sec = STAGE_SECONDS[st] * slow
+   478	            k = len(preflight_sample(st, jobs)) if (not a.smoke and len(jobs) > 1) else 0
+   479	            cap(sec * (k + _waves(len(jobs) - k, w_mem)))                       # admission includes the serial preflight tasks
+   480	            F.accept(out, jobs, salt_sha, container, src=a.src)
+   481	            if k:
+   482	                mp = memory_preflight(st, jobs, out, w_mem)
+   483	                w_mem = save_workers(out, min(w_mem, mp["workers"]), mp.get("limit_bytes", lim), st)
+   484	                fresh = set() if mp.get("reused") else set(mp["measured"])      # just run in this command: their records exist
+   485	                cap(sec * _waves(len(jobs) - len(fresh), w_mem))                 # admission again with the chosen workers
+   486	            run_stage(st, jobs, out, w_mem)       # review r5: every job passes through _run_one, which skips a valid record
+   487	                                                  # and recomputes a missing or damaged one
+   488	        elif st == "diagnostics":
+   489	            if not a.smoke and len(jobs) > 1:
+   490	                sv = saved_workers(out, lim)
+   491	                if sv is None:
+   492	                    raise SystemExit("churn arm refused: diagnostics needs memory evidence (an evaluate or doubling preflight "
+   493	                                     "of this output on this memory limit)")
+   494	                w_mem = min(w_mem, sv)
+   495	            cap(STAGE_SECONDS["diagnostics"] * slow * _waves(len(jobs), w_mem))
+   496	            write(Path(out) / "diagnostics.json", diagnostics(out, jobs, w_mem))
+   497	        else:
+   498	            inventory(out, p)
+   499	        print(json.dumps({"churn": p, "stage": st, "jobs": len(jobs), "workers_memory": w_mem}), flush=True)
+   500	
+   501	
+   502	def main(argv=None) -> int:
+   503	    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+   504	    ap.add_argument("--src", default=str(F.EVAL_ALL)); ap.add_argument("--out", required=True)
+   505	    ap.add_argument("--draw", default=str(F.ROOT / "results/v2/draw/draw.json")); ap.add_argument("--instances", default=str(F.ROOT / "results/v2/draw/instances.json"))
+   506	    ap.add_argument("--cfgs", default=str(F.ROOT / "results/v2/deviation/cfg_linux.json")); ap.add_argument("--addendum", default=str(F.ROOT / "results/v2/report/addendum.json"))
+   507	    ap.add_argument("--params", default=str(F.ROOT / "experiments/v2/params.json")); ap.add_argument("--markets", default=",".join(MARKETS))
+   508	    ap.add_argument("--rules", default=",".join(RULES)); ap.add_argument("--rates", default=",".join(f"{p:g}" for p in RATES))
+   509	    ap.add_argument("--stage", default="all", choices=("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory", "all"))
+   510	    ap.add_argument("--workers-search", dest="workers_search", type=int, default=16); ap.add_argument("--workers-eval", dest="workers_eval", type=int, default=9)
+   511	    ap.add_argument("--started", type=float, default=None, help="epoch seconds of pod allocation; spend is billed from it")
+   512	    ap.add_argument("--stop-usd", dest="stop_usd", type=float, default=STOP_USD)
+   513	    ap.add_argument("--usd-per-hour", dest="usd_per_hour", type=float, default=None, help="the pod's actual hourly price (required in production)")
+   514	    ap.add_argument("--prior-usd", dest="prior_usd", type=float, default=0.0, help="charges of earlier failed attempts of this arm")
+   515	    ap.add_argument("--gate", choices=("first", "only", "skip"), default="first", help="the p = 0 reproduction gate (plan section 3 c)")
+   516	    ap.add_argument("--require-identical", dest="req_id", action="store_true", help="the pod gate: bit identity (the author's decision)")
+   517	    ap.add_argument("--smoke", action="store_true")
+   518	    a = ap.parse_args(argv); base = Path(a.out); F.check_out(base, a.src)
+   519	    if not a.smoke:
+   520	        check_started(a.started)
+   521	        if a.usd_per_hour is None or not a.usd_per_hour > 0:
+   522	            raise SystemExit("churn arm refused: --usd-per-hour must be the pod's actual hourly price")
+   523	        if a.gate == "skip":
+   524	            raise SystemExit("churn arm refused: production runs cannot skip the gate")
+   525	        if a.stage != "all":
+   526	            require_gate(base, a.req_id)
+   527	        base.mkdir(parents=True, exist_ok=True)
+   528	        write(base / "run.json", {"started": a.started, "usd_per_hour": a.usd_per_hour, "prior_usd": a.prior_usd, "stop_usd": a.stop_usd})
+   529	    if a.usd_per_hour is None:
+   530	        a.usd_per_hour = POD_USD_PER_HOUR
+   531	    from sim.records import cfg_from_dict
+   532	    root = json.loads(Path(a.draw).read_text())["hash"]; salt_sha = json.loads(Path(a.instances).read_text())["salt_sha256"]
+   533	    container = json.loads(Path(a.addendum).read_text())["deviations"]["configs"]
+   534	    cfgs = {k: cfg_from_dict(v) for k, v in json.loads(Path(a.cfgs).read_text()).items()}
+   535	    params = json.loads(Path(a.params).read_text())
+   536	    steps = ("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory") if a.stage == "all" else (a.stage,)
+   537	    install()
+   538	    if a.gate != "skip" and a.stage == "all":
+   539	        out = base / "gate-p0"; out.mkdir(parents=True, exist_ok=True); R.install_salt(root, out)
+   540	        jobs = build_jobs(root, cfgs, params, salt_sha, 0.0, (GATE_CELL[0],), (GATE_CELL[1],), a.smoke)
+   541	        _run_rate(out, jobs, ("inputs", "search", "freeze", "evaluate", "doubling", "inventory"), a, salt_sha, container, 0.0, a.started)
+   542	        rid = R.cell_id(f"{GATE_CELL[0]}@rho0.2", GATE_CELL[1], "D2+H3", "profit")
+   543	        g = gate_compare(a.src, out, rid, jobs[0]["id"], a.req_id); inventory(out, 0.0)
+   544	        print(json.dumps({"gate_ok": g["gate_ok"], "identical": g["identical"], "search": g["search"].get("problems"), "doubling": g["doubling"].get("problems")}), flush=True)
+   545	        if not g["gate_ok"] and not a.smoke:
+   546	            print("churn arm stopped: the p = 0 gate failed", file=sys.stderr)
+   547	            return 1
+   548	        if a.gate == "only":
+   549	            return 0 if g["gate_ok"] else 1
+   550	    if not a.smoke:
+   551	        require_gate(base, a.req_id)
+   552	    for p in (float(x) for x in a.rates.split(",")):
+   553	        out = base / f"p{p:g}"; out.mkdir(parents=True, exist_ok=True); R.install_salt(root, out)
+   554	        jobs = build_jobs(root, cfgs, params, salt_sha, p, tuple(a.markets.split(",")), tuple(a.rules.split(",")), a.smoke)
+   555	        _run_rate(out, jobs, steps, a, salt_sha, container, p, a.started)
+   556	    return 0
+   557	
+   558	
+   559	if __name__ == "__main__":
+   560	    sys.exit(main())
+    16	2. The preflight runs real tasks (one evaluate task per rule, one doubling task) in child processes, takes the largest
+    17	   peak with a 25 percent margin for markets, rules and winners, and keeps their records; doubling is measured itself.
+    18	3. The pod gate requires bit identity (`--require-identical`, the semantics of the reset driver's `pod_gate_ok`; the
+    19	   author's decision on card `touchstone-reset-repro-pass`); the Mac gate keeps the tolerance criterion.
+    20	4. The launcher is a reviewed copy of `results/pods/reset_pod.sh` with `podctl.py` (draft in
+    21	   `docs/revision/churn/churn_pod.sh`): stages stop only between stages at the soft cap; the one exception is the
+    22	   watchdog, which deletes the pod at 1.3 times the cap at the price ceiling; attempts persist in its attempts file, with
+    23	   the bound at the ceiling; it passes the allocation time, the price and the earlier attempts' charges to the driver.
+    24	
+    25	**Changes from draft 2** (internal review round 2, `docs/revision/roster/{sol,astra}-churn-plan-r2.md`: Sol
+    26	accept-with-caveat, Astra reject):
+    27	1. Production runs require the pod's allocation time (`--started`) and its actual hourly price (`--usd-per-hour`), and
+    28	   carry the charges of earlier failed attempts (`--prior-usd`); all three are saved in `run.json`. The 8 USD limit is
+    29	   described as an estimate-based stage-admission limit that an overrunning stage can exceed under the no-kill rule; pod
+    30	   deletion on completion or failure is the launcher's job (section 7).
+    31	2. The reservation command passes the unpadded estimate, 4.43 USD; the wrapper applies the factor 1.25.
+    32	3. Every production stage, including separate-stage and resumed runs, requires a saved passing gate record of this
+    33	   driver version; production cannot skip the gate (section 3 c).
+    34	4. A pod-side memory preflight before the nine-worker stages: the cgroup limit, one full evaluate task's peak (four
+    35	   profiles) in a child process, the parent's own memory, and fewer workers if needed (section 7).
+    36	5. The creation-time newest statistic is labelled as such, and the mechanism-relevant one is added: first-offer age among
+    37	   the identities holding assigned jobs (section 4).
+    38	6. Expectation 4 is narrowed to a cross-rule difference under churn (section 6).
+    39	
+   220	billed time, not core-hours, so the reservation below still covers the expected 3.85 USD.
+   221	
+   222	**Budget** (author, 2026-11-10). The arm uses the shared ledger category `followup` (cap 22 USD for all follow-up runs).
+   223	Before the pod: `docs/revision/followup/budget_followup.py --reserve churn-pod 8.32` (amended 2026-11-12, launcher review
+   224	r1: the wrapper reserves 8.32 x 1.25 = 10.40 USD, the watchdog bound of 1.3 x the stop cap; the earlier 4.43 USD
+   225	estimate padded to 5.54 USD would not cover that bound). **Stop cap 8.00 USD, an estimate-based stage-admission limit.** No running
+   226	stage is ever killed (author, 2026-11-10): before each stage the driver adds the pod time billed since allocation at the
+   227	pod's actual hourly price, the charges of earlier failed attempts, and the stage's estimate, and stops between stages
+   228	if the sum would pass the cap, then reports. Production runs refuse to start without `--started` (the allocation time)
+   229	and `--usd-per-hour`; with `--prior-usd`, all are saved in `run.json`. A stage that overruns its estimate can end above
+   230	the cap.
+   231	
+   232	**Launcher** (a copy of `results/pods/reset_pod.sh` with `podctl.py`, unchanged pod safety; draft
+   233	`docs/revision/churn/churn_pod.sh`, installed in `results/pods/` after review): code and tarball guards; creation only
+   234	before the hard deadline; the price checked against the ceiling `MAXCPH`; the memory floor (28 GiB); the gate, then the
+   235	stages, each started only if no STOP file exists and the soft deadline has not passed (the soft deadline is the cap at
+   236	the ceiling, net of earlier attempts' charges); at the soft deadline it writes STOP, so the pod stops after the running
+   237	stage. **The one exception to "no running stage is killed":** the `podctl.py` watchdog deletes the pod at 1.3 times the
+   238	cap at the price ceiling (10.40 USD at most for this arm), also mid-stage, as an absolute guard against a hung pod. Spend
+   239	(amended 2026-11-12, launcher review r1) is recorded as the account balance difference (`podctl.py spend NAME`, at
+   240	least an hour after the watchdog ends); the launcher prints only estimates. Its attempts file holds each pod's id,
+   241	request time and deletion time. The launcher passes to the driver the live pod's request time as `--started`, its
+   242	actual price, and as `--prior-usd` the operator's `PRIOR` (recorded spend of earlier launches of this arm) plus this
+   243	launch's deleted attempts charged at the ceiling from their request times, rounded up. Both deadlines are net of
+   244	`PRIOR`, so the 10.40 USD bound holds across launches. An EXIT, INT or TERM trap pulls the records, verifies them against the inventories, deletes the pod, and
+   245	verifies the deletion; the watchdog keeps deleting until no pod of this name remains.
+   246	
+   247	## 8. Steps
+   248	
+   249	1. Internal review of this plan to consensus; freeze it (commit).
+   250	2. The author's approval of the follow-up limit is recorded; the reservation of 5.54 USD under `followup`.
+   251	3. One pod: the p = 0 gate, then the 36 cells; delete the pod and verify the deletion; record the spend.
+   252	4. Analysis in `docs/revision/posthoc/` (tested first); a paper paragraph and table, labelled exploratory.
+   253	
+   254	## 9. Commands behind the numbers
+   255	
+#!/bin/bash
+# Offline harness for churn_pod.sh (derived from test_reset_pod_harness.sh) with podctl.py and create_one.py (no real pods). A fake runpod.py keeps pods, pending
+# (delayed) creations and stuck deletions in state.json; a fake create_one.py makes one request per call. Every fake
+# holds an exclusive lock on state.json for its whole read-modify-write (r15). Each scenario asserts: the pods left (0),
+# the exact number of creation requests, the launcher exit status, the end state (an anchored pattern), that the
+# watchdog ended by itself (unless the scenario expects it to stay, fail-closed) and released the launch lock, and, where
+# stated, a watchdog log line, a launcher output line, and a line that must not appear (NOTOUT).
+set -u; H=$(mktemp -d); cd $H; SRC=/Users/oemer.demirel/Projects/touchstone/results/pods
+sed "s#P=/Users/oemer.demirel/Projects/touchstone/results/pods#P=$H#; s#snapf=\"/Users/oemer.demirel/Projects/touchstone/results/pods/snap_#snapf=\"$H/snap_#" $SRC/churn_pod.sh > churn_pod.sh
+cp $SRC/podctl.py .
+mkdir -p g && (cd g && git init -q && git -c commit.gpgsign=false -c user.email=x@x -c user.name=x commit -q --allow-empty -m x && git -c tag.gpgsign=false tag protocol-v2 && COPYFILE_DISABLE=1 tar --uid 0 --gid 0 -czf ../c.tgz .)
+C=$(git -C g rev-parse HEAD); echo x > b; tar czf b.tgz b; export HC=$C
+# prepared remote outputs with inventories, for the RUN OK scenario
+python3 - <<'EOF'
+import hashlib, json, os
+for d in ("remote/followup-churn/gate-p0", "remote/followup-churn/p0.01", "remote/followup-churn/p0.05"):
+    os.makedirs(d, exist_ok=True); open(f"{d}/r.json", "w").write('{"x": 1}')
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg -n '"'^def (inventory|inputs|check_pairing|check_configs|check_out)|EVAL_ALL|ROOT =|read'"\\(' docs/revision/followup/reset_followup_v2.py; nl -ba docs/revision/churn/churn_pod.sh | sed -n '167,224p'; sed -n '1,28p' docs/revision/budget-ledger.json; git diff --stat 4d963a3 -- docs/revision/churn/" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+20:ROOT = Path(__file__).resolve().parents[3]          # docs/revision/followup/ (code after the freeze lives under docs/)
+30:EVAL_ALL = ROOT / "results" / "v2" / "eval" / "all"
+55:def check_out(out, src=None) -> None:
+57:    for e in {Path(EVAL_ALL).resolve()} | ({Path(src).resolve()} if src else set()):
+65:def check_pairing(src, jobs: list[dict]) -> None:
+69:        ref = read(R.path_of(src, f"reference/{j['context']}/{j['rule']}"))
+144:def inputs(src, jobs: list[dict]) -> dict[str, str]:
+150:        ctx = j["context"]; fr = read(R.path_of(src, f"freeze/{ctx}"))
+158:        ref = read(R.path_of(src, rid))
+173:            for k, v in ((read(R.path_of(src, u)) or {}).get("upstream") or {}).items():
+194:    prev = read(Path(out) / "inputs.json")
+200:def check_configs(jobs: list[dict], container: dict) -> None:
+209:    return {r: s for r, s in (read(Path(out) / "inputs.json") or {}).items() if ctx in r}
+217:            p = R.path_of(out, j["id"]); rec = read(p)
+222:        p = R.path_of(out, f"freeze/{ctx}"); old = read(p)
+236:        have = read(Path(out) / "inputs.json") or {}
+240:        fr = read(R.path_of(out, f"freeze/{ctx}"))
+256:def inventory(out) -> dict:
+304:        pols = {"d2h3_base": read(R.path_of(src, h3))["attack"]["best_knobs"], "d2h3_doubled": report["doubling"][h3]["heldout"]["knobs"],
+305:                "d2_base": with_x(read(R.path_of(d2_from or out, j["id"]))["attack"]["best_knobs"], 0)}
+343:    a, b = read(R.path_of(src, rid)), read(R.path_of(out, rid)); ea, eb = read(R.eval_path(src, rid)), read(R.eval_path(out, rid))
+392:    a, b = read(p(src)), read(p(out))
+422:    reg = read(R.path_of(src, rid))
+444:    reg = read(R.path_of(src, REPRO))
+478:    ap.add_argument("--src", default=str(EVAL_ALL)); ap.add_argument("--out", required=True)
+   167	# Charges before this pod, for the driver's cap admission: PRIOR (earlier launches, recorded) plus this launch's
+   168	# deleted attempts at the ceiling MAXCPH (an upper bound; the balance difference records the real spend).
+   169	PRIORT=$($PY - "$ATT" "$MAXCPH" "$PRIOR" <<'PYA'
+   170	import math, sys
+   171	start, tot = {}, float(sys.argv[3])
+   172	for l in open(sys.argv[1]):
+   173	    f = l.split()
+   174	    if len(f) == 3 and f[2] == "start": start[f[0]] = int(f[1])
+   175	    elif len(f) == 3 and f[2] == "deleted" and f[0] in start: tot += (int(f[1]) - start.pop(f[0])) / 3600 * float(sys.argv[2])
+   176	print(math.ceil(tot * 10000) / 10000)   # rounded up, never down (r1 review)
+   177	PYA
+   178	) || { state="PRIOR CHARGES UNKNOWN"; exit 1; }
+   179	RS=$(mktemp "/tmp/${NAME}_remote.XXXXXX") || { state="CANNOT WRITE THE REMOTE SCRIPT"; exit 1; }   # private path (r1 review)
+   180	cat > "$RS" <<EOS
+   181	#!/bin/bash
+   182	R=\${REMOTE_ROOT:-/root}   # the pod's root; the offline harness runs this script under another root with a stub driver
+   183	echo "== remote started \$(date +%H:%M)"
+   184	cd \$R/touchstone || { echo "== RUN FAILED at setup \$(date +%H:%M)"; exit 1; }; export OMP_NUM_THREADS=1 PATH=\$HOME/.local/bin:\$PATH; unset TOUCHSTONE_IDENTITY_SALT; unset TOUCHSTONE_LOCKED
+   185	B=\$R/bundle; A="--src \$B/eval-all --draw \$B/draw/draw.json --instances \$B/draw/instances.json --cfgs \$B/deviation/cfg_linux.json --addendum \$B/report/addendum.json --started $a0 --usd-per-hour $cph --prior-usd $PRIORT --stop-usd $CAP --require-identical"
+   186	D=docs/revision/churn/churn_v2.py
+   187	{ [ -e \$R/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE gate (cap) \$(date +%H:%M)"; exit 1; }
+   188	echo "== gate start \$(date +%H:%M)"
+   189	# the gate passes the same cap admission as the stages: a refusal is a stop, a failed gate is GATE FAILED only when the
+   190	# driver says so, and any other error is RUN FAILED (r1 review)
+   191	uv run --frozen python \$D --gate only --out results/v2/followup-churn \$A >> results/logs/c_gate.log 2>&1 || {
+   192	  if tail -n 5 results/logs/c_gate.log | grep -q "stopped between stages"; then echo "== STOPPED BEFORE gate (cap, driver admission) \$(date +%H:%M)"
+   193	  elif tail -n 5 results/logs/c_gate.log | grep -q "the p = 0 gate failed"; then echo "== GATE FAILED \$(date +%H:%M)"
+   194	  else echo "== RUN FAILED at gate \$(date +%H:%M)"; fi; exit 1; }
+   195	echo "== gate passed (bit-identical) \$(date +%H:%M)"
+   196	for st in inputs search freeze evaluate doubling diagnostics inventory; do
+   197	  { [ -e \$R/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE \$st (cap) \$(date +%H:%M)"; exit 1; }
+   198	  echo "== stage \$st start \$(date +%H:%M) workers search $v, evaluation at most $WEVAL"
+   199	  uv run --frozen python \$D --stage \$st --workers-search $v --workers-eval $WEVAL --out results/v2/followup-churn \$A >> results/logs/c_run.log 2>&1 || {
+   200	    if tail -n 5 results/logs/c_run.log | grep -q "stopped between stages"; then echo "== STOPPED BEFORE \$st (cap, driver admission) \$(date +%H:%M)"; else echo "== RUN FAILED at \$st \$(date +%H:%M)"; fi; exit 1; }
+   201	done
+   202	echo "== RUN OK \$(date +%H:%M)"
+   203	EOS
+   204	tmo 120 $PY runpod.py push $id "$RS" /root/r_remote.sh >/dev/null 2>&1 || { state="UPLOAD FAILED (remote script)"; exit 1; }
+   205	tmo 120 $PY runpod.py ssh $id "chmod +x /root/r_remote.sh && (nohup /root/r_remote.sh > /root/touchstone/results/logs/r_remote.log 2>&1 < /dev/null &)" >/dev/null 2>&1 || { state="REMOTE START FAILED"; exit 1; }
+   206	# the run counts as started only when the remote script's first line is in its log (r16)
+   207	for i in 1 2 3 4 5 6; do sleep 10; tmo 30 $PY runpod.py ssh $id "grep -q 'remote started' /root/touchstone/results/logs/r_remote.log" >/dev/null 2>&1 && { started=1; break; }; done
+   208	[ -n "$started" ] || { state="REMOTE START FAILED (no start line)"; exit 1; }
+   209	state="RUNNING"; stopped=""
+   210	while true; do
+   211	  sleep 120
+   212	  now=$(date +%s)
+   213	  [ "$now" -ge "$hard" ] && { state="HARD DEADLINE ($HARD x cap at $MAXCPH USD/h; the watchdog deletes the pod)"; exit 1; }
+   214	  if [ "$now" -ge "$soft" ] && [ -z "$stopped" ]; then tmo 60 $PY runpod.py ssh $id 'touch /root/STOP && test -e /root/STOP' >/dev/null 2>&1 && stopped=1 && echo "$(date +%H:%M) cap reached: the pod stops after the running stage"; fi
+   215	  st=$(tmo 90 $PY runpod.py ssh $id "tail -c 240 /root/touchstone/results/logs/r_remote.log" 2>/dev/null | tr '\n' ' ')
+   216	  echo "$(date +%H:%M) [soft $(( soft - now ))s, hard $(( hard - now ))s] $st" | tail -c 320
+   217	  case "$st" in
+   218	    *"RUN OK"*) state="RUN OK"; rc=0; exit 0 ;;
+   219	    *"GATE FAILED"*) state="GATE FAILED (the driver reports the p = 0 gate failed: not passing or not bit-identical; churn cells not started)"; exit 1 ;;
+   220	    *"RUN FAILED"*|*"STOPPED BEFORE"*) state="$(echo "$st" | grep -o '== [A-Z].*' | head -c 120 | sed "s/[[:space:]]*\$//")"; exit 1 ;;
+   221	  esac
+   222	done
+{
+ "caps": {
+  "development": 12.0,
+  "evaluation": 43.0,
+  "followup": 72.0
+ },
+ "reservations": [
+  {
+   "op": "followup",
+   "tag": "churn-pod",
+   "cap": 10.4
+  }
+ ],
+ "spent": [
+  {
+   "op": "development",
+   "tag": "bench",
+   "usd": 2.54
+  },
+  {
+   "op": "development",
+   "tag": "tune-B3-t",
+   "usd": 1.69
+  },
+  {
+   "op": "development",
+   "tag": "tune-R3-t",
+   "usd": 1.75
+ docs/revision/churn/churn-plan.md             | 18 ++++---
+ docs/revision/churn/churn_pod.sh              | 42 ++++++++++------
+ docs/revision/churn/test_churn_pod_harness.sh | 72 +++++++++++++++++++++++++--
+ 3 files changed, 104 insertions(+), 28 deletions(-)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '1,45p' docs/revision/followup/reset_followup_v2.py; sed -n '140,207p' docs/revision/followup/reset_followup_v2.py; sed -n '250,276p' docs/revision/followup/reset_followup_v2.py; rg -n '"'^def build_jobs|''^GATE_CELL|''^def path_of|''^def _safe'"' docs/revision/churn/churn_v2.py scripts/revision_v2.py; nl -ba /Users/oemer.demirel/Projects/touchstone/results/pods/podctl.py | sed -n '150,265p'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+"""The reset follow-up (docs/revision/reset-experiment-plan.md, draft 4, section 3): the 18 D2 cells that cut 3 removed
+(F000, F111, C* x fresh0..fresh5 at rho 0.2), run with the frozen stage functions of scripts/revision_v2.py.
+
+Three things of the frozen runner are bypassed, each a recorded deviation (DEVIATIONS): the manifest's cut list, the
+hard-coded doubling eligibility, and the original freeze. Everything else is the frozen code: `job`, `stage_search`,
+`stage_evaluate`, `stage_doubling`, reached through `revision_v2._run_one`, so the record format and the dependency sets
+are the registered ones.
+
+Order: copy the inputs (the frozen references, the menu searches and bank sources they list, each checked against the
+hash the original records hold), search, the follow-up freeze, acceptance, evaluation, acceptance, doubling, inventory.
+The output directory is never results/v2/eval/all."""
+from __future__ import annotations
+
+import argparse
+import json
+import shutil
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]          # docs/revision/followup/ (code after the freeze lives under docs/)
+sys.path.insert(0, str(ROOT / "scripts")); sys.path.insert(0, str(ROOT))
+
+import revision_v2 as R  # noqa: E402
+from sim import manifest_v2 as MAN  # noqa: E402
+from sim.records_v2 import read, sha_file, write  # noqa: E402
+
+RULES = ("F000", "F111", "C*")
+MARKETS = tuple(f"fresh{i}" for i in range(6))
+CUTS, H4_EXCLUDED = 3, False                        # the registered evaluation: cuts 3, H4 loaded (results/v2/draw/h4.json)
+EVAL_ALL = ROOT / "results" / "v2" / "eval" / "all"
+DEVIATIONS = (
+    "manifest cut list bypassed: the 18 D2 cells (F000, F111, C* x fresh0..fresh5, rho 0.2) that cut 3 removed are run",
+    "doubling eligibility bypassed: each of the 18 cells gets a doubling check with its held-out evaluation",
+    "original freeze bypassed: this script's follow-up freeze and acceptance check replace revision_v2.accept",
+)
+
+
+def _refuse(msg: str):
+    raise SystemExit(f"reset follow-up refused: {msg}")
+
+
+def cell_ids(markets=MARKETS) -> list[str]:
+    return [R.cell_id(MAN.context(m), r, "D2", "profit") for m in markets for r in RULES]
+
+
+    """The registered menu and cuts-3 bank of a reference (revision_v2.expected_upstream)."""
+    return R.expected_upstream(rid, [], CUTS, H4_EXCLUDED)
+
+
+def inputs(src, jobs: list[dict]) -> dict[str, str]:
+    """Every record the frozen evaluation and doubling stages read for `jobs`, with the hash the original records hold:
+    the reference from the context's original freeze, its menu and bank records from the reference's `upstream`, and
+    (recursively) the `upstream` of each copied search record."""
+    need: dict[str, str] = {}
+    for j in jobs:
+        ctx = j["context"]; fr = read(R.path_of(src, f"freeze/{ctx}"))
+        if fr is None:
+            _refuse(f"the original freeze of {ctx} is missing")
+        if "cuts" not in fr or "h4_excluded" not in fr or fr["cuts"] != CUTS or fr["h4_excluded"] != H4_EXCLUDED:
+            _refuse(f"the original freeze of {ctx} does not state cuts {CUTS} with H4 loaded")
+        rid = f"reference/{ctx}/{j['rule']}"
+        if rid not in fr["records"]:
+            _refuse(f"{rid} is not in the original freeze of {ctx}")
+        ref = read(R.path_of(src, rid))
+        if ref is None:
+            _refuse(f"{rid} is missing in {src}")
+        want = _expected_reference_upstream(rid)
+        if want is not None and set(ref.get("upstream") or {}) != want:
+            _refuse(f"{rid}: its dependencies are not the registered menu and cuts-{CUTS} bank")
+        need[rid] = fr["records"][rid]; todo = dict(ref["upstream"])
+        while todo:
+            u, s = todo.popitem()
+            if need.setdefault(u, s) != s:
+                _refuse(f"{u}: two original records hold different hashes")
+            if u not in fr["records"]:
+                _refuse(f"{u}: not in the original freeze of {ctx}")
+            if fr["records"][u] != s:
+                _refuse(f"{u}: its hash differs from the original freeze of {ctx}")
+            for k, v in ((read(R.path_of(src, u)) or {}).get("upstream") or {}).items():
+                if need.get(k, v) != v or todo.get(k, v) != v:
+                    _refuse(f"{k}: two original records hold different hashes")
+                if k not in need:
+                    todo[k] = v
+    return need
+
+
+def copy_inputs(src, out, need: dict[str, str]) -> None:
+    """Copy each input read-only, checked against its recorded hash; an existing identical copy is kept."""
+    for rid, sha in sorted(need.items()):
+        p, q = R.path_of(src, rid), R.path_of(out, rid)
+        if not p.exists():
+            _refuse(f"input {rid} is missing in {src}")
+        if sha_file(p) != sha:
+            _refuse(f"input {rid} differs from the hash in the original records")
+        if q.exists():
+            if sha_file(q) != sha:
+                _refuse(f"{q} exists and differs from the original {rid}")
+            continue
+        q.parent.mkdir(parents=True, exist_ok=True); shutil.copyfile(p, q); q.chmod(0o444)
+    prev = read(Path(out) / "inputs.json")
+    if prev is not None and any(prev[k] != v for k, v in need.items() if k in prev):
+        _refuse("inputs.json lists other hashes for the same records")
+    write(Path(out) / "inputs.json", {**(prev or {}), **need})
+
+
+def check_configs(jobs: list[dict], container: dict) -> None:
+    """Each job's configuration hash equals the recorded container hash (addendum.json deviations.configs)."""
+    for j in jobs:
+        label = j["mkt"]["label"]; want = (container.get(label) or {}).get("container_hash")
+        if j["provenance"]["cfg_sha256"] != want:
+            _refuse(f"{j['id']}: configuration hash {j['provenance']['cfg_sha256']} is not the container hash {want}")
+
+
+
+
+def run_stage(stage: str, jobs: list[dict], out, workers: int = 1) -> list[str]:
+    return R._pool(stage, jobs, Path(out), workers, CUTS, H4_EXCLUDED, jobs)
+
+
+def inventory(out) -> dict:
+    """Every output file with its hash, written after the outputs, so no record lists itself."""
+    out = Path(out)
+    recs = {str(p.relative_to(out)): sha_file(p) for p in sorted(out.rglob("*"))
+            if p.is_file() and p.name != "inventory.json" and not p.name.endswith((".lock", ".tmp"))}
+    inv = {"stage": "inventory", "deviations": list(DEVIATIONS), "environment": environment(), "records": recs}
+    write(out / "inventory.json", inv)
+    return inv
+
+
+def reset_stats(results, focal: int) -> dict:
+    """Plan section 4: per episode, the focal provider's identity replacements, the rounds they were created, the rounds
+    without a focal offer (banned or waiting), and the ban rounds imposed on its identities."""
+    import numpy as np
+    resets, rounds, no_offer, bans = [], [], [], []
+    for r in results:
+        mine = [i for i, e in enumerate(r.entity_of) if e == focal]
+        new = [i for i in mine if r.identity_generation[i] > 0]
+        resets.append(len(new)); rounds.append([int(r.identity_round[i]) for i in new])
+        no_offer.append(int(np.isnan(r.claims[:, focal]).sum()))
+        bans.append(int(sum(v for h in r.history for i, v in h.consequences.bans.items() if i in mine)))
+docs/revision/churn/churn_v2.py:110:def build_jobs(root: str, cfgs: dict, params: dict, salt_sha256: str, p: float, markets=MARKETS, rules=RULES, smoke: bool = False) -> list[dict]:
+docs/revision/churn/churn_v2.py:240:GATE_CELL = ("fresh0", "F111")
+scripts/revision_v2.py:216:def _safe(s: str) -> str:
+scripts/revision_v2.py:220:def path_of(out: Path, rid: str) -> Path:
+scripts/revision_v2.py:1306:def build_jobs(markets: list[str], root: str, dev: bool, smoke: bool, params: dict | None, cuts: int, h4: dict | None, h4_excluded: bool,
+   150	
+   151	
+   152	def _utc(ts):
+   153	    return datetime.datetime.fromtimestamp(ts, datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+   154	
+   155	
+   156	def spend(name, run=_run, clock=time.time, here=HERE, mono=time.monotonic):
+   157	    """(USD rounded up to a cent, note) or (None, reason); on success also writes NAME.spent. Needs NAME.bal0, NAME.wdend
+   158	    at least WAIT_AFTER_WATCHDOG s old by both wall and monotonic time (r17; after a restart the wait cannot be verified
+   159	    and spend is refused), a successful listing with no pod named NAME, a readable balance, and a balance that did not
+   160	    rise (a rise proves a credit or deposit). The difference is valid only if no deposit or credit was added in the
+   161	    window (r16): the author confirms that on the Runpod billing page; the note names the window. It holds
+   162	    NAME.launchlock while it works, so it cannot overlap a launch (r17), and publishes NAME.spent atomically."""
+   163	    lock = os.path.join(here, f"{name}.launchlock")
+   164	    try:
+   165	        os.mkdir(lock)
+   166	    except OSError:
+   167	        return None, "a launch or its watchdog holds NAME.launchlock"
+   168	    try:
+   169	        return _spend_locked(name, run, clock, here, mono)
+   170	    finally:
+   171	        try:
+   172	            os.rmdir(lock)
+   173	        except OSError:
+   174	            pass
+   175	
+   176	
+   177	def _spend_locked(name, run, clock, here, mono):
+   178	    f0 = os.path.join(here, f"{name}.bal0")
+   179	    try:
+   180	        bal0 = Decimal(open(f0).read().split()[0]); t0 = os.path.getmtime(f0)
+   181	    except (OSError, IndexError, InvalidOperation):
+   182	        return None, "no starting balance (NAME.bal0)"
+   183	    try:
+   184	        wdend, wdmono = (float(x) for x in open(os.path.join(here, f"{name}.wdend")).read().split()[:2])
+   185	    except (OSError, ValueError):
+   186	        return None, "the watchdog has not ended"
+   187	    if mono() < wdmono:
+   188	        return None, "the machine restarted since the watchdog ended, so the wait cannot be verified; take the spend from the Runpod billing page"
+   189	    if clock() - wdend < WAIT_AFTER_WATCHDOG or mono() - wdmono < WAIT_AFTER_WATCHDOG:
+   190	        return None, f"wait until {WAIT_AFTER_WATCHDOG} s after the watchdog ended"
+   191	    pods = list_pods(run)
+   192	    if pods is None or named(pods, name):
+   193	        return None, "a pod named NAME may still exist"
+   194	    b = balance(run)
+   195	    if b is None:
+   196	        return None, "balance unknown"
+   197	    now = Decimal(str(b[0]))
+   198	    if now > bal0:
+   199	        return None, "the balance rose (a credit or deposit was added); take the spend from the Runpod billing page"
+   200	    usd = float((bal0 - now).quantize(Decimal("0.01"), rounding=ROUND_CEILING))
+   201	    note = (f"balance difference; valid only if no deposit or credit was added between {_utc(t0)} and {_utc(clock())} "
+   202	            f"(check the Runpod billing page)"
+   203	            + (f"; the account still bills {b[1]} USD/h elsewhere, so this overstates" if b[1] > 0 else ""))
+   204	    final, tmp = os.path.join(here, f"{name}.spent"), os.path.join(here, f"{name}.spent.tmp")
+   205	    try:
+   206	        with open(tmp, "w") as f:
+   207	            f.write(f"{usd} USD {note}\n"); f.flush(); os.fsync(f.fileno())
+   208	        os.replace(tmp, final)     # published only when complete (r17)
+   209	    except OSError as e:
+   210	        return None, f"could not write the spend record ({e})"
+   211	    return usd, note
+   212	
+   213	
+   214	def _request_pending(here, name):
+   215	    try:
+   216	        return open(os.path.join(here, f"{name}.request")).read().strip() == "pending"
+   217	    except OSError:
+   218	        return False
+   219	
+   220	
+   221	def watchdog(name, hard_ts, done_file, run=_run, clock=time.time, sleep=time.sleep, here=HERE, settle=SETTLE,
+   222	             mono=time.monotonic):
+   223	    """Ends only when DONE_FILE exists and successful listings show no pod named NAME for the settle time, counted from
+   224	    DONE onwards (r11); while NAME.request is "pending" (an outstanding or ambiguous creation request) the settle time is
+   225	    at least AMBIGUOUS_SETTLE. After DONE (the launcher reconciles first) any pod named NAME is an orphan and is deleted.
+   226	    From HARD_TS it also blocks creation and deletes every pod named NAME, with no retry limit. On exit it writes
+   227	    NAME.wdend and releases NAME.launchlock (it is the last process of a launch). Wall time (CLOCK) is used only for the
+   228	    hard deadline; the settle time and deletion budgets use MONO, so a clock change cannot shorten them (r16)."""
+   229	    blocked = False
+   230	    empty_since = None
+   231	    while True:
+   232	        if not blocked and clock() >= hard_ts:
+   233	            open(os.path.join(here, f"{name}.blocked"), "w").write(str(int(clock())))
+   234	            print(f"{time.strftime('%H:%M')} WATCHDOG: hard deadline; creation blocked; deleting every pod named {name}", flush=True)
+   235	            blocked = True
+   236	        done = os.path.exists(done_file)
+   237	        need = max(settle, AMBIGUOUS_SETTLE) if _request_pending(here, name) else settle
+   238	        if done or blocked:
+   239	            pods = list_pods(run)
+   240	            if pods is None:
+   241	                empty_since = None
+   242	            else:
+   243	                ids = named(pods, name)
+   244	                if ids:
+   245	                    empty_since = None
+   246	                    for i in ids:
+   247	                        print(f"{time.strftime('%H:%M')} WATCHDOG: deleting {i}", flush=True)
+   248	                        delete_verified(i, 120, run, mono, sleep)
+   249	                elif done:
+   250	                    empty_since = mono() if empty_since is None else empty_since
+   251	                    if mono() - empty_since >= need:
+   252	                        open(os.path.join(here, f"{name}.wdend"), "w").write(f"{time.time()} {time.monotonic()}")   # wall, monotonic (r17)
+   253	                        try:
+   254	                            os.rmdir(os.path.join(here, f"{name}.launchlock"))
+   255	                        except OSError:
+   256	                            pass
+   257	                        print(f"{time.strftime('%H:%M')} WATCHDOG: no pod named {name} for {need}s after the launcher was done; "
+   258	                              f"record the spend with `podctl.py spend {name}` from {WAIT_AFTER_WATCHDOG}s after now", flush=True)
+   259	                        return 0
+   260	                else:
+   261	                    empty_since = None
+   262	        sleep(30 if blocked else min(30, max(0.0, hard_ts - clock())) or 30)
+   263	
+   264	
+   265	def main(argv) -> int:
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "python3 -B -c 'from pathlib import Path
+import io, contextlib, subprocess, sys, re
+p=Path('\\''docs/revision/churn/churn_pod.sh'\\''); s=p.read_text()
+for f in (p, Path('\\''docs/revision/churn/test_churn_pod_harness.sh'\\'')):
+    subprocess.run(['\\''bash'\\'','\\''-n'\\'',str(f)],check=True)
+body=s.split('\\''cat > \""'$RS" <<EOS'"\\n'\\'',1)[1].split('\\''\\nEOS\\n'\\'',1)[0]
+values=dict(a0='\\''1794400000'\\'',cph='\\''0.56'\\'',PRIORT='\\''2.0654'\\'',CAP='\\''8'\\'',soft='\\''4000000000'\\'',v='\\''16'\\'',WEVAL='\\''9'\\'')
+remote=re.sub(r'\\''(?<"'!'"\\\\)\\"'$('"\\w+)'\\'',lambda m:values[m[1]],body).replace('\\''\\\\"'$'"'\\'','\\''"'$'"'\\'')
+subprocess.run(['\\''bash'\\'','\\''-n'\\''],input=remote,text=True,check=True)
+remote=remote.replace('\\''>> results/logs/c_gate.log'\\'','\\''>> /dev/null'\\'').replace('\\''>> results/logs/c_run.log'\\'','\\''>> /dev/null'\\'')
+stubs=\"\"\"
+exec 3>&1
+HOME=/nonexistent; REMOTE_ROOT=/nonexistent
+cd() { return 0; }
+uv() {
+  printf '\\''CALL %s\\n'\\'' \""'$*" >&3
+  local what=gate prev='"'\\'''\\'' arg
+  for arg in \""'$@"; do [ "$prev" = --stage ] && what=$arg; prev=$arg; done
+  lastlog='"'\\'''\\''
+  if [ \""'$what" = "$target" ]; then
+    case "$mode" in
+      cap) lastlog='"'\\''churn arm stopped between stages: cap'\\''; return 1 ;;
+      fail) lastlog='\\''churn arm stopped: the p = 0 gate failed'\\''; return 1 ;;
+      crash) lastlog='\\''ValueError: failure'\\''; return 1 ;;
+    esac
+  fi
+  return 0
+}
+tail() { printf '\\''%s\\n'\\'' \""'$lastlog" | command tail -n 5; }
+"""
+cases=[('"'\\''gate'\\'','\\''cap'\\'','\\''STOPPED BEFORE gate (cap, driver admission)'\\''),('\\''gate'\\'','\\''fail'\\'','\\''GATE FAILED'\\''),('\\''gate'\\'','\\''crash'\\'','\\''RUN FAILED at gate'\\''),('\\''search'\\'','\\''cap'\\'','\\''STOPPED BEFORE search (cap, driver admission)'\\''),('\\''freeze'\\'','\\''crash'\\'','\\''RUN FAILED at freeze'\\''),('\\''none'\\'','\\''none'\\'','\\''RUN OK'\\'')]
+for target,mode,want in cases:
+    result=subprocess.run(['\\''bash'\\''],input=f'\\''target={target}; mode={mode}\\n'\\''+stubs+remote,text=True,capture_output=True)
+    last=result.stdout.splitlines()[-1]
+    assert last.startswith('\\''== '\\''+want+'\\'' '\\''),(target,mode,last)
+    assert result.returncode==(0 if mode=='\\''none'\\'' else 1)
+    calls=[x[5:] for x in result.stdout.splitlines() if x.startswith('\\''CALL '\\'')]
+    if mode=='\\''none'\\'':
+        assert len(calls)==8
+        assert '\\''--gate only'\\'' in calls[0]
+        assert [c.split('\\''--stage '\\'')[1].split()[0] for c in calls[1:]]==['\\''inputs'\\'','\\''search'\\'','\\''freeze'\\'','\\''evaluate'\\'','\\''doubling'\\'','\\''diagnostics'\\'','\\''inventory'\\'']
+    print(f'\\''remote {target}/{mode}: {want}; calls={len(calls)}'\\'')
+accounting=s.split(\"<<'\\''PYA'\\''\\n\",1)[1].split('\\''\\nPYA\\n'\\'',1)[0]
+old=sys.argv; sys.argv=['\\''-'\\'', '\\''attempts'\\'', '\\''0.70'\\'', '\\''2'\\'']
+try:
+    output=io.StringIO()
+    with contextlib.redirect_stdout(output):
+        exec(accounting,{'\\''open'\\'':lambda _:io.StringIO('\\''old 1794400000 start\\nold 1794400336 deleted\\nlive 1794400400 start\\n'\\'')})
+    value=float(output.getvalue()); raw=2+336/3600*.70
+    assert raw<=value<raw+.0002
+    print('\\''accounting: upward rounding and live-attempt exclusion pass'\\'')
+finally: sys.argv=old
+print('\\''shell syntax: launcher, harness, generated remote pass'\\'')
+'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+hook: PostToolUse
+ succeeded in 96ms:
+remote gate/cap: STOPPED BEFORE gate (cap, driver admission); calls=1
+remote gate/fail: GATE FAILED; calls=1
+remote gate/crash: RUN FAILED at gate; calls=1
+remote search/cap: STOPPED BEFORE search (cap, driver admission); calls=3
+remote freeze/crash: RUN FAILED at freeze; calls=4
+remote none/none: RUN OK; calls=8
+accounting: upward rounding and live-attempt exclusion pass
+shell syntax: launcher, harness, generated remote pass
+
+hook: PostToolUse Completed
+codex
+The read-only stub checks pass for gate and stage cap stops, gate failure, ordinary errors, call order, and attempt accounting. The installed launcher matches the draft. Two gaps remain: the plan retains old budget figures, and the three inventories do not cover the driver’s top-level `run.json`.
+
+codex
+VERDICT: accept-with-caveat
+
+CORRECTIONS:
+
+1. `docs/revision/churn/churn-plan.md:250` — Change the remaining reservation instruction from 5.54 USD to 10.40 USD. At `:222`, update the shared follow-up cap from 22 USD to 72 USD. Keep the arm’s stop cap at 8 USD.
+
+2. `docs/revision/churn/churn_pod.sh:89` — Verify `followup-churn/run.json` separately or include it in a parent inventory. The driver writes this file at `docs/revision/churn/churn_v2.py:528`, outside the three verified directories. A missing or corrupt local copy can therefore pass verification. Extend `docs/revision/churn/test_churn_pod_harness.sh:119` to test this case.
+
+CONFIDENCE: 0.95
+hook: Stop
+hook: Stop Completed
+tokens used
+70'220
+VERDICT: accept-with-caveat
+
+CORRECTIONS:
+
+1. `docs/revision/churn/churn-plan.md:250` — Change the remaining reservation instruction from 5.54 USD to 10.40 USD. At `:222`, update the shared follow-up cap from 22 USD to 72 USD. Keep the arm’s stop cap at 8 USD.
+
+2. `docs/revision/churn/churn_pod.sh:89` — Verify `followup-churn/run.json` separately or include it in a parent inventory. The driver writes this file at `docs/revision/churn/churn_v2.py:528`, outside the three verified directories. A missing or corrupt local copy can therefore pass verification. Extend `docs/revision/churn/test_churn_pod_harness.sh:119` to test this case.
+
+CONFIDENCE: 0.95

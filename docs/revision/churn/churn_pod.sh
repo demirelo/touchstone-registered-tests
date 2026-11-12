@@ -52,6 +52,18 @@ bad = [k for k, h in inv["records"].items() if not (d / k).is_file() or hashlib.
 print(f"verify {d.name}: {len(inv['records'])} records, {len(bad)} bad"); sys.exit(1 if bad else 0)
 PYV
 }
+# verify_run FILE STARTED USD_PER_HOUR PRIOR_USD STOP_USD: the driver's run.json (outside the inventories) parses and
+# holds exactly the admission inputs this launcher passed (churn launcher review r2).
+verify_run() { $PY - "$@" <<'PYR'
+import json, math, sys
+f, want = sys.argv[1], dict(zip(("started", "usd_per_hour", "prior_usd", "stop_usd"), map(float, sys.argv[2:6])))
+try:
+    got = json.loads(open(f).read()); ok = set(got) == set(want) and all(math.isclose(float(got[k]), v, abs_tol=1e-9) for k, v in want.items())
+except Exception:
+    ok = False
+print(f"verify run.json: {'ok' if ok else 'bad'}"); sys.exit(0 if ok else 1)
+PYR
+}
 tmo() { perl -e 'alarm shift; exec @ARGV' "$@"; }
 NAME=ts-c-$TAG; DONE=$P/$NAME.done; ATT=$P/$NAME.attempts
 rm_ok() { [ -e "$1" ] && mv -- "$1" ~/.Trash/"$(basename "$1").$$"; true; }
@@ -86,7 +98,7 @@ cleanup() {
         tmo $t $PY runpod.py pull $id "/root/touchstone/results/v2/$d/" "$LOUT/$d/" >/dev/null 2>&1 || ok=0
       done
       rem=$(( hard - 120 - $(date +%s) )); [ $rem -gt 0 ] && tmo $(( rem < 300 ? rem : 300 )) $PY runpod.py pull $id /root/touchstone/results/logs/ logs_c_$TAG/ >/dev/null 2>&1
-      if [ "$state" = "RUN OK" ] && [ $ok = 1 ]; then { verify "$LOUT/followup-churn/gate-p0" && verify "$LOUT/followup-churn/p0.01" && verify "$LOUT/followup-churn/p0.05"; } || ok=0; fi
+      if [ "$state" = "RUN OK" ] && [ $ok = 1 ]; then { verify "$LOUT/followup-churn/gate-p0" && verify "$LOUT/followup-churn/p0.01" && verify "$LOUT/followup-churn/p0.05" && verify_run "$LOUT/followup-churn/run.json" $a0 $cph $PRIORT $CAP; } || ok=0; fi
       [ $ok = 1 ] && break
       echo "$(date +%H:%M) pull or verification failed (try $try)"
       if [ "$state" = "RUN OK" ]; then [ "$(date +%s)" -ge $(( hard - 120 )) ] && break; else [ $try -ge 3 ] && break; fi

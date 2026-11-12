@@ -52,6 +52,13 @@ elif cmd == "pull":
     for k in ("followup-churn",):
         if k in src:
             shutil.copytree(os.path.join(H, "remote", k), dst, dirs_exist_ok=True)
+            import re
+            sc = open(os.path.join(H, "pushed_r_remote.sh")).read()
+            fl = {k: float(re.search(r"--%s (\S+)" % k, sc)[1]) for k in ("started", "usd-per-hour", "prior-usd", "stop-usd")}
+            rj = {"started": int(fl["started"]), "usd_per_hour": fl["usd-per-hour"], "prior_usd": fl["prior-usd"], "stop_usd": fl["stop-usd"]}
+            open(os.path.join(dst, "run.json"), "w").write(json.dumps(rj))
+            if st.get("corrupt_run", 0) > 0:
+                st["corrupt_run"] -= 1; open(os.path.join(dst, "run.json"), "w").write("{corrupt")
             if st.get("corrupt_pulls", 0) > 0:
                 st["corrupt_pulls"] -= 1; open(os.path.join(dst, "p0.01", "r.json"), "w").write("corrupt")
 json.dump(st, open(S, "w")); sys.exit(rc)
@@ -77,7 +84,7 @@ if term:   # a stop during creation (r15): TERM the launcher while this request 
     sys.exit(1)
 print(json.dumps({"id": "" if amb else pid, "ambiguous": amb, "vcpu": 16}))
 EOF
-fail=0; ran=0; TOTAL=20
+fail=0; ran=0; TOTAL=21
 run() { # name state cap creates rc [end-pattern] [watchdog-log-substring] [launcher-output-substring]
   [ -n "${ONLY:-}" ] && ! echo "$1" | grep -q "$ONLY" && return 0   # smoke runs only; a full run sets no ONLY
   ran=$((ran+1)); echo "== $1"; echo "$2" > state.json; mkdir -p logs_c_t junk; : > logs_c_t/watchdog.log; : > ts-c-t.wdpid
@@ -117,6 +124,7 @@ PREBAL=1 EMPTYSPENT=1 run "an empty spend record does not count as recorded (r17
 run "unknown balance: no creation, lock released (r16)" '{"pods":{},"price":0.56,"up":true,"log":[],"bal_fail":true}' 5 0 1 "" "" "^refused: account balance unknown$"
 NOTOUT="pull or verification failed" run "upload failure stops the run before it starts (r15)" '{"pods":{},"price":0.56,"up":true,"log":[],"push_fail":true}' 5 1 1 "UPLOAD FAILED \(code\)"
 run "RUN OK with one corrupt pull: retried until verified" '{"pods":{},"price":0.56,"up":true,"log":[],"runok":true,"corrupt_pulls":1}' 5 1 0 "RUN OK" "" "podctl.py spend ts-c-t"
+run "RUN OK with one corrupt run.json: retried until verified (churn r2)" '{"pods":{},"price":0.56,"up":true,"log":[],"runok":true,"corrupt_run":1}' 5 1 0 "RUN OK" "" "verify run.json: bad"
 run "the driver's cap admission stops the run between stages (churn)" '{"pods":{},"price":0.56,"up":true,"log":[],"remote_tail":"== STOPPED BEFORE search (cap, driver admission) 12:00"}' 5 1 1 "== STOPPED BEFORE search \(cap, driver admission\) 12:00"
 PRIORV=-1 run "a negative PRIOR refuses the launch before any marker (churn)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 5 0 1 "" "" "^refused: PRIOR must be a non-negative number"
 PRIORV=inf run "an infinite PRIOR refuses the launch before any marker (churn r1)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 5 0 1 "" "" "^refused: PRIOR must be a non-negative number"

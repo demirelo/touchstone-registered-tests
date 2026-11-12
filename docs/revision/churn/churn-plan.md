@@ -219,7 +219,7 @@ If the preflight cuts the evaluation workers to 2, the same arithmetic gives 12.
 stop cap; the admission after each preflight recomputes the stage cost at the chosen workers. The serial tasks add
 billed time, not core-hours, so the reservation below still covers the expected 3.85 USD.
 
-**Budget** (author, 2026-11-10). The arm uses the shared ledger category `followup` (cap 22 USD for all follow-up runs).
+**Budget** (author, 2026-11-10). The arm uses the shared ledger category `followup` (cap 72 USD for all follow-up runs since the author's approval of 2026-11-12, earlier 22 USD; the arm's stop cap stays 8 USD).
 Before the pod: `docs/revision/followup/budget_followup.py --reserve churn-pod 8.32` (amended 2026-11-12, launcher review
 r1: the wrapper reserves 8.32 x 1.25 = 10.40 USD, the watchdog bound of 1.3 x the stop cap; the earlier 4.43 USD
 estimate padded to 5.54 USD would not cover that bound). **Stop cap 8.00 USD, an estimate-based stage-admission limit.** No running
@@ -247,7 +247,7 @@ verifies the deletion; the watchdog keeps deleting until no pod of this name rem
 ## 8. Steps
 
 1. Internal review of this plan to consensus; freeze it (commit).
-2. The author's approval of the follow-up limit is recorded; the reservation of 5.54 USD under `followup`.
+2. The author's approval of the follow-up limit is recorded; the reservation of 10.40 USD under `followup` (1.3 x the 8 USD stop cap).
 3. One pod: the p = 0 gate, then the 36 cells; delete the pod and verify the deletion; record the spend.
 4. Analysis in `docs/revision/posthoc/` (tested first); a paper paragraph and table, labelled exploratory.
 
