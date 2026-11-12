@@ -141,6 +141,15 @@ def test_a_missing_cell_is_reported_and_its_market_drops_from_the_pool(tmp_path)
     assert "fresh3" not in r["base"]["0.05"]["g"]["F111"]["markets"]
 
 
+def test_load_refuses_a_missing_registered_no_churn_record(tmp_path):
+    """The registered records all exist; a missing one means a wrong input directory (lesson 2026-11-12: the churn bundle
+    holds only the gate cell), so loading refuses instead of reporting it as a missing cell."""
+    ea, ch, rep = _tree(tmp_path, _gains())
+    f = ea / "evaluate" / (CB.safe("fresh4@rho0.2|C*|D2+H3|profit") + ".json"); f.rename(f.with_suffix(".gone"))
+    with pytest.raises(ValueError, match="registered no-churn record missing"):
+        CB.load(ea, ch, rep, markets=M6, n_seeds=40)
+
+
 def test_reselection_flags_per_cell(tmp_path):
     fl = {(0.05, "fresh0", "F111"): {"attack_change": 0.012, "reference_change": -0.003, "incomplete": True}}
     data = CB.load(*_tree(tmp_path, _gains(), flags=fl), markets=M6, n_seeds=40)

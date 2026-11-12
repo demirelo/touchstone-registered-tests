@@ -73,6 +73,8 @@ def load(eval_all, churn_dir, report_path, markets, n_seeds: int = 200) -> dict:
                 if dbl is not None:
                     flags[f"{c}|{m}|{r}"] = {k: dbl[k] for k in ("attack_change", "reference_change", "incomplete")}
             for (v, c), src in srcs.items():
+                if src is None and c == "0":      # registered records all exist: a gap means a wrong input directory
+                    raise ValueError(f"registered no-churn record missing: {rid} ({v})")
                 if src is None:
                     missing.append(f"{v}|{c}|{m}|{r}"); continue
                 if seeds is None:
