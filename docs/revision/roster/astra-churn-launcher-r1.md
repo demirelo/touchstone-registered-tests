@@ -1,0 +1,10 @@
+VERDICT: reject
+
+CORRECTIONS:
+1. `docs/revision/churn/churn_pod.sh:151`: Fix the billing start time. `a0` is set after the price check; attempt records also start after creation returns (`:143`). Capture each request’s start time before creation and use it conservatively for both accounting paths. Keep CAP=8 and PRIOR plus deleted-attempt charges, but do not round charges downward (`:173`). An isolated check confirmed that the omitted time can change a cap refusal into admission.
+2. `docs/revision/churn/churn_pod.sh:184`: Classify gate cap refusals too. The gate calls the same admission function, but every nonzero exit becomes “GATE FAILED,” then “not bit-identical” (`:209`). Report cap refusals as STOPPED; report other execution errors as RUN FAILED. Claim an identity mismatch only when the gate result establishes it.
+3. `docs/revision/churn/test_churn_pod_harness.sh:116`: Test the generated remote script with a stub driver. This scenario injects the final STOPPED message through fake SSH (`:42`); it never exercises the driver invocation or five-line matcher. Add gate and stage cap refusals, ordinary failures, positive PRIOR, and failed-attempt accounting. The supplied log reports 16/16 passes; I did not rerun the write-producing harness under the read-only constraint. The launcher copies match, shell syntax passes, and all three inventory paths match the driver.
+4. `docs/revision/churn/churn_pod.sh:25`: Require finite PRIOR. Positive infinity currently passes validation and allows pod creation before the driver refuses admission.
+5. `docs/revision/churn/churn-plan.md:224`: Replace the obsolete 5.54 USD reservation instruction with the approved 10.40 USD reservation. Update `:239` to describe account-balance spend records and ceiling-based attempt estimates. The ledger already records 10.40 USD correctly.
+
+CONFIDENCE: 0.97.

@@ -37,13 +37,16 @@ elif cmd == "delete":
     print("{}")
 elif cmd == "ssh":
     c = a[1] if len(a) > 1 else ""
-    if not st["up"]: rc = 255; print("")
+    down = st.get("down_first") and st.get("created") and a[0] == st["created"][0][0]   # the first pod never answers
+    if not st["up"] or down: rc = 255; print("")
     elif "git rev-parse" in c: print(f"git={os.environ.get('HC','')} env=unset bundle=6 memgb=64 py=x")
     elif "tail -c 240" in c: print("== RUN OK" if st.get("runok") else st.get("remote_tail", "== stage search"))
     else: print("up")
 elif cmd == "push":
     if st.get("push_fail"): rc = 1; print("exit 1")
-    else: print("exit 0")
+    else:
+        if a[2].endswith("r_remote.sh"): shutil.copy(a[1], os.path.join(H, "pushed_r_remote.sh"))   # kept for the remote checks
+        print("exit 0")
 elif cmd == "pull":
     src, dst = a[1], a[2]
     for k in ("followup-churn",):
@@ -58,7 +61,8 @@ import fcntl, json, os, signal, subprocess, sys
 S = os.path.join(os.path.dirname(os.path.abspath(__file__)), "state.json")
 L = open(S + ".lock", "w"); fcntl.flock(L, fcntl.LOCK_EX)
 st = json.load(open(S))
-pid = "pod%d" % (len(st["log"]) + 1); st["log"].append("create " + pid)
+import time
+pid = "pod%d" % (len(st["log"]) + 1); st["log"].append("create " + pid); st.setdefault("created", []).append([pid, time.time()])
 if st.get("delay"): st.setdefault("pending", {})[pid] = [sys.argv[1], st["delay"]]
 else: st["pods"][pid] = sys.argv[1]
 if st.get("stuck_next"): st.setdefault("stuck", {})[pid] = 40; st["stuck_next"] = False
@@ -73,7 +77,7 @@ if term:   # a stop during creation (r15): TERM the launcher while this request 
     sys.exit(1)
 print(json.dumps({"id": "" if amb else pid, "ambiguous": amb, "vcpu": 16}))
 EOF
-fail=0; ran=0; TOTAL=16
+fail=0; ran=0; TOTAL=20
 run() { # name state cap creates rc [end-pattern] [watchdog-log-substring] [launcher-output-substring]
   [ -n "${ONLY:-}" ] && ! echo "$1" | grep -q "$ONLY" && return 0   # smoke runs only; a full run sets no ONLY
   ran=$((ran+1)); echo "== $1"; echo "$2" > state.json; mkdir -p logs_c_t junk; : > logs_c_t/watchdog.log; : > ts-c-t.wdpid
@@ -115,6 +119,66 @@ NOTOUT="pull or verification failed" run "upload failure stops the run before it
 run "RUN OK with one corrupt pull: retried until verified" '{"pods":{},"price":0.56,"up":true,"log":[],"runok":true,"corrupt_pulls":1}' 5 1 0 "RUN OK" "" "podctl.py spend ts-c-t"
 run "the driver's cap admission stops the run between stages (churn)" '{"pods":{},"price":0.56,"up":true,"log":[],"remote_tail":"== STOPPED BEFORE search (cap, driver admission) 12:00"}' 5 1 1 "== STOPPED BEFORE search \(cap, driver admission\) 12:00"
 PRIORV=-1 run "a negative PRIOR refuses the launch before any marker (churn)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 5 0 1 "" "" "^refused: PRIOR must be a non-negative number"
+PRIORV=inf run "an infinite PRIOR refuses the launch before any marker (churn r1)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 5 0 1 "" "" "^refused: PRIOR must be a non-negative number"
+run "a gate cap refusal is a stop, not a gate failure (churn r1)" '{"pods":{},"price":0.56,"up":true,"log":[],"remote_tail":"== STOPPED BEFORE gate (cap, driver admission) 12:00"}' 5 1 1 "== STOPPED BEFORE gate \(cap, driver admission\) 12:00"
+# Accounting (churn r1): PRIOR 2 of a 5 USD cap, and a first pod that never answers (deleted after 240 s). The deadlines
+# leave CAP - PRIOR and HARD x CAP - PRIOR; --prior-usd is PRIOR plus the deleted attempt from its request time at the
+# ceiling, rounded up; --started is the live pod's request time, not later than its creation.
+PRIORV=2 run "PRIOR and a deleted attempt count against the deadlines and the driver's admission (churn r1)" '{"pods":{},"price":0.56,"up":true,"log":[],"down_first":true,"remote_tail":"== STOPPED BEFORE search (cap, driver admission) 12:00"}' 5 2 1 "== STOPPED BEFORE search \(cap, driver admission\) 12:00"
+python3 - "$H" <<'PYC' || { echo "SCENARIO FAILED (accounting)"; fail=1; }
+import json, re, sys
+H = sys.argv[1]; out = open(f"{H}/run.out").read(); sc = open(f"{H}/pushed_r_remote.sh").read()
+st = json.load(open(f"{H}/state.json")); att = [l.split() for l in open(f"{H}/ts-c-t.attempts")]
+m = re.search(r"soft stop in (\d+)s, hard stop in (\d+)s", out); soft, hard = int(m[1]), int(m[2])
+assert soft <= int(3600 * 3 / 0.70) and hard <= int(3600 * (6.5 - 2) / 0.70), (soft, hard)
+assert soft > int(3600 * 3 / 0.70) - 900, soft                     # less PRIOR, not less something larger
+starts = {f[0]: int(f[1]) for f in att if f[2] == "start"}; dels = {f[0]: int(f[1]) for f in att if f[2] == "deleted"}
+(p1, c1), (p2, c2) = st["created"][0], st["created"][1]
+raw = 2 + (dels[p1] - starts[p1]) / 3600 * 0.70
+prior = float(re.search(r"--prior-usd (\S+)", sc)[1]); started = int(re.search(r"--started (\d+)", sc)[1])
+assert raw <= prior < raw + 0.0002, (prior, raw)
+assert dels[p1] - starts[p1] >= 240 and starts[p1] <= c1, (starts, c1)
+assert started == starts[p2] and started <= c2, (started, starts, c2)
+assert re.search(r"--stop-usd 5 ", sc) and "--require-identical" in sc and "--usd-per-hour 0.56" in sc
+print(f"accounting ok: soft {soft}s, hard {hard}s, prior-usd {prior} (raw {raw:.5f}), started = request time")
+PYC
+# The generated remote script, executed under a scratch root with a stub driver (churn r1): every classification, the
+# driver's calls in order, and the STOP file.
+ran=$((ran+1)); echo "== the generated remote script with a stub driver (churn r1)"
+mkdir -p stubbin junk
+printf '%s\n' '#!/bin/bash' \
+  '# stub for `uv run --frozen python <driver> ...`: logs the call, then acts as $STUB says ("gate=cap", "search=crash", ...)' \
+  'echo "$*" >> "$REMOTE_ROOT/calls.log"' \
+  'what=gate; prev=""; for i in "$@"; do [ "$prev" = "--stage" ] && what=$i; prev=$i; done' \
+  'case " $STUB " in' \
+  '  *" $what=cap "*) echo "SystemExit: churn arm stopped between stages: 4.10 USD billed + 1.00 USD for the next stage would pass the 5.00 USD cap"; exit 1 ;;' \
+  '  *" $what=fail "*) echo "{\"gate_ok\": false}"; echo "churn arm stopped: the p = 0 gate failed"; exit 1 ;;' \
+  '  *" $what=crash "*) echo "Traceback (most recent call last): ValueError"; exit 1 ;;' \
+  'esac; exit 0' > stubbin/uv
+chmod +x stubbin/uv
+rcheck() { # STUB expected-last-line [STOPFILE]
+  rr=$(mktemp -d); mkdir -p $rr/touchstone/results/logs $rr/bundle $rr/.local/bin; cp stubbin/uv $rr/.local/bin/uv; [ -n "${3:-}" ] && touch $rr/STOP
+  last=$(REMOTE_ROOT=$rr HOME=$rr STUB="$1" bash pushed_r_remote.sh 2>&1 | tail -n 1)
+  echo "$last" | grep -Eq "^$2 [0-9]{2}:[0-9]{2}\$" || { echo "SCENARIO FAILED (remote, STUB='$1': last line '$last', expected '$2')"; fail=1; }
+  RCALLS=$(cat $rr/calls.log 2>/dev/null); mv -- $rr junk/rr.$RANDOM; }
+rcheck "gate=cap" "== STOPPED BEFORE gate \(cap, driver admission\)"
+rcheck "gate=fail" "== GATE FAILED"
+rcheck "gate=crash" "== RUN FAILED at gate"
+rcheck "search=cap" "== STOPPED BEFORE search \(cap, driver admission\)"
+rcheck "freeze=crash" "== RUN FAILED at freeze"
+rcheck "" "== STOPPED BEFORE gate \(cap\)" stop
+rcheck "" "== RUN OK"
+python3 - "$RCALLS" <<'PYR' || { echo "SCENARIO FAILED (remote driver calls)"; fail=1; }
+import sys
+c = [l.split() for l in sys.argv[1].splitlines()]
+assert len(c) == 8, len(c)
+assert all(x[:4] == ["run", "--frozen", "python", "docs/revision/churn/churn_v2.py"] for x in c)
+g = " ".join(c[0]); assert "--gate only" in g and "--require-identical" in g and "--out results/v2/followup-churn" in g and "--stage" not in g
+st = [x[x.index("--stage") + 1] for x in c[1:]]; assert st == ["inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory"], st
+for x in c[1:]:
+    j = " ".join(x); assert "--workers-search 16" in j and "--workers-eval 9" in j and "--require-identical" in j and "--out results/v2/followup-churn" in j
+print("remote ok: 7 classifications, gate then 7 stages with the expected flags")
+PYR
 cd /; mv -- $H ~/.Trash/harness_$$
 # a filtered (ONLY) run can never pass: the gate needs every scenario (r16)
 if [ $fail != 0 ]; then echo "HARNESS FAILED"; exit 1; elif [ $ran != $TOTAL ]; then echo "HARNESS PARTIAL ($ran of $TOTAL scenarios ran)"; exit 2; else echo "HARNESS OK ($ran of $TOTAL scenarios)"; fi

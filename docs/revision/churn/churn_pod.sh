@@ -22,7 +22,9 @@ PY=/opt/homebrew/bin/python3; P=/Users/oemer.demirel/Projects/touchstone/results
 TGZ=${1:?code tarball}; BTGZ=${2:?bundle tarball}; TAG=${3:?tag}; CAP=${4:?cap_usd}; LOUT=${5:?local_out}; cd $P
 case "$TGZ$BTGZ$TAG$LOUT" in *[[:space:]]*) echo "refused: a path or tag contains whitespace"; exit 1 ;; esac
 EXPECT=${EXPECT:?commit}; MAXCPH=${MAXCPH:?max usd per hour}; WEVAL=${WEVAL:-9}; MINMEM=${MINMEM:-28}; HARD=${HARD:-1.3}; PRIOR=${PRIOR:-0}
-$PY -c "import sys; sys.exit(0 if float(sys.argv[1]) >= 0 else 1)" "$PRIOR" 2>/dev/null || { echo "refused: PRIOR must be a non-negative number"; exit 1; }
+$PY -c "import math,sys; x=float(sys.argv[1]); sys.exit(0 if math.isfinite(x) and x >= 0 else 1)" "$PRIOR" 2>/dev/null || { echo "refused: PRIOR must be a non-negative number"; exit 1; }
+# PRIOR counts against both deadlines (r1 review), so the arm's bound stays HARD x CAP across launches.
+$PY -c "import sys; sys.exit(0 if float(sys.argv[1]) < float(sys.argv[2]) else 1)" "$PRIOR" "$CAP" 2>/dev/null || { echo "refused: PRIOR must be below the cap"; exit 1; }
 mkdir -p "$LOUT" logs_c_$TAG
 $PY -c "import sys,tarfile; ms=tarfile.open(sys.argv[1]).getmembers(); d=[m.name for m in ms if m.name.split('/')[-1].startswith('._')]; o=[m.name for m in ms if m.uid!=0]; print('tarball guard: %d AppleDouble, %d non-root' % (len(d),len(o))); sys.exit(1 if d or o else 0)" "$TGZ" || { echo "code tarball refused"; exit 1; }
 hg=$(mktemp -d); tar xzf "$TGZ" -C "$hg" 2>/dev/null || { echo "code tarball refused: cannot unpack"; exit 1; }
@@ -112,8 +114,9 @@ cleanup() {
   exit $rc
 }
 trap cleanup EXIT INT TERM
-# Deadlines from the first creation request at the price ceiling MAXCPH (a bound across attempts).
-t0=$(date +%s); soft=$(( t0 + $($PY -c "print(int(3600*float('$CAP')/float('$MAXCPH')))") )); hard=$(( t0 + $($PY -c "print(int(3600*float('$CAP')*float('$HARD')/float('$MAXCPH')))") ))
+# Deadlines from the first creation request at the price ceiling MAXCPH (a bound across attempts), less PRIOR: the
+# soft deadline leaves CAP - PRIOR, the hard deadline HARD x CAP - PRIOR (r1 review).
+t0=$(date +%s); soft=$(( t0 + $($PY -c "print(int(3600*(float('$CAP')-float('$PRIOR'))/float('$MAXCPH')))") )); hard=$(( t0 + $($PY -c "print(int(3600*(float('$CAP')*float('$HARD')-float('$PRIOR'))/float('$MAXCPH')))") ))
 nohup $PY podctl.py watchdog $NAME $hard "$DONE" >> logs_c_$TAG/watchdog.log 2>&1 &
 wd=$!; echo $wd > "$P/$NAME.wdpid"; disown
 sleep 1; kill -0 "$wd" 2>/dev/null || { state="WATCHDOG DID NOT START"; exit 1; }
@@ -131,7 +134,7 @@ while [ $tries -lt 3 ] && [ $req -lt 36 ]; do
   [ "$tfirst" -gt 0 ] || tfirst=$(date +%s)
   cph=0; id=""
   { echo pending > "$P/$NAME.request" && grep -qx pending "$P/$NAME.request"; } || { state="CANNOT WRITE $NAME.request BEFORE REQUEST $((req+1))"; exit 1; }
-  req=$((req+1))
+  req=$((req+1)); rq0=$(date +%s)   # billing may start with the request (r1 review): every charge counts from here
   out=$(tmo 120 $PY create_one.py $NAME $(( (req-1) % 12 )) 2>/dev/null | tail -n 1)
   id=$(echo "$out" | $PY -c 'import sys,json; print(json.loads(sys.stdin.read()).get("id",""))' 2>/dev/null)
   amb=$(echo "$out" | $PY -c 'import sys,json; d=json.loads(sys.stdin.read() or "{}"); print(1 if d.get("ambiguous", True) else 0)' 2>/dev/null || echo 1)
@@ -140,7 +143,7 @@ while [ $tries -lt 3 ] && [ $req -lt 36 ]; do
     echo clear > "$P/$NAME.request"; continue
   fi
   echo clear > "$P/$NAME.request"
-  v=16; echo "$id $(date +%s) start" >> "$ATT"
+  v=16; a0=$rq0; echo "$id $rq0 start" >> "$ATT"
   # Only a finite positive price at or below the ceiling is accepted; otherwise (above, missing, null, zero, failed
   # listing, timeout) the pod is deleted at once, with no retrieval (r15); the balance difference records what it cost.
   cph=$(tmo 60 $PY podctl.py price $id 2>/dev/null) || cph=""
@@ -148,7 +151,7 @@ while [ $tries -lt 3 ] && [ $req -lt 36 ]; do
     state="PRICE ${cph:-unknown} NOT IN (0, $MAXCPH]"; echo "$(date +%H:%M) $id: $state; deleting"
     $PY podctl.py delete $id 600 && { echo "$id $(date +%s) deleted" >> "$ATT"; id=""; }; exit 1
   fi
-  a0=$(date +%s); up=""; while [ "$(date +%s)" -lt "$soft" ] && [ $(( $(date +%s) - a0 )) -lt 240 ]; do r=$(tmo 30 $PY runpod.py ssh $id 'echo up' 2>/dev/null | head -c 2); [ "$r" = up ] && { up=1; break; }; sleep 10; done
+  u0=$(date +%s); up=""; while [ "$(date +%s)" -lt "$soft" ] && [ $(( $(date +%s) - u0 )) -lt 240 ]; do r=$(tmo 30 $PY runpod.py ssh $id 'echo up' 2>/dev/null | head -c 2); [ "$r" = up ] && { up=1; break; }; sleep 10; done
   [ -n "$up" ] && break
   echo "$(date +%H:%M) $id unreachable; deleting"; $PY podctl.py delete $id 600 || { state="UNREACHABLE POD NOT DELETED"; exit 1; }; echo "$id $(date +%s) deleted" >> "$ATT"; id=""; tries=$((tries+1))
 done
@@ -164,34 +167,41 @@ memgb=$(echo "$chk" | sed -n 's/.*memgb=\([0-9]*\).*/\1/p'); [ -n "$memgb" ] && 
 # Charges before this pod, for the driver's cap admission: PRIOR (earlier launches, recorded) plus this launch's
 # deleted attempts at the ceiling MAXCPH (an upper bound; the balance difference records the real spend).
 PRIORT=$($PY - "$ATT" "$MAXCPH" "$PRIOR" <<'PYA'
-import sys
+import math, sys
 start, tot = {}, float(sys.argv[3])
 for l in open(sys.argv[1]):
     f = l.split()
     if len(f) == 3 and f[2] == "start": start[f[0]] = int(f[1])
     elif len(f) == 3 and f[2] == "deleted" and f[0] in start: tot += (int(f[1]) - start.pop(f[0])) / 3600 * float(sys.argv[2])
-print(round(tot, 4))
+print(math.ceil(tot * 10000) / 10000)   # rounded up, never down (r1 review)
 PYA
 ) || { state="PRIOR CHARGES UNKNOWN"; exit 1; }
-cat > /tmp/r_remote_$TAG.sh <<EOS
+RS=$(mktemp "/tmp/${NAME}_remote.XXXXXX") || { state="CANNOT WRITE THE REMOTE SCRIPT"; exit 1; }   # private path (r1 review)
+cat > "$RS" <<EOS
 #!/bin/bash
+R=\${REMOTE_ROOT:-/root}   # the pod's root; the offline harness runs this script under another root with a stub driver
 echo "== remote started \$(date +%H:%M)"
-cd /root/touchstone; export OMP_NUM_THREADS=1 PATH=\$HOME/.local/bin:\$PATH; unset TOUCHSTONE_IDENTITY_SALT; unset TOUCHSTONE_LOCKED
-B=/root/bundle; A="--src \$B/eval-all --draw \$B/draw/draw.json --instances \$B/draw/instances.json --cfgs \$B/deviation/cfg_linux.json --addendum \$B/report/addendum.json --started $a0 --usd-per-hour $cph --prior-usd $PRIORT --stop-usd $CAP --require-identical"
+cd \$R/touchstone || { echo "== RUN FAILED at setup \$(date +%H:%M)"; exit 1; }; export OMP_NUM_THREADS=1 PATH=\$HOME/.local/bin:\$PATH; unset TOUCHSTONE_IDENTITY_SALT; unset TOUCHSTONE_LOCKED
+B=\$R/bundle; A="--src \$B/eval-all --draw \$B/draw/draw.json --instances \$B/draw/instances.json --cfgs \$B/deviation/cfg_linux.json --addendum \$B/report/addendum.json --started $a0 --usd-per-hour $cph --prior-usd $PRIORT --stop-usd $CAP --require-identical"
 D=docs/revision/churn/churn_v2.py
-{ [ -e /root/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE gate (cap) \$(date +%H:%M)"; exit 1; }
+{ [ -e \$R/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE gate (cap) \$(date +%H:%M)"; exit 1; }
 echo "== gate start \$(date +%H:%M)"
-uv run --frozen python \$D --gate only --out results/v2/followup-churn \$A >> results/logs/c_gate.log 2>&1 || { echo "== GATE FAILED \$(date +%H:%M)"; exit 1; }
+# the gate passes the same cap admission as the stages: a refusal is a stop, a failed gate is GATE FAILED only when the
+# driver says so, and any other error is RUN FAILED (r1 review)
+uv run --frozen python \$D --gate only --out results/v2/followup-churn \$A >> results/logs/c_gate.log 2>&1 || {
+  if tail -n 5 results/logs/c_gate.log | grep -q "stopped between stages"; then echo "== STOPPED BEFORE gate (cap, driver admission) \$(date +%H:%M)"
+  elif tail -n 5 results/logs/c_gate.log | grep -q "the p = 0 gate failed"; then echo "== GATE FAILED \$(date +%H:%M)"
+  else echo "== RUN FAILED at gate \$(date +%H:%M)"; fi; exit 1; }
 echo "== gate passed (bit-identical) \$(date +%H:%M)"
 for st in inputs search freeze evaluate doubling diagnostics inventory; do
-  { [ -e /root/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE \$st (cap) \$(date +%H:%M)"; exit 1; }
+  { [ -e \$R/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE \$st (cap) \$(date +%H:%M)"; exit 1; }
   echo "== stage \$st start \$(date +%H:%M) workers search $v, evaluation at most $WEVAL"
   uv run --frozen python \$D --stage \$st --workers-search $v --workers-eval $WEVAL --out results/v2/followup-churn \$A >> results/logs/c_run.log 2>&1 || {
     if tail -n 5 results/logs/c_run.log | grep -q "stopped between stages"; then echo "== STOPPED BEFORE \$st (cap, driver admission) \$(date +%H:%M)"; else echo "== RUN FAILED at \$st \$(date +%H:%M)"; fi; exit 1; }
 done
 echo "== RUN OK \$(date +%H:%M)"
 EOS
-tmo 120 $PY runpod.py push $id /tmp/r_remote_$TAG.sh /root/r_remote.sh >/dev/null 2>&1 || { state="UPLOAD FAILED (remote script)"; exit 1; }
+tmo 120 $PY runpod.py push $id "$RS" /root/r_remote.sh >/dev/null 2>&1 || { state="UPLOAD FAILED (remote script)"; exit 1; }
 tmo 120 $PY runpod.py ssh $id "chmod +x /root/r_remote.sh && (nohup /root/r_remote.sh > /root/touchstone/results/logs/r_remote.log 2>&1 < /dev/null &)" >/dev/null 2>&1 || { state="REMOTE START FAILED"; exit 1; }
 # the run counts as started only when the remote script's first line is in its log (r16)
 for i in 1 2 3 4 5 6; do sleep 10; tmo 30 $PY runpod.py ssh $id "grep -q 'remote started' /root/touchstone/results/logs/r_remote.log" >/dev/null 2>&1 && { started=1; break; }; done
@@ -206,7 +216,7 @@ while true; do
   echo "$(date +%H:%M) [soft $(( soft - now ))s, hard $(( hard - now ))s] $st" | tail -c 320
   case "$st" in
     *"RUN OK"*) state="RUN OK"; rc=0; exit 0 ;;
-    *"GATE FAILED"*) state="GATE FAILED (p = 0 gate not bit-identical; churn cells not started)"; exit 1 ;;
+    *"GATE FAILED"*) state="GATE FAILED (the driver reports the p = 0 gate failed: not passing or not bit-identical; churn cells not started)"; exit 1 ;;
     *"RUN FAILED"*|*"STOPPED BEFORE"*) state="$(echo "$st" | grep -o '== [A-Z].*' | head -c 120 | sed "s/[[:space:]]*\$//")"; exit 1 ;;
   esac
 done

@@ -217,12 +217,12 @@ of 9; the doubling as one serial preflight task plus 17 jobs in two waves of 9; 
 0.6 hours of preparation and idle: **6.88 hours, 3.85 USD** (5.95 hours and 3.33 USD without the serial preflight tasks).
 If the preflight cuts the evaluation workers to 2, the same arithmetic gives 12.44 hours, 6.97 USD, still below the
 stop cap; the admission after each preflight recomputes the stage cost at the chosen workers. The serial tasks add
-billed time, not core-hours, so the reservation below (4.43 USD unpadded, 5.54 USD reserved) still covers the expected
-3.85 USD.
+billed time, not core-hours, so the reservation below still covers the expected 3.85 USD.
 
 **Budget** (author, 2026-11-10). The arm uses the shared ledger category `followup` (cap 22 USD for all follow-up runs).
-Before the pod: `docs/revision/followup/budget_followup.py --reserve churn-pod 4.43` (the unpadded estimate; the
-wrapper reserves 4.43 x 1.25 = 5.54 USD). **Stop cap 8.00 USD, an estimate-based stage-admission limit.** No running
+Before the pod: `docs/revision/followup/budget_followup.py --reserve churn-pod 8.32` (amended 2026-11-12, launcher review
+r1: the wrapper reserves 8.32 x 1.25 = 10.40 USD, the watchdog bound of 1.3 x the stop cap; the earlier 4.43 USD
+estimate padded to 5.54 USD would not cover that bound). **Stop cap 8.00 USD, an estimate-based stage-admission limit.** No running
 stage is ever killed (author, 2026-11-10): before each stage the driver adds the pod time billed since allocation at the
 pod's actual hourly price, the charges of earlier failed attempts, and the stage's estimate, and stops between stages
 if the sum would pass the cap, then reports. Production runs refuse to start without `--started` (the allocation time)
@@ -236,10 +236,12 @@ stages, each started only if no STOP file exists and the soft deadline has not p
 the ceiling, net of earlier attempts' charges); at the soft deadline it writes STOP, so the pod stops after the running
 stage. **The one exception to "no running stage is killed":** the `podctl.py` watchdog deletes the pod at 1.3 times the
 cap at the price ceiling (10.40 USD at most for this arm), also mid-stage, as an absolute guard against a hung pod. Spend
-is recorded per attempt (pod id, start, end, recorded price) in the launcher's attempts file, which persists across
-launches; the summary gives the spend at the recorded prices and the bound at the ceiling. The launcher passes to the
-driver the current attempt's allocation time, the recorded price, and the earlier attempts' charges at their recorded
-prices. An EXIT, INT or TERM trap pulls the records, verifies them against the inventories, deletes the pod, and
+(amended 2026-11-12, launcher review r1) is recorded as the account balance difference (`podctl.py spend NAME`, at
+least an hour after the watchdog ends); the launcher prints only estimates. Its attempts file holds each pod's id,
+request time and deletion time. The launcher passes to the driver the live pod's request time as `--started`, its
+actual price, and as `--prior-usd` the operator's `PRIOR` (recorded spend of earlier launches of this arm) plus this
+launch's deleted attempts charged at the ceiling from their request times, rounded up. Both deadlines are net of
+`PRIOR`, so the 10.40 USD bound holds across launches. An EXIT, INT or TERM trap pulls the records, verifies them against the inventories, deletes the pod, and
 verifies the deletion; the watchdog keeps deleting until no pod of this name remains.
 
 ## 8. Steps

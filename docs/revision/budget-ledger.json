@@ -2,7 +2,7 @@
  "caps": {
   "development": 12.0,
   "evaluation": 43.0,
-  "followup": 22.0
+  "followup": 72.0
  },
  "reservations": [
   {
@@ -129,13 +129,17 @@
   }
  ],
  "approval": {
-  "limit": 73.0,
-  "text": "Approve all follow-up simulations (reset experiment, honest churn, convergence searches, C-thr(12) on fresh markets): follow-up cap 22 USD, program limit 73 USD, \u00d6mer Demirel, 2026-11-10."
+  "limit": 123.0,
+  "text": "Assume an additional 50 USD to finish the compute: follow-up cap 22 -> 72 USD, program limit 73 -> 123 USD (development and evaluation caps unchanged), \u00d6mer Demirel, 2026-11-12, given in the Claude Code session while the churn launcher was in review."
  },
  "approval_history": [
   {
    "limit": 55.0,
    "text": "Raise caps, start fresh5 now: evaluation cap 43 USD, program limit 55 USD (development cap 12 USD unchanged), \u00d6mer Demirel, 2026-11-04, chosen in the Claude Code session after the wave-1 overrun (fresh pods 4.65-4.80 USD against 4.26)."
+  },
+  {
+   "limit": 73.0,
+   "text": "Approve all follow-up simulations (reset experiment, honest churn, convergence searches, C-thr(12) on fresh markets): follow-up cap 22 USD, program limit 73 USD, \u00d6mer Demirel, 2026-11-10."
   }
  ]
 }
