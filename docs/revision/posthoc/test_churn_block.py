@@ -211,6 +211,70 @@ def test_expectation_4_reads_the_first_bin_at_p005(tmp_path):
     assert CB.expectations(r, diagnostics=None)["4"]["verdict"] == "unavailable"
 
 
+def _full_diag(n=4, share_r3=0.6, markets=M6):
+    """Consistent driver-shaped diagnostics: per-episode [served, audited] counts, bin totals, and the market-pooled shares."""
+    cells, pooled = {}, {}
+    for r in CB.RULES:
+        for w in ("base", "doubled"):
+            bins_by_m = {}
+            for i, m in enumerate(markets):
+                au = {"F111": round(10 * share_r3), "C*": 4, "F000": 2}[r] + (i % 2)
+                per = [{c: [[10, au], [5, 1], [0, 0], [3, 0]] for c in ("honest_replacement", "honest_initial", "focal")} for _ in range(n)]
+                sh = {}
+                for c in ("honest_replacement", "honest_initial", "focal"):
+                    rows = []
+                    for b in range(4):
+                        sv = sum(e[c][b][0] for e in per); a = sum(e[c][b][1] for e in per)
+                        rows.append({"age": [0, 1], "served": sv, "audited": a, "share": (a / sv if sv else None)})
+                    sh[c] = rows
+                sh.update(per_episode=per, honest_replacements_per_episode=18.0, focal_newest_by_creation=[0.5] * n,
+                          focal_newest_by_first_offer_assigned=[0.25] * n)
+                cells.setdefault(f"{m}@rho0.2|{r}", {})[w] = {"seeds": list(range(n)), "shares": sh}
+                bins_by_m[m] = sh
+            pooled[f"{r}|{w}"] = {}
+            for c in ("honest_replacement", "honest_initial", "focal"):
+                res = []
+                for b in range(4):
+                    v = [bins_by_m[m][c][b]["share"] for m in markets if bins_by_m[m][c][b]["share"] is not None]
+                    res.append({"share": (sum(v) / len(v) if v else None), "markets": len(v)})
+                pooled[f"{r}|{w}"][c] = res
+    return {"cells": cells, "pooled": pooled}
+
+
+def test_validate_diagnostics_accepts_a_consistent_summary():
+    CB.validate_diagnostics(_full_diag(), M6, n_seeds=4)
+
+
+def test_validate_diagnostics_rejects_a_conflicting_pooled_share():
+    d = _full_diag(); d["pooled"]["F111|base"]["honest_replacement"][0]["share"] += 0.01
+    with pytest.raises(ValueError, match="pooled"):
+        CB.validate_diagnostics(d, M6, n_seeds=4)
+
+
+def test_validate_diagnostics_rejects_bin_totals_that_differ_from_the_episode_counts():
+    d = _full_diag(); d["cells"]["fresh2@rho0.2|C*"]["doubled"]["shares"]["honest_replacement"][0]["audited"] += 1
+    with pytest.raises(ValueError, match="per-episode"):
+        CB.validate_diagnostics(d, M6, n_seeds=4)
+
+
+def test_validate_diagnostics_rejects_a_missing_cell_or_episode():
+    d = _full_diag(); del d["cells"]["fresh5@rho0.2|F000"]
+    with pytest.raises(ValueError, match="missing"):
+        CB.validate_diagnostics(d, M6, n_seeds=4)
+    with pytest.raises(ValueError, match="episodes"):
+        CB.validate_diagnostics(_full_diag(), M6, n_seeds=5)
+
+
+def test_newest_share_averages_episode_shares_within_a_market_then_across_markets():
+    """Sol r1: not one pooled fraction of rounds. Market fresh0 has episode shares 1, 0, 0 (one third), the others 1."""
+    d = _full_diag(n=3)
+    for m in M6:
+        d["cells"][f"{m}@rho0.2|F111"]["base"]["shares"]["focal_newest_by_first_offer_assigned"] = [1.0, 1.0, 1.0]
+    d["cells"]["fresh0@rho0.2|F111"]["base"]["shares"]["focal_newest_by_first_offer_assigned"] = [1.0, 0.0, None]
+    s = CB.diag_summary(d)["F111|base"]
+    assert s["focal_newest_first_offer"] == pytest.approx((0.5 + 5 * 1.0) / 6)       # None episodes are left out
+
+
 def test_registered_values_are_reproduced_from_the_no_churn_records(tmp_path):
     """posthoc.json doubled.D2+H3: q1 = C* - R3, q4 = B3 - R3 (frozen = base, doubled); absolute mean gains of C* and R3."""
     r = CB.analyse(CB.load(*_tree(tmp_path, _gains()), markets=M6, n_seeds=40), b=99, seed=1)
@@ -224,7 +288,8 @@ def test_registered_values_are_reproduced_from_the_no_churn_records(tmp_path):
 
 def test_cli_writes_the_result_with_input_hashes_and_a_table(tmp_path):
     ea, ch, rep = _tree(tmp_path, _gains(noise=0.01))
-    _write(ch / "p0.05" / "diagnostics.json", _diag({(x, w): 0.2 for x in CB.RULES for w in ("base", "doubled")}))
+    for c in ("0.01", "0.05"):
+        _write(ch / f"p{c}" / "diagnostics.json", _full_diag(n=40))
     out, tab = tmp_path / "churn.json", tmp_path / "tables"
     rc = CB.main(["--records", str(ea), "--churn", str(ch), "--report", str(rep), "--out", str(out), "--tables", str(tab),
                   "--n-seeds", "40", "--resamples", "99"])

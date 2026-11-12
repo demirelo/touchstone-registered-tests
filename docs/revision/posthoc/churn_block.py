@@ -229,9 +229,52 @@ def registered_check(res: dict, reg: dict) -> dict:
     return {"pooled": rows, "absolute_matches": absm, "ok": all(x["ok"] for x in rows.values()) and bool(absm)}
 
 
+CATS = ("honest_replacement", "honest_initial", "focal")
+
+
+def validate_diagnostics(diag: dict, markets, n_seeds: int = 200) -> None:
+    """Astra r1: before scoring, check the driver's summaries against their own counts. Every (market, rule, winner) cell
+    exists with one episode per seed; each bin's served and audited totals equal the sums of the per-episode counts and
+    its share is audited / served (None when nothing was served); the market-pooled share per bin is the mean of the
+    available market shares, with that count; the newest shares are in [0, 1] or None."""
+    for r in RULES:
+        for w in VERS:
+            by_m = {}
+            for m in markets:
+                cell = (diag.get("cells", {}).get(f"{m}@rho0.2|{r}") or {}).get(w)
+                if cell is None:
+                    raise ValueError(f"diagnostics cell missing: {m}|{r}|{w}")
+                sh = cell["shares"]; per = sh["per_episode"]
+                if len(per) != n_seeds or len(sh["focal_newest_by_first_offer_assigned"]) != n_seeds:
+                    raise ValueError(f"{m}|{r}|{w}: {len(per)} episodes (expected {n_seeds})")
+                for x in sh["focal_newest_by_first_offer_assigned"] + sh["focal_newest_by_creation"]:
+                    if x is not None and not (math.isfinite(x) and 0 <= x <= 1):
+                        raise ValueError(f"{m}|{r}|{w}: newest share {x} outside [0, 1]")
+                for c in CATS:
+                    for b, row in enumerate(sh[c]):
+                        sv = sum(e[c][b][0] for e in per); au = sum(e[c][b][1] for e in per)
+                        if (row["served"], row["audited"]) != (sv, au):
+                            raise ValueError(f"{m}|{r}|{w}|{c} bin {b}: totals differ from the per-episode counts")
+                        want = au / sv if sv else None
+                        if (want is None) != (row["share"] is None) or (want is not None and abs(row["share"] - want) > TOL):
+                            raise ValueError(f"{m}|{r}|{w}|{c} bin {b}: share is not audited / served")
+                by_m[m] = sh
+            pooled = (diag.get("pooled") or {}).get(f"{r}|{w}")
+            if pooled is None:
+                raise ValueError(f"pooled diagnostics missing: {r}|{w}")
+            for c in CATS:
+                for b, row in enumerate(pooled[c]):
+                    v = [by_m[m][c][b]["share"] for m in markets if by_m[m][c][b]["share"] is not None]
+                    want = sum(v) / len(v) if v else None
+                    if row["markets"] != len(v) or (want is None) != (row["share"] is None) or (want is not None and abs(row["share"] - want) > TOL):
+                        raise ValueError(f"pooled share {r}|{w}|{c} bin {b} differs from the market shares")
+
+
 def diag_summary(diag: dict) -> dict:
-    """Per rule and winner: honest replacements per episode and the mechanism-relevant newest share of the focal identity
-    (means over markets of per-episode means), and the driver's market-pooled age-bin shares."""
+    """Per rule and winner: honest replacements per episode, and the share of rounds in which the focal identity's first-offer
+    round is strictly the latest among identities holding assigned jobs (ties excluded), averaged over the episodes of a
+    market (episodes without such rounds left out) and then over markets with equal weights; not one pooled fraction of
+    rounds. The driver's market-pooled age-bin shares are copied (checked by validate_diagnostics)."""
     out = {}
     cells = diag.get("cells", {})
     for r in RULES:
@@ -290,6 +333,9 @@ def main(argv=None) -> int:
     data = load(a.records, ch, a.report, markets, a.n_seeds)
     res = analyse(data, a.resamples, a.seed)
     diags = {c: _read(ch / f"p{c}" / "diagnostics.json") for c in CONDS[1:]}
+    for d in diags.values():
+        if d is not None:
+            validate_diagnostics(d, markets, a.n_seeds)
     out = {"label": LABEL, "statistics": res, "flags": data["flags"], "flag_summary": flag_summary(data["flags"]),
            "expectations": expectations(res, diags.get("0.05")),
            "diagnostics": {c: (diag_summary(d) if d else None) for c, d in diags.items()},
