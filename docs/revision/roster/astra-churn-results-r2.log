@@ -1,0 +1,2290 @@
+OpenAI Codex v0.162.1
+--------
+workdir: /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+model: gpt-6-astra
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1d1ba-e3a0-7fa1-8136-3b7308289bdb
+--------
+user
+# Honest-churn results and paper text: internal review round 2 (read-only; no paid APIs; do not read `sealed/`, `~/touchstone-h4`, or `~/h4-session.out`; reasoning effort high; under 350 words)
+
+Round 1 (`docs/revision/roster/{sol,astra}-churn-results-r1.md`): Sol accept-with-caveat (3), Astra reject (4). Every brief, file and command of round 1 (`docs/revision/roster/brief-churn-results-r1.md`) still applies. Changes since round 1, all in the last commit (`git diff HEAD~1 -- docs/revision/posthoc docs/revision/paper-v2/main.tex`):
+
+1. Profit sentence: "mainly from higher attack profit", raw profit units, the reference's change with its interval, and that raw terms do not decompose the normalised gain exactly.
+2. The newest statistic is defined: strictly latest first-offer round among identities holding assigned jobs, ties excluded, averaged over a market's episodes and then over markets; `diag_summary` documents the same, and a test with unequal per-episode shares and a None episode pins the averaging.
+3. The diagnostics are described, not given causal force: "consistent with ...; they do not isolate the cause ... histories, bans, selected attacks".
+4. `validate_diagnostics` (run by the CLI before scoring): every cell present with one episode per seed; bin totals equal the per-episode sums; shares equal audited / served; the pooled shares equal the mean of the available market shares with that count; newest shares in [0, 1]. Four tests, each seen failing first; the real diagnostics pass, and churn.json and the table are unchanged by the rerun.
+
+Tests: `uv run --frozen pytest -q docs/revision/posthoc/test_churn_block.py` (23 pass). `results/pods/paper_check.sh`: gate ok.
+
+Check: (0) each round-1 correction is resolved; (1) to (4) as in round 1.
+
+Output exactly:
+VERDICT: accept | accept-with-caveat | reject
+CORRECTIONS: numbered, each with file:line, or "none".
+CONFIDENCE: 0 to 1.
+
+2026-11-12T21:47:28.977724Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: HTTP error: 426 Upgrade Required, url: ws://127.0.0.1:11434/api/codex/v1/responses
+hook: SessionStart
+hook: SessionStart Completed
+codex
+I will read the round-1 brief and reviews, check the changes, and run the required checks. I will keep all actions read-only and avoid the excluded paths.
+
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg -n 'touchstone|honest.churn' /Users/oemer.demirel/.codex/memories/MEMORY.md" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+664:# Task Group: anthropic-residency-application-writing-and-touchstone-research
+673:- rollout_summaries/2026-11-03T12-32-03-zdzn-anthropic_residency_writing_touchstone_research_plan.md (cwd=/Users/oemer.demirel/Documents/Codex/2026-11-03/why-anthropic-anthropic-sets-the-frontier, rollout_path=/Users/oemer.demirel/.codex/sessions/2026/11/03/rollout-2026-11-03T13-32-03-01a1a165-260e-7180-9d34-c9dc6bf34b4d.jsonl, updated_at=2026-11-03T13:02:09+00:00, thread_id=01a1a165-260e-7180-9d34-c9dc6bf34b4d, success; application answers finalized)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+exec
+/bin/zsh -lc 'pwd; git status --short; git show -1 --format=fuller --stat; cat docs/revision/roster/brief-churn-results-r1.md docs/revision/roster/sol-churn-results-r1.md docs/revision/roster/astra-churn-results-r1.md' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+?? docs/paper/astra-pro-ext12-triage.md
+?? docs/revision/roster/astra-churn-results-r2.log
+?? docs/revision/roster/sol-churn-results-r2.log
+commit 24b0c400bce8481916bd659d6295fdf63de22d6f
+Author:     Ömer Demirel <7556489+demirelo@users.noreply.github.com>
+AuthorDate: Thu Nov 12 22:47:28 2026 +0100
+Commit:     Ömer Demirel <7556489+demirelo@users.noreply.github.com>
+CommitDate: Thu Nov 12 22:47:28 2026 +0100
+
+    Churn results review r1 fixes: profit and diagnostics wording, newest statistic defined, diagnostics validated against their counts (23 tests); review r1 outputs; brief r2
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+    
+    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+ docs/revision/paper-v2/main.tex                 |    2 +-
+ docs/revision/posthoc/churn_block.py            |   50 +-
+ docs/revision/posthoc/test_churn_block.py       |   67 +-
+ docs/revision/roster/astra-churn-results-r1.log | 2431 +++++++++++++++++++
+ docs/revision/roster/astra-churn-results-r1.md  |   15 +
+ docs/revision/roster/brief-churn-results-r2.md  |   17 +
+ docs/revision/roster/sol-churn-results-r1.log   | 2917 +++++++++++++++++++++++
+ docs/revision/roster/sol-churn-results-r1.md    |    8 +
+ 8 files changed, 5503 insertions(+), 4 deletions(-)
+# Honest-churn results and paper text: internal review round 1 (read-only; no paid APIs; do not read `sealed/`, `~/touchstone-h4`, or `~/h4-session.out`; reasoning effort high; under 400 words)
+
+The churn arm (plan draft 6, `docs/revision/churn/churn-plan.md`, consensus before any churn search) ran on one pod: RUN OK, all records verified, pod deleted (`docs/revision/operations-ledger.md`, last section). Records: `/Users/oemer.demirel/Projects/touchstone/results/v2/followup-churn/followup-churn/` (gate-p0, p0.01, p0.05; each with evaluate, doubling, diagnostics.json, inventory.json). Registered no-churn inputs: `/Users/oemer.demirel/Projects/touchstone/results/v2/eval/all` and `/Users/oemer.demirel/Projects/touchstone/results/v2/report/report.json`.
+
+Files:
+- Analysis `docs/revision/posthoc/churn_block.py` and tests `test_churn_block.py` (18 pass). Order: code and tests c15580d; input guard c398a97 after a first run on a wrong directory (lesson in `docs/revision/lessons.md`); first run on the registered inputs cd64fc3; output naming and table format in 2066cdd (statistics and expectations unchanged; check with `git diff cd64fc3 2066cdd -- docs/revision/posthoc/churn.json`).
+- Result `docs/revision/posthoc/churn.json`; table `docs/revision/paper-v2/tables/posthoc_churn.tex`.
+- Paper: `docs/revision/paper-v2/main.tex`, paragraph "Honest identity churn (exploratory follow-up)" and Table `tab:ph-churn`; numbers come from `churn.json` through `sites.json` (`ch_*`) and `numbers_v2.py` (two new kinds, two count leaves); `results/pods/paper_check.sh` passes.
+
+Rerun command: `uv run --frozen python docs/revision/posthoc/churn_block.py --records <eval/all> --churn <followup-churn/followup-churn> --report <report.json> --posthoc docs/revision/posthoc/posthoc.json --out <tmp>.json --tables <tmp>`.
+
+Check:
+1. The analysis implements plan sections 2, 4, 5 and 6 exactly: estimand, pairing (one index vector per market shared by rules, rates, versions and no churn), pooling, sign counts, profit terms, the scoring rule of section 6 (met, failed, not established), and expectation 4's measure.
+2. churn.json follows from the records (rerun it; the registered check must be ok).
+3. Every sentence of the paragraph and caption is supported by churn.json and stays within the plan's limits (exploratory; the permissions after section 6; the churn model's caveats; the doubling flags; the illustrative rates).
+4. Defects the tests miss.
+
+Output exactly:
+VERDICT: accept | accept-with-caveat | reject
+CORRECTIONS: numbered, each with file:line, or "none".
+CONFIDENCE: 0 to 1.
+VERDICT: accept-with-caveat
+
+CORRECTIONS:
+1. docs/revision/paper-v2/main.tex:246 — Correct the profit statement. The reference-profit change is −0.146, with interval [−0.393, 0.098]. Say “the increase comes mainly from attack profit,” rather than “not from a weaker reference.” Label these values as raw profit units; they do not directly decompose the normalised gain.
+2. docs/revision/paper-v2/main.tex:246 — Define the newest-identity statistic precisely: “uniquely newest by first-offer round,” with episode shares averaged within each market, then equally across markets. The current phrase “of the rounds” implies a pooled round denominator that churn_block.py:244–248 does not use. Add a test with unequal episode denominators.
+3. docs/revision/paper-v2/main.tex:246 — Qualify “The diagnostics show how” and “priority thus moves audits … while the attacker’s identity hides.” The diagnostics support greater newcomer audit exposure and a low uniquely-newest share. They do not isolate the cause of the gain increase from history reset, ban escape, or changes in the selected attacks. Use “These diagnostics are consistent with …”.
+
+CONFIDENCE: 0.97.VERDICT: reject
+
+CORRECTIONS:
+
+1. `docs/revision/paper-v2/main.tex:246`: Correct the profit explanation. R3’s reference profit **falls** by 0.146; its interval is [−0.393, 0.098]. Replace “not from a weaker reference” with “predominantly from higher attack profit.” Label these as raw profit units. In normalized units, the attack change is +0.206563 and the reference change is −0.000278.
+
+2. `docs/revision/paper-v2/main.tex:246`: Replace “The diagnostics show how” and “priority thus moves audits … while the attacker’s identity hides” with descriptive statements. The diagnostics establish greater newcomer audit exposure and a low attacker newest share. They do not isolate the cause of the gain increase: histories, bans, and selected attacks also change.
+
+3. `docs/revision/paper-v2/main.tex:246`: Define “newest” precisely: **strictly latest first-offer round**, excluding ties, among identities with assigned jobs. State that the reported value averages per-episode shares, then market means. It is not a single pooled fraction of rounds.
+
+4. `docs/revision/posthoc/churn_block.py:210`: Validate the diagnostic summaries against their per-episode counts and expected cells before scoring expectation 4. The current code trusts `pooled` without checking its consistency; the tests supply synthetic pooled values and miss this failure. Add a test that rejects a conflicting summary. The supplied records pass this independent consistency check.
+
+The read-only, 9,999-resample rerun reproduced every JSON field and the table exactly; `registered_check.ok` is true. All four expectation scores are supported. The requested commit diff changes only `incomplete_n`.
+
+CONFIDENCE: 0.97.
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "git diff HEAD~1 -- docs/revision/posthoc docs/revision/paper-v2/main.tex; cat docs/revision/churn/churn-plan.md; cat results/pods/paper_check.sh; sed -n '1,260p' docs/revision/posthoc/churn_block.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+diff --git a/docs/revision/paper-v2/main.tex b/docs/revision/paper-v2/main.tex
+index a952d60..3538211 100644
+--- a/docs/revision/paper-v2/main.tex
++++ b/docs/revision/paper-v2/main.tex
+@@ -243,7 +243,7 @@ The registered estimates and decisions below come from the report that the tagge
+ \caption{Exploratory follow-up, after the report: the difference between the two prescribed searches, $I = g(\mathrm{D2{+}H3}) - g(\mathrm{D2})$, per rule, its contrasts, the B3 minus R3 gaps $G$ under each family, and the share $S$, pooled over the six fresh markets with equal weights, with paired seed-bootstrap percentile intervals; frozen and doubled searches. $S$ is shown only when the lower bound of the pooled D2+H3 gap exceeds the preset floor. The lower block gives the gaps per market (D2+H3 / D2).}\label{tab:ph-reset}
+ \end{table}
+ 
+-\paragraph{Honest identity churn (exploratory follow-up).} In the registered markets every honest provider keeps one identity for the whole episode, so the newest identities are mostly the attacker's. After the report we let each of the nine honest opponents retire its identity and re-enter under a fresh one with probability $p$ in each round, $p = \const{0.01}$ or $p = \const{0.05}$ (mean identity lifetimes of \const{100} and \const{20} rounds; \site{ch_reps1} and \site{ch_reps5} honest replacements per episode), and reran the registered D2+H3 search, evaluation, and doubling check for B3, R3, and C$^*$ on the six fresh markets at $\rho=\const{0.2}$, each against the rule's frozen truthful reference played under the same churn. The rates are illustrative sensitivity settings, not calibrated to any market. The plan and four expectations were written before any churn search, after a timing check on one market (one rule, the old attack, no reference) had been seen. The churn model keeps capacity and quality fixed, but it also resets an honest provider's history and lets it leave a false ban, so it does not isolate age information. This is an exploratory follow-up; it changes no registered decision, and its intervals hold the six markets and the selected policies fixed. At $p = \const{0.05}$, the pooled gain against R3 rises from \site{ch_r3_0} to \site{ch_r3_5} (paired seed-bootstrap interval [\site{ch_r3_5_lo}, \site{ch_r3_5_hi}]), while the gains against C$^*$ and B3 change much less (from \site{ch_c_0} to \site{ch_c_5}, and from \site{ch_b_0} to \site{ch_b_5}). The C$^*$ minus R3 difference falls from \site{ch_d_0} to \site{ch_d_5} ([\site{ch_d_5_lo}, \site{ch_d_5_hi}]; negative on \site{ch_d_5_neg} of the six markets), and the B3 minus R3 gap becomes \site{ch_q_5} ([\site{ch_q_5_lo}, \site{ch_q_5_hi}]; negative on \site{ch_q_5_neg} markets): under this churn, the attack earns more against R3 than against the rule without audit priority. The rise comes from the attack's profit, not from a weaker reference: against R3, the attack's mean profit rises by \site{ch_pa_5} and the reference's by \site{ch_pr_5} ([\site{ch_pr_5_lo}, \site{ch_pr_5_hi}]). At $p = \const{0.01}$, the C$^*$ minus R3 difference is \site{ch_d_1} ([\site{ch_d_1_lo}, \site{ch_d_1_hi}]; doubled searches \site{ch_d_1_d}), and the B3 minus R3 gap stays at \site{ch_q_1}. The diagnostics show how. At $p = \const{0.05}$, over the rounds in which the attacker holds assigned jobs, its identity is the newest among those holding assigned jobs, the order in which R3 ranks identities, in \site{ch_new_r3} of the rounds under R3 (\site{ch_new_c} under C$^*$, \site{ch_new_b} under B3). R3 audits \site{ch_sh_r3} of the jobs that honest replacement identities serve in their first ten rounds, against \site{ch_sh_c} under C$^*$ and \site{ch_sh_b} under B3, pooled over the markets. R3's newcomer priority thus moves audits to honest newcomers while the attacker's identity hides among them. The expectations set in advance, scored on point estimates under both the frozen and the doubled searches: pooled $g_{\const{0.05}}(\mathrm{R3})$ above its no-churn value, ``\site{ch_e1}''; pooled C$^*$ minus R3 at $p = \const{0.05}$ below its no-churn value, ``\site{ch_e2}''; B3 minus R3 positive on all six markets at $p = \const{0.01}$, ``\site{ch_e3}''; the audited share of honest replacements in their first ten rounds higher under R3 than under C$^*$ and B3 at $p = \const{0.05}$, ``\site{ch_e4}''. \site{ch_inc} of the \site{ch_inc_n} doubling checks are flagged incomplete; at $p = \const{0.05}$ the doubled searches give the same sign for every pooled gain and contrast, while at $p = \const{0.01}$ the C$^*$ minus R3 difference changes sign under doubling (Table~\ref{tab:ph-churn}). Within this model, at the higher rate, R3's measured advantage over C$^*$ and B3 does not survive honest churn.
++\paragraph{Honest identity churn (exploratory follow-up).} In the registered markets every honest provider keeps one identity for the whole episode, so the newest identities are mostly the attacker's. After the report we let each of the nine honest opponents retire its identity and re-enter under a fresh one with probability $p$ in each round, $p = \const{0.01}$ or $p = \const{0.05}$ (mean identity lifetimes of \const{100} and \const{20} rounds; \site{ch_reps1} and \site{ch_reps5} honest replacements per episode), and reran the registered D2+H3 search, evaluation, and doubling check for B3, R3, and C$^*$ on the six fresh markets at $\rho=\const{0.2}$, each against the rule's frozen truthful reference played under the same churn. The rates are illustrative sensitivity settings, not calibrated to any market. The plan and four expectations were written before any churn search, after a timing check on one market (one rule, the old attack, no reference) had been seen. The churn model keeps capacity and quality fixed, but it also resets an honest provider's history and lets it leave a false ban, so it does not isolate age information. This is an exploratory follow-up; it changes no registered decision, and its intervals hold the six markets and the selected policies fixed. At $p = \const{0.05}$, the pooled gain against R3 rises from \site{ch_r3_0} to \site{ch_r3_5} (paired seed-bootstrap interval [\site{ch_r3_5_lo}, \site{ch_r3_5_hi}]), while the gains against C$^*$ and B3 change much less (from \site{ch_c_0} to \site{ch_c_5}, and from \site{ch_b_0} to \site{ch_b_5}). The C$^*$ minus R3 difference falls from \site{ch_d_0} to \site{ch_d_5} ([\site{ch_d_5_lo}, \site{ch_d_5_hi}]; negative on \site{ch_d_5_neg} of the six markets), and the B3 minus R3 gap becomes \site{ch_q_5} ([\site{ch_q_5_lo}, \site{ch_q_5_hi}]; negative on \site{ch_q_5_neg} markets): under this churn, the attack earns more against R3 than against the rule without audit priority. The rise comes mainly from higher attack profit: against R3, in raw profit units, the attack's mean profit rises by \site{ch_pa_5} and the reference's changes by \site{ch_pr_5} ([\site{ch_pr_5_lo}, \site{ch_pr_5_hi}]); these raw terms do not decompose the normalised gain exactly. At $p = \const{0.01}$, the C$^*$ minus R3 difference is \site{ch_d_1} ([\site{ch_d_1_lo}, \site{ch_d_1_hi}]; doubled searches \site{ch_d_1_d}), and the B3 minus R3 gap stays at \site{ch_q_1}. Two diagnostics describe the setting at $p = \const{0.05}$. The first is the share of the rounds in which the attacker holds assigned jobs where its identity's first-offer round, the order in which R3 ranks identities, is strictly the latest among the identities holding assigned jobs (ties excluded); it is averaged over the episodes of each market and then over the markets. It is \site{ch_new_r3} under R3, \site{ch_new_c} under C$^*$, and \site{ch_new_b} under B3. The second: R3 audits \site{ch_sh_r3} of the jobs that honest replacement identities serve in their first ten rounds, against \site{ch_sh_c} under C$^*$ and \site{ch_sh_b} under B3 (market shares averaged over the markets). These diagnostics are consistent with R3's newcomer priority moving audits to honest newcomers while the attacker's identity is rarely the newest; they do not isolate the cause of the higher gain, because churn also resets histories, ends bans, and changes the selected attacks. The expectations set in advance, scored on point estimates under both the frozen and the doubled searches: pooled $g_{\const{0.05}}(\mathrm{R3})$ above its no-churn value, ``\site{ch_e1}''; pooled C$^*$ minus R3 at $p = \const{0.05}$ below its no-churn value, ``\site{ch_e2}''; B3 minus R3 positive on all six markets at $p = \const{0.01}$, ``\site{ch_e3}''; the audited share of honest replacements in their first ten rounds higher under R3 than under C$^*$ and B3 at $p = \const{0.05}$, ``\site{ch_e4}''. \site{ch_inc} of the \site{ch_inc_n} doubling checks are flagged incomplete; at $p = \const{0.05}$ the doubled searches give the same sign for every pooled gain and contrast, while at $p = \const{0.01}$ the C$^*$ minus R3 difference changes sign under doubling (Table~\ref{tab:ph-churn}). Within this model, at the higher rate, R3's measured advantage over C$^*$ and B3 does not survive honest churn.
+ 
+ \begin{table}[t]\centering\small
+ \adjustbox{max width=\linewidth}{\input{tables/posthoc_churn.tex}}
+diff --git a/docs/revision/posthoc/churn_block.py b/docs/revision/posthoc/churn_block.py
+index ca2b90c..2d39ce9 100644
+--- a/docs/revision/posthoc/churn_block.py
++++ b/docs/revision/posthoc/churn_block.py
+@@ -229,9 +229,52 @@ def registered_check(res: dict, reg: dict) -> dict:
+     return {"pooled": rows, "absolute_matches": absm, "ok": all(x["ok"] for x in rows.values()) and bool(absm)}
+ 
+ 
++CATS = ("honest_replacement", "honest_initial", "focal")
++
++
++def validate_diagnostics(diag: dict, markets, n_seeds: int = 200) -> None:
++    """Astra r1: before scoring, check the driver's summaries against their own counts. Every (market, rule, winner) cell
++    exists with one episode per seed; each bin's served and audited totals equal the sums of the per-episode counts and
++    its share is audited / served (None when nothing was served); the market-pooled share per bin is the mean of the
++    available market shares, with that count; the newest shares are in [0, 1] or None."""
++    for r in RULES:
++        for w in VERS:
++            by_m = {}
++            for m in markets:
++                cell = (diag.get("cells", {}).get(f"{m}@rho0.2|{r}") or {}).get(w)
++                if cell is None:
++                    raise ValueError(f"diagnostics cell missing: {m}|{r}|{w}")
++                sh = cell["shares"]; per = sh["per_episode"]
++                if len(per) != n_seeds or len(sh["focal_newest_by_first_offer_assigned"]) != n_seeds:
++                    raise ValueError(f"{m}|{r}|{w}: {len(per)} episodes (expected {n_seeds})")
++                for x in sh["focal_newest_by_first_offer_assigned"] + sh["focal_newest_by_creation"]:
++                    if x is not None and not (math.isfinite(x) and 0 <= x <= 1):
++                        raise ValueError(f"{m}|{r}|{w}: newest share {x} outside [0, 1]")
++                for c in CATS:
++                    for b, row in enumerate(sh[c]):
++                        sv = sum(e[c][b][0] for e in per); au = sum(e[c][b][1] for e in per)
++                        if (row["served"], row["audited"]) != (sv, au):
++                            raise ValueError(f"{m}|{r}|{w}|{c} bin {b}: totals differ from the per-episode counts")
++                        want = au / sv if sv else None
++                        if (want is None) != (row["share"] is None) or (want is not None and abs(row["share"] - want) > TOL):
++                            raise ValueError(f"{m}|{r}|{w}|{c} bin {b}: share is not audited / served")
++                by_m[m] = sh
++            pooled = (diag.get("pooled") or {}).get(f"{r}|{w}")
++            if pooled is None:
++                raise ValueError(f"pooled diagnostics missing: {r}|{w}")
++            for c in CATS:
++                for b, row in enumerate(pooled[c]):
++                    v = [by_m[m][c][b]["share"] for m in markets if by_m[m][c][b]["share"] is not None]
++                    want = sum(v) / len(v) if v else None
++                    if row["markets"] != len(v) or (want is None) != (row["share"] is None) or (want is not None and abs(row["share"] - want) > TOL):
++                        raise ValueError(f"pooled share {r}|{w}|{c} bin {b} differs from the market shares")
++
++
+ def diag_summary(diag: dict) -> dict:
+-    """Per rule and winner: honest replacements per episode and the mechanism-relevant newest share of the focal identity
+-    (means over markets of per-episode means), and the driver's market-pooled age-bin shares."""
++    """Per rule and winner: honest replacements per episode, and the share of rounds in which the focal identity's first-offer
++    round is strictly the latest among identities holding assigned jobs (ties excluded), averaged over the episodes of a
++    market (episodes without such rounds left out) and then over markets with equal weights; not one pooled fraction of
++    rounds. The driver's market-pooled age-bin shares are copied (checked by validate_diagnostics)."""
+     out = {}
+     cells = diag.get("cells", {})
+     for r in RULES:
+@@ -290,6 +333,9 @@ def main(argv=None) -> int:
+     data = load(a.records, ch, a.report, markets, a.n_seeds)
+     res = analyse(data, a.resamples, a.seed)
+     diags = {c: _read(ch / f"p{c}" / "diagnostics.json") for c in CONDS[1:]}
++    for d in diags.values():
++        if d is not None:
++            validate_diagnostics(d, markets, a.n_seeds)
+     out = {"label": LABEL, "statistics": res, "flags": data["flags"], "flag_summary": flag_summary(data["flags"]),
+            "expectations": expectations(res, diags.get("0.05")),
+            "diagnostics": {c: (diag_summary(d) if d else None) for c, d in diags.items()},
+diff --git a/docs/revision/posthoc/test_churn_block.py b/docs/revision/posthoc/test_churn_block.py
+index f6a12c5..40cc8c4 100644
+--- a/docs/revision/posthoc/test_churn_block.py
++++ b/docs/revision/posthoc/test_churn_block.py
+@@ -211,6 +211,70 @@ def test_expectation_4_reads_the_first_bin_at_p005(tmp_path):
+     assert CB.expectations(r, diagnostics=None)["4"]["verdict"] == "unavailable"
+ 
+ 
++def _full_diag(n=4, share_r3=0.6, markets=M6):
++    """Consistent driver-shaped diagnostics: per-episode [served, audited] counts, bin totals, and the market-pooled shares."""
++    cells, pooled = {}, {}
++    for r in CB.RULES:
++        for w in ("base", "doubled"):
++            bins_by_m = {}
++            for i, m in enumerate(markets):
++                au = {"F111": round(10 * share_r3), "C*": 4, "F000": 2}[r] + (i % 2)
++                per = [{c: [[10, au], [5, 1], [0, 0], [3, 0]] for c in ("honest_replacement", "honest_initial", "focal")} for _ in range(n)]
++                sh = {}
++                for c in ("honest_replacement", "honest_initial", "focal"):
++                    rows = []
++                    for b in range(4):
++                        sv = sum(e[c][b][0] for e in per); a = sum(e[c][b][1] for e in per)
++                        rows.append({"age": [0, 1], "served": sv, "audited": a, "share": (a / sv if sv else None)})
++                    sh[c] = rows
++                sh.update(per_episode=per, honest_replacements_per_episode=18.0, focal_newest_by_creation=[0.5] * n,
++                          focal_newest_by_first_offer_assigned=[0.25] * n)
++                cells.setdefault(f"{m}@rho0.2|{r}", {})[w] = {"seeds": list(range(n)), "shares": sh}
++                bins_by_m[m] = sh
++            pooled[f"{r}|{w}"] = {}
++            for c in ("honest_replacement", "honest_initial", "focal"):
++                res = []
++                for b in range(4):
++                    v = [bins_by_m[m][c][b]["share"] for m in markets if bins_by_m[m][c][b]["share"] is not None]
++                    res.append({"share": (sum(v) / len(v) if v else None), "markets": len(v)})
++                pooled[f"{r}|{w}"][c] = res
++    return {"cells": cells, "pooled": pooled}
++
++
++def test_validate_diagnostics_accepts_a_consistent_summary():
++    CB.validate_diagnostics(_full_diag(), M6, n_seeds=4)
++
++
++def test_validate_diagnostics_rejects_a_conflicting_pooled_share():
++    d = _full_diag(); d["pooled"]["F111|base"]["honest_replacement"][0]["share"] += 0.01
++    with pytest.raises(ValueError, match="pooled"):
++        CB.validate_diagnostics(d, M6, n_seeds=4)
++
++
++def test_validate_diagnostics_rejects_bin_totals_that_differ_from_the_episode_counts():
++    d = _full_diag(); d["cells"]["fresh2@rho0.2|C*"]["doubled"]["shares"]["honest_replacement"][0]["audited"] += 1
++    with pytest.raises(ValueError, match="per-episode"):
++        CB.validate_diagnostics(d, M6, n_seeds=4)
++
++
++def test_validate_diagnostics_rejects_a_missing_cell_or_episode():
++    d = _full_diag(); del d["cells"]["fresh5@rho0.2|F000"]
++    with pytest.raises(ValueError, match="missing"):
++        CB.validate_diagnostics(d, M6, n_seeds=4)
++    with pytest.raises(ValueError, match="episodes"):
++        CB.validate_diagnostics(_full_diag(), M6, n_seeds=5)
++
++
++def test_newest_share_averages_episode_shares_within_a_market_then_across_markets():
++    """Sol r1: not one pooled fraction of rounds. Market fresh0 has episode shares 1, 0, 0 (one third), the others 1."""
++    d = _full_diag(n=3)
++    for m in M6:
++        d["cells"][f"{m}@rho0.2|F111"]["base"]["shares"]["focal_newest_by_first_offer_assigned"] = [1.0, 1.0, 1.0]
++    d["cells"]["fresh0@rho0.2|F111"]["base"]["shares"]["focal_newest_by_first_offer_assigned"] = [1.0, 0.0, None]
++    s = CB.diag_summary(d)["F111|base"]
++    assert s["focal_newest_first_offer"] == pytest.approx((0.5 + 5 * 1.0) / 6)       # None episodes are left out
++
++
+ def test_registered_values_are_reproduced_from_the_no_churn_records(tmp_path):
+     """posthoc.json doubled.D2+H3: q1 = C* - R3, q4 = B3 - R3 (frozen = base, doubled); absolute mean gains of C* and R3."""
+     r = CB.analyse(CB.load(*_tree(tmp_path, _gains()), markets=M6, n_seeds=40), b=99, seed=1)
+@@ -224,7 +288,8 @@ def test_registered_values_are_reproduced_from_the_no_churn_records(tmp_path):
+ 
+ def test_cli_writes_the_result_with_input_hashes_and_a_table(tmp_path):
+     ea, ch, rep = _tree(tmp_path, _gains(noise=0.01))
+-    _write(ch / "p0.05" / "diagnostics.json", _diag({(x, w): 0.2 for x in CB.RULES for w in ("base", "doubled")}))
++    for c in ("0.01", "0.05"):
++        _write(ch / f"p{c}" / "diagnostics.json", _full_diag(n=40))
+     out, tab = tmp_path / "churn.json", tmp_path / "tables"
+     rc = CB.main(["--records", str(ea), "--churn", str(ch), "--report", str(rep), "--out", str(out), "--tables", str(tab),
+                   "--n-seeds", "40", "--resamples", "99"])
+# Honest-churn arm: plan (draft 6, 2026-11-11; for internal review; no spend yet)
+
+**Why.** The Fable 5.2 fresh review (problem 4, `docs/revision/roster/fable52-paper-r1.md`; triage
+`docs/paper/fable52-triage.md`): in both tests the nine honest opponents never replace their identities, so after the
+start a new identity almost always belongs to the deviating provider. This arm lets the honest opponents replace their
+identities and measures how R3's results change. The author asked on 2026-11-10 to "run all necessary sims"; nothing
+runs before this plan has internal consensus and the reservation is recorded in the budget ledger.
+
+**Status.** Draft 6. Exploratory follow-up outside the registered protocol, specified after the second test's results
+were seen. Not an independent replication.
+
+**Changes from draft 3** (internal review round 3, `docs/revision/roster/{sol,astra}-churn-plan-r3.md`, both reject; and
+the cross-cutting rules of the author and the reset plan):
+1. The cost admission runs again after the memory preflight chooses the workers; the first admission includes the
+   preflight's serial tasks; the chosen worker limit is kept for every later stage, including the diagnostics.
+2. The preflight runs real tasks (one evaluate task per rule, one doubling task) in child processes, takes the largest
+   peak with a 25 percent margin for markets, rules and winners, and keeps their records; doubling is measured itself.
+3. The pod gate requires bit identity (`--require-identical`, the semantics of the reset driver's `pod_gate_ok`; the
+   author's decision on card `touchstone-reset-repro-pass`); the Mac gate keeps the tolerance criterion.
+4. The launcher is a reviewed copy of `results/pods/reset_pod.sh` with `podctl.py` (draft in
+   `docs/revision/churn/churn_pod.sh`): stages stop only between stages at the soft cap; the one exception is the
+   watchdog, which deletes the pod at 1.3 times the cap at the price ceiling; attempts persist in its attempts file, with
+   the bound at the ceiling; it passes the allocation time, the price and the earlier attempts' charges to the driver.
+
+**Changes from draft 2** (internal review round 2, `docs/revision/roster/{sol,astra}-churn-plan-r2.md`: Sol
+accept-with-caveat, Astra reject):
+1. Production runs require the pod's allocation time (`--started`) and its actual hourly price (`--usd-per-hour`), and
+   carry the charges of earlier failed attempts (`--prior-usd`); all three are saved in `run.json`. The 8 USD limit is
+   described as an estimate-based stage-admission limit that an overrunning stage can exceed under the no-kill rule; pod
+   deletion on completion or failure is the launcher's job (section 7).
+2. The reservation command passes the unpadded estimate, 4.43 USD; the wrapper applies the factor 1.25.
+3. Every production stage, including separate-stage and resumed runs, requires a saved passing gate record of this
+   driver version; production cannot skip the gate (section 3 c).
+4. A pod-side memory preflight before the nine-worker stages: the cgroup limit, one full evaluate task's peak (four
+   profiles) in a child process, the parent's own memory, and fewer workers if needed (section 7).
+5. The creation-time newest statistic is labelled as such, and the mechanism-relevant one is added: first-offer age among
+   the identities holding assigned jobs (section 4).
+6. Expectation 4 is narrowed to a cross-rule difference under churn (section 6).
+
+**Changes from draft 1** (internal review round 1, `docs/revision/roster/{sol,astra}-churn-plan-r1.md`, both reject; and
+the author's instructions of 2026-11-10):
+1. Blocker: the doubling stage's reference reselection reran no candidate under churn (stored no-churn training profits
+   were reused) and its `reference_change` subtracted the stored no-churn reference score. The driver now clears those
+   values for churn cells and scores the frozen reference under churn on the training seeds (section 3; tests on the
+   five training seeds).
+2. Blocker: a standalone p = 0 gate through the injected path, with explicit id mapping, the same dependency checks,
+   `gate.json` and an inventory, and no dispatch of the churn cells on failure (section 3 c).
+3. Blocker: worker limits per stage, a memory check, the gate and the diagnostics in the billed time, a reservation in
+   the shared `followup` category, and a stop cap of 8 USD enforced between stages; no running stage is killed (section 7).
+4. The rates are illustrative sensitivity settings (mean identity lifetimes of 100 and 20 rounds); the unmeasured claim
+   about "newest" is removed and the focal identity's share of rounds as uniquely newest is measured.
+5. Base results are compared with base no-churn results (C* - R3 0.0207) and doubled with doubled (0.0296).
+6. Intervals condition on the six markets and the selected policies.
+7. Diagnostics for the doubled winners as well; market pooling defined; per-seed counts saved; empty bins reported as
+   unavailable; audit exposure is not called a financial loss.
+8. Cheap reselection among the frozen menu's candidates is distinguished from regenerating the menus.
+
+## 1. What exists (free; seen before this plan)
+
+- `sim/policies/honest.py` `HonestMax` never exits. `sim/market.py` `run_episode`: an action with `exit=True` retires the
+  identity and re-enters under a fresh one in the same round (entry cost `e = 0`); same-round entrants are ordered by a
+  salted rank. `ProviderView.rng` is seeded from the episode's per-round, per-entity `policy_seed`.
+- Registered no-churn values (`docs/revision/posthoc/posthoc.json`, `doubled.D2+H3`; command in section 9): pooled mean
+  gain C* 0.0856, R3 0.0649; pooled C* - R3 0.0207 (base) and 0.0296 (doubled); pooled B3 - R3 0.1734 (base) and 0.1698
+  (doubled).
+- Registered honest-replacement diagnostic (headline, one replacement at round 50): R3 audits 1.000 and 0.917 of the
+  replacement's jobs in its first two ten-round bins, C* 0.428 and 0.161, B3 about 0.250 (`posthoc.json` `honest`).
+- **Disclosed peek (timing check, 2026-11-10).** To price the churn slowdown, the registered no-churn F111 D2+H3 attack on
+  fresh0 was rerun on the first 40 evaluation seeds under churn (`docs/revision/churn/churn_timing.py`): mean normalised
+  profit 0.468 (no churn), 0.487 (p = 0.01), 0.521 (p = 0.05); the focal provider used 54.0, 36.7 and 6.8 identities per
+  episode; honest replacements per episode 0, 18.25, 89.2. One rule, one market, the old attack, no reference; the
+  expectations in section 6 were written after it.
+
+## 2. Estimand
+
+For rule r in {R3 (F111), C*, B3 (F000)}, fresh market m and churn rate p:
+
+g_p(r, m) = mean over the 200 evaluation seeds of the normalised gain of the D2+H3 attack selected by the registered
+search under churn p, against the rule's frozen truthful reference played under the same churn.
+
+Contrasts: d_p(m) = g_p(C*, m) - g_p(R3, m) and q_p(m) = g_p(B3, m) - g_p(R3, m), pooled with equal market weights, and
+their changes from the registered no-churn values on the same seeds. The attack and reference profits are reported
+separately. These are differences between finite searches with a fixed reference candidate in a changed environment, not
+identified optimal values. A weaker reference can raise a measured gain, and unequal reference losses can move either
+contrast in either direction.
+
+## 3. Cells and execution contract
+
+- **Churn model.** Each of the nine honest opponents plays honest-max delivery and offer and, in each round, retires its
+  identity and re-enters under a fresh one with probability p (`docs/revision/churn/churn_v2.py` `HonestChurn`). The draw
+  uses the episode's `policy_seed[t, e]`, so it is deterministic and the same for every rule on the same seed. The model
+  keeps provider capacity and quality fixed and changes identity age; it also resets an honest provider's history and
+  lets it leave a false ban, so it does not isolate age information alone. **Rates p in {0.01, 0.05}** are illustrative
+  sensitivity settings without empirical calibration: mean identity lifetimes of 100 and 20 rounds, about 18 and 89
+  honest replacements per episode (measured, section 1). Whether the focal identity stays the newest is measured (section 4).
+- **Cells.** {R3, C*, B3} x fresh0..fresh5 x {0.01, 0.05} at rho 0.2, D2+H3, registered search budget (5 restarts, 300
+  evaluations, 5 training seeds), the market's 200 evaluation seeds, a doubling check with its held-out evaluation on
+  every cell: **36 cells**, plus the gate cell.
+- **Driver.** `docs/revision/churn/churn_v2.py` (under `docs/`: the code freeze allows changes only there). It runs the
+  frozen `revision_v2` stage functions through `_run_one` and reuses the reset driver's helpers
+  (`docs/revision/followup/reset_followup_v2.py`: input copies, pre-episode checks, follow-up freeze, acceptance,
+  comparators, inventory). `install()` wraps three `revision_v2` names, also in every pool worker's initialiser (tested):
+  `train_cell` (which `eval_cell` calls), so search, twin search, the doubling stage's reference menu, and evaluation run
+  under churn; `select_reference`, so a cell with churning opponents never reuses a candidate's stored no-churn training
+  profits (only the abstain candidate, whose profit is zero, keeps its value); and `reference_of`, so a churn job's
+  frozen reference carries its training-seed score evaluated under the same churn, which the doubling stage's
+  `reference_change` subtracts. Churn job ids carry the suffix `|churn<p>` so they never overwrite the copied registered
+  D2+H3 records that the reference menus read; each rate writes to its own directory (`results/v2/followup-churn/p<p>/`),
+  never to `eval/all`.
+- **References: frozen candidate, played under churn.** Each (market, rule) keeps its frozen truthful reference
+  candidate. Two reselections are distinguished. Reselecting among the frozen menu's candidates under churn needs only
+  their evaluation on the training seeds; the doubling stage does it for every cell (with the fix above), and its
+  `reference_change` is reported as a diagnostic, not as a bound on held-out bias. Regenerating the menus under churn
+  would need 60 D2+H3 and 60 X7-SC searches per rate, about 12.19 USD per rate before the churn slowdown (section 9); it
+  is not done.
+- **Checks before any episode** (reset driver, plan draft 5): configuration hash equals the container hash; salt; known
+  commit; runner and `sim/` equal protocol-v2; each job's runner, salt, configuration, root, seeds, rule parameters and
+  context equal its frozen reference's provenance; output not inside `--src` or `eval/all`. Inputs are copied read-only
+  and hash-checked against the original records and freeze; the follow-up freeze and acceptance run before evaluation
+  and doubling; a final inventory records every output hash, the environment, and the churn driver's hash.
+- **Validation before spend (free, on the Mac).** (a) Unit tests: the churn policy is truthful and exits at rate p,
+  deterministically; p = 0 never exits; the wrapper adds churning opponents to training and evaluation cells, also in
+  pool workers, and leaves other jobs unchanged; churn ids and provenance are distinct; under churn every menu candidate
+  is rerun on the five training seeds and the frozen reference's score is recomputed; newcomer counts, unavailable
+  bins, the focal newest share, market pooling; the gate's id mapping; a failed gate stops dispatch; the cap check. (b)
+  A smoke-size run of the whole path for fresh0 R3 at p = 0.05, including the gate path, both winners' diagnostics, and
+  the memory preflight on its output; production refuses a missing `--started`, `--gate skip`, and a separate stage
+  without a saved passing gate; the worker limit fits the memory limit. All pass: `uv run pytest -q docs/revision/churn`
+  (32 passed: also the bit-identity pod gate, the preflight's real-task sample, admission after the preflight with
+  the kept worker limit, a skipped record never counted as a measurement, a retry reusing only an applicable saved
+  measurement, and the worker limit kept across separate-stage commands, the diagnostics included; round 5: rule coverage
+  of a reused measurement, rejection of older records, and dispatch of measured jobs).
+- **(c) The p = 0 gate, first on the pod.** The driver runs fresh0 R3 D2+H3 at p = 0 through the injected path (inputs,
+  search, freeze, acceptance, evaluation, doubling) into `gate-p0/`, maps the id `|churn0` to the registered id, and
+  compares search and evaluation by the reset driver's `compare` and the doubling check by `compare_doubling`
+  (draft-5 criteria of the reset plan). **On the pod the gate requires bit identity** (`--require-identical`: search,
+  evaluation and doubling identical to the registered records, the reset driver's `pod_gate_ok` semantics, the author's
+  decision); on the Mac the draft-5 tolerance criterion applies. It saves `gate-p0/gate.json` (with `identical`,
+  `require_identical` and `gate_ok`) and an inventory. On failure the driver stops before
+  any churn cell is dispatched and reports. Every later production stage, also when run alone or resumed, first requires
+  that saved gate record: passing its criterion (on the pod, bit-identical), for this cell and id mapping, and run by the
+  same driver version (its hash in the gate's inventory); production runs cannot skip the gate.
+
+## 4. Diagnostics (evaluation only, no search)
+
+For every cell, the base and the doubled winner are rerun on the evaluation seeds under churn (`diagnostics` stage):
+per-seed normalised profits; per episode the [served, audited] counts by identity age, in bins [0, 10), [10, 20),
+[20, 50), [50, 200), for honest replacement identities, honest initial identities, and the focal provider's identities;
+honest replacements per episode; and per episode two "newest" shares for the focal identity. (i) Creation-time newest:
+the share of rounds in which its creation round is strictly the latest among all current identities; this is not the
+order R3 uses. (ii) Mechanism-relevant: over the rounds in which it holds assigned jobs, the share in which its
+first-offer round is strictly the latest among the identities holding assigned jobs, which is how R3 ages and ranks
+identities (`sim/mechanisms/factorial.py`). Only (ii) is used to discuss R3's targeting.
+A bin with no served job is reported as unavailable. Pooling over markets: per rule, winner and bin, the mean of the
+market shares over the markets where the share is available, with that count. A higher audited share of honest
+newcomers is greater audit exposure; it is not by itself a financial loss.
+
+## 5. Analysis (fixed now)
+
+- Per market and pooled g_p(r), d_p, q_p, with paired seed bootstrap intervals (9,999 resamples, percentile, 95 percent;
+  the same resampled seed indices for every rule and rate of a market; pooled replicates resample seeds within each
+  market and average the six market means). The intervals condition on the six markets and the selected policies; they
+  do not include search uncertainty or uncertainty across markets.
+- Changes from no churn, paired by seed with the registered records: base with base, doubled with doubled.
+- Attack and reference profit terms separately; the reselection diagnostic per cell; sign counts over the six markets.
+- No confirmatory test, no multiplicity family, no change to any registered decision; all results are labelled
+  exploratory follow-up.
+
+## 6. Pre-specified expectations
+
+Written after the disclosed peek in section 1 and before any churn search. Scored on point estimates, as met (holds
+under both the base and the doubled searches, each against its own no-churn baseline), failed (fails under both), or not
+established (the two disagree).
+
+1. Pooled g_0.05(R3) exceeds the registered pooled no-churn g(R3) (base 0.0649; doubled against the doubled value).
+2. Pooled d_0.05 = C* - R3 is below the registered no-churn value (base 0.0207; doubled 0.0296).
+3. q_0.01 = B3 - R3 is positive on all six markets.
+4. At p = 0.05, the market-pooled audited share of honest replacement identities in their first ten rounds is higher
+   under R3 than under C* and than under B3, for both winners (a cross-rule difference under churn; no no-churn baseline
+   exists for honest replacement identities in these cells).
+
+A failure is not read as evidence of a particular cause. Only if expectation 2 is met may the paper say that R3's
+measured edge over C* shrinks when honest opponents churn; only if 4 is met that, under churn, R3 exposes honest newcomers
+to more audits than C* and B3 do.
+
+## 7. Cost and operations
+
+**Work** (`experiments/v2/benchmark/timings.json`, 0.108 USD per core-hour): per cell a D2+H3 search (2,084 s), the
+evaluation on 200 seeds (96.0 s per 160 seeds, scaled: 120 s), the doubling check with its held-out evaluation (998 s),
+and two diagnostic profiles (60 s); churn slows an episode by 1.133 (p = 0.01) and 1.330 (p = 0.05) (section 1). 36
+cells plus the gate cell: **41.1 core-hours, 4.43 USD** at the benchmark price.
+
+**Memory** (`docs/revision/churn/churn_memory.py`): one 200-seed profile peaks at 981 MB without churn and 1,084 MB at
+p = 0.05; an evaluate or doubling task keeps four profiles (2.5 GB without churn, operations ledger), so about 2.8 GB
+under churn. Workers: search 16; evaluate, doubling and diagnostics 9 (about 25 GB, 23.3 GiB, below the pod's 28 GiB floor; an
+independent four-profile check at p = 0.05 in review peaked at 2,532 MiB). **Pod-side preflight** before the evaluate and
+the doubling stage (`memory_preflight`): real tasks in child processes, one evaluate task per rule and one doubling task,
+each writing its production record (not run again); the largest peak times a margin of 1.25 for variation across
+markets, rules and winners; the cgroup limit and the parent's own peak; workers = min(current limit,
+floor((0.9 x limit - parent) / (1.25 x peak))), saved in `memory_preflight_<stage>.json`; the driver refuses if no task
+fits. **A task whose record already exists is no measurement** (review r4): the child reports the task status, and a
+"skipped" task is replaced by the next unfinished task of the same rule (evaluate) or stage (doubling). A retry reuses a
+saved measurement only if it applies (record version 2 with an explicit "done" status for every measured task, so
+draft-4 records are never reused; same memory limit and margin; measured jobs in the current job list; for the
+evaluation, a measurement for every current rule); with neither, the driver refuses. **A measurement never removes a
+job from dispatch** (review r5): every job of the stage passes through `_run_one`, which skips a valid record and
+recomputes a missing or damaged one; only the cost admission counts the tasks measured in the same command as done. **The chosen limit persists across commands:** it is saved in
+`memory_workers.json` with the memory limit, and every later command on that output (a separate stage, a resumed run)
+starts from the lowest saved limit that matches its memory limit; the diagnostics (two profiles per task, below the
+evaluate task) refuse to dispatch without such a saved limit. **Admission and the preflight:** before a stage the cost admission covers the preflight's serial tasks
+plus the remaining jobs at the current limit; after the preflight it runs again for the remaining jobs at the chosen
+limit, and stops between stages if the cap would be passed.
+
+**Billed pod time** (one 16-vCPU pod, 0.56 USD per hour; `docs/revision/churn/churn_cost.py`): the gate cell serially,
+then per rate the 18 searches in two waves of 16; the evaluation as three serial preflight tasks plus 15 jobs in two waves
+of 9; the doubling as one serial preflight task plus 17 jobs in two waves of 9; the diagnostics in two waves of 9; plus
+0.6 hours of preparation and idle: **6.88 hours, 3.85 USD** (5.95 hours and 3.33 USD without the serial preflight tasks).
+If the preflight cuts the evaluation workers to 2, the same arithmetic gives 12.44 hours, 6.97 USD, still below the
+stop cap; the admission after each preflight recomputes the stage cost at the chosen workers. The serial tasks add
+billed time, not core-hours, so the reservation below still covers the expected 3.85 USD.
+
+**Budget** (author, 2026-11-10). The arm uses the shared ledger category `followup` (cap 72 USD for all follow-up runs since the author's approval of 2026-11-12, earlier 22 USD; the arm's stop cap stays 8 USD).
+Before the pod: `docs/revision/followup/budget_followup.py --reserve churn-pod 8.32` (amended 2026-11-12, launcher review
+r1: the wrapper reserves 8.32 x 1.25 = 10.40 USD, the watchdog bound of 1.3 x the stop cap; the earlier 4.43 USD
+estimate padded to 5.54 USD would not cover that bound). **Stop cap 8.00 USD, an estimate-based stage-admission limit.** No running
+stage is ever killed (author, 2026-11-10): before each stage the driver adds the pod time billed since allocation at the
+pod's actual hourly price, the charges of earlier failed attempts, and the stage's estimate, and stops between stages
+if the sum would pass the cap, then reports. Production runs refuse to start without `--started` (the allocation time)
+and `--usd-per-hour`; with `--prior-usd`, all are saved in `run.json`. A stage that overruns its estimate can end above
+the cap.
+
+**Launcher** (a copy of `results/pods/reset_pod.sh` with `podctl.py`, unchanged pod safety; draft
+`docs/revision/churn/churn_pod.sh`, installed in `results/pods/` after review): code and tarball guards; creation only
+before the hard deadline; the price checked against the ceiling `MAXCPH`; the memory floor (28 GiB); the gate, then the
+stages, each started only if no STOP file exists and the soft deadline has not passed (the soft deadline is the cap at
+the ceiling, net of earlier attempts' charges); at the soft deadline it writes STOP, so the pod stops after the running
+stage. **The one exception to "no running stage is killed":** the `podctl.py` watchdog deletes the pod at 1.3 times the
+cap at the price ceiling (10.40 USD at most for this arm), also mid-stage, as an absolute guard against a hung pod. Spend
+(amended 2026-11-12, launcher review r1) is recorded as the account balance difference (`podctl.py spend NAME`, at
+least an hour after the watchdog ends); the launcher prints only estimates. Its attempts file holds each pod's id,
+request time and deletion time. The launcher passes to the driver the live pod's request time as `--started`, its
+actual price, and as `--prior-usd` the operator's `PRIOR` (recorded spend of earlier launches of this arm) plus this
+launch's deleted attempts charged at the ceiling from their request times, rounded up. Both deadlines are net of
+`PRIOR`, so the 10.40 USD bound holds across launches. An EXIT, INT or TERM trap pulls the records, verifies them against the inventories, deletes the pod, and
+verifies the deletion; the watchdog keeps deleting until no pod of this name remains.
+
+## 8. Steps
+
+1. Internal review of this plan to consensus; freeze it (commit).
+2. The author's approval of the follow-up limit is recorded; the reservation of 10.40 USD under `followup` (1.3 x the 8 USD stop cap).
+3. One pod: the p = 0 gate, then the 36 cells; delete the pod and verify the deletion; record the spend.
+4. Analysis in `docs/revision/posthoc/` (tested first); a paper paragraph and table, labelled exploratory.
+
+## 9. Commands behind the numbers
+
+- Registered values: `python3 -c "import json;p=json.load(open('docs/revision/posthoc/posthoc.json'))['doubled']['D2+H3'];print(p['absolute'],p['pooled'])"`
+  (C* 0.0856, R3 0.0649; C* - R3 0.02072 base, 0.02962 doubled; B3 - R3 0.1734 base, 0.1698 doubled).
+- Timing and peek: `uv run python docs/revision/churn/churn_timing.py` (40 fresh0 evaluation seeds; 6.48, 7.34, 8.62 s).
+- Memory: `uv run python docs/revision/churn/churn_memory.py none` and `... 0.05` (981.0 and 1,084.4 MB).
+- Cost: benchmark arithmetic over `experiments/v2/benchmark/timings.json` with the measured slowdowns, the worker limits
+  above and two waves per stage (41.06 core-hours, 4.43 USD).
+- Billed time: `uv run python docs/revision/churn/churn_cost.py` (6.28 hours of stages plus 0.6, 6.88 billed hours,
+  3.85 USD; 5.95 hours, 3.33 USD without the serial preflight tasks; 12.44 hours, 6.97 USD at two evaluation workers).
+- Reselection-by-regeneration cost: `sim/manifest_v2.py` `menu_families` and `bank_rules(ctx, fam, 3, False)` over the six
+  markets and three rules: 60 D2+H3 and 60 X7-SC searches per rate, 12.19 USD per rate.
+- Tests: `uv run pytest -q docs/revision/churn` (32 passed, 146 s).
+cat: results/pods/paper_check.sh: No such file or directory
+"""The churn block of the post-hoc analysis (docs/revision/churn/churn-plan.md, draft 6, sections 2, 4, 5 and 6).
+
+g_p(r, m) = mean over the evaluation seeds of the normalised gain of the D2+H3 winner selected under churn p, against
+the rule's frozen truthful reference played under the same churn; p = 0 is the registered no-churn record on the same
+seeds. Rules: R3 = F111, C*, B3 = F000. Contrasts d = g(C*) - g(R3), q = g(B3) - g(R3), and their changes from no churn,
+paired by seed (base with base, doubled with doubled). Intervals: paired seed bootstrap, 9,999 resamples, percentile 95%;
+one resampled index vector per market and replicate, shared by every rule, rate, version and the no-churn records;
+pooled = equal-weight mean of the six market means, seeds resampled within each market. The intervals condition on the
+markets and the selected policies. Exploratory follow-up: no test, no multiplicity family, no registered decision changes.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import math
+from pathlib import Path
+
+import numpy as np
+
+RULES = ("F111", "C*", "F000")
+RATES = (0.01, 0.05)
+CONDS = ("0",) + tuple(f"{p:g}" for p in RATES)
+VERS = ("base", "doubled")
+B = 9999
+SEED = 20261110                       # fixed bootstrap seed (the plan's date of specification)
+TOL = 1e-9
+LABEL = "exploratory follow-up (churn plan draft 6); no confirmatory test, no multiplicity family, no registered decision changes"
+
+
+def safe(rid: str) -> str:
+    return rid.replace("|", "__").replace("/", "~").replace("*", "star")      # revision_v2._safe
+
+
+def _read(p: Path):
+    return json.loads(p.read_text()) if p.exists() else None
+
+
+def _arrays(src: dict, what: str, n_seeds: int) -> dict:
+    """One-dimensional finite gains and profit terms, one per seed, unique seeds, the expected seed count."""
+    seeds = list(src["seeds"])
+    if len(seeds) != n_seeds:
+        raise ValueError(f"{what}: {len(seeds)} seeds (expected {n_seeds})")
+    if len(set(seeds)) != len(seeds):
+        raise ValueError(f"{what}: duplicate seed identifiers")
+    out = {}
+    for k in ("gain", "profit_attack", "profit_ref"):
+        a = np.asarray(src[k], dtype=float)
+        if a.ndim != 1 or a.size != n_seeds:
+            raise ValueError(f"{what}: {a.size} values of {k} for {n_seeds} seeds (expected {n_seeds})")
+        if not np.all(np.isfinite(a)):
+            raise ValueError(f"{what}: non-finite {k}")
+        out[k] = a
+    return out
+
+
+def load(eval_all, churn_dir, report_path, markets, n_seeds: int = 200) -> dict:
+    """Per-seed arrays {ver: {cond: {market: {rule: {gain, profit_attack, profit_ref}}}}}, the doubling flags of the churn
+    cells, and the missing cells. Refuses if a market's seed lists differ between any rule, rate, version or no churn."""
+    report = json.loads(Path(report_path).read_text())
+    cells = {v: {c: {m: {} for m in markets} for c in CONDS} for v in VERS}
+    flags, missing = {}, []
+    for m in markets:
+        seeds = None
+        for r in RULES:
+            rid = f"{m}@rho0.2|{r}|D2+H3|profit"
+            srcs = {("base", "0"): _read(Path(eval_all) / "evaluate" / (safe(rid) + ".json")),
+                    ("doubled", "0"): (report.get("doubling", {}).get(rid) or {}).get("heldout")}
+            for p in RATES:
+                c = f"{p:g}"; cid = f"{rid}|churn{c}"; d = Path(churn_dir) / f"p{c}"
+                srcs[("base", c)] = _read(d / "evaluate" / (safe(cid) + ".json"))
+                dbl = _read(d / "doubling" / (safe(cid) + ".json"))
+                srcs[("doubled", c)] = (dbl or {}).get("heldout")
+                if dbl is not None:
+                    flags[f"{c}|{m}|{r}"] = {k: dbl[k] for k in ("attack_change", "reference_change", "incomplete")}
+            for (v, c), src in srcs.items():
+                if src is None and c == "0":      # registered records all exist: a gap means a wrong input directory
+                    raise ValueError(f"registered no-churn record missing: {rid} ({v})")
+                if src is None:
+                    missing.append(f"{v}|{c}|{m}|{r}"); continue
+                if seeds is None:
+                    seeds = list(src["seeds"])
+                elif list(src["seeds"]) != seeds:
+                    raise ValueError(f"seeds of {rid} ({v}, p = {c}) differ from the market's seed list")
+                cells[v][c][m][r] = _arrays(src, f"{rid} ({v}, p = {c})", n_seeds)
+    return {"cells": cells, "flags": flags, "missing": missing, "markets": tuple(markets)}
+
+
+def _market_stats(data: dict, m: str, idx=None) -> dict:
+    """Per-market means for one market, optionally on resampled seed indices: keys 'ver|cond|kind|name'."""
+    out = {}
+    pick = (lambda a: a) if idx is None else (lambda a: a[idx])
+    for v in VERS:
+        for c in CONDS:
+            x = data["cells"][v][c][m]
+            for r, a in x.items():
+                out[f"{v}|{c}|g|{r}"] = float(np.mean(pick(a["gain"])))
+                out[f"{v}|{c}|pa|{r}"] = float(np.mean(pick(a["profit_attack"])))
+                out[f"{v}|{c}|pr|{r}"] = float(np.mean(pick(a["profit_ref"])))
+            for name, (a, b) in (("d", ("C*", "F111")), ("q", ("F000", "F111"))):
+                if a in x and b in x:
+                    out[f"{v}|{c}|{name}|"] = float(np.mean(pick(x[a]["gain"]) - pick(x[b]["gain"])))
+            if c == "0":
+                continue
+            for k in [k for k in list(out) if k.startswith(f"{v}|{c}|") and k.split("|")[2] in ("g", "d", "q", "pa", "pr")]:
+                k0 = k.replace(f"{v}|{c}|", f"{v}|0|", 1)
+                if k0 in out:
+                    out[k.replace(f"{v}|{c}|", f"{v}|{c}|c", 1)] = out[k] - out[k0]
+    return out
+
+
+def _pool(pm: dict, key: str, markets) -> float | None:
+    xs = [pm[m][key] for m in markets if key in pm[m]]
+    return float(np.mean(xs)) if markets and len(xs) == len(markets) else None
+
+
+def _ci(xs):
+    xs = np.asarray([x for x in xs if x is not None], dtype=float)
+    if xs.size == 0:
+        return None
+    return [float(np.percentile(xs, 2.5)), float(np.percentile(xs, 97.5))]
+
+
+def _signs(vals) -> dict:
+    vals = list(vals)
+    return {"positive": sum(x > 0 for x in vals), "negative": sum(x < 0 for x in vals), "zero": sum(x == 0 for x in vals)}
+
+
+def _build(data: dict, reps=None) -> dict:
+    ms = data["markets"]; pm = {m: _market_stats(data, m) for m in ms}
+
+    def entry(key, signs=False):
+        e = {"markets": {m: pm[m][key] for m in ms if key in pm[m]}}
+        est = _pool(pm, key, ms)
+        if reps is None:
+            e["pooled"] = est
+        else:
+            e["pooled"] = {"estimate": est, "ci95": _ci([_pool(rp, key, ms) for rp in reps]) if est is not None else None}
+            e["ci95_markets"] = {m: _ci([rp[m].get(key) for rp in reps]) for m in e["markets"]}
+        if signs:
+            e["signs"] = _signs(e["markets"].values())
+        return e
+
+    res = {}
+    for v in VERS:
+        res[v] = {}
+        for c in CONDS:
+            b = {"g": {r: entry(f"{v}|{c}|g|{r}") for r in RULES}, "d": entry(f"{v}|{c}|d|", True),
+                 "q": entry(f"{v}|{c}|q|", True),
+                 "profit": {r: {"attack": entry(f"{v}|{c}|pa|{r}"), "reference": entry(f"{v}|{c}|pr|{r}")} for r in RULES}}
+            if c != "0":
+                b["change"] = {"g": {r: entry(f"{v}|{c}|cg|{r}", True) for r in RULES}, "d": entry(f"{v}|{c}|cd|", True),
+                               "q": entry(f"{v}|{c}|cq|", True),
+                               "profit": {r: {"attack": entry(f"{v}|{c}|cpa|{r}"), "reference": entry(f"{v}|{c}|cpr|{r}")}
+                                          for r in RULES}}
+            res[v][c] = b
+    return res
+
+
+def statistics(data: dict) -> dict:
+    """Point estimates per market and pooled (pooled only when the statistic exists in every market)."""
+    return _build(data)
+
+
+def analyse(data: dict, b: int = B, seed: int = SEED) -> dict:
+    """Point estimates with paired percentile intervals and sign counts over the markets."""
+    rng = np.random.default_rng(seed); ms = data["markets"]
+    n = {m: next((len(a["gain"]) for v in VERS for c in CONDS for a in data["cells"][v][c][m].values()), 0) for m in ms}
+    reps = [{m: (_market_stats(data, m, rng.integers(0, n[m], n[m])) if n[m] else {}) for m in ms} for _ in range(b)]
+    res = _build(data, reps)
+    res["missing"] = list(data["missing"])
+    res["bootstrap"] = {"resamples": b, "seed": seed, "interval": "percentile 95%", "paired": "rules, rates, versions, no churn"}
+    return res
+
+
+def flag_summary(flags: dict) -> dict:
+    inc = sorted(k for k, f in flags.items() if f.get("incomplete"))
+    return {"cells": len(flags), "incomplete_n": len(inc), "incomplete": sorted(k for k, f in flags.items() if f.get("incomplete")),
+            "attack_changed": sorted(k for k, f in flags.items() if f.get("attack_change")),
+            "reference_changed": sorted(k for k, f in flags.items() if f.get("reference_change"))}
+
+
+def _est(e):
+    p = e["pooled"]
+    return p["estimate"] if isinstance(p, dict) else p
+
+
+def _verdict(holds: dict) -> str:
+    if any(h is None for h in holds.values()):
+        return "unavailable"
+    return "met" if all(holds.values()) else ("failed" if not any(holds.values()) else "not established")
+
+
+def expectations(res: dict, diagnostics: dict | None) -> dict:
+    """Section 6, scored on point estimates: met (both versions), failed (neither), not established (they disagree)."""
+    out = {}
+    e1, e2, e3 = {}, {}, {}
+    for v in VERS:
+        ch, nc = _est(res[v]["0.05"]["g"]["F111"]), _est(res[v]["0"]["g"]["F111"])
+        e1[v] = {"churn": ch, "no_churn": nc, "holds": None if ch is None or nc is None else ch > nc}
+        ch, nc = _est(res[v]["0.05"]["d"]), _est(res[v]["0"]["d"])
+        e2[v] = {"churn": ch, "no_churn": nc, "holds": None if ch is None or nc is None else ch < nc}
+        mk = res[v]["0.01"]["q"]["markets"]; pos = sum(x > 0 for x in mk.values())
+        e3[v] = {"positive": pos, "markets": len(mk), "holds": None if len(mk) < 6 else pos == 6}
+    out["1"] = {"text": "pooled g_0.05(R3) exceeds pooled no-churn g(R3)", **e1, "verdict": _verdict({v: e1[v]["holds"] for v in VERS})}
+    out["2"] = {"text": "pooled d_0.05 = C* - R3 below its no-churn value", **e2, "verdict": _verdict({v: e2[v]["holds"] for v in VERS})}
+    out["3"] = {"text": "q_0.01 = B3 - R3 positive on all six markets", **e3, "verdict": _verdict({v: e3[v]["holds"] for v in VERS})}
+    e4 = {}
+    for w in VERS:
+        try:
+            sh = {r: diagnostics["pooled"][f"{r}|{w}"]["honest_replacement"][0]["share"] for r in RULES}
+        except (TypeError, KeyError, IndexError):
+            sh = {r: None for r in RULES}
+        ok = None if any(x is None for x in sh.values()) else (sh["F111"] > sh["C*"] and sh["F111"] > sh["F000"])
+        e4[w] = {"first_bin_share": sh, "holds": ok}
+    out["4"] = {"text": "p = 0.05: pooled audited share of honest replacements aged [0, 10) higher under R3 than C* and B3",
+                **e4, "verdict": _verdict({w: e4[w]["holds"] for w in VERS})}
+    return out
+
+
+def registered_check(res: dict, reg: dict) -> dict:
+    """The no-churn records reproduce posthoc.json doubled.D2+H3 (q1 = C* - R3, q4 = B3 - R3; frozen = base)."""
+    pairs = {"q1_frozen": ("base", "d"), "q1_doubled": ("doubled", "d"), "q4_frozen": ("base", "q"), "q4_doubled": ("doubled", "q")}
+    rows = {}
+    for k, (v, s) in pairs.items():
+        got = _est(res[v]["0"][s]); want = reg["pooled"][k]
+        rows[k] = {"registered": want, "computed": got, "ok": got is not None and abs(got - want) <= TOL}
+    absm = [v for v in VERS if all(_est(res[v]["0"]["g"][r]) is not None
+                                   and abs(_est(res[v]["0"]["g"][r]) - reg["absolute"][r]["mean_gain"]) <= TOL for r in ("C*", "F111"))]
+    return {"pooled": rows, "absolute_matches": absm, "ok": all(x["ok"] for x in rows.values()) and bool(absm)}
+
+
+CATS = ("honest_replacement", "honest_initial", "focal")
+
+
+def validate_diagnostics(diag: dict, markets, n_seeds: int = 200) -> None:
+    """Astra r1: before scoring, check the driver's summaries against their own counts. Every (market, rule, winner) cell
+    exists with one episode per seed; each bin's served and audited totals equal the sums of the per-episode counts and
+    its share is audited / served (None when nothing was served); the market-pooled share per bin is the mean of the
+    available market shares, with that count; the newest shares are in [0, 1] or None."""
+    for r in RULES:
+        for w in VERS:
+            by_m = {}
+            for m in markets:
+                cell = (diag.get("cells", {}).get(f"{m}@rho0.2|{r}") or {}).get(w)
+                if cell is None:
+                    raise ValueError(f"diagnostics cell missing: {m}|{r}|{w}")
+                sh = cell["shares"]; per = sh["per_episode"]
+                if len(per) != n_seeds or len(sh["focal_newest_by_first_offer_assigned"]) != n_seeds:
+                    raise ValueError(f"{m}|{r}|{w}: {len(per)} episodes (expected {n_seeds})")
+                for x in sh["focal_newest_by_first_offer_assigned"] + sh["focal_newest_by_creation"]:
+                    if x is not None and not (math.isfinite(x) and 0 <= x <= 1):
+                        raise ValueError(f"{m}|{r}|{w}: newest share {x} outside [0, 1]")
+                for c in CATS:
+                    for b, row in enumerate(sh[c]):
+                        sv = sum(e[c][b][0] for e in per); au = sum(e[c][b][1] for e in per)
+                        if (row["served"], row["audited"]) != (sv, au):
+                            raise ValueError(f"{m}|{r}|{w}|{c} bin {b}: totals differ from the per-episode counts")
+                        want = au / sv if sv else None
+                        if (want is None) != (row["share"] is None) or (want is not None and abs(row["share"] - want) > TOL):
+                            raise ValueError(f"{m}|{r}|{w}|{c} bin {b}: share is not audited / served")
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '25,155p' docs/revision/churn/churn-plan.md; nl -ba docs/revision/posthoc/churn_block.py | sed -n '230,390p'; sed -n '1,90p' docs/revision/posthoc/test_churn_block.py; sed -n '248,257p' docs/revision/paper-v2/main.tex" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+**Changes from draft 2** (internal review round 2, `docs/revision/roster/{sol,astra}-churn-plan-r2.md`: Sol
+accept-with-caveat, Astra reject):
+1. Production runs require the pod's allocation time (`--started`) and its actual hourly price (`--usd-per-hour`), and
+   carry the charges of earlier failed attempts (`--prior-usd`); all three are saved in `run.json`. The 8 USD limit is
+   described as an estimate-based stage-admission limit that an overrunning stage can exceed under the no-kill rule; pod
+   deletion on completion or failure is the launcher's job (section 7).
+2. The reservation command passes the unpadded estimate, 4.43 USD; the wrapper applies the factor 1.25.
+3. Every production stage, including separate-stage and resumed runs, requires a saved passing gate record of this
+   driver version; production cannot skip the gate (section 3 c).
+4. A pod-side memory preflight before the nine-worker stages: the cgroup limit, one full evaluate task's peak (four
+   profiles) in a child process, the parent's own memory, and fewer workers if needed (section 7).
+5. The creation-time newest statistic is labelled as such, and the mechanism-relevant one is added: first-offer age among
+   the identities holding assigned jobs (section 4).
+6. Expectation 4 is narrowed to a cross-rule difference under churn (section 6).
+
+**Changes from draft 1** (internal review round 1, `docs/revision/roster/{sol,astra}-churn-plan-r1.md`, both reject; and
+the author's instructions of 2026-11-10):
+1. Blocker: the doubling stage's reference reselection reran no candidate under churn (stored no-churn training profits
+   were reused) and its `reference_change` subtracted the stored no-churn reference score. The driver now clears those
+   values for churn cells and scores the frozen reference under churn on the training seeds (section 3; tests on the
+   five training seeds).
+2. Blocker: a standalone p = 0 gate through the injected path, with explicit id mapping, the same dependency checks,
+   `gate.json` and an inventory, and no dispatch of the churn cells on failure (section 3 c).
+3. Blocker: worker limits per stage, a memory check, the gate and the diagnostics in the billed time, a reservation in
+   the shared `followup` category, and a stop cap of 8 USD enforced between stages; no running stage is killed (section 7).
+4. The rates are illustrative sensitivity settings (mean identity lifetimes of 100 and 20 rounds); the unmeasured claim
+   about "newest" is removed and the focal identity's share of rounds as uniquely newest is measured.
+5. Base results are compared with base no-churn results (C* - R3 0.0207) and doubled with doubled (0.0296).
+6. Intervals condition on the six markets and the selected policies.
+7. Diagnostics for the doubled winners as well; market pooling defined; per-seed counts saved; empty bins reported as
+   unavailable; audit exposure is not called a financial loss.
+8. Cheap reselection among the frozen menu's candidates is distinguished from regenerating the menus.
+
+## 1. What exists (free; seen before this plan)
+
+- `sim/policies/honest.py` `HonestMax` never exits. `sim/market.py` `run_episode`: an action with `exit=True` retires the
+  identity and re-enters under a fresh one in the same round (entry cost `e = 0`); same-round entrants are ordered by a
+  salted rank. `ProviderView.rng` is seeded from the episode's per-round, per-entity `policy_seed`.
+- Registered no-churn values (`docs/revision/posthoc/posthoc.json`, `doubled.D2+H3`; command in section 9): pooled mean
+  gain C* 0.0856, R3 0.0649; pooled C* - R3 0.0207 (base) and 0.0296 (doubled); pooled B3 - R3 0.1734 (base) and 0.1698
+  (doubled).
+- Registered honest-replacement diagnostic (headline, one replacement at round 50): R3 audits 1.000 and 0.917 of the
+  replacement's jobs in its first two ten-round bins, C* 0.428 and 0.161, B3 about 0.250 (`posthoc.json` `honest`).
+- **Disclosed peek (timing check, 2026-11-10).** To price the churn slowdown, the registered no-churn F111 D2+H3 attack on
+  fresh0 was rerun on the first 40 evaluation seeds under churn (`docs/revision/churn/churn_timing.py`): mean normalised
+  profit 0.468 (no churn), 0.487 (p = 0.01), 0.521 (p = 0.05); the focal provider used 54.0, 36.7 and 6.8 identities per
+  episode; honest replacements per episode 0, 18.25, 89.2. One rule, one market, the old attack, no reference; the
+  expectations in section 6 were written after it.
+
+## 2. Estimand
+
+For rule r in {R3 (F111), C*, B3 (F000)}, fresh market m and churn rate p:
+
+g_p(r, m) = mean over the 200 evaluation seeds of the normalised gain of the D2+H3 attack selected by the registered
+search under churn p, against the rule's frozen truthful reference played under the same churn.
+
+Contrasts: d_p(m) = g_p(C*, m) - g_p(R3, m) and q_p(m) = g_p(B3, m) - g_p(R3, m), pooled with equal market weights, and
+their changes from the registered no-churn values on the same seeds. The attack and reference profits are reported
+separately. These are differences between finite searches with a fixed reference candidate in a changed environment, not
+identified optimal values. A weaker reference can raise a measured gain, and unequal reference losses can move either
+contrast in either direction.
+
+## 3. Cells and execution contract
+
+- **Churn model.** Each of the nine honest opponents plays honest-max delivery and offer and, in each round, retires its
+  identity and re-enters under a fresh one with probability p (`docs/revision/churn/churn_v2.py` `HonestChurn`). The draw
+  uses the episode's `policy_seed[t, e]`, so it is deterministic and the same for every rule on the same seed. The model
+  keeps provider capacity and quality fixed and changes identity age; it also resets an honest provider's history and
+  lets it leave a false ban, so it does not isolate age information alone. **Rates p in {0.01, 0.05}** are illustrative
+  sensitivity settings without empirical calibration: mean identity lifetimes of 100 and 20 rounds, about 18 and 89
+  honest replacements per episode (measured, section 1). Whether the focal identity stays the newest is measured (section 4).
+- **Cells.** {R3, C*, B3} x fresh0..fresh5 x {0.01, 0.05} at rho 0.2, D2+H3, registered search budget (5 restarts, 300
+  evaluations, 5 training seeds), the market's 200 evaluation seeds, a doubling check with its held-out evaluation on
+  every cell: **36 cells**, plus the gate cell.
+- **Driver.** `docs/revision/churn/churn_v2.py` (under `docs/`: the code freeze allows changes only there). It runs the
+  frozen `revision_v2` stage functions through `_run_one` and reuses the reset driver's helpers
+  (`docs/revision/followup/reset_followup_v2.py`: input copies, pre-episode checks, follow-up freeze, acceptance,
+  comparators, inventory). `install()` wraps three `revision_v2` names, also in every pool worker's initialiser (tested):
+  `train_cell` (which `eval_cell` calls), so search, twin search, the doubling stage's reference menu, and evaluation run
+  under churn; `select_reference`, so a cell with churning opponents never reuses a candidate's stored no-churn training
+  profits (only the abstain candidate, whose profit is zero, keeps its value); and `reference_of`, so a churn job's
+  frozen reference carries its training-seed score evaluated under the same churn, which the doubling stage's
+  `reference_change` subtracts. Churn job ids carry the suffix `|churn<p>` so they never overwrite the copied registered
+  D2+H3 records that the reference menus read; each rate writes to its own directory (`results/v2/followup-churn/p<p>/`),
+  never to `eval/all`.
+- **References: frozen candidate, played under churn.** Each (market, rule) keeps its frozen truthful reference
+  candidate. Two reselections are distinguished. Reselecting among the frozen menu's candidates under churn needs only
+  their evaluation on the training seeds; the doubling stage does it for every cell (with the fix above), and its
+  `reference_change` is reported as a diagnostic, not as a bound on held-out bias. Regenerating the menus under churn
+  would need 60 D2+H3 and 60 X7-SC searches per rate, about 12.19 USD per rate before the churn slowdown (section 9); it
+  is not done.
+- **Checks before any episode** (reset driver, plan draft 5): configuration hash equals the container hash; salt; known
+  commit; runner and `sim/` equal protocol-v2; each job's runner, salt, configuration, root, seeds, rule parameters and
+  context equal its frozen reference's provenance; output not inside `--src` or `eval/all`. Inputs are copied read-only
+  and hash-checked against the original records and freeze; the follow-up freeze and acceptance run before evaluation
+  and doubling; a final inventory records every output hash, the environment, and the churn driver's hash.
+- **Validation before spend (free, on the Mac).** (a) Unit tests: the churn policy is truthful and exits at rate p,
+  deterministically; p = 0 never exits; the wrapper adds churning opponents to training and evaluation cells, also in
+  pool workers, and leaves other jobs unchanged; churn ids and provenance are distinct; under churn every menu candidate
+  is rerun on the five training seeds and the frozen reference's score is recomputed; newcomer counts, unavailable
+  bins, the focal newest share, market pooling; the gate's id mapping; a failed gate stops dispatch; the cap check. (b)
+  A smoke-size run of the whole path for fresh0 R3 at p = 0.05, including the gate path, both winners' diagnostics, and
+  the memory preflight on its output; production refuses a missing `--started`, `--gate skip`, and a separate stage
+  without a saved passing gate; the worker limit fits the memory limit. All pass: `uv run pytest -q docs/revision/churn`
+  (32 passed: also the bit-identity pod gate, the preflight's real-task sample, admission after the preflight with
+  the kept worker limit, a skipped record never counted as a measurement, a retry reusing only an applicable saved
+  measurement, and the worker limit kept across separate-stage commands, the diagnostics included; round 5: rule coverage
+  of a reused measurement, rejection of older records, and dispatch of measured jobs).
+- **(c) The p = 0 gate, first on the pod.** The driver runs fresh0 R3 D2+H3 at p = 0 through the injected path (inputs,
+  search, freeze, acceptance, evaluation, doubling) into `gate-p0/`, maps the id `|churn0` to the registered id, and
+  compares search and evaluation by the reset driver's `compare` and the doubling check by `compare_doubling`
+  (draft-5 criteria of the reset plan). **On the pod the gate requires bit identity** (`--require-identical`: search,
+  evaluation and doubling identical to the registered records, the reset driver's `pod_gate_ok` semantics, the author's
+  decision); on the Mac the draft-5 tolerance criterion applies. It saves `gate-p0/gate.json` (with `identical`,
+  `require_identical` and `gate_ok`) and an inventory. On failure the driver stops before
+  any churn cell is dispatched and reports. Every later production stage, also when run alone or resumed, first requires
+  that saved gate record: passing its criterion (on the pod, bit-identical), for this cell and id mapping, and run by the
+  same driver version (its hash in the gate's inventory); production runs cannot skip the gate.
+
+## 4. Diagnostics (evaluation only, no search)
+
+For every cell, the base and the doubled winner are rerun on the evaluation seeds under churn (`diagnostics` stage):
+per-seed normalised profits; per episode the [served, audited] counts by identity age, in bins [0, 10), [10, 20),
+[20, 50), [50, 200), for honest replacement identities, honest initial identities, and the focal provider's identities;
+honest replacements per episode; and per episode two "newest" shares for the focal identity. (i) Creation-time newest:
+the share of rounds in which its creation round is strictly the latest among all current identities; this is not the
+order R3 uses. (ii) Mechanism-relevant: over the rounds in which it holds assigned jobs, the share in which its
+first-offer round is strictly the latest among the identities holding assigned jobs, which is how R3 ages and ranks
+identities (`sim/mechanisms/factorial.py`). Only (ii) is used to discuss R3's targeting.
+A bin with no served job is reported as unavailable. Pooling over markets: per rule, winner and bin, the mean of the
+market shares over the markets where the share is available, with that count. A higher audited share of honest
+   230	
+   231	
+   232	CATS = ("honest_replacement", "honest_initial", "focal")
+   233	
+   234	
+   235	def validate_diagnostics(diag: dict, markets, n_seeds: int = 200) -> None:
+   236	    """Astra r1: before scoring, check the driver's summaries against their own counts. Every (market, rule, winner) cell
+   237	    exists with one episode per seed; each bin's served and audited totals equal the sums of the per-episode counts and
+   238	    its share is audited / served (None when nothing was served); the market-pooled share per bin is the mean of the
+   239	    available market shares, with that count; the newest shares are in [0, 1] or None."""
+   240	    for r in RULES:
+   241	        for w in VERS:
+   242	            by_m = {}
+   243	            for m in markets:
+   244	                cell = (diag.get("cells", {}).get(f"{m}@rho0.2|{r}") or {}).get(w)
+   245	                if cell is None:
+   246	                    raise ValueError(f"diagnostics cell missing: {m}|{r}|{w}")
+   247	                sh = cell["shares"]; per = sh["per_episode"]
+   248	                if len(per) != n_seeds or len(sh["focal_newest_by_first_offer_assigned"]) != n_seeds:
+   249	                    raise ValueError(f"{m}|{r}|{w}: {len(per)} episodes (expected {n_seeds})")
+   250	                for x in sh["focal_newest_by_first_offer_assigned"] + sh["focal_newest_by_creation"]:
+   251	                    if x is not None and not (math.isfinite(x) and 0 <= x <= 1):
+   252	                        raise ValueError(f"{m}|{r}|{w}: newest share {x} outside [0, 1]")
+   253	                for c in CATS:
+   254	                    for b, row in enumerate(sh[c]):
+   255	                        sv = sum(e[c][b][0] for e in per); au = sum(e[c][b][1] for e in per)
+   256	                        if (row["served"], row["audited"]) != (sv, au):
+   257	                            raise ValueError(f"{m}|{r}|{w}|{c} bin {b}: totals differ from the per-episode counts")
+   258	                        want = au / sv if sv else None
+   259	                        if (want is None) != (row["share"] is None) or (want is not None and abs(row["share"] - want) > TOL):
+   260	                            raise ValueError(f"{m}|{r}|{w}|{c} bin {b}: share is not audited / served")
+   261	                by_m[m] = sh
+   262	            pooled = (diag.get("pooled") or {}).get(f"{r}|{w}")
+   263	            if pooled is None:
+   264	                raise ValueError(f"pooled diagnostics missing: {r}|{w}")
+   265	            for c in CATS:
+   266	                for b, row in enumerate(pooled[c]):
+   267	                    v = [by_m[m][c][b]["share"] for m in markets if by_m[m][c][b]["share"] is not None]
+   268	                    want = sum(v) / len(v) if v else None
+   269	                    if row["markets"] != len(v) or (want is None) != (row["share"] is None) or (want is not None and abs(row["share"] - want) > TOL):
+   270	                        raise ValueError(f"pooled share {r}|{w}|{c} bin {b} differs from the market shares")
+   271	
+   272	
+   273	def diag_summary(diag: dict) -> dict:
+   274	    """Per rule and winner: honest replacements per episode, and the share of rounds in which the focal identity's first-offer
+   275	    round is strictly the latest among identities holding assigned jobs (ties excluded), averaged over the episodes of a
+   276	    market (episodes without such rounds left out) and then over markets with equal weights; not one pooled fraction of
+   277	    rounds. The driver's market-pooled age-bin shares are copied (checked by validate_diagnostics)."""
+   278	    out = {}
+   279	    cells = diag.get("cells", {})
+   280	    for r in RULES:
+   281	        for w in VERS:
+   282	            reps, newest = [], []
+   283	            for k, cell in cells.items():
+   284	                if k.split("|")[-1] != r or w not in cell:
+   285	                    continue
+   286	                s = cell[w]["shares"]; reps.append(float(s["honest_replacements_per_episode"]))
+   287	                xs = [x for x in s["focal_newest_by_first_offer_assigned"] if x is not None and math.isfinite(x)]
+   288	                if xs:
+   289	                    newest.append(float(np.mean(xs)))
+   290	            out[f"{r}|{w}"] = {"honest_replacements_per_episode": float(np.mean(reps)) if reps else None,
+   291	                               "focal_newest_first_offer": float(np.mean(newest)) if newest else None,
+   292	                               "markets": len(reps), "pooled_bins": diag.get("pooled", {}).get(f"{r}|{w}")}
+   293	    return out
+   294	
+   295	
+   296	def _fmt(e, d: int = 3) -> str:
+   297	    p = e["pooled"]
+   298	    if p["estimate"] is None:
+   299	        return "--"
+   300	    lo, hi = p["ci95"] or (None, None)
+   301	    n = lambda x: f"{x:.{d}f}".replace("-", "$-$")          # a typeset minus, not a hyphen
+   302	    return n(p["estimate"]) + ("" if lo is None else f" [{n(lo)}, {n(hi)}]")
+   303	
+   304	
+   305	def table(res: dict) -> str:
+   306	    name = {"0": "0 (registered)", "0.01": "0.01", "0.05": "0.05"}
+   307	    lines = ["\\begin{tabular}{llccccc}", "\\toprule",
+   308	             "Winner & $p$ & $g$(R3) & $g$(C*) & $g$(B3) & $d$ = C*$-$R3 & $q$ = B3$-$R3 \\\\", "\\midrule"]
+   309	    for v in VERS:
+   310	        for c in CONDS:
+   311	            b = res[v][c]
+   312	            lines.append(f"{'frozen' if v == 'base' else v} & {name[c]} & " + " & ".join([_fmt(b["g"][r]) for r in RULES] + [_fmt(b["d"]), _fmt(b["q"])]) + " \\\\")
+   313	    lines += ["\\bottomrule", "\\end{tabular}"]
+   314	    return "\n".join(lines) + "\n"
+   315	
+   316	
+   317	def _sha(p: Path):
+   318	    return hashlib.sha256(p.read_bytes()).hexdigest() if p.exists() else None
+   319	
+   320	
+   321	def main(argv=None) -> int:
+   322	    import argparse
+   323	    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+   324	    ap.add_argument("--records", required=True, help="registered eval-all directory (no-churn base records)")
+   325	    ap.add_argument("--churn", required=True, help="the pod's followup-churn directory (p0.01, p0.05)")
+   326	    ap.add_argument("--report", required=True, help="registered report.json (no-churn doubled records)")
+   327	    ap.add_argument("--out", required=True); ap.add_argument("--tables", required=True)
+   328	    ap.add_argument("--posthoc", default=None, help="posthoc.json, to check the registered no-churn values")
+   329	    ap.add_argument("--n-seeds", dest="n_seeds", type=int, default=200)
+   330	    ap.add_argument("--resamples", type=int, default=B); ap.add_argument("--seed", type=int, default=SEED)
+   331	    a = ap.parse_args(argv)
+   332	    markets = tuple(f"fresh{i}" for i in range(6)); ch = Path(a.churn)
+   333	    data = load(a.records, ch, a.report, markets, a.n_seeds)
+   334	    res = analyse(data, a.resamples, a.seed)
+   335	    diags = {c: _read(ch / f"p{c}" / "diagnostics.json") for c in CONDS[1:]}
+   336	    for d in diags.values():
+   337	        if d is not None:
+   338	            validate_diagnostics(d, markets, a.n_seeds)
+   339	    out = {"label": LABEL, "statistics": res, "flags": data["flags"], "flag_summary": flag_summary(data["flags"]),
+   340	           "expectations": expectations(res, diags.get("0.05")),
+   341	           "diagnostics": {c: (diag_summary(d) if d else None) for c, d in diags.items()},
+   342	           "inputs": {"records": str(a.records), "churn": str(ch), "report_sha256": _sha(Path(a.report)),
+   343	                      "run_json_sha256": _sha(ch / "run.json"),
+   344	                      **{f"inventory_p{c}_sha256": _sha(ch / f"p{c}" / "inventory.json") for c in CONDS[1:]},
+   345	                      **{f"diagnostics_p{c}_sha256": _sha(ch / f"p{c}" / "diagnostics.json") for c in CONDS[1:]}}}
+   346	    if a.posthoc:
+   347	        out["registered_check"] = registered_check(res, json.loads(Path(a.posthoc).read_text())["doubled"]["D2+H3"])
+   348	        out["inputs"]["posthoc_sha256"] = _sha(Path(a.posthoc))
+   349	    Path(a.out).write_text(json.dumps(out, indent=1) + "\n")
+   350	    d = Path(a.tables); d.mkdir(parents=True, exist_ok=True)
+   351	    (d / "posthoc_churn.tex").write_text(table(res).replace("C*", "C$^*$"))
+   352	    return 0
+   353	
+   354	
+   355	if __name__ == "__main__":
+   356	    raise SystemExit(main())
+"""Tests of the churn block (docs/revision/churn/churn-plan.md, draft 6, sections 5 and 6), written before the code."""
+import json
+import sys
+from pathlib import Path
+
+import numpy as np
+import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import churn_block as CB  # noqa: E402
+
+M6 = tuple(f"fresh{i}" for i in range(6))
+RATES = (0.01, 0.05)
+
+
+def _rec(gain, seeds, pa=None, pr=None):
+    g = np.asarray(gain, float)
+    pa = g + 1.0 if pa is None else np.asarray(pa, float)
+    pr = pa - g if pr is None else np.asarray(pr, float)
+    return {"seeds": list(seeds), "gain": g.tolist(), "profit_attack": pa.tolist(), "profit_ref": pr.tolist()}
+
+
+def _write(path: Path, obj):
+    path.parent.mkdir(parents=True, exist_ok=True); path.write_text(json.dumps(obj))
+
+
+def _gains(n=40, noise=0.0, seed=0, base=None, shift=None):
+    """Per-seed gains {cond: {ver: {m: {rule: array}}}}; cond 0 is no churn. Shared noise per market and seed."""
+    base = base or {"F111": 0.06, "C*": 0.08, "F000": 0.23}
+    shift = shift or {}
+    rng = np.random.default_rng(seed); out = {}
+    e = {m: (rng.normal(0, noise, n) if noise else np.zeros(n)) for m in M6}
+    for c in (0,) + RATES:
+        out[c] = {}
+        for v in ("base", "doubled"):
+            out[c][v] = {m: {r: base[r] + shift.get((c, v, r), 0.0) + e[m] for r in CB.RULES} for m in M6}
+    return out
+
+
+def _tree(tmp: Path, gains: dict, n=40, seeds=None, flags=None):
+    """Writes the registered no-churn records (eval-all/evaluate and report.json doubling) and the churn records."""
+    seeds = list(range(1000, 1000 + n)) if seeds is None else seeds
+    ea, ch = tmp / "eval-all", tmp / "churn"; report = {"doubling": {}}
+    for m in M6:
+        for r in CB.RULES:
+            rid = f"{m}@rho0.2|{r}|D2+H3|profit"
+            _write(ea / "evaluate" / (CB.safe(rid) + ".json"), _rec(gains[0]["base"][m][r], seeds))
+            report["doubling"][rid] = {"attack_change": 0.0, "reference_change": 0.0, "incomplete": False, "kind": "x",
+                                       "heldout": _rec(gains[0]["doubled"][m][r], seeds)}
+            for p in RATES:
+                cid = f"{rid}|churn{p:g}"; d = ch / f"p{p:g}"
+                _write(d / "evaluate" / (CB.safe(cid) + ".json"), _rec(gains[p]["base"][m][r], seeds))
+                fl = (flags or {}).get((p, m, r), {"attack_change": 0.0, "reference_change": 0.0, "incomplete": False})
+                _write(d / "doubling" / (CB.safe(cid) + ".json"), dict(fl, kind="x", heldout=_rec(gains[p]["doubled"][m][r], seeds)))
+    _write(tmp / "report.json", report)
+    return ea, ch, tmp / "report.json"
+
+
+def test_safe_matches_the_driver_names():
+    assert CB.safe("fresh0@rho0.2|C*|D2+H3|profit|churn0.05") == "fresh0@rho0.2__Cstar__D2+H3__profit__churn0.05"
+
+
+def test_point_estimates_contrasts_and_changes(tmp_path):
+    g = _gains(shift={(0.05, "base", "F111"): 0.02, (0.05, "doubled", "F111"): 0.03})
+    data = CB.load(*_tree(tmp_path, g), markets=M6, n_seeds=40)
+    s = CB.statistics(data)
+    assert s["base"]["0"]["g"]["F111"]["pooled"] == pytest.approx(0.06)
+    assert s["base"]["0.05"]["g"]["F111"]["pooled"] == pytest.approx(0.08)
+    assert s["base"]["0.05"]["d"]["pooled"] == pytest.approx(0.0)              # C* - R3 = 0.08 - 0.08
+    assert s["base"]["0.05"]["q"]["pooled"] == pytest.approx(0.15)             # B3 - R3 = 0.23 - 0.08
+    assert s["base"]["0.05"]["change"]["d"]["pooled"] == pytest.approx(-0.02)
+    assert s["doubled"]["0.05"]["change"]["g"]["F111"]["pooled"] == pytest.approx(0.03)
+    assert s["base"]["0.01"]["change"]["q"]["pooled"] == pytest.approx(0.0)
+
+
+def test_pooled_is_the_equal_weight_mean_of_market_means(tmp_path):
+    g = _gains(); g[0.05]["base"]["fresh0"]["F111"] = g[0.05]["base"]["fresh0"]["F111"] + 0.6
+    s = CB.statistics(CB.load(*_tree(tmp_path, g), markets=M6, n_seeds=40))
+    assert s["base"]["0.05"]["g"]["F111"]["markets"]["fresh0"] == pytest.approx(0.66)
+    assert s["base"]["0.05"]["g"]["F111"]["pooled"] == pytest.approx((0.66 + 5 * 0.06) / 6)
+
+
+def test_profit_terms_are_reported_separately(tmp_path):
+    s = CB.statistics(CB.load(*_tree(tmp_path, _gains()), markets=M6, n_seeds=40))
+    t = s["base"]["0.05"]["profit"]["F111"]
+    assert t["attack"]["pooled"] == pytest.approx(1.06) and t["reference"]["pooled"] == pytest.approx(1.0)
+
+
+def test_bootstrap_is_paired_across_rules_rates_versions_and_no_churn(tmp_path):
+    g = _gains(noise=0.05, seed=3, shift={(0.05, "base", "C*"): 0.01})
+\begin{table}[t]\centering\small
+\adjustbox{max width=\linewidth}{\input{tables/posthoc_churn.tex}}
+\caption{Exploratory follow-up, after the report: the D2+H3 gain $g$ against R3, C$^*$, and B3, and the contrasts $d$ = C$^*$ minus R3 and $q$ = B3 minus R3, pooled over the six fresh markets with equal weights, when each honest opponent replaces its identity with probability $p$ per round; $p$ = \const{0} is the registered no-churn result on the same seeds. Paired seed-bootstrap percentile intervals; frozen and doubled searches.}\label{tab:ph-churn}
+\end{table}
+
+\paragraph{Which parts of R3 matter (Q2).} Under separately searched D2+H3 attacks, pooled over the fresh markets, the main effects on the gain are \site{r_q2_p} for the priority phase P and \site{r_q2_g} for newest-first residual targeting G, both reductions, and \site{r_q2_s} for pacing S, a small increase (X7-SC: \site{r_q2_s_x}). The two targeting parts are substitutes: the PG factorial contrast, half the difference between G's conditional effects, is \site{r_q2_pg}; G changes the gain by \site{r_q2_g_p0} without the priority phase and by only \site{r_q2_g_p1} with it, and the priority phase changes it by only \site{r_q2_p_g1} once G is in place (averaged over both pacing settings). R3's own comparison, $F_{111}$ minus $F_{011}$ (exploratory, from the evaluation records), is \site{r_dp} pooled: exactly zero on four markets, where both rules leave the attacker the same gain, and nonzero on fresh1 (\site{r_dp_f1}) and fresh3. Against the fixed attacks, the priority phase's effect given newest-first targeting is larger (\site{r_q2_fixed_pg1} under D2+H3 and \site{r_q2_fixed_pg1_x} under X7-SC, averaged over pacing), though still small next to newest-first targeting's effect without the priority phase (above). In the pooled, separately searched comparisons, given newest-first targeting the priority phase adds little at these audit ratios and capacities; at a lower audit ratio or a larger attacker capacity, half of a round's audits may no longer cover one provider's jobs, and the substitution need not hold. In the pooled contrasts, either P or G alone accounts for most of the measured reduction; adding the other contributes little. The pattern also appears in the fixed-attack contrasts averaged over the eight selected attacks (P: \site{r_q2_fixed_p}). Our registered conjectures (P negligible, the targeting parts additive, S helpful) failed as scored (Table~\ref{tab:predictions}); the stricter eligibility reading of Table~\ref{tab:pred-eligibility} leaves them not assessed, with the estimates unchanged. X7-SC agrees (Table~\ref{tab:q2-x7sc}).
+
+\begin{table}[t]\centering\small
+\adjustbox{max width=\linewidth}{\input{tables/q2_d2h3.tex}}
+\caption{Q2 under D2+H3: factorial contrasts, searched and fixed attacks, with attack and reference terms and efficiency (descriptive, nominal intervals).}\label{tab:q2}
+
+hook: PostToolUse
+hook: PostToolUse Completed
+exec
+/bin/zsh -lc "ls -ld .venv /Users/oemer.demirel/Projects/touchstone/.venv; cat /Users/oemer.demirel/Projects/touchstone/results/pods/paper_check.sh; git diff cd64fc3 2066cdd -- docs/revision/posthoc/churn.json; rg -n 'first_offer_assigned|per_episode|newest_by_first|age_bins' docs/revision/churn; rg -n 'ch_' docs/revision/posthoc/sites.json" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ exited 2 in 0ms:
+drwxr-xr-x@ 9 oemer.demirel  staff  288 Oct 22 19:36 .venv
+drwxr-xr-x@ 9 oemer.demirel  staff  288 Oct 15 16:10 /Users/oemer.demirel/Projects/touchstone/.venv
+#!/bin/bash
+# Run the paper gate (number check, paper tests, markers) without committing; same checks as paper_commit.sh (lesson 2026-11-07).
+set -u; cd /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/docs/revision/paper-v2
+S=/private/tmp/claude-502/-Users-oemer-demirel-Projects-touchstone/a48c0006-982d-4d16-9bac-5ae26e145fac/scratchpad/paper
+REPORT=${REPORT:-/Users/oemer.demirel/Projects/touchstone/results/v2/report/report.json}; mkdir -p $S; cp main.tex refs.bib sites.json floats.json $S/
+uv run python numbers_v2.py --report "$REPORT" --numbers $S/numbers.tex --extra cells=/Users/oemer.demirel/Projects/touchstone/results/v2/paper/cells.json --extra scoring=/Users/oemer.demirel/Projects/touchstone/results/v2/paper/scoring.json --extra eligibility=/Users/oemer.demirel/Projects/touchstone/results/v2/paper/eligibility.json --extra posthoc=../posthoc/posthoc.json --extra reset=../posthoc/reset.json --extra churn=../posthoc/churn.json --extra refcheck=../posthoc/reset_reference/reset_reference.json --extra audit=../audit/audit.json --write || { echo "REFUSED: number write failed"; exit 1; }
+chk=$(uv run python numbers_v2.py --report "$REPORT" --numbers $S/numbers.tex --extra cells=/Users/oemer.demirel/Projects/touchstone/results/v2/paper/cells.json --extra scoring=/Users/oemer.demirel/Projects/touchstone/results/v2/paper/scoring.json --extra eligibility=/Users/oemer.demirel/Projects/touchstone/results/v2/paper/eligibility.json --extra posthoc=../posthoc/posthoc.json --extra reset=../posthoc/reset.json --extra churn=../posthoc/churn.json --extra refcheck=../posthoc/reset_reference/reset_reference.json --extra audit=../audit/audit.json --check $S/main.tex 2>&1) || { echo "REFUSED: number check crashed or failed:"; echo "$chk" | tail -5; exit 1; }
+out=$(echo "$chk" | grep -v "listed evaluation-2 float" | grep -v '^ok$')
+echo "$chk" | grep -q '^ok$' || [ -n "$out" ] || { echo "REFUSED: number check printed neither ok nor findings"; exit 1; }
+[ -z "$out" ] || { echo "REFUSED: number check findings:"; echo "$out"; exit 1; }
+uv run pytest -q . >/dev/null 2>&1 || { echo "REFUSED: paper tests fail"; exit 1; }
+grep -q "TODO-VERIFY" main.tex refs.bib && { echo "REFUSED: TODO-VERIFY markers remain"; exit 1; }
+echo "gate ok"
+diff --git a/docs/revision/posthoc/churn.json b/docs/revision/posthoc/churn.json
+index d8d2845..28312b4 100644
+--- a/docs/revision/posthoc/churn.json
++++ b/docs/revision/posthoc/churn.json
+@@ -5207,6 +5207,7 @@
+  },
+  "flag_summary": {
+   "cells": 36,
++  "incomplete_n": 13,
+   "incomplete": [
+    "0.01|fresh1|C*",
+    "0.01|fresh1|F111",
+docs/revision/churn/churn_v2.py:131:def _newest_by_first_offer(r, focal: int) -> float:
+docs/revision/churn/churn_v2.py:183:        per.append(cnt); newest.append(_uniquely_newest(r, focal)); offer_newest.append(_newest_by_first_offer(r, focal))
+docs/revision/churn/churn_v2.py:191:    out["per_episode"] = per
+docs/revision/churn/churn_v2.py:192:    out["honest_replacements_per_episode"] = float(sum(reps) / len(reps)) if reps else 0.0
+docs/revision/churn/churn_v2.py:194:    out["focal_newest_by_first_offer_assigned"] = offer_newest
+docs/revision/churn/churn_timing.py:23:                      "honest_reps_per_ep": sh["honest_replacements_per_episode"], "focal_identities_per_ep": round(sum(sum(1 for e in r.entity_of if e == cell.focal) for r in fr.results) / 40, 2)}))
+docs/revision/churn/test_churn_v2.py:80:    assert got["honest_replacements_per_episode"] == 1.0
+docs/revision/churn/test_churn_v2.py:96:        assert dg[w]["shares"]["honest_replacements_per_episode"] > 0 and len(dg[w]["normalized"]) == 2   # churn happened
+docs/revision/churn/test_churn_v2.py:209:    assert got["per_episode"][0]["focal"] == [[2, 1], [2, 0], [0, 0]]                          # [served, audited] per bin
+docs/revision/churn/test_churn_v2.py:293:    assert got["focal_newest_by_first_offer_assigned"] == [0.5]
+rg: docs/revision/posthoc/sites.json: IO error for operation on docs/revision/posthoc/sites.json: No such file or directory (os error 2)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+The paper text resolves the profit, newest-identity, and causal-language corrections. I found a possible gap in the new validator: it checks episode counts but not seed identifiers. I will test that gap and reproduce the results in memory to avoid file writes.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '155,200p' docs/revision/churn/churn-plan.md; sed -n '95,215p' docs/revision/posthoc/test_churn_block.py; sed -n '285,340p' docs/revision/posthoc/test_churn_block.py; sed -n '130,215p' docs/revision/churn/churn_v2.py; rg -n '"'^def |ch_'"' docs/revision/paper-v2/numbers_v2.py docs/revision/paper-v2/sites.json" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+market shares over the markets where the share is available, with that count. A higher audited share of honest
+newcomers is greater audit exposure; it is not by itself a financial loss.
+
+## 5. Analysis (fixed now)
+
+- Per market and pooled g_p(r), d_p, q_p, with paired seed bootstrap intervals (9,999 resamples, percentile, 95 percent;
+  the same resampled seed indices for every rule and rate of a market; pooled replicates resample seeds within each
+  market and average the six market means). The intervals condition on the six markets and the selected policies; they
+  do not include search uncertainty or uncertainty across markets.
+- Changes from no churn, paired by seed with the registered records: base with base, doubled with doubled.
+- Attack and reference profit terms separately; the reselection diagnostic per cell; sign counts over the six markets.
+- No confirmatory test, no multiplicity family, no change to any registered decision; all results are labelled
+  exploratory follow-up.
+
+## 6. Pre-specified expectations
+
+Written after the disclosed peek in section 1 and before any churn search. Scored on point estimates, as met (holds
+under both the base and the doubled searches, each against its own no-churn baseline), failed (fails under both), or not
+established (the two disagree).
+
+1. Pooled g_0.05(R3) exceeds the registered pooled no-churn g(R3) (base 0.0649; doubled against the doubled value).
+2. Pooled d_0.05 = C* - R3 is below the registered no-churn value (base 0.0207; doubled 0.0296).
+3. q_0.01 = B3 - R3 is positive on all six markets.
+4. At p = 0.05, the market-pooled audited share of honest replacement identities in their first ten rounds is higher
+   under R3 than under C* and than under B3, for both winners (a cross-rule difference under churn; no no-churn baseline
+   exists for honest replacement identities in these cells).
+
+A failure is not read as evidence of a particular cause. Only if expectation 2 is met may the paper say that R3's
+measured edge over C* shrinks when honest opponents churn; only if 4 is met that, under churn, R3 exposes honest newcomers
+to more audits than C* and B3 do.
+
+## 7. Cost and operations
+
+**Work** (`experiments/v2/benchmark/timings.json`, 0.108 USD per core-hour): per cell a D2+H3 search (2,084 s), the
+evaluation on 200 seeds (96.0 s per 160 seeds, scaled: 120 s), the doubling check with its held-out evaluation (998 s),
+and two diagnostic profiles (60 s); churn slows an episode by 1.133 (p = 0.01) and 1.330 (p = 0.05) (section 1). 36
+cells plus the gate cell: **41.1 core-hours, 4.43 USD** at the benchmark price.
+
+**Memory** (`docs/revision/churn/churn_memory.py`): one 200-seed profile peaks at 981 MB without churn and 1,084 MB at
+p = 0.05; an evaluate or doubling task keeps four profiles (2.5 GB without churn, operations ledger), so about 2.8 GB
+under churn. Workers: search 16; evaluate, doubling and diagnostics 9 (about 25 GB, 23.3 GiB, below the pod's 28 GiB floor; an
+independent four-profile check at p = 0.05 in review peaked at 2,532 MiB). **Pod-side preflight** before the evaluate and
+the doubling stage (`memory_preflight`): real tasks in child processes, one evaluate task per rule and one doubling task,
+each writing its production record (not run again); the largest peak times a margin of 1.25 for variation across
+markets, rules and winners; the cgroup limit and the parent's own peak; workers = min(current limit,
+floor((0.9 x limit - parent) / (1.25 x peak))), saved in `memory_preflight_<stage>.json`; the driver refuses if no task
+    assert hi - lo == pytest.approx(0.0, abs=1e-12)
+    lo, hi = r["base"]["0.05"]["g"]["F111"]["pooled"]["ci95"]    # a level keeps its seed noise
+    assert hi - lo > 0.005
+
+
+def test_bootstrap_is_reproducible_with_the_fixed_seed(tmp_path):
+    data = CB.load(*_tree(tmp_path, _gains(noise=0.05, seed=4)), markets=M6, n_seeds=40)
+    a = CB.analyse(data, b=199, seed=7); b = CB.analyse(data, b=199, seed=7)
+    assert a["base"]["0.05"]["g"]["C*"]["pooled"]["ci95"] == b["base"]["0.05"]["g"]["C*"]["pooled"]["ci95"]
+    assert CB.B == 9999
+
+
+def test_sign_counts_over_markets(tmp_path):
+    g = _gains()
+    for m in M6[:4]:
+        g[0.01]["base"][m]["F000"] = g[0.01]["base"][m]["F000"] * 0 + 0.0     # B3 - R3 = -0.06 on four markets
+    r = CB.analyse(CB.load(*_tree(tmp_path, g), markets=M6, n_seeds=40), b=99, seed=1)
+    assert r["base"]["0.01"]["q"]["signs"] == {"positive": 2, "negative": 4, "zero": 0}
+
+
+def test_load_refuses_seed_lists_that_differ_between_churn_and_no_churn(tmp_path):
+    ea, ch, rep = _tree(tmp_path, _gains())
+    f = ch / "p0.05" / "evaluate" / (CB.safe("fresh2@rho0.2|C*|D2+H3|profit|churn0.05") + ".json")
+    r = json.loads(f.read_text()); r["seeds"] = list(reversed(r["seeds"])); f.write_text(json.dumps(r))
+    with pytest.raises(ValueError, match="seeds"):
+        CB.load(ea, ch, rep, markets=M6, n_seeds=40)
+
+
+def test_load_refuses_a_wrong_seed_count_or_a_non_finite_gain(tmp_path):
+    ea, ch, rep = _tree(tmp_path, _gains())
+    with pytest.raises(ValueError, match="expected 50"):
+        CB.load(ea, ch, rep, markets=M6, n_seeds=50)
+    f = ch / "p0.01" / "doubling" / (CB.safe("fresh1@rho0.2|F000|D2+H3|profit|churn0.01") + ".json")
+    r = json.loads(f.read_text()); r["heldout"]["gain"][3] = float("nan"); f.write_text(json.dumps(r))
+    with pytest.raises(ValueError, match="non-finite"):
+        CB.load(ea, ch, rep, markets=M6, n_seeds=40)
+
+
+def test_a_missing_cell_is_reported_and_its_market_drops_from_the_pool(tmp_path):
+    ea, ch, rep = _tree(tmp_path, _gains())
+    f = ch / "p0.05" / "evaluate" / (CB.safe("fresh3@rho0.2|F111|D2+H3|profit|churn0.05") + ".json")
+    f.rename(f.with_suffix(".gone"))
+    data = CB.load(ea, ch, rep, markets=M6, n_seeds=40)
+    r = CB.analyse(data, b=99, seed=1)
+    assert "base|0.05|fresh3|F111" in r["missing"]
+    assert r["base"]["0.05"]["g"]["F111"]["pooled"]["estimate"] is None      # pooled only over all six markets
+    assert "fresh3" not in r["base"]["0.05"]["g"]["F111"]["markets"]
+
+
+def test_load_refuses_a_missing_registered_no_churn_record(tmp_path):
+    """The registered records all exist; a missing one means a wrong input directory (lesson 2026-11-12: the churn bundle
+    holds only the gate cell), so loading refuses instead of reporting it as a missing cell."""
+    ea, ch, rep = _tree(tmp_path, _gains())
+    f = ea / "evaluate" / (CB.safe("fresh4@rho0.2|C*|D2+H3|profit") + ".json"); f.rename(f.with_suffix(".gone"))
+    with pytest.raises(ValueError, match="registered no-churn record missing"):
+        CB.load(ea, ch, rep, markets=M6, n_seeds=40)
+
+
+def test_reselection_flags_per_cell(tmp_path):
+    fl = {(0.05, "fresh0", "F111"): {"attack_change": 0.012, "reference_change": -0.003, "incomplete": True}}
+    data = CB.load(*_tree(tmp_path, _gains(), flags=fl), markets=M6, n_seeds=40)
+    f = data["flags"]["0.05|fresh0|F111"]
+    assert f == {"attack_change": 0.012, "reference_change": -0.003, "incomplete": True}
+    assert CB.flag_summary(data["flags"])["incomplete"] == ["0.05|fresh0|F111"]
+    assert CB.flag_summary(data["flags"])["incomplete_n"] == 1
+
+
+def _scores(tmp_path, shift, b=99):
+    r = CB.analyse(CB.load(*_tree(tmp_path, _gains(shift=shift)), markets=M6, n_seeds=40), b=b, seed=1)
+    return CB.expectations(r, diagnostics=None)
+
+
+def test_expectation_1_met_failed_and_not_established(tmp_path):
+    up = {(0.05, v, "F111"): 0.01 for v in ("base", "doubled")}
+    assert _scores(tmp_path / "a", up)["1"]["verdict"] == "met"
+    down = {(0.05, v, "F111"): -0.01 for v in ("base", "doubled")}
+    assert _scores(tmp_path / "b", down)["1"]["verdict"] == "failed"
+    mixed = {(0.05, "base", "F111"): 0.01, (0.05, "doubled", "F111"): -0.01}
+    assert _scores(tmp_path / "c", mixed)["1"]["verdict"] == "not established"
+    assert _scores(tmp_path / "d", {})["1"]["verdict"] == "failed"          # equal is not "exceeds"
+
+
+def test_expectation_2_compares_d_with_its_own_no_churn_value(tmp_path):
+    lower = {(0.05, "base", "C*"): -0.01, (0.05, "doubled", "C*"): -0.005}
+    s = _scores(tmp_path / "a", lower)["2"]
+    assert s["verdict"] == "met" and s["base"]["churn"] == pytest.approx(0.01) and s["base"]["no_churn"] == pytest.approx(0.02)
+    assert _scores(tmp_path / "b", {(0.05, "base", "C*"): -0.01})["2"]["verdict"] == "not established"
+
+
+def test_expectation_3_needs_all_six_markets(tmp_path):
+    assert _scores(tmp_path / "a", {})["3"]["verdict"] == "met"
+    g = _gains(); g[0.01]["base"]["fresh5"]["F000"] = g[0.01]["base"]["fresh5"]["F111"] - 0.001
+    r = CB.analyse(CB.load(*_tree(tmp_path / "b", g), markets=M6, n_seeds=40), b=99, seed=1)
+    s = CB.expectations(r, diagnostics=None)["3"]
+    assert s["verdict"] == "not established" and s["base"]["positive"] == 5 and s["doubled"]["positive"] == 6
+
+
+def _diag(sh):
+    """Driver-shaped pooled diagnostics: sh[(rule, winner)] is the first-bin honest-replacement share."""
+    pooled = {}
+    for (rule, w), v in sh.items():
+        bins = [{"share": v, "markets": 6 if v is not None else 0}] + [{"share": 0.1, "markets": 6}] * 3
+        pooled[f"{rule}|{w}"] = {"honest_replacement": bins, "honest_initial": bins, "focal": bins}
+    return {"cells": {}, "pooled": pooled}
+
+
+def test_expectation_4_reads_the_first_bin_at_p005(tmp_path):
+    r = CB.analyse(CB.load(*_tree(tmp_path, _gains()), markets=M6, n_seeds=40), b=99, seed=1)
+    hi = {("F111", w): 0.9 for w in ("base", "doubled")} | {(x, w): 0.3 for x in ("C*", "F000") for w in ("base", "doubled")}
+    assert CB.expectations(r, diagnostics=_diag(hi))["4"]["verdict"] == "met"
+    one = dict(hi); one[("F000", "doubled")] = 0.95                        # R3 not above B3 for the doubled winner
+    assert CB.expectations(r, diagnostics=_diag(one))["4"]["verdict"] == "not established"
+    low = {k: (0.1 if k[0] == "F111" else 0.5) for k in hi}
+    assert CB.expectations(r, diagnostics=_diag(low))["4"]["verdict"] == "failed"
+    na = dict(hi); na[("C*", "base")] = None
+    assert CB.expectations(r, diagnostics=_diag(na))["4"]["verdict"] == "unavailable"
+    assert CB.expectations(r, diagnostics=None)["4"]["verdict"] == "unavailable"
+
+
+def _full_diag(n=4, share_r3=0.6, markets=M6):
+    """Consistent driver-shaped diagnostics: per-episode [served, audited] counts, bin totals, and the market-pooled shares."""
+    bad = json.loads(json.dumps(reg)); bad["pooled"]["q4_doubled"] = 0.18
+    assert CB.registered_check(r, bad)["ok"] is False
+
+
+def test_cli_writes_the_result_with_input_hashes_and_a_table(tmp_path):
+    ea, ch, rep = _tree(tmp_path, _gains(noise=0.01))
+    for c in ("0.01", "0.05"):
+        _write(ch / f"p{c}" / "diagnostics.json", _full_diag(n=40))
+    out, tab = tmp_path / "churn.json", tmp_path / "tables"
+    rc = CB.main(["--records", str(ea), "--churn", str(ch), "--report", str(rep), "--out", str(out), "--tables", str(tab),
+                  "--n-seeds", "40", "--resamples", "99"])
+    assert rc == 0
+    res = json.loads(out.read_text())
+    assert res["label"].startswith("exploratory follow-up") and len(res["inputs"]["report_sha256"]) == 64
+    assert set(res["expectations"]) == {"1", "2", "3", "4"}
+    t = (tab / "posthoc_churn.tex").read_text()
+    assert t.count("\\\\") >= 6 and "C$^*$" in t and "C*" not in t.replace("C$^*$", "")
+
+def _newest_by_first_offer(r, focal: int) -> float:
+    """The mechanism-relevant statistic (sim/mechanisms/factorial.py: R3 ages an identity from its first offer and ranks
+    the identities holding assigned jobs): over the rounds in which the focal identity holds assigned jobs, the share in
+    which its first-offer round is strictly the latest among the identities holding assigned jobs."""
+    first: dict = {}; hits = n = 0
+    for t, h in enumerate(r.history):
+        for i in getattr(h, "offers", {}) or {}:
+            first.setdefault(int(i), t)
+        holders = {int(i) for i in h.assignment.values()}
+        mine = [i for i in holders if r.entity_of[i] == focal]
+        if not mine:
+            continue
+        n += 1; f = first.get(mine[0], t); latest = max(first.get(i, t) for i in holders)
+        hits += int(f == latest and sum(1 for i in holders if first.get(i, t) == latest) == 1)
+    return hits / n if n else 0.0
+
+
+def _uniquely_newest(r, focal: int) -> float:
+    """Creation-time newest among the current identities: the share of rounds in which the focal provider's current
+    identity has strictly the latest creation round (initial identities tie at round 0). Not the order R3 uses."""
+    T = len(r.history); born = list(r.identity_round); ent = list(r.entity_of); hits = 0
+    for t in range(T):
+        cur = {}
+        for i, (e, b) in enumerate(zip(ent, born)):
+            if b <= t:
+                cur[e] = i                                              # identities are numbered in creation order
+        newest = max(born[i] for i in cur.values()); f = born[cur[focal]]
+        hits += int(f == newest and sum(1 for i in cur.values() if born[i] == newest) == 1)
+    return hits / T if T else 0.0
+
+
+def newcomer_shares(results, focal: int, edges=AGE_EDGES) -> dict:
+    """Audited share of served jobs by identity age (rounds since creation) for honest replacement identities, honest
+    initial identities, and the focal provider's identities: per episode [served, audited] counts per age bin, and the
+    pooled share per bin (None, "unavailable", when no job was served in the bin); honest replacements per episode; and
+    per episode the share of rounds in which the focal identity is uniquely the newest."""
+    cats = ("honest_replacement", "honest_initial", "focal"); nb = len(edges) - 1
+    per, reps, newest, offer_newest = [], [], [], []
+    for r in results:
+        cnt = {c: [[0, 0] for _ in range(nb)] for c in cats}
+        reps.append(sum(1 for i, e in enumerate(r.entity_of) if e != focal and r.identity_generation[i] > 0))
+        cat = lambda i: "focal" if r.entity_of[i] == focal else ("honest_replacement" if r.identity_generation[i] > 0 else "honest_initial")
+        for t, h in enumerate(r.history):
+            def put(i, k):
+                age = t - r.identity_round[i]
+                for b in range(nb):
+                    if edges[b] <= age < edges[b + 1]:
+                        cnt[cat(i)][b][k] += 1; return
+            for i in h.assignment.values():
+                put(i, 0)
+            for a in h.audits:
+                put(a.provider, 1)
+        per.append(cnt); newest.append(_uniquely_newest(r, focal)); offer_newest.append(_newest_by_first_offer(r, focal))
+    out = {}
+    for c in cats:
+        rows = []
+        for b in range(nb):
+            sv = sum(e[c][b][0] for e in per); au = sum(e[c][b][1] for e in per)
+            rows.append({"age": [edges[b], edges[b + 1]], "served": sv, "audited": au, "share": (au / sv if sv else None)})
+        out[c] = rows
+    out["per_episode"] = per
+    out["honest_replacements_per_episode"] = float(sum(reps) / len(reps)) if reps else 0.0
+    out["focal_newest_by_creation"] = newest
+    out["focal_newest_by_first_offer_assigned"] = offer_newest
+    return out
+
+
+def pool_markets(by_market: dict, cat: str) -> list:
+    """Equal market weights: per age bin, the mean of the market shares over the markets where the share is available."""
+    nb = len(next(iter(by_market.values()))[cat]); res = []
+    for b in range(nb):
+        v = [m[cat][b]["share"] for m in by_market.values() if m[cat][b]["share"] is not None]
+        res.append({"share": (sum(v) / len(v) if v else None), "markets": len(v)})
+    return res
+
+
+def _diag_one(job: dict, out: str) -> tuple:
+    import numpy as np
+    from sim.cell import SeedCache, run_focal
+    install(); j = job
+    T, L = R.constants(j); fam = R.family_for("D2+H3", T, L); cell = R.eval_cell(j)
+    pols = {"base": read(R.path_of(out, j["id"]))["attack"]["best_knobs"],
+            "doubled": read(Path(out) / "doubling" / (R._safe(j["id"]) + ".json"))["heldout"]["knobs"]}
+    row = {}
+    for k, knobs in pols.items():
+docs/revision/paper-v2/numbers_v2.py:49:def _fmt(v) -> str:
+docs/revision/paper-v2/numbers_v2.py:64:def _fmt_p(v) -> str:
+docs/revision/paper-v2/numbers_v2.py:77:def flat(report, prefix: str = "") -> dict:
+docs/revision/paper-v2/numbers_v2.py:87:def _is_p(path: str) -> bool:
+docs/revision/paper-v2/numbers_v2.py:92:def macros(report: dict) -> dict:
+docs/revision/paper-v2/numbers_v2.py:96:def render(report: dict, sites: dict | None = None) -> str:
+docs/revision/paper-v2/numbers_v2.py:105:def _sites(path) -> dict | None:
+docs/revision/paper-v2/numbers_v2.py:111:def load(report_path, extra: dict | None = None) -> dict:
+docs/revision/paper-v2/numbers_v2.py:121:def write(report_path, numbers_path, extra: dict | None = None) -> None:
+docs/revision/paper-v2/numbers_v2.py:125:def _blocks(tex: str) -> tuple[list[str], list[str]]:
+docs/revision/paper-v2/numbers_v2.py:145:def strip_comments(text: str) -> str:
+docs/revision/paper-v2/numbers_v2.py:164:def sources(tex_path, numbers_path=None) -> str:
+docs/revision/paper-v2/numbers_v2.py:176:def _report_numbers(raw: dict) -> set:
+docs/revision/paper-v2/numbers_v2.py:180:def check(report_path, numbers_path, tex_path, extra: dict | None = None) -> list[str]:
+docs/revision/paper-v2/numbers_v2.py:212:def _scan(tex: str):
+docs/revision/paper-v2/numbers_v2.py:247:def _captions(tex: str) -> list[tuple[bool, str]]:
+docs/revision/paper-v2/numbers_v2.py:273:def _floats(tex: str) -> list[dict]:
+docs/revision/paper-v2/numbers_v2.py:299:def _float_list(path) -> list | None:
+docs/revision/paper-v2/numbers_v2.py:305:def _site_checks(tex: str, sites: dict, raw: dict, known: dict, outside: str, tex_path_hint=None) -> list[str]:
+docs/revision/paper-v2/numbers_v2.py:357:def main(argv=None) -> int:
+docs/revision/paper-v2/sites.json:1037: "ch_reps1": {
+docs/revision/paper-v2/sites.json:1042: "ch_reps5": {
+docs/revision/paper-v2/sites.json:1047: "ch_r3_0": {
+docs/revision/paper-v2/sites.json:1052: "ch_r3_5": {
+docs/revision/paper-v2/sites.json:1057: "ch_r3_5_lo": {
+docs/revision/paper-v2/sites.json:1062: "ch_r3_5_hi": {
+docs/revision/paper-v2/sites.json:1067: "ch_c_0": {
+docs/revision/paper-v2/sites.json:1072: "ch_c_5": {
+docs/revision/paper-v2/sites.json:1077: "ch_b_0": {
+docs/revision/paper-v2/sites.json:1082: "ch_b_5": {
+docs/revision/paper-v2/sites.json:1087: "ch_d_0": {
+docs/revision/paper-v2/sites.json:1092: "ch_d_5": {
+docs/revision/paper-v2/sites.json:1097: "ch_d_5_lo": {
+docs/revision/paper-v2/sites.json:1102: "ch_d_5_hi": {
+docs/revision/paper-v2/sites.json:1107: "ch_d_5_neg": {
+docs/revision/paper-v2/sites.json:1112: "ch_q_5": {
+docs/revision/paper-v2/sites.json:1117: "ch_q_5_lo": {
+docs/revision/paper-v2/sites.json:1122: "ch_q_5_hi": {
+docs/revision/paper-v2/sites.json:1127: "ch_q_5_neg": {
+docs/revision/paper-v2/sites.json:1132: "ch_pa_5": {
+docs/revision/paper-v2/sites.json:1137: "ch_pr_5": {
+docs/revision/paper-v2/sites.json:1142: "ch_pr_5_lo": {
+docs/revision/paper-v2/sites.json:1147: "ch_pr_5_hi": {
+docs/revision/paper-v2/sites.json:1152: "ch_d_1": {
+docs/revision/paper-v2/sites.json:1157: "ch_d_1_lo": {
+docs/revision/paper-v2/sites.json:1162: "ch_d_1_hi": {
+docs/revision/paper-v2/sites.json:1167: "ch_d_1_d": {
+docs/revision/paper-v2/sites.json:1172: "ch_q_1": {
+docs/revision/paper-v2/sites.json:1177: "ch_new_r3": {
+docs/revision/paper-v2/sites.json:1182: "ch_new_c": {
+docs/revision/paper-v2/sites.json:1187: "ch_new_b": {
+docs/revision/paper-v2/sites.json:1192: "ch_sh_r3": {
+docs/revision/paper-v2/sites.json:1197: "ch_sh_c": {
+docs/revision/paper-v2/sites.json:1202: "ch_sh_b": {
+docs/revision/paper-v2/sites.json:1207: "ch_e1": {
+docs/revision/paper-v2/sites.json:1212: "ch_e2": {
+docs/revision/paper-v2/sites.json:1217: "ch_e3": {
+docs/revision/paper-v2/sites.json:1222: "ch_e4": {
+docs/revision/paper-v2/sites.json:1227: "ch_inc": {
+docs/revision/paper-v2/sites.json:1232: "ch_inc_n": {
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc ".venv/bin/python -B -c 'import sys,json
+from pathlib import Path
+from unittest.mock import patch
+sys.path.insert(0,\"docs/revision/posthoc\")
+import churn_block as cb
+root=\"/Users/oemer.demirel/Projects/touchstone/results/v2\"
+captured={}
+def write(p,s,*a,**k):
+    if str(p).startswith(\"/__review_memory__/\"):
+        captured[p.name]=s
+        return len(s)
+    raise RuntimeError(\"Unexpected write: \"+str(p))
+def mkdir(p,*a,**k):
+    if not str(p).startswith(\"/__review_memory__/\"): raise RuntimeError(\"Unexpected mkdir\")
+with patch.object(Path,\"write_text\",write), patch.object(Path,\"mkdir\",mkdir):
+    rc=cb.main([\"--records\",root+\"/eval/all\",\"--churn\",root+\"/followup-churn/followup-churn\",\"--report\",root+\"/report/report.json\",\"--posthoc\",\"docs/revision/posthoc/posthoc.json\",\"--out\",\"/__review_memory__/churn.json\",\"--tables\",\"/__review_memory__/tables\"])
+a=json.loads(captured[\"churn.json\"]); b=json.loads(Path(\"docs/revision/posthoc/churn.json\").read_text())
+print(\"CLI return:\",rc,\"JSON identical:\",a==b,\"table identical:\",captured[\"posthoc_churn.tex\"]==Path(\"docs/revision/paper-v2/tables/posthoc_churn.tex\").read_text(),\"registered:\",a[\"registered_check\"][\"ok\"])
+print(\"Differing fields:\",[k for k in a if a[k]"'!=b.get(k)])
+print("expectations:",{k:v["verdict"] for k,v in a["expectations"].items()})
+'"'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 13246ms:
+CLI return: 0 JSON identical: True table identical: True registered: True
+Differing fields: []
+expectations: {'1': 'met', '2': 'met', '3': 'met', '4': 'met'}
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc ".venv/bin/python -B -c 'import sys,json,copy,math
+from pathlib import Path
+sys.path.insert(0,\"docs/revision/posthoc\")
+import churn_block as cb
+root=Path(\"/Users/oemer.demirel/Projects/touchstone/results/v2/followup-churn/followup-churn\")
+ms=tuple(f\"fresh{i}\" for i in range(6))
+for rate in cb.CONDS[1:]:
+ d=json.loads((root/f\"p{rate}/diagnostics.json\").read_text())
+ issues=[]; empty=0
+ for key,vs in d[\"cells\"].items():
+  for w,c in vs.items():
+   seeds=c[\"seeds\"]
+   if len(seeds)"'!=200 or len(set(seeds))!=200: issues.append((key,w,"seeds"))
+   sh=c["shares"]
+   for e,x in zip(sh["per_episode"],sh["focal_newest_by_first_offer_assigned"]):
+    if sum(b[0] for b in e["focal"])==0: empty+=1
+ print(rate,"real cells",len(d["cells"]),"seed issues",issues,"zero-assignment episodes",empty)
+d=json.loads((root/"p0.05/diagnostics.json").read_text())
+for case in ("duplicate seeds","NaN pooled share","wrong age bin"):
+ x=copy.deepcopy(d)
+ if case=="duplicate seeds":
+  c=x["cells"]["fresh0@rho0.2|F111"]["base"]; c["seeds"]=[c["seeds"][0]]*200
+ elif case=="NaN pooled share": x["pooled"]["F111|base"]["honest_replacement"][0]["share"]=float("nan")
+ else:
+  for vs in x["cells"].values():
+   for c in vs.values(): c["shares"]["honest_replacement"][0]["age"]=[10,20]
+ try:
+  cb.validate_diagnostics(x,ms)
+  print(case,"ACCEPTED")
+ except Exception as e: print(case,"rejected",repr(e))
+res=json.loads(Path("docs/revision/posthoc/churn.json").read_text())["statistics"]
+print("real E4:",cb.expectations(res,d)["4"]["verdict"])
+x=copy.deepcopy(d)
+for w in cb.VERS: x["pooled"][f"F111|{w}"]["honest_replacement"][0]["share"]=float("nan")
+cb.validate_diagnostics(x,ms)
+print("validated NaN E4:",cb.expectations(res,x)["4"]["verdict"])
+'"'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 305ms:
+0.01 real cells 18 seed issues [] zero-assignment episodes 0
+0.05 real cells 18 seed issues [] zero-assignment episodes 0
+duplicate seeds ACCEPTED
+NaN pooled share ACCEPTED
+wrong age bin ACCEPTED
+real E4: met
+validated NaN E4: failed
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '90,125p' docs/revision/paper-v2/numbers_v2.py; sed -n '164,212p' docs/revision/paper-v2/numbers_v2.py; sed -n '1037,1240p' docs/revision/paper-v2/sites.json; rg -n '"'^def test_|tmp_path|monkeypatch'"' docs/revision/paper-v2/test*.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+
+
+def macros(report: dict) -> dict:
+    return {p: (_fmt_p(v) if _is_p(p) else _fmt(v)) for p, v in flat(report).items()}
+
+
+def render(report: dict, sites: dict | None = None) -> str:
+    m = macros(report)
+    # With a site manifest the text uses only \\site{}, so only site macros are written (the full path list ran to
+    # 219k lines and overflowed pdfLaTeX's string pool, 2026-11-05).
+    lines = [] if sites is not None else [f"\\expandafter\\def\\csname rv@{p}\\endcsname{{{v}}}" for p, v in sorted(m.items())]
+    lines += [f"\\expandafter\\def\\csname site@{n}\\endcsname{{{m.get(d['path'], '??' + n)}}}" for n, d in sorted((sites or {}).items())]
+    return HEADER + PREAMBLE + "\n".join(lines) + "\n"
+
+
+def _sites(path) -> dict | None:
+    """The result-site manifest: site name -> {path, kind, section}; read from beside the given file when present."""
+    f = Path(path).parent / "sites.json"
+    return json.loads(f.read_text()) if f.exists() else None
+
+
+def load(report_path, extra: dict | None = None) -> dict:
+    """report.json at the top level; each extra source (name -> path: cells.json, scoring.json) under its own name."""
+    data = json.loads(Path(report_path).read_text())
+    for name, path in (extra or {}).items():
+        if name in data:
+            raise ValueError(f"extra source name {name} collides with a report key")
+        data[name] = json.loads(Path(path).read_text())
+    return data
+
+
+def write(report_path, numbers_path, extra: dict | None = None) -> None:
+    Path(numbers_path).write_text(render(load(report_path, extra), _sites(numbers_path)))
+
+
+def _blocks(tex: str) -> tuple[list[str], list[str]]:
+def sources(tex_path, numbers_path=None) -> str:
+    """The text with every \\input or \\include file inlined, except the generated numbers file and generated tables
+    (checked by tables_v2.py --check)."""
+    base = Path(tex_path).parent; skip = {Path(numbers_path).name} if numbers_path else set()
+    def inline(m):
+        name = m.group(1); f = base / (name if name.endswith(".tex") else name + ".tex")
+        if f.name in skip or name.startswith("tables/") or not f.exists():
+            return m.group(0)
+        return sources(f, numbers_path)
+    return INPUT.sub(inline, strip_comments(Path(tex_path).read_text()))      # comments first: a commented \\input is not followed
+
+
+def _report_numbers(raw: dict) -> set:
+    return {f"{v:.3f}" for v in raw.values() if isinstance(v, float) and not isinstance(v, bool) and math.isfinite(v)}
+
+
+def check(report_path, numbers_path, tex_path, extra: dict | None = None) -> list[str]:
+    report = load(report_path, extra); known = macros(report); raw = flat(report)
+    tex = sources(tex_path, numbers_path); problems = []
+    sites = _sites(tex_path)
+    if not Path(numbers_path).exists() or Path(numbers_path).read_text() != render(report, sites):
+        problems.append(f"{numbers_path}: stale or missing; run --write")
+    used = set(USE.findall(tex)) | {p for _, p in USEK.findall(tex)}
+    problems += [f"unknown report path in the text: {p}" for p in sorted(used) if p not in known]
+    for kind, p in USEK.findall(tex):
+        if kind not in KINDS:
+            problems.append(f"unknown kind {kind} for {p}")
+        elif p in raw and not KINDS[kind](p.split(".")[-1], raw[p]):
+            problems.append(f"kind {kind} does not fit {p} (value {raw[p]!r})")
+    blocks, bp = _blocks(tex); problems += bp
+    for b in blocks:
+        problems += [f"plain \\rv in an evaluation-2 block (use \\rvk with a kind): {p}" for p in USE.findall(b)]
+        bare = BARE.findall(EXEMPT.sub("", USEK.sub("", USE.sub("", b))))
+        problems += [f"bare number in an evaluation-2 block: {x}" for x in bare]
+    outside = tex
+    for b in blocks:
+        outside = outside.replace(b, "")
+    if sites is not None:
+        problems += [f"\\rv{{{p}}} used with a site manifest (sites.json): use \\site{{}}" for p in USE.findall(tex)]
+        problems += [f"\\rv{{{p}}} used with a site manifest (sites.json): use \\site{{}}" for _, p in USEK.findall(tex)]
+        return problems + _site_checks(tex, sites, raw, known, outside, tex_path)
+    vals = _report_numbers(raw)
+    for x in BARE.findall(EXEMPT.sub("", USEK.sub("", USE.sub("", outside)))):
+        if re.fullmatch(r"-?\d*\.\d{3,}", x) and f"{float(x):.3f}" in vals:
+            problems.append(f"number outside the evaluation-2 regions equals a report value (mark it, or wrap evaluation-1 values in \\evone): {x}")
+    return problems
+
+
+def _scan(tex: str):
+ "ch_reps1": {
+  "path": "churn.diagnostics.0.01.F111|base.honest_replacements_per_episode",
+  "kind": "per_episode",
+  "section": "results"
+ },
+ "ch_reps5": {
+  "path": "churn.diagnostics.0.05.F111|base.honest_replacements_per_episode",
+  "kind": "per_episode",
+  "section": "results"
+ },
+ "ch_r3_0": {
+  "path": "churn.statistics.base.0.g.F111.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_r3_5": {
+  "path": "churn.statistics.base.0.05.g.F111.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_r3_5_lo": {
+  "path": "churn.statistics.base.0.05.g.F111.pooled.ci95.0",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_r3_5_hi": {
+  "path": "churn.statistics.base.0.05.g.F111.pooled.ci95.1",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_c_0": {
+  "path": "churn.statistics.base.0.g.C*.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_c_5": {
+  "path": "churn.statistics.base.0.05.g.C*.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_b_0": {
+  "path": "churn.statistics.base.0.g.F000.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_b_5": {
+  "path": "churn.statistics.base.0.05.g.F000.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_d_0": {
+  "path": "churn.statistics.base.0.d.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_d_5": {
+  "path": "churn.statistics.base.0.05.d.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_d_5_lo": {
+  "path": "churn.statistics.base.0.05.d.pooled.ci95.0",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_d_5_hi": {
+  "path": "churn.statistics.base.0.05.d.pooled.ci95.1",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_d_5_neg": {
+  "path": "churn.statistics.base.0.05.d.signs.negative",
+  "kind": "count",
+  "section": "results"
+ },
+ "ch_q_5": {
+  "path": "churn.statistics.base.0.05.q.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_q_5_lo": {
+  "path": "churn.statistics.base.0.05.q.pooled.ci95.0",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_q_5_hi": {
+  "path": "churn.statistics.base.0.05.q.pooled.ci95.1",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_q_5_neg": {
+  "path": "churn.statistics.base.0.05.q.signs.negative",
+  "kind": "count",
+  "section": "results"
+ },
+ "ch_pa_5": {
+  "path": "churn.statistics.base.0.05.change.profit.F111.attack.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_pr_5": {
+  "path": "churn.statistics.base.0.05.change.profit.F111.reference.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_pr_5_lo": {
+  "path": "churn.statistics.base.0.05.change.profit.F111.reference.pooled.ci95.0",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_pr_5_hi": {
+  "path": "churn.statistics.base.0.05.change.profit.F111.reference.pooled.ci95.1",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_d_1": {
+  "path": "churn.statistics.base.0.01.d.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_d_1_lo": {
+  "path": "churn.statistics.base.0.01.d.pooled.ci95.0",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_d_1_hi": {
+  "path": "churn.statistics.base.0.01.d.pooled.ci95.1",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_d_1_d": {
+  "path": "churn.statistics.doubled.0.01.d.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_q_1": {
+  "path": "churn.statistics.base.0.01.q.pooled.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "ch_new_r3": {
+  "path": "churn.diagnostics.0.05.F111|base.focal_newest_first_offer",
+  "kind": "age_share",
+  "section": "results"
+ },
+ "ch_new_c": {
+  "path": "churn.diagnostics.0.05.C*|base.focal_newest_first_offer",
+  "kind": "age_share",
+  "section": "results"
+ },
+ "ch_new_b": {
+  "path": "churn.diagnostics.0.05.F000|base.focal_newest_first_offer",
+  "kind": "age_share",
+  "section": "results"
+ },
+ "ch_sh_r3": {
+  "path": "churn.diagnostics.0.05.F111|base.pooled_bins.honest_replacement.0.share",
+  "kind": "age_share",
+  "section": "results"
+ },
+ "ch_sh_c": {
+  "path": "churn.diagnostics.0.05.C*|base.pooled_bins.honest_replacement.0.share",
+  "kind": "age_share",
+  "section": "results"
+ },
+ "ch_sh_b": {
+  "path": "churn.diagnostics.0.05.F000|base.pooled_bins.honest_replacement.0.share",
+  "kind": "age_share",
+  "section": "results"
+ },
+ "ch_e1": {
+  "path": "churn.expectations.1.verdict",
+  "kind": "label",
+  "section": "results"
+ },
+ "ch_e2": {
+  "path": "churn.expectations.2.verdict",
+  "kind": "label",
+  "section": "results"
+ },
+ "ch_e3": {
+  "path": "churn.expectations.3.verdict",
+  "kind": "label",
+  "section": "results"
+ },
+ "ch_e4": {
+  "path": "churn.expectations.4.verdict",
+  "kind": "label",
+  "section": "results"
+ },
+ "ch_inc": {
+  "path": "churn.flag_summary.incomplete_n",
+  "kind": "count",
+  "section": "results"
+ },
+ "ch_inc_n": {
+  "path": "churn.flag_summary.cells",
+  "kind": "count",
+  "section": "results"
+ }
+}
+docs/revision/paper-v2/test_tables.py:18:def report(tmp_path, monkeypatch):
+docs/revision/paper-v2/test_tables.py:19:    out, cat = W._world(tmp_path)
+docs/revision/paper-v2/test_tables.py:20:    return W._run(monkeypatch, out, cat)
+docs/revision/paper-v2/test_tables.py:29:def test_q4_rows_carry_their_own_market_values(report):
+docs/revision/paper-v2/test_tables.py:38:def test_q4_status_row_for_an_undecided_market(report):
+docs/revision/paper-v2/test_tables.py:43:def test_q1_rows_by_family_with_category_and_side_evidence(report):
+docs/revision/paper-v2/test_tables.py:51:def test_q2_contrast_rows_match_their_contrast(report):
+docs/revision/paper-v2/test_tables.py:57:def test_coalition_and_welfare_tables_render(report):
+docs/revision/paper-v2/test_tables.py:62:def test_nonfinite_value_refused(report):
+docs/revision/paper-v2/test_tables.py:68:def test_all_tables_compile(report, tmp_path):
+docs/revision/paper-v2/test_tables.py:70:    (tmp_path / "t.tex").write_text("\\documentclass{article}\\usepackage{booktabs}\\begin{document}\n" + tex + "\n\\end{document}\n")
+docs/revision/paper-v2/test_tables.py:71:    r = subprocess.run(["pdflatex", "-interaction=nonstopmode", "-halt-on-error", "t.tex"], cwd=tmp_path, capture_output=True, text=True)
+docs/revision/paper-v2/test_tables.py:75:def test_small_p_values_keep_digits_in_tables(report):
+docs/revision/paper-v2/test_tables.py:84:def test_predictions_rows_carry_their_own_status_and_cells():
+docs/revision/paper-v2/test_tables.py:96:def test_prediction_pairs_are_labelled_and_rounded():
+docs/revision/paper-v2/test_tables.py:105:def test_prediction_statements_come_from_the_registered_table():
+docs/revision/paper-v2/test_tables.py:113:def test_all_prediction_pairs_are_named_and_precise():
+docs/revision/paper-v2/test_tables.py:121:def test_predictions_split_into_two_tables_by_question():
+docs/revision/paper-v2/test_tables.py:127:def test_close_values_stay_distinguishable_and_q3f_pairs_are_named():
+docs/revision/paper-v2/test_tables.py:137:def test_p_value_columns_say_what_they_print(report):
+docs/revision/paper-v2/test_tables.py:150:def test_side_table_names_false_failure_refunds_and_the_service_fraction(report):
+docs/revision/paper-v2/test_tables.py:166:def test_prediction_rows_mark_the_targets_a_stricter_eligibility_reading_changes():
+docs/revision/paper-v2/test_tables.py:176:def test_eligibility_table_gives_each_reading_its_tally_and_changed_predictions():
+docs/revision/paper-v2/test_tables.py:183:def test_eligibility_table_adds_the_direct_input_tallies_when_the_map_has_them():
+docs/revision/paper-v2/test_tables.py:194:def test_q4_decision_marks_an_inherited_flag_from_the_addendum(report):
+docs/revision/paper-v2/test_scoring.py:17:def world(tmp_path, monkeypatch):
+docs/revision/paper-v2/test_scoring.py:18:    out, cat = W._world(tmp_path)
+docs/revision/paper-v2/test_scoring.py:19:    return out, W._run(monkeypatch, out, cat)
+docs/revision/paper-v2/test_scoring.py:22:def test_cells_reads_means_and_hashes(world):
+docs/revision/paper-v2/test_scoring.py:33:def test_every_prediction_scored_with_a_valid_status(world):
+docs/revision/paper-v2/test_scoring.py:42:def test_q1a_follows_the_category(world):
+docs/revision/paper-v2/test_scoring.py:50:def test_q1b_excludes_the_c_star_lower_direction(world):
+docs/revision/paper-v2/test_scoring.py:56:def test_cell_aggregation_missing_cell_is_not_assessed_but_a_failed_cell_fails(world):
+docs/revision/paper-v2/test_scoring.py:68:def test_q3d_uses_the_difference_also_for_nonpositive_totals(world):
+docs/revision/paper-v2/test_scoring.py:80:def test_q4b_strict_tie_fails_and_no_eligible_market_is_not_assessed(world):
+docs/revision/paper-v2/test_scoring.py:89:def test_q4a_needs_a_decision(world):
+docs/revision/paper-v2/test_scoring.py:97:def test_q1c_reports_c_star_minus_f111_as_registered(world):
+docs/revision/paper-v2/test_scoring.py:104:def test_q4b_compares_calibrated_p_values_as_registered(world):
+docs/revision/paper-v2/test_scoring.py:119:def test_inputs_name_the_required_searches_of_each_prediction_cell():
+docs/revision/paper-v2/test_scoring.py:142:def test_a_flagged_required_search_makes_the_q3_cell_not_assessed():
+docs/revision/paper-v2/test_scoring.py:151:def test_the_descriptive_reading_also_covers_q1c_and_q2_but_never_a_decision():
+docs/revision/paper-v2/test_scoring.py:163:def test_eligibility_map_tallies_each_reading():
+docs/revision/paper-v2/test_scoring.py:180:def test_dependency_closure_follows_recorded_upstream_hashes(tmp_path):
+docs/revision/paper-v2/test_scoring.py:182:    ha = _write(tmp_path, "search/a.json", {"stage": "search", "upstream": {}})
+docs/revision/paper-v2/test_scoring.py:183:    hr = _write(tmp_path, "reference/fresh0@rho0.2/Cstar.json", {"stage": "reference", "upstream": {a: ha}})
+docs/revision/paper-v2/test_scoring.py:184:    hb = _write(tmp_path, "search/b.json", {"stage": "search", "upstream": {a: ha}})
+docs/revision/paper-v2/test_scoring.py:185:    _write(tmp_path, f"evaluate/{S._safe(b)}.json", {"stage": "evaluate", "upstream": {b: hb, "reference/fresh0@rho0.2/C*": hr}})
+docs/revision/paper-v2/test_scoring.py:186:    deps = S.dependencies(tmp_path, [b])
+docs/revision/paper-v2/test_scoring.py:189:        S.dependencies(tmp_path, ["fresh9@rho0.2|C*|X7-SC|profit"])          # an input without a record is an error
+docs/revision/paper-v2/test_scoring.py:192:def test_a_flag_reached_through_a_dependency_counts():
+docs/revision/paper-v2/test_scoring.py:200:def test_refused_or_nonfinite_values_are_not_assessed(world):
+docs/revision/paper-v2/test_scoring.py:209:def test_eligibility_map_lists_every_cell_with_inputs_and_statuses():
+docs/revision/paper-v2/test_scoring.py:219:def test_q1d_is_not_assessed_when_the_q1_test_is_refused(world):
+docs/revision/paper-v2/test_scoring.py:227:def test_an_unresolved_upstream_link_raises(tmp_path):
+docs/revision/paper-v2/test_scoring.py:229:    _write(tmp_path, f"evaluate/{S._safe(b)}.json", {"stage": "evaluate", "upstream": {b: "0" * 64}})
+docs/revision/paper-v2/test_scoring.py:231:        S.dependencies(tmp_path, [b])
+docs/revision/paper-v2/test_scoring.py:234:def test_eligibility_map_exports_the_full_traced_search_set():
+docs/revision/paper-v2/test_numbers.py:27:def _setup(tmp_path, tex=TEX, report=REPORT):
+docs/revision/paper-v2/test_numbers.py:28:    (tmp_path / "report.json").write_text(json.dumps(report)); (tmp_path / "main.tex").write_text(tex)
+docs/revision/paper-v2/test_numbers.py:29:    N.write(tmp_path / "report.json", tmp_path / "numbers.tex")
+docs/revision/paper-v2/test_numbers.py:30:    return tmp_path
+docs/revision/paper-v2/test_numbers.py:33:def test_flatten_formats_numbers_and_escapes_text():
+docs/revision/paper-v2/test_numbers.py:44:def test_check_passes_on_consistent_files(tmp_path):
+docs/revision/paper-v2/test_numbers.py:45:    d = _setup(tmp_path)
+docs/revision/paper-v2/test_numbers.py:49:def test_check_fails_on_unknown_path(tmp_path):
+docs/revision/paper-v2/test_numbers.py:50:    d = _setup(tmp_path, tex=_v(r"\rvk{count}{q4.k}", r"\rvk{count}{q4.kk}"))
+docs/revision/paper-v2/test_numbers.py:54:def test_check_fails_on_bare_number_in_ev2_block(tmp_path):
+docs/revision/paper-v2/test_numbers.py:55:    d = _setup(tmp_path, tex=_v(r"\rvk{count}{q4.k} of six", r"\rvk{count}{q4.k} of six, gap 0.271"))
+docs/revision/paper-v2/test_numbers.py:59:def test_check_ignores_numbers_outside_ev2_blocks(tmp_path):
+docs/revision/paper-v2/test_numbers.py:60:    d = _setup(tmp_path)
+docs/revision/paper-v2/test_numbers.py:64:def test_check_fails_on_stale_numbers_file(tmp_path):
+docs/revision/paper-v2/test_numbers.py:65:    d = _setup(tmp_path)
+docs/revision/paper-v2/test_numbers.py:71:def test_check_fails_on_unclosed_block(tmp_path):
+docs/revision/paper-v2/test_numbers.py:72:    d = _setup(tmp_path, tex=_v("% END-EV2\n", ""))
+docs/revision/paper-v2/test_numbers.py:76:def test_check_fails_on_bare_integer_and_percentage(tmp_path):
+docs/revision/paper-v2/test_numbers.py:78:        d = _setup(tmp_path, tex=_v(r"Replicated on \rvk{count}{q4.k} of six markets", bad))
+docs/revision/paper-v2/test_numbers.py:82:def test_check_ignores_identifiers_constants_and_references(tmp_path):
+docs/revision/paper-v2/test_numbers.py:85:    d = _setup(tmp_path, tex=_v(r"Replicated on \rvk{count}{q4.k} of six markets", r"Replicated on \rvk{count}{q4.k}; " + ok))
+docs/revision/paper-v2/test_numbers.py:89:def test_render_refuses_nonfinite_values():
+docs/revision/paper-v2/test_numbers.py:104:def _setup2(tmp_path, tex, extra=None):
+docs/revision/paper-v2/test_numbers.py:105:    (tmp_path / "report.json").write_text(json.dumps(R2)); (tmp_path / "main.tex").write_text(tex)
+docs/revision/paper-v2/test_numbers.py:107:        (tmp_path / name).write_text(body)
+docs/revision/paper-v2/test_numbers.py:108:    N.write(tmp_path / "report.json", tmp_path / "numbers.tex")
+docs/revision/paper-v2/test_numbers.py:109:    return N.check(tmp_path / "report.json", tmp_path / "numbers.tex", tmp_path / "main.tex")
+docs/revision/paper-v2/test_numbers.py:112:def test_kinds_pass_when_matching(tmp_path):
+docs/revision/paper-v2/test_numbers.py:113:    assert _setup2(tmp_path, TEX2) == []
+docs/revision/paper-v2/test_numbers.py:116:def test_kind_mismatch_fails_a_gain_used_as_count(tmp_path):
+docs/revision/paper-v2/test_numbers.py:118:    assert bad != TEX2 and any("kind" in p for p in _setup2(tmp_path, bad))
+docs/revision/paper-v2/test_numbers.py:121:def test_plain_rv_not_allowed_in_ev2_region(tmp_path):
+docs/revision/paper-v2/test_numbers.py:123:    assert bad != TEX2 and any("\\rvk" in p for p in _setup2(tmp_path, bad))
+docs/revision/paper-v2/test_numbers.py:126:def test_report_value_outside_regions_is_flagged(tmp_path):
+docs/revision/paper-v2/test_numbers.py:128:    assert any("0.271" in p for p in _setup2(tmp_path, bad))
+docs/revision/paper-v2/test_numbers.py:131:def test_included_file_is_scanned(tmp_path):
+docs/revision/paper-v2/test_numbers.py:133:    assert any("0.271" in p for p in _setup2(tmp_path, tex, {"cap.tex": "% BEGIN-EV2\nCaption: gap 0.271.\n% END-EV2\n"}))
+docs/revision/paper-v2/test_numbers.py:136:def test_small_p_values_keep_four_significant_digits():
+docs/revision/paper-v2/test_numbers.py:163:def _setup3(tmp_path, tex, sites=SITES, extra=None):
+docs/revision/paper-v2/test_numbers.py:164:    (tmp_path / "sites.json").write_text(json.dumps(sites))
+docs/revision/paper-v2/test_numbers.py:165:    return _setup2(tmp_path, tex, extra)
+docs/revision/paper-v2/test_numbers.py:173:def test_sites_pass_when_consistent(tmp_path):
+docs/revision/paper-v2/test_numbers.py:174:    assert _setup3(tmp_path, TEX3) == []
+docs/revision/paper-v2/test_numbers.py:177:def test_site_in_the_wrong_section_fails(tmp_path):
+docs/revision/paper-v2/test_numbers.py:180:    assert any("section" in p for p in _setup3(tmp_path, bad))
+docs/revision/paper-v2/test_numbers.py:183:def test_site_used_twice_or_unused_fails(tmp_path):
+docs/revision/paper-v2/test_numbers.py:185:    probs = _setup3(tmp_path, bad)
+docs/revision/paper-v2/test_numbers.py:189:def test_raw_path_macros_refused_in_regions(tmp_path):
+docs/revision/paper-v2/test_numbers.py:191:    assert any("\\site" in p for p in _setup3(tmp_path, bad))
+docs/revision/paper-v2/test_numbers.py:194:def test_results_section_must_be_fully_marked(tmp_path):
+docs/revision/paper-v2/test_numbers.py:196:    assert any("outside a result region" in p for p in _setup3(tmp_path, bad))
+docs/revision/paper-v2/test_numbers.py:199:def test_unmarked_decimal_outside_regions_fails_even_if_not_a_report_value(tmp_path):
+docs/revision/paper-v2/test_numbers.py:201:    assert any("0.999" in p for p in _setup3(tmp_path, bad))
+docs/revision/paper-v2/test_numbers.py:204:def test_unmarked_decimal_in_included_caption_fails(tmp_path):
+docs/revision/paper-v2/test_numbers.py:206:    assert any("0.999" in p for p in _setup3(tmp_path, bad, extra={"cap.tex": "Caption: gain 0.999.\n"}))
+docs/revision/paper-v2/test_numbers.py:209:def test_unknown_site_and_bad_manifest_path_fail(tmp_path):
+docs/revision/paper-v2/test_numbers.py:211:    probs = _setup3(tmp_path, _v3(r"d is \site{q1-d2h3-d}.", r"d is \site{q1-d2h3-d} \site{extra} \site{nope}."), sites)
+docs/revision/paper-v2/test_numbers.py:215:def test_results_label_on_its_own_line_and_missing_results_section(tmp_path):
+docs/revision/paper-v2/test_numbers.py:217:    assert _setup3(tmp_path, ok) == []
+docs/revision/paper-v2/test_numbers.py:219:    assert any("required section results" in p for p in _setup3(tmp_path, bad))
+docs/revision/paper-v2/test_numbers.py:222:def test_unmarked_integer_in_a_caption_or_discussion_fails(tmp_path):
+docs/revision/paper-v2/test_numbers.py:225:        assert any("unmarked number" in p for p in _setup3(tmp_path, bad)), add
+docs/revision/paper-v2/test_numbers.py:227:    assert any("caption outside a result region" in p for p in _setup3(tmp_path, cap, extra={"cap.tex": "\\caption{Replicated on 4 of six markets.}\n"}))
+docs/revision/paper-v2/test_numbers.py:230:def test_model_section_integers_are_allowed(tmp_path):
+docs/revision/paper-v2/test_numbers.py:231:    assert _setup3(tmp_path, _v3("Ten providers", "There are 10 providers and 50 jobs;")) == []
+docs/revision/paper-v2/test_numbers.py:234:def test_site_only_in_a_comment_is_unused(tmp_path):
+docs/revision/paper-v2/test_numbers.py:237:    assert any("unused" in p for p in _setup3(tmp_path, bad))
+docs/revision/paper-v2/test_numbers.py:240:def test_documented_limit_swap_of_two_sites_within_one_section_passes(tmp_path):
+docs/revision/paper-v2/test_numbers.py:245:    assert _setup3(tmp_path, sw) == []
+docs/revision/paper-v2/test_numbers.py:256:def test_full_labelled_paper_passes(tmp_path):
+docs/revision/paper-v2/test_numbers.py:257:    assert _setup3(tmp_path, TEX4) == []
+docs/revision/paper-v2/test_numbers.py:260:def test_unlabelled_section_fails(tmp_path):
+docs/revision/paper-v2/test_numbers.py:261:    assert any("label" in p for p in _setup3(tmp_path, _v4("\\section{Model}\\label{sec:model}", "\\section{Model}")))
+docs/revision/paper-v2/test_numbers.py:264:def test_subsection_sec_label_fails_and_keeps_parent(tmp_path):
+docs/revision/paper-v2/test_numbers.py:266:    probs = _setup3(tmp_path, bad)
+docs/revision/paper-v2/test_numbers.py:270:def test_introduction_count_fails(tmp_path):
+docs/revision/paper-v2/test_numbers.py:271:    assert any("intro" in p for p in _setup3(tmp_path, _v4("Intro.", "Replicated on 4 of six markets.")))
+docs/revision/paper-v2/test_numbers.py:274:def test_multiline_caption_and_macro_caption_outside_regions_fail(tmp_path):
+docs/revision/paper-v2/test_numbers.py:276:        probs = _setup3(tmp_path, _v4("\\section{Model}\\label{sec:model}", "\\section{Model}\\label{sec:model}\n\\input{cap}"), extra={"cap.tex": cap})
+docs/revision/paper-v2/test_numbers.py:280:def test_escaped_backslash_percent_and_commented_input_hide_sites(tmp_path):
+docs/revision/paper-v2/test_numbers.py:282:    probs = _setup3(tmp_path, _v4(sentence, r"Line break \\% " + sentence[13:]))
+docs/revision/paper-v2/test_numbers.py:284:    probs = _setup3(tmp_path, _v4(sentence, "% \\input{res}\nNothing."), extra={"res.tex": sentence + "\n"})
+docs/revision/paper-v2/test_numbers.py:288:def test_round6_parser_cases(tmp_path):
+docs/revision/paper-v2/test_numbers.py:289:    assert any("without a" in p for p in _setup3(tmp_path, _v4("\\section{Model}\\label{sec:model}", "\\section{Model}\n\nText.")))
+docs/revision/paper-v2/test_numbers.py:290:    assert _setup3(tmp_path, _v4("\\section{Model}\\label{sec:model}", "\\section{Model} \\label{sec:model}")) == []
+docs/revision/paper-v2/test_numbers.py:292:    assert any("caption" in p for p in _setup3(tmp_path, cap))
+docs/revision/paper-v2/test_numbers.py:294:    assert any("figure or table" in p for p in _setup3(tmp_path, fig))
+docs/revision/paper-v2/test_numbers.py:297:def _setup5(tmp_path, tex, floats):
+docs/revision/paper-v2/test_numbers.py:298:    (tmp_path / "floats.json").write_text(json.dumps(floats))
+docs/revision/paper-v2/test_numbers.py:299:    return _setup3(tmp_path, tex)
+docs/revision/paper-v2/test_numbers.py:305:def test_listed_float_must_lie_wholly_in_a_region(tmp_path):
+docs/revision/paper-v2/test_numbers.py:308:    assert _setup5(tmp_path, inside, ["tab:q4"]) == []
+docs/revision/paper-v2/test_numbers.py:309:    assert any("tab:q9" in p for p in _setup5(tmp_path, inside, ["tab:q4", "tab:q9"]))
+docs/revision/paper-v2/test_numbers.py:311:    assert any("tab:q4" in p and "wholly" in p for p in _setup5(tmp_path, half, ["tab:q4"]))
+docs/revision/paper-v2/test_numbers.py:314:def test_float_lines_after_a_region_end_and_one_line_floats_are_scanned(tmp_path):
+docs/revision/paper-v2/test_numbers.py:316:    assert any("figure or table" in p for p in _setup3(tmp_path, one))
+docs/revision/paper-v2/test_numbers.py:318:    assert any("figure or table" in p for p in _setup3(tmp_path, split))
+docs/revision/paper-v2/test_numbers.py:321:def test_two_float_commands_on_one_line_refused(tmp_path):
+docs/revision/paper-v2/test_numbers.py:323:    assert any("one float command per line" in p for p in _setup3(tmp_path, bad))
+docs/revision/paper-v2/test_numbers.py:326:def test_digit_subscripts_are_identifiers_not_numbers(tmp_path):
+docs/revision/paper-v2/test_numbers.py:328:    assert _setup3(tmp_path, ok) == []
+docs/revision/paper-v2/test_numbers.py:330:    assert any("figure or table" in p for p in _setup3(tmp_path, bad))
+docs/revision/paper-v2/test_numbers.py:333:def test_extra_sources_merge_under_their_names(tmp_path):
+docs/revision/paper-v2/test_numbers.py:334:    (tmp_path / "scoring.json").write_text(json.dumps({"Q4-a": {"status": "fulfilled"}}))
+docs/revision/paper-v2/test_numbers.py:337:    (tmp_path / "sites.json").write_text(json.dumps(sites)); (tmp_path / "report.json").write_text(json.dumps(R2))
+docs/revision/paper-v2/test_numbers.py:338:    (tmp_path / "main.tex").write_text(tex)
+docs/revision/paper-v2/test_numbers.py:339:    extra = {"scoring": tmp_path / "scoring.json"}
+docs/revision/paper-v2/test_numbers.py:340:    N.write(tmp_path / "report.json", tmp_path / "numbers.tex", extra)
+docs/revision/paper-v2/test_numbers.py:341:    assert N.check(tmp_path / "report.json", tmp_path / "numbers.tex", tmp_path / "main.tex", extra) == []
+docs/revision/paper-v2/test_numbers.py:342:    assert "fulfilled" in (tmp_path / "numbers.tex").read_text()
+docs/revision/paper-v2/test_numbers.py:345:def test_with_sites_the_numbers_file_holds_only_site_macros():
+docs/revision/paper-v2/test_numbers.py:351:def test_with_sites_a_plain_report_macro_is_refused(tmp_path):
+docs/revision/paper-v2/test_numbers.py:352:    (tmp_path / "sites.json").write_text(json.dumps({"k": {"path": "q4.k", "kind": "count", "section": "results"}}))
+docs/revision/paper-v2/test_numbers.py:354:    _setup(tmp_path, tex)
+docs/revision/paper-v2/test_numbers.py:355:    assert any("\\rv" in p and "sites" in p for p in N.check(tmp_path / "report.json", tmp_path / "numbers.tex", tmp_path / "main.tex"))
+docs/revision/paper-v2/test_numbers.py:358:def test_p_kind_accepts_the_audit_holm_adjusted_and_calibrated_values():
+docs/revision/paper-v2/test_numbers.py:364:def test_count_kind_accepts_the_prediction_tallies_but_not_a_float():
+docs/revision/paper-v2/test_numbers.py:370:def test_gain_and_share_kinds_accept_the_round9_analyses_only():
+docs/revision/paper-v2/test_numbers.py:379:def test_kinds_accept_the_fable52_analyses_only():
+docs/revision/paper-v2/test_numbers.py:388:def test_kinds_accept_the_followup_review_analyses():
+docs/revision/paper-v2/test_numbers.py:394:def test_reset_share_kind():
+docs/revision/paper-v2/test_numbers.py:400:def test_reset_review_r3_kinds():
+docs/revision/paper-v2/test_numbers.py:407:def test_reset_reference_check_kinds():
+docs/revision/paper-v2/test_figures.py:17:def report(tmp_path, monkeypatch):
+docs/revision/paper-v2/test_figures.py:18:    out, cat = W._world(tmp_path)
+docs/revision/paper-v2/test_figures.py:19:    return W._run(monkeypatch, out, cat)
+docs/revision/paper-v2/test_figures.py:22:def test_figures_written_with_data_matching_report_paths(report, tmp_path):
+docs/revision/paper-v2/test_figures.py:23:    d = tmp_path / "figs"; F.write(report, d)
+docs/revision/paper-v2/test_figures.py:34:def test_check_detects_a_stale_figure(report, tmp_path):
+docs/revision/paper-v2/test_figures.py:35:    d = tmp_path / "figs"; F.write(report, d)
+docs/revision/paper-v2/test_figures.py:41:def test_status_strings_are_skipped_and_listed(report, tmp_path):
+docs/revision/paper-v2/test_figures.py:43:    d = tmp_path / "figs"; F.write(report, d)
+docs/revision/paper-v2/test_comparator_table.py:21:def test_rows_list_inner_and_recheck_runs_with_gains(tmp_path):
+docs/revision/paper-v2/test_comparator_table.py:22:    _log(tmp_path, "mem", 6, 20, "inner", 0.0, -0.1767); _log(tmp_path, "mem", 6, 20, "recheck", 0.0966, 0.0381)
+docs/revision/paper-v2/test_comparator_table.py:23:    _log(tmp_path, "thr", 12, None, "recheck", 0.0761, 0.0178); _log(tmp_path, "boinc", 10, None, "inner", 0.0, 0.0)
+docs/revision/paper-v2/test_comparator_table.py:24:    rows = C.rows(tmp_path)
+docs/revision/paper-v2/test_comparator_table.py:31:def test_rows_carry_the_selection_score_and_its_deciding_cell(tmp_path):
+docs/revision/paper-v2/test_comparator_table.py:32:    _log(tmp_path, "mem", 6, 20, "recheck", 0.0966, 0.0381, 0.9974, 0.9944)
+docs/revision/paper-v2/test_comparator_table.py:33:    r = C.rows(tmp_path)[0]
+docs/revision/paper-v2/test_facts.py:24:def test_family_table_knob_counts_match_the_code():
+docs/revision/paper-v2/test_facts.py:36:def test_every_bibliography_entry_has_a_doi_or_url():
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc ".venv/bin/python -B -c 'import sys,inspect
+from pathlib import Path
+from unittest.mock import patch
+sys.path.insert(0,\"docs/revision/posthoc\")
+import test_churn_block as t
+fs={}
+orig={n:getattr(Path,n) for n in (\"write_text\",\"read_text\",\"read_bytes\",\"mkdir\",\"exists\",\"rename\")}
+def mem(p): return str(p).startswith(\"/__review_memory__/\")
+def write(p,s,*a,**k):
+ if not mem(p): raise RuntimeError(\"Unexpected write \"+str(p))
+ fs[str(p)]=s; return len(s)
+def read(p,*a,**k): return fs[str(p)] if mem(p) else orig[\"read_text\"](p,*a,**k)
+def rb(p,*a,**k): return fs[str(p)].encode() if mem(p) else orig[\"read_bytes\"](p,*a,**k)
+def exists(p): return str(p) in fs if mem(p) else orig[\"exists\"](p)
+def mkdir(p,*a,**k):
+ if not mem(p): raise RuntimeError(\"Unexpected mkdir \"+str(p))
+def rename(p,q):
+ if not mem(p) or not mem(q): raise RuntimeError(\"Unexpected rename\")
+ fs[str(q)]=fs.pop(str(p)); return q
+with patch.multiple(Path,write_text=write,read_text=read,read_bytes=rb,exists=exists,mkdir=mkdir,rename=rename):
+ passed=0
+ for name,f in vars(t).copy().items():
+  if name.startswith(\"test_\") and callable(f):
+   params=inspect.signature(f).parameters
+   assert set(params)<={\"tmp_path\"}, (name,params)
+   f(**({\"tmp_path\":Path(\"/__review_memory__\")/name} if params else {}))
+   passed+=1
+ print(\"Churn test functions passed:\",passed,\"(file operations held in memory)\")
+'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+hook: PostToolUse
+hook: PostToolUse Completed
+ succeeded in 2730ms:
+Churn test functions passed: 23 (file operations held in memory)
+
+codex
+The 9,999-resample rerun reproduced every JSON field and the table exactly. The registered check passed. The validator still accepts duplicate seed identifiers and NaN pooled shares; in a test copy, NaN changed expectation 4 from “met” to “failed.” The supplied records do not contain these defects.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc ".venv/bin/python -B -c 'import sys,json,re
+from pathlib import Path
+from unittest.mock import patch
+sys.path.insert(0,\"docs/revision/paper-v2\")
+import numbers_v2 as n
+p=Path(\"docs/revision/paper-v2\")
+root=Path(\"/Users/oemer.demirel/Projects/touchstone/results/v2\")
+extra={k:root/\"paper\"/(k+\".json\") for k in (\"cells\",\"scoring\",\"eligibility\")}
+extra.update({k:Path(\"docs/revision/posthoc\")/(k+\".json\") for k in (\"posthoc\",\"reset\",\"churn\")})
+extra.update(refcheck=Path(\"docs/revision/posthoc/reset_reference/reset_reference.json\"),audit=Path(\"docs/revision/audit/audit.json\"))
+report=root/\"report/report.json\"
+data=n.load(report,extra); sites=json.loads((p/\"sites.json\").read_text())
+generated=n.render(data,sites)
+target=p/\"numbers.tex\"
+read=Path.read_text; exists=Path.exists
+def r(path,*a,**kw): return generated if path==target else read(path,*a,**kw)
+def e(path): return True if path==target else exists(path)
+with patch.object(Path,\"read_text\",r),patch.object(Path,\"exists\",e):
+ problems=n.check(report,target,p/\"main.tex\",extra)
+print(\"Paper number-check findings:\",[x for x in problems if \"listed evaluation-2 float\" not in x])
+print(\"TODO-VERIFY:\",any(\"TODO-VERIFY\" in (p/f).read_text() for f in (\"main.tex\",\"refs.bib\")))
+flat=n.flat(data)
+print(\"Churn sites:\",{k:n._fmt(flat[v[\"path\"]]) for k,v in sites.items() if k.startswith(\"ch_\")})
+'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 548ms:
+Paper number-check findings: []
+TODO-VERIFY: False
+Churn sites: {'ch_reps1': '17.901', 'ch_reps5': '89.582', 'ch_r3_0': '0.065', 'ch_r3_5': '0.272', 'ch_r3_5_lo': '0.268', 'ch_r3_5_hi': '0.275', 'ch_c_0': '0.086', 'ch_c_5': '0.098', 'ch_b_0': '0.238', 'ch_b_5': '0.220', 'ch_d_0': '0.021', 'ch_d_5': '\\ensuremath{-0.173}', 'ch_d_5_lo': '\\ensuremath{-0.177}', 'ch_d_5_hi': '\\ensuremath{-0.170}', 'ch_d_5_neg': '6', 'ch_q_5': '\\ensuremath{-0.052}', 'ch_q_5_lo': '\\ensuremath{-0.055}', 'ch_q_5_hi': '\\ensuremath{-0.048}', 'ch_q_5_neg': '6', 'ch_pa_5': '113.101', 'ch_pr_5': '\\ensuremath{-0.146}', 'ch_pr_5_lo': '\\ensuremath{-0.393}', 'ch_pr_5_hi': '0.098', 'ch_d_1': '0.001', 'ch_d_1_lo': '0.000', 'ch_d_1_hi': '0.003', 'ch_d_1_d': '\\ensuremath{-0.004}', 'ch_q_1': '0.175', 'ch_new_r3': '0.010', 'ch_new_c': '0.107', 'ch_new_b': '0.452', 'ch_sh_r3': '0.571', 'ch_sh_c': '0.356', 'ch_sh_b': '0.250', 'ch_e1': 'met', 'ch_e2': 'met', 'ch_e3': 'met', 'ch_e4': 'met', 'ch_inc': '13', 'ch_inc_n': '36'}
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc ".venv/bin/python -B -c 'import sys,json
+from pathlib import Path
+sys.path.insert(0,\"docs/revision/posthoc\")
+import churn_block as cb
+root=Path(\"/Users/oemer.demirel/Projects/touchstone/results/v2\")
+count=0
+for rate in (\"0.01\",\"0.05\"):
+ d=json.loads((root/f\"followup-churn/followup-churn/p{rate}/diagnostics.json\").read_text())
+ for key,versions in d[\"cells\"].items():
+  rid=key+\"|D2+H3|profit\"
+  expected=json.loads((root/\"eval/all/evaluate\"/(cb.safe(rid)+\".json\")).read_text())[\"seeds\"]
+  for w,c in versions.items():
+   assert c[\"seeds\"]==expected
+   s=c[\"shares\"]
+   assert len(s[\"focal_newest_by_creation\"])==len(expected)
+   for cat in cb.CATS:
+    assert [x[\"age\"] for x in s[cat]]==[[0,10],[10,20],[20,50],[50,200]]
+    for e in s[\"per_episode\"]:
+     assert len(e[cat])==4
+     assert all(isinstance(a,int) and isinstance(b,int) and 0<=b<=a for a,b in e[cat])
+   count+=1
+print(\"Independent seed, age-bin and count checks passed:\",count,\"diagnostic cells\")
+'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+Independent seed, age-bin and count checks passed: 72 diagnostic cells
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+VERDICT: accept-with-caveat
+
+CORRECTIONS:
+
+1. docs/revision/posthoc/churn_block.py:269 — Reject non-finite audit shares before tolerance comparisons, including at line 259. NaN passes because `abs(NaN - expected) > TOL` is false. Replacing both R3 pooled first-bin shares with NaN passes validation and changes expectation 4 from “met” to “failed.” Add a rejection test.
+
+2. docs/revision/posthoc/churn_block.py:248 — Check seed identifiers, uniqueness, and agreement with the evaluation records. Array lengths alone do not establish “one episode per seed.” Replacing all 200 seed identifiers with one repeated identifier passes validation. Add a rejection test.
+
+3. docs/revision/posthoc/churn_block.py:254 — Check the four expected bin boundaries and corresponding array lengths. Changing the first bin’s age label to `[10,20]` passes validation, although expectation 4 still treats it as `[0,10)`. Add a rejection test.
+
+The round-1 text corrections are resolved. The supplied records pass independent seed, bin, and count checks. The read-only, 9,999-resample rerun reproduced every JSON field and the table; the registered check passed. All 23 test functions passed with file operations held in memory. The paper number check passed; the full paper gate was not rerun.
+
+CONFIDENCE: 0.97.
+hook: Stop
+hook: Stop Completed
+tokens used
+57'742
+VERDICT: accept-with-caveat
+
+CORRECTIONS:
+
+1. docs/revision/posthoc/churn_block.py:269 — Reject non-finite audit shares before tolerance comparisons, including at line 259. NaN passes because `abs(NaN - expected) > TOL` is false. Replacing both R3 pooled first-bin shares with NaN passes validation and changes expectation 4 from “met” to “failed.” Add a rejection test.
+
+2. docs/revision/posthoc/churn_block.py:248 — Check seed identifiers, uniqueness, and agreement with the evaluation records. Array lengths alone do not establish “one episode per seed.” Replacing all 200 seed identifiers with one repeated identifier passes validation. Add a rejection test.
+
+3. docs/revision/posthoc/churn_block.py:254 — Check the four expected bin boundaries and corresponding array lengths. Changing the first bin’s age label to `[10,20]` passes validation, although expectation 4 still treats it as `[0,10)`. Add a rejection test.
+
+The round-1 text corrections are resolved. The supplied records pass independent seed, bin, and count checks. The read-only, 9,999-resample rerun reproduced every JSON field and the table; the registered check passed. All 23 test functions passed with file operations held in memory. The paper number check passed; the full paper gate was not rerun.
+
+CONFIDENCE: 0.97.

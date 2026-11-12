@@ -211,7 +211,7 @@ def test_expectation_4_reads_the_first_bin_at_p005(tmp_path):
     assert CB.expectations(r, diagnostics=None)["4"]["verdict"] == "unavailable"
 
 
-def _full_diag(n=4, share_r3=0.6, markets=M6):
+def _full_diag(n=4, share_r3=0.6, markets=M6, seeds=None):
     """Consistent driver-shaped diagnostics: per-episode [served, audited] counts, bin totals, and the market-pooled shares."""
     cells, pooled = {}, {}
     for r in CB.RULES:
@@ -225,11 +225,11 @@ def _full_diag(n=4, share_r3=0.6, markets=M6):
                     rows = []
                     for b in range(4):
                         sv = sum(e[c][b][0] for e in per); a = sum(e[c][b][1] for e in per)
-                        rows.append({"age": [0, 1], "served": sv, "audited": a, "share": (a / sv if sv else None)})
+                        rows.append({"age": list(CB.AGE_BINS[b]), "served": sv, "audited": a, "share": (a / sv if sv else None)})
                     sh[c] = rows
                 sh.update(per_episode=per, honest_replacements_per_episode=18.0, focal_newest_by_creation=[0.5] * n,
                           focal_newest_by_first_offer_assigned=[0.25] * n)
-                cells.setdefault(f"{m}@rho0.2|{r}", {})[w] = {"seeds": list(range(n)), "shares": sh}
+                cells.setdefault(f"{m}@rho0.2|{r}", {})[w] = {"seeds": list(range(n)) if seeds is None else list(seeds), "shares": sh}
                 bins_by_m[m] = sh
             pooled[f"{r}|{w}"] = {}
             for c in ("honest_replacement", "honest_initial", "focal"):
@@ -261,8 +261,41 @@ def test_validate_diagnostics_rejects_a_missing_cell_or_episode():
     d = _full_diag(); del d["cells"]["fresh5@rho0.2|F000"]
     with pytest.raises(ValueError, match="missing"):
         CB.validate_diagnostics(d, M6, n_seeds=4)
-    with pytest.raises(ValueError, match="episodes"):
+    with pytest.raises(ValueError, match="seed|episodes"):
         CB.validate_diagnostics(_full_diag(), M6, n_seeds=5)
+
+
+def test_validate_diagnostics_rejects_swapped_relabelled_or_missing_bins():
+    """Sol and Astra r2: the four age bins in order; a consistent swap of the first two bins or an empty bin list fails."""
+    d = _full_diag(); sh = d["cells"]["fresh1@rho0.2|F111"]["base"]["shares"]
+    sh["honest_replacement"][0]["age"], sh["honest_replacement"][1]["age"] = [10, 20], [0, 10]
+    with pytest.raises(ValueError, match="age bins"):
+        CB.validate_diagnostics(d, M6, n_seeds=4)
+    d = _full_diag(); d["cells"]["fresh1@rho0.2|F111"]["base"]["shares"]["focal"] = []
+    with pytest.raises(ValueError, match="age bins"):
+        CB.validate_diagnostics(d, M6, n_seeds=4)
+    d = _full_diag(); d["pooled"]["C*|doubled"]["honest_initial"] = d["pooled"]["C*|doubled"]["honest_initial"][:3]
+    with pytest.raises(ValueError, match="age bins"):
+        CB.validate_diagnostics(d, M6, n_seeds=4)
+
+
+def test_validate_diagnostics_rejects_non_finite_shares_at_both_levels():
+    d = _full_diag(); d["cells"]["fresh3@rho0.2|F000"]["base"]["shares"]["honest_replacement"][0]["share"] = float("nan")
+    with pytest.raises(ValueError, match="finite"):
+        CB.validate_diagnostics(d, M6, n_seeds=4)
+    d = _full_diag(); d["pooled"]["F111|base"]["honest_replacement"][0]["share"] = float("nan")
+    with pytest.raises(ValueError, match="finite"):
+        CB.validate_diagnostics(d, M6, n_seeds=4)
+
+
+def test_validate_diagnostics_checks_the_seed_identifiers():
+    d = _full_diag(); d["cells"]["fresh0@rho0.2|C*"]["base"]["seeds"] = [7, 7, 7, 7]
+    with pytest.raises(ValueError, match="seed"):
+        CB.validate_diagnostics(d, M6, n_seeds=4)
+    seeds = {m: list(range(4)) for m in M6}; CB.validate_diagnostics(_full_diag(), M6, n_seeds=4, seeds=seeds)
+    seeds["fresh4"] = [0, 1, 3, 2]
+    with pytest.raises(ValueError, match="seed"):
+        CB.validate_diagnostics(_full_diag(), M6, n_seeds=4, seeds=seeds)
 
 
 def test_newest_share_averages_episode_shares_within_a_market_then_across_markets():
@@ -289,7 +322,7 @@ def test_registered_values_are_reproduced_from_the_no_churn_records(tmp_path):
 def test_cli_writes_the_result_with_input_hashes_and_a_table(tmp_path):
     ea, ch, rep = _tree(tmp_path, _gains(noise=0.01))
     for c in ("0.01", "0.05"):
-        _write(ch / f"p{c}" / "diagnostics.json", _full_diag(n=40))
+        _write(ch / f"p{c}" / "diagnostics.json", _full_diag(n=40, seeds=range(1000, 1040)))
     out, tab = tmp_path / "churn.json", tmp_path / "tables"
     rc = CB.main(["--records", str(ea), "--churn", str(ch), "--report", str(rep), "--out", str(out), "--tables", str(tab),
                   "--n-seeds", "40", "--resamples", "99"])

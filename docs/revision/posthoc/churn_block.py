@@ -58,7 +58,7 @@ def load(eval_all, churn_dir, report_path, markets, n_seeds: int = 200) -> dict:
     cells, and the missing cells. Refuses if a market's seed lists differ between any rule, rate, version or no churn."""
     report = json.loads(Path(report_path).read_text())
     cells = {v: {c: {m: {} for m in markets} for c in CONDS} for v in VERS}
-    flags, missing = {}, []
+    flags, missing, seed_lists = {}, [], {}
     for m in markets:
         seeds = None
         for r in RULES:
@@ -82,7 +82,8 @@ def load(eval_all, churn_dir, report_path, markets, n_seeds: int = 200) -> dict:
                 elif list(src["seeds"]) != seeds:
                     raise ValueError(f"seeds of {rid} ({v}, p = {c}) differ from the market's seed list")
                 cells[v][c][m][r] = _arrays(src, f"{rid} ({v}, p = {c})", n_seeds)
-    return {"cells": cells, "flags": flags, "missing": missing, "markets": tuple(markets)}
+        seed_lists[m] = seeds
+    return {"cells": cells, "flags": flags, "missing": missing, "markets": tuple(markets), "seeds": seed_lists}
 
 
 def _market_stats(data: dict, m: str, idx=None) -> dict:
@@ -230,13 +231,18 @@ def registered_check(res: dict, reg: dict) -> dict:
 
 
 CATS = ("honest_replacement", "honest_initial", "focal")
+AGE_BINS = ((0, 10), (10, 20), (20, 50), (50, 200))     # churn_v2.AGE_EDGES; expectation 4 reads the first
 
 
-def validate_diagnostics(diag: dict, markets, n_seeds: int = 200) -> None:
+def validate_diagnostics(diag: dict, markets, n_seeds: int = 200, seeds: dict | None = None) -> None:
     """Astra r1: before scoring, check the driver's summaries against their own counts. Every (market, rule, winner) cell
     exists with one episode per seed; each bin's served and audited totals equal the sums of the per-episode counts and
     its share is audited / served (None when nothing was served); the market-pooled share per bin is the mean of the
-    available market shares, with that count; the newest shares are in [0, 1] or None."""
+    available market shares, with that count; the newest shares are in [0, 1] or None. Review r2: the four age bins in order
+    at every level, finite shares, and unique seed identifiers (equal to the market's evaluation seeds when given)."""
+    def finite_share(x, what):
+        if x is not None and not (isinstance(x, (int, float)) and math.isfinite(x) and 0 <= x <= 1):
+            raise ValueError(f"{what}: share {x} is not a finite value in [0, 1]")
     for r in RULES:
         for w in VERS:
             by_m = {}
@@ -244,14 +250,19 @@ def validate_diagnostics(diag: dict, markets, n_seeds: int = 200) -> None:
                 cell = (diag.get("cells", {}).get(f"{m}@rho0.2|{r}") or {}).get(w)
                 if cell is None:
                     raise ValueError(f"diagnostics cell missing: {m}|{r}|{w}")
-                sh = cell["shares"]; per = sh["per_episode"]
+                sh = cell["shares"]; per = sh["per_episode"]; cs = list(cell.get("seeds", []))
+                if len(cs) != n_seeds or len(set(cs)) != len(cs) or (seeds is not None and cs != list(seeds[m])):
+                    raise ValueError(f"{m}|{r}|{w}: seed identifiers are not the market's {n_seeds} unique evaluation seeds")
                 if len(per) != n_seeds or len(sh["focal_newest_by_first_offer_assigned"]) != n_seeds:
                     raise ValueError(f"{m}|{r}|{w}: {len(per)} episodes (expected {n_seeds})")
                 for x in sh["focal_newest_by_first_offer_assigned"] + sh["focal_newest_by_creation"]:
                     if x is not None and not (math.isfinite(x) and 0 <= x <= 1):
                         raise ValueError(f"{m}|{r}|{w}: newest share {x} outside [0, 1]")
                 for c in CATS:
+                    if [tuple(row["age"]) for row in sh[c]] != list(AGE_BINS) or any(len(e[c]) != len(AGE_BINS) for e in per):
+                        raise ValueError(f"{m}|{r}|{w}|{c}: age bins are not {AGE_BINS} in order")
                     for b, row in enumerate(sh[c]):
+                        finite_share(row["share"], f"{m}|{r}|{w}|{c} bin {b}")
                         sv = sum(e[c][b][0] for e in per); au = sum(e[c][b][1] for e in per)
                         if (row["served"], row["audited"]) != (sv, au):
                             raise ValueError(f"{m}|{r}|{w}|{c} bin {b}: totals differ from the per-episode counts")
@@ -263,7 +274,10 @@ def validate_diagnostics(diag: dict, markets, n_seeds: int = 200) -> None:
             if pooled is None:
                 raise ValueError(f"pooled diagnostics missing: {r}|{w}")
             for c in CATS:
+                if len(pooled[c]) != len(AGE_BINS):
+                    raise ValueError(f"pooled {r}|{w}|{c}: age bins are not {AGE_BINS} in order")
                 for b, row in enumerate(pooled[c]):
+                    finite_share(row["share"], f"pooled {r}|{w}|{c} bin {b}")
                     v = [by_m[m][c][b]["share"] for m in markets if by_m[m][c][b]["share"] is not None]
                     want = sum(v) / len(v) if v else None
                     if row["markets"] != len(v) or (want is None) != (row["share"] is None) or (want is not None and abs(row["share"] - want) > TOL):
@@ -335,7 +349,7 @@ def main(argv=None) -> int:
     diags = {c: _read(ch / f"p{c}" / "diagnostics.json") for c in CONDS[1:]}
     for d in diags.values():
         if d is not None:
-            validate_diagnostics(d, markets, a.n_seeds)
+            validate_diagnostics(d, markets, a.n_seeds, data["seeds"])
     out = {"label": LABEL, "statistics": res, "flags": data["flags"], "flag_summary": flag_summary(data["flags"]),
            "expectations": expectations(res, diags.get("0.05")),
            "diagnostics": {c: (diag_summary(d) if d else None) for c, d in diags.items()},
