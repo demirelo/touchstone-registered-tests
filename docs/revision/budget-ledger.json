@@ -9,6 +9,11 @@
    "op": "followup",
    "tag": "churn-mid-pod",
    "cap": 10.4
+  },
+  {
+   "op": "followup",
+   "tag": "runner-up-1",
+   "cap": 3.9
   }
  ],
  "spent": [
