@@ -99,3 +99,8 @@ Guard: tests `test_r12_settle_counts_only_after_done`, `test_r12_creation_answer
 - 2026-11-13: I accepted a helper's report that the churn launcher's end-state parse returned the first marker, and reported it as a bug; a negative test showed the old parse was correct (only end states are capitalised after `== `). Guard: a reported defect is called a defect only after a test fails on it; reports from helpers and reviewers are hypotheses until then.
 - 2026-11-13 (churn mid launcher, harness run 7): my defensive end-state parse edit put its comment before `; exit 1 ;;` on the same case line, so the comment swallowed the exit; on a stop or failure the launcher kept polling until the harness alarm (2 scenarios failed, exit 142). Guard: `results/pods/case_end_check.py` fails on any `;;` that only appears inside a trailing comment (negative test: the buggy line is refused); the churn harness runs it first and stops on a failure.
 - 2026-11-13 (board): I wrote a guessed updatedAt (17:10Z) on job touchstone-runs-ab when the clock read 16:02Z; corrected at once. Guard: no board write without a `date -u` call in the same turn; the value is pasted from its output, never typed.
+
+- 2026-11-13, Run B bundle: a one-line move-then-copy script went on after the move to the Trash failed (an empty
+  target from a failed `mkdir`), so `cp` overwrote the old Mac gate records in place. Nothing was lost (copies are in
+  `f2_bundle_a.tgz`). Guard: `results/pods/trash.sh` (copy in `docs/revision/followup/`) fails on no paths, a missing
+  path or a failed move (negative tests run 2026-11-13); every replace is `trash.sh OLD && cp NEW`.
