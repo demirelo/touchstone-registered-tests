@@ -9,6 +9,10 @@ fi
 # reset_pod.sh, rounds r9-r18, and churn launcher reviews r1-r2): pod safety, launch lock, price ceiling, watchdog, spend
 # records, request-time attempts and deadlines net of PRIOR are unchanged. What differs (launcher-notes.md):
 # - The first argument selects the run (A or B): its name, ledger run tag, plan cap, remote steps and output directories.
+# - NAME is per run (ts-f2a, ts-f2b), not per launch tag (review r1): one launch lock, balance baseline and spend record
+#   per run, so two launches of a run never overlap and a launch is refused while the previous one's spend is unrecorded.
+#   The launch tag names this launch's reservation (<run tag>-<tag>, category followup); any other open reservation of
+#   the run (an unrecorded earlier launch) refuses the launch. One validated ledger snapshot gives PRIOR and is pushed.
 # - PRIOR is not an operator input: it is the spend the ledger records for this run's tag (the same rule as the drivers'
 #   guards.ledger_spend), and a reservation for the run tag must cover the watchdog bound HARD x CAP - PRIOR.
 # - Before every paid step on the pod (the reproduction gate included) the remote script checks the STOP file and the soft
@@ -33,8 +37,8 @@ PY=/opt/homebrew/bin/python3; P=/Users/oemer.demirel/Projects/touchstone/results
 RUN=${1:?run A or B}; TGZ=${2:?code tarball}; BTGZ=${3:?bundle tarball}; TAG=${4:?tag}; CAP=${5:?cap_usd}; LOUT=${6:?local_out}; cd $P
 case "$TGZ$BTGZ$TAG$LOUT" in *[[:space:]]*) echo "refused: a path or tag contains whitespace"; exit 1 ;; esac
 case "$RUN" in
-  A) NAME=ts-f2a-$TAG; RUNTAG=runner-up; PLANCAP=3.00; OUTS="followup2-a-pod-gate followup2-runnerup" ;;
-  B) NAME=ts-f2b-$TAG; RUNTAG=convergence; PLANCAP=4.25; OUTS="followup2-conv" ;;
+  A) NAME=ts-f2a; RUNTAG=runner-up; PLANCAP=3.00; OUTS="followup2-a-pod-gate followup2-runnerup" ;;
+  B) NAME=ts-f2b; RUNTAG=convergence; PLANCAP=4.25; OUTS="followup2-conv" ;;
   *) echo "refused: the run must be A or B"; exit 1 ;;
 esac
 EXPECT=${EXPECT:?commit}; MAXCPH=${MAXCPH:?max usd per hour}; MINMEM=${MINMEM:-28}; HARD=${HARD:-1.3}
@@ -44,9 +48,12 @@ $PY -c "import math,sys; c=float(sys.argv[1]); p=float(sys.argv[2]); sys.exit(0 
 # PRIOR from the ledger (guards.ledger_spend's rule: a `spent` list of rows with a tag and a finite, nonnegative amount;
 # rows whose tag starts with the run tag count); it must lie below the cap, and a reservation for the run tag must cover
 # the watchdog bound HARD x CAP - PRIOR (churn launcher review r1: the reservation is the bound, not the stop cap).
-PRIOR=$($PY - "$LEDGER" "$RUNTAG" "$CAP" "$HARD" <<'PYL'
+# One snapshot of the ledger (review r1, Astra 2): it is validated here, gives PRIOR for the deadlines, and is the copy
+# pushed to the pod for every admission; a later change to the ledger file cannot reach this launch.
+SNAP=$(mktemp "/tmp/${NAME}_ledger.XXXXXX") && cp "$LEDGER" "$SNAP" 2>/dev/null || { echo "refused: cannot snapshot the ledger $LEDGER"; exit 1; }
+PRIOR=$($PY - "$SNAP" "$RUNTAG" "$CAP" "$HARD" "$TAG" <<'PYL'
 import json, math, sys
-led, tag, cap, hard = sys.argv[1], sys.argv[2], float(sys.argv[3]), float(sys.argv[4])
+led, tag, cap, hard, launch = sys.argv[1], sys.argv[2], float(sys.argv[3]), float(sys.argv[4]), sys.argv[5]
 def num(x):
     return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x) and x >= 0
 try:
@@ -63,9 +70,17 @@ for r in d["spent"]:
 if not tot < cap:
     print(f"refused: the ledger records {tot:.4f} USD for {tag}, not below the cap {cap}"); sys.exit(1)
 need = hard * cap - tot
-res = [r for r in d.get("reservations", []) if isinstance(r, dict) and str(r.get("tag", "")).startswith(tag + "-") and num(r.get("cap"))]
-if not any(float(r["cap"]) >= need - 1e-6 for r in res):
-    print(f"refused: no reservation tagged {tag}-<n> covers the watchdog bound {need:.4f} USD (HARD x CAP - PRIOR)"); sys.exit(1)
+# This launch's reservation is the one tagged <run tag>-<launch tag> in category followup (review r1, Astra 1); any other
+# open reservation of the run is an earlier launch whose spend is not recorded yet (recording replaces the reservation),
+# so PRIOR would miss it: refused, as churn refuses an unrecorded previous launch.
+mine = [r for r in d.get("reservations", []) if isinstance(r, dict) and r.get("tag") == f"{tag}-{launch}"]
+other = [r.get("tag") for r in d.get("reservations", []) if isinstance(r, dict) and str(r.get("tag", "")).startswith(tag + "-") and r.get("tag") != f"{tag}-{launch}"]
+if other:
+    print(f"refused: open reservations {other} of {tag}: an earlier launch's spend is not recorded in the ledger"); sys.exit(1)
+if any(str(r.get("tag")) == f"{tag}-{launch}" for r in d["spent"]):
+    print(f"refused: {tag}-{launch} already has a spend record; use a new launch tag"); sys.exit(1)
+if len(mine) != 1 or mine[0].get("op") != "followup" or not num(mine[0].get("cap")) or float(mine[0]["cap"]) < need - 1e-6:
+    print(f"refused: no single followup reservation {tag}-{launch} covers the watchdog bound {need:.4f} USD (HARD x CAP - PRIOR)"); sys.exit(1)
 print(round(tot, 6))
 PYL
 ) || { echo "$PRIOR"; exit 1; }
@@ -104,7 +119,7 @@ guard() {
 }
 ( guard "$hg" ); g=$?; mv -- "$hg" ~/.Trash/hg_f2_$$
 [ $g -eq 0 ] || { echo "code tarball refused"; exit 1; }
-echo "ledger: PRIOR $PRIOR USD recorded for $RUNTAG; a reservation covers the watchdog bound"
+echo "ledger: PRIOR $PRIOR USD recorded for $RUNTAG; reservation $RUNTAG-$TAG covers the watchdog bound (snapshot $SNAP)"
 [ -n "${DRYRUN:-}" ] && { echo "dry run: guards passed; no pod created"; exit 0; }
 # verify DIR: every record in DIR/inventory.json exists with its hash, and every file in DIR (except inventory.json and
 # *.lock, *.tmp, which the drivers' inventories also leave out) is in the inventory: nothing outside it goes unchecked.
@@ -238,7 +253,7 @@ memgb=$(echo "$chk" | sed -n 's/.*memgb=\([0-9]*\).*/\1/p'); [ -n "$memgb" ] && 
 # ceiling; the open start is this pod's request time) and the ledger (earlier launches of the run tag). Both are fixed
 # for the pod's life (no attempt event or ledger row can appear while it runs), so one push covers every paid step.
 tmo 120 $PY runpod.py push $id "$ATT" /root/f2.attempts >/dev/null 2>&1 || { state="UPLOAD FAILED (attempts)"; exit 1; }
-tmo 120 $PY runpod.py push $id "$LEDGER" /root/f2.ledger.json >/dev/null 2>&1 || { state="UPLOAD FAILED (ledger)"; exit 1; }
+tmo 120 $PY runpod.py push $id "$SNAP" /root/f2.ledger.json >/dev/null 2>&1 || { state="UPLOAD FAILED (ledger)"; exit 1; }
 # The run's own steps, kept literal ($ expands on the pod); inserted into the remote script below as one value.
 if [ "$RUN" = A ]; then
 RBODY=$(cat <<'RA'

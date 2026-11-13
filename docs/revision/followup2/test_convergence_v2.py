@@ -243,3 +243,36 @@ def test_worker_cost_arguments_keep_the_recorded_accounting_start(tmp_path):
     assert args[2] == 0.0 and args[4] == pytest.approx(2.0)
     w = B.G.CostStop(*args[:3], lambda: 3600.0, *args[4:])
     assert w.allow("round 2", 3.9) is False                                     # 2.00 + 0.56 + 2.18 > 4.25, as the validated stopper says
+
+
+# ---- shared launcher review r1 (Sol and Astra) ----
+
+def test_a_gate_cell_refused_by_the_inner_admission_is_a_cost_stop_not_a_gate_failure(monkeypatch):
+    """A cost stop before round 1 (round1_gate "not run") must not read as a measured mismatch."""
+    monkeypatch.setattr(B, "run_cell", lambda *a, **k: {"rounds": [], "status": "stopped at the cost cap", "round1_gate": "not run", "cost": {"stopped_before": "round 1"}})
+    got = B.gate_cell({"id": "c"}, "out", "src", "pod", {"smoke": False})
+    assert got["pass"] is False and got["cost_stopped"] is True
+    monkeypatch.setattr(B, "run_cell", lambda *a, **k: {"rounds": [{"round": 1}], "round1_gate": {"pass": False, "problems": ["x"]}})
+    assert B.gate_cell({"id": "c"}, "out", "src", "pod", {"smoke": False})["cost_stopped"] is False
+
+
+@pytest.mark.skipif(not (MAIN / "eval/all/freeze").is_dir(), reason="needs the registered evaluation records")
+def test_the_pod_gate_exits_3_when_the_stop_file_appears_between_the_outer_and_inner_admission(tmp_path, monkeypatch):
+    """Real driver path: the outer admission in main() passes; a STOP file then appears; the real run_cell's own admission
+    refuses round 1. The gate must exit 3 (a stop), write cost_stop.json, and write no gate record (not exit 4)."""
+    import time
+    monkeypatch.setattr(B.R, "git_commit", lambda: "pinned-for-the-rerun-check")
+    now = time.time(); att = tmp_path / "f2.attempts"; att.write_text(f"pod1 {int(now) - 60} start\n")
+    led = tmp_path / "ledger.json"; write(led, {"spent": [{"op": "followup", "tag": "reset-pod", "usd": 1.65}], "reservations": []})
+    stop = tmp_path / "STOP"; real = B.run_cell
+    def run_cell_after_stop(*a, **k):
+        stop.write_text("")                                                         # the launcher's soft deadline passed meanwhile
+        return real(*a, **k)
+    monkeypatch.setattr(B, "run_cell", run_cell_after_stop)
+    out = tmp_path / "conv"; cell = "fresh1@rho0.2|F111|D2+H3|profit"
+    args = ["--src", str(MAIN / "eval/all"), "--out", str(out), "--report", str(MAIN / "report/report.json"), "--draw", str(MAIN / "draw/draw.json"),
+            "--instances", str(MAIN / "draw/instances.json"), "--cfgs", str(MAIN / "deviation/cfg_linux.json"), "--addendum", str(MAIN / "report/addendum.json"),
+            "--gate", "--site", "pod", "--cells", cell, "--cap-usd", "4.25", "--usd-per-hour", "0.70", "--started-at", str(int(now) - 60),
+            "--attempts", str(att), "--ledger", str(led), "--run-tag", "convergence", "--stop-file", str(stop), "--soft-deadline", str(now + 3600)]
+    assert B.main(args) == 3
+    assert (out / "cost_stop.json").exists() and not (out / "gate" / (B.R._safe(cell) + "__pod.json")).exists()

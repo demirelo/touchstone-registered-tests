@@ -13,6 +13,7 @@ sed "s#P=/Users/oemer.demirel/Projects/touchstone/results/pods#P=$H#; s#snapf=\"
 cp $SRC/podctl.py .
 mkdir -p g && (cd g && git init -q && git -c commit.gpgsign=false -c user.email=x@x -c user.name=x commit -q --allow-empty -m x && git -c tag.gpgsign=false tag protocol-v2 && COPYFILE_DISABLE=1 tar --uid 0 --gid 0 -czf ../c.tgz .)
 C=$(git -C g rev-parse HEAD); export HC=$C
+export WT=/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79 REALUV=$(command -v uv) REALCACHE=$(uv cache dir 2>/dev/null)
 # bundles: the evidence each run needs (Run B's Mac gate records bound to the commit); a variant bound to another commit
 python3 - "$C" <<'EOF'
 import json, os, sys
@@ -55,7 +56,11 @@ elif cmd == "ssh":
     c = a[1] if len(a) > 1 else ""
     down = st.get("down_first") and st.get("created") and a[0] == st["created"][0][0]   # the first pod never answers
     if not st["up"] or down: rc = 255; print("")
-    elif "git rev-parse" in c: print(f"git={os.environ.get('HC','')} env=unset bundle=6 memgb=64 py=x")
+    elif "git rev-parse" in c:
+        if st.get("mutate_ledger"):                     # the operator edits the ledger after the deadlines were computed
+            led = json.load(open(os.path.join(H, "ledger.json"))); led["spent"].append({"op": "followup", "tag": "runner-up-late", "usd": 9.0})
+            json.dump(led, open(os.path.join(H, "ledger.json"), "w"))
+        print(f"git={os.environ.get('HC','')} env=unset bundle=6 memgb=64 py=x")
     elif "tail -c 240" in c: print("== remote started 11:48 == reset gate start 11:48 == RUN OK 12:00" if st.get("runok") else st.get("remote_tail", "== remote started 11:48 == runner-up start 11:50"))
     else: print("up")
 elif cmd == "push":
@@ -98,21 +103,29 @@ EOF
 ledger() { python3 - "$1" "${2:-0}" <<'EOF'
 import json, sys
 v, prior = sys.argv[1], float(sys.argv[2])
-d = {"caps": {"followup": 72.0}, "reservations": [{"op": "followup", "tag": "runner-up-1", "cap": 3.9}, {"op": "followup", "tag": "convergence-1", "cap": 5.525}],
+d = {"caps": {"followup": 72.0}, "reservations": [{"op": "followup", "tag": "runner-up-t", "cap": 3.9}, {"op": "followup", "tag": "convergence-t", "cap": 5.525}],
      "spent": [{"op": "followup", "tag": "reset-pod", "usd": 1.65}, {"op": "followup", "tag": "churn-pod", "usd": 4.99}]}
 if prior:
     d["spent"].append({"op": "followup", "tag": "runner-up-0", "usd": prior})
 if v == "nores":
-    d["reservations"] = [{"op": "followup", "tag": "runner-up-1", "cap": 3.0}]          # the stop cap only: below the bound
+    d["reservations"] = [{"op": "followup", "tag": "runner-up-t", "cap": 3.0}]          # the stop cap only: below the bound
+if v == "wrongop":
+    d["reservations"] = [{"op": "development", "tag": "runner-up-t", "cap": 3.9}]       # another category (review r1, Astra 1)
+if v == "leftover":
+    d["reservations"].append({"op": "followup", "tag": "runner-up-0", "cap": 3.9})     # an earlier launch, spend not recorded
+if v == "tagu":
+    d["reservations"] = [{"op": "followup", "tag": "runner-up-u", "cap": 3.9}]
+if v == "reused":
+    d["spent"].append({"op": "followup", "tag": "runner-up-t", "usd": 0.5})            # this launch tag already spent
 if v == "badrow":
     d["spent"].append({"op": "followup", "tag": "runner-up-x", "usd": float("nan")})
 open("ledger.json", "w").write(json.dumps(d))
 EOF
 }
-fail=0; ran=0; TOTAL=29
+fail=0; ran=0; TOTAL=34
 run() { # name state cap creates rc [end-pattern] [watchdog-log-substring] [launcher-output-substring]; env RUNV (A), BUN
   [ -n "${ONLY:-}" ] && ! echo "$1" | grep -q "$ONLY" && return 0   # smoke runs only; a full run sets no ONLY
-  r=${RUNV:-A}; rl=$(echo $r | tr AB ab); N=ts-f2$rl-t; LG=logs_f2${rl}_t
+  r=${RUNV:-A}; rl=$(echo $r | tr AB ab); T=${TAGV:-t}; N=ts-f2$rl; LG=logs_f2${rl}_$T
   ran=$((ran+1)); echo "== $1"; echo "$2" > state.json; mkdir -p $LG junk; : > $LG/watchdog.log; : > $N.wdpid
   for f in $N.bal0 $N.spent $N.wdend; do [ -e $f ] && mv -- $f junk/$f.$ran; done   # isolation: one launch per scenario
   [ -n "${PRELOCK:-}" ] && mkdir $N.launchlock
@@ -120,9 +133,9 @@ run() { # name state cap creates rc [end-pattern] [watchdog-log-substring] [laun
   [ -n "${EMPTYSPENT:-}" ] && : > $N.spent
   ledger "${LEDGERV:-ok}" "${PRIORV:-0}"
   if [ -n "${PRIORENV:-}" ]; then
-    PRIOR=$PRIORENV EXPECT=$C MAXCPH=0.70 HARD=${HARDX:-1.3} LEDGER=$H/ledger.json DRYRUN=${DRY:-} perl -e 'alarm 1500; exec @ARGV' bash followup2_pod.sh $r c.tgz ${BUN:-b.tgz} t $3 out > run.out 2>&1; lrc=$?
+    PRIOR=$PRIORENV EXPECT=$C MAXCPH=0.70 HARD=${HARDX:-1.3} LEDGER=$H/ledger.json DRYRUN=${DRY:-} perl -e 'alarm 1500; exec @ARGV' bash followup2_pod.sh $r c.tgz ${BUN:-b.tgz} $T $3 out > run.out 2>&1; lrc=$?
   else
-    EXPECT=$C MAXCPH=0.70 HARD=${HARDX:-1.3} LEDGER=$H/ledger.json DRYRUN=${DRY:-} perl -e 'alarm 1500; exec @ARGV' bash followup2_pod.sh $r c.tgz ${BUN:-b.tgz} t $3 out > run.out 2>&1; lrc=$?
+    EXPECT=$C MAXCPH=0.70 HARD=${HARDX:-1.3} LEDGER=$H/ledger.json DRYRUN=${DRY:-} perl -e 'alarm 1500; exec @ARGV' bash followup2_pod.sh $r c.tgz ${BUN:-b.tgz} $T $3 out > run.out 2>&1; lrc=$?
   fi
   out=$(grep -v "^tarball\|code guard\|bundle guard\|^ledger:" run.out); echo "$out" | tail -3
   # wait for THIS scenario's watchdog by its PID (r11); the settle while a request is pending is 30 minutes
@@ -145,7 +158,11 @@ run() { # name state cap creates rc [end-pattern] [watchdog-log-substring] [laun
 RUNV=C run "an unknown run letter is refused" '{"pods":{},"price":0.56,"up":true,"log":[]}' 3 0 1 "" "" "^refused: the run must be A or B"
 PRIORENV=1 run "PRIOR from the environment is refused (it comes from the ledger)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 3 0 1 "" "" "^refused: PRIOR is not an input here"
 run "a cap above the plan's is refused" '{"pods":{},"price":0.56,"up":true,"log":[]}' 5 0 1 "" "" "^refused: the cap must be positive and at most the plan's 3.00 USD"
-LEDGERV=nores run "a reservation below the watchdog bound is refused" '{"pods":{},"price":0.56,"up":true,"log":[]}' 3 0 1 "" "" "^refused: no reservation tagged runner-up-<n> covers the watchdog bound 3.9000 USD"
+LEDGERV=nores run "a reservation below the watchdog bound is refused" '{"pods":{},"price":0.56,"up":true,"log":[]}' 3 0 1 "" "" "^refused: no single followup reservation runner-up-t covers the watchdog bound 3.9000 USD"
+LEDGERV=wrongop run "a reservation in another category is refused (r1)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 3 0 1 "" "" "^refused: no single followup reservation runner-up-t covers"
+LEDGERV=leftover run "an open reservation of an earlier launch refuses the launch (r1)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 3 0 1 "" "" "^refused: open reservations \\['runner-up-0'\\] of runner-up"
+LEDGERV=reused run "a launch tag that already has a spend record is refused (r1)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 3 0 1 "" "" "^refused: runner-up-t already has a spend record"
+PRELOCK=1 TAGV=u LEDGERV=tagu run "the run-level lock refuses a launch of the same run under another tag (r1)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 3 0 1 "" "" "^LOCKED: ts-f2a.launchlock exists"
 LEDGERV=badrow run "a malformed ledger row is refused" '{"pods":{},"price":0.56,"up":true,"log":[]}' 3 0 1 "" "" "^refused: a malformed spend row in the ledger"
 RUNV=B BUN=bbad.tgz run "Run B is refused when its Mac gate records are not bound to EXPECT" '{"pods":{},"price":0.56,"up":true,"log":[]}' 4.25 0 1 "" "" "^bundle refused"
 RUNV=B DRY=1 run "Run B dry run: every guard passes, no pod" '{"pods":{},"price":0.56,"up":true,"log":[]}' 4.25 0 0 "" "" "^dry run: guards passed; no pod created"
@@ -158,13 +175,19 @@ run "a stop during creation leaves the request pending; the late pod is deleted 
 HARDX=1.0 run "unreachable pod at the deadline" '{"pods":{},"price":0.56,"up":false,"log":[]}' 0.004 1 1 "CREATION BLOCKED \(hard deadline\)|SOFT DEADLINE BEFORE START|NO POD"
 HARDX=1.0 run "deletion keeps failing: the watchdog deletes after the deadline" '{"pods":{},"price":0.56,"up":false,"log":[],"stuck_next":true}' 0.004 1 1 "UNREACHABLE POD NOT DELETED|CREATION BLOCKED \(hard deadline\)|SOFT DEADLINE BEFORE START|NO POD" "WATCHDOG: deleting"
 WD_ALIVE=1 WAITW=20 run "listing always fails: no creation; the watchdog stays (fail-closed)" '{"pods":{},"price":0.56,"up":true,"log":[],"fail_list":1000000}' 3 0 1 "RECONCILE FAILED BEFORE REQUEST 1"
-PRELOCK=1 run "a held launch lock refuses the launch (r15)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 3 0 1 "" "" "^LOCKED: ts-f2a-t.launchlock exists"
+PRELOCK=1 run "a held launch lock refuses the launch (r15)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 3 0 1 "" "" "^LOCKED: ts-f2a.launchlock exists"
 PREBAL=1 run "an unrecorded previous spend refuses the launch and keeps its baseline (r16)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 3 0 1 "" "" "^refused: the previous launch's spend is not recorded"
 PREBAL=1 EMPTYSPENT=1 run "an empty spend record does not count as recorded (r17)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 3 0 1 "" "" "^refused: the previous launch's spend is not recorded"
 run "unknown balance: no creation, lock released (r16)" '{"pods":{},"price":0.56,"up":true,"log":[],"bal_fail":true}' 3 0 1 "" "" "^refused: account balance unknown$"
 NOTOUT="pull or verification failed" run "upload failure stops the run before it starts (r15)" '{"pods":{},"price":0.56,"up":true,"log":[],"push_fail":true}' 3 1 1 "UPLOAD FAILED \(code\)"
-run "Run A: RUN OK with one corrupt pull, retried until both directories verify" '{"pods":{},"price":0.56,"up":true,"log":[],"runok":true,"corrupt_pulls":1}' 3 1 0 "RUN OK" "" "verify followup2-runnerup: 2 records, 0 bad, 0 not inventoried"
+run "Run A: RUN OK with one corrupt pull, retried until both directories verify; a ledger edit after the deadlines does not reach the pod" '{"pods":{},"price":0.56,"up":true,"log":[],"runok":true,"corrupt_pulls":1,"mutate_ledger":true}' 3 1 0 "RUN OK" "" "verify followup2-runnerup: 2 records, 0 bad, 0 not inventoried"
 cp pushed_r_remote.sh pushed_A.sh
+python3 - <<'PYS' || { echo "SCENARIO FAILED (ledger snapshot)"; fail=1; }
+import json
+now, pushed = json.load(open("ledger.json")), json.load(open("pushed_f2.ledger.json"))
+assert any(r["tag"] == "runner-up-late" for r in now["spent"]) and not any(r["tag"] == "runner-up-late" for r in pushed["spent"]), "the pushed ledger is not the validated snapshot"
+print("ledger snapshot ok: the pushed copy is the one validated before the deadlines")
+PYS
 run "Run A: the end state is the last line of the polled tail (a gate failure after earlier lines)" '{"pods":{},"price":0.56,"up":true,"log":[],"remote_tail":"== remote started 11:48 == reset gate start 11:48 == GATE FAILED at reset gate (not bit-identical) 12:00"}' 3 1 1 "== GATE FAILED at reset gate \(not bit-identical\) 12:00"
 run "Run A: the driver's cap admission stops the run between stages" '{"pods":{},"price":0.56,"up":true,"log":[],"remote_tail":"== reset gate passed (bit-identical) 12:30 == runner-up start 12:30 == STOPPED BEFORE search (cap, driver admission) 12:40"}' 3 1 1 "== STOPPED BEFORE search \(cap, driver admission\) 12:40"
 RUNV=B run "Run B: RUN OK with one corrupt pull, retried until verified" '{"pods":{},"price":0.56,"up":true,"log":[],"runok":true,"corrupt_pulls":1}' 4.25 1 0 "RUN OK" "" "verify followup2-conv: 2 records, 0 bad, 0 not inventoried"
@@ -193,6 +216,7 @@ led = json.load(open(f"{H}/pushed_f2.ledger.json")); assert any(r["tag"] == "run
 assert "ledger: PRIOR 1.2 USD recorded for runner-up" in out
 print(f"accounting ok: soft {soft}s, hard {hard}s, PRIOR 1.2 from the ledger, one open attempt = --started-at")
 PYC
+cp pushed_r_remote.sh pushed_acct.sh; cp pushed_f2.attempts acct.attempts; cp pushed_f2.ledger.json acct.ledger.json
 # The generated remote scripts, executed under a scratch root with a stub `uv` (logs each call; acts as $STUB says):
 # every end state, the order of calls (admission before each paid step, the gate before the driver), and the flags.
 mkdir -p stubbin junk
@@ -200,6 +224,9 @@ cat > stubbin/uv <<'EOF'
 #!/bin/bash
 # stub for `uv run --frozen python <script> ...`. STUB words: admit@<hours>=refuse|crash, gate=fail|crash|cap, run=cap|fail|crash
 echo "$*" >> "$REMOTE_ROOT/calls.log"
+if [ -n "${REALADMIT:-}" ] && [ "${4##*/}" = guards.py ]; then         # the real admission, not a stub exit code (review r1)
+  cd "$WT" && UV_CACHE_DIR="$REALCACHE" exec "$REALUV" run --frozen python docs/revision/followup2/guards.py "${@:5}"
+fi
 s=$4; what=run; hours=""; prev=""
 for i in "$@"; do [ "$prev" = "--hours" ] && hours=$i; prev=$i; done
 case "$s" in *guards.py) what="admit@$hours" ;; *reset_followup_v2.py) what=gate ;; *convergence_v2.py) case " $* " in *" --gate "*) what=gate ;; esac ;; esac
@@ -217,11 +244,12 @@ esac
 exit 0
 EOF
 chmod +x stubbin/uv
-rcheck() { # SCRIPT STUB expected-last-line [STOPFILE]
+rcheck() { # SCRIPT STUB expected-last-line [STOPFILE]; env REALADMIT: the real guards.py with the accounting launch's pushed files
   rr=$(mktemp -d); mkdir -p $rr/touchstone/results/logs $rr/bundle $rr/.local/bin; cp stubbin/uv $rr/.local/bin/uv; [ -n "${4:-}" ] && touch $rr/STOP
+  [ -n "${REALADMIT:-}" ] && { cp acct.attempts $rr/f2.attempts; cp acct.ledger.json $rr/f2.ledger.json; }
   last=$(REMOTE_ROOT=$rr HOME=$rr STUB="$2" bash $1 2>&1 | tail -n 1)
   echo "$last" | grep -Eq "^$3 [0-9]{2}:[0-9]{2}\$" || { echo "SCENARIO FAILED (remote $1, STUB='$2': last line '$last', expected '$3')"; fail=1; }
-  RCALLS=$(cat $rr/calls.log 2>/dev/null); mv -- $rr junk/rr.$RANDOM; }
+  RCALLS=$(cat $rr/calls.log 2>/dev/null); RADMIT=$(cat $rr/touchstone/results/logs/f2_admit.log 2>/dev/null); mv -- $rr junk/rr.$RANDOM; }
 ran=$((ran+1)); echo "== Run A: the generated remote script with a stub driver"
 rcheck pushed_A.sh "admit@0.61=refuse" "== STOPPED BEFORE reset gate \(cap, admission\)"
 rcheck pushed_A.sh "admit@0.61=crash" "== RUN FAILED at admission before reset gate"
@@ -272,6 +300,20 @@ ev = [c[3][i + 1] for i, x in enumerate(c[3]) if x == "--evidence"]
 assert len(ev) == 4 and sum("/bundle/evidence/conv-gate-mac/" in e for e in ev) == 2 and sum(e.startswith("results/v2/followup2-conv/gate/") and e.endswith("__pod.json") for e in ev) == 2, ev
 print("remote ok (B): 9 end states; admit, gate, admit, main run with four evidence records")
 PYR
+# The real admission (review r1): the accounting launch's script, attempts file and ledger (PRIOR 1.2 of a 3 USD cap), with
+# the real guards.py: the reset gate (0.61 h at 0.70) is admitted, the runner-up step (2.65 h) would pass the cap and is
+# refused by the real check, so the script stops before it.
+ran=$((ran+1)); echo "== the real guards.py admission inside the generated remote script (r1)"
+REALADMIT=1 rcheck pushed_acct.sh "" "== STOPPED BEFORE runner-up \(cap, admission\)"
+python3 - "$RCALLS" "$RADMIT" <<'PYA' || { echo "SCENARIO FAILED (real admission)"; fail=1; }
+import json, sys
+c = [l.split() for l in sys.argv[1].splitlines()]
+assert [x[3].split("/")[-1] for x in c] == ["guards.py", "reset_followup_v2.py", "guards.py"], c
+rep = [json.loads(l) for l in sys.argv[2].splitlines() if l.startswith("{")]
+assert len(rep) == 2 and rep[0]["log"][-1]["allowed"] is True and rep[1]["log"][-1]["allowed"] is False, rep
+assert rep[1]["prior_usd"] > 1.2 and rep[1]["cap_usd"] == 3.0, rep[1]
+print(f"real admission ok: gate admitted, runner-up refused (prior {rep[1]['prior_usd']:.4f} USD incl. the deleted attempt)")
+PYA
 # The embedded verifier (extracted verbatim from the launcher) on prepared directories: complete, a missing record, a
 # changed record, a file outside the inventory, and an empty inventory.
 ran=$((ran+1)); echo "== the embedded verifier"

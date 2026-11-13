@@ -1,5 +1,7 @@
 # Run A, the runner-up comparator on the fresh markets: plan (draft 7, 2026-11-11; for internal review; no spend)
 
+**Amendment (2026-11-13, shared launcher review r1, `docs/revision/roster/{sol,astra}-f2-launcher-r1.md`):** reservation input 3.12 (grant 3.90 USD = 1.3 x the 3.00 USD stop cap, which is unchanged); the follow-up category cap is 72 USD (the author's approval of 2026-11-12); the reservation covers the watchdog bound, 1.3 x the stop cap, because a stage admitted within the cap finishes and only the watchdog at 1.3 x the cap stops a running stage (churn launcher review r1, Sol and Astra); `guards.check_grant` against the stop cap is replaced by the launcher's check that one `followup` reservation tagged with this launch covers 1.3 x the stop cap minus the run's recorded spend. The launcher is `docs/revision/followup2/followup2_pod.sh`.
+
 **Draft 7 changes** (internal review round 6, `docs/revision/roster/{sol,astra}-runner-up-plan-r6.md`, both reject): paid accounting counts the current pod from its recorded open event, never from a later `--started-at`
 (refusal test); the ledger must have a `spent` list of rows with a tag and a finite, nonnegative amount, and the cap,
 rate, and step estimate must be finite and valid (refusal tests); the reservation command is `budget_followup.py
@@ -123,8 +125,8 @@ separately, never a failure). No expectation on the category.
 `python3 docs/revision/followup2/cost_estimate.py`: 17.65 core-hours, 1.91 USD at the benchmark's 0.108 USD per
 core-hour; billed path on one 16-vCPU pod 3.56 hours (reproduction gate 0.61 h, searches, six serial reference calls,
 X7-SC evaluation and doubling, 0.3 h preparation and tail) = 1.99 USD at 0.56 USD per hour. Estimate 1.99 USD
-(x 1.25 = 2.49); **stop cap and reservation 3.00 USD**, the full allowance, in the ledger category `followup` (cap 22 USD
-shared by all follow-up runs: reset 5, churn 8, Run A 3, Run B 4.25, total 20.25; `budget_followup.py reserve`). A paid run
+(x 1.25 = 2.49); **stop cap 3.00 USD**, the full allowance; **reservation 3.90 USD** (1.3 x the stop cap, the watchdog bound;
+amendment above) in the ledger category `followup` (cap 72 USD shared by all follow-up runs; `budget_followup.py reserve`). A paid run
 requires `--started-at <allocation time>` and the launcher's attempts file (`--attempts`). The driver checks
 the cap between stages: a stage starts only if the billed time so far
 plus its estimate stays within the cap; a running stage is never killed (author's instruction); the run stops, writes
@@ -144,9 +146,9 @@ honours the launcher's between-stage stop (test).
 **Admission before every paid step (draft 6).** Before the pod's first paid step, and before each later one (the reset
 reproduction gate included), the launcher runs `python3 docs/revision/followup2/guards.py admit --cap-usd 3.00
 --usd-per-hour <ceiling> --started-at <allocation> --attempts <file> --ledger <ledger> --run-tag runner-up --hours <step estimate>
---stop-file /root/STOP --soft-deadline <soft>` and starts the step only on exit 0. Reservation: `python3 docs/revision/followup/budget_followup.py --reserve runner-up-<n> 2.40`; the
-returned grant must equal 3.00 USD (`guards.check_grant`; the ledger grants less when the category is nearly full), else
-no pod. The launcher copy itself (a copy of `results/pods/reset_pod.sh`) is not part
+--stop-file /root/STOP --soft-deadline <soft>` and starts the step only on exit 0. Reservation: `python3 docs/revision/followup/budget_followup.py --reserve runner-up-<n> 3.12`; the
+launcher requires one `followup` reservation `runner-up-<n>` (its launch tag) of at least 1.3 x the stop cap minus the run's
+recorded spend (3.90 USD on a first launch; the ledger grants less when the category is nearly full), else no pod; the reservation covers the watchdog bound, 1.3 x the stop cap, because a stage admitted within the cap finishes and only the watchdog at 1.3 x the cap stops a running stage (churn launcher review r1, Sol and Astra); `guards.check_grant` against the stop cap is replaced by the launcher's check that one `followup` reservation tagged with this launch covers 1.3 x the stop cap minus the run's recorded spend. The launcher copy itself (a copy of `results/pods/reset_pod.sh`) is not part
 of this folder and is to be written and tested offline before allocation.
 
 **Launcher and the cap.** The pod launcher is a copy of `results/pods/reset_pod.sh` with `results/pods/podctl.py`. Its soft
@@ -163,6 +165,6 @@ in the ledger (`budget_v2.py --record`).
 ## 6. Steps
 
 1. Internal review to consensus; freeze this plan.
-2. Reserve 3.00 USD in the ledger; one pod: `reset_followup_v2.py --reproduce --require-identical`, then `runnerup_v2.py
+2. Reserve 3.90 USD in the ledger (input 3.12); one pod: `reset_followup_v2.py --reproduce --require-identical`, then `runnerup_v2.py
    --stage all --workers 12 --reset-mac M --reset-pod P --doubling-evidence D --cap-usd 3.00 --started-at T --attempts A --ledger L --run-tag runner-up --stop-file /root/STOP --soft-deadline S`; delete and verify the pod; record the spend.
 3. Analysis on the Mac from the retrieved records; a paper paragraph and table labelled exploratory, after review.

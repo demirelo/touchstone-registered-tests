@@ -272,7 +272,8 @@ def gate_cell(job: dict, out, src, site: str, bind: dict, cost: tuple | None = N
     ref = frozen_doubling(job, out) if site == "mac" else None
     r = run_cell(job, out, max_rounds=1, src=src, cost=cost, round_hours=round_hours, reference=ref)
     ok = isinstance(r["round1_gate"], dict) and r["round1_gate"]["pass"] is True
-    return {"stage": "convergence gate", "cell": job["id"], "pass": bool(ok), "site": site, "compared_with": "frozen stage, same machine" if ref else "registered record",
+    stopped = r.get("round1_gate") == "not run"        # refused by the cell's own admission before round 1: a cost stop, not a mismatch
+    return {"stage": "convergence gate", "cell": job["id"], "pass": bool(ok), "cost_stopped": stopped, "cost": r.get("cost") if stopped else None, "site": site, "compared_with": "frozen stage, same machine" if ref else "registered record",
             "comparison": r["round1_gate"],
             "round1": (r.get("rounds") or [None])[0],
             "binding": bind, "environment": G.environment()}
@@ -380,6 +381,9 @@ def main(argv=None) -> int:
             if stop and not stop.allow(f"gate {j['id']}", hours(j)):
                 write(out / "cost_stop.json", stop.report()); G.inventory(out, DEVIATIONS, files, argv); return 3
             res[j["id"]] = gate_cell(j, out, a.src, a.site, bind(j), cargs, hours(j))
+            if res[j["id"]]["cost_stopped"]:                     # shared launcher review r1: exit 3 (a stop), and no gate record
+                write(out / "cost_stop.json", {**(stop.report() if stop else {}), "inner": res[j["id"]]["cost"], "cell": j["id"]})
+                G.inventory(out, DEVIATIONS, files, argv); return 3
             write(out / "gate" / (R._safe(j["id"]) + f"__{a.site}.json"), res[j["id"]])
         G.inventory(out, DEVIATIONS, files, argv)
         return 0 if all(r["pass"] for r in res.values()) else 4
