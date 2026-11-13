@@ -110,3 +110,9 @@ Guard: tests `test_r12_settle_counts_only_after_done`, `test_r12_creation_answer
   Guard (written rule, launcher frozen while Run B runs): after any pod end other than RUN OK, run
   `sed -n '86,96p' followup2_pod.sh > verify_inv.py; python3 verify_inv.py <dir>` on every output directory before any
   analysis; fix in the launcher before its next use (verify on every end state that pulled records).
+
+- 2026-11-13, Run B: `convergence_v2.py` collects every cell with `list(ex.map(...))` and writes results only after all
+  cells end, so one worker killed with signal 9 (likely out of memory: 16 workers, 29 GB) lost 3.6 h of work and about
+  3.43 USD. Three review rounds missed it; no test killed a worker, and no step measured memory per worker. Guard (for
+  the rerun, tests first): a test that kills one worker and checks that finished cells are on disk and skipped on resume;
+  a Mac-measured peak memory per cell that sets the worker count, checked by the launcher against the pod's memory.
