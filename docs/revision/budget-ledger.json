@@ -4,7 +4,13 @@
   "evaluation": 43.0,
   "followup": 72.0
  },
- "reservations": [],
+ "reservations": [
+  {
+   "op": "followup",
+   "tag": "churn-mid-pod",
+   "cap": 10.4
+  }
+ ],
  "spent": [
   {
    "op": "development",
