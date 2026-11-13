@@ -45,45 +45,6 @@ EXPECT=${EXPECT:?commit}; MAXCPH=${MAXCPH:?max usd per hour}; MINMEM=${MINMEM:-2
 LEDGER=${LEDGER:-/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/docs/revision/budget-ledger.json}
 [ -z "${PRIOR+x}" ] || { echo "refused: PRIOR is not an input here; it is the ledger's recorded spend for the run tag $RUNTAG"; exit 1; }
 $PY -c "import math,sys; c=float(sys.argv[1]); p=float(sys.argv[2]); sys.exit(0 if math.isfinite(c) and 0 < c <= p else 1)" "$CAP" "$PLANCAP" 2>/dev/null || { echo "refused: the cap must be positive and at most the plan's $PLANCAP USD"; exit 1; }
-# PRIOR from the ledger (guards.ledger_spend's rule: a `spent` list of rows with a tag and a finite, nonnegative amount;
-# rows whose tag starts with the run tag count); it must lie below the cap, and a reservation for the run tag must cover
-# the watchdog bound HARD x CAP - PRIOR (churn launcher review r1: the reservation is the bound, not the stop cap).
-# One snapshot of the ledger (review r1, Astra 2): it is validated here, gives PRIOR for the deadlines, and is the copy
-# pushed to the pod for every admission; a later change to the ledger file cannot reach this launch.
-SNAP=$(mktemp "/tmp/${NAME}_ledger.XXXXXX") && cp "$LEDGER" "$SNAP" 2>/dev/null || { echo "refused: cannot snapshot the ledger $LEDGER"; exit 1; }
-PRIOR=$($PY - "$SNAP" "$RUNTAG" "$CAP" "$HARD" "$TAG" <<'PYL'
-import json, math, sys
-led, tag, cap, hard, launch = sys.argv[1], sys.argv[2], float(sys.argv[3]), float(sys.argv[4]), sys.argv[5]
-def num(x):
-    return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x) and x >= 0
-try:
-    d = json.load(open(led))
-except Exception:
-    print("refused: no readable budget ledger at " + led); sys.exit(1)
-if not isinstance(d, dict) or not isinstance(d.get("spent"), list) or not isinstance(d.get("reservations", []), list):
-    print("refused: the ledger needs a `spent` list"); sys.exit(1)
-tot = 0.0
-for r in d["spent"]:
-    if not isinstance(r, dict) or "tag" not in r or not num(r.get("usd")):
-        print(f"refused: a malformed spend row in the ledger: {r!r}"); sys.exit(1)
-    if str(r["tag"]).startswith(tag): tot += float(r["usd"])
-if not tot < cap:
-    print(f"refused: the ledger records {tot:.4f} USD for {tag}, not below the cap {cap}"); sys.exit(1)
-need = hard * cap - tot
-# This launch's reservation is the one tagged <run tag>-<launch tag> in category followup (review r1, Astra 1); any other
-# open reservation of the run is an earlier launch whose spend is not recorded yet (recording replaces the reservation),
-# so PRIOR would miss it: refused, as churn refuses an unrecorded previous launch.
-mine = [r for r in d.get("reservations", []) if isinstance(r, dict) and r.get("tag") == f"{tag}-{launch}"]
-other = [r.get("tag") for r in d.get("reservations", []) if isinstance(r, dict) and str(r.get("tag", "")).startswith(tag + "-") and r.get("tag") != f"{tag}-{launch}"]
-if other:
-    print(f"refused: open reservations {other} of {tag}: an earlier launch's spend is not recorded in the ledger"); sys.exit(1)
-if any(str(r.get("tag")) == f"{tag}-{launch}" for r in d["spent"]):
-    print(f"refused: {tag}-{launch} already has a spend record; use a new launch tag"); sys.exit(1)
-if len(mine) != 1 or mine[0].get("op") != "followup" or not num(mine[0].get("cap")) or float(mine[0]["cap"]) < need - 1e-6:
-    print(f"refused: no single followup reservation {tag}-{launch} covers the watchdog bound {need:.4f} USD (HARD x CAP - PRIOR)"); sys.exit(1)
-print(round(tot, 6))
-PYL
-) || { echo "$PRIOR"; exit 1; }
 LOGD=logs_f2$(echo $RUN | tr AB ab)_$TAG; mkdir -p "$LOUT" $LOGD
 $PY -c "import sys,tarfile; ms=tarfile.open(sys.argv[1]).getmembers(); d=[m.name for m in ms if m.name.split('/')[-1].startswith('._')]; o=[m.name for m in ms if m.uid!=0]; print('tarball guard: %d AppleDouble, %d non-root' % (len(d),len(o))); sys.exit(1 if d or o else 0)" "$TGZ" || { echo "code tarball refused"; exit 1; }
 # Bundle guard: the evidence the run needs is present and passing; Run B's Mac gate records bind to EXPECT.
@@ -119,8 +80,6 @@ guard() {
 }
 ( guard "$hg" ); g=$?; mv -- "$hg" ~/.Trash/hg_f2_$$
 [ $g -eq 0 ] || { echo "code tarball refused"; exit 1; }
-echo "ledger: PRIOR $PRIOR USD recorded for $RUNTAG; reservation $RUNTAG-$TAG covers the watchdog bound (snapshot $SNAP)"
-[ -n "${DRYRUN:-}" ] && { echo "dry run: guards passed; no pod created"; exit 0; }
 # verify DIR: every record in DIR/inventory.json exists with its hash, and every file in DIR (except inventory.json and
 # *.lock, *.tmp, which the drivers' inventories also leave out) is in the inventory: nothing outside it goes unchecked.
 verify() { $PY - "$1" <<'PYV'
@@ -152,6 +111,49 @@ if spent_ok; then
   arch="$P/spend_records/$NAME.$(date +%s)"; mkdir -p "$arch" || { echo "refused: cannot archive the spend record"; unlock; exit 1; }
   for f in bal0 wdend spent attempts; do [ -e "$P/$NAME.$f" ] && { mv -- "$P/$NAME.$f" "$arch/" || { echo "refused: cannot archive $NAME.$f"; unlock; exit 1; }; }; done
 fi
+# The ledger is read only under the run lock (review r2, Sol 1): a second launch delayed before the lock validates
+# against the ledger as it is when it holds the lock (the first launch's recorded spend, its consumed reservation).
+# PRIOR from the ledger (guards.ledger_spend's rule: a `spent` list of rows with a tag and a finite, nonnegative amount;
+# rows whose tag starts with the run tag count); it must lie below the cap, and a reservation for the run tag must cover
+# the watchdog bound HARD x CAP - PRIOR (churn launcher review r1: the reservation is the bound, not the stop cap).
+# One snapshot of the ledger (review r1, Astra 2): it is validated here, gives PRIOR for the deadlines, and is the copy
+# pushed to the pod for every admission; a later change to the ledger file cannot reach this launch.
+SNAP=$(mktemp "/tmp/${NAME}_ledger.XXXXXX") && cp "$LEDGER" "$SNAP" 2>/dev/null || { echo "refused: cannot snapshot the ledger $LEDGER"; unlock; exit 1; }
+PRIOR=$($PY - "$SNAP" "$RUNTAG" "$CAP" "$HARD" "$TAG" <<'PYL'
+import json, math, sys
+led, tag, cap, hard, launch = sys.argv[1], sys.argv[2], float(sys.argv[3]), float(sys.argv[4]), sys.argv[5]
+def num(x):
+    return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x) and x >= 0
+try:
+    d = json.load(open(led))
+except Exception:
+    print("refused: no readable budget ledger at " + led); sys.exit(1)
+if not isinstance(d, dict) or not isinstance(d.get("spent"), list) or not isinstance(d.get("reservations", []), list):
+    print("refused: the ledger needs a `spent` list"); sys.exit(1)
+tot = 0.0
+for r in d["spent"]:
+    if not isinstance(r, dict) or "tag" not in r or not num(r.get("usd")):
+        print(f"refused: a malformed spend row in the ledger: {r!r}"); sys.exit(1)
+    if str(r["tag"]).startswith(tag): tot += float(r["usd"])
+if not tot < cap:
+    print(f"refused: the ledger records {tot:.4f} USD for {tag}, not below the cap {cap}"); sys.exit(1)
+need = hard * cap - tot
+# This launch's reservation is the one tagged <run tag>-<launch tag> in category followup (review r1, Astra 1); any other
+# open reservation of the run is an earlier launch whose spend is not recorded yet (recording replaces the reservation),
+# so PRIOR would miss it: refused, as churn refuses an unrecorded previous launch.
+mine = [r for r in d.get("reservations", []) if isinstance(r, dict) and r.get("tag") == f"{tag}-{launch}"]
+other = [r.get("tag") for r in d.get("reservations", []) if isinstance(r, dict) and str(r.get("tag", "")).startswith(tag + "-") and r.get("tag") != f"{tag}-{launch}"]
+if other:
+    print(f"refused: open reservations {other} of {tag}: an earlier launch's spend is not recorded in the ledger"); sys.exit(1)
+if any(str(r.get("tag")) == f"{tag}-{launch}" for r in d["spent"]):
+    print(f"refused: {tag}-{launch} already has a spend record; use a new launch tag"); sys.exit(1)
+if len(mine) != 1 or mine[0].get("op") != "followup" or not num(mine[0].get("cap")) or float(mine[0]["cap"]) < need - 1e-6:
+    print(f"refused: no single followup reservation {tag}-{launch} covers the watchdog bound {need:.4f} USD (HARD x CAP - PRIOR)"); sys.exit(1)
+print(round(tot, 6))
+PYL
+) || { echo "$PRIOR"; unlock; exit 1; }
+echo "ledger: PRIOR $PRIOR USD recorded for $RUNTAG; reservation $RUNTAG-$TAG covers the watchdog bound (snapshot $SNAP)"
+[ -n "${DRYRUN:-}" ] && { echo "dry run: guards passed; no pod created"; unlock; exit 0; }
 for f in "$DONE" "$P/$NAME.blocked" "$P/$NAME.request" "$P/$NAME.wdend" "$P/$NAME.ambiguous" "$P/$NAME.acct" "$P/$NAME.unpriced"; do rm_ok "$f"; done; : > "$ATT"
 b0=$(tmo 90 $PY podctl.py balance) || { echo "refused: account balance unknown"; unlock; exit 1; }
 echo "$b0" > "$P/$NAME.bal0" && [ -s "$P/$NAME.bal0" ] || { echo "refused: cannot write $NAME.bal0"; unlock; exit 1; }

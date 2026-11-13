@@ -385,6 +385,8 @@ def main(argv=None) -> int:
                 write(out / "cost_stop.json", {**(stop.report() if stop else {}), "inner": res[j["id"]]["cost"], "cell": j["id"]})
                 G.inventory(out, DEVIATIONS, files, argv); return 3
             write(out / "gate" / (R._safe(j["id"]) + f"__{a.site}.json"), res[j["id"]])
+            if not res[j["id"]]["pass"]:                         # review r2: a measured mismatch ends the gate at once (exit 4);
+                G.inventory(out, DEVIATIONS, files, argv); return 4   # no later cell starts, so no later stop can mask it
         G.inventory(out, DEVIATIONS, files, argv)
         return 0 if all(r["pass"] for r in res.values()) else 4
     path = lambda j: out / "convergence" / (R._safe(j["id"]) + ".json")

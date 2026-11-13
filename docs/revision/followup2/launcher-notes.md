@@ -1,5 +1,10 @@
 # Follow-up Runs A and B: the shared pod launcher (notes for review; no spend)
 
+**Review round 2** (`docs/revision/roster/{sol,astra}-f2-launcher-r2.md`, both reject). Changes: the launcher takes the
+run lock and the spend-record checks before the ledger snapshot, PRIOR and the reservation check (a launch held before
+the lock reads the ledger as it is under the lock); `convergence_v2.py` ends the gate at once with exit 4 after a measured
+mismatch, so no later cell starts and no later stop can mask it; the pre-launch requirements are listed below.
+
 **Review round 1** (`docs/revision/roster/{sol,astra}-f2-launcher-r1.md`, both reject; rulings 1 and 3 to 8 accepted,
 ruling 2 accepted subject to plan amendments). Changes:
 - `convergence_v2.py`: a gate cell refused by its own admission before round 1 (`round1_gate` "not run") now exits 3 with
@@ -93,11 +98,18 @@ bundle with the comparisons recomputed; spec, bank inputs, pairing and budgets r
 8. **bash 3.2.** The run-specific remote steps are kept in a quoted heredoc assigned to a variable before the remote-script
    heredoc (no nested heredoc and no `case` inside a command substitution, which macOS bash 3.2 cannot parse).
 
-## Pre-launch steps (after review consensus)
+## Pre-launch steps (after review consensus; none done yet)
 
-1. Commit everything; note the commit C. 2. Run B only: rerun the Mac gate at C into a fresh directory, copy its two
-`gate/*__mac.json` into the bundle's `evidence/conv-gate-mac/` and rebuild the bundle tarball (no commit afterwards). 3.
-Reserve under the launch tag (ruling 2). 4. Build
-the code tarball from a clean clone at C (`tar --uid 0 --gid 0`, `COPYFILE_DISABLE=1`) and the bundle tarball. 5.
-`DRYRUN=1` guard check. 6. Launch detached with a pid file; record the spend after the watchdog ends plus an hour and the
-author's billing check, with a tag starting with the run tag.
+1. Commit every correction; note the final commit C. No commit may follow until the launch.
+2. **Run B only, required (blocker): regenerate both Run B Mac gate records at C** (`convergence_v2.py --gate --site mac
+   --cells headline@rho0.2|F111|X7-SC|profit,fresh1@rho0.2|F111|D2+H3|profit` into a fresh directory, free, on the Mac).
+   The current records bind 51b71d2 and the old driver and plan hashes, so the pod would refuse them; the launcher
+   refuses Run B until both bind to EXPECT.
+3. **Rebuild the bundle:** copy the two new `gate/*__mac.json` into `results/v2/followup2-bundle/evidence/conv-gate-mac/`
+   and rebuild the bundle tarball (`COPYFILE_DISABLE=1`).
+4. Reserve under the launch tag (ruling 2): `budget_followup.py --reserve runner-up-<tag> 3.12` or
+   `--reserve convergence-<tag> 4.42`.
+5. Build the code tarball from a clean clone at C (`tar --uid 0 --gid 0`, `COPYFILE_DISABLE=1`).
+6. `DRYRUN=1` guard check.
+7. Launch detached with a pid file. Record the spend after the watchdog ends plus an hour and the author's billing check,
+   under the launch tag.

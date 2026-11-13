@@ -276,3 +276,53 @@ def test_the_pod_gate_exits_3_when_the_stop_file_appears_between_the_outer_and_i
             "--attempts", str(att), "--ledger", str(led), "--run-tag", "convergence", "--stop-file", str(stop), "--soft-deadline", str(now + 3600)]
     assert B.main(args) == 3
     assert (out / "cost_stop.json").exists() and not (out / "gate" / (B.R._safe(cell) + "__pod.json")).exists()
+
+
+# ---- shared launcher review r2 (Sol and Astra) ----
+
+def _pod_gate_args(tmp_path, cells):
+    import time
+    now = time.time(); att = tmp_path / "f2.attempts"; att.write_text(f"pod1 {int(now) - 60} start\n")
+    led = tmp_path / "ledger.json"; write(led, {"spent": [{"op": "followup", "tag": "reset-pod", "usd": 1.65}], "reservations": []})
+    out = tmp_path / "conv"
+    return out, tmp_path / "STOP", ["--src", str(MAIN / "eval/all"), "--out", str(out), "--report", str(MAIN / "report/report.json"), "--draw", str(MAIN / "draw/draw.json"),
+            "--instances", str(MAIN / "draw/instances.json"), "--cfgs", str(MAIN / "deviation/cfg_linux.json"), "--addendum", str(MAIN / "report/addendum.json"),
+            "--gate", "--site", "pod", "--cells", ",".join(cells), "--cap-usd", "4.25", "--usd-per-hour", "0.70", "--started-at", str(int(now) - 60),
+            "--attempts", str(att), "--ledger", str(led), "--run-tag", "convergence", "--stop-file", str(tmp_path / "STOP"), "--soft-deadline", str(now + 3600)]
+
+
+@pytest.mark.skipif(not (MAIN / "eval/all/freeze").is_dir(), reason="needs the registered evaluation records")
+@pytest.mark.parametrize("second", ["outer", "inner"])
+def test_a_measured_gate_mismatch_exits_4_at_once_and_no_later_cell_starts(tmp_path, monkeypatch, second):
+    """r2: the first gate cell fails its measured comparison; the second cell would be refused by the outer admission (a
+    STOP file appears) or by its own inner admission. Exit 4 with the failed record and the inventory; the second never starts."""
+    monkeypatch.setattr(B.R, "git_commit", lambda: "pinned-for-the-rerun-check")
+    cells = list(B.GATE_CELLS); calls = []
+    out, stop, args = _pod_gate_args(tmp_path, cells)
+    def fake_gate_cell(job, *a, **k):
+        calls.append(job["id"])
+        if len(calls) == 1:
+            if second == "outer":
+                stop.write_text("")
+            return {"stage": "convergence gate", "cell": job["id"], "pass": False, "cost_stopped": False, "cost": None, "comparison": {"pass": False, "problems": ["knob"]}}
+        return {"stage": "convergence gate", "cell": job["id"], "pass": False, "cost_stopped": True, "cost": {"stopped_before": "round 1"}}
+    monkeypatch.setattr(B, "gate_cell", fake_gate_cell)
+    assert B.main(args) == 4
+    assert calls == [cells[0]]
+    assert read(out / "gate" / (B.R._safe(cells[0]) + "__pod.json"))["pass"] is False and (out / "inventory.json").exists()
+    assert not (out / "cost_stop.json").exists()
+
+
+@pytest.mark.skipif(not (MAIN / "eval/all/freeze").is_dir(), reason="needs the registered evaluation records")
+def test_without_a_measured_mismatch_a_later_admission_refusal_still_exits_3(tmp_path, monkeypatch):
+    monkeypatch.setattr(B.R, "git_commit", lambda: "pinned-for-the-rerun-check")
+    cells = list(B.GATE_CELLS); calls = []
+    out, stop, args = _pod_gate_args(tmp_path, cells)
+    def fake_gate_cell(job, *a, **k):
+        calls.append(job["id"])
+        if len(calls) == 1:
+            stop.write_text("")
+            return {"stage": "convergence gate", "cell": job["id"], "pass": True, "cost_stopped": False, "cost": None, "comparison": {"pass": True}}
+        raise AssertionError("the second cell must not start after the STOP file")
+    monkeypatch.setattr(B, "gate_cell", fake_gate_cell)
+    assert B.main(args) == 3 and calls == [cells[0]] and (out / "cost_stop.json").exists()

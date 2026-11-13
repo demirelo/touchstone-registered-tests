@@ -9,7 +9,12 @@
 # scenarios. The generated remote scripts of both runs are executed under a scratch root with a stub `uv` for every end
 # state, and the embedded verifier is run on prepared directories.
 set -u; H=$(mktemp -d); cd $H; SRC=/Users/oemer.demirel/Projects/touchstone/results/pods
-sed "s#P=/Users/oemer.demirel/Projects/touchstone/results/pods#P=$H#; s#snapf=\"/Users/oemer.demirel/Projects/touchstone/results/pods/snap_#snapf=\"$H/snap_#" $SRC/followup2_pod.sh > followup2_pod.sh
+python3 $SRC/case_end_check.py $SRC/followup2_pod.sh || { echo "HARNESS FAILED (a case branch ends inside a comment)"; exit 1; }
+sed "s#P=/Users/oemer.demirel/Projects/touchstone/results/pods#P=$H#; s#snapf=\"/Users/oemer.demirel/Projects/touchstone/results/pods/snap_#snapf=\"$H/snap_#; s#^PY=/opt/homebrew/bin/python3;#PY=$H/pywrap;#" $SRC/followup2_pod.sh > followup2_pod.sh
+grep -q "^PY=$H/pywrap;" followup2_pod.sh || { echo "HARNESS FAILED (python wrapper not installed)"; exit 1; }
+printf '%s\n' '#!/bin/bash' '# holds a launch with F2HOLD=1 at its tarball guard while hold_guard exists (review r2 scenario)' \
+  'case "$*" in *tarfile*getmembers*) [ -n "${F2HOLD:-}" ] && while [ -e "$(dirname "$0")/hold_guard" ]; do sleep 1; done ;; esac' \
+  'exec /opt/homebrew/bin/python3 "$@"' > pywrap; chmod +x pywrap
 cp $SRC/podctl.py .
 mkdir -p g && (cd g && git init -q && git -c commit.gpgsign=false -c user.email=x@x -c user.name=x commit -q --allow-empty -m x && git -c tag.gpgsign=false tag protocol-v2 && COPYFILE_DISABLE=1 tar --uid 0 --gid 0 -czf ../c.tgz .)
 C=$(git -C g rev-parse HEAD); export HC=$C
@@ -122,7 +127,7 @@ if v == "badrow":
 open("ledger.json", "w").write(json.dumps(d))
 EOF
 }
-fail=0; ran=0; TOTAL=34
+fail=0; ran=0; TOTAL=35
 run() { # name state cap creates rc [end-pattern] [watchdog-log-substring] [launcher-output-substring]; env RUNV (A), BUN
   [ -n "${ONLY:-}" ] && ! echo "$1" | grep -q "$ONLY" && return 0   # smoke runs only; a full run sets no ONLY
   r=${RUNV:-A}; rl=$(echo $r | tr AB ab); T=${TAGV:-t}; N=ts-f2$rl; LG=logs_f2${rl}_$T
@@ -166,6 +171,31 @@ PRELOCK=1 TAGV=u LEDGERV=tagu run "the run-level lock refuses a launch of the sa
 LEDGERV=badrow run "a malformed ledger row is refused" '{"pods":{},"price":0.56,"up":true,"log":[]}' 3 0 1 "" "" "^refused: a malformed spend row in the ledger"
 RUNV=B BUN=bbad.tgz run "Run B is refused when its Mac gate records are not bound to EXPECT" '{"pods":{},"price":0.56,"up":true,"log":[]}' 4.25 0 1 "" "" "^bundle refused"
 RUNV=B DRY=1 run "Run B dry run: every guard passes, no pod" '{"pods":{},"price":0.56,"up":true,"log":[]}' 4.25 0 0 "" "" "^dry run: guards passed; no pod created"
+# --- review r2 (Sol 1): a second launch of the same run and tag, held before the lock while the first launch runs, ends
+# and has its spend recorded (the ledger replaces the reservation by a spend row), must be refused when it resumes: it
+# reads the ledger only under the lock. Before the fix it had validated the stale ledger and created a second pod.
+ran=$((ran+1)); echo "== a second launch held before the lock validates the ledger as it is under the lock (r2)"
+echo '{"pods":{},"price":0.9,"up":true,"log":[]}' > state.json; mkdir -p logs_f2a_t junk; : > logs_f2a_t/watchdog.log; : > ts-f2a.wdpid
+for f in ts-f2a.bal0 ts-f2a.spent ts-f2a.wdend; do [ -e $f ] && mv -- $f junk/$f.r2; done
+ledger ok 0; touch hold_guard; rm -f run2.rc
+( F2HOLD=1 EXPECT=$C MAXCPH=0.70 LEDGER=$H/ledger.json bash followup2_pod.sh A c.tgz b.tgz t 3 out2 > run2.out 2>&1; echo $? > run2.rc ) &
+sleep 5
+EXPECT=$C MAXCPH=0.70 LEDGER=$H/ledger.json perl -e 'alarm 1500; exec @ARGV' bash followup2_pod.sh A c.tgz b.tgz t 3 out > run.out 2>&1; l1=$?
+wd=$(cat ts-f2a.wdpid 2>/dev/null); for i in $(seq 1 800); do [ -n "$wd" ] && kill -0 "$wd" 2>/dev/null || break; sleep 3; done
+echo "0.012 USD balance difference (test)" > ts-f2a.spent                    # podctl.py spend, then the ledger record
+python3 - <<'PYR'
+import json
+d = json.load(open("ledger.json")); d["reservations"] = [r for r in d["reservations"] if r["tag"] != "runner-up-t"]
+d["spent"].append({"op": "followup", "tag": "runner-up-t", "usd": 0.012}); json.dump(d, open("ledger.json", "w"))
+PYR
+mv -- hold_guard junk/hold_guard.r2
+for i in $(seq 1 400); do [ -e run2.rc ] && break; sleep 3; done
+wd2=$(cat ts-f2a.wdpid 2>/dev/null); for i in $(seq 1 800); do [ -n "$wd2" ] && kill -0 "$wd2" 2>/dev/null || break; sleep 3; done
+creates=$(python3 -c "import json;s=json.load(open('state.json'));print(sum(1 for l in s['log'] if l.startswith('create')))")
+echo "first launch exit $l1; second launch exit $(cat run2.rc 2>/dev/null); creation requests $creates (expected 1)"; grep -E "^refused|end:" run2.out | tail -2
+{ [ "$l1" = 1 ] && [ "$(cat run2.rc 2>/dev/null)" = 1 ] && [ "$creates" = 1 ] && grep -q "^refused: runner-up-t already has a spend record" run2.out; } || { echo "SCENARIO FAILED (delayed second launch)"; fail=1; }
+[ -d ts-f2a.launchlock ] && { echo "SCENARIO FAILED (launch lock not released)"; fail=1; }
+python3 podctl.py unlock ts-f2a >/dev/null 2>&1; [ -e ts-f2a.spent ] && mv -- ts-f2a.spent junk/ts-f2a.spent.r2b; [ -e ts-f2a.bal0 ] && mv -- ts-f2a.bal0 junk/ts-f2a.bal0.r2b; true
 # --- the shared pre-pod path (from the churn harness), with Run A
 NOTOUT="pull or verification failed" run "price above the ceiling: deleted at once, no retrieval" '{"pods":{},"price":0.9,"up":true,"log":[]}' 3 1 1 "PRICE 0.9 NOT IN \(0, 0.70\]"
 NOTOUT="pull or verification failed" run "null price: deleted at once (r12)" '{"pods":{},"price":null,"up":true,"log":[]}' 3 1 1 "PRICE unknown NOT IN \(0, 0.70\]"
