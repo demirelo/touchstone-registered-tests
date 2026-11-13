@@ -425,6 +425,21 @@ def table(res: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
+def combine(first: dict, mid: dict, tol: float = 1e-12) -> dict:
+    """Amendment 1 section 3: one table over p = 0, 0.01, 0.02, 0.03, 0.05. Both arms read the same registered no-churn
+    records, so their p = 0 point estimates must agree (g per rule, d, q); a difference refuses the merge."""
+    def ests(b):
+        return [b["g"][r]["pooled"]["estimate"] for r in RULES] + [b["d"]["pooled"]["estimate"], b["q"]["pooled"]["estimate"]]
+    out = {}
+    for v in VERS:
+        a, b = ests(first[v]["0"]), ests(mid[v]["0"])
+        if any((x is None) != (y is None) or (x is not None and abs(x - y) > tol) for x, y in zip(a, b)):
+            raise ValueError(f"the two arms' no-churn values differ ({v}): {a} vs {b}")
+        allc = {**{c: first[v][c] for c in first[v]}, **{c: mid[v][c] for c in mid[v]}}
+        out[v] = {c: allc[c] for c in ("0",) + tuple(f"{p:g}" for p in sorted(ALLOWED)) if c in allc}
+    return out
+
+
 def _sha(p: Path):
     return hashlib.sha256(p.read_bytes()).hexdigest() if p.exists() else None
 
@@ -444,11 +459,17 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
     markets = tuple(f"fresh{i}" for i in range(6)); ch = Path(a.churn)
     try:
-        rates = tuple(float(x) for x in a.rates.split(","))
+        rates = tuple(sorted(float(x) for x in a.rates.split(",")))      # order-free (review churn-mid-r1)
     except ValueError:
         ap.error("--rates must be numbers")
     if not rates or len(set(rates)) != len(rates) or not set(rates) <= ALLOWED:
         ap.error("--rates must list distinct rates from 0.01, 0.02, 0.03, 0.05")
+    mid = set(rates) == {0.02, 0.03}
+    if not (rates == RATES or mid):
+        ap.error("--rates must be the draft-6 set 0.01,0.05 or the amendment-1 set 0.02,0.03")
+    if mid and not a.first:
+        ap.error("--rates 0.02,0.03 needs --first (draft 6's churn.json) to score expectations 5 to 8")
+    first = json.loads(Path(a.first).read_text()) if mid else None
     conds = ("0",) + tuple(f"{p:g}" for p in rates)
     data = load(a.records, ch, a.report, markets, a.n_seeds, rates)
     res = analyse(data, a.resamples, a.seed)
@@ -458,7 +479,7 @@ def main(argv=None) -> int:
             validate_diagnostics(d, markets, a.n_seeds, data["seeds"])
     out = {"label": LABEL, "statistics": res, "flags": data["flags"], "flag_summary": flag_summary(data["flags"]),
            "expectations": (expectations(res, diags.get("0.05")) if rates == RATES else
-                            expectations_mid(res, diags, json.loads(Path(a.first).read_text())) if a.first and set(rates) == {0.02, 0.03} else {}),
+                            expectations_mid(res, diags, first)),
            "review_r4": review_r4(res, data, diags),
            "diagnostics": {c: (diag_summary(d) if d else None) for c, d in diags.items()},
            "inputs": {"records": str(a.records), "churn": str(ch), "report_sha256": _sha(Path(a.report)),
@@ -467,6 +488,9 @@ def main(argv=None) -> int:
                       **{f"diagnostics_p{c}_sha256": _sha(ch / f"p{c}" / "diagnostics.json") for c in conds[1:]}}}
     if a.first:
         out["inputs"]["first_sha256"] = _sha(Path(a.first))
+    combined = combine(first["statistics"], res) if mid else None      # raises before any file is written
+    if mid:
+        out["combined_no_churn_check"] = "ok"
     if a.posthoc:
         out["registered_check"] = registered_check(res, json.loads(Path(a.posthoc).read_text())["doubled"]["D2+H3"])
         out["inputs"]["posthoc_sha256"] = _sha(Path(a.posthoc))
@@ -474,6 +498,8 @@ def main(argv=None) -> int:
     d = Path(a.tables); d.mkdir(parents=True, exist_ok=True)
     name = "posthoc_churn.tex" if rates == RATES else "posthoc_churn_mid.tex"
     (d / name).write_text(table(res).replace("C*", "C$^*$"))
+    if combined is not None:
+        (d / "posthoc_churn_all.tex").write_text(table(combined).replace("C*", "C$^*$"))
     return 0
 
 

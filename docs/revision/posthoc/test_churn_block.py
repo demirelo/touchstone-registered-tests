@@ -430,3 +430,66 @@ def test_cli_with_amendment_rates_scores_5_to_8(tmp_path):
     with pytest.raises(SystemExit):
         CB.main(["--records", str(ea2), "--churn", str(ch2), "--report", str(rep2), "--out", str(out), "--tables", str(tmp_path / "t3"),
                  "--rates", "0.02,0.04"])
+
+
+# Review churn-mid-r1 caveats (Sol and Astra): --first required for the amendment rates, rate order irrelevant, and the
+# combined five-condition table promised in amendment section 3.
+def _first_and_mid(tmp_path):
+    r1dir = tmp_path / "first"; ea, ch, rep_ = _tree(r1dir, _gains(noise=0.01))
+    for c in ("0.01", "0.05"):
+        _write(ch / f"p{c}" / "diagnostics.json", _full_diag(n=40, seeds=range(1000, 1040)))
+    first = tmp_path / "churn.json"
+    assert CB.main(["--records", str(ea), "--churn", str(ch), "--report", str(rep_), "--out", str(first), "--tables", str(tmp_path / "t1"),
+                    "--n-seeds", "40", "--resamples", "99"]) == 0
+    ea2, ch2, rep2 = _tree(tmp_path / "mid", _gains(rates=MID, noise=0.01), rates=MID)
+    for c in ("0.02", "0.03"):
+        _write(ch2 / f"p{c}" / "diagnostics.json", _full_diag(n=40, seeds=range(1000, 1040)))
+    return first, ["--records", str(ea2), "--churn", str(ch2), "--report", str(rep2), "--n-seeds", "40", "--resamples", "99"], (ea, ch, rep_)
+
+
+def test_amendment_rates_require_first(tmp_path):
+    first, mid, _ = _first_and_mid(tmp_path)
+    with pytest.raises(SystemExit):
+        CB.main(mid + ["--out", str(tmp_path / "x.json"), "--tables", str(tmp_path / "tx"), "--rates", "0.02,0.03"])
+    assert not (tmp_path / "x.json").exists()
+
+
+def test_rate_order_does_not_change_the_expectations(tmp_path):
+    first, mid, (ea, ch, rep_) = _first_and_mid(tmp_path)
+    out = tmp_path / "rev.json"
+    assert CB.main(["--records", str(ea), "--churn", str(ch), "--report", str(rep_), "--out", str(out), "--tables", str(tmp_path / "tr"),
+                    "--n-seeds", "40", "--resamples", "99", "--rates", "0.05,0.01"]) == 0
+    assert set(json.loads(out.read_text())["expectations"]) == {"1", "2", "3", "4"}
+    assert (tmp_path / "tr" / "posthoc_churn.tex").exists()
+    out2 = tmp_path / "mid_rev.json"
+    assert CB.main(mid + ["--out", str(out2), "--tables", str(tmp_path / "tm"), "--rates", "0.03,0.02", "--first", str(first)]) == 0
+    assert set(json.loads(out2.read_text())["expectations"]) == {"5", "6", "7", "8"}
+
+
+def test_other_rate_sets_are_refused(tmp_path):
+    first, mid, _ = _first_and_mid(tmp_path)
+    for r in ("0.02", "0.01,0.02", "0.01,0.02,0.03,0.05"):
+        with pytest.raises(SystemExit):
+            CB.main(mid + ["--out", str(tmp_path / "y.json"), "--tables", str(tmp_path / "ty"), "--rates", r, "--first", str(first)])
+
+
+def test_combined_table_lists_all_five_conditions_for_both_versions(tmp_path):
+    first, mid, _ = _first_and_mid(tmp_path)
+    out = tmp_path / "churn_mid.json"
+    assert CB.main(mid + ["--out", str(out), "--tables", str(tmp_path / "tc"), "--rates", "0.02,0.03", "--first", str(first)]) == 0
+    t = (tmp_path / "tc" / "posthoc_churn_all.tex").read_text()
+    rows = [l for l in t.splitlines() if l.startswith(("frozen", "doubled"))]
+    assert len(rows) == 10
+    for v in ("frozen", "doubled"):
+        assert [l.split(" & ")[1] for l in rows if l.startswith(v)] == ["0 (registered)", "0.01", "0.02", "0.03", "0.05"]
+    assert json.loads(out.read_text())["combined_no_churn_check"] == "ok"
+
+
+def test_combined_table_refuses_a_first_arm_whose_no_churn_values_differ(tmp_path):
+    first, mid, _ = _first_and_mid(tmp_path)
+    f = json.loads(first.read_text())
+    f["statistics"]["base"]["0"]["g"]["F111"]["pooled"]["estimate"] += 0.01
+    bad = tmp_path / "bad_first.json"; bad.write_text(json.dumps(f))
+    with pytest.raises(ValueError, match="no-churn"):
+        CB.main(mid + ["--out", str(tmp_path / "z.json"), "--tables", str(tmp_path / "tz"), "--rates", "0.02,0.03", "--first", str(bad)])
+    assert not (tmp_path / "z.json").exists()
