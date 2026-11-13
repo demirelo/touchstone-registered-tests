@@ -1,0 +1,634 @@
+{
+ "D2+H3": {
+  "base": {
+   "cstar_minus_r3": {
+    "category": "equivalent, direction R3 lower",
+    "estimate": 0.02072000551319045,
+    "interval": [
+     0.0200108046858237,
+     0.021445954914459397
+    ],
+    "level": 0.95,
+    "market_intervals": {
+     "fresh0": [
+      0.019550905035097037,
+      0.022729947984713325
+     ],
+     "fresh1": [
+      0.05074870332902722,
+      0.05434428228470457
+     ],
+     "fresh2": [
+      0.02676269036724234,
+      0.030283330784887708
+     ],
+     "fresh3": [
+      -0.039868168213829214,
+      -0.03656077676937214
+     ],
+     "fresh4": [
+      0.041989239809055834,
+      0.04570891290034365
+     ],
+     "fresh5": [
+      0.014638851583860187,
+      0.01831662734218711
+     ]
+    },
+    "markets": {
+     "fresh0": 0.021141253469674638,
+     "fresh1": 0.05252177188565417,
+     "fresh2": 0.028540099916228225,
+     "fresh3": -0.03820729077136015,
+     "fresh4": 0.04384136831493004,
+     "fresh5": 0.016482830264015792
+    },
+    "resamples": 9999,
+    "scope": "nominal paired percentile bootstrap over seeds, conditional on these markets and the selected policies and references; no search or market-sampling uncertainty; no registered calibration or Holm guarantee",
+    "seed": 0
+   },
+   "cstar_minus_runner_up": {
+    "estimate": 0.030954791919399056,
+    "interval": [
+     0.029875498073346808,
+     0.03204600126072136
+    ],
+    "level": 0.95,
+    "market_intervals": {
+     "fresh0": [
+      0.033383725069247965,
+      0.03700869479663149
+     ],
+     "fresh1": [
+      0.04831072185998114,
+      0.05250811984858377
+     ],
+     "fresh2": [
+      0.023454397328345766,
+      0.02780543573316384
+     ],
+     "fresh3": [
+      -0.045473558296689344,
+      -0.04211223634752284
+     ],
+     "fresh4": [
+      0.03990774001624323,
+      0.04551411419974685
+     ],
+     "fresh5": [
+      0.07087085413817758,
+      0.08007491485954218
+     ]
+    },
+    "markets": {
+     "fresh0": 0.035205002013590184,
+     "fresh1": 0.050398954422122305,
+     "fresh2": 0.02563083904464529,
+     "fresh3": -0.043765434244494125,
+     "fresh4": 0.042714398176027776,
+     "fresh5": 0.0755449921045029
+    },
+    "resamples": 9999,
+    "scope": "nominal paired percentile bootstrap over seeds, conditional on these markets and the selected policies and references; no search or market-sampling uncertainty; no registered calibration or Holm guarantee",
+    "seed": 0
+   },
+   "runner_up_minus_r3": {
+    "category": "equivalent, direction comparator lower",
+    "estimate": -0.010234786406208602,
+    "interval": [
+     -0.011263100707433237,
+     -0.009172720032758045
+    ],
+    "level": 0.95,
+    "market_intervals": {
+     "fresh0": [
+      -0.015848255585901062,
+      -0.012235358322074025
+     ],
+     "fresh1": [
+      0.00010378569209969602,
+      0.004239162060737711
+     ],
+     "fresh2": [
+      0.000542881677130434,
+      0.0052948499300601755
+     ],
+     "fresh3": [
+      0.004827046581299131,
+      0.006294319888799418
+     ],
+     "fresh4": [
+      -0.0012992105770115623,
+      0.003520770294538955
+     ],
+     "fresh5": [
+      -0.0635359363193404,
+      -0.05452086164868483
+     ]
+    },
+    "markets": {
+     "fresh0": -0.014063748543915549,
+     "fresh1": 0.002122817463531862,
+     "fresh2": 0.0029092608715829394,
+     "fresh3": 0.0055581434731339805,
+     "fresh4": 0.0011269701389022516,
+     "fresh5": -0.0590621618404871
+    },
+    "resamples": 9999,
+    "scope": "nominal paired percentile bootstrap over seeds, conditional on these markets and the selected policies and references; no search or market-sampling uncertainty; no registered calibration or Holm guarantee",
+    "seed": 0
+   }
+  },
+  "doubled": {
+   "cstar_minus_r3": {
+    "category": "equivalent, direction R3 lower",
+    "estimate": 0.029624480023365915,
+    "interval": [
+     0.02897866687258265,
+     0.03027174686499178
+    ],
+    "level": 0.95,
+    "market_intervals": {
+     "fresh0": [
+      0.025803340934363875,
+      0.028791130915072887
+     ],
+     "fresh1": [
+      0.0533884733430406,
+      0.056609317691693584
+     ],
+     "fresh2": [
+      0.036405324209837726,
+      0.039196446830688667
+     ],
+     "fresh3": [
+      0.014180807964881659,
+      0.015665534452223063
+     ],
+     "fresh4": [
+      0.02419981755111902,
+      0.028262758263374363
+     ],
+     "fresh5": [
+      0.014638851583860187,
+      0.01831662734218711
+     ]
+    },
+    "markets": {
+     "fresh0": 0.02731113993901113,
+     "fresh1": 0.054993972304808666,
+     "fresh2": 0.03780888229853148,
+     "fresh3": 0.01492567290701855,
+     "fresh4": 0.02622438242680989,
+     "fresh5": 0.016482830264015792
+    },
+    "resamples": 9999,
+    "scope": "nominal paired percentile bootstrap over seeds, conditional on these markets and the selected policies and references; no search or market-sampling uncertainty; no registered calibration or Holm guarantee",
+    "seed": 0
+   },
+   "cstar_minus_runner_up": {
+    "estimate": 0.03414257680898855,
+    "interval": [
+     0.03314788127196053,
+     0.03514363649103161
+    ],
+    "level": 0.95,
+    "market_intervals": {
+     "fresh0": [
+      0.021506442551511434,
+      0.024521809479144282
+     ],
+     "fresh1": [
+      0.0569046547531576,
+      0.06073397214916981
+     ],
+     "fresh2": [
+      0.0180770242423019,
+      0.0220378865807012
+     ],
+     "fresh3": [
+      0.009949198160710037,
+      0.011567089897401068
+     ],
+     "fresh4": [
+      0.014586946507337493,
+      0.01868949793640941
+     ],
+     "fresh5": [
+      0.07087085413817758,
+      0.08007491485954218
+     ]
+    },
+    "markets": {
+     "fresh0": 0.02302514816123204,
+     "fresh1": 0.05881037295441591,
+     "fresh2": 0.020083374761916132,
+     "fresh3": 0.01077921922641074,
+     "fresh4": 0.016612353645453607,
+     "fresh5": 0.0755449921045029
+    },
+    "resamples": 9999,
+    "scope": "nominal paired percentile bootstrap over seeds, conditional on these markets and the selected policies and references; no search or market-sampling uncertainty; no registered calibration or Holm guarantee",
+    "seed": 0
+   },
+   "runner_up_minus_r3": {
+    "category": "equivalent, direction comparator lower",
+    "estimate": -0.004518096785622632,
+    "interval": [
+     -0.0055220550234833425,
+     -0.0034895471048425027
+    ],
+    "level": 0.95,
+    "market_intervals": {
+     "fresh0": [
+      0.002489186780429003,
+      0.0060397236027276814
+     ],
+     "fresh1": [
+      -0.0058074323127999435,
+      -0.0017740789247158815
+     ],
+     "fresh2": [
+      0.015635877792465957,
+      0.019823921940543835
+     ],
+     "fresh3": [
+      0.0033046975380886367,
+      0.005039678685508506
+     ],
+     "fresh4": [
+      0.0076509450201817245,
+      0.011534577022456504
+     ],
+     "fresh5": [
+      -0.0635359363193404,
+      -0.05452086164868483
+     ]
+    },
+    "markets": {
+     "fresh0": 0.004285991777779093,
+     "fresh1": -0.003816400649607232,
+     "fresh2": 0.017725507536615347,
+     "fresh3": 0.00414645368060781,
+     "fresh4": 0.009612028781356285,
+     "fresh5": -0.0590621618404871
+    },
+    "resamples": 9999,
+    "scope": "nominal paired percentile bootstrap over seeds, conditional on these markets and the selected policies and references; no search or market-sampling uncertainty; no registered calibration or Holm guarantee",
+    "seed": 0
+   }
+  },
+  "expectation": {
+   "base": true,
+   "doubled": true,
+   "score": "met",
+   "statement": "pooled g(C*) - g(runner-up) > 0 under D2+H3 (the runner-up leaves the lower gain), base and doubled"
+  },
+  "flags": {
+   "fresh0": {
+    "attack_change": 0.025771979868276396,
+    "incomplete": true,
+    "reference_change": 0.0
+   },
+   "fresh1": {
+    "attack_change": 0.0,
+    "incomplete": false,
+    "reference_change": 0.0
+   },
+   "fresh2": {
+    "attack_change": 0.015816665456095835,
+    "incomplete": true,
+    "reference_change": 0.0
+   },
+   "fresh3": {
+    "attack_change": 6.70403617319959e-06,
+    "incomplete": false,
+    "reference_change": 0.0
+   },
+   "fresh4": {
+    "attack_change": 0.018892857508927052,
+    "incomplete": true,
+    "reference_change": 0.0
+   },
+   "fresh5": {
+    "attack_change": 0.0,
+    "incomplete": false,
+    "reference_change": 0.0
+   }
+  },
+  "label": "exploratory, after the report; nominal paired percentile bootstrap over seeds, conditional on these markets and the selected policies and references; no search or market-sampling uncertainty; no registered calibration or Holm guarantee"
+ },
+ "X7-SC": {
+  "base": {
+   "cstar_minus_r3": {
+    "category": "equivalent, direction R3 lower",
+    "estimate": 0.024318963497430204,
+    "interval": [
+     0.023619829307655094,
+     0.025010759149877864
+    ],
+    "level": 0.95,
+    "market_intervals": {
+     "fresh0": [
+      0.019550905035097037,
+      0.022729947984713325
+     ],
+     "fresh1": [
+      0.05074870332902722,
+      0.05434428228470457
+     ],
+     "fresh2": [
+      0.02676269036724234,
+      0.030283330784887708
+     ],
+     "fresh3": [
+      -0.004988058620355405,
+      -0.003524828107959025
+     ],
+     "fresh4": [
+      0.029437650554463343,
+      0.03354158354779378
+     ],
+     "fresh5": [
+      0.014638851583860187,
+      0.01831662734218711
+     ]
+    },
+    "markets": {
+     "fresh0": 0.021141253469674638,
+     "fresh1": 0.05252177188565417,
+     "fresh2": 0.028540099916228225,
+     "fresh3": -0.0042565245034226155,
+     "fresh4": 0.03148434995243102,
+     "fresh5": 0.016482830264015792
+    },
+    "resamples": 9999,
+    "scope": "nominal paired percentile bootstrap over seeds, conditional on these markets and the selected policies and references; no search or market-sampling uncertainty; no registered calibration or Holm guarantee",
+    "seed": 0
+   },
+   "cstar_minus_runner_up": {
+    "estimate": 0.031552095642401155,
+    "interval": [
+     0.03050241694642258,
+     0.03258359924775745
+    ],
+    "level": 0.95,
+    "market_intervals": {
+     "fresh0": [
+      0.02591588950228864,
+      0.029509961765149337
+     ],
+     "fresh1": [
+      0.04831072185998114,
+      0.05250811984858377
+     ],
+     "fresh2": [
+      0.023454397328345766,
+      0.02780543573316384
+     ],
+     "fresh3": [
+      -0.010604095271144325,
+      -0.00902173871541265
+     ],
+     "fresh4": [
+      0.017723784722988422,
+      0.02211141688123507
+     ],
+     "fresh5": [
+      0.07087085413817758,
+      0.08007491485954218
+     ]
+    },
+    "markets": {
+     "fresh0": 0.02764513038719361,
+     "fresh1": 0.050398954422122305,
+     "fresh2": 0.02563083904464529,
+     "fresh3": -0.009814667976556595,
+     "fresh4": 0.019907325872499423,
+     "fresh5": 0.0755449921045029
+    },
+    "resamples": 9999,
+    "scope": "nominal paired percentile bootstrap over seeds, conditional on these markets and the selected policies and references; no search or market-sampling uncertainty; no registered calibration or Holm guarantee",
+    "seed": 0
+   },
+   "runner_up_minus_r3": {
+    "category": "equivalent, direction comparator lower",
+    "estimate": -0.007233132144970949,
+    "interval": [
+     -0.00822272672417962,
+     -0.006205463187123818
+    ],
+    "level": 0.95,
+    "market_intervals": {
+     "fresh0": [
+      -0.008190907174022625,
+      -0.004919302993429573
+     ],
+     "fresh1": [
+      0.00010378569209969602,
+      0.004239162060737711
+     ],
+     "fresh2": [
+      0.000542881677130434,
+      0.0052948499300601755
+     ],
+     "fresh3": [
+      0.004827046581299131,
+      0.006294319888799418
+     ],
+     "fresh4": [
+      0.00978122844822888,
+      0.01338922660875976
+     ],
+     "fresh5": [
+      -0.0635359363193404,
+      -0.05452086164868483
+     ]
+    },
+    "markets": {
+     "fresh0": -0.006503876917518978,
+     "fresh1": 0.002122817463531862,
+     "fresh2": 0.0029092608715829394,
+     "fresh3": 0.0055581434731339805,
+     "fresh4": 0.0115770240799316,
+     "fresh5": -0.0590621618404871
+    },
+    "resamples": 9999,
+    "scope": "nominal paired percentile bootstrap over seeds, conditional on these markets and the selected policies and references; no search or market-sampling uncertainty; no registered calibration or Holm guarantee",
+    "seed": 0
+   }
+  },
+  "doubled": {
+   "cstar_minus_r3": {
+    "category": "equivalent, direction R3 lower",
+    "estimate": 0.02428988597794812,
+    "interval": [
+     0.023599441878543983,
+     0.024991644978611963
+    ],
+    "level": 0.95,
+    "market_intervals": {
+     "fresh0": [
+      0.016548400116331085,
+      0.019956674770346804
+     ],
+     "fresh1": [
+      0.05074870332902722,
+      0.05434428228470457
+     ],
+     "fresh2": [
+      0.02676269036724234,
+      0.030283330784887708
+     ],
+     "fresh3": [
+      -0.0032135031078050586,
+      -0.0016042417037872925
+     ],
+     "fresh4": [
+      0.029437650554463343,
+      0.03354158354779378
+     ],
+     "fresh5": [
+      0.015398699925668592,
+      0.019229782030485226
+     ]
+    },
+    "markets": {
+     "fresh0": 0.018278661554136058,
+     "fresh1": 0.05252177188565417,
+     "fresh2": 0.028540099916228225,
+     "fresh3": -0.002394789623880396,
+     "fresh4": 0.03148434995243102,
+     "fresh5": 0.017309222183119647
+    },
+    "resamples": 9999,
+    "scope": "nominal paired percentile bootstrap over seeds, conditional on these markets and the selected policies and references; no search or market-sampling uncertainty; no registered calibration or Holm guarantee",
+    "seed": 0
+   },
+   "cstar_minus_runner_up": {
+    "estimate": 0.021469816148341786,
+    "interval": [
+     0.02062471227901926,
+     0.022311344485638398
+    ],
+    "level": 0.95,
+    "market_intervals": {
+     "fresh0": [
+      0.02591588950228864,
+      0.029509961765149337
+     ],
+     "fresh1": [
+      0.04831072185998114,
+      0.05250811984858377
+     ],
+     "fresh2": [
+      0.023454397328345766,
+      0.02780543573316384
+     ],
+     "fresh3": [
+      -0.00879722921628134,
+      -0.007146428396648646
+     ],
+     "fresh4": [
+      0.017723784722988422,
+      0.02211141688123507
+     ],
+     "fresh5": [
+      0.010408154358180176,
+      0.015950763060802522
+     ]
+    },
+    "markets": {
+     "fresh0": 0.02764513038719361,
+     "fresh1": 0.050398954422122305,
+     "fresh2": 0.02563083904464529,
+     "fresh3": -0.007952933097014375,
+     "fresh4": 0.019907325872499423,
+     "fresh5": 0.013189580260604461
+    },
+    "resamples": 9999,
+    "scope": "nominal paired percentile bootstrap over seeds, conditional on these markets and the selected policies and references; no search or market-sampling uncertainty; no registered calibration or Holm guarantee",
+    "seed": 0
+   },
+   "runner_up_minus_r3": {
+    "category": "equivalent, direction R3 lower",
+    "estimate": 0.002820069829606336,
+    "interval": [
+     0.0020746874159898515,
+     0.0035852191683027196
+    ],
+    "level": 0.95,
+    "market_intervals": {
+     "fresh0": [
+      -0.01087441800846145,
+      -0.007913580146077478
+     ],
+     "fresh1": [
+      0.00010378569209969602,
+      0.004239162060737711
+     ],
+     "fresh2": [
+      0.000542881677130434,
+      0.0052948499300601755
+     ],
+     "fresh3": [
+      0.004827046581299131,
+      0.006294319888799418
+     ],
+     "fresh4": [
+      0.00978122844822888,
+      0.01338922660875976
+     ],
+     "fresh5": [
+      0.001811557593935613,
+      0.0064636207086590505
+     ]
+    },
+    "markets": {
+     "fresh0": -0.009366468833057553,
+     "fresh1": 0.002122817463531862,
+     "fresh2": 0.0029092608715829394,
+     "fresh3": 0.0055581434731339805,
+     "fresh4": 0.0115770240799316,
+     "fresh5": 0.004119641922515186
+    },
+    "resamples": 9999,
+    "scope": "nominal paired percentile bootstrap over seeds, conditional on these markets and the selected policies and references; no search or market-sampling uncertainty; no registered calibration or Holm guarantee",
+    "seed": 0
+   }
+  },
+  "flags": {
+   "fresh0": {
+    "attack_change": 0.0,
+    "incomplete": false,
+    "reference_change": 0.0
+   },
+   "fresh1": {
+    "attack_change": 0.0,
+    "incomplete": false,
+    "reference_change": 0.0
+   },
+   "fresh2": {
+    "attack_change": 0.0,
+    "incomplete": false,
+    "reference_change": 0.0
+   },
+   "fresh3": {
+    "attack_change": 0.0,
+    "incomplete": false,
+    "reference_change": 0.0
+   },
+   "fresh4": {
+    "attack_change": 0.0,
+    "incomplete": false,
+    "reference_change": 0.0
+   },
+   "fresh5": {
+    "attack_change": 0.04143026254161397,
+    "incomplete": true,
+    "reference_change": 0.0
+   }
+  },
+  "label": "exploratory, after the report; nominal paired percentile bootstrap over seeds, conditional on these markets and the selected policies and references; no search or market-sampling uncertainty; no registered calibration or Holm guarantee"
+ }
+}
