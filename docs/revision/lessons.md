@@ -104,3 +104,9 @@ Guard: tests `test_r12_settle_counts_only_after_done`, `test_r12_creation_answer
   target from a failed `mkdir`), so `cp` overwrote the old Mac gate records in place. Nothing was lost (copies are in
   `f2_bundle_a.tgz`). Guard: `results/pods/trash.sh` (copy in `docs/revision/followup/`) fails on no paths, a missing
   path or a failed move (negative tests run 2026-11-13); every replace is `trash.sh OLD && cp NEW`.
+
+- 2026-11-13, Run A: the launcher verifies the pulled inventories only after RUN OK, so a run that ends "STOPPED BEFORE"
+  comes back unchecked. Run A's records were then checked by hand with the launcher's own `verify` body (161 + 27, 0 bad).
+  Guard (written rule, launcher frozen while Run B runs): after any pod end other than RUN OK, run
+  `sed -n '86,96p' followup2_pod.sh > verify_inv.py; python3 verify_inv.py <dir>` on every output directory before any
+  analysis; fix in the launcher before its next use (verify on every end state that pulled records).
