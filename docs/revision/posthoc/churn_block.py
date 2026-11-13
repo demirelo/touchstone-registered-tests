@@ -18,8 +18,10 @@ from pathlib import Path
 import numpy as np
 
 RULES = ("F111", "C*", "F000")
-RATES = (0.01, 0.05)
+RATES = (0.01, 0.05)                  # draft 6; amendment 1 runs (0.02, 0.03) with --rates
+ALLOWED = {0.01, 0.02, 0.03, 0.05}
 CONDS = ("0",) + tuple(f"{p:g}" for p in RATES)
+T5 = 2.5705818366147395                # t quantile, 0.975, 5 degrees of freedom (six markets)
 VERS = ("base", "doubled")
 B = 9999
 SEED = 20261110                       # fixed bootstrap seed (the plan's date of specification)
@@ -50,14 +52,20 @@ def _arrays(src: dict, what: str, n_seeds: int) -> dict:
         if not np.all(np.isfinite(a)):
             raise ValueError(f"{what}: non-finite {k}")
         out[k] = a
+    if "eff_attack" in src:                # round-4 review block: efficiency under the selected attack
+        e = np.asarray(src["eff_attack"], dtype=float)
+        if e.ndim != 1 or e.size != n_seeds or not np.all(np.isfinite(e)):
+            raise ValueError(f"{what}: eff_attack is not {n_seeds} finite values")
+        out["eff_attack"] = e
     return out
 
 
-def load(eval_all, churn_dir, report_path, markets, n_seeds: int = 200) -> dict:
+def load(eval_all, churn_dir, report_path, markets, n_seeds: int = 200, rates=RATES) -> dict:
     """Per-seed arrays {ver: {cond: {market: {rule: {gain, profit_attack, profit_ref}}}}}, the doubling flags of the churn
     cells, and the missing cells. Refuses if a market's seed lists differ between any rule, rate, version or no churn."""
     report = json.loads(Path(report_path).read_text())
-    cells = {v: {c: {m: {} for m in markets} for c in CONDS} for v in VERS}
+    conds = ("0",) + tuple(f"{p:g}" for p in rates)
+    cells = {v: {c: {m: {} for m in markets} for c in conds} for v in VERS}
     flags, missing, seed_lists = {}, [], {}
     for m in markets:
         seeds = None
@@ -65,7 +73,7 @@ def load(eval_all, churn_dir, report_path, markets, n_seeds: int = 200) -> dict:
             rid = f"{m}@rho0.2|{r}|D2+H3|profit"
             srcs = {("base", "0"): _read(Path(eval_all) / "evaluate" / (safe(rid) + ".json")),
                     ("doubled", "0"): (report.get("doubling", {}).get(rid) or {}).get("heldout")}
-            for p in RATES:
+            for p in rates:
                 c = f"{p:g}"; cid = f"{rid}|churn{c}"; d = Path(churn_dir) / f"p{c}"
                 srcs[("base", c)] = _read(d / "evaluate" / (safe(cid) + ".json"))
                 dbl = _read(d / "doubling" / (safe(cid) + ".json"))
@@ -83,7 +91,7 @@ def load(eval_all, churn_dir, report_path, markets, n_seeds: int = 200) -> dict:
                     raise ValueError(f"seeds of {rid} ({v}, p = {c}) differ from the market's seed list")
                 cells[v][c][m][r] = _arrays(src, f"{rid} ({v}, p = {c})", n_seeds)
         seed_lists[m] = seeds
-    return {"cells": cells, "flags": flags, "missing": missing, "markets": tuple(markets), "seeds": seed_lists}
+    return {"cells": cells, "flags": flags, "missing": missing, "markets": tuple(markets), "seeds": seed_lists, "conds": conds}
 
 
 def _market_stats(data: dict, m: str, idx=None) -> dict:
@@ -91,7 +99,7 @@ def _market_stats(data: dict, m: str, idx=None) -> dict:
     out = {}
     pick = (lambda a: a) if idx is None else (lambda a: a[idx])
     for v in VERS:
-        for c in CONDS:
+        for c in data["conds"]:
             x = data["cells"][v][c][m]
             for r, a in x.items():
                 out[f"{v}|{c}|g|{r}"] = float(np.mean(pick(a["gain"])))
@@ -144,7 +152,7 @@ def _build(data: dict, reps=None) -> dict:
     res = {}
     for v in VERS:
         res[v] = {}
-        for c in CONDS:
+        for c in data["conds"]:
             b = {"g": {r: entry(f"{v}|{c}|g|{r}") for r in RULES}, "d": entry(f"{v}|{c}|d|", True),
                  "q": entry(f"{v}|{c}|q|", True),
                  "profit": {r: {"attack": entry(f"{v}|{c}|pa|{r}"), "reference": entry(f"{v}|{c}|pr|{r}")} for r in RULES}}
@@ -165,7 +173,7 @@ def statistics(data: dict) -> dict:
 def analyse(data: dict, b: int = B, seed: int = SEED) -> dict:
     """Point estimates with paired percentile intervals and sign counts over the markets."""
     rng = np.random.default_rng(seed); ms = data["markets"]
-    n = {m: next((len(a["gain"]) for v in VERS for c in CONDS for a in data["cells"][v][c][m].values()), 0) for m in ms}
+    n = {m: next((len(a["gain"]) for v in VERS for c in data["conds"] for a in data["cells"][v][c][m].values()), 0) for m in ms}
     reps = [{m: (_market_stats(data, m, rng.integers(0, n[m], n[m])) if n[m] else {}) for m in ms} for _ in range(b)]
     res = _build(data, reps)
     res["missing"] = list(data["missing"])
@@ -216,6 +224,95 @@ def expectations(res: dict, diagnostics: dict | None) -> dict:
     out["4"] = {"text": "p = 0.05: pooled audited share of honest replacements aged [0, 10) higher under R3 than C* and B3",
                 **e4, "verdict": _verdict({w: e4[w]["holds"] for w in VERS})}
     return out
+
+
+def expectations_mid(res: dict, diags: dict, first: dict) -> dict:
+    """Amendment 1, section 2 (expectations 5 to 8), scored like draft 6 section 6. `first` is churn.json of draft 6."""
+    out, e5, e6, e7, e8 = {}, {}, {}, {}, {}
+    fs = first["statistics"]
+    for w in VERS:
+        try:
+            s01, s05 = (first["diagnostics"][c][f"F111|{w}"]["pooled_bins"]["honest_replacement"][0]["share"] for c in ("0.01", "0.05"))
+            s02, s03 = (diags[c]["pooled"][f"F111|{w}"]["honest_replacement"][0]["share"] for c in ("0.02", "0.03"))
+        except (TypeError, KeyError, IndexError):
+            s01 = s05 = s02 = s03 = None
+        ok = None if None in (s01, s05, s02, s03) else (s05 < s03 < s02 < s01)
+        e5[w] = {"0.01": s01, "0.02": s02, "0.03": s03, "0.05": s05, "holds": ok}
+    for v in VERS:
+        d2, d3 = _est(res[v]["0.02"]["d"]), _est(res[v]["0.03"]["d"])
+        e6[v] = {"0.02": d2, "0.03": d3, "holds": None if d2 is None or d3 is None else d3 < d2}
+        g2, g0, g5 = _est(res[v]["0.02"]["g"]["F111"]), _est(res[v]["0"]["g"]["F111"]), _est(fs[v]["0.05"]["g"]["F111"])
+        mid = None if g0 is None or g5 is None else (g0 + g5) / 2
+        e7[v] = {"0.02": g2, "midpoint": mid, "holds": None if g2 is None or mid is None else g2 < mid}
+        mk = res[v]["0.02"]["q"]["markets"]; pos = sum(x > 0 for x in mk.values())
+        e8[v] = {"positive": pos, "markets": len(mk), "holds": None if len(mk) < 6 else pos >= 5}
+    out["5"] = {"text": "R3 first-bin audited share of honest replacements: below its p = 0.01 value, above its p = 0.05 value, lower at 0.03 than at 0.02",
+                **e5, "verdict": _verdict({w: e5[w]["holds"] for w in VERS})}
+    out["6"] = {"text": "pooled C* - R3 lower at p = 0.03 than at p = 0.02", **e6, "verdict": _verdict({v: e6[v]["holds"] for v in VERS})}
+    out["7"] = {"text": "pooled g_0.02(R3) below the midpoint of the no-churn and p = 0.05 values", **e7, "verdict": _verdict({v: e7[v]["holds"] for v in VERS})}
+    out["8"] = {"text": "B3 - R3 positive on at least five of six markets at p = 0.02", **e8, "verdict": _verdict({v: e8[v]["holds"] for v in VERS})}
+    return out
+
+
+def audit_allocation(diag: dict) -> dict:
+    """Round-4 review (post hoc): per rule and winner, from the per-episode counts summed per market and averaged over markets
+    with equal weights: the share of served jobs held by honest identities younger than ten rounds (replacement and initial),
+    their share of all audits, the audited rate of established honest jobs (ten rounds or older), the focal provider's share
+    of served jobs and its audited rate; and the winner's replacement switch x per market."""
+    out = {}
+    for r in RULES:
+        for w in VERS:
+            rows, xs = [], {}
+            for k, cell in sorted(diag.get("cells", {}).items()):
+                m, rule = k.split("@")[0], k.split("|")[-1]
+                if rule != r or w not in cell:
+                    continue
+                sh = cell[w]["shares"]
+                t = {c: [[sum(e[c][b][j] for e in sh["per_episode"]) for j in (0, 1)] for b in range(len(AGE_BINS))] for c in CATS}
+                served = sum(t[c][b][0] for c in CATS for b in range(len(AGE_BINS)))
+                audits = sum(t[c][b][1] for c in CATS for b in range(len(AGE_BINS)))
+                yh = [t["honest_replacement"][0][j] + t["honest_initial"][0][j] for j in (0, 1)]
+                eh = [sum(t[c][b][j] for c in ("honest_replacement", "honest_initial") for b in range(1, len(AGE_BINS))) for j in (0, 1)]
+                fo = [sum(t["focal"][b][j] for b in range(len(AGE_BINS))) for j in (0, 1)]
+                div = lambda a, b: a / b if b else None
+                rows.append({"young_honest_job_share": div(yh[0], served), "young_honest_audit_share": div(yh[1], audits),
+                             "established_honest_audit_rate": div(eh[1], eh[0]), "focal_job_share": div(fo[0], served),
+                             "focal_audit_rate": div(fo[1], fo[0])})
+                xs[m] = (cell[w].get("knobs") or {}).get("x")
+            mean = lambda k: (float(np.mean([x[k] for x in rows if x[k] is not None])) if any(x[k] is not None for x in rows) else None)
+            out[f"{r}|{w}"] = {k: mean(k) for k in ("young_honest_job_share", "young_honest_audit_share",
+                                                     "established_honest_audit_rate", "focal_job_share", "focal_audit_rate")}
+            out[f"{r}|{w}"].update(markets=len(rows), x_by_market=xs)
+    return out
+
+
+def review_r4(res: dict, data: dict | None, diags: dict) -> dict:
+    """Post hoc block after external review round 4 (Fable 5.2): t intervals over the six market means of d and q (5 degrees
+    of freedom), pooled efficiency under the selected attack, and the audit allocation per rate. Not part of the plan."""
+    t95 = {}
+    for v in VERS:
+        t95[v] = {}
+        for c in res[v]:
+            if c == "0" or not isinstance(res[v][c], dict) or "d" not in res[v][c]:
+                continue
+            t95[v][c] = {}
+            for s in ("d", "q"):
+                xs = np.array(list(res[v][c][s]["markets"].values()), dtype=float)
+                if xs.size == 6:
+                    half = T5 * xs.std(ddof=1) / math.sqrt(6)
+                    t95[v][c][s] = {"mean": float(xs.mean()), "ci": [float(xs.mean() - half), float(xs.mean() + half)]}
+    eff = {}
+    if data is not None:
+        for v in VERS:
+            eff[v] = {}
+            for c in data["conds"]:
+                eff[v][c] = {}
+                for r in RULES:
+                    ms = [float(np.mean(data["cells"][v][c][m][r]["eff_attack"])) for m in data["markets"]
+                          if r in data["cells"][v][c][m] and "eff_attack" in data["cells"][v][c][m][r]]
+                    eff[v][c][r] = float(np.mean(ms)) if len(ms) == len(data["markets"]) else None
+    return {"label": "post hoc, after external review round 4; not part of the plan", "t95": t95, "eff_attack": eff,
+            "audit_allocation": {c: audit_allocation(d) for c, d in diags.items() if d}}
 
 
 def registered_check(res: dict, reg: dict) -> dict:
@@ -317,13 +414,13 @@ def _fmt(e, d: int = 3) -> str:
 
 
 def table(res: dict) -> str:
-    name = {"0": "0 (registered)", "0.01": "0.01", "0.05": "0.05"}
+    name = {"0": "0 (registered)"}
     lines = ["\\begin{tabular}{llccccc}", "\\toprule",
              "Winner & $p$ & $g$(R3) & $g$(C*) & $g$(B3) & $d$ = C*$-$R3 & $q$ = B3$-$R3 \\\\", "\\midrule"]
     for v in VERS:
-        for c in CONDS:
+        for c in [k for k in res[v] if k in ("0",) or k.replace(".", "", 1).isdigit()]:
             b = res[v][c]
-            lines.append(f"{'frozen' if v == 'base' else v} & {name[c]} & " + " & ".join([_fmt(b["g"][r]) for r in RULES] + [_fmt(b["d"]), _fmt(b["q"])]) + " \\\\")
+            lines.append(f"{'frozen' if v == 'base' else v} & {name.get(c, c)} & " + " & ".join([_fmt(b["g"][r]) for r in RULES] + [_fmt(b["d"]), _fmt(b["q"])]) + " \\\\")
     lines += ["\\bottomrule", "\\end{tabular}"]
     return "\n".join(lines) + "\n"
 
@@ -341,28 +438,42 @@ def main(argv=None) -> int:
     ap.add_argument("--out", required=True); ap.add_argument("--tables", required=True)
     ap.add_argument("--posthoc", default=None, help="posthoc.json, to check the registered no-churn values")
     ap.add_argument("--n-seeds", dest="n_seeds", type=int, default=200)
+    ap.add_argument("--rates", default=",".join(f"{p:g}" for p in RATES), help="draft 6: 0.01,0.05; amendment 1: 0.02,0.03")
+    ap.add_argument("--first", default=None, help="churn.json of draft 6 (needed to score expectations 5 to 8)")
     ap.add_argument("--resamples", type=int, default=B); ap.add_argument("--seed", type=int, default=SEED)
     a = ap.parse_args(argv)
     markets = tuple(f"fresh{i}" for i in range(6)); ch = Path(a.churn)
-    data = load(a.records, ch, a.report, markets, a.n_seeds)
+    try:
+        rates = tuple(float(x) for x in a.rates.split(","))
+    except ValueError:
+        ap.error("--rates must be numbers")
+    if not rates or len(set(rates)) != len(rates) or not set(rates) <= ALLOWED:
+        ap.error("--rates must list distinct rates from 0.01, 0.02, 0.03, 0.05")
+    conds = ("0",) + tuple(f"{p:g}" for p in rates)
+    data = load(a.records, ch, a.report, markets, a.n_seeds, rates)
     res = analyse(data, a.resamples, a.seed)
-    diags = {c: _read(ch / f"p{c}" / "diagnostics.json") for c in CONDS[1:]}
+    diags = {c: _read(ch / f"p{c}" / "diagnostics.json") for c in conds[1:]}
     for d in diags.values():
         if d is not None:
             validate_diagnostics(d, markets, a.n_seeds, data["seeds"])
     out = {"label": LABEL, "statistics": res, "flags": data["flags"], "flag_summary": flag_summary(data["flags"]),
-           "expectations": expectations(res, diags.get("0.05")),
+           "expectations": (expectations(res, diags.get("0.05")) if rates == RATES else
+                            expectations_mid(res, diags, json.loads(Path(a.first).read_text())) if a.first and set(rates) == {0.02, 0.03} else {}),
+           "review_r4": review_r4(res, data, diags),
            "diagnostics": {c: (diag_summary(d) if d else None) for c, d in diags.items()},
            "inputs": {"records": str(a.records), "churn": str(ch), "report_sha256": _sha(Path(a.report)),
                       "run_json_sha256": _sha(ch / "run.json"),
-                      **{f"inventory_p{c}_sha256": _sha(ch / f"p{c}" / "inventory.json") for c in CONDS[1:]},
-                      **{f"diagnostics_p{c}_sha256": _sha(ch / f"p{c}" / "diagnostics.json") for c in CONDS[1:]}}}
+                      **{f"inventory_p{c}_sha256": _sha(ch / f"p{c}" / "inventory.json") for c in conds[1:]},
+                      **{f"diagnostics_p{c}_sha256": _sha(ch / f"p{c}" / "diagnostics.json") for c in conds[1:]}}}
+    if a.first:
+        out["inputs"]["first_sha256"] = _sha(Path(a.first))
     if a.posthoc:
         out["registered_check"] = registered_check(res, json.loads(Path(a.posthoc).read_text())["doubled"]["D2+H3"])
         out["inputs"]["posthoc_sha256"] = _sha(Path(a.posthoc))
     Path(a.out).write_text(json.dumps(out, indent=1) + "\n")
     d = Path(a.tables); d.mkdir(parents=True, exist_ok=True)
-    (d / "posthoc_churn.tex").write_text(table(res).replace("C*", "C$^*$"))
+    name = "posthoc_churn.tex" if rates == RATES else "posthoc_churn_mid.tex"
+    (d / name).write_text(table(res).replace("C*", "C$^*$"))
     return 0
 
 

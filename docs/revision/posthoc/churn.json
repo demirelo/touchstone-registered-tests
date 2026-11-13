@@ -5327,6 +5327,313 @@
    "verdict": "met"
   }
  },
+ "review_r4": {
+  "label": "post hoc, after external review round 4; not part of the plan",
+  "t95": {
+   "base": {
+    "0.01": {
+     "d": {
+      "mean": 0.0014685139205764541,
+      "ci": [
+       -0.01927172727348825,
+       0.022208755114641154
+      ]
+     },
+     "q": {
+      "mean": 0.17458445418390203,
+      "ci": [
+       -0.037576463783156766,
+       0.38674537215096083
+      ]
+     }
+    },
+    "0.05": {
+     "d": {
+      "mean": -0.17343029484308567,
+      "ci": [
+       -0.3521775296758135,
+       0.005316939989642194
+      ]
+     },
+     "q": {
+      "mean": -0.051982103200608754,
+      "ci": [
+       -0.11941576913085748,
+       0.015451562729639975
+      ]
+     }
+    }
+   },
+   "doubled": {
+    "0.01": {
+     "d": {
+      "mean": -0.004234640388155182,
+      "ci": [
+       -0.04074546338958707,
+       0.03227618261327671
+      ]
+     },
+     "q": {
+      "mean": 0.1533192983274888,
+      "ci": [
+       -0.023437151628098812,
+       0.3300757482830764
+      ]
+     }
+    },
+    "0.05": {
+     "d": {
+      "mean": -0.1689615646642766,
+      "ci": [
+       -0.3391429998580962,
+       0.0012198705295430323
+      ]
+     },
+     "q": {
+      "mean": -0.03252041465266145,
+      "ci": [
+       -0.06374484052737835,
+       -0.0012959887779445504
+      ]
+     }
+    }
+   }
+  },
+  "eff_attack": {
+   "base": {
+    "0": {
+     "F111": 0.9937176734830401,
+     "C*": 0.9928513477897809,
+     "F000": 0.9591329195239946
+    },
+    "0.01": {
+     "F111": 0.9891347694611223,
+     "C*": 0.9930468381206886,
+     "F000": 0.9592548447709485
+    },
+    "0.05": {
+     "F111": 0.966785403665904,
+     "C*": 0.9930123495827604,
+     "F000": 0.9401550217725364
+    }
+   },
+   "doubled": {
+    "0": {
+     "F111": 0.9937817509282421,
+     "C*": 0.9932730582515269,
+     "F000": 0.9583336766081025
+    },
+    "0.01": {
+     "F111": 0.9937954064913727,
+     "C*": 0.9931404117796191,
+     "F000": 0.9589060660422145
+    },
+    "0.05": {
+     "F111": 0.9493359827258302,
+     "C*": 0.9930092197780446,
+     "F000": 0.9592767564160373
+    }
+   }
+  },
+  "audit_allocation": {
+   "0.01": {
+    "F111|base": {
+     "young_honest_job_share": 0.12855471078144617,
+     "young_honest_audit_share": 0.32816790738596135,
+     "established_honest_audit_rate": 0.17215988258063375,
+     "focal_job_share": 0.07735829182139357,
+     "focal_audit_rate": 0.36577521537964536,
+     "markets": 6,
+     "x_by_market": {
+      "fresh0": 1,
+      "fresh1": 0,
+      "fresh2": 1,
+      "fresh3": 0,
+      "fresh4": 1,
+      "fresh5": 1
+     }
+    },
+    "F111|doubled": {
+     "young_honest_job_share": 0.1249248516548485,
+     "young_honest_audit_share": 0.3096274033192192,
+     "established_honest_audit_rate": 0.1545314329644704,
+     "focal_job_share": 0.10368967495703914,
+     "focal_audit_rate": 0.5046146563790704,
+     "markets": 6,
+     "x_by_market": {
+      "fresh0": 1,
+      "fresh1": 1,
+      "fresh2": 1,
+      "fresh3": 1,
+      "fresh4": 1,
+      "fresh5": 1
+     }
+    },
+    "C*|base": {
+     "young_honest_job_share": 0.1271903795113564,
+     "young_honest_audit_share": 0.1737425163744327,
+     "established_honest_audit_rate": 0.22268484151609835,
+     "focal_job_share": 0.09139216693345169,
+     "focal_audit_rate": 0.36284968819672425,
+     "markets": 6,
+     "x_by_market": {
+      "fresh0": 1,
+      "fresh1": 1,
+      "fresh2": 1,
+      "fresh3": 1,
+      "fresh4": 1,
+      "fresh5": 1
+     }
+    },
+    "C*|doubled": {
+     "young_honest_job_share": 0.12560489237891928,
+     "young_honest_audit_share": 0.1719698537959681,
+     "established_honest_audit_rate": 0.22262355765267738,
+     "focal_job_share": 0.10331707999218555,
+     "focal_audit_rate": 0.3643604662592597,
+     "markets": 6,
+     "x_by_market": {
+      "fresh0": 1,
+      "fresh1": 1,
+      "fresh2": 1,
+      "fresh3": 1,
+      "fresh4": 1,
+      "fresh5": 1
+     }
+    },
+    "F000|base": {
+     "young_honest_job_share": 0.12529776736313353,
+     "young_honest_audit_share": 0.12505133333333335,
+     "established_honest_audit_rate": 0.2504707654447746,
+     "focal_job_share": 0.11012642889719333,
+     "focal_audit_rate": 0.2507335949613814,
+     "markets": 6,
+     "x_by_market": {
+      "fresh0": 1,
+      "fresh1": 1,
+      "fresh2": 1,
+      "fresh3": 1,
+      "fresh4": 1,
+      "fresh5": 1
+     }
+    },
+    "F000|doubled": {
+     "young_honest_job_share": 0.12529776736313353,
+     "young_honest_audit_share": 0.12505133333333335,
+     "established_honest_audit_rate": 0.2504730809204648,
+     "focal_job_share": 0.11012642889719333,
+     "focal_audit_rate": 0.2507231782947148,
+     "markets": 6,
+     "x_by_market": {
+      "fresh0": 1,
+      "fresh1": 1,
+      "fresh2": 1,
+      "fresh3": 1,
+      "fresh4": 1,
+      "fresh5": 1
+     }
+    }
+   },
+   "0.05": {
+    "F111|base": {
+     "young_honest_job_share": 0.3905586162052601,
+     "young_honest_audit_share": 0.8228771364668943,
+     "established_honest_audit_rate": 0.07780740442477439,
+     "focal_job_share": 0.0883605959486541,
+     "focal_audit_rate": 0.042389512021891514,
+     "markets": 6,
+     "x_by_market": {
+      "fresh0": 1,
+      "fresh1": 0,
+      "fresh2": 0,
+      "fresh3": 1,
+      "fresh4": 0,
+      "fresh5": 1
+     }
+    },
+    "F111|doubled": {
+     "young_honest_job_share": 0.3936505161694539,
+     "young_honest_audit_share": 0.8279684960247122,
+     "established_honest_audit_rate": 0.07790120362273562,
+     "focal_job_share": 0.08141683942261034,
+     "focal_audit_rate": 0.027915561947723183,
+     "markets": 6,
+     "x_by_market": {
+      "fresh0": 1,
+      "fresh1": 0,
+      "fresh2": 0,
+      "fresh3": 1,
+      "fresh4": 0,
+      "fresh5": 1
+     }
+    },
+    "C*|base": {
+     "young_honest_job_share": 0.38504154763695236,
+     "young_honest_audit_share": 0.5232129720185753,
+     "established_honest_audit_rate": 0.17691544634107162,
+     "focal_job_share": 0.10274831007798653,
+     "focal_audit_rate": 0.2922612556221013,
+     "markets": 6,
+     "x_by_market": {
+      "fresh0": 1,
+      "fresh1": 1,
+      "fresh2": 1,
+      "fresh3": 1,
+      "fresh4": 1,
+      "fresh5": 1
+     }
+    },
+    "C*|doubled": {
+     "young_honest_job_share": 0.3848918208542183,
+     "young_honest_audit_share": 0.5155474944798777,
+     "established_honest_audit_rate": 0.17392731858303315,
+     "focal_job_share": 0.10310457909054409,
+     "focal_audit_rate": 0.3196117762563589,
+     "markets": 6,
+     "x_by_market": {
+      "fresh0": 1,
+      "fresh1": 1,
+      "fresh2": 1,
+      "fresh3": 1,
+      "fresh4": 1,
+      "fresh5": 1
+     }
+    },
+    "F000|base": {
+     "young_honest_job_share": 0.38341439974550445,
+     "young_honest_audit_share": 0.3832066666666667,
+     "established_honest_audit_rate": 0.2503707005553852,
+     "focal_job_share": 0.11012780714163806,
+     "focal_audit_rate": 0.2506210219309236,
+     "markets": 6,
+     "x_by_market": {
+      "fresh0": 1,
+      "fresh1": 1,
+      "fresh2": 1,
+      "fresh3": 1,
+      "fresh4": 1,
+      "fresh5": 1
+     }
+    },
+    "F000|doubled": {
+     "young_honest_job_share": 0.3834159253090201,
+     "young_honest_audit_share": 0.38327233333333327,
+     "established_honest_audit_rate": 0.25037219487901247,
+     "focal_job_share": 0.1101351684882531,
+     "focal_audit_rate": 0.250575917764257,
+     "markets": 6,
+     "x_by_market": {
+      "fresh0": 1,
+      "fresh1": 1,
+      "fresh2": 1,
+      "fresh3": 1,
+      "fresh4": 1,
+      "fresh5": 1
+     }
+    }
+   }
+  }
+ },
  "diagnostics": {
   "0.01": {
    "F111|base": {

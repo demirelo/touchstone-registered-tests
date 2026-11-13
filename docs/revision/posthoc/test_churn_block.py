@@ -13,31 +13,32 @@ M6 = tuple(f"fresh{i}" for i in range(6))
 RATES = (0.01, 0.05)
 
 
-def _rec(gain, seeds, pa=None, pr=None):
+def _rec(gain, seeds, pa=None, pr=None, eff=None):
     g = np.asarray(gain, float)
     pa = g + 1.0 if pa is None else np.asarray(pa, float)
     pr = pa - g if pr is None else np.asarray(pr, float)
-    return {"seeds": list(seeds), "gain": g.tolist(), "profit_attack": pa.tolist(), "profit_ref": pr.tolist()}
+    return {"seeds": list(seeds), "gain": g.tolist(), "profit_attack": pa.tolist(), "profit_ref": pr.tolist(),
+            "eff_attack": (np.full(g.size, 0.9) if eff is None else np.asarray(eff, float)).tolist()}
 
 
 def _write(path: Path, obj):
     path.parent.mkdir(parents=True, exist_ok=True); path.write_text(json.dumps(obj))
 
 
-def _gains(n=40, noise=0.0, seed=0, base=None, shift=None):
+def _gains(n=40, noise=0.0, seed=0, base=None, shift=None, rates=RATES):
     """Per-seed gains {cond: {ver: {m: {rule: array}}}}; cond 0 is no churn. Shared noise per market and seed."""
     base = base or {"F111": 0.06, "C*": 0.08, "F000": 0.23}
     shift = shift or {}
     rng = np.random.default_rng(seed); out = {}
     e = {m: (rng.normal(0, noise, n) if noise else np.zeros(n)) for m in M6}
-    for c in (0,) + RATES:
+    for c in (0,) + tuple(rates):
         out[c] = {}
         for v in ("base", "doubled"):
             out[c][v] = {m: {r: base[r] + shift.get((c, v, r), 0.0) + e[m] for r in CB.RULES} for m in M6}
     return out
 
 
-def _tree(tmp: Path, gains: dict, n=40, seeds=None, flags=None):
+def _tree(tmp: Path, gains: dict, n=40, seeds=None, flags=None, rates=RATES):
     """Writes the registered no-churn records (eval-all/evaluate and report.json doubling) and the churn records."""
     seeds = list(range(1000, 1000 + n)) if seeds is None else seeds
     ea, ch = tmp / "eval-all", tmp / "churn"; report = {"doubling": {}}
@@ -47,7 +48,7 @@ def _tree(tmp: Path, gains: dict, n=40, seeds=None, flags=None):
             _write(ea / "evaluate" / (CB.safe(rid) + ".json"), _rec(gains[0]["base"][m][r], seeds))
             report["doubling"][rid] = {"attack_change": 0.0, "reference_change": 0.0, "incomplete": False, "kind": "x",
                                        "heldout": _rec(gains[0]["doubled"][m][r], seeds)}
-            for p in RATES:
+            for p in rates:
                 cid = f"{rid}|churn{p:g}"; d = ch / f"p{p:g}"
                 _write(d / "evaluate" / (CB.safe(cid) + ".json"), _rec(gains[p]["base"][m][r], seeds))
                 fl = (flags or {}).get((p, m, r), {"attack_change": 0.0, "reference_change": 0.0, "incomplete": False})
@@ -229,7 +230,8 @@ def _full_diag(n=4, share_r3=0.6, markets=M6, seeds=None):
                     sh[c] = rows
                 sh.update(per_episode=per, honest_replacements_per_episode=18.0, focal_newest_by_creation=[0.5] * n,
                           focal_newest_by_first_offer_assigned=[0.25] * n)
-                cells.setdefault(f"{m}@rho0.2|{r}", {})[w] = {"seeds": list(range(n)) if seeds is None else list(seeds), "shares": sh}
+                cells.setdefault(f"{m}@rho0.2|{r}", {})[w] = {"seeds": list(range(n)) if seeds is None else list(seeds), "shares": sh,
+                                                             "knobs": {"x": i % 2}}
                 bins_by_m[m] = sh
             pooled[f"{r}|{w}"] = {}
             for c in ("honest_replacement", "honest_initial", "focal"):
@@ -332,3 +334,99 @@ def test_cli_writes_the_result_with_input_hashes_and_a_table(tmp_path):
     assert set(res["expectations"]) == {"1", "2", "3", "4"}
     t = (tab / "posthoc_churn.tex").read_text()
     assert t.count("\\\\") >= 6 and "C$^*$" in t and "C*" not in t.replace("C$^*$", "")
+
+
+# Amendment 1 (rates 0.02 and 0.03) and the round-4 review block (post hoc, labelled), written before the code.
+MID = (0.02, 0.03)
+
+
+def test_rates_option_reads_the_amendment_rates(tmp_path):
+    g = _gains(rates=MID, shift={(0.03, "base", "F111"): 0.05})
+    data = CB.load(*_tree(tmp_path, g, rates=MID), markets=M6, n_seeds=40, rates=MID)
+    s = CB.statistics(data)
+    assert set(s["base"]) == {"0", "0.02", "0.03"}
+    assert s["base"]["0.03"]["change"]["g"]["F111"]["pooled"] == pytest.approx(0.05)
+    r = CB.analyse(data, b=99, seed=1)
+    assert "0.05" not in r["base"] and r["base"]["0.02"]["d"]["pooled"]["ci95"] is not None
+
+
+def test_review_r4_market_t_interval_of_the_contrasts(tmp_path):
+    g = _gains()
+    for i, m in enumerate(M6):
+        g[0.05]["base"][m]["C*"] = g[0.05]["base"][m]["C*"] + 0.01 * i          # d_0.05(m) = 0.02 + 0.01 i
+    r = CB.analyse(CB.load(*_tree(tmp_path, g), markets=M6, n_seeds=40), b=99, seed=1)
+    t = CB.review_r4(r, data=None, diags={})["t95"]["base"]["0.05"]["d"]
+    xs = np.array([0.02 + 0.01 * i for i in range(6)])
+    half = 2.5705818366147395 * xs.std(ddof=1) / np.sqrt(6)
+    assert t["mean"] == pytest.approx(xs.mean()) and t["ci"] == pytest.approx([xs.mean() - half, xs.mean() + half])
+
+
+def test_review_r4_efficiency_under_attack(tmp_path):
+    ea, ch, rep_ = _tree(tmp_path, _gains())
+    data = CB.load(ea, ch, rep_, markets=M6, n_seeds=40)
+    r = CB.analyse(data, b=99, seed=1)
+    e = CB.review_r4(r, data=data, diags={})["eff_attack"]
+    assert e["base"]["0.05"]["F111"] == pytest.approx(0.9) and e["doubled"]["0"]["C*"] == pytest.approx(0.9)
+
+
+def test_review_r4_audit_allocation_from_the_episode_counts():
+    d = _full_diag(n=4)
+    a = CB.audit_allocation(d)["F111|base"]
+    aus = [6 + (i % 2) for i in range(6)]
+    assert a["young_honest_job_share"] == pytest.approx(20 / 54)
+    assert a["young_honest_audit_share"] == pytest.approx(np.mean([2 * x / (3 * (x + 1)) for x in aus]))
+    assert a["established_honest_audit_rate"] == pytest.approx(1 / 8)
+    assert a["focal_job_share"] == pytest.approx(1 / 3)
+    assert a["focal_audit_rate"] == pytest.approx(np.mean([(x + 1) / 18 for x in aus]))
+    assert a["x_by_market"] == {m: i % 2 for i, m in enumerate(M6)}
+
+
+def _first(r_first, s01=0.88, s05=0.57):
+    """A churn.json-shaped first arm: statistics and the R3 first-bin shares at 0.01 and 0.05."""
+    pb = lambda v: {"honest_replacement": [{"share": v, "markets": 6}] * 4}
+    return {"statistics": r_first, "diagnostics": {c: {f"F111|{w}": {"pooled_bins": pb(v)} for w in ("base", "doubled")}
+                                                   for c, v in (("0.01", s01), ("0.05", s05))}}
+
+
+def _mid_diag(s02, s03):
+    return {"0.02": {"pooled": {f"F111|{w}": {"honest_replacement": [{"share": s02, "markets": 6}] * 4} for w in ("base", "doubled")}},
+            "0.03": {"pooled": {f"F111|{w}": {"honest_replacement": [{"share": s03, "markets": 6}] * 4} for w in ("base", "doubled")}}}
+
+
+def test_expectations_5_to_8(tmp_path):
+    r1 = CB.analyse(CB.load(*_tree(tmp_path / "a", _gains(shift={(0.05, v, "F111"): 0.2 for v in ("base", "doubled")})),
+                            markets=M6, n_seeds=40), b=99, seed=1)                         # g_0.05(R3) = 0.26
+    g = _gains(rates=MID, shift={(0.03, v, "F111"): 0.01 for v in ("base", "doubled")})   # d_0.03 < d_0.02
+    rm = CB.analyse(CB.load(*_tree(tmp_path / "b", g, rates=MID), markets=M6, n_seeds=40, rates=MID), b=99, seed=1)
+    e = CB.expectations_mid(rm, _mid_diag(0.8, 0.7), _first(r1))
+    assert [e[k]["verdict"] for k in ("5", "6", "7", "8")] == ["met", "met", "met", "met"]
+    assert CB.expectations_mid(rm, _mid_diag(0.7, 0.8), _first(r1))["5"]["verdict"] == "failed"     # not lower at 0.03
+    assert CB.expectations_mid(rm, _mid_diag(0.9, 0.7), _first(r1))["5"]["verdict"] == "failed"     # above the 0.01 value
+    g2 = _gains(rates=MID, shift={(0.02, "base", "F111"): 0.2})                                     # frozen g_0.02 = 0.26 > midpoint 0.16
+    rm2 = CB.analyse(CB.load(*_tree(tmp_path / "c", g2, rates=MID), markets=M6, n_seeds=40, rates=MID), b=99, seed=1)
+    e2 = CB.expectations_mid(rm2, _mid_diag(0.8, 0.7), _first(r1))
+    assert e2["7"]["verdict"] == "not established" and e2["7"]["base"]["midpoint"] == pytest.approx(0.16)
+    assert e2["6"]["verdict"] == "failed"                                # d_0.03 above (frozen) or equal to (doubled) d_0.02
+    assert e2["8"]["base"]["positive"] == 0 and e2["8"]["verdict"] == "not established"
+
+
+def test_cli_with_amendment_rates_scores_5_to_8(tmp_path):
+    r1dir = tmp_path / "first"; ea, ch, rep_ = _tree(r1dir, _gains(noise=0.01))
+    for c in ("0.01", "0.05"):
+        _write(ch / f"p{c}" / "diagnostics.json", _full_diag(n=40, seeds=range(1000, 1040)))
+    first = tmp_path / "churn.json"
+    assert CB.main(["--records", str(ea), "--churn", str(ch), "--report", str(rep_), "--out", str(first), "--tables", str(tmp_path / "t1"),
+                    "--n-seeds", "40", "--resamples", "99"]) == 0
+    g = _gains(rates=MID, noise=0.01); ea2, ch2, rep2 = _tree(tmp_path / "mid", g, rates=MID)
+    for c in ("0.02", "0.03"):
+        _write(ch2 / f"p{c}" / "diagnostics.json", _full_diag(n=40, seeds=range(1000, 1040)))
+    out = tmp_path / "churn_mid.json"
+    assert CB.main(["--records", str(ea2), "--churn", str(ch2), "--report", str(rep2), "--out", str(out), "--tables", str(tmp_path / "t2"),
+                    "--n-seeds", "40", "--resamples", "99", "--rates", "0.02,0.03", "--first", str(first)]) == 0
+    res = json.loads(out.read_text())
+    assert set(res["expectations"]) == {"5", "6", "7", "8"} and "review_r4" in res and res["review_r4"]["label"].startswith("post hoc")
+    assert set(res["statistics"]["base"]) == {"0", "0.02", "0.03"}
+    assert (tmp_path / "t2" / "posthoc_churn_mid.tex").exists()
+    with pytest.raises(SystemExit):
+        CB.main(["--records", str(ea2), "--churn", str(ch2), "--report", str(rep2), "--out", str(out), "--tables", str(tmp_path / "t3"),
+                 "--rates", "0.02,0.04"])
