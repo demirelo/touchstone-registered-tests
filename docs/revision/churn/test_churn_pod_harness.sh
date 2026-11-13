@@ -7,13 +7,14 @@
 # stated, a watchdog log line, a launcher output line, and a line that must not appear (NOTOUT).
 set -u; H=$(mktemp -d); cd $H; SRC=/Users/oemer.demirel/Projects/touchstone/results/pods
 sed "s#P=/Users/oemer.demirel/Projects/touchstone/results/pods#P=$H#; s#snapf=\"/Users/oemer.demirel/Projects/touchstone/results/pods/snap_#snapf=\"$H/snap_#" $SRC/churn_pod.sh > churn_pod.sh
+python3 $SRC/case_end_check.py $SRC/churn_pod.sh || { echo "HARNESS FAILED (a case branch ends inside a comment)"; exit 1; }
 cp $SRC/podctl.py .
 mkdir -p g && (cd g && git init -q && git -c commit.gpgsign=false -c user.email=x@x -c user.name=x commit -q --allow-empty -m x && git -c tag.gpgsign=false tag protocol-v2 && COPYFILE_DISABLE=1 tar --uid 0 --gid 0 -czf ../c.tgz .)
 C=$(git -C g rev-parse HEAD); echo x > b; tar czf b.tgz b; export HC=$C
 # prepared remote outputs with inventories, for the RUN OK scenario
 python3 - <<'EOF'
 import hashlib, json, os
-for d in ("remote/followup-churn/gate-p0", "remote/followup-churn/p0.01", "remote/followup-churn/p0.05"):
+for d in ("remote/followup-churn/gate-p0", "remote/followup-churn/p0.01", "remote/followup-churn/p0.05", "remote/followup-churn/p0.02", "remote/followup-churn/p0.03"):
     os.makedirs(d, exist_ok=True); open(f"{d}/r.json", "w").write('{"x": 1}')
     json.dump({"records": {"r.json": hashlib.sha256(open(f"{d}/r.json", "rb").read()).hexdigest()}}, open(f"{d}/inventory.json", "w"))
 EOF
@@ -84,7 +85,7 @@ if term:   # a stop during creation (r15): TERM the launcher while this request 
     sys.exit(1)
 print(json.dumps({"id": "" if amb else pid, "ambiguous": amb, "vcpu": 16}))
 EOF
-fail=0; ran=0; TOTAL=21
+fail=0; ran=0; TOTAL=24
 run() { # name state cap creates rc [end-pattern] [watchdog-log-substring] [launcher-output-substring]
   [ -n "${ONLY:-}" ] && ! echo "$1" | grep -q "$ONLY" && return 0   # smoke runs only; a full run sets no ONLY
   ran=$((ran+1)); echo "== $1"; echo "$2" > state.json; mkdir -p logs_c_t junk; : > logs_c_t/watchdog.log; : > ts-c-t.wdpid
@@ -124,10 +125,14 @@ PREBAL=1 EMPTYSPENT=1 run "an empty spend record does not count as recorded (r17
 run "unknown balance: no creation, lock released (r16)" '{"pods":{},"price":0.56,"up":true,"log":[],"bal_fail":true}' 5 0 1 "" "" "^refused: account balance unknown$"
 NOTOUT="pull or verification failed" run "upload failure stops the run before it starts (r15)" '{"pods":{},"price":0.56,"up":true,"log":[],"push_fail":true}' 5 1 1 "UPLOAD FAILED \(code\)"
 run "RUN OK with one corrupt pull: retried until verified" '{"pods":{},"price":0.56,"up":true,"log":[],"runok":true,"corrupt_pulls":1}' 5 1 0 "RUN OK" "" "podctl.py spend ts-c-t"
+RATES=0.02,0.03 run "amendment 1: RATES 0.02,0.03 pass to the driver and their directories are verified (churn mid)" '{"pods":{},"price":0.56,"up":true,"log":[],"runok":true}' 5 1 0 "RUN OK" "" "^verify p0.03: 1 records, 0 bad"
+grep -q -- "--rates 0.02,0.03 " pushed_r_remote.sh && ! grep -q "^verify p0.01" run.out || { echo "SCENARIO FAILED (mid rates: flag or verified directories)"; fail=1; }
+RATES=0.02,0.04 run "amendment 1: an unknown rate refuses the launch before any marker (churn mid)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 5 0 1 "" "" "^refused: RATES must list distinct rates"
 run "RUN OK with one corrupt run.json: retried until verified (churn r2)" '{"pods":{},"price":0.56,"up":true,"log":[],"runok":true,"corrupt_run":1}' 5 1 0 "RUN OK" "" "verify run.json: bad"
 run "the driver's cap admission stops the run between stages (churn)" '{"pods":{},"price":0.56,"up":true,"log":[],"remote_tail":"== STOPPED BEFORE search (cap, driver admission) 12:00"}' 5 1 1 "== STOPPED BEFORE search \(cap, driver admission\) 12:00"
 PRIORV=-1 run "a negative PRIOR refuses the launch before any marker (churn)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 5 0 1 "" "" "^refused: PRIOR must be a non-negative number"
 PRIORV=inf run "an infinite PRIOR refuses the launch before any marker (churn r1)" '{"pods":{},"price":0.56,"up":true,"log":[]}' 5 0 1 "" "" "^refused: PRIOR must be a non-negative number"
+run "the end state is the last marker of a polled tail that holds several (churn mid)" '{"pods":{},"price":0.56,"up":true,"log":[],"remote_tail":"== stage evaluate start 12:00 workers search 16, evaluation at most 9 == stage doubling start 12:30 workers search 16, evaluation at most 9 == STOPPED BEFORE diagnostics (cap, driver admission) 13:00"}' 5 1 1 "== STOPPED BEFORE diagnostics \(cap, driver admission\) 13:00"
 run "a gate cap refusal is a stop, not a gate failure (churn r1)" '{"pods":{},"price":0.56,"up":true,"log":[],"remote_tail":"== STOPPED BEFORE gate (cap, driver admission) 12:00"}' 5 1 1 "== STOPPED BEFORE gate \(cap, driver admission\) 12:00"
 # Accounting (churn r1): PRIOR 2 of a 5 USD cap, and a first pod that never answers (deleted after 240 s). The deadlines
 # leave CAP - PRIOR and HARD x CAP - PRIOR; --prior-usd is PRIOR plus the deleted attempt from its request time at the
@@ -184,7 +189,7 @@ assert all(x[:4] == ["run", "--frozen", "python", "docs/revision/churn/churn_v2.
 g = " ".join(c[0]); assert "--gate only" in g and "--require-identical" in g and "--out results/v2/followup-churn" in g and "--stage" not in g
 st = [x[x.index("--stage") + 1] for x in c[1:]]; assert st == ["inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory"], st
 for x in c[1:]:
-    j = " ".join(x); assert "--workers-search 16" in j and "--workers-eval 9" in j and "--require-identical" in j and "--out results/v2/followup-churn" in j
+    j = " ".join(x); assert "--workers-search 16" in j and "--workers-eval 9" in j and "--require-identical" in j and "--out results/v2/followup-churn" in j and "--rates 0.01,0.05" in j
 print("remote ok: 7 classifications, gate then 7 stages with the expected flags")
 PYR
 cd /; mv -- $H ~/.Trash/harness_$$

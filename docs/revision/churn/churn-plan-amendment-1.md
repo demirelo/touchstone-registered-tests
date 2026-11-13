@@ -22,8 +22,9 @@ the execution contract and gate (section 3), diagnostics (section 4), analysis (
   the p = 0.05 slowdown, 1.33, which over-states these rates).
 - Launcher: the reviewed `docs/revision/churn/churn_pod.sh` with `RATES=0.02,0.03` (a new environment setting, default
   0.01,0.05, refused unless every rate is in {0.01, 0.02, 0.03, 0.05} and none repeats; it passes `--rates` to every
-  driver call and verifies each rate directory after RUN OK). The same review also fixes the end-state parse: the polled
-  log tail holds several markers, and the launcher now reports the last one (it reported the first). Harness
+  driver call and verifies each rate directory after RUN OK). The same review covers a defensive change to the end-state
+  parse (it takes the last capitalised marker of the polled tail; the old parse gave the same result, because only end
+  states start with a capital letter). Harness
   `test_churn_pod_harness.sh`, three new scenarios.
 - Local output `results/v2/followup-churn-mid/` (the first arm's records are not touched). Run tag `churn-mid`; PRIOR 0.
 

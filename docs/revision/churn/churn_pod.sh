@@ -16,12 +16,15 @@ fi
 # ends); this launcher prints only estimates. One launch per NAME at a time (NAME.launchlock; the watchdog releases it).
 # Usage: churn_pod.sh <code_tgz> <bundle_tgz> <tag> <cap_usd> <local_out>   (no spaces in paths)
 # Env: EXPECT (commit inside the code tarball), MAXCPH, optional WEVAL (default 9), MINMEM (default 28), HARD (default 1.3),
-# PRIOR (USD recorded for earlier launches of this arm, default 0).
+# PRIOR (USD recorded for earlier launches of this arm, default 0), RATES (churn rates, default 0.01,0.05; amendment 1 adds
+# 0.02,0.03; each rate in {0.01, 0.02, 0.03, 0.05}, at most once).
 set -u
 PY=/opt/homebrew/bin/python3; P=/Users/oemer.demirel/Projects/touchstone/results/pods
 TGZ=${1:?code tarball}; BTGZ=${2:?bundle tarball}; TAG=${3:?tag}; CAP=${4:?cap_usd}; LOUT=${5:?local_out}; cd $P
 case "$TGZ$BTGZ$TAG$LOUT" in *[[:space:]]*) echo "refused: a path or tag contains whitespace"; exit 1 ;; esac
 EXPECT=${EXPECT:?commit}; MAXCPH=${MAXCPH:?max usd per hour}; WEVAL=${WEVAL:-9}; MINMEM=${MINMEM:-28}; HARD=${HARD:-1.3}; PRIOR=${PRIOR:-0}
+RATES=${RATES:-0.01,0.05}
+$PY -c "import sys; r=sys.argv[1].split(','); sys.exit(0 if r and len(set(r)) == len(r) and set(r) <= {'0.01','0.02','0.03','0.05'} else 1)" "$RATES" || { echo "refused: RATES must list distinct rates from 0.01,0.02,0.03,0.05"; exit 1; }
 $PY -c "import math,sys; x=float(sys.argv[1]); sys.exit(0 if math.isfinite(x) and x >= 0 else 1)" "$PRIOR" 2>/dev/null || { echo "refused: PRIOR must be a non-negative number"; exit 1; }
 # PRIOR counts against both deadlines (r1 review), so the arm's bound stays HARD x CAP across launches.
 $PY -c "import sys; sys.exit(0 if float(sys.argv[1]) < float(sys.argv[2]) else 1)" "$PRIOR" "$CAP" 2>/dev/null || { echo "refused: PRIOR must be below the cap"; exit 1; }
@@ -64,6 +67,7 @@ except Exception:
 print(f"verify run.json: {'ok' if ok else 'bad'}"); sys.exit(0 if ok else 1)
 PYR
 }
+verify_rates() { local r; for r in ${RATES//,/ }; do verify "$LOUT/followup-churn/p$r" || return 1; done; }   # amendment 1
 tmo() { perl -e 'alarm shift; exec @ARGV' "$@"; }
 NAME=ts-c-$TAG; DONE=$P/$NAME.done; ATT=$P/$NAME.attempts
 rm_ok() { [ -e "$1" ] && mv -- "$1" ~/.Trash/"$(basename "$1").$$"; true; }
@@ -98,7 +102,7 @@ cleanup() {
         tmo $t $PY runpod.py pull $id "/root/touchstone/results/v2/$d/" "$LOUT/$d/" >/dev/null 2>&1 || ok=0
       done
       rem=$(( hard - 120 - $(date +%s) )); [ $rem -gt 0 ] && tmo $(( rem < 300 ? rem : 300 )) $PY runpod.py pull $id /root/touchstone/results/logs/ logs_c_$TAG/ >/dev/null 2>&1
-      if [ "$state" = "RUN OK" ] && [ $ok = 1 ]; then { verify "$LOUT/followup-churn/gate-p0" && verify "$LOUT/followup-churn/p0.01" && verify "$LOUT/followup-churn/p0.05" && verify_run "$LOUT/followup-churn/run.json" $a0 $cph $PRIORT $CAP; } || ok=0; fi
+      if [ "$state" = "RUN OK" ] && [ $ok = 1 ]; then { verify "$LOUT/followup-churn/gate-p0" && verify_rates && verify_run "$LOUT/followup-churn/run.json" $a0 $cph $PRIORT $CAP; } || ok=0; fi
       [ $ok = 1 ] && break
       echo "$(date +%H:%M) pull or verification failed (try $try)"
       if [ "$state" = "RUN OK" ]; then [ "$(date +%s)" -ge $(( hard - 120 )) ] && break; else [ $try -ge 3 ] && break; fi
@@ -194,7 +198,7 @@ cat > "$RS" <<EOS
 R=\${REMOTE_ROOT:-/root}   # the pod's root; the offline harness runs this script under another root with a stub driver
 echo "== remote started \$(date +%H:%M)"
 cd \$R/touchstone || { echo "== RUN FAILED at setup \$(date +%H:%M)"; exit 1; }; export OMP_NUM_THREADS=1 PATH=\$HOME/.local/bin:\$PATH; unset TOUCHSTONE_IDENTITY_SALT; unset TOUCHSTONE_LOCKED
-B=\$R/bundle; A="--src \$B/eval-all --draw \$B/draw/draw.json --instances \$B/draw/instances.json --cfgs \$B/deviation/cfg_linux.json --addendum \$B/report/addendum.json --started $a0 --usd-per-hour $cph --prior-usd $PRIORT --stop-usd $CAP --require-identical"
+B=\$R/bundle; A="--src \$B/eval-all --draw \$B/draw/draw.json --instances \$B/draw/instances.json --cfgs \$B/deviation/cfg_linux.json --addendum \$B/report/addendum.json --started $a0 --usd-per-hour $cph --prior-usd $PRIORT --stop-usd $CAP --rates $RATES --require-identical"
 D=docs/revision/churn/churn_v2.py
 { [ -e \$R/STOP ] || [ \$(date +%s) -ge $soft ]; } && { echo "== STOPPED BEFORE gate (cap) \$(date +%H:%M)"; exit 1; }
 echo "== gate start \$(date +%H:%M)"
@@ -229,6 +233,6 @@ while true; do
   case "$st" in
     *"RUN OK"*) state="RUN OK"; rc=0; exit 0 ;;
     *"GATE FAILED"*) state="GATE FAILED (the driver reports the p = 0 gate failed: not passing or not bit-identical; churn cells not started)"; exit 1 ;;
-    *"RUN FAILED"*|*"STOPPED BEFORE"*) state="$(echo "$st" | grep -o '== [A-Z].*' | head -c 120 | sed "s/[[:space:]]*\$//")"; exit 1 ;;
+    *"RUN FAILED"*|*"STOPPED BEFORE"*) state="$(echo "$st" | sed 's/.*\(== [A-Z]\)/\1/' | head -c 120 | sed "s/[[:space:]]*\$//")"; exit 1 ;;   # the LAST marker (the tail holds several)
   esac
 done
