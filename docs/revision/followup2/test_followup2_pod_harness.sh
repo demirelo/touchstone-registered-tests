@@ -142,7 +142,7 @@ if v == "badrow":
 open("ledger.json", "w").write(json.dumps(d))
 EOF
 }
-fail=0; ran=0; TOTAL=47
+fail=0; ran=0; TOTAL=48
 run() { # name state cap creates rc [end-pattern] [watchdog-log-substring] [launcher-output-substring]; env RUNV (A), BUN
   [ -n "${ONLY:-}" ] && ! echo "$1" | grep -q "$ONLY" && return 0   # smoke runs only; a full run sets no ONLY
   r=${RUNV:-A}; rl=$(echo $r | tr AB ab); T=${TAGV:-t}; N=ts-f2$rl; LG=logs_f2${rl}_$T
@@ -286,7 +286,7 @@ cp pushed_r_remote.sh pushed_acct.sh; cp pushed_f2.attempts acct.attempts; cp pu
 mkdir -p stubbin junk
 cat > stubbin/uv <<'EOF'
 #!/bin/bash
-# stub for `uv run --frozen python <script> ...`. STUB words: admit@<hours>=refuse|crash, gate=fail|crash|cap, run=cap|fail|crash
+# stub for `uv run --frozen python <script> ...`. STUB words: admit@<hours>=refuse|crash, gate=fail|crash|cap, run=cap|fail|crash|lost|lostnoest|lostonce|lostthenerr|cellerr
 echo "$*" >> "$REMOTE_ROOT/calls.log"
 if [ -n "${REALADMIT:-}" ] && [ "${4##*/}" = guards.py ]; then         # the real admission, not a stub exit code (review r1)
   cd "$WT" && UV_CACHE_DIR="$REALCACHE" exec "$REALUV" run --frozen python docs/revision/followup2/guards.py "${@:5}"
@@ -306,7 +306,9 @@ case "$what:$act:$s" in
   run:fail:*) exit 4 ;;
   run:lost*:*) mkdir -p results/v2/followup2-conv                  # a worker lost (Run B rerun): the driver's lost_cells.json
     if [ "$act" = lostnoest ]; then echo '{"lost": ["x"]}'; else echo '{"lost": ["x"], "restart_hours": {"13": 9.9, "3": 2.75, "7": 1.5}}'; fi > results/v2/followup2-conv/lost_cells.json
-    [ "$act" = lostonce ] && { [ -e "$REMOTE_ROOT/lost1" ] && exit 0; touch "$REMOTE_ROOT/lost1"; }; exit 5 ;;
+    [ "$act" = lostonce ] && { [ -e "$REMOTE_ROOT/lost1" ] && exit 0; touch "$REMOTE_ROOT/lost1"; }
+    [ "$act" = lostthenerr ] && { [ -e "$REMOTE_ROOT/lost1" ] && exit 6; touch "$REMOTE_ROOT/lost1"; }; exit 5 ;;
+  run:cellerr:*) echo '{"cell_errors": {"x": "ValueError: boom"}}' >&2; exit 6 ;;   # an ordinary cell error (review r3)
 esac
 exit 0
 EOF
@@ -380,6 +382,24 @@ assert "--hours 2.75" in j[4] and "--workers 5 " in j[3] + " " and "--workers 3 
 print("restart ok: admission, then the stage again with 3 workers")
 PYL
 rcheck pushed_B.sh "run=lostonce admit@2.75=refuse" "== STOPPED BEFORE convergence restart \(cap, admission\)"
+# Review r3 (Astra 2): a cell error (driver exit 6) ends the run as RUN FAILED with no restart, both on the first run and
+# on the restart after a lost worker.
+ran=$((ran+1)); echo "== Run B: a cell error (exit 6) ends the run without a restart (review r3)"
+rcheck pushed_B.sh "run=cellerr" "== RUN FAILED at convergence"
+python3 - "$RCALLS" <<'PYE' || { echo "SCENARIO FAILED (Run B cell error)"; fail=1; }
+import sys
+c = [l.split() for l in sys.argv[1].splitlines()]
+assert [x[3].split("/")[-1] for x in c] == ["guards.py", "convergence_v2.py"] * 2, c
+print("cell error ok: one main run, no restart")
+PYE
+rcheck pushed_B.sh "run=lostthenerr" "== RUN FAILED at convergence"
+python3 - "$RCALLS" <<'PYE' || { echo "SCENARIO FAILED (Run B cell error on the restart)"; fail=1; }
+import sys
+c = [l.split() for l in sys.argv[1].splitlines()]
+assert [x[3].split("/")[-1] for x in c] == ["guards.py", "convergence_v2.py"] * 3, c
+assert "--workers 3 " in " ".join(c[5]) + " ", c[5]
+print("cell error on the restart ok: one restart only, then RUN FAILED")
+PYE
 # The real admission (review r1): the accounting launch's script, attempts file and ledger (PRIOR 1.2 of a 3 USD cap), with
 # the real guards.py: the reset gate (0.61 h at 0.70) is admitted, the runner-up step (2.65 h) would pass the cap and is
 # refused by the real check, so the script stops before it.
