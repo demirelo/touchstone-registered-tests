@@ -7,18 +7,8 @@
  "reservations": [
   {
    "op": "followup",
-   "tag": "churn-mid-pod",
-   "cap": 10.4
-  },
-  {
-   "op": "followup",
-   "tag": "runner-up-1",
-   "cap": 3.9
-  },
-  {
-   "op": "followup",
-   "tag": "convergence-1",
-   "cap": 5.525
+   "tag": "convergence2-1",
+   "cap": 9.1
   }
  ],
  "spent": [
@@ -141,6 +131,21 @@
    "op": "followup",
    "tag": "churn-pod",
    "usd": 4.99
+  },
+  {
+   "op": "followup",
+   "tag": "churn-mid-pod",
+   "usd": 7.7
+  },
+  {
+   "op": "followup",
+   "tag": "runner-up-1",
+   "usd": 3.14
+  },
+  {
+   "op": "followup",
+   "tag": "convergence-1",
+   "usd": 3.43
   }
  ],
  "approval": {

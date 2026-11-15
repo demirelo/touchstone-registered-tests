@@ -418,6 +418,18 @@ def test_a_cell_error_ends_the_run_without_a_restart(tmp_path, monkeypatch):
     assert not (out / "lost_cells.json").exists()
 
 
+def test_a_round1_mismatch_outranks_a_cell_error(tmp_path, monkeypatch):
+    """Astra r3: a saved round-1 mismatch plus an ordinary cell error exits 4 (GATE FAILED), not 6, and still writes
+    cell_errors.json and the inventory."""
+    def fake(fn, todo, args, workers, dests, extras):
+        B.write(dests[1], {"status": "stopped: round 1 differs from the registered record", "rounds": [], **extras[1]})
+        return [], {todo[0]["id"]: "ValueError: x"}
+    monkeypatch.setattr(B, "run_cells", fake)
+    assert B.main(_smoke_main_args(tmp_path, monkeypatch)) == 4
+    out = tmp_path / "out"
+    assert json.loads((out / "cell_errors.json").read_text())["failed"] and (out / "inventory.json").exists()
+
+
 def test_restart_hours_schedule_the_lost_cells_longest_first_on_each_worker_count():
     """Sol and Astra r1: the restart was admitted at a fixed 2.60 h; an early loss can leave all 19 cells (about 10 h on 3
     workers). The estimate comes from the lost cells: longest first onto the least-loaded worker, plus 0.1 h shutdown."""

@@ -145,3 +145,13 @@ Guard: tests `test_r12_settle_counts_only_after_done`, `test_r12_creation_answer
   scenario "a pull that hangs past the deadline" (red: `f2_harness_red5.log`). Rule: when code that surfaced results
   is replaced, test each kind of outcome the old code surfaced (success, ordinary error, dead worker), and every exit
   from a verification loop passes through the verify step.
+- 2026-11-15, Run B rerun review r3 (Astra, caveat): the new driver exit 6 had no launcher harness case and the
+  mismatch-over-cell-error priority no pytest case. Guard (tests): harness section "a cell error (exit 6) ends the run
+  without a restart" (red on a mutant that restarts on 6: `results/pods/logs_harness/f2_harness_red6.log`) and
+  `test_a_round1_mismatch_outranks_a_cell_error` (red on a mutant that always returns 6: `f2_pytest_red_r3.log`).
+  Rule: a new exit code gets a case in every layer that reads it (driver test and launcher harness).
+- 2026-11-15, ledger reconciliation: I reserved `convergence2-1` with estimate 7 and assumed a 1.3 headroom; the
+  budget tool's `HEADROOM` is 1.25, so the grant was 8.75 USD, below the 9.10 USD watchdog bound. Caught at once from
+  the tool's printed grant; the ledger was restored from git and the reservation redone at estimate 7.28 (grant 9.10).
+  Guard (check): the launcher refuses any reservation below HARD x CAP - PRIOR (followup2_pod.sh, ledger check), and
+  the dry run runs before any launch. Rule: read the reserved amount back before reporting it.
