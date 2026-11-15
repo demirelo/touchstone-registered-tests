@@ -124,3 +124,16 @@ Guard: tests `test_r12_settle_counts_only_after_done`, `test_r12_creation_answer
   copy exists; the review brief names that log, and a brief without it is not sent.
 - 2026-11-14, Run B rerun: the worker check named in the guard above is a fixed count (7, from the Mac peak of 2.39 GB
   per cell, `memprobe/rss.log`) and a launcher refusal outside 1 to 16, not a live check of the pod's memory.
+- 2026-11-15, Run B rerun review round 1 (both seats reject): my first fix saved cells in the parent, so a result in
+  transfer could still be lost when a sibling died; a pool broken during submission escaped the handler; one worker ran
+  the cell inside the driver, so a kill took the driver too; the restart estimate was a fixed 2.60 h, not the remaining
+  cells. Guard (tests): `test_a_cell_that_ends_just_before_a_sibling_dies_is_already_on_disk`,
+  `test_a_pool_broken_during_submission_is_a_lost_worker_not_a_crash`,
+  `test_one_worker_still_runs_each_cell_in_its_own_process`, `test_restart_hours_schedule_the_lost_cells_longest_first...`,
+  and the harness checks `run=lostnoest` and `--hours 2.75`, each red before the fix
+  (`results/pods/logs_harness/f2_harness_red2.log`, `f2_harness_red3.log`). Written rule: a red run filtered with ONLY
+  must also include the scenario that makes the remote script, or its remote checks fail for the wrong reason.
+- 2026-11-15, Run B rerun: I called 7 workers safe from a round-1-only probe (2.39 GB). The full three-round probe
+  peaked at 3.53 GB (`results/pods/memprobe3/rss.log`, 2 s sampling), so 7 workers would have run out of memory again. Guard (written
+  rule): a memory figure that sets a worker count comes from the longest configuration the run can reach (all rounds),
+  and the launcher's `PEAKGB` names that probe log.

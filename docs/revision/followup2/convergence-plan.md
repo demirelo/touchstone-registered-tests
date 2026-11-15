@@ -7,19 +7,33 @@
 workers was killed with signal 9, most likely out of memory, and the driver wrote results only after every cell ended. Its
 spend is recorded under `convergence-1` after the author's billing check; nothing from it enters the analysis; the rerun
 runs its own gate on its own pod. Changes, all tested before any spend:
-- Driver (`convergence_v2.run_cells`): each cell is saved the moment it ends; a lost worker breaks the pool, so every cell
-  unfinished at that moment is listed in `lost_cells.json` and the driver exits 5; a restart skips saved cells
-  (`guards.reusable`, unchanged). Tests: a real worker killed with signal 9 loses only its own cell; the serial path saves in
-  order; through `main()`, exit 5 then a restart that runs only the lost cell.
+- Driver (`convergence_v2.run_cells`, after internal review r1, both reject): each cell runs in a worker process (also
+  with one worker or one cell, so a kill cannot take the driver) and the worker writes its record (atomic) before
+  anything returns to the parent, so another worker's death cannot discard a finished result in transit. A broken pool,
+  at submission or later, is a lost worker; the records on disk, not the pool, say which cells are saved
+  (`guards.reusable`). Lost cells go to `lost_cells.json` with the driver's restart estimate for 1 to 16 workers
+  (`restart_hours`: the lost cells' worst-case hours, longest first onto the least-loaded worker, plus 0.1 h), and the
+  driver exits 5; a saved round-1 mismatch outranks a lost worker (exit 4, no restart). Tests: a real worker killed with
+  signal 9 loses only its own cell; a sibling that dies the moment a record is on disk; one worker; a broken pool at
+  submission; through `main()`, exit 5 then a restart that runs only the lost cell; a mismatch with a lost worker
+  returns 4; the restart schedule.
 - Worker count: one X7-SC cell (round 1 and its evaluations, `--gate --site mac`) peaked at 2.39 GB resident on the Mac
-  (15 s sampling; search phases 0.2 to 0.4 GB, evaluation phases 1.8 to 2.4 GB). Workers = 7 (7 x 2.39 = 16.7 GB of the
-  28 GB minimum pod memory, a margin of 1.6 for sampling and for later rounds' larger archives); on exit 5 the launcher
-  admits and restarts the stage once with 3 workers; a second exit 5 ends the run ("RUN FAILED ... a worker lost twice").
-- Launcher: the pulled records are verified on every end state (lessons.md), retried only after RUN OK.
-- Cost: run tag `convergence2`, stop cap **5 USD** (the author's), watchdog bound 6.50 USD, reservation
-  `convergence2-1` 6.50 USD. Worst case (three rounds for every cell, 7 workers, benchmark timings): 5.08 h of convergence
-  + 1.06 h gate + 0.3 h preparation = 6.4 h, 3.6 USD at 0.56 USD/h and 4.5 USD at the 0.70 ceiling; the convergence step is
-  admitted at 5.10 h and the restart at 2.60 h. A cell refused by the cap keeps its frozen estimate, as before.
+  (15 s sampling). The full three-round cell, sampled every 2 s, peaked at 3.53 GB (3534160 kB, round 3; the cell passed
+  all three rounds against the Mac reference; `results/pods/memprobe3/rss.log`), so `PEAKGB` = 3.54. The launcher refuses a worker
+  count for which workers x PEAKGB x 1.25 + 2 GB (the driver) exceeds the 28 GB minimum pod memory: 6 workers need
+  28.6 GB and are refused. Workers = 5; on exit 5 the launcher admits the restart with the driver's estimate for 3
+  workers and restarts once; a second exit 5 ends the run ("RUN FAILED ... a worker lost twice"). An early loss can leave
+  most cells: then the restart's admission (12.65 h for all 19 cells on 3 workers) exceeds the cap and the run stops
+  with the saved cells kept ("STOPPED BEFORE convergence restart"); the watchdog bounds spend, not completion.
+- Launcher: every directory that arrived is verified on every end state, also after a failed or partial pull of it or
+  of another directory (lessons.md); retried only after RUN OK. The rerun is refused until the first Run B's spend is
+  recorded under `convergence-` and its reservation is closed, so the follow-up total holds both runs.
+- Cost: run tag `convergence2`, stop cap **7 USD** (the author raised it from 5 on 2026-11-15, after the three-round
+  probe), watchdog bound 9.10 USD, reservation `convergence2-1` 9.10 USD. Normal run (no lost worker; three rounds for
+  every cell, 5 workers, benchmark timings, the driver's longest-first schedule): 7.65 h of convergence + 1.06 h gate +
+  0.3 h preparation = 9.0 h, 5.0 USD at 0.56 USD/h and 6.3 USD at the 0.70 ceiling; the convergence step is admitted at
+  7.70 h. A restart is admitted at the driver's estimate for the lost cells, within the
+  same cap. A cell refused by the cap keeps its frozen estimate, as before.
 
 **Draft 7 changes** (internal review round 6, `docs/revision/roster/{sol,astra}-convergence-plan-r6.md`, both reject): paid accounting counts the current pod from its recorded open event, never from a later `--started-at`
 (refusal test); the ledger must have a `spent` list of rows with a tag and a finite, nonnegative amount, and the cap,

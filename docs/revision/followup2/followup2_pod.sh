@@ -37,19 +37,23 @@ PY=/opt/homebrew/bin/python3; P=/Users/oemer.demirel/Projects/touchstone/results
 RUN=${1:?run A or B}; TGZ=${2:?code tarball}; BTGZ=${3:?bundle tarball}; TAG=${4:?tag}; CAP=${5:?cap_usd}; LOUT=${6:?local_out}; cd $P
 case "$TGZ$BTGZ$TAG$LOUT" in *[[:space:]]*) echo "refused: a path or tag contains whitespace"; exit 1 ;; esac
 case "$RUN" in
-  A) NAME=ts-f2a; RUNTAG=runner-up; PLANCAP=3.00; OUTS="followup2-a-pod-gate followup2-runnerup" ;;
-  B) NAME=ts-f2b; RUNTAG=convergence2; PLANCAP=5.00; OUTS="followup2-conv" ;;   # the rerun: its own tag and cap (plan, rerun amendment)
+  A) NAME=ts-f2a; RUNTAG=runner-up; PLANCAP=3.00; OUTS="followup2-a-pod-gate followup2-runnerup"; PREDTAG="" ;;
+  B) NAME=ts-f2b; RUNTAG=convergence2; PLANCAP=7.00; OUTS="followup2-conv"; PREDTAG="convergence-" ;;   # the rerun: its own tag and cap; the first Run B must be recorded (plan, rerun amendment)
   *) echo "refused: the run must be A or B"; exit 1 ;;
 esac
 EXPECT=${EXPECT:?commit}; MAXCPH=${MAXCPH:?max usd per hour}; MINMEM=${MINMEM:-28}; HARD=${HARD:-1.3}
 # Run B worker count (Run B rerun): one killed worker lost the first Run B; the count comes from the Mac-measured peak memory
 # per cell (convergence-plan.md, rerun section); a lost worker restarts the stage once at half the count (saved cells skipped).
-CONVWORKERS=${CONVWORKERS:-7}   # 7 x 2.39 GB (Mac peak, X7-SC cell) = 16.7 GB of 28: margin 1.6
+CONVWORKERS=${CONVWORKERS:-5}   # 5 x 3.54 GB x 1.25 + 2 = 24.1 GB of 28 (6 workers need 28.6: refused below)
+PEAKGB=3.54                     # Mac peak of one X7-SC cell over all three rounds, 3534160 kB (results/pods/memprobe3/rss.log; convergence-plan.md, rerun section)
 case "$CONVWORKERS" in [1-9]|1[0-6]) ;; *) echo "refused: CONVWORKERS must be an integer from 1 to 16"; exit 1 ;; esac
-CONVRETRY=$(( CONVWORKERS > 1 ? CONVWORKERS / 2 : 1 ))
+CONVRETRY=$(( CONVWORKERS > 3 ? 3 : CONVWORKERS ))   # the restart runs on at most 3 workers
 LEDGER=${LEDGER:-/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/docs/revision/budget-ledger.json}
 [ -z "${PRIOR+x}" ] || { echo "refused: PRIOR is not an input here; it is the ledger's recorded spend for the run tag $RUNTAG"; exit 1; }
 $PY -c "import math,sys; c=float(sys.argv[1]); p=float(sys.argv[2]); sys.exit(0 if math.isfinite(c) and 0 < c <= p else 1)" "$CAP" "$PLANCAP" 2>/dev/null || { echo "refused: the cap must be positive and at most the plan's $PLANCAP USD"; exit 1; }
+# Rerun review r1 (Sol 5, Astra 4): the workers must fit the minimum pod memory (prep refuses a pod below MINMEM) at the
+# measured peak per cell, with a margin of 1.25 and 2 GB for the driver process.
+$PY -c "import sys; w,p,m=int(sys.argv[1]),float(sys.argv[2]),float(sys.argv[3]); n=w*p*1.25+2; print(f'refused: CONVWORKERS={w} needs about {n:.1f} GB ({w} x {p} GB peak per cell x 1.25 + 2 GB for the driver), more than the {m:g} GB minimum pod memory') if n>m else None; sys.exit(1 if n>m else 0)" "$CONVWORKERS" "$PEAKGB" "$MINMEM" || exit 1
 LOGD=logs_f2$(echo $RUN | tr AB ab)_$TAG; mkdir -p "$LOUT" $LOGD
 $PY -c "import sys,tarfile; ms=tarfile.open(sys.argv[1]).getmembers(); d=[m.name for m in ms if m.name.split('/')[-1].startswith('._')]; o=[m.name for m in ms if m.uid!=0]; print('tarball guard: %d AppleDouble, %d non-root' % (len(d),len(o))); sys.exit(1 if d or o else 0)" "$TGZ" || { echo "code tarball refused"; exit 1; }
 # Bundle guard: the evidence the run needs is present and passing; Run B's Mac gate records bind to EXPECT.
@@ -124,9 +128,9 @@ fi
 # One snapshot of the ledger (review r1, Astra 2): it is validated here, gives PRIOR for the deadlines, and is the copy
 # pushed to the pod for every admission; a later change to the ledger file cannot reach this launch.
 SNAP=$(mktemp "/tmp/${NAME}_ledger.XXXXXX") && cp "$LEDGER" "$SNAP" 2>/dev/null || { echo "refused: cannot snapshot the ledger $LEDGER"; unlock; exit 1; }
-PRIOR=$($PY - "$SNAP" "$RUNTAG" "$CAP" "$HARD" "$TAG" <<'PYL'
+PRIOR=$($PY - "$SNAP" "$RUNTAG" "$CAP" "$HARD" "$TAG" "$PREDTAG" <<'PYL'
 import json, math, sys
-led, tag, cap, hard, launch = sys.argv[1], sys.argv[2], float(sys.argv[3]), float(sys.argv[4]), sys.argv[5]
+led, tag, cap, hard, launch, pred = sys.argv[1], sys.argv[2], float(sys.argv[3]), float(sys.argv[4]), sys.argv[5], sys.argv[6]
 def num(x):
     return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x) and x >= 0
 try:
@@ -140,6 +144,10 @@ for r in d["spent"]:
     if not isinstance(r, dict) or "tag" not in r or not num(r.get("usd")):
         print(f"refused: a malformed spend row in the ledger: {r!r}"); sys.exit(1)
     if str(r["tag"]).startswith(tag): tot += float(r["usd"])
+# Rerun review r1 (Astra 6): the rerun has its own tag, so the first Run B's spend must be recorded (its reservation closed)
+# before it; the follow-up total then holds both.
+if pred and (not any(str(r["tag"]).startswith(pred) for r in d["spent"]) or any(isinstance(r, dict) and str(r.get("tag", "")).startswith(pred) for r in d.get("reservations", []))):
+    print(f"refused: the first Run B's spend ({pred}) is not recorded in the ledger, or its reservation is still open; record it first"); sys.exit(1)
 if not tot < cap:
     print(f"refused: the ledger records {tot:.4f} USD for {tag}, not below the cap {cap}"); sys.exit(1)
 need = hard * cap - tot
@@ -171,17 +179,18 @@ cleanup() {
   if [ -n "$id" ] && [ -n "$started" ]; then
     try=0
     while :; do   # after RUN OK: keep the pod and retry until every directory verifies, or until 2 min before the hard deadline
-      try=$((try+1)); ok=1
+      try=$((try+1)); ok=1; seen=0
       for d in $OUTS; do
         t=1800
         rem=$(( hard - 120 - $(date +%s) )); [ $rem -le 0 ] && { ok=0; break; }; [ $rem -lt $t ] && t=$rem
         tmo $t $PY runpod.py pull $id "/root/touchstone/results/v2/$d/" "$LOUT/$d/" >/dev/null 2>&1 || ok=0
+        # verify whatever arrived, on every end state and after a failed or partial pull of this or another directory
+        # (lessons.md: Run A went unverified after STOPPED; rerun review r1: one failed pull skipped every check)
+        if [ -d "$LOUT/$d" ]; then seen=1; verify "$LOUT/$d" || ok=0; fi
       done
       rem=$(( hard - 120 - $(date +%s) )); [ $rem -gt 0 ] && tmo $(( rem < 300 ? rem : 300 )) $PY runpod.py pull $id /root/touchstone/results/logs/ $LOGD/ >/dev/null 2>&1
-      pulled=$ok   # verify on every end state (lessons.md: Run A's records went unverified after STOPPED); retry only after RUN OK
-      if [ $pulled = 1 ]; then for d in $OUTS; do verify "$LOUT/$d" || ok=0; done; fi
       [ $ok = 1 ] && break
-      [ "$state" != "RUN OK" ] && [ $pulled = 1 ] && { echo "$(date +%H:%M) end state $state: pulled records do not all verify (see above)"; break; }
+      [ "$state" != "RUN OK" ] && [ $seen = 1 ] && { echo "$(date +%H:%M) end state $state: pulled records do not all verify (see above)"; break; }
       echo "$(date +%H:%M) pull or verification failed (try $try)"
       if [ "$state" = "RUN OK" ]; then [ "$(date +%s)" -ge $(( hard - 120 )) ] && break; else [ $try -ge 3 ] && break; fi
       sleep 60
@@ -286,11 +295,13 @@ elif [ $drc = 4 ]; then echo "== GATE FAILED at convergence gate (round 1 differ
 elif [ $drc != 0 ]; then echo "== RUN FAILED at convergence gate $(date +%H:%M)"; exit 1; fi
 echo "== convergence gate passed $(date +%H:%M)"
 EV="--evidence $B/evidence/conv-gate-mac/headline@rho0.2__F111__X7-SC__profit__mac.json --evidence $B/evidence/conv-gate-mac/fresh1@rho0.2__F111__D2+H3__profit__mac.json --evidence $O/gate/headline@rho0.2__F111__X7-SC__profit__pod.json --evidence $O/gate/fresh1@rho0.2__F111__D2+H3__profit__pod.json"
-step "convergence" 5.10
+step "convergence" 7.70
 uv run --frozen python docs/revision/followup2/convergence_v2.py --workers @CW@ --site pod --out $O $IN $EV $PAID >> $L/f2_run.log 2>&1; drc=$?
 if [ $drc = 5 ]; then                  # a lost worker: the finished cells are saved; one restart at half the workers runs the rest
   echo "== convergence lost a worker; restart with @CWR@ workers (saved cells skipped) $(date +%H:%M)"
-  step "convergence restart" 2.60
+  RH=$(grep -o '[{ ,]"@CWR@": [0-9.]*' $O/lost_cells.json 2>/dev/null | head -n 1 | sed 's/.*: //')   # the driver's estimate for the lost cells (review r1)
+  [ -n "$RH" ] || { echo "== RUN FAILED at convergence restart (no restart estimate in lost_cells.json) $(date +%H:%M)"; exit 1; }
+  step "convergence restart" $RH
   uv run --frozen python docs/revision/followup2/convergence_v2.py --workers @CWR@ --site pod --out $O $IN $EV $PAID >> $L/f2_run.log 2>&1; drc=$?
   [ $drc = 5 ] && { echo "== RUN FAILED at convergence (a worker lost twice; saved cells kept) $(date +%H:%M)"; exit 1; }
 fi

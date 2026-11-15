@@ -330,48 +330,105 @@ def test_without_a_measured_mismatch_a_later_admission_refusal_still_exits_3(tmp
 
 # Run B rerun (board card touchstone-runb-rerun): one killed worker lost all 17 cells, because results were written only
 # after every cell ended. Each cell must be saved the moment it ends, and a lost worker must cost only its own cells.
-def _probe_cell(job, wait):
+def _probe_cell(job, wait, watch=None):
     import os
     import time
     time.sleep(wait)
     if job["id"] == "kill":
+        for _ in range(200):                                     # die the moment a sibling's record is on disk (review r1)
+            if watch is None or Path(watch).exists():
+                break
+            time.sleep(0.025)
         os.kill(os.getpid(), 9)                                  # what the out-of-memory killer did on the pod
     return {"id": job["id"], "status": "passed"}
 
 
-def test_each_cell_is_saved_when_it_ends_and_a_killed_worker_loses_only_its_own_cell():
-    saved = []
+def _dests(tmp_path, jobs):
+    return [tmp_path / f"{j['id']}.json" for j in jobs], [{"binding": {"cell": j["id"]}} for j in jobs]
+
+
+def test_each_cell_is_saved_by_its_worker_and_a_killed_worker_loses_only_its_own_cell(tmp_path):
     jobs = [{"id": "kill"}, {"id": "a"}, {"id": "b"}]
-    args = [(jobs[0], 1.5), (jobs[1], 0.0), (jobs[2], 0.0)]
-    lost = B.run_cells(_probe_cell, jobs, args, workers=2, save=lambda j, rec: saved.append((j["id"], rec["status"])))
-    assert sorted(saved) == [("a", "passed"), ("b", "passed")]
+    dests, extras = _dests(tmp_path, jobs)
+    lost = B.run_cells(_probe_cell, jobs, [(jobs[0], 1.5), (jobs[1], 0.0), (jobs[2], 0.0)], 2, dests, extras)
+    assert lost == ["kill"] and not dests[0].exists()
+    for d, j in zip(dests[1:], jobs[1:]):
+        assert json.loads(d.read_text()) == {"id": j["id"], "status": "passed", "binding": {"cell": j["id"]}}
+
+
+def test_a_cell_that_ends_just_before_a_sibling_dies_is_already_on_disk(tmp_path):
+    """Sol and Astra r1: a result in transit to the parent is lost when another worker dies; the worker saves it first."""
+    jobs = [{"id": "a"}, {"id": "kill"}]
+    dests, extras = _dests(tmp_path, jobs)
+    lost = B.run_cells(_probe_cell, jobs, [(jobs[0], 0.0), (jobs[1], 0.0, str(dests[0]))], 2, dests, extras)
+    assert lost == ["kill"] and json.loads(dests[0].read_text())["status"] == "passed"
+
+
+def test_one_worker_still_runs_each_cell_in_its_own_process(tmp_path):
+    """Sol r1: with one worker (or one cell) the cell ran inside the driver, so a kill took the driver with it (no exit 5)."""
+    jobs = [{"id": "a"}, {"id": "kill"}, {"id": "b"}]
+    dests, extras = _dests(tmp_path, jobs)
+    lost = B.run_cells(_probe_cell, jobs, [(j, 0.0) for j in jobs], 1, dests, extras)
+    assert dests[0].exists() and lost == ["kill", "b"]
+    lost = B.run_cells(_probe_cell, jobs[1:2], [(jobs[1], 0.0)], 1, dests[1:2], extras[1:2])
     assert lost == ["kill"]
 
 
-def test_serial_path_saves_each_cell_as_it_ends():
-    order = []
-    jobs = [{"id": "a"}, {"id": "b"}]
-    def fn(job, wait):
-        order.append(("run", job["id"]))
-        return {"id": job["id"], "status": "passed"}
-    lost = B.run_cells(fn, jobs, [(j, 0.0) for j in jobs], workers=1, save=lambda j, rec: order.append(("save", j["id"])))
-    assert order == [("run", "a"), ("save", "a"), ("run", "b"), ("save", "b")] and lost == []
+def test_a_pool_broken_during_submission_is_a_lost_worker_not_a_crash(tmp_path, monkeypatch):
+    """Sol and Astra r1: BrokenProcessPool raised by submit() escaped the handler (no lost_cells.json, no exit 5)."""
+    import concurrent.futures as cf
+    from concurrent.futures.process import BrokenProcessPool
+    real, n = cf.ProcessPoolExecutor.submit, []
+    def submit(self, *a, **k):
+        n.append(1)
+        if len(n) > 1:
+            raise BrokenProcessPool("a worker died during submission")
+        return real(self, *a, **k)
+    monkeypatch.setattr(cf.ProcessPoolExecutor, "submit", submit)
+    jobs = [{"id": "a"}, {"id": "b"}, {"id": "c"}]
+    dests, extras = _dests(tmp_path, jobs)
+    lost = B.run_cells(_probe_cell, jobs, [(j, 0.0) for j in jobs], 2, dests, extras)
+    assert dests[0].exists() and lost == ["b", "c"]
+
+
+def test_restart_hours_schedule_the_lost_cells_longest_first_on_each_worker_count():
+    """Sol and Astra r1: the restart was admitted at a fixed 2.60 h; an early loss can leave all 19 cells (about 10 h on 3
+    workers). The estimate comes from the lost cells: longest first onto the least-loaded worker, plus 0.1 h shutdown."""
+    h = B.restart_hours([3.0, 3.0, 2.0, 1.0, 1.0])
+    assert h["1"] == 10.1 and h["2"] == 5.1 and h["3"] == 4.1 and h["5"] == 3.1 and h["16"] == 3.1
+    assert all(h[str(w)] >= h[str(w + 1)] for w in range(1, 16))
+    assert B.restart_hours([]) == {str(w): 0.1 for w in range(1, 17)}
+
+
+def _fake_run_cells(calls, first_status="passed"):
+    def fake(fn, todo, args, workers, dests, extras):
+        calls.append([j["id"] for j in todo])
+        for i, j in enumerate(todo):
+            if len(calls) == 1 and i == 0:
+                continue                                         # the first call loses its first cell
+            B.write(dests[i], {"status": first_status if len(calls) == 1 else "passed", "rounds": [], **extras[i]})
+        return [todo[0]["id"]] if len(calls) == 1 else []
+    return fake
 
 
 def test_a_restart_skips_the_cells_saved_before_the_loss(tmp_path, monkeypatch):
     """Through main(): first run loses one cell (exit 5, the others saved); the restart runs only the lost cell."""
     calls = []
-    def fake_run_cells(fn, todo, args, workers, save):
-        ids = [j["id"] for j in todo]; calls.append(ids)
-        for j in todo[1:] if len(calls) == 1 else todo:
-            save(j, {"status": "passed", "rounds": []})
-        return [todo[0]["id"]] if len(calls) == 1 else []
-    monkeypatch.setattr(B, "run_cells", fake_run_cells)
+    monkeypatch.setattr(B, "run_cells", _fake_run_cells(calls))
     argv = _smoke_main_args(tmp_path, monkeypatch)
     assert B.main(argv) == 5
-    assert (tmp_path / "out" / "lost_cells.json").exists()
+    lc = json.loads((tmp_path / "out" / "lost_cells.json").read_text())
+    assert lc["lost"] == [calls[0][0]] and sorted(lc["restart_hours"], key=int) == [str(w) for w in range(1, 17)]
     assert B.main(argv) == 0
     assert len(calls) == 2 and calls[1] == [calls[0][0]]
+
+
+def test_a_round1_mismatch_outranks_a_lost_worker(tmp_path, monkeypatch):
+    """Astra r1: a saved round-1 mismatch plus a lost worker returned 5 (a paid restart) and could hide the mismatch."""
+    calls = []
+    monkeypatch.setattr(B, "run_cells", _fake_run_cells(calls, first_status="stopped: round 1 differs from the registered record"))
+    assert B.main(_smoke_main_args(tmp_path, monkeypatch)) == 4
+    assert (tmp_path / "out" / "lost_cells.json").exists() and (tmp_path / "out" / "inventory.json").exists()
 
 
 def _smoke_main_args(tmp_path, monkeypatch):

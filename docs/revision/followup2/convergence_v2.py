@@ -257,26 +257,41 @@ def run_cell(job: dict, out, max_rounds: int = MAX_ROUNDS, src=None, cost: tuple
     return res
 
 
-def run_cells(fn, todo: list, args: list, workers: int, save) -> list:
-    """Run the cells and save each one the moment it ends (Run B lost all 17 cells to one killed worker because results were
-    written only after every cell ended). Returns the ids of cells with no result: a lost worker breaks the pool, so every
-    cell unfinished at that moment is lost; the saved cells are skipped on restart (guards.reusable)."""
-    if workers <= 1 or len(todo) <= 1:
-        for j, x in zip(todo, args):
-            save(j, fn(*x))
-        return []
-    from concurrent.futures import ProcessPoolExecutor, as_completed
+def restart_hours(hs: list) -> dict:
+    """Hours a restart needs for cells of these worst-case hours on 1 to 16 workers: longest first onto the least-loaded
+    worker, plus 0.1 h shutdown, rounded up to 0.01 h (Sol and Astra, rerun review r1: not a fixed estimate)."""
+    import math
+    out = {}
+    for w in range(1, 17):
+        load = [0.0] * w
+        for h in sorted(hs, reverse=True):
+            load[load.index(min(load))] += h
+        out[str(w)] = math.ceil((max(load) + 0.1) * 100 - 1e-6) / 100
+    return out
+
+
+def _run_and_save(fn, x: tuple, dest, extra: dict) -> None:
+    """In the worker: run one cell and write its record (atomic) before anything goes back to the parent, so a sibling's
+    death cannot discard a finished result in transit (Sol and Astra, rerun review r1)."""
+    write(dest, {**fn(*x), **extra})
+
+
+def run_cells(fn, todo: list, args: list, workers: int, dests: list, extras: list) -> list:
+    """Run the cells, each in a worker process (also with one worker: a kill must not take the driver), and let each worker
+    save its own record the moment the cell ends. Run B lost all 17 cells to one killed worker because results were written
+    only after every cell ended. A lost worker breaks the pool (at submission or later); every cell with no record on disk
+    is returned as lost, and saved cells are skipped on restart (guards.reusable)."""
+    from concurrent.futures import ProcessPoolExecutor, wait
     from concurrent.futures.process import BrokenProcessPool
-    done = set()
-    with ProcessPoolExecutor(max_workers=workers) as ex:
-        futs = {ex.submit(fn, *x): j for j, x in zip(todo, args)}
-        for f in as_completed(futs):
-            try:
-                rec = f.result()
-            except BrokenProcessPool:
-                continue
-            save(futs[f], rec); done.add(futs[f]["id"])
-    return [j["id"] for j in todo if j["id"] not in done]
+    with ProcessPoolExecutor(max_workers=max(1, workers)) as ex:
+        futs = []
+        try:
+            for x, d, e in zip(args, dests, extras):
+                futs.append(ex.submit(_run_and_save, fn, x, d, e))
+        except BrokenProcessPool:
+            pass
+        wait(futs)                                               # a broken pool fails the rest; the disk says what is saved
+    return [j["id"] for j, d in zip(todo, dests) if read(d) is None]
 
 
 def frozen_doubling(job: dict, out) -> Path:
@@ -415,12 +430,15 @@ def main(argv=None) -> int:
     todo = sorted((j for j in jobs if not G.reusable(path(j), bind(j))), key=lambda j: j["family"] != "X7-SC")   # longest first
     minr = lambda j: 2 if j["id"] in plan["nesting"] else 1
     args = [(j, out, a.max_rounds, None if a.smoke else a.src, cargs, hours(j), emb(j), minr(j)) for j in todo]
-    lost = run_cells(run_cell, todo, args, a.workers, lambda j, rec: write(path(j), {**rec, "binding": bind(j)}))
-    if lost:                                                     # exit 5: a worker was lost; a restart runs only these cells
-        write(out / "lost_cells.json", {"lost": lost, "saved": [j["id"] for j in todo if j["id"] not in lost]})
-        G.inventory(out, DEVIATIONS, files, argv); return 5
-    status = {j["id"]: read(path(j))["status"] for j in jobs}
+    run_cells(run_cell, todo, args, a.workers, [path(j) for j in todo], [{"binding": bind(j)} for j in todo])
+    lost = [j["id"] for j in todo if not G.reusable(path(j), bind(j))]          # the disk, not the pool, says what is saved
+    status = {j["id"]: read(path(j))["status"] for j in jobs if j["id"] not in lost}
     mismatch = [k for k, v in status.items() if v.startswith("stopped: round 1")]
+    if lost:                                                     # exit 5: a worker was lost; a restart runs only these cells
+        write(out / "lost_cells.json", {"lost": lost, "saved": [j["id"] for j in todo if j["id"] not in lost], "mismatch": mismatch,
+                                        "restart_hours": restart_hours([hours(j) * a.max_rounds for j in todo if j["id"] in lost])})
+        G.inventory(out, DEVIATIONS, files, argv)
+        return 4 if mismatch else 5                              # Astra r1: a measured mismatch outranks a lost worker (no restart)
     if not a.smoke and not mismatch:
         done = {j["id"]: bind(j) for j in jobs if "heldout" in read(path(j))}           # cost-stopped cells keep their frozen estimates
         nest_done = {k: read(out / "convergence" / (R._safe(k) + ".json"))["heldout"]["gain"] for k in plan["nesting"] if k in done}

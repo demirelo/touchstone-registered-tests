@@ -78,7 +78,11 @@ elif cmd == "pull":
     src, dst = a[1], a[2]
     for k in ("followup2-a-pod-gate", "followup2-runnerup", "followup2-conv"):
         if k in src:
+            if st.get("fail_pull") == k:                 # rerun r1: this directory's pull fails, nothing arrives
+                rc = 1; continue
             shutil.copytree(os.path.join(H, "remote", k), dst, dirs_exist_ok=True)
+            if st.get("partial_pull") == k:              # rerun r1: the transfer reports failure after the files arrived
+                rc = 1
             if st.get("corrupt_pulls", 0) > 0:
                 st["corrupt_pulls"] -= 1; open(os.path.join(dst, "sub", "s.json"), "w").write("corrupt")
 json.dump(st, open(S, "w")); sys.exit(rc)
@@ -109,7 +113,8 @@ ledger() { python3 - "$1" "${2:-0}" <<'EOF'
 import json, sys
 v, prior = sys.argv[1], float(sys.argv[2])
 d = {"caps": {"followup": 72.0}, "reservations": [{"op": "followup", "tag": "runner-up-t", "cap": 3.9}, {"op": "followup", "tag": "convergence2-t", "cap": 5.525}],
-     "spent": [{"op": "followup", "tag": "reset-pod", "usd": 1.65}, {"op": "followup", "tag": "churn-pod", "usd": 4.99}]}
+     "spent": [{"op": "followup", "tag": "reset-pod", "usd": 1.65}, {"op": "followup", "tag": "churn-pod", "usd": 4.99},
+               {"op": "followup", "tag": "convergence-1", "usd": 3.43}]}
 if prior:
     d["spent"].append({"op": "followup", "tag": "runner-up-0", "usd": prior})
 if v == "nores":
@@ -122,12 +127,18 @@ if v == "tagu":
     d["reservations"] = [{"op": "followup", "tag": "runner-up-u", "cap": 3.9}]
 if v == "reused":
     d["spent"].append({"op": "followup", "tag": "runner-up-t", "usd": 0.5})            # this launch tag already spent
+if v == "noconv1":
+    d["spent"] = [r for r in d["spent"] if r["tag"] != "convergence-1"]                 # the first Run B is not recorded
+if v == "conv1open":
+    d["spent"] = [r for r in d["spent"] if r["tag"] != "convergence-1"]; d["reservations"].append({"op": "followup", "tag": "convergence-1", "cap": 5.525})
+if v == "cap7":
+    d["reservations"] = [r for r in d["reservations"] if r["tag"] != "convergence2-t"] + [{"op": "followup", "tag": "convergence2-t", "cap": 9.1}]   # the author's 7 USD cap (rerun, 2026-11-15)
 if v == "badrow":
     d["spent"].append({"op": "followup", "tag": "runner-up-x", "usd": float("nan")})
 open("ledger.json", "w").write(json.dumps(d))
 EOF
 }
-fail=0; ran=0; TOTAL=39
+fail=0; ran=0; TOTAL=46
 run() { # name state cap creates rc [end-pattern] [watchdog-log-substring] [launcher-output-substring]; env RUNV (A), BUN
   [ -n "${ONLY:-}" ] && ! echo "$1" | grep -q "$ONLY" && return 0   # smoke runs only; a full run sets no ONLY
   r=${RUNV:-A}; rl=$(echo $r | tr AB ab); T=${TAGV:-t}; N=ts-f2$rl; LG=logs_f2${rl}_$T
@@ -171,6 +182,9 @@ PRELOCK=1 TAGV=u LEDGERV=tagu run "the run-level lock refuses a launch of the sa
 LEDGERV=badrow run "a malformed ledger row is refused" '{"pods":{},"price":0.56,"up":true,"log":[]}' 3 0 1 "" "" "^refused: a malformed spend row in the ledger"
 RUNV=B BUN=bbad.tgz run "Run B is refused when its Mac gate records are not bound to EXPECT" '{"pods":{},"price":0.56,"up":true,"log":[]}' 4.25 0 1 "" "" "^bundle refused"
 RUNV=B DRY=1 run "Run B dry run: every guard passes, no pod" '{"pods":{},"price":0.56,"up":true,"log":[]}' 4.25 0 0 "" "" "^dry run: guards passed; no pod created"
+# Run B rerun, 2026-11-15: the author raised the cap to 7 USD after the three-round memory probe (5 workers).
+LEDGERV=cap7 RUNV=B DRY=1 run "Run B dry run at the author's 7 USD cap" '{"pods":{},"price":0.56,"up":true,"log":[]}' 7.00 0 0 "" "" "^dry run: guards passed; no pod created"
+RUNV=B run "Run B: a cap above the author's 7 USD is refused" '{"pods":{},"price":0.56,"up":true,"log":[]}' 7.01 0 1 "" "" "^refused: the cap must be positive and at most the plan's 7.00 USD"
 # --- review r2 (Sol 1): a second launch of the same run and tag, held before the lock while the first launch runs, ends
 # and has its spend recorded (the ledger replaces the reservation by a spend row), must be refused when it resumes: it
 # reads the ledger only under the lock. Before the fix it had validated the stale ledger and created a second pod.
@@ -227,6 +241,14 @@ cp pushed_r_remote.sh pushed_B.sh
 RUNV=B run "Run B: records pulled after a stop are verified too" '{"pods":{},"price":0.56,"up":true,"log":[],"remote_tail":"== remote started 11:48 == convergence start 12:00 == RUN FAILED at convergence 13:00"}' 4.25 1 1 "== RUN FAILED at convergence 13:00" "" "verify followup2-conv: 2 records, 0 bad, 0 not inventoried"
 RUNV=B run "Run B: a corrupt pull after a stop is reported once, not retried" '{"pods":{},"price":0.56,"up":true,"log":[],"corrupt_pulls":5,"remote_tail":"== remote started 11:48 == convergence start 12:00 == RUN FAILED at convergence 13:00"}' 4.25 1 1 "== RUN FAILED at convergence 13:00" "" "end state == RUN FAILED at convergence 13:00: pulled records do not all verify"
 CONVWORKERS=0 RUNV=B run "Run B: a worker count outside 1 to 16 is refused" '{"pods":{},"price":0.56,"up":true,"log":[]}' 4.25 0 1 "" "" "^refused: CONVWORKERS must be an integer from 1 to 16"
+# Run B rerun review r1 (Sol 5, Astra 4): the worker count must fit the minimum pod memory at the measured peak per cell.
+CONVWORKERS=6 RUNV=B run "Run B: a worker count whose measured memory exceeds the pod minimum is refused" '{"pods":{},"price":0.56,"up":true,"log":[]}' 4.25 0 1 "" "" "^refused: CONVWORKERS=6 needs about 28.6 GB"
+# Astra 6: the first Run B's spend must be recorded (and its reservation closed) before the rerun under its own tag.
+LEDGERV=noconv1 RUNV=B run "Run B: the rerun is refused while the first Run B has no spend record" '{"pods":{},"price":0.56,"up":true,"log":[]}' 4.25 0 1 "" "" "^refused: the first Run B's spend \(convergence-\) is not recorded"
+LEDGERV=conv1open RUNV=B run "Run B: the rerun is refused while the first Run B's reservation is open" '{"pods":{},"price":0.56,"up":true,"log":[]}' 4.25 0 1 "" "" "^refused: the first Run B's spend \(convergence-\) is not recorded"
+# Sol 6, Astra 7: a failed or partial pull of one directory must not skip verifying the others (or itself, if files came).
+run "Run A: a failed pull of one directory still verifies the other" '{"pods":{},"price":0.56,"up":true,"log":[],"fail_pull":"followup2-a-pod-gate","remote_tail":"== remote started 11:48 == runner-up start 12:00 == RUN FAILED at runner-up 13:00"}' 3 1 1 "== RUN FAILED at runner-up 13:00" "" "verify followup2-runnerup: 2 records, 0 bad, 0 not inventoried"
+run "Run A: a pull that reports failure after the files arrived is still verified" '{"pods":{},"price":0.56,"up":true,"log":[],"partial_pull":"followup2-a-pod-gate","remote_tail":"== remote started 11:48 == runner-up start 12:00 == RUN FAILED at runner-up 13:00"}' 3 1 1 "== RUN FAILED at runner-up 13:00" "" "verify followup2-a-pod-gate: [0-9]+ records, 0 bad, 0 not inventoried"
 RUNV=B run "Run B: a failed convergence gate is the end state" '{"pods":{},"price":0.56,"up":true,"log":[],"remote_tail":"== remote started 11:48 == convergence gate start 11:48 == GATE FAILED at convergence gate (round 1 differs from the registered record) 13:00"}' 4.25 1 1 "== GATE FAILED at convergence gate \(round 1 differs from the registered record\) 13:00"
 # Accounting: the ledger records 1.2 USD for runner-up (PRIOR), and a first pod never answers (deleted after 240 s). The
 # deadlines leave CAP - PRIOR and HARD x CAP - PRIOR; the pushed attempts file has the deleted attempt and exactly one open
@@ -275,8 +297,9 @@ case "$what:$act:$s" in
   *:crash:*) echo "Traceback (most recent call last): ValueError"; exit 1 ;;
   run:cap:*) echo '{"stopped_before": "search", "cap_usd": 3.0}'; exit 3 ;;
   run:fail:*) exit 4 ;;
-  run:lost:*) exit 5 ;;                                            # a worker lost (Run B rerun), every time
-  run:lostonce:*) [ -e "$REMOTE_ROOT/lost1" ] && exit 0; touch "$REMOTE_ROOT/lost1"; exit 5 ;;
+  run:lost*:*) mkdir -p results/v2/followup2-conv                  # a worker lost (Run B rerun): the driver's lost_cells.json
+    if [ "$act" = lostnoest ]; then echo '{"lost": ["x"]}'; else echo '{"lost": ["x"], "restart_hours": {"13": 9.9, "3": 2.75, "7": 1.5}}'; fi > results/v2/followup2-conv/lost_cells.json
+    [ "$act" = lostonce ] && { [ -e "$REMOTE_ROOT/lost1" ] && exit 0; touch "$REMOTE_ROOT/lost1"; }; exit 5 ;;
 esac
 exit 0
 EOF
@@ -317,10 +340,11 @@ rcheck pushed_B.sh "admit@1.06=refuse" "== STOPPED BEFORE convergence gate \(cap
 rcheck pushed_B.sh "gate=cap" "== STOPPED BEFORE convergence gate \(cap, driver admission\)"
 rcheck pushed_B.sh "gate=fail" "== GATE FAILED at convergence gate \(round 1 differs from the registered record\)"
 rcheck pushed_B.sh "gate=crash" "== RUN FAILED at convergence gate"
-rcheck pushed_B.sh "admit@5.10=refuse" "== STOPPED BEFORE convergence \(cap, admission\)"
+rcheck pushed_B.sh "admit@7.70=refuse" "== STOPPED BEFORE convergence \(cap, admission\)"
 rcheck pushed_B.sh "run=fail" "== GATE FAILED at convergence \(round 1 differs\)"
 rcheck pushed_B.sh "run=crash" "== RUN FAILED at convergence"
 rcheck pushed_B.sh "run=lost" "== RUN FAILED at convergence \(a worker lost twice; saved cells kept\)"
+rcheck pushed_B.sh "run=lostnoest" "== RUN FAILED at convergence restart \(no restart estimate in lost_cells.json\)"
 rcheck pushed_B.sh "" "== STOPPED BEFORE convergence gate \(cap\)" stop
 rcheck pushed_B.sh "" "== RUN OK"
 python3 - "$RCALLS" <<'PYR' || { echo "SCENARIO FAILED (Run B remote calls)"; fail=1; }
@@ -328,15 +352,15 @@ import sys
 c = [l.split() for l in sys.argv[1].splitlines()]
 assert [x[3] for x in c] == ["docs/revision/followup2/guards.py", "docs/revision/followup2/convergence_v2.py"] * 2, [x[3] for x in c]
 j = [" ".join(x) for x in c]
-assert "--hours 1.06" in j[0] and "--hours 5.10" in j[2]
+assert "--hours 1.06" in j[0] and "--hours 7.70" in j[2]
 for k in (0, 1, 2, 3):
     for f in ("--cap-usd 4.25 ", "--usd-per-hour 0.70 ", "--run-tag convergence2 ", "/f2.attempts ", "/f2.ledger.json ", "/STOP ", "--soft-deadline "):
         assert f in j[k] + " ", (k, f)
 assert "--gate --site pod --cells headline@rho0.2|F111|X7-SC|profit,fresh1@rho0.2|F111|D2+H3|profit --out results/v2/followup2-conv" in j[1], j[1]
-assert "--gate" not in c[3] and "--workers 7" in j[3] and "--out results/v2/followup2-conv" in j[3]
+assert "--gate" not in c[3] and "--workers 5" in j[3] and "--out results/v2/followup2-conv" in j[3]
 ev = [c[3][i + 1] for i, x in enumerate(c[3]) if x == "--evidence"]
 assert len(ev) == 4 and sum("/bundle/evidence/conv-gate-mac/" in e for e in ev) == 2 and sum(e.startswith("results/v2/followup2-conv/gate/") and e.endswith("__pod.json") for e in ev) == 2, ev
-print("remote ok (B): 10 end states; admit, gate, admit, main run with four evidence records")
+print("remote ok (B): 11 end states; admit, gate, admit, main run with four evidence records")
 PYR
 ran=$((ran+1)); echo "== Run B: a lost worker restarts the stage once at half the workers (Run B rerun)"
 rcheck pushed_B.sh "run=lostonce" "== RUN OK"
@@ -345,10 +369,10 @@ import sys
 c = [l.split() for l in sys.argv[1].splitlines()]
 assert [x[3].split("/")[-1] for x in c] == ["guards.py", "convergence_v2.py"] * 3, c
 j = [" ".join(x) for x in c]
-assert "--hours 2.60" in j[4] and "--workers 7 " in j[3] + " " and "--workers 3 " in j[5] + " " and "--gate" not in c[5], j
+assert "--hours 2.75" in j[4] and "--workers 5 " in j[3] + " " and "--workers 3 " in j[5] + " " and "--gate" not in c[5], j
 print("restart ok: admission, then the stage again with 3 workers")
 PYL
-rcheck pushed_B.sh "run=lostonce admit@2.60=refuse" "== STOPPED BEFORE convergence restart \(cap, admission\)"
+rcheck pushed_B.sh "run=lostonce admit@2.75=refuse" "== STOPPED BEFORE convergence restart \(cap, admission\)"
 # The real admission (review r1): the accounting launch's script, attempts file and ledger (PRIOR 1.2 of a 3 USD cap), with
 # the real guards.py: the reset gate (0.61 h at 0.70) is admitted, the runner-up step (2.65 h) would pass the cap and is
 # refused by the real check, so the script stops before it.
