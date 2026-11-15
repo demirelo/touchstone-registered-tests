@@ -16,24 +16,33 @@ runs its own gate on its own pod. Changes, all tested before any spend:
   driver exits 5; a saved round-1 mismatch outranks a lost worker (exit 4, no restart). Tests: a real worker killed with
   signal 9 loses only its own cell; a sibling that dies the moment a record is on disk; one worker; a broken pool at
   submission; through `main()`, exit 5 then a restart that runs only the lost cell; a mismatch with a lost worker
-  returns 4; the restart schedule.
+  returns 4; the restart schedule. An ordinary exception in a cell is not a lost worker (review r2): the driver reads
+  every future, writes `cell_errors.json` with each message and the inventory, and exits 6, which the launcher reports
+  as "RUN FAILED at convergence" with no restart (a mismatch still outranks it, exit 4).
 - Worker count: one X7-SC cell (round 1 and its evaluations, `--gate --site mac`) peaked at 2.39 GB resident on the Mac
   (15 s sampling). The full three-round cell, sampled every 2 s, peaked at 3.53 GB (3534160 kB, round 3; the cell passed
   all three rounds against the Mac reference; `results/pods/memprobe3/rss.log`), so `PEAKGB` = 3.54. The launcher refuses a worker
   count for which workers x PEAKGB x 1.25 + 2 GB (the driver) exceeds the 28 GB minimum pod memory: 6 workers need
-  28.6 GB and are refused. Workers = 5; on exit 5 the launcher admits the restart with the driver's estimate for 3
+  28.6 GB and are refused. The fit is an estimate: 5 workers need about 24.1 GB, a margin of 3.9 GB below 28 GB, and
+  the Mac probe does not establish the Linux peak or memory kept across successive cells in a long-lived worker; a
+  worker lost to memory is the exit-5 path below. Workers = 5; on exit 5 the launcher admits the restart with the driver's estimate for 3
   workers and restarts once; a second exit 5 ends the run ("RUN FAILED ... a worker lost twice"). An early loss can leave
   most cells: then the restart's admission (12.65 h for all 19 cells on 3 workers) exceeds the cap and the run stops
   with the saved cells kept ("STOPPED BEFORE convergence restart"); the watchdog bounds spend, not completion.
 - Launcher: every directory that arrived is verified on every end state, also after a failed or partial pull of it or
-  of another directory (lessons.md); retried only after RUN OK. The rerun is refused until the first Run B's spend is
+  of another directory (lessons.md), and also when the hard deadline leaves no time to pull (review r2); retried only
+  after RUN OK. The rerun is refused until the first Run B's spend is
   recorded under `convergence-` and its reservation is closed, so the follow-up total holds both runs.
 - Cost: run tag `convergence2`, stop cap **7 USD** (the author raised it from 5 on 2026-11-15, after the three-round
   probe), watchdog bound 9.10 USD, reservation `convergence2-1` 9.10 USD. Normal run (no lost worker; three rounds for
   every cell, 5 workers, benchmark timings, the driver's longest-first schedule): 7.65 h of convergence + 1.06 h gate +
   0.3 h preparation = 9.0 h, 5.0 USD at 0.56 USD/h and 6.3 USD at the 0.70 ceiling; the convergence step is admitted at
   7.70 h. A restart is admitted at the driver's estimate for the lost cells, within the
-  same cap. A cell refused by the cap keeps its frozen estimate, as before.
+  same cap. A cell refused by the cap keeps its frozen estimate, as before. The 7 USD cap governs admission (no step
+  starts unless its estimate fits); it is not a ceiling on the bill. The spend bound is the watchdog's hard deadline,
+  1.3 x 7 USD = 9.10 USD at the 0.70 USD/h ceiling (13 h), plus any delay in a verified deletion. Completion after a lost
+  worker is not guaranteed. Before launch the ledger must be reconciled: the first Run B's spend recorded under
+  `convergence-1`, its reservation closed, and `convergence2-1` reserved at 9.10 USD (the launcher refuses otherwise).
 
 **Draft 7 changes** (internal review round 6, `docs/revision/roster/{sol,astra}-convergence-plan-r6.md`, both reject): paid accounting counts the current pod from its recorded open event, never from a later `--started-at`
 (refusal test); the ledger must have a `spent` list of rows with a tag and a finite, nonnegative amount, and the cap,

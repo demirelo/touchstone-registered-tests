@@ -334,6 +334,8 @@ def _probe_cell(job, wait, watch=None):
     import os
     import time
     time.sleep(wait)
+    if job["id"] == "boom":
+        raise ValueError("an ordinary cell error")
     if job["id"] == "kill":
         for _ in range(200):                                     # die the moment a sibling's record is on disk (review r1)
             if watch is None or Path(watch).exists():
@@ -350,7 +352,7 @@ def _dests(tmp_path, jobs):
 def test_each_cell_is_saved_by_its_worker_and_a_killed_worker_loses_only_its_own_cell(tmp_path):
     jobs = [{"id": "kill"}, {"id": "a"}, {"id": "b"}]
     dests, extras = _dests(tmp_path, jobs)
-    lost = B.run_cells(_probe_cell, jobs, [(jobs[0], 1.5), (jobs[1], 0.0), (jobs[2], 0.0)], 2, dests, extras)
+    lost, failed = B.run_cells(_probe_cell, jobs, [(jobs[0], 1.5), (jobs[1], 0.0), (jobs[2], 0.0)], 2, dests, extras)
     assert lost == ["kill"] and not dests[0].exists()
     for d, j in zip(dests[1:], jobs[1:]):
         assert json.loads(d.read_text()) == {"id": j["id"], "status": "passed", "binding": {"cell": j["id"]}}
@@ -360,7 +362,7 @@ def test_a_cell_that_ends_just_before_a_sibling_dies_is_already_on_disk(tmp_path
     """Sol and Astra r1: a result in transit to the parent is lost when another worker dies; the worker saves it first."""
     jobs = [{"id": "a"}, {"id": "kill"}]
     dests, extras = _dests(tmp_path, jobs)
-    lost = B.run_cells(_probe_cell, jobs, [(jobs[0], 0.0), (jobs[1], 0.0, str(dests[0]))], 2, dests, extras)
+    lost, failed = B.run_cells(_probe_cell, jobs, [(jobs[0], 0.0), (jobs[1], 0.0, str(dests[0]))], 2, dests, extras)
     assert lost == ["kill"] and json.loads(dests[0].read_text())["status"] == "passed"
 
 
@@ -368,9 +370,9 @@ def test_one_worker_still_runs_each_cell_in_its_own_process(tmp_path):
     """Sol r1: with one worker (or one cell) the cell ran inside the driver, so a kill took the driver with it (no exit 5)."""
     jobs = [{"id": "a"}, {"id": "kill"}, {"id": "b"}]
     dests, extras = _dests(tmp_path, jobs)
-    lost = B.run_cells(_probe_cell, jobs, [(j, 0.0) for j in jobs], 1, dests, extras)
+    lost, failed = B.run_cells(_probe_cell, jobs, [(j, 0.0) for j in jobs], 1, dests, extras)
     assert dests[0].exists() and lost == ["kill", "b"]
-    lost = B.run_cells(_probe_cell, jobs[1:2], [(jobs[1], 0.0)], 1, dests[1:2], extras[1:2])
+    lost, failed = B.run_cells(_probe_cell, jobs[1:2], [(jobs[1], 0.0)], 1, dests[1:2], extras[1:2])
     assert lost == ["kill"]
 
 
@@ -387,8 +389,33 @@ def test_a_pool_broken_during_submission_is_a_lost_worker_not_a_crash(tmp_path, 
     monkeypatch.setattr(cf.ProcessPoolExecutor, "submit", submit)
     jobs = [{"id": "a"}, {"id": "b"}, {"id": "c"}]
     dests, extras = _dests(tmp_path, jobs)
-    lost = B.run_cells(_probe_cell, jobs, [(j, 0.0) for j in jobs], 2, dests, extras)
+    lost, failed = B.run_cells(_probe_cell, jobs, [(j, 0.0) for j in jobs], 2, dests, extras)
     assert dests[0].exists() and lost == ["b", "c"]
+
+
+def test_an_ordinary_cell_error_is_reported_not_lost(tmp_path):
+    """Sol and Astra r2: wait() never read the futures, so a ValueError in a cell became a lost worker (a paid restart)
+    and the error was never shown. An ordinary error is a failed cell with its message; only a dead worker is lost."""
+    jobs = [{"id": "a"}, {"id": "boom"}, {"id": "b"}]
+    dests, extras = _dests(tmp_path, jobs)
+    lost, failed = B.run_cells(_probe_cell, jobs, [(j, 0.0) for j in jobs], 2, dests, extras)
+    assert lost == [] and list(failed) == ["boom"] and "ValueError: an ordinary cell error" in failed["boom"]
+    assert dests[0].exists() and dests[2].exists() and not dests[1].exists()
+
+
+def test_a_cell_error_ends_the_run_without_a_restart(tmp_path, monkeypatch):
+    """Sol and Astra r2: a failed cell exits 6 (the launcher reads any exit but 0, 3, 4, 5 as RUN FAILED, no restart),
+    writes cell_errors.json and the inventory, and no lost_cells.json, even when a worker was also lost."""
+    def fake(fn, todo, args, workers, dests, extras):
+        for i, j in enumerate(todo[2:], 2):
+            B.write(dests[i], {"status": "passed", "rounds": [], **extras[i]})
+        return [todo[0]["id"]], {todo[1]["id"]: "ValueError: x"} if len(todo) > 1 else {}
+    monkeypatch.setattr(B, "run_cells", fake)
+    argv = _smoke_main_args(tmp_path, monkeypatch)
+    assert B.main(argv) == 6
+    out = tmp_path / "out"
+    assert json.loads((out / "cell_errors.json").read_text())["failed"] and (out / "inventory.json").exists()
+    assert not (out / "lost_cells.json").exists()
 
 
 def test_restart_hours_schedule_the_lost_cells_longest_first_on_each_worker_count():
@@ -407,7 +434,7 @@ def _fake_run_cells(calls, first_status="passed"):
             if len(calls) == 1 and i == 0:
                 continue                                         # the first call loses its first cell
             B.write(dests[i], {"status": first_status if len(calls) == 1 else "passed", "rounds": [], **extras[i]})
-        return [todo[0]["id"]] if len(calls) == 1 else []
+        return ([todo[0]["id"]] if len(calls) == 1 else []), {}
     return fake
 
 

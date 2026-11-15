@@ -182,8 +182,9 @@ cleanup() {
       try=$((try+1)); ok=1; seen=0
       for d in $OUTS; do
         t=1800
-        rem=$(( hard - 120 - $(date +%s) )); [ $rem -le 0 ] && { ok=0; break; }; [ $rem -lt $t ] && t=$rem
-        tmo $t $PY runpod.py pull $id "/root/touchstone/results/v2/$d/" "$LOUT/$d/" >/dev/null 2>&1 || ok=0
+        rem=$(( hard - 120 - $(date +%s) ))
+        if [ $rem -le 0 ]; then ok=0     # no time left to pull, but still verify what is already on disk (rerun review r2)
+        else [ $rem -lt $t ] && t=$rem; tmo $t $PY runpod.py pull $id "/root/touchstone/results/v2/$d/" "$LOUT/$d/" >/dev/null 2>&1 || ok=0; fi
         # verify whatever arrived, on every end state and after a failed or partial pull of this or another directory
         # (lessons.md: Run A went unverified after STOPPED; rerun review r1: one failed pull skipped every check)
         if [ -d "$LOUT/$d" ]; then seen=1; verify "$LOUT/$d" || ok=0; fi

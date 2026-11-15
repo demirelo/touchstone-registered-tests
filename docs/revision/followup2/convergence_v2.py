@@ -276,11 +276,12 @@ def _run_and_save(fn, x: tuple, dest, extra: dict) -> None:
     write(dest, {**fn(*x), **extra})
 
 
-def run_cells(fn, todo: list, args: list, workers: int, dests: list, extras: list) -> list:
+def run_cells(fn, todo: list, args: list, workers: int, dests: list, extras: list) -> tuple:
     """Run the cells, each in a worker process (also with one worker: a kill must not take the driver), and let each worker
     save its own record the moment the cell ends. Run B lost all 17 cells to one killed worker because results were written
     only after every cell ended. A lost worker breaks the pool (at submission or later); every cell with no record on disk
-    is returned as lost, and saved cells are skipped on restart (guards.reusable)."""
+    is lost, and saved cells are skipped on restart (guards.reusable). An ordinary exception in a cell is not a lost
+    worker: it is returned with its message and never restarted (Sol and Astra, rerun review r2). Returns (lost, failed)."""
     from concurrent.futures import ProcessPoolExecutor, wait
     from concurrent.futures.process import BrokenProcessPool
     with ProcessPoolExecutor(max_workers=max(1, workers)) as ex:
@@ -291,7 +292,12 @@ def run_cells(fn, todo: list, args: list, workers: int, dests: list, extras: lis
         except BrokenProcessPool:
             pass
         wait(futs)                                               # a broken pool fails the rest; the disk says what is saved
-    return [j["id"] for j, d in zip(todo, dests) if read(d) is None]
+    failed = {}
+    for j, f in zip(todo, futs):
+        e = f.exception()
+        if e is not None and not isinstance(e, BrokenProcessPool):
+            failed[j["id"]] = f"{type(e).__name__}: {e}"
+    return [j["id"] for j, d in zip(todo, dests) if read(d) is None and j["id"] not in failed], failed
 
 
 def frozen_doubling(job: dict, out) -> Path:
@@ -430,9 +436,14 @@ def main(argv=None) -> int:
     todo = sorted((j for j in jobs if not G.reusable(path(j), bind(j))), key=lambda j: j["family"] != "X7-SC")   # longest first
     minr = lambda j: 2 if j["id"] in plan["nesting"] else 1
     args = [(j, out, a.max_rounds, None if a.smoke else a.src, cargs, hours(j), emb(j), minr(j)) for j in todo]
-    run_cells(run_cell, todo, args, a.workers, [path(j) for j in todo], [{"binding": bind(j)} for j in todo])
-    lost = [j["id"] for j in todo if not G.reusable(path(j), bind(j))]          # the disk, not the pool, says what is saved
-    status = {j["id"]: read(path(j))["status"] for j in jobs if j["id"] not in lost}
+    _, failed = run_cells(run_cell, todo, args, a.workers, [path(j) for j in todo], [{"binding": bind(j)} for j in todo])
+    lost = [j["id"] for j in todo if not G.reusable(path(j), bind(j)) and j["id"] not in failed]   # the disk says what is saved
+    status = {j["id"]: read(path(j))["status"] for j in jobs if j["id"] not in lost and j["id"] not in failed}
+    if failed:                                                   # exit 6: a cell raised; a code or data error, never restarted
+        write(out / "cell_errors.json", {"failed": failed, "lost": lost, "status": status})
+        G.inventory(out, DEVIATIONS, files, argv)
+        print(json.dumps({"cell_errors": failed}), file=sys.stderr)
+        return 4 if any(v.startswith("stopped: round 1") for v in status.values()) else 6
     mismatch = [k for k, v in status.items() if v.startswith("stopped: round 1")]
     if lost:                                                     # exit 5: a worker was lost; a restart runs only these cells
         write(out / "lost_cells.json", {"lost": lost, "saved": [j["id"] for j in todo if j["id"] not in lost], "mismatch": mismatch,

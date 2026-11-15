@@ -137,3 +137,11 @@ Guard: tests `test_r12_settle_counts_only_after_done`, `test_r12_creation_answer
   peaked at 3.53 GB (`results/pods/memprobe3/rss.log`, 2 s sampling), so 7 workers would have run out of memory again. Guard (written
   rule): a memory figure that sets a worker count comes from the longest configuration the run can reach (all rounds),
   and the launcher's `PEAKGB` names that probe log.
+- 2026-11-15, Run B rerun review r2 (both reject): my round-1 fix replaced the result loop with `wait(futs)`, which
+  never reads the futures, so an ordinary `ValueError` in a cell became a "lost worker" and a paid restart; and the
+  partial-pull fix left the deadline exit (`rem <= 0; break`) skipping verification. Both fixes were tested only on the
+  path the finding named. Guard (tests): `test_an_ordinary_cell_error_is_reported_not_lost`,
+  `test_a_cell_error_ends_the_run_without_a_restart` (red: `results/pods/logs_harness/f2_pytest_red_r2.log`), harness
+  scenario "a pull that hangs past the deadline" (red: `f2_harness_red5.log`). Rule: when code that surfaced results
+  is replaced, test each kind of outcome the old code surfaced (success, ordinary error, dead worker), and every exit
+  from a verification loop passes through the verify step.

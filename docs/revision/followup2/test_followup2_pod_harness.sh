@@ -85,6 +85,10 @@ elif cmd == "pull":
                 rc = 1
             if st.get("corrupt_pulls", 0) > 0:
                 st["corrupt_pulls"] -= 1; open(os.path.join(dst, "sub", "s.json"), "w").write("corrupt")
+            if st.get("slow_pull") == k:                 # rerun r2: the files (and the next directory's) arrive, then the
+                nxt = os.path.join(os.path.dirname(dst.rstrip("/")), "followup2-runnerup")   # transfer hangs past the deadline
+                shutil.copytree(os.path.join(H, "remote", "followup2-runnerup"), nxt, dirs_exist_ok=True)
+                json.dump(st, open(S, "w")); L.close(); import time; time.sleep(900)
 json.dump(st, open(S, "w")); sys.exit(rc)
 EOF
 cat > create_one.py <<'EOF'
@@ -138,7 +142,7 @@ if v == "badrow":
 open("ledger.json", "w").write(json.dumps(d))
 EOF
 }
-fail=0; ran=0; TOTAL=46
+fail=0; ran=0; TOTAL=47
 run() { # name state cap creates rc [end-pattern] [watchdog-log-substring] [launcher-output-substring]; env RUNV (A), BUN
   [ -n "${ONLY:-}" ] && ! echo "$1" | grep -q "$ONLY" && return 0   # smoke runs only; a full run sets no ONLY
   r=${RUNV:-A}; rl=$(echo $r | tr AB ab); T=${TAGV:-t}; N=ts-f2$rl; LG=logs_f2${rl}_$T
@@ -249,6 +253,9 @@ LEDGERV=conv1open RUNV=B run "Run B: the rerun is refused while the first Run B'
 # Sol 6, Astra 7: a failed or partial pull of one directory must not skip verifying the others (or itself, if files came).
 run "Run A: a failed pull of one directory still verifies the other" '{"pods":{},"price":0.56,"up":true,"log":[],"fail_pull":"followup2-a-pod-gate","remote_tail":"== remote started 11:48 == runner-up start 12:00 == RUN FAILED at runner-up 13:00"}' 3 1 1 "== RUN FAILED at runner-up 13:00" "" "verify followup2-runnerup: 2 records, 0 bad, 0 not inventoried"
 run "Run A: a pull that reports failure after the files arrived is still verified" '{"pods":{},"price":0.56,"up":true,"log":[],"partial_pull":"followup2-a-pod-gate","remote_tail":"== remote started 11:48 == runner-up start 12:00 == RUN FAILED at runner-up 13:00"}' 3 1 1 "== RUN FAILED at runner-up 13:00" "" "verify followup2-a-pod-gate: [0-9]+ records, 0 bad, 0 not inventoried"
+# Sol r2: a pull that runs into the 2-minute margin before the hard deadline must not skip verifying a directory that
+# already arrived (cap 0.05: the hard deadline minus 120 s falls about 214 s after the first request).
+run "Run A: a pull that hangs past the deadline still verifies the directory already on disk" '{"pods":{},"price":0.56,"up":true,"log":[],"runok":true,"slow_pull":"followup2-a-pod-gate"}' 0.05 1 1 "RUN OK BUT RECORDS NOT VERIFIED" "" "verify followup2-runnerup: 2 records, 0 bad, 0 not inventoried"
 RUNV=B run "Run B: a failed convergence gate is the end state" '{"pods":{},"price":0.56,"up":true,"log":[],"remote_tail":"== remote started 11:48 == convergence gate start 11:48 == GATE FAILED at convergence gate (round 1 differs from the registered record) 13:00"}' 4.25 1 1 "== GATE FAILED at convergence gate \(round 1 differs from the registered record\) 13:00"
 # Accounting: the ledger records 1.2 USD for runner-up (PRIOR), and a first pod never answers (deleted after 240 s). The
 # deadlines leave CAP - PRIOR and HARD x CAP - PRIOR; the pushed attempts file has the deleted attempt and exactly one open
