@@ -38,10 +38,15 @@ RUN=${1:?run A or B}; TGZ=${2:?code tarball}; BTGZ=${3:?bundle tarball}; TAG=${4
 case "$TGZ$BTGZ$TAG$LOUT" in *[[:space:]]*) echo "refused: a path or tag contains whitespace"; exit 1 ;; esac
 case "$RUN" in
   A) NAME=ts-f2a; RUNTAG=runner-up; PLANCAP=3.00; OUTS="followup2-a-pod-gate followup2-runnerup" ;;
-  B) NAME=ts-f2b; RUNTAG=convergence; PLANCAP=4.25; OUTS="followup2-conv" ;;
+  B) NAME=ts-f2b; RUNTAG=convergence2; PLANCAP=5.00; OUTS="followup2-conv" ;;   # the rerun: its own tag and cap (plan, rerun amendment)
   *) echo "refused: the run must be A or B"; exit 1 ;;
 esac
 EXPECT=${EXPECT:?commit}; MAXCPH=${MAXCPH:?max usd per hour}; MINMEM=${MINMEM:-28}; HARD=${HARD:-1.3}
+# Run B worker count (Run B rerun): one killed worker lost the first Run B; the count comes from the Mac-measured peak memory
+# per cell (convergence-plan.md, rerun section); a lost worker restarts the stage once at half the count (saved cells skipped).
+CONVWORKERS=${CONVWORKERS:-7}   # 7 x 2.39 GB (Mac peak, X7-SC cell) = 16.7 GB of 28: margin 1.6
+case "$CONVWORKERS" in [1-9]|1[0-6]) ;; *) echo "refused: CONVWORKERS must be an integer from 1 to 16"; exit 1 ;; esac
+CONVRETRY=$(( CONVWORKERS > 1 ? CONVWORKERS / 2 : 1 ))
 LEDGER=${LEDGER:-/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/docs/revision/budget-ledger.json}
 [ -z "${PRIOR+x}" ] || { echo "refused: PRIOR is not an input here; it is the ledger's recorded spend for the run tag $RUNTAG"; exit 1; }
 $PY -c "import math,sys; c=float(sys.argv[1]); p=float(sys.argv[2]); sys.exit(0 if math.isfinite(c) and 0 < c <= p else 1)" "$CAP" "$PLANCAP" 2>/dev/null || { echo "refused: the cap must be positive and at most the plan's $PLANCAP USD"; exit 1; }
@@ -173,8 +178,10 @@ cleanup() {
         tmo $t $PY runpod.py pull $id "/root/touchstone/results/v2/$d/" "$LOUT/$d/" >/dev/null 2>&1 || ok=0
       done
       rem=$(( hard - 120 - $(date +%s) )); [ $rem -gt 0 ] && tmo $(( rem < 300 ? rem : 300 )) $PY runpod.py pull $id /root/touchstone/results/logs/ $LOGD/ >/dev/null 2>&1
-      if [ "$state" = "RUN OK" ] && [ $ok = 1 ]; then for d in $OUTS; do verify "$LOUT/$d" || ok=0; done; fi
+      pulled=$ok   # verify on every end state (lessons.md: Run A's records went unverified after STOPPED); retry only after RUN OK
+      if [ $pulled = 1 ]; then for d in $OUTS; do verify "$LOUT/$d" || ok=0; done; fi
       [ $ok = 1 ] && break
+      [ "$state" != "RUN OK" ] && [ $pulled = 1 ] && { echo "$(date +%H:%M) end state $state: pulled records do not all verify (see above)"; break; }
       echo "$(date +%H:%M) pull or verification failed (try $try)"
       if [ "$state" = "RUN OK" ]; then [ "$(date +%s)" -ge $(( hard - 120 )) ] && break; else [ $try -ge 3 ] && break; fi
       sleep 60
@@ -279,12 +286,19 @@ elif [ $drc = 4 ]; then echo "== GATE FAILED at convergence gate (round 1 differ
 elif [ $drc != 0 ]; then echo "== RUN FAILED at convergence gate $(date +%H:%M)"; exit 1; fi
 echo "== convergence gate passed $(date +%H:%M)"
 EV="--evidence $B/evidence/conv-gate-mac/headline@rho0.2__F111__X7-SC__profit__mac.json --evidence $B/evidence/conv-gate-mac/fresh1@rho0.2__F111__D2+H3__profit__mac.json --evidence $O/gate/headline@rho0.2__F111__X7-SC__profit__pod.json --evidence $O/gate/fresh1@rho0.2__F111__D2+H3__profit__pod.json"
-step "convergence" 2.24
-uv run --frozen python docs/revision/followup2/convergence_v2.py --workers 16 --site pod --out $O $IN $EV $PAID >> $L/f2_run.log 2>&1; drc=$?
+step "convergence" 5.10
+uv run --frozen python docs/revision/followup2/convergence_v2.py --workers @CW@ --site pod --out $O $IN $EV $PAID >> $L/f2_run.log 2>&1; drc=$?
+if [ $drc = 5 ]; then                  # a lost worker: the finished cells are saved; one restart at half the workers runs the rest
+  echo "== convergence lost a worker; restart with @CWR@ workers (saved cells skipped) $(date +%H:%M)"
+  step "convergence restart" 2.60
+  uv run --frozen python docs/revision/followup2/convergence_v2.py --workers @CWR@ --site pod --out $O $IN $EV $PAID >> $L/f2_run.log 2>&1; drc=$?
+  [ $drc = 5 ] && { echo "== RUN FAILED at convergence (a worker lost twice; saved cells kept) $(date +%H:%M)"; exit 1; }
+fi
 [ $drc = 4 ] && { echo "== GATE FAILED at convergence (round 1 differs) $(date +%H:%M)"; exit 1; }
 [ $drc = 0 ] || { echo "== RUN FAILED at convergence $(date +%H:%M)"; exit 1; }
 RB
 )
+RBODY=${RBODY//@CWR@/$CONVRETRY}; RBODY=${RBODY//@CW@/$CONVWORKERS}
 fi
 RS=$(mktemp "/tmp/${NAME}_remote.XXXXXX") || { state="CANNOT WRITE THE REMOTE SCRIPT"; exit 1; }   # private path (churn r1 review)
 cat > "$RS" <<EOS

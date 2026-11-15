@@ -257,6 +257,28 @@ def run_cell(job: dict, out, max_rounds: int = MAX_ROUNDS, src=None, cost: tuple
     return res
 
 
+def run_cells(fn, todo: list, args: list, workers: int, save) -> list:
+    """Run the cells and save each one the moment it ends (Run B lost all 17 cells to one killed worker because results were
+    written only after every cell ended). Returns the ids of cells with no result: a lost worker breaks the pool, so every
+    cell unfinished at that moment is lost; the saved cells are skipped on restart (guards.reusable)."""
+    if workers <= 1 or len(todo) <= 1:
+        for j, x in zip(todo, args):
+            save(j, fn(*x))
+        return []
+    from concurrent.futures import ProcessPoolExecutor, as_completed
+    from concurrent.futures.process import BrokenProcessPool
+    done = set()
+    with ProcessPoolExecutor(max_workers=workers) as ex:
+        futs = {ex.submit(fn, *x): j for j, x in zip(todo, args)}
+        for f in as_completed(futs):
+            try:
+                rec = f.result()
+            except BrokenProcessPool:
+                continue
+            save(futs[f], rec); done.add(futs[f]["id"])
+    return [j["id"] for j in todo if j["id"] not in done]
+
+
 def frozen_doubling(job: dict, out) -> Path:
     """The frozen doubling stage (revision_v2.stage_doubling) for this cell on this machine, saved as a reference record."""
     p = Path(out) / "gate" / "frozen" / (R._safe(job["id"]) + ".json")
@@ -393,14 +415,10 @@ def main(argv=None) -> int:
     todo = sorted((j for j in jobs if not G.reusable(path(j), bind(j))), key=lambda j: j["family"] != "X7-SC")   # longest first
     minr = lambda j: 2 if j["id"] in plan["nesting"] else 1
     args = [(j, out, a.max_rounds, None if a.smoke else a.src, cargs, hours(j), emb(j), minr(j)) for j in todo]
-    from concurrent.futures import ProcessPoolExecutor
-    if a.workers > 1 and len(todo) > 1:
-        with ProcessPoolExecutor(max_workers=a.workers) as ex:
-            res = list(ex.map(run_cell, *zip(*args)))
-    else:
-        res = [run_cell(*x) for x in args]
-    for j, rec in zip(todo, res):
-        write(path(j), {**rec, "binding": bind(j)})
+    lost = run_cells(run_cell, todo, args, a.workers, lambda j, rec: write(path(j), {**rec, "binding": bind(j)}))
+    if lost:                                                     # exit 5: a worker was lost; a restart runs only these cells
+        write(out / "lost_cells.json", {"lost": lost, "saved": [j["id"] for j in todo if j["id"] not in lost]})
+        G.inventory(out, DEVIATIONS, files, argv); return 5
     status = {j["id"]: read(path(j))["status"] for j in jobs}
     mismatch = [k for k, v in status.items() if v.startswith("stopped: round 1")]
     if not a.smoke and not mismatch:

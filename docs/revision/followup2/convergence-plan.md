@@ -2,6 +2,25 @@
 
 **Amendment (2026-11-13, shared launcher review r1, `docs/revision/roster/{sol,astra}-f2-launcher-r1.md`):** reservation input 4.42 (grant 5.525 USD = 1.3 x the 4.25 USD stop cap, which is unchanged); the follow-up category cap is 72 USD (the author's approval of 2026-11-12); the reservation covers the watchdog bound, 1.3 x the stop cap, because a stage admitted within the cap finishes and only the watchdog at 1.3 x the cap stops a running stage (churn launcher review r1, Sol and Astra); `guards.check_grant` against the stop cap is replaced by the launcher's check that one `followup` reservation tagged with this launch covers 1.3 x the stop cap minus the run's recorded spend. The launcher is `docs/revision/followup2/followup2_pod.sh`.
 
+**Rerun amendment (2026-11-14; the author's board answer "Fix and rerun", card `touchstone-runb-rerun`).** The first Run B
+(pod 9mjos5t359bfcs, launch tag `convergence-1`) passed its gate, then lost every convergence result after 3.6 h: one of 16
+workers was killed with signal 9, most likely out of memory, and the driver wrote results only after every cell ended. Its
+spend is recorded under `convergence-1` after the author's billing check; nothing from it enters the analysis; the rerun
+runs its own gate on its own pod. Changes, all tested before any spend:
+- Driver (`convergence_v2.run_cells`): each cell is saved the moment it ends; a lost worker breaks the pool, so every cell
+  unfinished at that moment is listed in `lost_cells.json` and the driver exits 5; a restart skips saved cells
+  (`guards.reusable`, unchanged). Tests: a real worker killed with signal 9 loses only its own cell; the serial path saves in
+  order; through `main()`, exit 5 then a restart that runs only the lost cell.
+- Worker count: one X7-SC cell (round 1 and its evaluations, `--gate --site mac`) peaked at 2.39 GB resident on the Mac
+  (15 s sampling; search phases 0.2 to 0.4 GB, evaluation phases 1.8 to 2.4 GB). Workers = 7 (7 x 2.39 = 16.7 GB of the
+  28 GB minimum pod memory, a margin of 1.6 for sampling and for later rounds' larger archives); on exit 5 the launcher
+  admits and restarts the stage once with 3 workers; a second exit 5 ends the run ("RUN FAILED ... a worker lost twice").
+- Launcher: the pulled records are verified on every end state (lessons.md), retried only after RUN OK.
+- Cost: run tag `convergence2`, stop cap **5 USD** (the author's), watchdog bound 6.50 USD, reservation
+  `convergence2-1` 6.50 USD. Worst case (three rounds for every cell, 7 workers, benchmark timings): 5.08 h of convergence
+  + 1.06 h gate + 0.3 h preparation = 6.4 h, 3.6 USD at 0.56 USD/h and 4.5 USD at the 0.70 ceiling; the convergence step is
+  admitted at 5.10 h and the restart at 2.60 h. A cell refused by the cap keeps its frozen estimate, as before.
+
 **Draft 7 changes** (internal review round 6, `docs/revision/roster/{sol,astra}-convergence-plan-r6.md`, both reject): paid accounting counts the current pod from its recorded open event, never from a later `--started-at`
 (refusal test); the ledger must have a `spent` list of rows with a tag and a finite, nonnegative amount, and the cap,
 rate, and step estimate must be finite and valid (refusal tests); the reservation command is `budget_followup.py

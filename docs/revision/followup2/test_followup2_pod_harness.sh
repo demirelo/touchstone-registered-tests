@@ -108,7 +108,7 @@ EOF
 ledger() { python3 - "$1" "${2:-0}" <<'EOF'
 import json, sys
 v, prior = sys.argv[1], float(sys.argv[2])
-d = {"caps": {"followup": 72.0}, "reservations": [{"op": "followup", "tag": "runner-up-t", "cap": 3.9}, {"op": "followup", "tag": "convergence-t", "cap": 5.525}],
+d = {"caps": {"followup": 72.0}, "reservations": [{"op": "followup", "tag": "runner-up-t", "cap": 3.9}, {"op": "followup", "tag": "convergence2-t", "cap": 5.525}],
      "spent": [{"op": "followup", "tag": "reset-pod", "usd": 1.65}, {"op": "followup", "tag": "churn-pod", "usd": 4.99}]}
 if prior:
     d["spent"].append({"op": "followup", "tag": "runner-up-0", "usd": prior})
@@ -127,7 +127,7 @@ if v == "badrow":
 open("ledger.json", "w").write(json.dumps(d))
 EOF
 }
-fail=0; ran=0; TOTAL=35
+fail=0; ran=0; TOTAL=39
 run() { # name state cap creates rc [end-pattern] [watchdog-log-substring] [launcher-output-substring]; env RUNV (A), BUN
   [ -n "${ONLY:-}" ] && ! echo "$1" | grep -q "$ONLY" && return 0   # smoke runs only; a full run sets no ONLY
   r=${RUNV:-A}; rl=$(echo $r | tr AB ab); T=${TAGV:-t}; N=ts-f2$rl; LG=logs_f2${rl}_$T
@@ -222,6 +222,11 @@ run "Run A: the end state is the last line of the polled tail (a gate failure af
 run "Run A: the driver's cap admission stops the run between stages" '{"pods":{},"price":0.56,"up":true,"log":[],"remote_tail":"== reset gate passed (bit-identical) 12:30 == runner-up start 12:30 == STOPPED BEFORE search (cap, driver admission) 12:40"}' 3 1 1 "== STOPPED BEFORE search \(cap, driver admission\) 12:40"
 RUNV=B run "Run B: RUN OK with one corrupt pull, retried until verified" '{"pods":{},"price":0.56,"up":true,"log":[],"runok":true,"corrupt_pulls":1}' 4.25 1 0 "RUN OK" "" "verify followup2-conv: 2 records, 0 bad, 0 not inventoried"
 cp pushed_r_remote.sh pushed_B.sh
+# Run B rerun: records are verified on every end state, not only after RUN OK (lessons.md); a failed check after a non-OK
+# end is reported once, without the RUN OK retry loop; a bad worker count is refused before any marker.
+RUNV=B run "Run B: records pulled after a stop are verified too" '{"pods":{},"price":0.56,"up":true,"log":[],"remote_tail":"== remote started 11:48 == convergence start 12:00 == RUN FAILED at convergence 13:00"}' 4.25 1 1 "== RUN FAILED at convergence 13:00" "" "verify followup2-conv: 2 records, 0 bad, 0 not inventoried"
+RUNV=B run "Run B: a corrupt pull after a stop is reported once, not retried" '{"pods":{},"price":0.56,"up":true,"log":[],"corrupt_pulls":5,"remote_tail":"== remote started 11:48 == convergence start 12:00 == RUN FAILED at convergence 13:00"}' 4.25 1 1 "== RUN FAILED at convergence 13:00" "" "end state == RUN FAILED at convergence 13:00: pulled records do not all verify"
+CONVWORKERS=0 RUNV=B run "Run B: a worker count outside 1 to 16 is refused" '{"pods":{},"price":0.56,"up":true,"log":[]}' 4.25 0 1 "" "" "^refused: CONVWORKERS must be an integer from 1 to 16"
 RUNV=B run "Run B: a failed convergence gate is the end state" '{"pods":{},"price":0.56,"up":true,"log":[],"remote_tail":"== remote started 11:48 == convergence gate start 11:48 == GATE FAILED at convergence gate (round 1 differs from the registered record) 13:00"}' 4.25 1 1 "== GATE FAILED at convergence gate \(round 1 differs from the registered record\) 13:00"
 # Accounting: the ledger records 1.2 USD for runner-up (PRIOR), and a first pod never answers (deleted after 240 s). The
 # deadlines leave CAP - PRIOR and HARD x CAP - PRIOR; the pushed attempts file has the deleted attempt and exactly one open
@@ -270,6 +275,8 @@ case "$what:$act:$s" in
   *:crash:*) echo "Traceback (most recent call last): ValueError"; exit 1 ;;
   run:cap:*) echo '{"stopped_before": "search", "cap_usd": 3.0}'; exit 3 ;;
   run:fail:*) exit 4 ;;
+  run:lost:*) exit 5 ;;                                            # a worker lost (Run B rerun), every time
+  run:lostonce:*) [ -e "$REMOTE_ROOT/lost1" ] && exit 0; touch "$REMOTE_ROOT/lost1"; exit 5 ;;
 esac
 exit 0
 EOF
@@ -310,9 +317,10 @@ rcheck pushed_B.sh "admit@1.06=refuse" "== STOPPED BEFORE convergence gate \(cap
 rcheck pushed_B.sh "gate=cap" "== STOPPED BEFORE convergence gate \(cap, driver admission\)"
 rcheck pushed_B.sh "gate=fail" "== GATE FAILED at convergence gate \(round 1 differs from the registered record\)"
 rcheck pushed_B.sh "gate=crash" "== RUN FAILED at convergence gate"
-rcheck pushed_B.sh "admit@2.24=refuse" "== STOPPED BEFORE convergence \(cap, admission\)"
+rcheck pushed_B.sh "admit@5.10=refuse" "== STOPPED BEFORE convergence \(cap, admission\)"
 rcheck pushed_B.sh "run=fail" "== GATE FAILED at convergence \(round 1 differs\)"
 rcheck pushed_B.sh "run=crash" "== RUN FAILED at convergence"
+rcheck pushed_B.sh "run=lost" "== RUN FAILED at convergence \(a worker lost twice; saved cells kept\)"
 rcheck pushed_B.sh "" "== STOPPED BEFORE convergence gate \(cap\)" stop
 rcheck pushed_B.sh "" "== RUN OK"
 python3 - "$RCALLS" <<'PYR' || { echo "SCENARIO FAILED (Run B remote calls)"; fail=1; }
@@ -320,16 +328,27 @@ import sys
 c = [l.split() for l in sys.argv[1].splitlines()]
 assert [x[3] for x in c] == ["docs/revision/followup2/guards.py", "docs/revision/followup2/convergence_v2.py"] * 2, [x[3] for x in c]
 j = [" ".join(x) for x in c]
-assert "--hours 1.06" in j[0] and "--hours 2.24" in j[2]
+assert "--hours 1.06" in j[0] and "--hours 5.10" in j[2]
 for k in (0, 1, 2, 3):
-    for f in ("--cap-usd 4.25 ", "--usd-per-hour 0.70 ", "--run-tag convergence ", "/f2.attempts ", "/f2.ledger.json ", "/STOP ", "--soft-deadline "):
+    for f in ("--cap-usd 4.25 ", "--usd-per-hour 0.70 ", "--run-tag convergence2 ", "/f2.attempts ", "/f2.ledger.json ", "/STOP ", "--soft-deadline "):
         assert f in j[k] + " ", (k, f)
 assert "--gate --site pod --cells headline@rho0.2|F111|X7-SC|profit,fresh1@rho0.2|F111|D2+H3|profit --out results/v2/followup2-conv" in j[1], j[1]
-assert "--gate" not in c[3] and "--workers 16" in j[3] and "--out results/v2/followup2-conv" in j[3]
+assert "--gate" not in c[3] and "--workers 7" in j[3] and "--out results/v2/followup2-conv" in j[3]
 ev = [c[3][i + 1] for i, x in enumerate(c[3]) if x == "--evidence"]
 assert len(ev) == 4 and sum("/bundle/evidence/conv-gate-mac/" in e for e in ev) == 2 and sum(e.startswith("results/v2/followup2-conv/gate/") and e.endswith("__pod.json") for e in ev) == 2, ev
-print("remote ok (B): 9 end states; admit, gate, admit, main run with four evidence records")
+print("remote ok (B): 10 end states; admit, gate, admit, main run with four evidence records")
 PYR
+ran=$((ran+1)); echo "== Run B: a lost worker restarts the stage once at half the workers (Run B rerun)"
+rcheck pushed_B.sh "run=lostonce" "== RUN OK"
+python3 - "$RCALLS" <<'PYL' || { echo "SCENARIO FAILED (Run B restart)"; fail=1; }
+import sys
+c = [l.split() for l in sys.argv[1].splitlines()]
+assert [x[3].split("/")[-1] for x in c] == ["guards.py", "convergence_v2.py"] * 3, c
+j = [" ".join(x) for x in c]
+assert "--hours 2.60" in j[4] and "--workers 7 " in j[3] + " " and "--workers 3 " in j[5] + " " and "--gate" not in c[5], j
+print("restart ok: admission, then the stage again with 3 workers")
+PYL
+rcheck pushed_B.sh "run=lostonce admit@2.60=refuse" "== STOPPED BEFORE convergence restart \(cap, admission\)"
 # The real admission (review r1): the accounting launch's script, attempts file and ledger (PRIOR 1.2 of a 3 USD cap), with
 # the real guards.py: the reset gate (0.61 h at 0.70) is admitted, the runner-up step (2.65 h) would pass the cap and is
 # refused by the real check, so the script stops before it.

@@ -326,3 +326,58 @@ def test_without_a_measured_mismatch_a_later_admission_refusal_still_exits_3(tmp
         raise AssertionError("the second cell must not start after the STOP file")
     monkeypatch.setattr(B, "gate_cell", fake_gate_cell)
     assert B.main(args) == 3 and calls == [cells[0]] and (out / "cost_stop.json").exists()
+
+
+# Run B rerun (board card touchstone-runb-rerun): one killed worker lost all 17 cells, because results were written only
+# after every cell ended. Each cell must be saved the moment it ends, and a lost worker must cost only its own cells.
+def _probe_cell(job, wait):
+    import os
+    import time
+    time.sleep(wait)
+    if job["id"] == "kill":
+        os.kill(os.getpid(), 9)                                  # what the out-of-memory killer did on the pod
+    return {"id": job["id"], "status": "passed"}
+
+
+def test_each_cell_is_saved_when_it_ends_and_a_killed_worker_loses_only_its_own_cell():
+    saved = []
+    jobs = [{"id": "kill"}, {"id": "a"}, {"id": "b"}]
+    args = [(jobs[0], 1.5), (jobs[1], 0.0), (jobs[2], 0.0)]
+    lost = B.run_cells(_probe_cell, jobs, args, workers=2, save=lambda j, rec: saved.append((j["id"], rec["status"])))
+    assert sorted(saved) == [("a", "passed"), ("b", "passed")]
+    assert lost == ["kill"]
+
+
+def test_serial_path_saves_each_cell_as_it_ends():
+    order = []
+    jobs = [{"id": "a"}, {"id": "b"}]
+    def fn(job, wait):
+        order.append(("run", job["id"]))
+        return {"id": job["id"], "status": "passed"}
+    lost = B.run_cells(fn, jobs, [(j, 0.0) for j in jobs], workers=1, save=lambda j, rec: order.append(("save", j["id"])))
+    assert order == [("run", "a"), ("save", "a"), ("run", "b"), ("save", "b")] and lost == []
+
+
+def test_a_restart_skips_the_cells_saved_before_the_loss(tmp_path, monkeypatch):
+    """Through main(): first run loses one cell (exit 5, the others saved); the restart runs only the lost cell."""
+    calls = []
+    def fake_run_cells(fn, todo, args, workers, save):
+        ids = [j["id"] for j in todo]; calls.append(ids)
+        for j in todo[1:] if len(calls) == 1 else todo:
+            save(j, {"status": "passed", "rounds": []})
+        return [todo[0]["id"]] if len(calls) == 1 else []
+    monkeypatch.setattr(B, "run_cells", fake_run_cells)
+    argv = _smoke_main_args(tmp_path, monkeypatch)
+    assert B.main(argv) == 5
+    assert (tmp_path / "out" / "lost_cells.json").exists()
+    assert B.main(argv) == 0
+    assert len(calls) == 2 and calls[1] == [calls[0][0]]
+
+
+def _smoke_main_args(tmp_path, monkeypatch):
+    monkeypatch.setattr(B.R, "git_commit", lambda: "pinned-for-the-rerun-check")
+    cells = "fresh1@rho0.2|F111|D2+H3|profit,fresh4@rho0.2|F111|D2+H3|profit"
+    return ["--src", str(MAIN / "eval/all"), "--out", str(tmp_path / "out"), "--report", str(MAIN / "report/report.json"),
+            "--draw", str(MAIN / "draw/draw.json"), "--instances", str(MAIN / "draw/instances.json"),
+            "--cfgs", str(MAIN / "deviation/cfg_linux.json"), "--addendum", str(MAIN / "report/addendum.json"),
+            "--cells", cells, "--max-rounds", "2", "--smoke", "--workers", "2"]

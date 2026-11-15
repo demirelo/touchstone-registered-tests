@@ -116,3 +116,11 @@ Guard: tests `test_r12_settle_counts_only_after_done`, `test_r12_creation_answer
   3.43 USD. Three review rounds missed it; no test killed a worker, and no step measured memory per worker. Guard (for
   the rerun, tests first): a test that kills one worker and checks that finished cells are on disk and skipped on resume;
   a Mac-measured peak memory per cell that sets the worker count, checked by the launcher against the pod's memory.
+
+- 2026-11-14, Run B rerun: I edited the launcher (`followup2_pod.sh`) before its harness had the new scenarios, so the
+  first harness run could not show that the new scenarios fail on the old code. Mitigation: a red run of the new harness
+  against the installed old launcher (`results/pods/logs_harness/f2_harness_red.log`) before the new launcher is
+  installed. Guard (written rule): for a launcher change, install nothing until a red harness log against the installed
+  copy exists; the review brief names that log, and a brief without it is not sent.
+- 2026-11-14, Run B rerun: the worker check named in the guard above is a fixed count (7, from the Mac peak of 2.39 GB
+  per cell, `memprobe/rss.log`) and a launcher refusal outside 1 to 16, not a live check of the pod's memory.
