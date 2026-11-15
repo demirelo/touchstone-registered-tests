@@ -5,7 +5,7 @@ Run B (convergence, 19 cells) failed on pod ts-f2b: one worker was killed with s
 memory. A Mac probe measured a peak of 2.39 GB per cell (16 workers about 38 GB, pod 29 GB). The author chose "fix and
 rerun" with a new cap of 5 USD.
 
-Files (diff against the last commit: `git diff HEAD -- docs/revision/followup2/`):
+Files (the change is commit f1a8f8a: `git show f1a8f8a`):
 - Driver `docs/revision/followup2/convergence_v2.py`: `run_cells` saves each cell when it ends (serial and pool paths);
   a `BrokenProcessPool` loses only unfinished cells; `main` writes `lost_cells.json` and returns 5. Saved cells are
   skipped on the next call (existing skip of cells whose record exists).
