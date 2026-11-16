@@ -1568,5 +1568,15 @@
   "path": "churnpaper.r3_p05.staying_audit_max",
   "kind": "alloc",
   "section": "churn"
+ },
+ "ch_stay_lo_d": {
+  "path": "churnpaper.r3_p05.staying_audit_min_doubled",
+  "kind": "alloc",
+  "section": "churn"
+ },
+ "ch_stay_hi_d": {
+  "path": "churnpaper.r3_p05.staying_audit_max_doubled",
+  "kind": "alloc",
+  "section": "churn"
  }
 }

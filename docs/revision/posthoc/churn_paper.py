@@ -81,7 +81,9 @@ def summary(first: dict, mid: dict, runnerup: dict | None = None) -> dict:
         fad = r5["focal_audit_rate_by_market"]["0.05"].get("F111|doubled"); xd = alloc["0.05"]["F111|doubled"]["x_by_market"]
         if fad:   # Astra d10-r2, correction 5: the same range for the doubled winners
             repd = [fad[m] for m in fad if xd.get(m) == 1]
-            r3.update(replacing_audit_min_doubled=min(repd), replacing_audit_max_doubled=max(repd), replacing_markets_doubled=len(repd))
+            keepd = [fad[m] for m in fad if xd.get(m) == 0]
+            r3.update(replacing_audit_min_doubled=min(repd), replacing_audit_max_doubled=max(repd), replacing_markets_doubled=len(repd),
+                      staying_audit_min_doubled=min(keepd), staying_audit_max_doubled=max(keepd), staying_markets_doubled=len(keepd))
     ru = {}
     for fam, vers in (runnerup or {}).items():
         if not isinstance(vers, dict):

@@ -138,3 +138,12 @@ def test_runner_up_table_and_flags_per_family():
     fa = FIRST["review_r5"]["focal_audit_rate_by_market"]["0.05"]["F111|base"]; x = FIRST["review_r4"]["audit_allocation"]["0.05"]["F111|base"]["x_by_market"]
     keep = [fa[m] for m in fa if x[m] == 0]
     assert r["staying_audit_min"] == min(keep) and r["staying_audit_max"] == max(keep)
+
+
+def test_summary_staying_range_doubled():
+    # Astra d10-r4, correction 3: the non-replacing range for the doubled winners at p = 0.05
+    s = P.summary(FIRST, MID, RUNNERUP)
+    fa = FIRST["review_r5"]["focal_audit_rate_by_market"]["0.05"]["F111|doubled"]
+    x = FIRST["review_r4"]["audit_allocation"]["0.05"]["F111|doubled"]["x_by_market"]
+    keep = [fa[m] for m in fa if x[m] == 0]
+    assert s["r3_p05"]["staying_audit_min_doubled"] == min(keep) and s["r3_p05"]["staying_markets_doubled"] == len(keep)

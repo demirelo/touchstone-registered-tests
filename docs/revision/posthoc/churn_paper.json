@@ -18,8 +18,11 @@
   "replacing_markets": 3,
   "replacing_markets_doubled": 3,
   "staying_audit_max": 0.01456767141595666,
+  "staying_audit_max_doubled": 0.01456767141595666,
   "staying_audit_min": 0.011861243403269404,
-  "staying_markets": 3
+  "staying_audit_min_doubled": 0.011861243403269404,
+  "staying_markets": 3,
+  "staying_markets_doubled": 3
  },
  "rates": {
   "0.01": {
