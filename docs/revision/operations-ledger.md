@@ -215,9 +215,39 @@ Astra accept-with-caveat; the one caveat (Holm citation) is resolved in 06c75e9 
 
 ## Honest-churn follow-up (exploratory, after the report; 2026-11-12, times UTC)
 
-- Plan: `docs/revision/churn/churn-plan.md`, draft 6, consensus before any churn search; the author started the arm on the board ("Start the honest-churn arm now") and added 50 USD on 2026-11-12 (ledger approval, limit 123 USD; the arm's stop cap stayed 8 USD, reservation 10.40 USD).
+- Plan: `docs/revision/churn/churn-plan.md`, draft 6, consensus before any churn search; the file as run is the one at commit ef17139 (2026-11-12 11:45:42 UTC), one minute before the pod request at 11:46; the author started the arm on the board ("Start the honest-churn arm now") and added 50 USD on 2026-11-12 (ledger approval, limit 123 USD; the arm's stop cap stayed 8 USD, reservation 10.40 USD).
 - Launcher `docs/revision/churn/churn_pod.sh` (from the reviewed reset launcher): review r1 Sol and Astra reject (fixed in 41cb0f9, harness 20 of 20); r2 Sol and Astra accept-with-caveat, caveats applied (ef17139, harness 21 of 21). Dry-run guard ok at ef17139.
 - Pod l1z4ehbliw376o (16 vCPU, 0.56 USD/h): requested 11:46; p = 0 gate 11:48 to 12:33, bit-identical; search 12:33 to 16:37; freeze and evaluate to 17:06; doubling to 20:24; diagnostics to 20:34; inventory; RUN OK 20:34. Records verified (gate-p0 31, p0.01 206, p0.05 206; 0 bad; run.json ok); pod deleted and verified 20:38; account pod list empty. Records in `results/v2/followup-churn/followup-churn/`. Stages ran about 20 to 25 percent longer than the cost model.
 - Analysis code `docs/revision/posthoc/churn_block.py` with its tests committed in c15580d, before any run on the churn records; a first run on a wrong no-churn directory (the churn bundle holds only the gate cell) wrote a partial result that was discarded; an input guard followed in c398a97 (lesson); the first run on the registered inputs was committed in cd64fc3. It reproduces the registered no-churn values exactly; expectations 1 to 4 all met.
 - Spend: 4.99 USD balance difference (`podctl.py spend ts-c-churn`, 21:44 UTC; `results/pods/ts-c-churn.spent`), entered in the follow-up ledger after the author's billing-page check (board, 21:50 UTC: no deposit or credit). Pod-time estimate 4.96 USD; plan estimate 3.85 USD; stop cap 8 USD not reached. Program total 57.51 USD of the 123 USD limit.
 - Review of the results and paper text: round 1 Sol accept-with-caveat, Astra reject (fixed in 24b0c40); round 2 Sol and Astra accept-with-caveat, caveats applied (012af60). Consensus.
+
+## Churn amendment 1, rates 0.02 and 0.03 (exploratory, after the report; 2026-11-13 and 14, times UTC)
+
+- Plan: churn plan amendment 1 with expectations 5 to 8, committed in 2604ce6 before any run at these rates and after the
+  0.01 and 0.05 results were known; launcher review r1 consensus 470da21 (2026-11-13 15:54); pod rruxjg3uevmclf launched at
+  e1c925a.
+- Result committed in f682415 (2026-11-14 02:55): RUN OK, records verified (31 + 206 + 206, 0 bad), pod deleted;
+  expectations 5 to 8 met (frozen and doubled); 8 of 36 cells flagged incomplete.
+- Spend: recorded as the ceiling upper bound 7.70 USD (`churn-mid-pod`; the author's board decision of 2026-11-15, because a
+  deposit made the balance difference unusable; the author kept the bound on 2026-11-16).
+
+## Run A, runner-up comparator (exploratory, after the report; 2026-11-13, times UTC)
+
+- Plan `docs/revision/followup2/runner-up-plan.md`; shared launcher review r3 consensus dc296bd; reservation and launch
+  04d63f0 (16:19), pod wk8fwbjtmwppyu at dc296bd.
+- Result committed in 9bad3b1 (20:49): pod records verified (161 + 27, 0 bad); analysis on the Mac at dc296bd, D2+H3
+  expectation met (base and doubled). No churn cells.
+- Spend: ceiling upper bound 3.14 USD (`runner-up-1`), kept as the record by the author on 2026-11-16.
+
+## Run B, continued searches (exploratory, after the report; 2026-11-13 to 16, times UTC)
+
+- First attempt: pod 9mjos5t359bfcs at dc296bd (launch 2461c7b, 18:03); gate passed, then one of 16 workers was killed
+  (signal 9) after about 3.6 h and the driver lost every convergence result. Nothing from it enters the analysis. Spend
+  2.76 USD (the author's billing page, entered in 8144e3c).
+- Rerun (the author's board answer "Fix and rerun", cap raised to 7 USD): driver and launcher fixes, review rounds 1 to 3
+  to consensus (572c627, c4483f9); Mac gate at c4483f9 passed both cells; pod qqu4d1emxzsep7 launched 2026-11-16 01:15,
+  RUN OK 07:15, 135 records verified, pod deleted and verified 07:17.
+- Analysis on the Mac (09586ed, 09:53): the recompute equals the pod's; 19 of 19 cells passed within three rounds.
+- Spend: 3.40 USD balance difference (01:15 to 08:25; no reload in that window per the author's billing screenshot),
+  0244fa0. Follow-up total 23.64 of 72 USD; program 74.509 of 123 USD.
