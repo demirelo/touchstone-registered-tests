@@ -1,0 +1,14 @@
+VERDICT: accept-with-caveat
+
+CORRECTIONS:
+1. **§§5–6; `cost_estimate.py` — Finish the round-2 scheduling correction.** The nonzero-churn continuation gate appears before `churn_search`, although it needs that cell’s search and doubling records. Split the gates: run the churn-zero gate after menus/references, then run the nonzero gate after its search/evaluation/doubling inputs exist. Reuse those validated inputs in production.
+
+2. **§§5–6; `cost_estimate.py` — Include the complete churn-zero gate.** The estimate charges evaluation and doubling but no injected-path search. The existing churn gate compares search, evaluation and doubling. Reuse the ordinary menu search, add one churn-zero search, and require agreement across all three stages. Recompute costs after these changes and after any reduction in worker counts. Otherwise, the structure is correct: 66 searches per family include the ten-rule menus plus runner-up; X7-SC’s larger search budget is included, and menu X7-SC doubling is explicitly excluded. Slowdown, continuation share, diagnostics and two-pod overhead are present. Keep actual pod billing separate from the conservative core-hour projection.
+
+3. **§5 — Make commitment verification explicit in the implementation review.** Check the actual frozen source files against the committed revision, as well as checking the manifest’s file hashes. Retain evidence for the public publication height: `draw_v2.instances` only tests the supplied integer against H; it does not authenticate publication. The stamped-manifest correction otherwise works with the frozen block reader and instance function. A valid anchor A establishes prior existence before H = A + 144; absent timely publication, preserve the nonconfirmatory label.
+
+4. **§§1–5 — Remaining round-2 execution and analysis corrections are answered correctly.** No identified stage requires a frozen-file edit. Separate directories, `fresh0..5`, runner-up parameters under `C*`, direct function calls, and one pod calibration passed through `cfg=` suffice. Require the promised adapter, candidate-replay, mismatch, resume and failure tests before stamping. The paired estimand is well defined: each winner set uses its corresponding market’s p = 0 menu baseline and the unchanged reference candidate replayed under churn. The prospective primary winner choice and frozen sensitivity are sufficiently specified.
+
+5. **§§3,8 — Retain the stated limits.** The support criterion is numeric, scorable and nontrivial; the material companion controls effect-size wording separately. Expectation 4 is unobserved and falsifiable, but its subjective 0.5 forecast does not establish empirical difficulty. Keep unresolved-search counts, fallback counts and search-conditional interval scope beside the results. The remaining lesson risks concern implementation checks, rather than an uninterpretable design.
+
+CONFIDENCE: 0.93.

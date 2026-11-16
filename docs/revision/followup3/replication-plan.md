@@ -1,4 +1,4 @@
-# Churn replication on new markets: plan (draft 3, 2026-11-16; for internal review; no spend)
+# Churn replication on new markets: plan (draft 3 with the review r3 caveats, 2026-11-16; consensus; no spend)
 
 **Why.** Two external reviews of draft 10 (`docs/revision/roster/astra-pro-paper-d10-ext.md`, `-ext2.md`; WEIS 3/5 upper
 borderline) found the churn result reproducible but narrow: one market neighbourhood, one verified-history comparator
@@ -36,7 +36,13 @@ separate spend card.
    preparation and transfer for each of two pods (section 6). 6. Deterministic continuation priority under a cost stop,
    pod-memory admission against the allocated pod, validated configuration reuse across pods (section 5).
 
-**Status.** Draft 3. A prospective follow-up: this plan, its expectations and its analysis code are committed and stamped
+**Review round 3** (`docs/revision/roster/{sol,astra}-replication-plan-r3.md`): Sol and Astra accept-with-caveat; the
+caveats are applied below without another round: the gates are split and ordered (section 5); the frozen code is
+verified at run time and publication evidence is kept (section 5); a continuation stopped between rounds keeps the
+frozen winner (section 4); expectation 4 is an uncertain forecast (section 3).
+
+**Status.** Draft 3, consensus. The implementation (drivers, adapter, analysis, tests) is reviewed separately before
+the stamp. A prospective follow-up: this plan, its expectations and its analysis code are committed and stamped
 before the block that draws the markets exists. It is still outside the registered protocol v2 and changes no registered
 decision. It is the first churn result in this project whose markets were unknown when its expectations were written.
 
@@ -98,7 +104,7 @@ Expectations (each scored "met" or "not met" exactly as written, primary winners
 3. The support criterion holds for x = d and for x = q at p = 0.03.
 4. The support criterion holds for x = u (the runner-up) at p = 0.05. Subjective prospective probability, recorded now:
    0.5. There is no direct runner-up churn result; the R3 churn results and the two comparators' mechanics give only
-   indirect information.
+   indirect information. This is an uncertain forecast, not evidence that the prediction is difficult.
 5. R3's audited share of the attacker's jobs (audited jobs over served jobs of the attacker's identities, summed over the
    200 seeds of a market) at p = 0.05 is below its value at p = 0 on at least 5 of 6 markets; a market where the attacker
    serves no job at either rate (a zero denominator at either rate) counts as not below.
@@ -117,7 +123,9 @@ continuation runs through a churn-aware adapter under `docs/`: it installs churn
 direct `sim.reference.select_reference` import of `convergence_v2.run_cell`, so that every menu candidate is replayed
 under the cell's churn and no cached no-churn score is used; tests require the replay and the round-1 agreement.
 Winners: a cell that passes keeps its final winner; a cell that reaches the round cap keeps its last winner and is
-counted as unresolved; a cell not continued because of the cost cap, or whose continuation output is missing or
+counted as unresolved; a cell whose continuation stops between rounds at the cost cap keeps its validated frozen winner,
+its partial rounds are excluded from every result, and it is counted as stopped; a cell not continued because of the
+cost cap, or whose continuation output is missing or
 nonfinite, keeps its validated frozen winner and is counted as not continued. A round-1 mismatch (round 1 differs from
 this run's doubling record) signals an environment or code fault, as in Run B (exit 4): it stops all continuation, no
 continued winner of this run enters any result, and the primary analysis is reported as not available; the all-frozen
@@ -126,17 +134,23 @@ invalid is unscorable, and so is every expectation that needs it. Ties in refere
 `select_reference` rule (training score, then its fixed order). A reference reselected during continuation affects only
 the diagnostics and the stopping decision; gains always use the rule's selected no-churn reference candidate.
 Continuation order, fixed now (it decides which cells a cost stop leaves out): p = 0.05, then 0.03, then 0; within a
-rate, markets rep0 to rep5; within a market, R3, C*, C-thr(12), B3.
+rate, markets rep0 to rep5; within a market, R3, C*, C-thr(12), B3. The five continuation workers take cells from one
+queue in this order, and a resume continues the same queue from the first cell without a passing record. Passing the
+continuation's incremental check is not a claim of convergence or of bounded search error.
 
 ## 5. Execution contract
 
 - No change under `sim/` or `scripts/` (code freeze). New drivers live in `docs/revision/followup3/` and call the frozen
   functions directly (`R.market`, `R.job`, `R.stage_search`, `_run_one`, `R._run_reference`, `churn_v2.install` and
   `build_jobs`, `convergence_v2.run_cell`), bypassing `R.main` and the manifest-wide freeze, as the follow-ups did.
-- Gates: a Mac smoke run of each wrapper; on the pod, one p = 0 cell through the ordinary path and through the churn path
-  with churn zero, required bit-identical; one continuation round 1 at p = 0.05 against its own doubling record,
-  required identical, with a test that every menu candidate was replayed under churn (a zero-churn gate cannot expose
-  cached no-churn scores). The evidence guards that point at registered cells are replaced by guards on this run's own records.
+- Gates, in order: a Mac smoke run of each wrapper; on the pod, after the menus and references, one p = 0 cell through
+  the churn path with churn zero (search, evaluation and doubling) against the ordinary menu search and its evaluation
+  and doubling, required bit-identical in all three; then, after the first p = 0.05 cell's search, evaluation and
+  doubling (reused in production), its continuation round 1 against its own doubling record, required identical, with a
+  test that every menu candidate was replayed under churn (a zero-churn gate cannot expose cached no-churn scores).
+- Frozen code at run time: before the draw, before each stage and before any resume, the drivers check that `sim/`,
+  `scripts/` and the frozen configuration inputs equal the manifest's git commit (no working-tree change), that no
+  environment override is set, and that every manifest-listed file matches its hash. The evidence guards that point at registered cells are replaced by guards on this run's own records.
 - Memory: the longest task of each stage measured on the Mac (as the churn arm and Run B did); on each pod, before each
   stage, the worker count is admitted against the pod's cgroup memory limit with 25 percent headroom over the measured
   peak and lowered if needed, then kept across restarts; the saved configurations are reused on the second pod only
@@ -150,7 +164,8 @@ rate, markets rep0 to rep5; within a market, R3, C*, C-thr(12), B3.
   valid attestation A and the draw record are kept. One stamp and one draw at H = A + 144: no restamping, no redraw, no
   replacement of a market after any record exists. A valid anchor at A proves that the manifest existed before H; a
   public, uniquely identified commitment also needs the manifest published before H (a push, which needs the author's
-  consent), with its publication height recorded. Without publication before H, the draw wrapper records the draw as
+  consent), with its publication height recorded and the evidence for it kept (the pushed commit, the remote's record and a block
+explorer read at that time); `draw_v2.instances` only compares the given height with H and does not authenticate it. Without publication before H, the draw wrapper records the draw as
   nonconfirmatory (the `--published-height` rule of `draw_v2.py`), and the paper says so.
 - Inventory with hashes; verification of every pulled directory on every end state; pod deletion verified; spend
   recorded from the billing page.
@@ -159,9 +174,9 @@ rate, markets rep0 to rep5; within a market, R3, C*, C-thr(12), B3.
 
 `python3 docs/revision/followup3/cost_estimate.py`, a stage schedule in execution order at the memory-safe workers
 (search 16, evaluation and doubling 9, continuation 5), with calibration, gates, diagnostics, and preparation and transfer
-for each of two pods: flag share 0.30 gives 221 core-hours, 25.1 billed pod-hours; 0.50 gives 238 core-hours, 28.8
-pod-hours. Estimate (the larger of core-hour pricing at 0.108 and pod pricing at 0.56; actual billing is per pod-hour):
-23.83 and 25.70 USD; with the 1.25 headroom 29.78 and 32.12. The follow-up budget has 48.36 of 72 USD
+for each of two pods: flag share 0.30 gives 221 core-hours, 25.2 billed pod-hours; 0.50 gives 238 core-hours, 28.9
+pod-hours. Actual billing is per pod-hour (14.12 and 16.21 USD at 0.56); the conservative estimate is the larger of that
+and core-hour pricing at 0.108: 23.84 and 25.72 USD, with the 1.25 headroom 29.80 and 32.15. The follow-up budget has 48.36 of 72 USD
 left. The run may use two pods (menus and references; then evaluation, churn and continuation) to stay under a day per
 pod. The stop cap is set on the spend card; the reservation covers 1.3 times that cap.
 

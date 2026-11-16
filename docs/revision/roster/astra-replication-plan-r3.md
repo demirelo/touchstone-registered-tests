@@ -1,0 +1,15 @@
+VERDICT: accept-with-caveat
+
+CORRECTIONS:
+
+1. **Plan §§1–5 — Round-2 response:** Most corrections are answered correctly: manifest bytes, nonzero-churn replay, mismatch handling, missing-base rules, ties, interval construction, publication status, memory admission, and configuration reuse. No identified stage requires a frozen-file edit. Separate directories, `fresh0..5`, saved `cfg=`, direct stage calls, and the proposed `docs/` adapter are sufficient in principle. Acceptance of the implementation still requires the stated tests.
+
+2. **Plan §5 — Verify the frozen revision:** Recording a commit identifier does not verify the executing files. Require the wrapper to check `sim/`, `scripts/`, and frozen configuration inputs against that revision, including working-tree changes and environment overrides. Check bindings again before execution and resume, not only before drawing. Passing the stamped manifest bytes to both draw functions is otherwise correct; those functions do not require protocol YAML for instance generation. The anchor establishes prior existence; public commitment remains conditional on publication before H.
+
+3. **Plan §§2,4 — Complete the cost-stop branch:** Specify what happens when continuation starts but stops between rounds. `convergence_v2.run_cell` can return finite `partial` results without `heldout`; this differs from “not continued” and missing output. Explicitly retain the validated frozen winner, exclude partial results from primary scoring, and report the stopped count. Define how ordered admission and resume preserve the stated priority with five workers.
+
+4. **Plan §§5,6; `cost_estimate.py` — Gate dependencies remain incorrect:** The nonzero-churn gate precedes `churn_search`, although doubling and continuation require that cell’s churn search record. Split the gates: run the zero-churn gate first, then one nonzero-churn search and its gate, then remaining searches. Include the zero-churn injected search if the equivalence gate covers search. State which pilot records production reuses, and recalculate without double-counting. The 66 searches per family, X7-SC budget treatment and doubling exclusion, slowdown, continuation scenarios, diagnostics, and two-pod overhead are otherwise coherent. The script reproduces the stated totals; actual pod-price projections are $14.03/$16.11, distinct from the conservative $23.83/$25.70 estimates.
+
+5. **Plan §§2,3,8 — Preserve interpretation limits:** The paired estimands are well defined when each winner set uses its corresponding p=0 result and unchanged reference candidate replayed under churn. Continued-search primary results are defensible because selection is fixed prospectively. The support criterion is numeric and nontrivial, but permits negligible effects; retain the separate material criterion. Expectation 4 is falsifiable, but a subjective probability of 0.5 does not establish empirical difficulty. Describe it as an uncertain forecast, not demonstrated evidence of a risky prediction. Passing the incremental search check must not become a claim of convergence or bounded search error.
+
+CONFIDENCE: 0.94.

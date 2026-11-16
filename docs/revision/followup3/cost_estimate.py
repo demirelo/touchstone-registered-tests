@@ -1,4 +1,4 @@
-"""Cost estimate of the churn replication (plan draft 3) from experiments/v2/benchmark/timings.json, the churn slowdown
+"""Cost estimate of the churn replication (plan draft 3, review r3 caveats applied) from experiments/v2/benchmark/timings.json, the churn slowdown
 measured for the churn arm (docs/revision/churn/churn_cost.py) and the memory-safe worker counts of the churn arm and
 Run B. Two numbers per scenario: core-hours at 0.108 USD per core-hour, and billed pod time from a stage schedule
 (waves at the stage's worker limit, stages in sequence) at 0.56 USD per hour; the estimate is the larger of the two.
@@ -35,10 +35,12 @@ def estimate(flag_share: float, rounds: int = 3) -> dict:
         "menu_d2h3": (menu_d2 * T["d2h3_cell"], waves(menu_d2, W_SEARCH) * T["d2h3_cell"]),
         "menu_x7": (menu_x7 * T["x7_cell"], waves(menu_x7, W_SEARCH) * T["x7_cell"]),     # needs the embedded D2+H3 winner
         "references": (MARKETS * RULES * T["reference"], MARKETS * RULES * T["reference"]),               # serial, as Run A
-        "gates": (2 * (EV + T["doubling"]) + 2 * cont_round, 2 * (EV + T["doubling"]) + 2 * cont_round),   # p = 0 cell through
-        # the ordinary and the churn-zero path (evaluate and doubling), and one continuation round 1 at p = 0.05 against its
-        # own doubling record (that doubling plus the round); serial
+        "gate_churn_zero": (T["d2h3_cell"] + 2 * (EV + T["doubling"]), T["d2h3_cell"] + 2 * (EV + T["doubling"])),   # review
+        # r3: one churn-zero search, evaluation and doubling against the ordinary menu search and its evaluation and doubling
+        # (search, evaluate and doubling must agree); serial, after the menus and references
         "p0_eval_doubling": (MARKETS * RULES * (EV + T["doubling"]), waves(MARKETS * RULES, W_EVAL) * (EV + T["doubling"])),
+        "gate_churn_nonzero": (cont_round, cont_round),   # after the first p = 0.05 cell's search, evaluation and doubling
+        # (reused in production): its continuation round 1 against its own doubling record
         "churn_search": (churn_cells * T["d2h3_cell"] * SLOW, waves(churn_cells, W_SEARCH) * T["d2h3_cell"] * SLOW),
         "churn_eval_doubling": (churn_cells * (EV + T["doubling"]) * SLOW, waves(churn_cells, W_EVAL) * (EV + T["doubling"]) * SLOW),
         "continuation": (flagged * rounds * cont_round, waves(flagged, W_CONT) * rounds * cont_round),
