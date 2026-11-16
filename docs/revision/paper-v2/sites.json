@@ -1383,5 +1383,45 @@
   "path": "churn.statistics.base.0.05.q.pooled.estimate",
   "kind": "gain",
   "section": "conclusion"
+ },
+ "r_rb_cells": {
+  "path": "conv.cells",
+  "kind": "count",
+  "section": "results"
+ },
+ "r_rb_q1": {
+  "path": "conv.recompute.q1.converged.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_rb_q4": {
+  "path": "conv.recompute.q4.converged.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_rb_max": {
+  "path": "conv.largest_market_change.change",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_ra_est": {
+  "path": "runnerup.D2+H3.base.runner_up_minus_r3.estimate",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_ra_lo": {
+  "path": "runnerup.D2+H3.base.runner_up_minus_r3.interval.0",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_ra_hi": {
+  "path": "runnerup.D2+H3.base.runner_up_minus_r3.interval.1",
+  "kind": "gain",
+  "section": "results"
+ },
+ "r_ra_cat": {
+  "path": "runnerup.D2+H3.base.runner_up_minus_r3.category",
+  "kind": "label",
+  "section": "results"
  }
 }
