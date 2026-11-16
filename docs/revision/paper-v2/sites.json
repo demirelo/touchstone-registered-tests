@@ -1428,5 +1428,35 @@
   "path": "runnerup.D2+H3.base.runner_up_minus_r3.estimate",
   "kind": "gain",
   "section": "abstract"
+ },
+ "ch_d_1_d2": {
+  "path": "churn.statistics.doubled.0.01.d.pooled.estimate",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "ch_t_q5_dlo": {
+  "path": "churn.review_r4.t95.doubled.0.05.q.ci.0",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "ch_t_q5_dhi": {
+  "path": "churn.review_r4.t95.doubled.0.05.q.ci.1",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "ch_q_3_neg": {
+  "path": "churnmid.statistics.base.0.03.q.signs.negative",
+  "kind": "count",
+  "section": "churn"
+ },
+ "ch_q_3_dneg": {
+  "path": "churnmid.statistics.doubled.0.03.q.signs.negative",
+  "kind": "count",
+  "section": "churn"
+ },
+ "r_ra_x7d": {
+  "path": "runnerup.X7-SC.doubled.runner_up_minus_r3.estimate",
+  "kind": "gain",
+  "section": "results"
  }
 }

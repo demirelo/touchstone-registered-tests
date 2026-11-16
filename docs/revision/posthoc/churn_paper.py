@@ -97,7 +97,18 @@ def _draw(d: dict, path: Path) -> None:
         ax.plot([p["p"] for p in pts], [p["estimate"] for p in pts], fmt, color=col, label=lab, ms=4, mfc="white" if ver == "doubled" else col)
     ax.axhline(0, color="#1c2421", lw=0.6)
     ax.set_xlabel("honest churn rate $p$ (per round)"); ax.set_ylabel("gain difference")
-    ax.legend(fontsize=7, frameon=False); fig.tight_layout(); fig.savefig(path); plt.close(fig)
+    ax.legend(fontsize=7, frameon=False); fig.tight_layout()
+    fig.savefig(path, metadata={"CreationDate": None}); plt.close(fig)   # no timestamp: the bytes depend only on the data (Astra d10-r1, 8)
+
+
+def _same_pdf(d: dict, path: Path) -> bool:
+    """The PDF on disk equals a fresh rendering of the data, byte for byte."""
+    import tempfile
+    if not path.exists():
+        return False
+    with tempfile.TemporaryDirectory() as t:
+        fresh = Path(t) / "fig.pdf"; _draw(d, fresh)
+        return fresh.read_bytes() == path.read_bytes()
 
 
 def write(d: dict, figdir, tabdir, summary_path=None, summary=None) -> None:
@@ -116,7 +127,7 @@ def check(d: dict, figdir, tabdir, summary_path=None, summary=None) -> list:
         if not sp.exists() or json.loads(sp.read_text()) != json.loads(json.dumps(summary, sort_keys=True)):
             bad.append(f"{sp.name}: stale or missing; run --write")
     f = fd / "fig_churn.data.json"
-    if not f.exists() or json.loads(f.read_text()) != json.loads(json.dumps(d, sort_keys=True)) or not (fd / "fig_churn.pdf").exists():
+    if not f.exists() or json.loads(f.read_text()) != json.loads(json.dumps(d, sort_keys=True)) or not _same_pdf(d, fd / "fig_churn.pdf"):
         bad.append("fig_churn: stale or missing; run --write")
     t = td / "posthoc_churn_audit.tex"
     if not t.exists() or t.read_text() != audit_table(d):

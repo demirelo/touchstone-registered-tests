@@ -57,3 +57,12 @@ def test_check_refuses_a_stale_summary(tmp_path):
     assert P.check(d, tmp_path, tmp_path, summary_path=out, summary=s) == []
     out.write_text("{}")
     assert any("churn_paper.json" in b for b in P.check(d, tmp_path, tmp_path, summary_path=out, summary=s))
+
+
+def test_check_refuses_a_replaced_figure(tmp_path):
+    # Astra paper-d10-r1, correction 8: a PDF that no longer matches its data must be refused
+    d = P.data(FIRST, MID)
+    P.write(d, tmp_path, tmp_path)
+    assert P.check(d, tmp_path, tmp_path) == []
+    (tmp_path / "fig_churn.pdf").write_bytes(b"%PDF-1.4 not the figure")
+    assert any("fig_churn" in b for b in P.check(d, tmp_path, tmp_path))
