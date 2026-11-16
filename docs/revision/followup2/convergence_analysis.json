@@ -1,0 +1,403 @@
+{
+ "cells": 19,
+ "label": "exploratory sensitivity; the frozen estimates stay primary; nominal paired percentile bootstrap over seeds, conditional on these markets and the selected policies and references; no search or market-sampling uncertainty; no registered calibration or Holm guarantee",
+ "largest_market_change": {
+  "change": 0.053827301029504636,
+  "market": "fresh3",
+  "q": "q1"
+ },
+ "mac_equals_pod": true,
+ "market_change": {
+  "q1": {
+   "fresh0": 0.006143878472612791,
+   "fresh1": 0.0024722004191544966,
+   "fresh2": 0.0,
+   "fresh3": 0.053827301029504636,
+   "fresh4": -0.01761698588812015,
+   "fresh5": 0.0
+  },
+  "q1_x7": {
+   "fresh0": 0.006143878472612791,
+   "fresh1": 0.0024722004191544966,
+   "fresh2": 0.0,
+   "fresh3": 0.019876534761567106,
+   "fresh4": -0.012680433710015242,
+   "fresh5": 0.0
+  },
+  "q4": {
+   "fresh0": 0.0,
+   "fresh1": -0.0059392181131390775,
+   "fresh2": 0.0,
+   "fresh3": 0.0,
+   "fresh4": -0.017616985888120107,
+   "fresh5": 0.0
+  }
+ },
+ "nesting_shortfall": {
+  "fresh0@rho0.2|C*|X7-SC|profit": {
+   "after": 0.0,
+   "before": 0.0061438784726128015,
+   "best_d2h3": 0.12072485206445271
+  },
+  "fresh1@rho0.2|C*|X7-SC|profit": {
+   "after": 0.0,
+   "before": 0.008411418532293574,
+   "best_d2h3": 0.15692578783500244
+  },
+  "fresh1@rho0.2|F111|X7-SC|profit": {
+   "after": 0.0,
+   "before": 0.005939218113139119,
+   "best_d2h3": 0.10193181553019379
+  },
+  "fresh3@rho0.2|C*|X7-SC|profit": {
+   "after": 0.0,
+   "before": 0.019876534761567102,
+   "best_d2h3": 0.08829836939454212
+  },
+  "fresh4@rho0.2|F111|X7-SC|profit": {
+   "after": -0.007420466184394119,
+   "before": 0.005259967525621124,
+   "best_d2h3": 0.023343659794189477
+  },
+  "headline@rho0.2|F111|X7-SC|profit": {
+   "after": 0.0,
+   "before": 0.02114149363538971,
+   "best_d2h3": 0.069695948870906
+  }
+ },
+ "passed_within_three_rounds": 19,
+ "recompute": {
+  "label": "exploratory sensitivity; the frozen estimates stay primary; nominal paired percentile bootstrap over seeds, conditional on these markets and the selected policies and references; no search or market-sampling uncertainty; no registered calibration or Holm guarantee",
+  "q1": {
+   "converged": {
+    "estimate": 0.028191071185382416,
+    "interval": [
+     0.027529081706832177,
+     0.02885544035798467
+    ],
+    "level": 0.95,
+    "market_intervals": {
+     "fresh0": [
+      0.02578041373177632,
+      0.028762320507452057
+     ],
+     "fresh1": [
+      0.0533884733430406,
+      0.056609317691693584
+     ],
+     "fresh2": [
+      0.02676269036724234,
+      0.030283330784887708
+     ],
+     "fresh3": [
+      0.014920745764471438,
+      0.016298813900399434
+     ],
+     "fresh4": [
+      0.02419981755111902,
+      0.028262758263374363
+     ],
+     "fresh5": [
+      0.014638851583860187,
+      0.01831662734218711
+     ]
+    },
+    "markets": {
+     "fresh0": 0.02728513194228743,
+     "fresh1": 0.054993972304808666,
+     "fresh2": 0.028540099916228225,
+     "fresh3": 0.01562001025814449,
+     "fresh4": 0.02622438242680989,
+     "fresh5": 0.016482830264015792
+    },
+    "resamples": 9999,
+    "scope": "nominal paired percentile bootstrap over seeds, conditional on these markets and the selected policies and references; no search or market-sampling uncertainty; no registered calibration or Holm guarantee",
+    "seed": 0
+   },
+   "frozen": {
+    "estimate": 0.02072000551319045,
+    "interval": [
+     0.0200108046858237,
+     0.021445954914459397
+    ],
+    "level": 0.95,
+    "market_intervals": {
+     "fresh0": [
+      0.019550905035097037,
+      0.022729947984713325
+     ],
+     "fresh1": [
+      0.05074870332902722,
+      0.05434428228470457
+     ],
+     "fresh2": [
+      0.02676269036724234,
+      0.030283330784887708
+     ],
+     "fresh3": [
+      -0.039868168213829214,
+      -0.03656077676937214
+     ],
+     "fresh4": [
+      0.041989239809055834,
+      0.04570891290034365
+     ],
+     "fresh5": [
+      0.014638851583860187,
+      0.01831662734218711
+     ]
+    },
+    "markets": {
+     "fresh0": 0.021141253469674638,
+     "fresh1": 0.05252177188565417,
+     "fresh2": 0.028540099916228225,
+     "fresh3": -0.03820729077136015,
+     "fresh4": 0.04384136831493004,
+     "fresh5": 0.016482830264015792
+    },
+    "resamples": 9999,
+    "scope": "nominal paired percentile bootstrap over seeds, conditional on these markets and the selected policies and references; no search or market-sampling uncertainty; no registered calibration or Holm guarantee",
+    "seed": 0
+   }
+  },
+  "q1_x7": {
+   "converged": {
+    "estimate": 0.026954326821316734,
+    "interval": [
+     0.02629858866574936,
+     0.027611200302165618
+    ],
+    "level": 0.95,
+    "market_intervals": {
+     "fresh0": [
+      0.02578041373177632,
+      0.028762320507452057
+     ],
+     "fresh1": [
+      0.0533884733430406,
+      0.056609317691693584
+     ],
+     "fresh2": [
+      0.02676269036724234,
+      0.030283330784887708
+     ],
+     "fresh3": [
+      0.014920745764471438,
+      0.016298813900399434
+     ],
+     "fresh4": [
+      0.016898680193237214,
+      0.020737750683544432
+     ],
+     "fresh5": [
+      0.014638851583860187,
+      0.01831662734218711
+     ]
+    },
+    "markets": {
+     "fresh0": 0.02728513194228743,
+     "fresh1": 0.054993972304808666,
+     "fresh2": 0.028540099916228225,
+     "fresh3": 0.01562001025814449,
+     "fresh4": 0.018803916242415775,
+     "fresh5": 0.016482830264015792
+    },
+    "resamples": 9999,
+    "scope": "nominal paired percentile bootstrap over seeds, conditional on these markets and the selected policies and references; no search or market-sampling uncertainty; no registered calibration or Holm guarantee",
+    "seed": 0
+   },
+   "frozen": {
+    "estimate": 0.024318963497430204,
+    "interval": [
+     0.023619829307655094,
+     0.025010759149877864
+    ],
+    "level": 0.95,
+    "market_intervals": {
+     "fresh0": [
+      0.019550905035097037,
+      0.022729947984713325
+     ],
+     "fresh1": [
+      0.05074870332902722,
+      0.05434428228470457
+     ],
+     "fresh2": [
+      0.02676269036724234,
+      0.030283330784887708
+     ],
+     "fresh3": [
+      -0.004988058620355405,
+      -0.003524828107959025
+     ],
+     "fresh4": [
+      0.029437650554463343,
+      0.03354158354779378
+     ],
+     "fresh5": [
+      0.014638851583860187,
+      0.01831662734218711
+     ]
+    },
+    "markets": {
+     "fresh0": 0.021141253469674638,
+     "fresh1": 0.05252177188565417,
+     "fresh2": 0.028540099916228225,
+     "fresh3": -0.0042565245034226155,
+     "fresh4": 0.03148434995243102,
+     "fresh5": 0.016482830264015792
+    },
+    "resamples": 9999,
+    "scope": "nominal paired percentile bootstrap over seeds, conditional on these markets and the selected policies and references; no search or market-sampling uncertainty; no registered calibration or Holm guarantee",
+    "seed": 0
+   }
+  },
+  "q4": {
+   "converged": {
+    "estimate": 0.1694689219565034,
+    "interval": [
+     0.16813901125771777,
+     0.17085215629314965
+    ],
+    "level": 0.95,
+    "market_intervals": {
+     "fresh0": [
+      0.040091862072424815,
+      0.0427849297154746
+     ],
+     "fresh1": [
+      0.4605956510610042,
+      0.4655619843769442
+     ],
+     "fresh2": [
+      0.0539867753675533,
+      0.05956236494089599
+     ],
+     "fresh3": [
+      0.26087871348067626,
+      0.26430600301535284
+     ],
+     "fresh4": [
+      0.1593271174205223,
+      0.17277771810391448
+     ],
+     "fresh5": [
+      0.025712671713272885,
+      0.028430669382313093
+     ]
+    },
+    "markets": {
+     "fresh0": 0.04144271507592087,
+     "fresh1": 0.46312347193840653,
+     "fresh2": 0.056810283555962966,
+     "fresh3": 0.2625905586494956,
+     "fresh4": 0.16577345263906004,
+     "fresh5": 0.027073049880174248
+    },
+    "resamples": 9999,
+    "scope": "nominal paired percentile bootstrap over seeds, conditional on these markets and the selected policies and references; no search or market-sampling uncertainty; no registered calibration or Holm guarantee",
+    "seed": 0
+   },
+   "frozen": {
+    "estimate": 0.17339495595671325,
+    "interval": [
+     0.17205631191510926,
+     0.17479581795977714
+    ],
+    "level": 0.95,
+    "market_intervals": {
+     "fresh0": [
+      0.040091862072424815,
+      0.0427849297154746
+     ],
+     "fresh1": [
+      0.46636098964952216,
+      0.4716971447027651
+     ],
+     "fresh2": [
+      0.0539867753675533,
+      0.05956236494089599
+     ],
+     "fresh3": [
+      0.26087871348067626,
+      0.26430600301535284
+     ],
+     "fresh4": [
+      0.17701902913860076,
+      0.19028918054823454
+     ],
+     "fresh5": [
+      0.025712671713272885,
+      0.028430669382313093
+     ]
+    },
+    "markets": {
+     "fresh0": 0.04144271507592087,
+     "fresh1": 0.4690626900515456,
+     "fresh2": 0.056810283555962966,
+     "fresh3": 0.2625905586494956,
+     "fresh4": 0.18339043852718015,
+     "fresh5": 0.027073049880174248
+    },
+    "resamples": 9999,
+    "scope": "nominal paired percentile bootstrap over seeds, conditional on these markets and the selected policies and references; no search or market-sampling uncertainty; no registered calibration or Holm guarantee",
+    "seed": 0
+   }
+  },
+  "substituted": [
+   "fresh0@rho0.2|C*|D2+H3|profit",
+   "fresh1@rho0.2|C*|D2+H3|profit",
+   "fresh1@rho0.2|F111|D2+H3|profit",
+   "fresh3@rho0.2|C*|D2+H3|profit",
+   "fresh4@rho0.2|F111|D2+H3|profit",
+   "fresh0@rho0.2|C*|X7-SC|profit",
+   "fresh1@rho0.2|C*|X7-SC|profit",
+   "fresh1@rho0.2|F111|X7-SC|profit",
+   "fresh3@rho0.2|C*|X7-SC|profit",
+   "fresh4@rho0.2|F111|X7-SC|profit"
+  ]
+ },
+ "rounds": {
+  "fresh0@rho0.2|C*|D2+H3|profit": 2,
+  "fresh0@rho0.2|C*|X7-SC|profit": 3,
+  "fresh1@rho0.2|C*|D2+H3|profit": 2,
+  "fresh1@rho0.2|C*|X7-SC|profit": 3,
+  "fresh1@rho0.2|F111|D2+H3|profit": 2,
+  "fresh1@rho0.2|F111|X7-SC|profit": 3,
+  "fresh3@rho0.2|C*|D2+H3|profit": 2,
+  "fresh3@rho0.2|C*|X7-SC|profit": 3,
+  "fresh4@rho0.2|F111|D2+H3|profit": 2,
+  "fresh4@rho0.2|F111|X7-SC|profit": 3,
+  "headline@rho0.2|F000|D2+H3|profit": 2,
+  "headline@rho0.2|F001|D2+H3|profit": 2,
+  "headline@rho0.2|F011|X7-SC|profit": 2,
+  "headline@rho0.2|F100|D2+H3|profit": 2,
+  "headline@rho0.2|F100|X7-SC|profit": 2,
+  "headline@rho0.2|F101|D2+H3|profit": 2,
+  "headline@rho0.2|F101|X7-SC|profit": 2,
+  "headline@rho0.2|F111|D2+H3|profit": 2,
+  "headline@rho0.2|F111|X7-SC|profit": 3
+ },
+ "status": {
+  "fresh0@rho0.2|C*|D2+H3|profit": "passed",
+  "fresh0@rho0.2|C*|X7-SC|profit": "passed",
+  "fresh1@rho0.2|C*|D2+H3|profit": "passed",
+  "fresh1@rho0.2|C*|X7-SC|profit": "passed",
+  "fresh1@rho0.2|F111|D2+H3|profit": "passed",
+  "fresh1@rho0.2|F111|X7-SC|profit": "passed",
+  "fresh3@rho0.2|C*|D2+H3|profit": "passed",
+  "fresh3@rho0.2|C*|X7-SC|profit": "passed",
+  "fresh4@rho0.2|F111|D2+H3|profit": "passed",
+  "fresh4@rho0.2|F111|X7-SC|profit": "passed",
+  "headline@rho0.2|F000|D2+H3|profit": "passed",
+  "headline@rho0.2|F001|D2+H3|profit": "passed",
+  "headline@rho0.2|F011|X7-SC|profit": "passed",
+  "headline@rho0.2|F100|D2+H3|profit": "passed",
+  "headline@rho0.2|F100|X7-SC|profit": "passed",
+  "headline@rho0.2|F101|D2+H3|profit": "passed",
+  "headline@rho0.2|F101|X7-SC|profit": "passed",
+  "headline@rho0.2|F111|D2+H3|profit": "passed",
+  "headline@rho0.2|F111|X7-SC|profit": "passed"
+ },
+ "with_heldout": 19
+}
