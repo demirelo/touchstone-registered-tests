@@ -807,22 +807,22 @@
  "rs_fx_b3": {
   "path": "reset.switches.F000.fixed_policy_x0.pooled",
   "kind": "gain",
-  "section": "reset"
+  "section": "app-results"
  },
  "rs_fx_r3": {
   "path": "reset.switches.F111.fixed_policy_x0.pooled",
   "kind": "gain",
-  "section": "reset"
+  "section": "app-results"
  },
  "rs_rev_b3": {
   "path": "reset.switches.F000.reverse_x1.pooled",
   "kind": "gain",
-  "section": "reset"
+  "section": "app-results"
  },
  "rs_rev_r3": {
   "path": "reset.switches.F111.reverse_x1.pooled",
   "kind": "gain",
-  "section": "reset"
+  "section": "app-results"
  },
  "rs_gd0_pos": {
   "path": "reset.review_r3.base.G_D2.positive",
@@ -862,37 +862,37 @@
  "rs_flag": {
   "path": "reset.review_r3.flags.flagged",
   "kind": "count",
-  "section": "reset"
+  "section": "app-results"
  },
  "rs_flag_n": {
   "path": "reset.review_r3.flags.n",
   "kind": "count",
-  "section": "reset"
+  "section": "app-results"
  },
  "rs_flag_max": {
   "path": "reset.review_r3.flags.max_change",
   "kind": "gain",
-  "section": "reset"
+  "section": "app-results"
  },
  "rs_f0_g0": {
   "path": "reset.base.G.D2.markets.fresh0.estimate",
   "kind": "gain",
-  "section": "reset"
+  "section": "app-results"
  },
  "rs_f0_g0_d": {
   "path": "reset.doubled.G.D2.markets.fresh0.estimate",
   "kind": "gain",
-  "section": "reset"
+  "section": "app-results"
  },
  "rs_nest_c": {
   "path": "reset.base.I.C*.markets.fresh3.estimate",
   "kind": "gain",
-  "section": "reset"
+  "section": "app-results"
  },
  "rs_nest_r": {
   "path": "reset.base.I.F111.markets.fresh4.estimate",
   "kind": "gain",
-  "section": "reset"
+  "section": "app-results"
  },
  "rs_cr1": {
   "path": "reset.review_r3.base.Cstar_minus_R3.D2+H3.estimate",
@@ -927,27 +927,27 @@
  "rs_ref_any": {
   "path": "refcheck.summary.refs_with_any_reset",
   "kind": "count",
-  "section": "reset"
+  "section": "app-results"
  },
  "rs_ref_n": {
   "path": "refcheck.summary.n",
   "kind": "count",
-  "section": "reset"
+  "section": "app-results"
  },
  "rs_ref_max": {
   "path": "refcheck.summary.max_abs_replacement_value",
   "kind": "gain",
-  "section": "reset"
+  "section": "app-results"
  },
  "rs_ref_s": {
   "path": "refcheck.summary.S_with_non_replacing_references",
   "kind": "share_s",
-  "section": "reset"
+  "section": "app-results"
  },
  "rs_ref_val": {
   "path": "refcheck.summary.max_abs_validation_mean_diff",
   "kind": "gain",
-  "section": "reset"
+  "section": "app-results"
  },
  "abs_rs_g1": {
   "path": "reset.base.G.D2+H3.pooled.estimate",
@@ -962,12 +962,12 @@
  "rs_fx_c": {
   "path": "reset.switches.C*.fixed_policy_x0.pooled",
   "kind": "gain",
-  "section": "reset"
+  "section": "app-results"
  },
  "rs_rev_c": {
   "path": "reset.switches.C*.reverse_x1.pooled",
   "kind": "gain",
-  "section": "reset"
+  "section": "app-results"
  },
  "ch_reps1": {
   "path": "churn.diagnostics.0.01.F111|base.honest_replacements_per_episode",
@@ -1423,5 +1423,10 @@
   "path": "runnerup.D2+H3.base.runner_up_minus_r3.category",
   "kind": "label",
   "section": "results"
+ },
+ "abs_ra_est": {
+  "path": "runnerup.D2+H3.base.runner_up_minus_r3.estimate",
+  "kind": "gain",
+  "section": "abstract"
  }
 }
