@@ -12,8 +12,11 @@
   "eff_min": 0.8934983226542275,
   "eff_min_market": "fresh2",
   "replacing_audit_max": 0.095395,
+  "replacing_audit_max_doubled": 0.05078353428167811,
   "replacing_audit_min": 0.04062942208637573,
-  "replacing_markets": 3
+  "replacing_audit_min_doubled": 0.0372427652733119,
+  "replacing_markets": 3,
+  "replacing_markets_doubled": 3
  },
  "rates": {
   "0.01": {
@@ -194,5 +197,9 @@
    "negative": 1,
    "positive": 5
   }
+ },
+ "runner_up_flags": {
+  "incomplete": 3,
+  "markets": 6
  }
 }

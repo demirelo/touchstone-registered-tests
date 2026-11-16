@@ -25,5 +25,6 @@
  "tab:ph-reset",
  "tab:ph-churn",
  "fig:churn",
- "tab:ph-churn-audit"
+ "tab:ph-churn-audit",
+ "tab:ph-churn-t"
 ]

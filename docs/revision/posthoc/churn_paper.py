@@ -1,7 +1,7 @@
 """Draft 10 churn float data (outline-draft10.md, sections 4 and 5): the C* - R3 and B3 - R3 curves against the churn
 rate (figure) and the audit allocation per rate (table), from churn.json (p = 0, 0.01, 0.05) and churn_mid.json
 (p = 0.02, 0.03). Exploratory, after the report; descriptive. --write regenerates, --check refuses stale outputs.
-Usage: churn_paper.py --first churn.json --mid churn_mid.json --figdir <dir> --tabdir <dir> [--summary churn_paper.json] (--write | --check)"""
+Usage: churn_paper.py --first churn.json --mid churn_mid.json --figdir <dir> --tabdir <dir> [--summary churn_paper.json --runnerup runnerup_analysis.json] (--write | --check)"""
 import argparse
 import json
 import sys
@@ -74,6 +74,10 @@ def summary(first: dict, mid: dict, runnerup: dict | None = None) -> dict:
         e = r5["eff_by_market"]["base"]["0.05"]["F111"]
         r3 = {"replacing_audit_min": min(rep), "replacing_audit_max": max(rep), "replacing_markets": len(rep),
               "eff_min": min(e.values()), "eff_min_market": min(e, key=e.get)}
+        fad = r5["focal_audit_rate_by_market"]["0.05"].get("F111|doubled"); xd = alloc["0.05"]["F111|doubled"]["x_by_market"]
+        if fad:   # Astra d10-r2, correction 5: the same range for the doubled winners
+            repd = [fad[m] for m in fad if xd.get(m) == 1]
+            r3.update(replacing_audit_min_doubled=min(repd), replacing_audit_max_doubled=max(repd), replacing_markets_doubled=len(repd))
     ru = {}
     for fam, vers in (runnerup or {}).items():
         if not isinstance(vers, dict):
@@ -83,7 +87,10 @@ def summary(first: dict, mid: dict, runnerup: dict | None = None) -> dict:
             if ms:   # Fable round 5, problem 1: runner-up minus R3 per market (positive: R3 lower)
                 ru[f"{fam}|{v}"] = {"positive": sum(1 for g in ms.values() if g > 0), "negative": sum(1 for g in ms.values() if g < 0),
                                     "min": min(ms.values()), "min_market": min(ms, key=ms.get)}
+    flags_ru = ((runnerup or {}).get("D2+H3") or {}).get("flags") or {}
+    ruf = {"incomplete": sum(1 for v in flags_ru.values() if v.get("incomplete")), "markets": len(flags_ru)} if flags_ru else {}
     return {"label": "exploratory, after the report; aggregates of churn.json and churn_mid.json", "r3_p05": r3, "runner_up": ru,
+            "runner_up_flags": ruf,
             "flags": {"cells": len(cells), "max_attack_change": cells[top]["attack_change"], "max_attack_cell": top,
                       "reselected": sum(1 for c in cells.values() if c["reference_change"] != 0),
                       "max_reference_change": max(abs(c["reference_change"]) for c in cells.values()),
@@ -107,6 +114,19 @@ def audit_table(d: dict) -> str:
                    f"{_f(r['young_honest_audit_share'])} & {_f(r['established_honest_audit_rate'])} & {r['x_off']} / {r['x_off_doubled']} of {r['markets']} & "
                    f"{_f(r['eff_attack'])} / {_f(r['eff_doubled'])} \\\\\n" for r in d["allocation"])
     return head + body + "\\bottomrule\n\\end{tabular}\n"
+
+
+def t_table(first: dict, mid: dict) -> str:
+    """Market-level t intervals (5 degrees of freedom) over the six market differences, per rate and search version,
+    from the review_r4 blocks (Astra d10-r2, correction 2)."""
+    t = {v: {**first["review_r4"]["t95"][v], **mid["review_r4"]["t95"][v]} for v in VERS}
+    rows = []
+    for v, name in (("base", "frozen"), ("doubled", "doubled")):
+        for p in sorted(t[v], key=float):
+            d, q = t[v][p]["d"], t[v][p]["q"]
+            rows.append(f"{name} & {p} & {_f(d['mean'])} [{_f(d['ci'][0])}, {_f(d['ci'][1])}] & {_f(q['mean'])} [{_f(q['ci'][0])}, {_f(q['ci'][1])}] \\\\\n")
+    return ("\\begin{tabular}{llcc}\n\\toprule\nWinner & $p$ & $d$ = C$^*$$-$R3 & $q$ = B3$-$R3 \\\\\n\\midrule\n" + "".join(rows)
+            + "\\bottomrule\n\\end{tabular}\n")
 
 
 def _draw(d: dict, path: Path) -> None:
@@ -135,8 +155,10 @@ def _same_pdf(d: dict, path: Path) -> bool:
         return fresh.read_bytes() == path.read_bytes()
 
 
-def write(d: dict, figdir, tabdir, summary_path=None, summary=None) -> None:
+def write(d: dict, figdir, tabdir, summary_path=None, summary=None, ttable=None) -> None:
     fd, td = Path(figdir), Path(tabdir)
+    if ttable is not None:
+        (td / "posthoc_churn_t.tex").write_text(ttable)
     if summary_path is not None:
         Path(summary_path).write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n")
     (fd / "fig_churn.data.json").write_text(json.dumps(d, indent=1, sort_keys=True))
@@ -144,8 +166,10 @@ def write(d: dict, figdir, tabdir, summary_path=None, summary=None) -> None:
     (td / "posthoc_churn_audit.tex").write_text(audit_table(d))
 
 
-def check(d: dict, figdir, tabdir, summary_path=None, summary=None) -> list:
+def check(d: dict, figdir, tabdir, summary_path=None, summary=None, ttable=None) -> list:
     fd, td = Path(figdir), Path(tabdir); bad = []
+    if ttable is not None and (not (td / "posthoc_churn_t.tex").exists() or (td / "posthoc_churn_t.tex").read_text() != ttable):
+        bad.append("posthoc_churn_t.tex: stale or missing; run --write")
     if summary_path is not None:
         sp = Path(summary_path)
         if not sp.exists() or json.loads(sp.read_text()) != json.loads(json.dumps(summary, sort_keys=True)):
@@ -165,12 +189,14 @@ def main(argv=None) -> int:
     ap.add_argument("--figdir", required=True); ap.add_argument("--tabdir", required=True); ap.add_argument("--summary", default=None); ap.add_argument("--runnerup", default=None)
     g = ap.add_mutually_exclusive_group(required=True); g.add_argument("--write", action="store_true"); g.add_argument("--check", action="store_true")
     a = ap.parse_args(argv)
+    if a.summary and not a.runnerup:   # Astra d10-r2, correction 9: a summary without Run A would silently lack runner_up
+        ap.error("--summary requires --runnerup (followup2/runnerup_analysis.json)")
     first, mid = json.loads(Path(a.first).read_text()), json.loads(Path(a.mid).read_text())
     ru = json.loads(Path(a.runnerup).read_text()) if a.runnerup else None
-    d, s = data(first, mid), summary(first, mid, ru)
+    d, s, tt = data(first, mid), summary(first, mid, ru), t_table(first, mid)
     if a.write:
-        write(d, a.figdir, a.tabdir, a.summary, s); return 0
-    bad = check(d, a.figdir, a.tabdir, a.summary, s); print("\n".join(bad) or "ok"); return 1 if bad else 0
+        write(d, a.figdir, a.tabdir, a.summary, s, tt); return 0
+    bad = check(d, a.figdir, a.tabdir, a.summary, s, tt); print("\n".join(bad) or "ok"); return 1 if bad else 0
 
 
 if __name__ == "__main__":

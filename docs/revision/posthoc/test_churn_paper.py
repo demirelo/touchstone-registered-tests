@@ -89,3 +89,34 @@ def test_summary_round5_fields():
     assert s["runner_up"]["D2+H3|base"]["positive"] == sum(v > 0 for v in ru.values())
     assert s["runner_up"]["D2+H3|base"]["min_market"] == min(ru, key=ru.get) and s["runner_up"]["D2+H3|base"]["min"] == min(ru.values())
     assert s["flags"]["incomplete_n"] == FIRST["flag_summary"]["incomplete_n"] + MID["flag_summary"]["incomplete_n"]
+
+
+def test_summary_round6_fields():
+    # Astra paper-d10-r2: the doubled replacing-winner range at p = 0.05 and Run A's flag count
+    s = P.summary(FIRST, MID, RUNNERUP)
+    r5 = FIRST["review_r5"]
+    fa = r5["focal_audit_rate_by_market"]["0.05"]["F111|doubled"]
+    x = FIRST["review_r4"]["audit_allocation"]["0.05"]["F111|doubled"]["x_by_market"]
+    rep = [fa[m] for m in fa if x[m] == 1]
+    assert s["r3_p05"]["replacing_audit_min_doubled"] == min(rep) and s["r3_p05"]["replacing_markets_doubled"] == len(rep)
+    fl = RUNNERUP["D2+H3"]["flags"]
+    assert s["runner_up_flags"]["incomplete"] == sum(1 for v in fl.values() if v["incomplete"])
+
+
+def test_main_refuses_a_summary_without_runnerup(tmp_path):
+    import pytest
+    with pytest.raises(SystemExit):
+        P.main(["--first", str(HERE / "churn.json"), "--mid", str(HERE / "churn_mid.json"), "--figdir", str(tmp_path),
+                "--tabdir", str(tmp_path), "--summary", str(tmp_path / "s.json"), "--write"])
+
+
+def test_t_table_lists_every_rate_and_version(tmp_path):
+    # Astra d10-r2, correction 2: the market-level t intervals at every rate, for both search versions
+    t = P.t_table(FIRST, MID)
+    ci = MID["review_r4"]["t95"]["doubled"]["0.03"]["d"]["ci"]
+    assert P._f(ci[0]) in t and P._f(ci[1]) in t and t.count("\\\\\n") == 4 * 2 + 1
+    d = P.data(FIRST, MID); s = P.summary(FIRST, MID, RUNNERUP)
+    P.write(d, tmp_path, tmp_path, summary_path=tmp_path / "s.json", summary=s, ttable=t)
+    assert P.check(d, tmp_path, tmp_path, summary_path=tmp_path / "s.json", summary=s, ttable=t) == []
+    (tmp_path / "posthoc_churn_t.tex").write_text("x")
+    assert any("posthoc_churn_t" in b for b in P.check(d, tmp_path, tmp_path, summary_path=tmp_path / "s.json", summary=s, ttable=t))
