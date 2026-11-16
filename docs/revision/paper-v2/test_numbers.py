@@ -434,3 +434,13 @@ def test_draft10_reset_and_churn_sections_are_required(tmp_path):
     for lab in ("reset", "churn"):
         bad = _v3("\\label{sec:%s}" % lab, "")
         assert any("required section %s" % lab in p for p in _setup3(tmp_path, bad)), lab
+
+
+def test_draft10_kinds():
+    # draft 10: churn aggregates (posthoc/churn_paper.json) and the Run B analysis (followup2/convergence_analysis.json)
+    for leaf in ("focal_audit_rate", "young_honest_job_share", "young_honest_audit_share", "established_honest_audit_rate"):
+        assert N.KINDS["alloc"](leaf, 0.37) and not N.KINDS["alloc"](leaf, 1.2) and not N.KINDS["alloc"]("share", 0.3)
+    for leaf in ("x_off", "reselected", "passed_within_three_rounds", "markets"):
+        assert N.KINDS["count"](leaf, 3) and not N.KINDS["count"](leaf, 0.5)
+    for leaf in ("max_attack_change", "max_reference_change", "change", "after", "before"):
+        assert N.KINDS["gain"](leaf, 0.087) and not N.KINDS["gain"](leaf, 2)

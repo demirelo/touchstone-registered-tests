@@ -35,3 +35,25 @@ def test_check_refuses_stale_outputs(tmp_path):
     assert P.check(d, tmp_path, tmp_path) == []
     (tmp_path / "posthoc_churn_audit.tex").write_text("x")
     assert any("audit" in b for b in P.check(d, tmp_path, tmp_path))
+
+
+def test_summary_aggregates_flags_reselection_and_rules():
+    s = P.summary(FIRST, MID)
+    cells = {**FIRST["flags"], **MID["flags"]}
+    assert s["flags"]["cells"] == len(cells) == 72
+    assert s["flags"]["max_attack_change"] == max(c["attack_change"] for c in cells.values())
+    assert s["flags"]["reselected"] == sum(1 for c in cells.values() if c["reference_change"] != 0)
+    assert s["flags"]["max_reference_change"] == max(abs(c["reference_change"]) for c in cells.values())
+    r = s["rates"]["0.05"]["R3"]
+    a = FIRST["review_r4"]["audit_allocation"]["0.05"]["F111|base"]
+    assert r["x_off"] == sum(v == 0 for v in a["x_by_market"].values()) and r["focal_audit_rate"] == a["focal_audit_rate"]
+    assert r["eff"] == FIRST["review_r4"]["eff_attack"]["base"]["0.05"]["F111"]
+    assert set(s["rates"]) == {"0.01", "0.02", "0.03", "0.05"}
+
+
+def test_check_refuses_a_stale_summary(tmp_path):
+    d = P.data(FIRST, MID); s = P.summary(FIRST, MID); out = tmp_path / "churn_paper.json"
+    P.write(d, tmp_path, tmp_path, summary_path=out, summary=s)
+    assert P.check(d, tmp_path, tmp_path, summary_path=out, summary=s) == []
+    out.write_text("{}")
+    assert any("churn_paper.json" in b for b in P.check(d, tmp_path, tmp_path, summary_path=out, summary=s))

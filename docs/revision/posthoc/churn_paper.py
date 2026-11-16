@@ -1,7 +1,7 @@
 """Draft 10 churn float data (outline-draft10.md, sections 4 and 5): the C* - R3 and B3 - R3 curves against the churn
 rate (figure) and the audit allocation per rate (table), from churn.json (p = 0, 0.01, 0.05) and churn_mid.json
 (p = 0.02, 0.03). Exploratory, after the report; descriptive. --write regenerates, --check refuses stale outputs.
-Usage: churn_paper.py --first churn.json --mid churn_mid.json --figdir <dir> --tabdir <dir> (--write | --check)"""
+Usage: churn_paper.py --first churn.json --mid churn_mid.json --figdir <dir> --tabdir <dir> [--summary churn_paper.json] (--write | --check)"""
 import argparse
 import json
 import sys
@@ -44,6 +44,29 @@ def data(first: dict, mid: dict) -> dict:
     return {"label": "exploratory, after the report; frozen searches unless stated", "rates": rates, "curves": curves, "allocation": rows}
 
 
+def summary(first: dict, mid: dict) -> dict:
+    """Aggregates that the paper cites and the records hold only per cell: the doubling flags' largest attack change,
+    the reselection diagnostic (reference_change), and per rate and rule the audit allocation, the selected attacks
+    without replacement (x_off) and the gross efficiency under attack (frozen searches)."""
+    cells = {**first["flags"], **mid["flags"]}
+    top = max(cells, key=lambda k: cells[k]["attack_change"])
+    alloc, eff = _r4(first, mid, "audit_allocation"), _r4(first, mid, "eff_attack")
+    rates = {}
+    for p, rows in alloc.items():
+        rates[p] = {}
+        for rule, name in RULES:
+            a = rows[f"{rule}|base"]
+            rates[p][name.replace("$^*$", "*")] = {
+                "focal_audit_rate": a["focal_audit_rate"], "young_honest_job_share": a["young_honest_job_share"],
+                "young_honest_audit_share": a["young_honest_audit_share"], "established_honest_audit_rate": a["established_honest_audit_rate"],
+                "x_off": sum(1 for x in a["x_by_market"].values() if x == 0), "markets": a["markets"], "eff": eff["base"][p][rule]}
+    return {"label": "exploratory, after the report; aggregates of churn.json and churn_mid.json",
+            "flags": {"cells": len(cells), "max_attack_change": cells[top]["attack_change"], "max_attack_cell": top,
+                      "reselected": sum(1 for c in cells.values() if c["reference_change"] != 0),
+                      "max_reference_change": max(abs(c["reference_change"]) for c in cells.values())},
+            "rates": rates}
+
+
 def _key(p: float) -> str:
     return "0" if p == 0 else f"{p:g}"
 
@@ -77,15 +100,21 @@ def _draw(d: dict, path: Path) -> None:
     ax.legend(fontsize=7, frameon=False); fig.tight_layout(); fig.savefig(path); plt.close(fig)
 
 
-def write(d: dict, figdir, tabdir) -> None:
+def write(d: dict, figdir, tabdir, summary_path=None, summary=None) -> None:
     fd, td = Path(figdir), Path(tabdir)
+    if summary_path is not None:
+        Path(summary_path).write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n")
     (fd / "fig_churn.data.json").write_text(json.dumps(d, indent=1, sort_keys=True))
     _draw(d, fd / "fig_churn.pdf")
     (td / "posthoc_churn_audit.tex").write_text(audit_table(d))
 
 
-def check(d: dict, figdir, tabdir) -> list:
+def check(d: dict, figdir, tabdir, summary_path=None, summary=None) -> list:
     fd, td = Path(figdir), Path(tabdir); bad = []
+    if summary_path is not None:
+        sp = Path(summary_path)
+        if not sp.exists() or json.loads(sp.read_text()) != json.loads(json.dumps(summary, sort_keys=True)):
+            bad.append(f"{sp.name}: stale or missing; run --write")
     f = fd / "fig_churn.data.json"
     if not f.exists() or json.loads(f.read_text()) != json.loads(json.dumps(d, sort_keys=True)) or not (fd / "fig_churn.pdf").exists():
         bad.append("fig_churn: stale or missing; run --write")
@@ -98,13 +127,14 @@ def check(d: dict, figdir, tabdir) -> list:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--first", required=True); ap.add_argument("--mid", required=True)
-    ap.add_argument("--figdir", required=True); ap.add_argument("--tabdir", required=True)
+    ap.add_argument("--figdir", required=True); ap.add_argument("--tabdir", required=True); ap.add_argument("--summary", default=None)
     g = ap.add_mutually_exclusive_group(required=True); g.add_argument("--write", action="store_true"); g.add_argument("--check", action="store_true")
     a = ap.parse_args(argv)
-    d = data(json.loads(Path(a.first).read_text()), json.loads(Path(a.mid).read_text()))
+    first, mid = json.loads(Path(a.first).read_text()), json.loads(Path(a.mid).read_text())
+    d, s = data(first, mid), summary(first, mid)
     if a.write:
-        write(d, a.figdir, a.tabdir); return 0
-    bad = check(d, a.figdir, a.tabdir); print("\n".join(bad) or "ok"); return 1 if bad else 0
+        write(d, a.figdir, a.tabdir, a.summary, s); return 0
+    bad = check(d, a.figdir, a.tabdir, a.summary, s); print("\n".join(bad) or "ok"); return 1 if bad else 0
 
 
 if __name__ == "__main__":
