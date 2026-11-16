@@ -161,3 +161,14 @@ Guard: tests `test_r12_settle_counts_only_after_done`, `test_r12_creation_answer
 Mistake: I wrote `pickedUpAt` 09:45:00Z on the board without reading the clock; `date -u` then showed 09:43:10Z, so
 the record was in the future. Guard: corrected at once; rule: every board write carries a time from `date -u` read in
 the same command batch, never typed. If this repeats, the guard becomes a wrapper script that stamps the time itself.
+
+## 2026-11-16: direction and quantifier words the number gate cannot see
+
+Mistake: in draft 10 I wrote "the B3 minus R3 gap falls from 0.173 to 0.175", a churn claim ("only while the attacker is
+almost the only source of new identities") that the B3 rows contradict at p = 0.02 and 0.03, "the attacker stays old"
+for a pattern on 2 or 3 of 6 markets, and "on every market by p = 0.03" where the doubled searches give 5 of 6 at 0.05.
+The number gate checks values and their record paths, not the words around them (falls, rises, every, only, always).
+Guard: every review brief for the paper now carries the item "check each comparative and universal word (falls, rises,
+reverses, every, all, only, never) against the sites and tables it describes, for both search versions"; I reread each
+rewritten section for these words before commit. If the class repeats, the guard becomes a script that lists every such
+word in a result region with its nearest sites for a reviewer.
