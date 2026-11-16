@@ -68,7 +68,8 @@ def test_check_refuses_a_replaced_figure(tmp_path):
     assert any("fig_churn" in b for b in P.check(d, tmp_path, tmp_path))
 
 
-RUNNERUP = json.loads((HERE.parent / "followup2" / "runnerup_analysis.json").read_text())
+_RU = [HERE.parent / "followup2" / "runnerup_analysis.json", HERE / "runs" / "runnerup_analysis.json"]   # repository, review package
+RUNNERUP = json.loads(next(p for p in _RU if p.exists()).read_text())
 
 
 def test_summary_round5_fields():
