@@ -4,13 +4,7 @@
   "evaluation": 43.0,
   "followup": 72.0
  },
- "reservations": [
-  {
-   "op": "followup",
-   "tag": "convergence2-1",
-   "cap": 9.1
-  }
- ],
+ "reservations": [],
  "spent": [
   {
    "op": "development",
@@ -146,6 +140,11 @@
    "op": "followup",
    "tag": "convergence-1",
    "usd": 3.43
+  },
+  {
+   "op": "followup",
+   "tag": "convergence2-1",
+   "usd": 3.4
   }
  ],
  "approval": {
