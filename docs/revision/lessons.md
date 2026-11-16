@@ -155,3 +155,9 @@ Guard: tests `test_r12_settle_counts_only_after_done`, `test_r12_creation_answer
   the tool's printed grant; the ledger was restored from git and the reservation redone at estimate 7.28 (grant 9.10).
   Guard (check): the launcher refuses any reservation below HARD x CAP - PRIOR (followup2_pod.sh, ledger check), and
   the dry run runs before any launch. Rule: read the reserved amount back before reporting it.
+
+## 2026-11-16: a board time typed from an estimate
+
+Mistake: I wrote `pickedUpAt` 09:45:00Z on the board without reading the clock; `date -u` then showed 09:43:10Z, so
+the record was in the future. Guard: corrected at once; rule: every board write carries a time from `date -u` read in
+the same command batch, never typed. If this repeats, the guard becomes a wrapper script that stamps the time itself.
