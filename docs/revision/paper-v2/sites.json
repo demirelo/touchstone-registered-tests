@@ -1458,5 +1458,120 @@
   "path": "runnerup.X7-SC.doubled.runner_up_minus_r3.estimate",
   "kind": "gain",
   "section": "results"
+ },
+ "abs_ra_pos": {
+  "path": "churnpaper.runner_up.D2+H3|base.positive",
+  "kind": "count",
+  "section": "abstract"
+ },
+ "abs_ch_fa1d": {
+  "path": "churnpaper.rates.0.01.R3.focal_audit_rate_doubled",
+  "kind": "alloc",
+  "section": "abstract"
+ },
+ "abs_ch_fa5d": {
+  "path": "churnpaper.rates.0.05.R3.focal_audit_rate_doubled",
+  "kind": "alloc",
+  "section": "abstract"
+ },
+ "abs_ch_q5d": {
+  "path": "churn.statistics.doubled.0.05.q.pooled.estimate",
+  "kind": "gain",
+  "section": "abstract"
+ },
+ "abs_ch_inc": {
+  "path": "churnpaper.flags.incomplete_n",
+  "kind": "count",
+  "section": "abstract"
+ },
+ "abs_ch_cells": {
+  "path": "churnpaper.flags.cells",
+  "kind": "count",
+  "section": "abstract"
+ },
+ "ch_t_d2_lo": {
+  "path": "churnmid.review_r4.t95.base.0.02.d.ci.0",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "ch_t_d2_hi": {
+  "path": "churnmid.review_r4.t95.base.0.02.d.ci.1",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "ch_t_d3_lo": {
+  "path": "churnmid.review_r4.t95.base.0.03.d.ci.0",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "ch_t_d3_hi": {
+  "path": "churnmid.review_r4.t95.base.0.03.d.ci.1",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "ch_fa_c1": {
+  "path": "churnpaper.rates.0.01.C*.focal_audit_rate",
+  "kind": "alloc",
+  "section": "churn"
+ },
+ "ch_fa_1d": {
+  "path": "churnpaper.rates.0.01.R3.focal_audit_rate_doubled",
+  "kind": "alloc",
+  "section": "churn"
+ },
+ "ch_rep_n": {
+  "path": "churnpaper.r3_p05.replacing_markets",
+  "kind": "count",
+  "section": "churn"
+ },
+ "ch_rep_lo": {
+  "path": "churnpaper.r3_p05.replacing_audit_min",
+  "kind": "alloc",
+  "section": "churn"
+ },
+ "ch_rep_hi": {
+  "path": "churnpaper.r3_p05.replacing_audit_max",
+  "kind": "alloc",
+  "section": "churn"
+ },
+ "ch_eff_5d": {
+  "path": "churnpaper.rates.0.05.R3.eff_doubled",
+  "kind": "eff",
+  "section": "churn"
+ },
+ "ch_eff_b5d": {
+  "path": "churnpaper.rates.0.05.B3.eff_doubled",
+  "kind": "eff",
+  "section": "churn"
+ },
+ "ch_eff_minm": {
+  "path": "churnpaper.r3_p05.eff_min_market",
+  "kind": "label",
+  "section": "churn"
+ },
+ "ch_eff_min": {
+  "path": "churnpaper.r3_p05.eff_min",
+  "kind": "eff",
+  "section": "churn"
+ },
+ "c_ch_q5d": {
+  "path": "churn.statistics.doubled.0.05.q.pooled.estimate",
+  "kind": "gain",
+  "section": "conclusion"
+ },
+ "r_ra_pos": {
+  "path": "churnpaper.runner_up.D2+H3|base.positive",
+  "kind": "count",
+  "section": "results"
+ },
+ "r_ra_minm": {
+  "path": "churnpaper.runner_up.D2+H3|base.min_market",
+  "kind": "label",
+  "section": "results"
+ },
+ "r_ra_min": {
+  "path": "churnpaper.runner_up.D2+H3|base.min",
+  "kind": "gain",
+  "section": "results"
  }
 }

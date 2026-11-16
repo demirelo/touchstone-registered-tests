@@ -315,6 +315,32 @@ def review_r4(res: dict, data: dict | None, diags: dict) -> dict:
             "audit_allocation": {c: audit_allocation(d) for c, d in diags.items() if d}}
 
 
+def review_r5(data: dict | None, diags: dict) -> dict:
+    """Post hoc block after external review round 5 (Fable 5.2): per-market efficiency under the selected attack and the
+    focal provider's audited rate per market (the per-market terms of review_r4's pooled values). Not part of the plan."""
+    eff = {}
+    if data is not None:
+        for v in VERS:
+            eff[v] = {}
+            for c in data["conds"]:
+                eff[v][c] = {r: {m: float(np.mean(data["cells"][v][c][m][r]["eff_attack"])) for m in data["markets"]
+                                 if r in data["cells"][v][c][m] and "eff_attack" in data["cells"][v][c][m][r]} for r in RULES}
+    fa = {}
+    for c, d in diags.items():
+        if not d:
+            continue
+        fa[c] = {}
+        for k, cell in sorted(d.get("cells", {}).items()):
+            m, r = k.split("@")[0], k.split("|")[-1]
+            for w in VERS:
+                if w not in cell:
+                    continue
+                sh = cell[w]["shares"]
+                fo = [sum(e["focal"][b][j] for e in sh["per_episode"] for b in range(len(AGE_BINS))) for j in (0, 1)]
+                fa[c].setdefault(f"{r}|{w}", {})[m] = fo[1] / fo[0] if fo[0] else None
+    return {"label": "post hoc, after external review round 5; not part of the plan", "eff_by_market": eff, "focal_audit_rate_by_market": fa}
+
+
 def registered_check(res: dict, reg: dict) -> dict:
     """The no-churn records reproduce posthoc.json doubled.D2+H3 (q1 = C* - R3, q4 = B3 - R3; frozen = base)."""
     pairs = {"q1_frozen": ("base", "d"), "q1_doubled": ("doubled", "d"), "q4_frozen": ("base", "q"), "q4_doubled": ("doubled", "q")}
@@ -481,6 +507,7 @@ def main(argv=None) -> int:
            "expectations": (expectations(res, diags.get("0.05")) if rates == RATES else
                             expectations_mid(res, diags, first)),
            "review_r4": review_r4(res, data, diags),
+           "review_r5": review_r5(data, diags),
            "diagnostics": {c: (diag_summary(d) if d else None) for c, d in diags.items()},
            "inputs": {"records": str(a.records), "churn": str(ch), "report_sha256": _sha(Path(a.report)),
                       "run_json_sha256": _sha(ch / "run.json"),

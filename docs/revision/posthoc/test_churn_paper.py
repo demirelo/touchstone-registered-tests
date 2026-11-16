@@ -66,3 +66,26 @@ def test_check_refuses_a_replaced_figure(tmp_path):
     assert P.check(d, tmp_path, tmp_path) == []
     (tmp_path / "fig_churn.pdf").write_bytes(b"%PDF-1.4 not the figure")
     assert any("fig_churn" in b for b in P.check(d, tmp_path, tmp_path))
+
+
+RUNNERUP = json.loads((HERE.parent / "followup2" / "runnerup_analysis.json").read_text())
+
+
+def test_summary_round5_fields():
+    # Fable round 5: doubled values beside frozen, the R3 per-market values at p = 0.05, Run A's market signs
+    s = P.summary(FIRST, MID, RUNNERUP)
+    r = s["rates"]["0.01"]["R3"]
+    a = FIRST["review_r4"]["audit_allocation"]["0.01"]["F111|doubled"]
+    assert r["focal_audit_rate_doubled"] == a["focal_audit_rate"]
+    assert r["x_off_doubled"] == sum(v == 0 for v in a["x_by_market"].values())
+    assert s["rates"]["0.05"]["R3"]["eff_doubled"] == FIRST["review_r4"]["eff_attack"]["doubled"]["0.05"]["F111"]
+    r5 = FIRST["review_r5"]
+    fa, x = r5["focal_audit_rate_by_market"]["0.05"]["F111|base"], FIRST["review_r4"]["audit_allocation"]["0.05"]["F111|base"]["x_by_market"]
+    rep = [fa[m] for m in fa if x[m] == 1]
+    assert s["r3_p05"]["replacing_audit_min"] == min(rep) and s["r3_p05"]["replacing_audit_max"] == max(rep)
+    e = r5["eff_by_market"]["base"]["0.05"]["F111"]
+    assert s["r3_p05"]["eff_min"] == min(e.values()) and s["r3_p05"]["eff_min_market"] == min(e, key=e.get)
+    ru = RUNNERUP["D2+H3"]["base"]["runner_up_minus_r3"]["markets"]
+    assert s["runner_up"]["D2+H3|base"]["positive"] == sum(v > 0 for v in ru.values())
+    assert s["runner_up"]["D2+H3|base"]["min_market"] == min(ru, key=ru.get) and s["runner_up"]["D2+H3|base"]["min"] == min(ru.values())
+    assert s["flags"]["incomplete_n"] == FIRST["flag_summary"]["incomplete_n"] + MID["flag_summary"]["incomplete_n"]

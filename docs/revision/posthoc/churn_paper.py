@@ -36,15 +36,17 @@ def data(first: dict, mid: dict) -> dict:
     rows = []
     for p in [r for r in rates if r > 0]:
         for rule, name in RULES:
-            a = alloc[_key(p)][f"{rule}|base"]
-            rows.append({"p": p, "rule": name, "focal_audit_rate": a["focal_audit_rate"], "young_honest_job_share": a["young_honest_job_share"],
+            a, ad = alloc[_key(p)][f"{rule}|base"], alloc[_key(p)][f"{rule}|doubled"]
+            rows.append({"p": p, "rule": name, "focal_audit_rate": a["focal_audit_rate"], "focal_audit_rate_doubled": ad["focal_audit_rate"],
+                         "x_off_doubled": sum(1 for x in ad["x_by_market"].values() if x == 0), "eff_doubled": eff["doubled"][_key(p)][rule],
+                         "young_honest_job_share": a["young_honest_job_share"],
                          "young_honest_audit_share": a["young_honest_audit_share"], "established_honest_audit_rate": a["established_honest_audit_rate"],
                          "x_off": sum(1 for x in a["x_by_market"].values() if x == 0), "markets": a["markets"],
                          "eff_attack": eff["base"][_key(p)][rule]})
     return {"label": "exploratory, after the report; frozen searches unless stated", "rates": rates, "curves": curves, "allocation": rows}
 
 
-def summary(first: dict, mid: dict) -> dict:
+def summary(first: dict, mid: dict, runnerup: dict | None = None) -> dict:
     """Aggregates that the paper cites and the records hold only per cell: the doubling flags' largest attack change,
     the reselection diagnostic (reference_change), and per rate and rule the audit allocation, the selected attacks
     without replacement (x_off) and the gross efficiency under attack (frozen searches)."""
@@ -60,10 +62,32 @@ def summary(first: dict, mid: dict) -> dict:
                 "focal_audit_rate": a["focal_audit_rate"], "young_honest_job_share": a["young_honest_job_share"],
                 "young_honest_audit_share": a["young_honest_audit_share"], "established_honest_audit_rate": a["established_honest_audit_rate"],
                 "x_off": sum(1 for x in a["x_by_market"].values() if x == 0), "markets": a["markets"], "eff": eff["base"][p][rule]}
-    return {"label": "exploratory, after the report; aggregates of churn.json and churn_mid.json",
+            ad = rows.get(f"{rule}|doubled")
+            if ad:   # Fable round 5, problem 4 and 5: the doubled winners beside the frozen ones
+                rates[p][name.replace("$^*$", "*")].update(focal_audit_rate_doubled=ad["focal_audit_rate"],
+                    x_off_doubled=sum(1 for x in ad["x_by_market"].values() if x == 0), eff_doubled=eff["doubled"][p][rule])
+    r5 = first.get("review_r5", {})
+    r3 = {}
+    if r5:   # Fable round 5, problems 5 and 8: R3 at p = 0.05 per market (frozen searches)
+        fa = r5["focal_audit_rate_by_market"]["0.05"]["F111|base"]; xs = alloc["0.05"]["F111|base"]["x_by_market"]
+        rep = [fa[m] for m in fa if xs.get(m) == 1]
+        e = r5["eff_by_market"]["base"]["0.05"]["F111"]
+        r3 = {"replacing_audit_min": min(rep), "replacing_audit_max": max(rep), "replacing_markets": len(rep),
+              "eff_min": min(e.values()), "eff_min_market": min(e, key=e.get)}
+    ru = {}
+    for fam, vers in (runnerup or {}).items():
+        if not isinstance(vers, dict):
+            continue
+        for v in ("base", "doubled"):
+            ms = (vers.get(v) or {}).get("runner_up_minus_r3", {}).get("markets")
+            if ms:   # Fable round 5, problem 1: runner-up minus R3 per market (positive: R3 lower)
+                ru[f"{fam}|{v}"] = {"positive": sum(1 for g in ms.values() if g > 0), "negative": sum(1 for g in ms.values() if g < 0),
+                                    "min": min(ms.values()), "min_market": min(ms, key=ms.get)}
+    return {"label": "exploratory, after the report; aggregates of churn.json and churn_mid.json", "r3_p05": r3, "runner_up": ru,
             "flags": {"cells": len(cells), "max_attack_change": cells[top]["attack_change"], "max_attack_cell": top,
                       "reselected": sum(1 for c in cells.values() if c["reference_change"] != 0),
-                      "max_reference_change": max(abs(c["reference_change"]) for c in cells.values())},
+                      "max_reference_change": max(abs(c["reference_change"]) for c in cells.values()),
+                      "incomplete_n": first["flag_summary"]["incomplete_n"] + mid["flag_summary"]["incomplete_n"]},
             "rates": rates}
 
 
@@ -79,9 +103,9 @@ def _f(x: float) -> str:
 def audit_table(d: dict) -> str:
     head = ("\\begin{tabular}{llcccccc}\n\\toprule\n$p$ & Rule & attacker's jobs audited & young honest jobs & "
             "audits to young honest & established honest audited & winners without replacement & efficiency \\\\\n\\midrule\n")
-    body = "".join(f"{r['p']:g} & {r['rule']} & {_f(r['focal_audit_rate'])} & {_f(r['young_honest_job_share'])} & "
-                   f"{_f(r['young_honest_audit_share'])} & {_f(r['established_honest_audit_rate'])} & {r['x_off']} of {r['markets']} & "
-                   f"{_f(r['eff_attack'])} \\\\\n" for r in d["allocation"])
+    body = "".join(f"{r['p']:g} & {r['rule']} & {_f(r['focal_audit_rate'])} / {_f(r['focal_audit_rate_doubled'])} & {_f(r['young_honest_job_share'])} & "
+                   f"{_f(r['young_honest_audit_share'])} & {_f(r['established_honest_audit_rate'])} & {r['x_off']} / {r['x_off_doubled']} of {r['markets']} & "
+                   f"{_f(r['eff_attack'])} / {_f(r['eff_doubled'])} \\\\\n" for r in d["allocation"])
     return head + body + "\\bottomrule\n\\end{tabular}\n"
 
 
@@ -138,11 +162,12 @@ def check(d: dict, figdir, tabdir, summary_path=None, summary=None) -> list:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--first", required=True); ap.add_argument("--mid", required=True)
-    ap.add_argument("--figdir", required=True); ap.add_argument("--tabdir", required=True); ap.add_argument("--summary", default=None)
+    ap.add_argument("--figdir", required=True); ap.add_argument("--tabdir", required=True); ap.add_argument("--summary", default=None); ap.add_argument("--runnerup", default=None)
     g = ap.add_mutually_exclusive_group(required=True); g.add_argument("--write", action="store_true"); g.add_argument("--check", action="store_true")
     a = ap.parse_args(argv)
     first, mid = json.loads(Path(a.first).read_text()), json.loads(Path(a.mid).read_text())
-    d, s = data(first, mid), summary(first, mid)
+    ru = json.loads(Path(a.runnerup).read_text()) if a.runnerup else None
+    d, s = data(first, mid), summary(first, mid, ru)
     if a.write:
         write(d, a.figdir, a.tabdir, a.summary, s); return 0
     bad = check(d, a.figdir, a.tabdir, a.summary, s); print("\n".join(bad) or "ok"); return 1 if bad else 0

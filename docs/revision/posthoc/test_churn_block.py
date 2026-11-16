@@ -493,3 +493,16 @@ def test_combined_table_refuses_a_first_arm_whose_no_churn_values_differ(tmp_pat
     with pytest.raises(ValueError, match="no-churn"):
         CB.main(mid + ["--out", str(tmp_path / "z.json"), "--tables", str(tmp_path / "tz"), "--rates", "0.02,0.03", "--first", str(bad)])
     assert not (tmp_path / "z.json").exists()
+
+
+def test_review_r5_per_market_values(tmp_path):
+    # Fable round 5, problems 5 and 8: per-market efficiency under attack and the attacker's audited rate per market
+    ea, ch, rep_ = _tree(tmp_path, _gains())
+    data = CB.load(ea, ch, rep_, markets=M6, n_seeds=40)
+    r5 = CB.review_r5(data=data, diags={"0.05": _full_diag(n=4)})
+    e = r5["eff_by_market"]["base"]["0.05"]["F111"]
+    assert set(e) == set(M6) and all(v == pytest.approx(0.9) for v in e.values())
+    fa = r5["focal_audit_rate_by_market"]["0.05"]["F111|base"]
+    aus = [6 + (i % 2) for i in range(6)]
+    assert [fa[m] for m in M6] == pytest.approx([(x + 1) / 18 for x in aus])
+    assert np.mean(list(fa.values())) == pytest.approx(CB.audit_allocation(_full_diag(n=4))["F111|base"]["focal_audit_rate"])

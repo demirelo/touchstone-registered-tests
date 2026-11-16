@@ -444,3 +444,13 @@ def test_draft10_kinds():
         assert N.KINDS["count"](leaf, 3) and not N.KINDS["count"](leaf, 0.5)
     for leaf in ("max_attack_change", "max_reference_change", "change", "after", "before"):
         assert N.KINDS["gain"](leaf, 0.087) and not N.KINDS["gain"](leaf, 2)
+
+
+def test_round5_kinds():
+    # Fable round 5 aggregates in churn_paper.json
+    for leaf in ("focal_audit_rate_doubled", "replacing_audit_min", "replacing_audit_max"):
+        assert N.KINDS["alloc"](leaf, 0.09) and not N.KINDS["alloc"](leaf, 1.5)
+    for leaf in ("eff_doubled", "eff_min"):
+        assert N.KINDS["eff"](leaf, 0.893)
+    assert N.KINDS["count"]("replacing_markets", 3) and N.KINDS["count"]("x_off_doubled", 0)
+    assert N.KINDS["gain"]("min", -0.059) and not N.KINDS["gain"]("min", 1)

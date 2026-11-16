@@ -4,10 +4,15 @@
 \providecommand{\rvk}[2]{\rv{#2}}
 \providecommand{\site}[1]{\ifcsname site@#1\endcsname\csname site@#1\endcsname\else\textbf{??#1}\fi}
 \providecommand{\rv}[1]{\ifcsname rv@#1\endcsname\csname rv@#1\endcsname\else\textbf{??#1}\fi}
+\expandafter\def\csname site@abs_ch_cells\endcsname{72}
 \expandafter\def\csname site@abs_ch_d5\endcsname{\ensuremath{-0.173}}
 \expandafter\def\csname site@abs_ch_fa1\endcsname{0.366}
+\expandafter\def\csname site@abs_ch_fa1d\endcsname{0.505}
 \expandafter\def\csname site@abs_ch_fa5\endcsname{0.042}
+\expandafter\def\csname site@abs_ch_fa5d\endcsname{0.028}
+\expandafter\def\csname site@abs_ch_inc\endcsname{21}
 \expandafter\def\csname site@abs_ch_q5\endcsname{\ensuremath{-0.052}}
+\expandafter\def\csname site@abs_ch_q5d\endcsname{\ensuremath{-0.033}}
 \expandafter\def\csname site@abs_ml_hi\endcsname{0.054}
 \expandafter\def\csname site@abs_ml_lo\endcsname{\ensuremath{-0.013}}
 \expandafter\def\csname site@abs_q1_cat\endcsname{equivalent, direction R3 lower}
@@ -16,12 +21,14 @@
 \expandafter\def\csname site@abs_q3_w0\endcsname{0.840}
 \expandafter\def\csname site@abs_q4_k\endcsname{3}
 \expandafter\def\csname site@abs_ra_est\endcsname{\ensuremath{-0.010}}
+\expandafter\def\csname site@abs_ra_pos\endcsname{4}
 \expandafter\def\csname site@abs_rs_g0\endcsname{\ensuremath{-0.009}}
 \expandafter\def\csname site@abs_rs_g1\endcsname{0.173}
 \expandafter\def\csname site@c_ch_d5\endcsname{\ensuremath{-0.173}}
 \expandafter\def\csname site@c_ch_fa1\endcsname{0.366}
 \expandafter\def\csname site@c_ch_fa5\endcsname{0.042}
 \expandafter\def\csname site@c_ch_q5\endcsname{\ensuremath{-0.052}}
+\expandafter\def\csname site@c_ch_q5d\endcsname{\ensuremath{-0.033}}
 \expandafter\def\csname site@c_w0\endcsname{0.840}
 \expandafter\def\csname site@c_w1\endcsname{0.997}
 \expandafter\def\csname site@ch_b_0\endcsname{0.238}
@@ -51,14 +58,20 @@
 \expandafter\def\csname site@ch_e8\endcsname{met}
 \expandafter\def\csname site@ch_eff_1\endcsname{0.989}
 \expandafter\def\csname site@ch_eff_5\endcsname{0.967}
+\expandafter\def\csname site@ch_eff_5d\endcsname{0.949}
 \expandafter\def\csname site@ch_eff_b5\endcsname{0.940}
+\expandafter\def\csname site@ch_eff_b5d\endcsname{0.959}
 \expandafter\def\csname site@ch_eff_c5\endcsname{0.993}
+\expandafter\def\csname site@ch_eff_min\endcsname{0.893}
+\expandafter\def\csname site@ch_eff_minm\endcsname{fresh2}
 \expandafter\def\csname site@ch_est_5\endcsname{0.078}
 \expandafter\def\csname site@ch_fa_1\endcsname{0.366}
+\expandafter\def\csname site@ch_fa_1d\endcsname{0.505}
 \expandafter\def\csname site@ch_fa_2\endcsname{0.190}
 \expandafter\def\csname site@ch_fa_3\endcsname{0.093}
 \expandafter\def\csname site@ch_fa_5\endcsname{0.042}
 \expandafter\def\csname site@ch_fa_b5\endcsname{0.251}
+\expandafter\def\csname site@ch_fa_c1\endcsname{0.363}
 \expandafter\def\csname site@ch_fa_c5\endcsname{0.292}
 \expandafter\def\csname site@ch_flag_max\endcsname{0.088}
 \expandafter\def\csname site@ch_inc\endcsname{13}
@@ -85,6 +98,9 @@
 \expandafter\def\csname site@ch_r3_5\endcsname{0.272}
 \expandafter\def\csname site@ch_r3_5_hi\endcsname{0.275}
 \expandafter\def\csname site@ch_r3_5_lo\endcsname{0.268}
+\expandafter\def\csname site@ch_rep_hi\endcsname{0.095}
+\expandafter\def\csname site@ch_rep_lo\endcsname{0.041}
+\expandafter\def\csname site@ch_rep_n\endcsname{3}
 \expandafter\def\csname site@ch_reps1\endcsname{17.901}
 \expandafter\def\csname site@ch_reps2\endcsname{35.777}
 \expandafter\def\csname site@ch_reps3\endcsname{53.790}
@@ -95,6 +111,10 @@
 \expandafter\def\csname site@ch_sh_b\endcsname{0.250}
 \expandafter\def\csname site@ch_sh_c\endcsname{0.356}
 \expandafter\def\csname site@ch_sh_r3\endcsname{0.571}
+\expandafter\def\csname site@ch_t_d2_hi\endcsname{0.035}
+\expandafter\def\csname site@ch_t_d2_lo\endcsname{\ensuremath{-0.075}}
+\expandafter\def\csname site@ch_t_d3_hi\endcsname{0.007}
+\expandafter\def\csname site@ch_t_d3_lo\endcsname{\ensuremath{-0.188}}
 \expandafter\def\csname site@ch_t_d5_hi\endcsname{0.005}
 \expandafter\def\csname site@ch_t_d5_lo\endcsname{\ensuremath{-0.352}}
 \expandafter\def\csname site@ch_t_q5_dhi\endcsname{\ensuremath{-0.001}}
@@ -222,6 +242,9 @@
 \expandafter\def\csname site@r_ra_est\endcsname{\ensuremath{-0.010}}
 \expandafter\def\csname site@r_ra_hi\endcsname{\ensuremath{-0.009}}
 \expandafter\def\csname site@r_ra_lo\endcsname{\ensuremath{-0.011}}
+\expandafter\def\csname site@r_ra_min\endcsname{\ensuremath{-0.059}}
+\expandafter\def\csname site@r_ra_minm\endcsname{fresh5}
+\expandafter\def\csname site@r_ra_pos\endcsname{4}
 \expandafter\def\csname site@r_ra_x7d\endcsname{0.003}
 \expandafter\def\csname site@r_rb_cells\endcsname{19}
 \expandafter\def\csname site@r_rb_max\endcsname{0.054}
