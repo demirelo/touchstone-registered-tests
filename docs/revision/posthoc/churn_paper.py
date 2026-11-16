@@ -39,8 +39,10 @@ def data(first: dict, mid: dict) -> dict:
             a, ad = alloc[_key(p)][f"{rule}|base"], alloc[_key(p)][f"{rule}|doubled"]
             rows.append({"p": p, "rule": name, "focal_audit_rate": a["focal_audit_rate"], "focal_audit_rate_doubled": ad["focal_audit_rate"],
                          "x_off_doubled": sum(1 for x in ad["x_by_market"].values() if x == 0), "eff_doubled": eff["doubled"][_key(p)][rule],
-                         "young_honest_job_share": a["young_honest_job_share"],
-                         "young_honest_audit_share": a["young_honest_audit_share"], "established_honest_audit_rate": a["established_honest_audit_rate"],
+                         "young_honest_job_share": a["young_honest_job_share"], "young_honest_job_share_doubled": ad["young_honest_job_share"],
+                         "young_honest_audit_share": a["young_honest_audit_share"], "young_honest_audit_share_doubled": ad["young_honest_audit_share"],
+                         "established_honest_audit_rate": a["established_honest_audit_rate"],
+                         "established_honest_audit_rate_doubled": ad["established_honest_audit_rate"],
                          "x_off": sum(1 for x in a["x_by_market"].values() if x == 0), "markets": a["markets"],
                          "eff_attack": eff["base"][_key(p)][rule]})
     return {"label": "exploratory, after the report; frozen searches unless stated", "rates": rates, "curves": curves, "allocation": rows}
@@ -72,7 +74,9 @@ def summary(first: dict, mid: dict, runnerup: dict | None = None) -> dict:
         fa = r5["focal_audit_rate_by_market"]["0.05"]["F111|base"]; xs = alloc["0.05"]["F111|base"]["x_by_market"]
         rep = [fa[m] for m in fa if xs.get(m) == 1]
         e = r5["eff_by_market"]["base"]["0.05"]["F111"]
+        keep = [fa[m] for m in fa if xs.get(m) == 0]
         r3 = {"replacing_audit_min": min(rep), "replacing_audit_max": max(rep), "replacing_markets": len(rep),
+              "staying_audit_min": min(keep), "staying_audit_max": max(keep), "staying_markets": len(keep),
               "eff_min": min(e.values()), "eff_min_market": min(e, key=e.get)}
         fad = r5["focal_audit_rate_by_market"]["0.05"].get("F111|doubled"); xd = alloc["0.05"]["F111|doubled"]["x_by_market"]
         if fad:   # Astra d10-r2, correction 5: the same range for the doubled winners
@@ -86,9 +90,13 @@ def summary(first: dict, mid: dict, runnerup: dict | None = None) -> dict:
             ms = (vers.get(v) or {}).get("runner_up_minus_r3", {}).get("markets")
             if ms:   # Fable round 5, problem 1: runner-up minus R3 per market (positive: R3 lower)
                 ru[f"{fam}|{v}"] = {"positive": sum(1 for g in ms.values() if g > 0), "negative": sum(1 for g in ms.values() if g < 0),
-                                    "min": min(ms.values()), "min_market": min(ms, key=ms.get)}
-    flags_ru = ((runnerup or {}).get("D2+H3") or {}).get("flags") or {}
-    ruf = {"incomplete": sum(1 for v in flags_ru.values() if v.get("incomplete")), "markets": len(flags_ru)} if flags_ru else {}
+                                    "min": min(ms.values()), "min_market": min(ms, key=ms.get),
+                                    "cstar_minus_runner_up": vers[v]["cstar_minus_runner_up"]["estimate"]}
+    ruf = {}
+    for fam, vers in (runnerup or {}).items():
+        fl = vers.get("flags") if isinstance(vers, dict) else None
+        if fl:   # Astra d10-r3: flags per family
+            ruf[fam] = {"incomplete": sum(1 for v in fl.values() if v.get("incomplete")), "markets": len(fl)}
     return {"label": "exploratory, after the report; aggregates of churn.json and churn_mid.json", "r3_p05": r3, "runner_up": ru,
             "runner_up_flags": ruf,
             "flags": {"cells": len(cells), "max_attack_change": cells[top]["attack_change"], "max_attack_cell": top,
@@ -110,10 +118,33 @@ def _f(x: float) -> str:
 def audit_table(d: dict) -> str:
     head = ("\\begin{tabular}{llcccccc}\n\\toprule\n$p$ & Rule & attacker's jobs audited & young honest jobs & "
             "audits to young honest & established honest audited & winners without replacement & efficiency \\\\\n\\midrule\n")
-    body = "".join(f"{r['p']:g} & {r['rule']} & {_f(r['focal_audit_rate'])} / {_f(r['focal_audit_rate_doubled'])} & {_f(r['young_honest_job_share'])} & "
-                   f"{_f(r['young_honest_audit_share'])} & {_f(r['established_honest_audit_rate'])} & {r['x_off']} / {r['x_off_doubled']} of {r['markets']} & "
+    body = "".join(f"{r['p']:g} & {r['rule']} & {_f(r['focal_audit_rate'])} / {_f(r['focal_audit_rate_doubled'])} & {_f(r['young_honest_job_share'])} / {_f(r['young_honest_job_share_doubled'])} & "
+                   f"{_f(r['young_honest_audit_share'])} / {_f(r['young_honest_audit_share_doubled'])} & "
+                   f"{_f(r['established_honest_audit_rate'])} / {_f(r['established_honest_audit_rate_doubled'])} & {r['x_off']} / {r['x_off_doubled']} of {r['markets']} & "
                    f"{_f(r['eff_attack'])} / {_f(r['eff_doubled'])} \\\\\n" for r in d["allocation"])
     return head + body + "\\bottomrule\n\\end{tabular}\n"
+
+
+T5 = 2.570581835636314   # 0.975 quantile of Student's t with 5 degrees of freedom
+
+
+def _t95(xs: list) -> tuple:
+    import math
+    n = len(xs); m = sum(xs) / n; sd = math.sqrt(sum((x - m) ** 2 for x in xs) / (n - 1))
+    return m - T5 * sd / math.sqrt(n), m + T5 * sd / math.sqrt(n)
+
+
+def runner_up_table(runnerup: dict) -> str:
+    """Run A: runner-up minus R3 per family and search version, with the market-level t interval and the market signs
+    (positive: R3 lower), and C* minus runner-up (Astra d10-r3, correction 2)."""
+    rows = []
+    for fam in ("D2+H3", "X7-SC"):
+        for v, name in (("base", "frozen"), ("doubled", "doubled")):
+            x = runnerup[fam][v]; ms = list(x["runner_up_minus_r3"]["markets"].values()); lo, hi = _t95(ms)
+            rows.append(f"{fam} & {name} & {_f(x['runner_up_minus_r3']['estimate'])} & [{_f(lo)}, {_f(hi)}] & "
+                        f"{sum(1 for g in ms if g > 0)} / {sum(1 for g in ms if g < 0)} & {_f(x['cstar_minus_runner_up']['estimate'])} \\\\\n")
+    return ("\\begin{tabular}{llcccc}\n\\toprule\nFamily & Winner & runner-up $-$ R3 & market $t$ interval & markets R3 lower / higher & C$^*$ $-$ runner-up \\\\\n\\midrule\n"
+            + "".join(rows) + "\\bottomrule\n\\end{tabular}\n")
 
 
 def t_table(first: dict, mid: dict) -> str:
@@ -155,8 +186,10 @@ def _same_pdf(d: dict, path: Path) -> bool:
         return fresh.read_bytes() == path.read_bytes()
 
 
-def write(d: dict, figdir, tabdir, summary_path=None, summary=None, ttable=None) -> None:
+def write(d: dict, figdir, tabdir, summary_path=None, summary=None, ttable=None, rtable=None) -> None:
     fd, td = Path(figdir), Path(tabdir)
+    if rtable is not None:
+        (td / "posthoc_runnerup.tex").write_text(rtable)
     if ttable is not None:
         (td / "posthoc_churn_t.tex").write_text(ttable)
     if summary_path is not None:
@@ -166,8 +199,10 @@ def write(d: dict, figdir, tabdir, summary_path=None, summary=None, ttable=None)
     (td / "posthoc_churn_audit.tex").write_text(audit_table(d))
 
 
-def check(d: dict, figdir, tabdir, summary_path=None, summary=None, ttable=None) -> list:
+def check(d: dict, figdir, tabdir, summary_path=None, summary=None, ttable=None, rtable=None) -> list:
     fd, td = Path(figdir), Path(tabdir); bad = []
+    if rtable is not None and (not (td / "posthoc_runnerup.tex").exists() or (td / "posthoc_runnerup.tex").read_text() != rtable):
+        bad.append("posthoc_runnerup.tex: stale or missing; run --write")
     if ttable is not None and (not (td / "posthoc_churn_t.tex").exists() or (td / "posthoc_churn_t.tex").read_text() != ttable):
         bad.append("posthoc_churn_t.tex: stale or missing; run --write")
     if summary_path is not None:
@@ -194,9 +229,10 @@ def main(argv=None) -> int:
     first, mid = json.loads(Path(a.first).read_text()), json.loads(Path(a.mid).read_text())
     ru = json.loads(Path(a.runnerup).read_text()) if a.runnerup else None
     d, s, tt = data(first, mid), summary(first, mid, ru), t_table(first, mid)
+    rt = runner_up_table(ru) if ru else None
     if a.write:
-        write(d, a.figdir, a.tabdir, a.summary, s, tt); return 0
-    bad = check(d, a.figdir, a.tabdir, a.summary, s, tt); print("\n".join(bad) or "ok"); return 1 if bad else 0
+        write(d, a.figdir, a.tabdir, a.summary, s, tt, rt); return 0
+    bad = check(d, a.figdir, a.tabdir, a.summary, s, tt, rt); print("\n".join(bad) or "ok"); return 1 if bad else 0
 
 
 if __name__ == "__main__":

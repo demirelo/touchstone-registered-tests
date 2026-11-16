@@ -100,7 +100,7 @@ def test_summary_round6_fields():
     rep = [fa[m] for m in fa if x[m] == 1]
     assert s["r3_p05"]["replacing_audit_min_doubled"] == min(rep) and s["r3_p05"]["replacing_markets_doubled"] == len(rep)
     fl = RUNNERUP["D2+H3"]["flags"]
-    assert s["runner_up_flags"]["incomplete"] == sum(1 for v in fl.values() if v["incomplete"])
+    assert s["runner_up_flags"]["D2+H3"]["incomplete"] == sum(1 for v in fl.values() if v["incomplete"])
 
 
 def test_main_refuses_a_summary_without_runnerup(tmp_path):
@@ -120,3 +120,21 @@ def test_t_table_lists_every_rate_and_version(tmp_path):
     assert P.check(d, tmp_path, tmp_path, summary_path=tmp_path / "s.json", summary=s, ttable=t) == []
     (tmp_path / "posthoc_churn_t.tex").write_text("x")
     assert any("posthoc_churn_t" in b for b in P.check(d, tmp_path, tmp_path, summary_path=tmp_path / "s.json", summary=s, ttable=t))
+
+
+def test_runner_up_table_and_flags_per_family():
+    # Astra d10-r3, correction 2: four rows (family x version) with market t interval and sign counts; flags per family
+    t = P.runner_up_table(RUNNERUP)
+    assert t.count("\\\\\n") == 4 + 1
+    ms = list(RUNNERUP["X7-SC"]["doubled"]["runner_up_minus_r3"]["markets"].values())
+    lo, hi = P._t95(ms)
+    assert P._f(lo) in t and P._f(hi) in t
+    s = P.summary(FIRST, MID, RUNNERUP)
+    for fam in ("D2+H3", "X7-SC"):
+        fl = RUNNERUP[fam]["flags"]
+        assert s["runner_up_flags"][fam]["incomplete"] == sum(1 for v in fl.values() if v["incomplete"])
+    assert s["runner_up"]["D2+H3|doubled"]["cstar_minus_runner_up"] == RUNNERUP["D2+H3"]["doubled"]["cstar_minus_runner_up"]["estimate"]
+    r = s["r3_p05"]
+    fa = FIRST["review_r5"]["focal_audit_rate_by_market"]["0.05"]["F111|base"]; x = FIRST["review_r4"]["audit_allocation"]["0.05"]["F111|base"]["x_by_market"]
+    keep = [fa[m] for m in fa if x[m] == 0]
+    assert r["staying_audit_min"] == min(keep) and r["staying_audit_max"] == max(keep)

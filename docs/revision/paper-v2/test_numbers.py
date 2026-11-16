@@ -454,3 +454,4 @@ def test_round5_kinds():
         assert N.KINDS["eff"](leaf, 0.893)
     assert N.KINDS["count"]("replacing_markets", 3) and N.KINDS["count"]("x_off_doubled", 0)
     assert N.KINDS["gain"]("min", -0.059) and not N.KINDS["gain"]("min", 1)
+    assert N.KINDS["alloc"]("staying_audit_min", 0.012) and N.KINDS["count"]("staying_markets", 3) and N.KINDS["count"]("incomplete", 1)

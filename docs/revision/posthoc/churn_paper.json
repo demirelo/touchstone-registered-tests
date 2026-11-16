@@ -16,7 +16,10 @@
   "replacing_audit_min": 0.04062942208637573,
   "replacing_audit_min_doubled": 0.0372427652733119,
   "replacing_markets": 3,
-  "replacing_markets_doubled": 3
+  "replacing_markets_doubled": 3,
+  "staying_audit_max": 0.01456767141595666,
+  "staying_audit_min": 0.011861243403269404,
+  "staying_markets": 3
  },
  "rates": {
   "0.01": {
@@ -174,24 +177,28 @@
  },
  "runner_up": {
   "D2+H3|base": {
+   "cstar_minus_runner_up": 0.030954791919399056,
    "min": -0.0590621618404871,
    "min_market": "fresh5",
    "negative": 2,
    "positive": 4
   },
   "D2+H3|doubled": {
+   "cstar_minus_runner_up": 0.03414257680898855,
    "min": -0.0590621618404871,
    "min_market": "fresh5",
    "negative": 2,
    "positive": 4
   },
   "X7-SC|base": {
+   "cstar_minus_runner_up": 0.031552095642401155,
    "min": -0.0590621618404871,
    "min_market": "fresh5",
    "negative": 2,
    "positive": 4
   },
   "X7-SC|doubled": {
+   "cstar_minus_runner_up": 0.021469816148341786,
    "min": -0.009366468833057553,
    "min_market": "fresh0",
    "negative": 1,
@@ -199,7 +206,13 @@
   }
  },
  "runner_up_flags": {
-  "incomplete": 3,
-  "markets": 6
+  "D2+H3": {
+   "incomplete": 3,
+   "markets": 6
+  },
+  "X7-SC": {
+   "incomplete": 1,
+   "markets": 6
+  }
  }
 }
