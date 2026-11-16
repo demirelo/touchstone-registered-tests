@@ -1,4 +1,4 @@
-"""Cost estimate of the churn replication (plan draft 2) from experiments/v2/benchmark/timings.json, the churn slowdown
+"""Cost estimate of the churn replication (plan draft 3) from experiments/v2/benchmark/timings.json, the churn slowdown
 measured for the churn arm (docs/revision/churn/churn_cost.py) and the memory-safe worker counts of the churn arm and
 Run B. Two numbers per scenario: core-hours at 0.108 USD per core-hour, and billed pod time from a stage schedule
 (waves at the stage's worker limit, stages in sequence) at 0.56 USD per hour; the estimate is the larger of the two.
@@ -9,7 +9,7 @@ import json
 import math
 
 T = json.load(open("experiments/v2/benchmark/timings.json"))["timings"]
-U, POD, PREP = 0.108, 0.56, 0.6
+U, POD, PREP, PODS, TRANSFER_H = 0.108, 0.56, 0.6, 2, 0.2   # two pods, each with preparation and a transfer tail
 MARKETS, RULES, MENU_RULES, RATES = 6, 4, 10, (0.03, 0.05)
 SLOW = 8.62 / 6.48                     # the p = 0.05 slowdown, applied to every churn stage (conservative for 0.03)
 CALIB_H = 0.25                         # assumption: six calibrations of 20 seeds each on the pod (not benchmarked)
@@ -29,21 +29,23 @@ def estimate(flag_share: float, rounds: int = 3) -> dict:
     churn_cells = len(RATES) * MARKETS * RULES
     flagged = round(flag_share * cells)
     cont_round = (T["doubling"] + EV) * SLOW                        # one continuation round; round 1 repeats the doubling
-    stages = {   # name: (core seconds, schedule seconds)
+    stages = {   # name: (core seconds, schedule seconds), in execution order (review r2: D2+H3 before X7-SC, gates after
+        # their menu and reference inputs)
         "calibration": (CALIB_H * 3600, CALIB_H * 3600),
-        "gates": (3 * (T["d2h3_cell"] + EV + T["doubling"]), 3 * (T["d2h3_cell"] + EV + T["doubling"])),   # p = 0 ordinary,
-        # p = 0 through the churn path (injected churn zero), and one continuation round against its doubling record; serial
-        "menu_x7": (menu_x7 * T["x7_cell"], waves(menu_x7, W_SEARCH) * T["x7_cell"]),
         "menu_d2h3": (menu_d2 * T["d2h3_cell"], waves(menu_d2, W_SEARCH) * T["d2h3_cell"]),
+        "menu_x7": (menu_x7 * T["x7_cell"], waves(menu_x7, W_SEARCH) * T["x7_cell"]),     # needs the embedded D2+H3 winner
         "references": (MARKETS * RULES * T["reference"], MARKETS * RULES * T["reference"]),               # serial, as Run A
+        "gates": (2 * (EV + T["doubling"]) + 2 * cont_round, 2 * (EV + T["doubling"]) + 2 * cont_round),   # p = 0 cell through
+        # the ordinary and the churn-zero path (evaluate and doubling), and one continuation round 1 at p = 0.05 against its
+        # own doubling record (that doubling plus the round); serial
         "p0_eval_doubling": (MARKETS * RULES * (EV + T["doubling"]), waves(MARKETS * RULES, W_EVAL) * (EV + T["doubling"])),
         "churn_search": (churn_cells * T["d2h3_cell"] * SLOW, waves(churn_cells, W_SEARCH) * T["d2h3_cell"] * SLOW),
         "churn_eval_doubling": (churn_cells * (EV + T["doubling"]) * SLOW, waves(churn_cells, W_EVAL) * (EV + T["doubling"]) * SLOW),
         "continuation": (flagged * rounds * cont_round, waves(flagged, W_CONT) * rounds * cont_round),
-        "diagnostics": (cells * 2 * DIAG, waves(cells * 2, W_EVAL) * DIAG),   # frozen and final winners
+        "diagnostics": (cells * 2 * DIAG * SLOW, waves(cells * 2, W_EVAL) * DIAG * SLOW),   # frozen and final winners
     }
     core_h = sum(c for c, _ in stages.values()) / 3600
-    sched_h = sum(s for _, s in stages.values()) / 3600 + PREP
+    sched_h = sum(s for _, s in stages.values()) / 3600 + PODS * (PREP + TRANSFER_H)
     usd_core, usd_pod = core_h * U, sched_h * POD
     est = max(usd_core, usd_pod)
     return {"flag_share": flag_share, "flagged_cells": flagged,
