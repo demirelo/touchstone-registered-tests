@@ -378,6 +378,17 @@
   "headline@rho0.2|F111|D2+H3|profit": 2,
   "headline@rho0.2|F111|X7-SC|profit": 3
  },
+ "selection": {
+  "flagged": 14,
+  "unflagged": 5,
+  "unflagged_cells": [
+   "fresh0@rho0.2|C*|X7-SC|profit",
+   "fresh1@rho0.2|C*|X7-SC|profit",
+   "fresh1@rho0.2|F111|X7-SC|profit",
+   "fresh3@rho0.2|C*|X7-SC|profit",
+   "fresh4@rho0.2|F111|X7-SC|profit"
+  ]
+ },
  "status": {
   "fresh0@rho0.2|C*|D2+H3|profit": "passed",
   "fresh0@rho0.2|C*|X7-SC|profit": "passed",

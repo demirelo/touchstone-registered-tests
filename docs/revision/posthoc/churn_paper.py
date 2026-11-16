@@ -77,6 +77,8 @@ def summary(first: dict, mid: dict, runnerup: dict | None = None) -> dict:
         keep = [fa[m] for m in fa if xs.get(m) == 0]
         r3 = {"replacing_audit_min": min(rep), "replacing_audit_max": max(rep), "replacing_markets": len(rep),
               "staying_audit_min": min(keep), "staying_audit_max": max(keep), "staying_markets": len(keep),
+              **({"replacing_newest_min": min(nb[m] for m in nb if xs.get(m) == 1), "replacing_newest_max": max(nb[m] for m in nb if xs.get(m) == 1)}
+                 if (nb := r5.get("focal_newest_by_market", {}).get("0.05", {}).get("F111|base")) else {}),
               "eff_min": min(e.values()), "eff_min_market": min(e, key=e.get)}
         fad = r5["focal_audit_rate_by_market"]["0.05"].get("F111|doubled"); xd = alloc["0.05"]["F111|doubled"]["x_by_market"]
         if fad:   # Astra d10-r2, correction 5: the same range for the doubled winners
@@ -99,7 +101,10 @@ def summary(first: dict, mid: dict, runnerup: dict | None = None) -> dict:
         fl = vers.get("flags") if isinstance(vers, dict) else None
         if fl:   # Astra d10-r3: flags per family
             ruf[fam] = {"incomplete": sum(1 for v in fl.values() if v.get("incomplete")), "markets": len(fl)}
+    dl = deltas(first, mid)
+    dneg = {p: {v: [dl[v][p]["d"]["negative"], dl[v][p]["q"]["negative"]] for v in VERS} for p in dl["base"]}
     return {"label": "exploratory, after the report; aggregates of churn.json and churn_mid.json", "r3_p05": r3, "runner_up": ru,
+            "deltas_all_negative": dneg,
             "runner_up_flags": ruf,
             "flags": {"cells": len(cells), "max_attack_change": cells[top]["attack_change"], "max_attack_cell": top,
                       "reselected": sum(1 for c in cells.values() if c["reference_change"] != 0),
@@ -149,6 +154,33 @@ def runner_up_table(runnerup: dict) -> str:
             + "".join(rows) + "\\bottomrule\n\\end{tabular}\n")
 
 
+def deltas(first: dict, mid: dict) -> dict:
+    """External review d10 (Astra Pro), exploratory: per version, rate and contrast, the change of each market's contrast
+    from the same market's no-churn value (same version), its mean, the market t interval and the count of decreases."""
+    out = {}
+    for v in VERS:
+        st = _stats(first, mid, v); base = st["0"]; out[v] = {}
+        for p in sorted((k for k in st if k != "0"), key=float):
+            out[v][p] = {}
+            for c in ("d", "q"):
+                m0, m1 = base[c]["markets"], st[p][c]["markets"]
+                ch = [m1[k] - m0[k] for k in m0]
+                lo, hi = _t95(ch)
+                out[v][p][c] = {"mean": sum(ch) / len(ch), "ci": [lo, hi], "negative": sum(1 for x in ch if x < 0), "markets": len(ch)}
+    return out
+
+
+def delta_table(dl: dict) -> str:
+    rows = []
+    for v, name in (("base", "frozen"), ("doubled", "doubled")):
+        for p, r in dl[v].items():
+            d, q = r["d"], r["q"]
+            rows.append(f"{name} & {p} & {_f(d['mean'])} [{_f(d['ci'][0])}, {_f(d['ci'][1])}] & {d['negative']} of {d['markets']} & "
+                        f"{_f(q['mean'])} [{_f(q['ci'][0])}, {_f(q['ci'][1])}] & {q['negative']} of {q['markets']} \\\\\n")
+    return ("\\begin{tabular}{llcccc}\n\\toprule\nWinner & $p$ & change in $d$ & markets lower & change in $q$ & markets lower \\\\\n\\midrule\n"
+            + "".join(rows) + "\\bottomrule\n\\end{tabular}\n")
+
+
 def t_table(first: dict, mid: dict) -> str:
     """Market-level t intervals (5 degrees of freedom) over the six market differences, per rate and search version,
     from the review_r4 blocks (Astra d10-r2, correction 2)."""
@@ -188,8 +220,10 @@ def _same_pdf(d: dict, path: Path) -> bool:
         return fresh.read_bytes() == path.read_bytes()
 
 
-def write(d: dict, figdir, tabdir, summary_path=None, summary=None, ttable=None, rtable=None) -> None:
+def write(d: dict, figdir, tabdir, summary_path=None, summary=None, ttable=None, rtable=None, dtable=None) -> None:
     fd, td = Path(figdir), Path(tabdir)
+    if dtable is not None:
+        (td / "posthoc_churn_delta.tex").write_text(dtable)
     if rtable is not None:
         (td / "posthoc_runnerup.tex").write_text(rtable)
     if ttable is not None:
@@ -201,8 +235,10 @@ def write(d: dict, figdir, tabdir, summary_path=None, summary=None, ttable=None,
     (td / "posthoc_churn_audit.tex").write_text(audit_table(d))
 
 
-def check(d: dict, figdir, tabdir, summary_path=None, summary=None, ttable=None, rtable=None) -> list:
+def check(d: dict, figdir, tabdir, summary_path=None, summary=None, ttable=None, rtable=None, dtable=None) -> list:
     fd, td = Path(figdir), Path(tabdir); bad = []
+    if dtable is not None and (not (td / "posthoc_churn_delta.tex").exists() or (td / "posthoc_churn_delta.tex").read_text() != dtable):
+        bad.append("posthoc_churn_delta.tex: stale or missing; run --write")
     if rtable is not None and (not (td / "posthoc_runnerup.tex").exists() or (td / "posthoc_runnerup.tex").read_text() != rtable):
         bad.append("posthoc_runnerup.tex: stale or missing; run --write")
     if ttable is not None and (not (td / "posthoc_churn_t.tex").exists() or (td / "posthoc_churn_t.tex").read_text() != ttable):
@@ -232,9 +268,10 @@ def main(argv=None) -> int:
     ru = json.loads(Path(a.runnerup).read_text()) if a.runnerup else None
     d, s, tt = data(first, mid), summary(first, mid, ru), t_table(first, mid)
     rt = runner_up_table(ru) if ru else None
+    dt = delta_table(deltas(first, mid))
     if a.write:
-        write(d, a.figdir, a.tabdir, a.summary, s, tt, rt); return 0
-    bad = check(d, a.figdir, a.tabdir, a.summary, s, tt, rt); print("\n".join(bad) or "ok"); return 1 if bad else 0
+        write(d, a.figdir, a.tabdir, a.summary, s, tt, rt, dt); return 0
+    bad = check(d, a.figdir, a.tabdir, a.summary, s, tt, rt, dt); print("\n".join(bad) or "ok"); return 1 if bad else 0
 
 
 if __name__ == "__main__":

@@ -147,3 +147,28 @@ def test_summary_staying_range_doubled():
     x = FIRST["review_r4"]["audit_allocation"]["0.05"]["F111|doubled"]["x_by_market"]
     keep = [fa[m] for m in fa if x[m] == 0]
     assert s["r3_p05"]["staying_audit_min_doubled"] == min(keep) and s["r3_p05"]["staying_markets_doubled"] == len(keep)
+
+
+FIRST = json.loads((HERE / "churn.json").read_text()); MID = json.loads((HERE / "churn_mid.json").read_text())
+
+
+def test_delta_table_pairs_each_market_with_its_own_no_churn_value():
+    # External review d10 (Astra Pro): change of each market's contrast from its own no-churn value, per version
+    dl = P.deltas(FIRST, MID)
+    m0 = FIRST["statistics"]["doubled"]["0"]["q"]["markets"]; m3 = MID["statistics"]["doubled"]["0.03"]["q"]["markets"]
+    ch = [m3[k] - m0[k] for k in m0]
+    row = dl["doubled"]["0.03"]["q"]
+    assert row["mean"] == sum(ch) / 6 and row["negative"] == sum(1 for x in ch if x < 0)
+    lo, hi = P._t95(ch)
+    assert row["ci"] == [lo, hi]
+    t = P.delta_table(dl)
+    assert t.count("\\\\\n") == 8 + 1 and P._f(row["mean"]) in t
+
+
+def test_summary_newest_range_for_replacing_markets():
+    s = P.summary(FIRST, MID, RUNNERUP)
+    nb = FIRST["review_r5"]["focal_newest_by_market"]["0.05"]["F111|base"]
+    x = FIRST["review_r4"]["audit_allocation"]["0.05"]["F111|base"]["x_by_market"]
+    rep = [nb[m] for m in nb if x[m] == 1]
+    assert s["r3_p05"]["replacing_newest_min"] == min(rep) and s["r3_p05"]["replacing_newest_max"] == max(rep)
+    assert s["deltas_all_negative"]["0.05"] == {"base": [6, 6], "doubled": [6, 6]}

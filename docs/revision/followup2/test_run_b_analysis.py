@@ -36,3 +36,13 @@ def test_differing_recompute_is_refused(tmp_path, monkeypatch):
     monkeypatch.setattr(A.B, "recompute", lambda src, run, expected: mac)
     with pytest.raises(SystemExit):
         A.analyse(tmp_path, "src")
+
+
+def test_selection_counts_come_from_the_report(tmp_path, monkeypatch):
+    # External review d10 (Astra Pro), problem 2: Run B's cells are flagged cells plus unflagged nesting cells
+    mac = _setup(tmp_path)
+    monkeypatch.setattr(A.B, "recompute", lambda src, run, expected: mac)
+    (tmp_path / "convergence" / "b.json").write_text(json.dumps({"id": "b", "binding": {"x": 2}, "heldout": {}, "status": "passed", "rounds": [1]}))
+    report = {"doubling": {"a": {"incomplete": True}, "b": {"incomplete": False}}}
+    r = A.analyse(tmp_path, "src", report=report)
+    assert r["selection"] == {"flagged": 1, "unflagged": 1, "unflagged_cells": ["b"]}

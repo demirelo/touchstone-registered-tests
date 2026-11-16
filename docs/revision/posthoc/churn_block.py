@@ -325,7 +325,7 @@ def review_r5(data: dict | None, diags: dict) -> dict:
             for c in data["conds"]:
                 eff[v][c] = {r: {m: float(np.mean(data["cells"][v][c][m][r]["eff_attack"])) for m in data["markets"]
                                  if r in data["cells"][v][c][m] and "eff_attack" in data["cells"][v][c][m][r]} for r in RULES}
-    fa = {}
+    fa, nb = {}, {}   # nb: external review d10, the newest-identity frequency per market (mean over episodes)
     for c, d in diags.items():
         if not d:
             continue
@@ -338,7 +338,10 @@ def review_r5(data: dict | None, diags: dict) -> dict:
                 sh = cell[w]["shares"]
                 fo = [sum(e["focal"][b][j] for e in sh["per_episode"] for b in range(len(AGE_BINS))) for j in (0, 1)]
                 fa[c].setdefault(f"{r}|{w}", {})[m] = fo[1] / fo[0] if fo[0] else None
-    return {"label": "post hoc, after external review round 5; not part of the plan", "eff_by_market": eff, "focal_audit_rate_by_market": fa}
+                xs = [x for x in sh["focal_newest_by_first_offer_assigned"] if x is not None and math.isfinite(x)]
+                nb.setdefault(c, {}).setdefault(f"{r}|{w}", {})[m] = float(np.mean(xs)) if xs else None
+    return {"label": "post hoc, after external review round 5; not part of the plan", "eff_by_market": eff, "focal_audit_rate_by_market": fa,
+            "focal_newest_by_market": nb}
 
 
 def registered_check(res: dict, reg: dict) -> dict:

@@ -456,3 +456,4 @@ def test_round5_kinds():
     assert N.KINDS["gain"]("min", -0.059) and not N.KINDS["gain"]("min", 1)
     assert N.KINDS["alloc"]("staying_audit_min", 0.012) and N.KINDS["count"]("staying_markets", 3) and N.KINDS["count"]("incomplete", 1)
     assert N.KINDS["alloc"]("staying_audit_max_doubled", 0.015) and N.KINDS["count"]("staying_markets_doubled", 3)
+    assert N.KINDS["alloc"]("replacing_newest_max", 0.033) and N.KINDS["count"]("unflagged", 5)

@@ -181,3 +181,19 @@ repository. The committed `numbers.tex` went stale (found by Astra, review paper
 touches `docs/revision/paper-v2/` goes through `results/pods/paper_commit.sh` (d496c04 did). If this repeats, the guard
 becomes a git pre-commit hook that refuses a commit of `paper-v2/main.tex` or `sites.json` when `numbers.tex` differs
 from the regenerated file (needs the author's consent: it changes repository configuration).
+
+## 2026-11-16: Run B described as "19 flagged cells"
+
+Mistake: the paper said Run B continued "the 19 registered cells whose doubling check was flagged"; 14 were flagged and 5
+were unflagged X7-SC cells added for held-out shortfalls (convergence-plan.md; found by the external review of draft 10).
+I typed a set description from memory instead of reading it from the records. Guard: `run_b_analysis.py` now writes
+`selection` (flagged and unflagged counts, from report.json `doubling`), tested first (runb_selection_red.log), and the
+paper cites both counts through the number gate. Rule: a sentence that describes how a set of cells was chosen cites
+counts from a record, not memory.
+
+## 2026-11-16: a compare-then-copy step copied after a failed comparison
+
+Mistake: while regenerating `churn_mid.json` I chained a comparison that printed `False` and exited 0 with `&& cp`, so
+the regenerated file replaced the committed one before I had read the difference (it was only an input hash). Guard:
+comparisons that gate a copy use `assert` (non-zero exit on mismatch), never a printed boolean; I re-derived the file
+against the current inputs and checked it field by field before keeping it.

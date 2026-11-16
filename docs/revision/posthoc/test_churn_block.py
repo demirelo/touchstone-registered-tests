@@ -506,3 +506,10 @@ def test_review_r5_per_market_values(tmp_path):
     aus = [6 + (i % 2) for i in range(6)]
     assert [fa[m] for m in M6] == pytest.approx([(x + 1) / 18 for x in aus])
     assert np.mean(list(fa.values())) == pytest.approx(CB.audit_allocation(_full_diag(n=4))["F111|base"]["focal_audit_rate"])
+
+
+def test_review_r5_newest_by_market():
+    # External review d10 (Astra Pro), problem 7: the focal provider's newest-identity frequency per market
+    r5 = CB.review_r5(data=None, diags={"0.05": _full_diag(n=4)})
+    nb = r5["focal_newest_by_market"]["0.05"]["F111|base"]
+    assert set(nb) == set(M6) and all(v == pytest.approx(0.25) for v in nb.values())

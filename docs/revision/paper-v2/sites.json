@@ -1578,5 +1578,25 @@
   "path": "churnpaper.r3_p05.staying_audit_max_doubled",
   "kind": "alloc",
   "section": "churn"
+ },
+ "r_rb_flagged": {
+  "path": "conv.selection.flagged",
+  "kind": "count",
+  "section": "results"
+ },
+ "r_rb_unflagged": {
+  "path": "conv.selection.unflagged",
+  "kind": "count",
+  "section": "results"
+ },
+ "ch_new_lo": {
+  "path": "churnpaper.r3_p05.replacing_newest_min",
+  "kind": "alloc",
+  "section": "churn"
+ },
+ "ch_new_hi": {
+  "path": "churnpaper.r3_p05.replacing_newest_max",
+  "kind": "alloc",
+  "section": "churn"
  }
 }
