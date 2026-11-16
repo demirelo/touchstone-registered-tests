@@ -20,8 +20,9 @@ USE = re.compile(r"\\rv\{([^}]*)\}")
 USEK = re.compile(r"\\rvk\{(\w+)\}\{([^}]*)\}")
 SITE = re.compile(r"\\site\{([^}]*)\}")
 SECTION = re.compile(r"\\section\*?\s*\{([^}]*)\}(?:\s*\\label\{sec:([^}]*)\})?")
-FULL = ("abstract", "results")       # sections that must lie wholly inside result regions
-NOBARE = REQUIRED = ("abstract", "intro", "results", "discussion", "conclusion")   # no unmarked number outside regions; captions likewise
+FULL = ("abstract", "results", "reset", "churn", "app-results")   # sections wholly inside result regions (draft 10 adds reset, churn, app-results)
+REQUIRED = ("abstract", "intro", "results", "reset", "churn", "discussion", "conclusion")
+NOBARE = REQUIRED + ("app-results",)   # no unmarked number outside regions; captions likewise
 LABEL = re.compile(r"\\label\{sec:([^}]*)\}")
 COMMENT = re.compile(r"(?<!\\)%.*")
 INPUT = re.compile(r"\\(?:input|include)\{([^}]*)\}")

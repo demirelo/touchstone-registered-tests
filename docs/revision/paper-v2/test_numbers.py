@@ -155,8 +155,18 @@ Ten providers at \const{0.050} noise; evaluation 1 gave \evone{0.353}.
 % BEGIN-EV2
 Replicated on \site{q4-count} of six markets; d is \site{q1-d2h3-d}.
 % END-EV2
+\section{Where the advantage lives}\label{sec:reset}
+% BEGIN-EV2
+% END-EV2
+\section{Honest churn}\label{sec:churn}
+% BEGIN-EV2
+% END-EV2
 \section{Discussion}\label{sec:discussion}
 \section{Conclusion}\label{sec:conclusion}
+\appendix
+\section{Further results}\label{sec:app-results}
+% BEGIN-EV2
+% END-EV2
 """
 
 
@@ -192,7 +202,7 @@ def test_raw_path_macros_refused_in_regions(tmp_path):
 
 
 def test_results_section_must_be_fully_marked(tmp_path):
-    bad = _v3("% END-EV2\n\\section{Discussion}", "% END-EV2\nReplicated on 4 of six markets.\n\\section{Discussion}")
+    bad = _v3("% END-EV2\n\\section{Where the advantage lives}", "% END-EV2\nReplicated on 4 of six markets.\n\\section{Where the advantage lives}")
     assert any("outside a result region" in p for p in _setup3(tmp_path, bad))
 
 
@@ -262,7 +272,7 @@ def test_unlabelled_section_fails(tmp_path):
 
 
 def test_subsection_sec_label_fails_and_keeps_parent(tmp_path):
-    bad = _v4("% END-EV2\n\\section{Discussion}", "% END-EV2\n\\subsection{More}\\label{sec:more}\nReplicated on 4 of six markets.\n\\section{Discussion}")
+    bad = _v4("% END-EV2\n\\section{Where the advantage lives}", "% END-EV2\n\\subsection{More}\\label{sec:more}\nReplicated on 4 of six markets.\n\\section{Where the advantage lives}")   # draft 10: the results section now ends before the reset section
     probs = _setup3(tmp_path, bad)
     assert any("sec: label" in p for p in probs) and any("results" in p and "4" in p for p in probs)
 
@@ -409,3 +419,18 @@ def test_reset_reference_check_kinds():
     assert N.KINDS["count"]("refs_with_any_reset", 17)
     assert N.KINDS["gain"]("G_shift_pooled", 0.0005) and N.KINDS["gain"]("max_abs_replacement_value", 0.009)
     assert N.KINDS["gain"]("max_abs_validation_mean_diff", 0.007) and N.KINDS["share_s"]("S_with_non_replacing_references", 1.05)
+
+
+def test_draft10_result_sections_must_be_fully_marked(tmp_path):
+    # draft 10: the reset, churn and appendix result sections get the results section's rules (outline-draft10.md, 6)
+    for lab in ("reset", "churn", "app-results"):
+        bad = _v3("\\label{sec:%s}\n" % lab, "\\label{sec:%s}\nGain 4 of six; gap 0.999.\n" % lab)
+        probs = _setup3(tmp_path, bad)
+        assert any("outside a result region" in p and "Gain 4" in p for p in probs), (lab, probs)
+        assert any("unmarked number" in p and "0.999" in p for p in probs), (lab, probs)
+
+
+def test_draft10_reset_and_churn_sections_are_required(tmp_path):
+    for lab in ("reset", "churn"):
+        bad = _v3("\\label{sec:%s}" % lab, "")
+        assert any("required section %s" % lab in p for p in _setup3(tmp_path, bad)), lab
