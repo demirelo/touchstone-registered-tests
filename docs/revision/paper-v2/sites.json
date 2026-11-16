@@ -1094,16 +1094,6 @@
   "kind": "gain",
   "section": "churn"
  },
- "ch_d_5_lo": {
-  "path": "churn.statistics.base.0.05.d.pooled.ci95.0",
-  "kind": "gain",
-  "section": "churn"
- },
- "ch_d_5_hi": {
-  "path": "churn.statistics.base.0.05.d.pooled.ci95.1",
-  "kind": "gain",
-  "section": "churn"
- },
  "ch_d_5_neg": {
   "path": "churn.statistics.base.0.05.d.signs.negative",
   "kind": "count",
@@ -1111,16 +1101,6 @@
  },
  "ch_q_5": {
   "path": "churn.statistics.base.0.05.q.pooled.estimate",
-  "kind": "gain",
-  "section": "churn"
- },
- "ch_q_5_lo": {
-  "path": "churn.statistics.base.0.05.q.pooled.ci95.0",
-  "kind": "gain",
-  "section": "churn"
- },
- "ch_q_5_hi": {
-  "path": "churn.statistics.base.0.05.q.pooled.ci95.1",
   "kind": "gain",
   "section": "churn"
  },
@@ -1154,16 +1134,6 @@
   "kind": "gain",
   "section": "churn"
  },
- "ch_d_1_lo": {
-  "path": "churn.statistics.base.0.01.d.pooled.ci95.0",
-  "kind": "gain",
-  "section": "churn"
- },
- "ch_d_1_hi": {
-  "path": "churn.statistics.base.0.01.d.pooled.ci95.1",
-  "kind": "gain",
-  "section": "churn"
- },
  "ch_d_1_d": {
   "path": "churn.statistics.doubled.0.01.d.pooled.estimate",
   "kind": "gain",
@@ -1172,21 +1142,6 @@
  "ch_q_1": {
   "path": "churn.statistics.base.0.01.q.pooled.estimate",
   "kind": "gain",
-  "section": "churn"
- },
- "ch_new_r3": {
-  "path": "churn.diagnostics.0.05.F111|base.focal_newest_first_offer",
-  "kind": "age_share",
-  "section": "churn"
- },
- "ch_new_c": {
-  "path": "churn.diagnostics.0.05.C*|base.focal_newest_first_offer",
-  "kind": "age_share",
-  "section": "churn"
- },
- "ch_new_b": {
-  "path": "churn.diagnostics.0.05.F000|base.focal_newest_first_offer",
-  "kind": "age_share",
   "section": "churn"
  },
  "ch_sh_r3": {
@@ -1232,6 +1187,221 @@
  "ch_inc_n": {
   "path": "churn.flag_summary.cells",
   "kind": "count",
+  "section": "churn"
+ },
+ "ch_reps2": {
+  "path": "churnmid.diagnostics.0.02.F111|base.honest_replacements_per_episode",
+  "kind": "per_episode",
+  "section": "churn"
+ },
+ "ch_reps3": {
+  "path": "churnmid.diagnostics.0.03.F111|base.honest_replacements_per_episode",
+  "kind": "per_episode",
+  "section": "churn"
+ },
+ "ch_d_2": {
+  "path": "churnmid.statistics.base.0.02.d.pooled.estimate",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "ch_d_3": {
+  "path": "churnmid.statistics.base.0.03.d.pooled.estimate",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "ch_q_0": {
+  "path": "churn.statistics.base.0.q.pooled.estimate",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "ch_q_2": {
+  "path": "churnmid.statistics.base.0.02.q.pooled.estimate",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "ch_q_3": {
+  "path": "churnmid.statistics.base.0.03.q.pooled.estimate",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "ch_d_5_dneg": {
+  "path": "churn.statistics.doubled.0.05.d.signs.negative",
+  "kind": "count",
+  "section": "churn"
+ },
+ "ch_q_5_dneg": {
+  "path": "churn.statistics.doubled.0.05.q.signs.negative",
+  "kind": "count",
+  "section": "churn"
+ },
+ "ch_d_5_d": {
+  "path": "churn.statistics.doubled.0.05.d.pooled.estimate",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "ch_q_5_d": {
+  "path": "churn.statistics.doubled.0.05.q.pooled.estimate",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "ch_t_d5_lo": {
+  "path": "churn.review_r4.t95.base.0.05.d.ci.0",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "ch_t_d5_hi": {
+  "path": "churn.review_r4.t95.base.0.05.d.ci.1",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "ch_t_q5_lo": {
+  "path": "churn.review_r4.t95.base.0.05.q.ci.0",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "ch_t_q5_hi": {
+  "path": "churn.review_r4.t95.base.0.05.q.ci.1",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "ch_d_3_neg": {
+  "path": "churnmid.statistics.base.0.03.d.signs.negative",
+  "kind": "count",
+  "section": "churn"
+ },
+ "ch_d_2_neg": {
+  "path": "churnmid.statistics.base.0.02.d.signs.negative",
+  "kind": "count",
+  "section": "churn"
+ },
+ "ch_d_1_x": {
+  "path": "churn.statistics.base.0.01.d.pooled.estimate",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "ch_q_1_x": {
+  "path": "churn.statistics.base.0.01.q.pooled.estimate",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "ch_q_1_d": {
+  "path": "churn.statistics.doubled.0.01.q.pooled.estimate",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "ch_inc_mid": {
+  "path": "churnmid.flag_summary.incomplete_n",
+  "kind": "count",
+  "section": "churn"
+ },
+ "ch_inc_mid_n": {
+  "path": "churnmid.flag_summary.cells",
+  "kind": "count",
+  "section": "churn"
+ },
+ "ch_flag_max": {
+  "path": "churnpaper.flags.max_attack_change",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "ch_resel": {
+  "path": "churnpaper.flags.reselected",
+  "kind": "count",
+  "section": "churn"
+ },
+ "ch_resel_n": {
+  "path": "churnpaper.flags.cells",
+  "kind": "count",
+  "section": "churn"
+ },
+ "ch_resel_max": {
+  "path": "churnpaper.flags.max_reference_change",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "ch_fa_1": {
+  "path": "churnpaper.rates.0.01.R3.focal_audit_rate",
+  "kind": "alloc",
+  "section": "churn"
+ },
+ "ch_fa_2": {
+  "path": "churnpaper.rates.0.02.R3.focal_audit_rate",
+  "kind": "alloc",
+  "section": "churn"
+ },
+ "ch_fa_3": {
+  "path": "churnpaper.rates.0.03.R3.focal_audit_rate",
+  "kind": "alloc",
+  "section": "churn"
+ },
+ "ch_fa_5": {
+  "path": "churnpaper.rates.0.05.R3.focal_audit_rate",
+  "kind": "alloc",
+  "section": "churn"
+ },
+ "ch_fa_c5": {
+  "path": "churnpaper.rates.0.05.C*.focal_audit_rate",
+  "kind": "alloc",
+  "section": "churn"
+ },
+ "ch_fa_b5": {
+  "path": "churnpaper.rates.0.05.B3.focal_audit_rate",
+  "kind": "alloc",
+  "section": "churn"
+ },
+ "ch_yj_5": {
+  "path": "churnpaper.rates.0.05.R3.young_honest_job_share",
+  "kind": "alloc",
+  "section": "churn"
+ },
+ "ch_ya_5": {
+  "path": "churnpaper.rates.0.05.R3.young_honest_audit_share",
+  "kind": "alloc",
+  "section": "churn"
+ },
+ "ch_est_5": {
+  "path": "churnpaper.rates.0.05.R3.established_honest_audit_rate",
+  "kind": "alloc",
+  "section": "churn"
+ },
+ "ch_eff_1": {
+  "path": "churnpaper.rates.0.01.R3.eff",
+  "kind": "eff",
+  "section": "churn"
+ },
+ "ch_eff_5": {
+  "path": "churnpaper.rates.0.05.R3.eff",
+  "kind": "eff",
+  "section": "churn"
+ },
+ "ch_eff_c5": {
+  "path": "churnpaper.rates.0.05.C*.eff",
+  "kind": "eff",
+  "section": "churn"
+ },
+ "ch_eff_b5": {
+  "path": "churnpaper.rates.0.05.B3.eff",
+  "kind": "eff",
+  "section": "churn"
+ },
+ "ch_e5": {
+  "path": "churnmid.expectations.5.verdict",
+  "kind": "label",
+  "section": "churn"
+ },
+ "ch_e6": {
+  "path": "churnmid.expectations.6.verdict",
+  "kind": "label",
+  "section": "churn"
+ },
+ "ch_e7": {
+  "path": "churnmid.expectations.7.verdict",
+  "kind": "label",
+  "section": "churn"
+ },
+ "ch_e8": {
+  "path": "churnmid.expectations.8.verdict",
+  "kind": "label",
   "section": "churn"
  }
 }
