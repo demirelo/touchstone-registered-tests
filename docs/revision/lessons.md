@@ -172,3 +172,12 @@ Guard: every review brief for the paper now carries the item "check each compara
 reverses, every, all, only, never) against the sites and tables it describes, for both search versions"; I reread each
 rewritten section for these words before commit. If the class repeats, the guard becomes a script that lists every such
 word in a result region with its nearest sites for a reviewer.
+
+## 2026-11-16: draft-10 paper commits bypassed paper_commit.sh
+
+Mistake: I ran the paper gate (`paper_check.sh`) and then committed draft-10 paper changes with plain `git commit`, eight
+times. `paper_check.sh` writes the regenerated `numbers.tex` only to the scratchpad; `paper_commit.sh` copies it into the
+repository. The committed `numbers.tex` went stale (found by Astra, review paper-d10-r1, item 9). Guard: every commit that
+touches `docs/revision/paper-v2/` goes through `results/pods/paper_commit.sh` (d496c04 did). If this repeats, the guard
+becomes a git pre-commit hook that refuses a commit of `paper-v2/main.tex` or `sites.json` when `numbers.tex` differs
+from the regenerated file (needs the author's consent: it changes repository configuration).

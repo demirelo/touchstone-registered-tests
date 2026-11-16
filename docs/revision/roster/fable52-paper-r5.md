@@ -223,7 +223,7 @@ What should move or be cut:
 1. **Section 7, "Calibration" and the inference paragraph (pp. 9 to 10, about 0.7 page).** Fixture pools, Clopper-Pearson bounds and Holm families support Q1 and Q4 labels that are no longer the centre. Keep three sentences and Table 2; move the rest to Appendix C.
 2. **Section 8, the Q1 paragraph (pp. 11 to 12).** It is one paragraph of about 70 lines with eight interval statements. Split it: the registered result (10 lines), sensitivity (Run B, doubled, strongest family, t intervals; a small table instead of prose), the comparator caveat with Run A, and the honest-replacement diagnostic. The fresh1 "numerically extreme studentized intervals" passage (pp. 10 to 11) belongs in the appendix.
 3. **Section 5, Theorem 1 (p. 7).** The paper says "No reported result depends on it." Move the theorem and its caveat to Appendix E. Keep Lemma 1, Corollary 1, Lemma 2 and Proposition 1.
-4. **Table 1 (p. 8).** Six of its nine families appear only in the appendix. Keep D2, D2+H3 and X7-SC in the text; move the table.
+4. **Table 1 (p. 8).** The results in the main text use D2, D2+H3 and X7-SC; the other six rows (H2, X5-AG/v2, H4, the welfare attacks and the two coalition families) carry results that are now in Appendices A and B. Name the three families in the text and move the table.
 5. **FlashProve.** It appears in the introduction (p. 1 to 2), in related work (p. 4) and in "Exact but costly checks" (p. 17). Once is enough; the p. 17 paragraph itself says it "changes none of their claims".
 6. **Section 9.** One paragraph of 45 lines. The S statistic with its leave-one-out range can go to Appendix A; the text needs the two gaps, the t interval and the expectations.
 7. **The conclusion (p. 18).** One paragraph of 27 lines that repeats the abstract with more numbers. Cut it to the three results and the one open question.
@@ -293,7 +293,7 @@ With items 1 to 7 the main text is about 14 pages and the churn section starts n
 - "stays near a third" for a value that falls from 0.363 to 0.292 (p. 15).
 - The opening of Section 8 (p. 10) lists exploratory tables by number and does not mention Tables 5 to 7.
 
-**Not a problem, checked because round 4 raised it:** the gain definition (largest deviation from the formula below 1e-12 on the cell I tested), the seed pairing between churn and no-churn records (equal seed lists in all 24 R3 cells), and the audit ratio of 0.25 in the churn cells.
+**Not a problem, checked because round 4 raised it:** the gain definition (largest deviation from the formula below 1e-12 on the cell I tested), the seed pairing between churn and no-churn records (equal seed lists in all 24 R3 cells), and the audit ratio in the churn cells (0.250 to 0.254 over all 144 diagnostic profiles; my computation).
 
 **A post hoc choice that could drive a conclusion.** The choice of the frozen searches as primary is the paper's standing convention and is not post hoc. But in the churn arm it decides three printed numbers in the abstract (0.366, -0.052, and the 0.01 to 0.02 crossing), and each of the three is the less favourable to R3 of the two versions or the more exact of the two. No conclusion about the sign at 0.03 or 0.05 depends on it. The young-identity cut at ten rounds equals L and is not a free choice.
 
