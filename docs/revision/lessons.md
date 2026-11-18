@@ -197,3 +197,14 @@ Mistake: while regenerating `churn_mid.json` I chained a comparison that printed
 the regenerated file replaced the committed one before I had read the difference (it was only an input hash). Guard:
 comparisons that gate a copy use `assert` (non-zero exit on mismatch), never a printed boolean; I re-derived the file
 against the current inputs and checked it field by field before keeping it.
+
+## 2026-11-19: a new driver stage ran without the identity salt
+
+Mistake: the replication's continuation stage (and my first probe) never called `install_salt`, so the frozen code fell
+back to another identity salt. Without churn this changes nothing (no identity appears mid-episode), so the no-churn
+smoke cells matched; under churn every new honest identity drew differently, and round 1 of the continuation differed
+from the cell's own doubling record (found by the smoke run, `scratchpad/repsmoke`). The earlier churn arm is not
+affected: `churn_v2.main` installs the salt before every stage, and its evaluation record re-simulated exactly once the
+salt was installed. Guard: `rep_v2._context()` installs the draw's salt and checks its hash for every stage that reads
+the calibration (`install_checked_salt`, test first, `logs_harness/rep_driver_red.log`). Rule: every process that runs an
+episode installs and checks the salt; a smoke run must include at least one churn cell through every stage.
