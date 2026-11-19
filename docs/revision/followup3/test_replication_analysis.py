@@ -71,9 +71,10 @@ def test_expectation5_zero_denominator_counts_as_not_below():
 
 def test_seed_bootstrap_is_paired_and_deterministic():
     g = _gains({"0": 0.0, "0.03": 0.06, "0.05": 0.20})
-    a = RA.pooled_paired(g["0.05"], "C*", resamples=199, seed=0)
-    b = RA.pooled_paired(g["0.05"], "C*", resamples=199, seed=0)
-    assert a == b and a["ci95"][0] <= a["estimate"] <= a["ci95"][1]
+    a = RA.analyse(_recs(g), _audit(), resamples=199)
+    b = RA.analyse(_recs(g), _audit(), resamples=199)
+    lo, hi = a["bootstrap"]["0.05"]["d"]["pooled"]["ci95"]
+    assert a == b and lo <= a["paired_changes"]["0.05"]["d"]["mean"] <= hi
 
 
 def test_nonfinite_gain_is_refused():
@@ -81,3 +82,75 @@ def test_nonfinite_gain_is_refused():
     g["0.03"]["rep1"]["B3"][0] = float("nan")
     with pytest.raises(ValueError):
         RA.paired_changes(g)
+
+
+# ---- review rep-impl-r1 (Sol 7, 8; Astra 5, 6): six named markets, matched seeds, no crash, secondary outputs ----------
+
+def _recs(g: dict) -> dict:
+    """Records per cell from gains: attack term = gain + 0.5, reference term 0.5, efficiency 0.9, seeds 0..n-1."""
+    return {p: {m: {r: {"gain": xs, "attack": [x + 0.5 for x in xs], "reference": [0.5] * len(xs),
+                        "eff_attack": [0.9] * len(xs), "seeds": list(range(len(xs)))} for r, xs in rs.items()}
+                for m, rs in ms.items()} for p, ms in g.items()}
+
+
+def _audit():
+    return {p: {m: (5, 100) if p == "0.05" else (30, 100) for m in MK} for p in RATES}
+
+
+def test_a_market_missing_everywhere_makes_the_contrast_incomplete():
+    g = _gains({"0": 0.0, "0.03": 0.06, "0.05": 0.20})
+    for p in RATES:
+        g[p].pop("rep5")                                 # five markets, all lower: must not score "met"
+    e = RA.expectations(RA.criteria(RA.paired_changes(g)), _audit())
+    assert [e[k]["verdict"] for k in "1234"] == ["not scorable"] * 4
+
+
+def test_unequal_seed_vectors_are_refused():
+    g = _gains({"0": 0.0, "0.03": 0.06, "0.05": 0.20})
+    g["0.05"]["rep2"]["R3"] = g["0.05"]["rep2"]["R3"][:-1]
+    with pytest.raises(ValueError):
+        RA.paired_changes(g)
+    r = _recs(_gains({"0": 0.0, "0.03": 0.06, "0.05": 0.20}))
+    r["0.03"]["rep1"]["B3"]["seeds"] = list(range(1, 21))   # same length, other seeds
+    with pytest.raises(ValueError):
+        RA.analyse(r, _audit(), resamples=19)
+
+
+def test_a_missing_rate_or_r3_cell_is_not_scorable_and_does_not_crash():
+    g = _gains({"0": 0.0, "0.03": 0.06, "0.05": 0.20})
+    g.pop("0.03"); g["0.05"]["rep0"].pop("R3")
+    out = RA.analyse(_recs(g), _audit(), resamples=19)
+    assert [out["expectations"][k]["verdict"] for k in "1234"] == ["not scorable"] * 4
+    assert out["bootstrap"]["0.05"]["d"]["pooled"] is None and out["bootstrap"]["0.03"]["q"]["pooled"] is None
+
+
+def test_expectation5_needs_all_six_markets():
+    g = _gains({"0": 0.0, "0.03": 0.06, "0.05": 0.20})
+    a = _audit()
+    for p in RATES:
+        a[p].pop("rep4")
+    assert RA.expectations(RA.criteria(RA.paired_changes(g)), a)["5"]["verdict"] == "not scorable"
+
+
+def test_bootstrap_uses_one_index_vector_per_market_shared_by_rules_and_rates():
+    g = _gains({"0": 0.0, "0.03": 0.0, "0.05": 0.0})
+    for m in MK:                                         # noisy, but identical at every rate: every paired change is 0
+        for r in ("R3", "C*", "C-thr", "B3"):
+            xs = [((s * 7919 + MK.index(m) * 31 + len(r)) % 97) / 97 for s in range(20)]
+            for p in RATES:
+                g[p][m][r] = list(xs)
+    b = RA.analyse(_recs(g), _audit(), resamples=199)["bootstrap"]
+    assert b["0.05"]["d"]["pooled"]["ci95"] == [0.0, 0.0]
+    assert all(v["ci95"] == [0.0, 0.0] for v in b["0.03"]["q"]["markets"].values())
+    b2 = RA.analyse(_recs(g), _audit(), resamples=199)["bootstrap"]
+    assert b == b2                                       # deterministic (seed 0)
+
+
+def test_secondary_outputs_absolute_contrasts_terms_and_efficiency():
+    g = _gains({"0": 0.0, "0.03": 0.06, "0.05": 0.20})
+    out = RA.analyse(_recs(g), _audit(), resamples=99)
+    ab = out["absolute"]["0.05"]["d"]
+    assert set(ab) >= {"markets", "mean", "t95", "pooled_ci95"} and all(set(v) >= {"estimate", "ci95"} for v in ab["markets"].values())
+    t = out["terms"]["0.05"]["rep0"]["R3"]
+    assert math.isclose(t["attack"] - t["reference"], t["gain"], abs_tol=1e-12) and math.isclose(t["eff_attack"], 0.9)
+    assert set(out) >= {"paired_changes", "criteria", "expectations", "absolute", "terms", "bootstrap"}

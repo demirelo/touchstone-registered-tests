@@ -23,13 +23,13 @@ def _repo(tmp_path):
 
 def test_manifest_bytes_are_deterministic_and_verify(tmp_path):
     root, head = _repo(tmp_path)
-    m1 = C.build(root, ["plan.md", "sim/a.py"], head)
-    m2 = C.build(root, ["sim/a.py", "plan.md"], head)
+    m1 = C.build(root, ["plan.md", "sim/a.py"], head, required=[])
+    m2 = C.build(root, ["sim/a.py", "plan.md"], head, required=[])
     assert m1 == m2 and json.loads(m1)["commit"] == head
     (root / "manifest.json").write_bytes(m1)
-    assert C.verify(root, root / "manifest.json") == []
+    assert C.verify(root, root / "manifest.json", required=[]) == []
     (root / "plan.md").write_text("changed\n")
-    assert any("plan.md" in p for p in C.verify(root, root / "manifest.json"))
+    assert any("plan.md" in p for p in C.verify(root, root / "manifest.json", required=[]))
 
 
 def test_freeze_check_refuses_a_working_tree_change_an_untracked_file_and_an_override(tmp_path, monkeypatch):
@@ -49,8 +49,51 @@ def test_freeze_check_refuses_a_working_tree_change_an_untracked_file_and_an_ove
 def test_require_raises_on_any_problem(tmp_path, monkeypatch):
     root, head = _repo(tmp_path)
     monkeypatch.delenv("TOUCHSTONE_LOCKED", raising=False)
-    (root / "manifest.json").write_bytes(C.build(root, ["plan.md"], head))
-    C.require(root, root / "manifest.json")
+    (root / "manifest.json").write_bytes(C.build(root, ["plan.md"], head, required=[]))
+    C.require(root, root / "manifest.json", required=[])
     (root / "plan.md").write_text("changed\n")
     with pytest.raises(SystemExit):
-        C.require(root, root / "manifest.json")
+        C.require(root, root / "manifest.json", required=[])
+
+
+# ---- review rep-impl-r1 (Sol 1, Astra 1): a required file set, the import closure, the frozen inputs ------------------
+
+def test_build_and_verify_refuse_a_manifest_without_a_required_file(tmp_path):
+    root, head = _repo(tmp_path)
+    with pytest.raises(SystemExit):
+        C.build(root, [], head, required=["plan.md"])
+    (root / "m.json").write_bytes(C.build(root, ["plan.md"], head, required=[]))   # an old, partial manifest
+    (root / "m2.json").write_text(json.dumps({"commit": head, "files": {}}))       # an empty manifest
+    assert any("required" in p for p in C.verify(root, root / "m2.json", required=["plan.md"]))
+    assert C.verify(root, root / "m.json", required=["plan.md"]) == []
+
+
+def test_import_closure_follows_imports_inside_functions(tmp_path):
+    root, head = _repo(tmp_path)
+    d = root / "docs"; d.mkdir()
+    (d / "a.py").write_text("import json\n\ndef f():\n    from b import g\n    return g\n")
+    (d / "b.py").write_text("import c\n")
+    (d / "c.py").write_text("from sim import a\n")
+    assert C.import_closure(root, ["docs/a.py"], [d]) == {"docs/a.py", "docs/b.py", "docs/c.py"}
+    with pytest.raises(SystemExit):
+        C.build(root, ["docs/a.py", "docs/b.py"], head, required=[], search=[d])
+
+
+def test_the_real_required_set_covers_the_drivers_import_closure():
+    root = Path(__file__).resolve().parents[3]
+    py = [f for f in C.REQUIRED if f.endswith(".py")]
+    missing = C.import_closure(root, py, C.search_dirs(root)) - set(C.REQUIRED)
+    assert not missing, missing
+    assert all((root / f).is_file() for f in C.REQUIRED), [f for f in C.REQUIRED if not (root / f).is_file()]
+
+
+def test_a_change_to_a_frozen_configuration_input_is_refused(tmp_path, monkeypatch):
+    root, head = _repo(tmp_path)
+    monkeypatch.delenv("TOUCHSTONE_LOCKED", raising=False)
+    (root / "experiments").mkdir(); (root / "experiments" / "locked.yaml").write_text("a: 1\n")
+    subprocess.run(["git", "-C", str(root), "add", "."], check=True)
+    subprocess.run(["git", "-C", str(root), "-c", "commit.gpgsign=false", "commit", "-q", "-m", "d"], check=True)
+    head = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+    assert C.frozen_problems(root, head) == []
+    (root / "experiments" / "locked.yaml").write_text("a: 2\n")
+    assert any("experiments/locked.yaml" in p for p in C.frozen_problems(root, head))

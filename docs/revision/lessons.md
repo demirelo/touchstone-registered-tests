@@ -219,3 +219,25 @@ with a nonzero estimate, that the stage returns Run B's codes (4 mismatch, 5 los
 error) and that `main` returns them (`test_rep_collect.py`, `test_rep_v2.py`, each seen failing first). Rule: a wrapper
 of a reviewed function passes every argument the reviewed caller passes, or says in a comment why not; compare the two
 call sites line by line.
+
+## 2026-11-19: the launcher's end-state parser cut a state at its first "="
+
+Mistake: the replication launcher copied Run B's parser `grep -o '== [A-Z][^=]*'`, which ends a state at the next
+"="; the new gate0 state says "p = 0", so the launcher would have reported "GATE FAILED at gate0 (churn path not
+bit-identical at p" and lost the rest. Run B's states contain no "=", so Run B was not affected. Found by the harness
+scenario "pod 2: the end state is the last line of the polled tail (a gate failure)", which failed on it. Guard: the
+parser now splits on the " == " marker only, and that scenario stays in `test_rep_pod_harness.sh`. Rule: when a copied
+parser meets new message text, add one harness scenario per new end-state string with its full expected text.
+
+## 2026-11-19: two launcher rulings overrode the reviewed plan's text
+
+Mistake: in the replication's implementation notes, ruling 5 made the continuation gate "the first flagged cell" where
+the plan says "the first p = 0.05 cell", and ruling 8 scored expectation 5 on the frozen winners where the plan says
+"primary winners; frozen winners reported beside". Both notes even said that the plan read otherwise. Sol and Astra
+rejected both in implementation review r1. A ruling is for a gap in the plan, never for a sentence the plan already
+decides; departing from plan text is a plan amendment that needs its own review. Guard: `test_notes.py` fails unless
+every ruling quotes, verbatim, the plan sentence it applies (negative test included), so a ruling that cannot quote the
+plan cannot be written without the test failing.
+
+Also (same day): a zsh command passed the manifest's file list as one argument (the 2026-11-11 lesson again); the
+manifest builder refused it, fail-closed. Multi-argument commands with a variable list run under `bash -c`.

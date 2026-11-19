@@ -82,7 +82,7 @@ def test_rates_split_runs_p0_before_the_gate_and_churn_after(monkeypatch, tmp_pa
     import revision_v2 as R
     monkeypatch.setattr(R, "install_salt", lambda root, out: None)
     a = types.SimpleNamespace(out=str(tmp_path), smoke=True, rates="p0", workers_search=1, workers_eval=1, stop_usd=1, usd_per_hour=1,
-                              prior_usd=0, started=None)
+                              prior_usd=0, started=None, peak_search=2.5e8)
     D.stage_rates(a)
     assert [n for n, _ in calls] == ["menu-p0", "cthr-p0"]
     calls.clear(); a.rates = "churn"; D.stage_rates(a)
@@ -103,3 +103,118 @@ def test_main_returns_the_stage_exit_code(monkeypatch):
     monkeypatch.setattr(D, "_require", lambda a: None)
     monkeypatch.setitem(D.STAGES, "continue", lambda a: 5)
     assert D.main(["--stage", "continue", "--out", "o", "--manifest", "m", "--smoke"]) == 5
+
+
+def test_continuation_cost_stop_carries_the_launchers_stop_file_and_soft_deadline(tmp_path):
+    # Run B's worker cost stop holds the STOP file and the soft deadline; the replication's must too
+    import types
+    a = types.SimpleNamespace(smoke=False, stop_usd=30.0, usd_per_hour=0.7, started=1.7e9, prior_usd=1.5,
+                              stop_file=str(tmp_path / "STOP"), soft_deadline=1.7e9 + 3600)
+    s = D.cost_stop(a)
+    assert (s.cap, s.rate, s.started, s.prior, str(s.stop_file), s.soft) == (30.0, 0.7, 1.7e9, 1.5, str(tmp_path / "STOP"), 1.7e9 + 3600)
+    (tmp_path / "STOP").write_text("")
+    assert not s.allow("round 1", 0.0)
+    a.smoke = True
+    assert D.cost_stop(a) is None
+
+
+# ---- review rep-impl-r1 (Sol 1, 2, 3, 12; Astra 1, 2, 3, 7, 12) --------------------------------------------------------
+
+def _manifest(tmp_path, files=None):
+    import json
+    m = tmp_path / "manifest.json"; m.write_text(json.dumps({"commit": "c0ffee", "files": files or {}})); return m
+
+
+def test_parameter_files_must_be_listed_in_the_manifest(tmp_path):
+    m = _manifest(tmp_path, {"experiments/v2/params.json": "x"})
+    D.check_params_listed(m, D.ROOT / "experiments/v2/params.json")
+    with pytest.raises(SystemExit):
+        D.check_params_listed(m, tmp_path / "my-params.json")
+
+
+def test_every_provenance_carries_the_manifest_and_draw_hashes(tmp_path, monkeypatch):
+    import revision_v2 as R
+    monkeypatch.setattr(R, "context_provenance", lambda mkt: {"a": 1})
+    m = _manifest(tmp_path); draw = tmp_path / "draw.json"; draw.write_text("{}")
+    D.bind_provenance(m, draw); D.bind_provenance(m, draw)          # idempotent
+    p = R.context_provenance({})
+    assert p == {"a": 1, "manifest_sha256": D.K._sha(m), "draw_sha256": D.K._sha(draw)}
+    assert R.aux_provenance({}, rule="F111")["manifest_sha256"] == D.K._sha(m)
+
+
+def test_instances_and_calibration_are_never_replaced(tmp_path, monkeypatch):
+    import json
+    import types
+    from scripts import draw_v2
+    monkeypatch.setattr(draw_v2, "instances", lambda *a, **k: {"root": "r1"})
+    (tmp_path / "draw.json").write_text("{}"); (tmp_path / "proof").write_bytes(b"p"); m = _manifest(tmp_path)
+    a = types.SimpleNamespace(out=str(tmp_path / "o"), draw=str(tmp_path / "draw.json"), proof=str(tmp_path / "proof"),
+                              manifest=str(m), protocol=None, smoke=False, published_height=None)
+    D.stage_instances(a); D.stage_instances(a)                     # a resume with the same draw is allowed
+    monkeypatch.setattr(draw_v2, "instances", lambda *a, **k: {"root": "r2"})
+    with pytest.raises(SystemExit):
+        D.stage_instances(a)
+    (tmp_path / "o" / "calibration.json").write_text(json.dumps({"cfgs_sha256": "x"}))
+    with pytest.raises(SystemExit):
+        D.stage_calibrate(types.SimpleNamespace(out=str(tmp_path / "o"), params="p"))
+
+
+def test_a_reused_calibration_must_come_from_linux_x86(tmp_path):
+    D.check_calibration_platform({"system": "Linux", "machine": "x86_64"}, smoke=False)
+    D.check_calibration_platform({"system": "Darwin", "machine": "arm64"}, smoke=True)
+    with pytest.raises(SystemExit):
+        D.check_calibration_platform({"system": "Darwin", "machine": "arm64"}, smoke=False)
+
+
+def test_every_stage_checks_the_output_belongs_to_this_manifest_and_draw(tmp_path):
+    import json
+    m = _manifest(tmp_path); draw = tmp_path / "draw.json"; draw.write_text("{}")
+    out = tmp_path / "o"; out.mkdir()
+    D.write_binding(out, m, draw)
+    D.check_binding(out, m, draw)
+    draw2 = tmp_path / "draw2.json"; draw2.write_text('{"other": 1}')
+    with pytest.raises(SystemExit):
+        D.check_binding(out, m, draw2)
+    (out / "binding.json").write_text(json.dumps({"manifest_sha256": "0" * 64, "draw_sha256": D.K._sha(draw)}))
+    with pytest.raises(SystemExit):
+        D.check_binding(out, m, draw)
+
+
+def test_churn_rates_need_a_passed_churn_zero_gate(monkeypatch, tmp_path):
+    import json
+    import types
+    calls = []
+    fake = types.SimpleNamespace(install=lambda: None, _run_rate=lambda out, jobs, steps, a, s, c, p, st: calls.append(Path(out).name))
+    monkeypatch.setitem(sys.modules, "churn_v2", fake)
+    monkeypatch.setattr(D, "_context", lambda a: types.SimpleNamespace(root="r", salt="s", container={}))
+    monkeypatch.setattr(D, "rate_jobs", lambda c, k, p, s: [])
+    monkeypatch.setattr(D, "_memory_limit", lambda: None)
+    import revision_v2 as R
+    monkeypatch.setattr(R, "install_salt", lambda root, out: None)
+    a = types.SimpleNamespace(out=str(tmp_path), smoke=False, rates="churn", workers_search=16, workers_eval=9, stop_usd=1,
+                              usd_per_hour=1, prior_usd=0, started=0.0, peak_search=2.5e8)
+    with pytest.raises(SystemExit):
+        D.stage_rates(a)
+    (tmp_path / "gate0").mkdir(); (tmp_path / "gate0" / "gate.json").write_text(json.dumps({"gate_ok": False}))
+    with pytest.raises(SystemExit):
+        D.stage_rates(a)
+    (tmp_path / "gate0" / "gate.json").write_text(json.dumps({"gate_ok": True}))
+    D.stage_rates(a)
+    assert calls == ["menu-p0.03", "menu-p0.05", "cthr-p0.03", "cthr-p0.05"]
+
+
+def test_churn_search_workers_are_admitted_and_kept_across_restarts(tmp_path):
+    gb = 1e9
+    assert D.rate_search_workers(tmp_path, 16, 6 * gb, 0.8 * gb) == 4          # (6 - 2) / (0.8 * 1.25) = 4
+    assert D.rate_search_workers(tmp_path, 16, 64 * gb, 0.8 * gb) == 4         # a restart keeps the lower count
+    assert D.rate_search_workers(tmp_path / "s", 16, None, 0.8 * gb) == 16     # smoke: no limit
+
+
+def test_the_continuation_gate_is_the_first_p005_cell():
+    jobs = {("menu", 0.05): [{"id": "fresh1@rho0.2|F111|D2+H3|profit|churn0.05", "mkt": {"label": "fresh1"}, "rule": "F111"},
+                             {"id": "fresh0@rho0.2|C*|D2+H3|profit|churn0.05", "mkt": {"label": "fresh0"}, "rule": "C*"},
+                             {"id": "fresh0@rho0.2|F111|D2+H3|profit|churn0.05", "mkt": {"label": "fresh0"}, "rule": "F111"}],
+            ("menu", 0.0): [{"id": "fresh0@rho0.2|F111|D2+H3|profit", "mkt": {"label": "fresh0"}, "rule": "F111"}]}
+    g = D.gate_item(jobs, Path("/b"))
+    assert g["job"]["id"] == "fresh0@rho0.2|F111|D2+H3|profit|churn0.05" and g["dir"] == "/b/menu-p0.05"
+    assert g["id"] == "menu-p0.05|fresh0@rho0.2|F111|D2+H3|profit|churn0.05"

@@ -174,9 +174,11 @@ explorer read at that time); `draw_v2.instances` only compares the given height 
 
 `python3 docs/revision/followup3/cost_estimate.py`, a stage schedule in execution order at the memory-safe workers
 (search 16, evaluation and doubling 9, continuation 5), with calibration, gates, diagnostics, and preparation and transfer
-for each of two pods: flag share 0.30 gives 221 core-hours, 25.2 billed pod-hours; 0.50 gives 238 core-hours, 28.9
-pod-hours. Actual billing is per pod-hour (14.12 and 16.21 USD at 0.56); the conservative estimate is the larger of that
-and core-hour pricing at 0.108: 23.84 and 25.72 USD, with the 1.25 headroom 29.80 and 32.15. The follow-up budget has 48.36 of 72 USD
+for each of two pods (implementation review r1: the churn search per rate directory, six waves in all; each directory's
+serial memory preflight; the continuation gate round always run; diagnostics of continued R3 winners): flag share 0.30
+gives 221 core-hours, 29.9 billed pod-hours; 0.50 gives 238 core-hours, 33.6 pod-hours. Actual billing is per pod-hour
+(16.74 and 18.83 USD at 0.56); the conservative estimate is the larger of that and core-hour pricing at 0.108: 23.82 and
+25.70 USD, with the 1.25 headroom 29.78 and 32.13. The follow-up budget has 48.36 of 72 USD
 left. The run may use two pods (menus and references; then evaluation, churn and continuation) to stay under a day per
 pod. The stop cap is set on the spend card; the reservation covers 1.3 times that cap.
 

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -70,6 +71,80 @@ def admit_workers(requested: int, limit_bytes: int | None, peak_bytes: float, pa
     return min(requested, fit)
 
 
+def check_params_listed(manifest, params) -> None:
+    """The parameter file is one the manifest lists (plan section 5: the parameter files are committed)."""
+    files = json.loads(Path(manifest).read_text())["files"]
+    try:
+        rel = str(Path(os.path.abspath(params)).relative_to(os.path.abspath(ROOT)))
+    except ValueError:
+        rel = None
+    if rel not in files:
+        _refuse(f"the parameter file {params} is not listed in the manifest")
+
+
+def bind_provenance(manifest, draw) -> None:
+    """Every provenance built in this process (jobs, references, auxiliary records) carries the manifest's hash (which
+    covers the plan, the drivers, the analysis and the parameters) and the draw record's hash; the draw root, seeds, salt
+    and configuration hashes are already in it (plan section 5: "Every record binds to this plan's hash, the draw record,
+    the configuration hashes and the driver hashes"). Resumes then reuse only records with this binding."""
+    import revision_v2 as R
+    cur = R.context_provenance
+    orig = cur._rep_orig if getattr(cur, "_rep_bound", False) else cur
+    extra = {"manifest_sha256": K._sha(Path(manifest)), "draw_sha256": K._sha(Path(draw))}
+
+    def bound(mkt):
+        return orig(mkt) | extra
+    bound._rep_bound, bound._rep_orig = True, orig
+    R.context_provenance = bound
+
+
+def write_binding(out, manifest, draw) -> None:
+    p = Path(out) / "binding.json"
+    body = {"manifest_sha256": K._sha(Path(manifest)), "draw_sha256": K._sha(Path(draw))}
+    old = json.loads(p.read_text()) if p.exists() else None
+    if old is not None and old != body:
+        _refuse("binding.json exists with another manifest or draw (no redraw, plan section 5)")
+    if old is None:
+        p.write_text(json.dumps(body, indent=1, sort_keys=True) + "\n")
+
+
+def check_binding(out, manifest, draw) -> None:
+    """The output directory belongs to this manifest and this draw record (also on the second pod)."""
+    p = Path(out) / "binding.json"
+    if not p.exists():
+        _refuse(f"no {p}: run the instances stage first")
+    if json.loads(p.read_text()) != {"manifest_sha256": K._sha(Path(manifest)), "draw_sha256": K._sha(Path(draw))}:
+        _refuse("the output belongs to another manifest or draw")
+
+
+def check_calibration_platform(cal: dict, smoke: bool) -> None:
+    """Plan section 1: the instances are calibrated once, on the pod's Linux x86 stack; a reuse requires that record."""
+    if not smoke and (cal.get("system") != "Linux" or cal.get("machine") not in ("x86_64", "AMD64")):
+        _refuse(f"the calibration was made on {cal.get('system')} {cal.get('machine')}, not Linux x86")
+
+
+def rate_search_workers(out, requested: int, limit_bytes, peak_bytes: float) -> int:
+    """Search workers admitted against the pod's memory limit and kept across restarts (plan section 5): the lowest count
+    admitted for this output so far."""
+    p = Path(out) / "search_workers.json"
+    saved = json.loads(p.read_text())["workers"] if p.exists() else None
+    w = admit_workers(requested, limit_bytes, peak_bytes)
+    if saved is not None:
+        w = min(w, int(saved))
+    if limit_bytes is not None:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps({"workers": w, "limit_bytes": limit_bytes, "peak_bytes": peak_bytes}, sort_keys=True) + "\n")
+    return w
+
+
+def gate_item(jobs_by_dir: dict, base) -> dict:
+    """The nonzero-churn continuation gate: the first p = 0.05 cell (rep0, R3) whether flagged or not (plan section 5)."""
+    import rep_collect as C
+    j = next(j for j in jobs_by_dir[("menu", 0.05)] if j["mkt"]["label"] == MARKETS[0] and j["rule"] == TARGETS[0])
+    return {"id": C._key("menu", 0.05, j["id"]), "job": j, "dir": str(Path(base) / "menu-p0.05"), "rate": 0.05,
+            "market": MARKETS[0], "rule": TARGETS[0]}
+
+
 def check_cfg_reuse(cfgs_path: Path, calibration_record: dict) -> None:
     """The saved configurations are reused on a later pod only if their hash equals the calibrating pod's record."""
     if K._sha(Path(cfgs_path)) != calibration_record.get("cfgs_sha256"):
@@ -80,6 +155,7 @@ def check_cfg_reuse(cfgs_path: Path, calibration_record: dict) -> None:
 
 def _require(a) -> None:
     K.require(ROOT, a.manifest)
+    check_params_listed(a.manifest, a.params)
     pin_commit(a.manifest)
 
 
@@ -100,7 +176,11 @@ def stage_instances(a) -> None:
         _refuse("--protocol other than the manifest is for smoke runs only")
     inst = draw_v2.instances(draw, proto, Path(a.proof).read_bytes(), a.published_height, calibrate=False)
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
-    (out / "instances.json").write_text(json.dumps(inst, indent=1, sort_keys=True) + "\n")
+    body = json.dumps(inst, indent=1, sort_keys=True) + "\n"; p = out / "instances.json"
+    if p.exists() and p.read_text() != body:
+        _refuse("instances.json exists with other markets (no redraw, no replacement of a market, plan section 5)")
+    p.write_text(body)
+    write_binding(out, a.manifest, a.draw)
 
 
 def stage_calibrate(a) -> None:
@@ -109,7 +189,10 @@ def stage_calibrate(a) -> None:
     import revision_v2 as R
     from sim import instances as INST
     from sim.records import cfg_from_dict, cfg_to_dict
-    out = Path(a.out); inst = json.loads((out / "instances.json").read_text())
+    out = Path(a.out)
+    if (out / "calibration.json").exists() or (out / "cfgs.json").exists():
+        _refuse("a calibration exists for this output; no later stage recalibrates (plan section 1)")
+    inst = json.loads((out / "instances.json").read_text())
     cfgs = {m: cfg_to_dict(INST.calibrated(cfg_from_dict(inst["markets"][m]["cfg"]))) for m in MARKETS}
     p = out / "cfgs.json"; p.write_text(json.dumps(cfgs, indent=1, sort_keys=True) + "\n")
     params = json.loads(Path(a.params).read_text())
@@ -134,9 +217,15 @@ def install_checked_salt(root: str, out, salt_sha256: str) -> None:
 def _context(a):
     """The draw root, salt, configurations, container and parameters, with the configuration reuse check."""
     from sim.records import cfg_from_dict
-    out = Path(a.out); inst = json.loads((out / "instances.json").read_text())
+    out = Path(a.out)
+    if a.draw is None:
+        _refuse("every stage needs --draw (the output's binding is checked against it)")
+    check_binding(out, a.manifest, a.draw)
+    inst = json.loads((out / "instances.json").read_text())
     cal = json.loads((out / "calibration.json").read_text())
+    check_calibration_platform(cal, a.smoke)
     check_cfg_reuse(out / "cfgs.json", cal)
+    bind_provenance(a.manifest, a.draw)
     cfgs = {k: cfg_from_dict(v) for k, v in json.loads((out / "cfgs.json").read_text()).items()}
     install_checked_salt(inst["root"], out, inst["salt_sha256"])
     return SimpleNamespace(root=inst["root"], salt=inst["salt_sha256"], cfgs=cfgs, container=cal["container"],
@@ -169,8 +258,7 @@ def stage_menu(a) -> None:
     from reset_followup_v2 import CUTS, H4_EXCLUDED
     c = _context(a); out = Path(a.out) / "menu"; out.mkdir(parents=True, exist_ok=True); R.install_salt(c.root, out)
     jobs = menu_jobs(c, a.smoke)
-    lim = None if a.smoke else _memory_limit()
-    w = admit_workers(a.workers_search, lim, a.peak_search)
+    w = rate_search_workers(a.out, a.workers_search, None if a.smoke else _memory_limit(), a.peak_search)
     for fam in FAMS:                                    # D2+H3 first: the X7-SC search embeds the D2+H3 winner
         R._pool("search", [j for j in jobs if j["family"] == fam], out, w, CUTS, H4_EXCLUDED, jobs)
     for item in [i for i in R._menu_items(jobs) if i["rule"] in TARGETS]:
@@ -209,7 +297,7 @@ def stage_cthr(a) -> None:
     jobs = U.build_jobs(c.root, c.cfgs, U.runner_up_params(c.params), c.salt, MARKETS, a.smoke)
     U.check_spec(jobs)
     copy_inputs(src, out, U.bank_inputs(src, [j["context"] for j in jobs]))
-    w = admit_workers(a.workers_search, None if a.smoke else _memory_limit(), a.peak_search)
+    w = rate_search_workers(a.out, a.workers_search, None if a.smoke else _memory_limit(), a.peak_search)
     U.run_searches(jobs, out, w); U.reference_stage(jobs, out, src); U.prefreeze(out, jobs, src)
 
 
@@ -219,7 +307,9 @@ def _memory_limit():
 
 
 def _rate_args(a, src: Path) -> SimpleNamespace:
-    return SimpleNamespace(src=str(src), smoke=a.smoke, workers_search=a.workers_search, workers_eval=a.workers_eval,
+    """The churn arm's arguments; the search workers are admitted against memory and kept across restarts."""
+    w = rate_search_workers(a.out, a.workers_search, None if a.smoke else _memory_limit(), a.peak_search)
+    return SimpleNamespace(src=str(src), smoke=a.smoke, workers_search=w, workers_eval=a.workers_eval,
                            stop_usd=a.stop_usd, usd_per_hour=a.usd_per_hour, prior_usd=a.prior_usd)
 
 
@@ -245,6 +335,10 @@ def stage_rates(a) -> None:
     import revision_v2 as R
     c = _context(a); churn_v2.install()
     rates = {"p0": (0.0,), "churn": RATES, "all": (0.0,) + RATES}[a.rates]   # p0, then gate0, then churn (plan section 5)
+    if any(p > 0 for p in rates) and not a.smoke:
+        g = Path(a.out) / "gate0" / "gate.json"
+        if not g.exists() or json.loads(g.read_text()).get("gate_ok") is not True:
+            _refuse("the churn rates need a passed churn-zero gate (gate0/gate.json; plan section 5)")
     for kind in ("menu", "cthr"):
         src = Path(a.out) / kind
         for p in rates:
@@ -267,6 +361,7 @@ def stage_gate0(a) -> None:
     ref = Path(a.out) / "menu-p0"
     rid = R.cell_id("fresh0@rho0.2", "F111", "D2+H3", "profit")
     g = churn_v2.gate_compare(ref, out, rid, jobs[0]["id"], require_identical=not a.smoke)
+    (out / "gate.json").write_text(json.dumps({"gate_ok": bool(g["gate_ok"]), "comparison": g}, indent=1, sort_keys=True, default=str) + "\n")
     if not g["gate_ok"] and not a.smoke:
         _refuse("the churn-zero gate failed")
 
@@ -275,19 +370,35 @@ def _jobs_by_dir(c, smoke: bool) -> dict:
     return {(kind, p): rate_jobs(c, kind, p, smoke) for kind in ("menu", "cthr") for p in (0.0,) + RATES}
 
 
+def cost_stop(a):
+    """The continuation's per-round admission (Run B's worker cost stop): the stop cap, the price ceiling, the pod's
+    request time, earlier spend, and the launcher's STOP file and soft deadline. None in smoke runs."""
+    from guards import CostStop
+    if a.smoke:
+        return None
+    return CostStop(a.stop_usd, a.usd_per_hour, a.started, prior_usd=a.prior_usd, stop_file=a.stop_file, soft_deadline=a.soft_deadline)
+
+
 def stage_continue(a) -> None:
     """The ordered continuation queue (plan section 4); cost admission per round through the frozen CostStop."""
     import churn_v2
     import rep_collect as C
     from convergence_v2 import worker_cost_args
-    from guards import CostStop
-    c = _context(a); churn_v2.install()
-    queue = continuation_queue(C.flagged_cells(Path(a.out), _jobs_by_dir(c, a.smoke)))
-    cost = None if a.smoke else worker_cost_args(CostStop(a.stop_usd, a.usd_per_hour, a.started, prior_usd=a.prior_usd))
+    c = _context(a); churn_v2.install(); jobs = _jobs_by_dir(c, a.smoke)
+    queue = continuation_queue(C.flagged_cells(Path(a.out), jobs))
+    stop = cost_stop(a); cost = None if stop is None else worker_cost_args(stop)
     w = admit_workers(a.workers_cont, None if a.smoke else _memory_limit(), a.peak_cont)
-    res = C.run_queue(queue, Path(a.out), w, cost)
+    res = C.run_queue(queue, Path(a.out), w, cost, gate=gate_item(jobs, a.out), smoke=a.smoke)
     print(json.dumps({"stage": "continue", "queued": len(queue), **{k: v for k, v in res.items()}}), flush=True)
-    return res["exit"]                                   # Run B's codes: 4 round-1 mismatch, 5 lost worker, 6 cell error
+    if res["exit"] != 0:
+        return res["exit"]                               # 3 cost stop, 4 round-1 mismatch, 5 lost worker, 6 cell error
+    # expectation 5 on the primary winners: diagnostics of R3's continued winners (plan section 3), admitted at the cap
+    if stop is not None and not stop.allow("continued diagnostics", 0.1 + 60.0 * 1.33 * 12 / 3600):
+        print(json.dumps({"stage": "continued diagnostics", "exit": 3}), flush=True)
+        return 3
+    d = C.run_diagnostics(Path(a.out), jobs, admit_workers(a.workers_eval, None if a.smoke else _memory_limit(), a.peak_cont))
+    print(json.dumps({"stage": "continued diagnostics", **d}), flush=True)
+    return d["exit"]
 
 
 def root_inventory(out) -> dict:
@@ -311,16 +422,15 @@ def stage_analyse(a) -> None:
     """The committed analysis on the collected records, for both winner sets (plan sections 2 and 3)."""
     import rep_collect as C
     import replication_analysis as RA
-    c = _context(a); col = C.collect(Path(a.out), _jobs_by_dir(c, a.smoke))
-    res = {"confirmatory": c.confirmatory, "counts": col["counts"], "round1_mismatch": col["round1_mismatch"]}
+    c = _context(a); jobs = _jobs_by_dir(c, a.smoke)
+    col = C.collect(Path(a.out), jobs, gate_id=gate_item(jobs, a.out)["id"], smoke=a.smoke)
+    res = {k: col[k] for k in ("counts", "round1_mismatch", "gate_ok", "problems", "unscorable")}
+    res["confirmatory"] = c.confirmatory
     for name in ("primary", "frozen"):
         g = col[name]
         if g is None:
-            res[name] = "not available (round-1 mismatch)"; continue
-        pc = RA.paired_changes(g); cr = RA.criteria(pc)
-        res[name] = {"paired_changes": pc, "criteria": cr, "expectations": RA.expectations(cr, col["audit"]),
-                     "pooled": {p: {x: RA.pooled_paired(g[p], comp, resamples=a.resamples) for x, comp in RA.CONTRASTS.items()
-                                    if all(comp in g[p][m] for m in g[p])} for p in g}}
+            res[name] = "not available (a round-1 mismatch or a continued winner without an identical gate)"; continue
+        res[name] = RA.analyse(g, col["audit"][name], resamples=a.resamples)
     (Path(a.out) / "analysis.json").write_text(json.dumps(res, indent=1, sort_keys=True) + "\n")
 
 
@@ -345,6 +455,8 @@ def main(argv=None) -> int:
     ap.add_argument("--started", type=float, default=None); ap.add_argument("--stop-usd", dest="stop_usd", type=float, default=None)
     ap.add_argument("--usd-per-hour", dest="usd_per_hour", type=float, default=None)
     ap.add_argument("--prior-usd", dest="prior_usd", type=float, default=0.0)
+    ap.add_argument("--stop-file", dest="stop_file", default=None, help="the launcher's STOP file (continuation rounds)")
+    ap.add_argument("--soft-deadline", dest="soft_deadline", type=float, default=None, help="the launcher's soft deadline, epoch seconds")
     ap.add_argument("--rates", choices=("p0", "churn", "all"), default="all", help="stage rates: p = 0 only, churn only, or both")
     ap.add_argument("--smoke", action="store_true")
     a = ap.parse_args(argv)

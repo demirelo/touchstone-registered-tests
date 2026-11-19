@@ -1,9 +1,13 @@
 """Commitment manifest and run-time freeze check of the churn replication (replication-plan.md, section 5).
 build(): deterministic manifest bytes (sorted JSON) with the frozen code's git commit and the SHA-256 of every listed
 file; these bytes are what is stamped and what block_draw.py and the instance wrapper read as --protocol.
-frozen_problems(): sim/ and scripts/ equal the commit (no change, no untracked file) and no outside override is set.
-verify() / require(): every listed file still matches its hash; require() stops the run on any problem.
+frozen_problems(): sim/, scripts/ and the frozen configuration inputs equal the commit (no change, no untracked file)
+  and no outside override is set.
+verify() / require(): every required file is listed and every listed file still matches its hash; require() stops the
+  run on any problem. build() refuses a file list without a required file or without a file of the drivers' import
+  closure (imports inside functions included, review rep-impl-r1).
 Usage: commitment.py build <out> <commit> <file>...   |   commitment.py check <manifest>"""
+import ast
 import hashlib
 import json
 import os
@@ -12,6 +16,20 @@ import sys
 from pathlib import Path
 
 FROZEN = ("sim", "scripts")
+# Files outside sim/ and scripts/ that the frozen code reads (plan section 5: "the frozen configuration inputs").
+FROZEN_INPUTS = ("experiments/locked.yaml", "experiments/revision-v2-manifest.yaml", "experiments/calibration.json",
+                 "experiments/v2/params.json", "experiments/v2/benchmark/timings.json")
+F3, CH, F2, F1 = "docs/revision/followup3", "docs/revision/churn", "docs/revision/followup2", "docs/revision/followup"
+# Plan section 5: this plan, the analysis and its tests, the drivers and adapters, every imported helper outside sim/
+# and scripts/ (test_the_real_required_set_covers_the_drivers_import_closure keeps this complete), the parameter files
+# and uv.lock; also the launcher and its harness, the cost schedule and the frozen configuration inputs.
+REQUIRED = tuple(sorted({
+    f"{F3}/replication-plan.md", f"{F3}/replication_analysis.py", f"{F3}/test_replication_analysis.py",
+    f"{F3}/commitment.py", f"{F3}/test_commitment.py", f"{F3}/continuation.py", f"{F3}/test_continuation.py",
+    f"{F3}/rep_v2.py", f"{F3}/test_rep_v2.py", f"{F3}/rep_collect.py", f"{F3}/test_rep_collect.py",
+    f"{F3}/rep_pod.sh", f"{F3}/test_rep_pod_harness.sh", f"{F3}/cost_estimate.py",
+    f"{CH}/churn_v2.py", f"{F1}/reset_followup_v2.py", f"{F2}/common.py", f"{F2}/convergence_v2.py", f"{F2}/guards.py",
+    f"{F2}/runnerup_v2.py", "uv.lock", *FROZEN_INPUTS}))
 # Environment variables the frozen code reads; the driver sets TOUCHSTONE_IDENTITY_SALT itself (checked against the draw).
 OVERRIDES = ("TOUCHSTONE_LOCKED", "TOUCHSTONE_PROPOSED_MODULE", "TOUCHSTONE_PROPOSED_PARAMS", "TOUCHSTONE_SEALED_DIR",
              "TOUCHSTONE_GIT_COMMIT")
@@ -21,16 +39,57 @@ def _sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def build(root, files, commit: str) -> bytes:
+def search_dirs(root) -> list:
+    """The drivers' import path outside the standard library (rep_v2.py, rep_collect.py): their own folders and the repo."""
     root = Path(root)
+    return [root / F3, root / CH, root / F2, root / F1, root, root / "scripts"]
+
+
+def _imports(path: Path) -> set:
+    names = set()
+    for n in ast.walk(ast.parse(path.read_text(), filename=str(path))):
+        if isinstance(n, ast.Import):
+            names |= {a.name.split(".")[0] for a in n.names}
+        elif isinstance(n, ast.ImportFrom) and n.module and n.level == 0:
+            names.add(n.module.split(".")[0])
+    return names
+
+
+def import_closure(root, start, search) -> set:
+    """Every repo file outside sim/, scripts/ and the virtual environment reachable by imports (at any depth, inside
+    functions too) from the start files, resolved along `search` as the drivers' sys.path does; paths relative to root."""
+    root = Path(root).resolve(); seen, todo = set(), [root / f for f in start]
+    while todo:
+        p = todo.pop().resolve(); rel = str(p.relative_to(root))
+        if rel in seen:
+            continue
+        seen.add(rel)
+        for name in _imports(p):
+            for d in [p.parent, *map(Path, search)]:
+                q = (Path(d) / f"{name}.py").resolve()
+                if q.is_file():
+                    r = q.relative_to(root).parts
+                    if r[0] not in (*FROZEN, ".venv"):
+                        todo.append(q)
+                    break
+    return seen
+
+
+def build(root, files, commit: str, required=None, search=None) -> bytes:
+    root = Path(root); files = sorted(set(files))
+    need = set(REQUIRED if required is None else required)
+    py = [f for f in files if f.endswith(".py")]
+    need |= import_closure(root, py, search_dirs(root) if search is None else search)
+    if missing := sorted(need - set(files)):
+        raise SystemExit(f"manifest refused: required or imported files not listed: {missing}")
     body = {"commit": commit, "files": {f: _sha(root / f) for f in sorted(set(files))},
             "note": "churn replication commitment; docs/revision/followup3/replication-plan.md"}
     return (json.dumps(body, indent=1, sort_keys=True) + "\n").encode()
 
 
-def verify(root, manifest) -> list:
+def verify(root, manifest, required=None) -> list:
     root = Path(root); m = json.loads(Path(manifest).read_text())
-    out = []
+    out = [f"{f}: required but not listed" for f in (REQUIRED if required is None else required) if f not in m["files"]]
     for f, h in m["files"].items():
         p = root / f
         if not p.exists():
@@ -46,18 +105,20 @@ def _git(root, *a) -> subprocess.CompletedProcess:
 
 def frozen_problems(root, commit: str) -> list:
     out = []
-    if _git(root, "diff", "--quiet", commit, "--", *FROZEN).returncode != 0:
-        out.append(f"{', '.join(FROZEN)} differ from commit {commit}")
-    untracked = _git(root, "ls-files", "--others", "--exclude-standard", "--", *FROZEN).stdout.split()
+    paths = [*FROZEN, *[f for f in FROZEN_INPUTS if (Path(root) / f).exists() or _git(root, "cat-file", "-e", f"{commit}:{f}").returncode == 0]]
+    changed = _git(root, "diff", "--name-only", commit, "--", *paths).stdout.split()
+    if changed:
+        out.append(f"differ from commit {commit}: {', '.join(changed[:5])}")
+    untracked = _git(root, "ls-files", "--others", "--exclude-standard", "--", *paths).stdout.split()
     if untracked:
         out.append(f"untracked files under {', '.join(FROZEN)}: {', '.join(untracked[:5])}")
     out += [f"environment override set: {v}" for v in OVERRIDES if os.environ.get(v)]
     return out
 
 
-def require(root, manifest) -> None:
+def require(root, manifest, required=None) -> None:
     m = json.loads(Path(manifest).read_text())
-    bad = frozen_problems(root, m["commit"]) + verify(root, manifest)
+    bad = frozen_problems(root, m["commit"]) + verify(root, manifest, required)
     if bad:
         raise SystemExit("commitment check failed:\n" + "\n".join(bad))
 
