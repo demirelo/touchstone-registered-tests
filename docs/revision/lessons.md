@@ -208,3 +208,14 @@ affected: `churn_v2.main` installs the salt before every stage, and its evaluati
 salt was installed. Guard: `rep_v2._context()` installs the draw's salt and checks its hash for every stage that reads
 the calibration (`install_checked_salt`, test first, `logs_harness/rep_driver_red.log`). Rule: every process that runs an
 episode installs and checks the salt; a smoke run must include at least one churn cell through every stage.
+
+## 2026-11-19: the continuation worker dropped Run B's round estimate and end codes
+
+Mistake: when I wrapped `convergence_v2.run_cell` for the replication, the worker called it without `round_hours`, so the
+cost stop admitted every round with a zero estimate and could never refuse one; and the stage always exited 0, so a
+round-1 mismatch, a lost worker or a cell error would read as success to a launcher. Found by reading the driver
+against the reviewed Run B driver before writing the launcher, not by a run. Guard: tests that every round is admitted
+with a nonzero estimate, that the stage returns Run B's codes (4 mismatch, 5 lost with the restart estimate, 6 cell
+error) and that `main` returns them (`test_rep_collect.py`, `test_rep_v2.py`, each seen failing first). Rule: a wrapper
+of a reviewed function passes every argument the reviewed caller passes, or says in a comment why not; compare the two
+call sites line by line.

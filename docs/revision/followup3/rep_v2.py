@@ -8,6 +8,7 @@ Stages, in order (each checks the commitment manifest and the frozen code first,
   gate0        the churn-zero gate: one p = 0 cell through the churn path against the ordinary menu search (all stages)
   rates        p = 0 evaluation and doubling of the menu winners; p = 0.03, 0.05 churn search, evaluation, doubling, diagnostics
   continue     the ordered continuation queue of flagged cells (churn-aware adapter; round 1 against this run's doubling)
+  inventory    one inventory.json at the output root (last on each pod; the launcher verifies against it)
 The market labels stay fresh0..fresh5 (the frozen code requires them); every output lives under --out, never under the
 registered results. Usage: rep_v2.py --stage <stage> --out <dir> --manifest <file> [stage options]"""
 from __future__ import annotations
@@ -243,9 +244,10 @@ def stage_rates(a) -> None:
     import churn_v2
     import revision_v2 as R
     c = _context(a); churn_v2.install()
+    rates = {"p0": (0.0,), "churn": RATES, "all": (0.0,) + RATES}[a.rates]   # p0, then gate0, then churn (plan section 5)
     for kind in ("menu", "cthr"):
         src = Path(a.out) / kind
-        for p in (0.0,) + RATES:
+        for p in rates:
             out = Path(a.out) / f"{kind}-p{p:g}"; out.mkdir(parents=True, exist_ok=True); R.install_salt(c.root, out)
             steps = ("inputs", "freeze", "evaluate", "doubling", "diagnostics", "inventory") if p == 0 else \
                     ("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory")
@@ -285,6 +287,24 @@ def stage_continue(a) -> None:
     w = admit_workers(a.workers_cont, None if a.smoke else _memory_limit(), a.peak_cont)
     res = C.run_queue(queue, Path(a.out), w, cost)
     print(json.dumps({"stage": "continue", "queued": len(queue), **{k: v for k, v in res.items()}}), flush=True)
+    return res["exit"]                                   # Run B's codes: 4 round-1 mismatch, 5 lost worker, 6 cell error
+
+
+def root_inventory(out) -> dict:
+    """One inventory at the output root, written last: every file with its hash except inventory files and *.lock, *.tmp
+    (the launcher verifies every pulled directory against it, and that no file is outside it)."""
+    import hashlib
+    from sim.records_v2 import write
+    out = Path(out)
+    recs = {str(q.relative_to(out)): hashlib.sha256(q.read_bytes()).hexdigest() for q in sorted(out.rglob("*"))
+            if q.is_file() and q.name != "inventory.json" and not q.name.endswith((".lock", ".tmp"))}
+    inv = {"stage": "inventory", "records": recs}
+    write(out / "inventory.json", inv)
+    return inv
+
+
+def stage_inventory(a) -> None:
+    root_inventory(a.out)
 
 
 def stage_analyse(a) -> None:
@@ -305,7 +325,8 @@ def stage_analyse(a) -> None:
 
 
 STAGES = {"instances": stage_instances, "calibrate": stage_calibrate, "menu": stage_menu, "cthr": stage_cthr,
-          "gate0": stage_gate0, "rates": stage_rates, "continue": stage_continue, "analyse": stage_analyse}
+          "gate0": stage_gate0, "rates": stage_rates, "continue": stage_continue, "analyse": stage_analyse,
+          "inventory": stage_inventory}
 
 
 def main(argv=None) -> int:
@@ -324,6 +345,7 @@ def main(argv=None) -> int:
     ap.add_argument("--started", type=float, default=None); ap.add_argument("--stop-usd", dest="stop_usd", type=float, default=None)
     ap.add_argument("--usd-per-hour", dest="usd_per_hour", type=float, default=None)
     ap.add_argument("--prior-usd", dest="prior_usd", type=float, default=0.0)
+    ap.add_argument("--rates", choices=("p0", "churn", "all"), default="all", help="stage rates: p = 0 only, churn only, or both")
     ap.add_argument("--smoke", action="store_true")
     a = ap.parse_args(argv)
     _require(a)
@@ -331,8 +353,7 @@ def main(argv=None) -> int:
         a.stop_usd = 1e9
     if not a.smoke and a.stage in ("menu", "cthr", "gate0", "rates", "continue") and (a.started is None or not a.usd_per_hour or a.stop_usd is None):
         _refuse("a paid stage needs --started, --usd-per-hour and --stop-usd")
-    STAGES[a.stage](a)
-    return 0
+    return int(STAGES[a.stage](a) or 0)
 
 
 if __name__ == "__main__":

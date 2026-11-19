@@ -70,35 +70,71 @@ def flagged_cells(base: Path, jobs_by_dir: dict) -> list:
     return out
 
 
-def _cont_one(job: dict, rate_dir: str, max_rounds: int, cost) -> dict:
+def round_hours(job: dict) -> float:
+    """One continuation round's admission estimate (Run B's rule): a doubling-size search and its 200-seed evaluation from
+    the benchmark, times the churn slowdown (1.33 at p > 0, the churn arm's rate stages), plus 0.1 h shutdown."""
+    import json as _j
+    from convergence_v2 import ROOT as _ROOT
+    t = _j.loads((_ROOT / "experiments/v2/benchmark/timings.json").read_text())["timings"]
+    base = (t["doubling_x7"] if job.get("family") == "X7-SC" else t["doubling"]) + t["eval160"]["profit"] * 200 / 160
+    return base * (1.33 if float(job.get("churn") or 0) > 0 else 1.0) / 3600 + 0.1
+
+
+def run_cells(*args):
+    """Run B's worker pool (each worker saves its own record); a module-level name so tests can replace it."""
+    from convergence_v2 import run_cells as rc
+    return rc(*args)
+
+
+def write_record(dest, rec: dict) -> None:
+    from sim.records_v2 import write
+    write(dest, rec)
+
+
+def _cont_one(job: dict, rate_dir: str, max_rounds: int, cost, hours: float) -> dict:
     """In a worker: install the churn-aware adapter, then continue one cell; round 1 is compared with this run's
-    doubling record in the same rate directory."""
+    doubling record in the same rate directory. Every round is admitted with `hours` against the cost stop."""
     from continuation import install_continuation
     install_continuation()
     import convergence_v2 as B
-    return B.run_cell(job, rate_dir, max_rounds=max_rounds, src=rate_dir, cost=cost)
+    return B.run_cell(job, rate_dir, max_rounds=max_rounds, src=rate_dir, cost=cost, round_hours=hours)
+
+
+def _mismatch(rec) -> bool:
+    return str((rec or {}).get("status", "")).startswith("stopped: round 1")
 
 
 def run_queue(queue: list, base: Path, workers: int, cost=None, max_rounds: int = 3) -> dict:
-    """The gate cell alone, then the rest in workers, each saving its own record (Run B's pattern)."""
+    """The gate cell alone, then the rest in workers, each saving its own record (Run B's pattern). The result's "exit"
+    follows Run B: 4 a measured round-1 mismatch (it outranks the rest; no restart), 6 a cell error (never restarted),
+    5 a lost worker (lost_cells.json holds the restart estimate; saved cells are skipped on restart), 0 otherwise."""
+    from convergence_v2 import restart_hours                             # first: it puts scripts/ on the path
     import revision_v2 as R
-    from convergence_v2 import run_cells
-    from sim.records_v2 import read, write
+    from sim.records_v2 import read
     cdir = Path(base) / "continuation"; cdir.mkdir(parents=True, exist_ok=True)
     dest = lambda c: cdir / (R._safe(c["id"]) + ".json")
-    if any(str((read(dest(c)) or {}).get("status", "")).startswith("stopped: round 1") for c in queue):
-        return {"run": 0, "gate": "round-1 mismatch on record: continuation stays stopped"}   # also on resume (plan section 4)
-    todo = [c for c in queue if read(dest(c)) is None]                   # a resume keeps the order and skips saved cells
+    saved = {c["id"]: read(dest(c)) for c in queue}
+    other = [c["id"] for c in queue if saved[c["id"]] is not None and saved[c["id"]].get("provenance") != c["job"].get("provenance")]
+    if other:                                                            # plan section 5: reuse only this run's records
+        raise SystemExit(f"replication refused: saved continuation records of another job or run: {other[:3]}")
+    if any(_mismatch(r) for r in saved.values()):
+        return {"run": 0, "exit": 4, "gate": "round-1 mismatch on record: continuation stays stopped"}   # also on resume (plan section 4)
+    todo = [c for c in queue if saved[c["id"]] is None]                   # a resume keeps the order and skips saved cells
     if not todo:
-        return {"run": 0}
+        return {"run": 0, "exit": 0}
+    hours = {c["id"]: round_hours(c["job"]) for c in todo}
     first, rest = todo[0], todo[1:]
-    write(dest(first), {**_cont_one(first["job"], first["dir"], max_rounds, cost), "id": first["id"]})
-    if str(read(dest(first)).get("status", "")).startswith("stopped: round 1"):
-        return {"run": 1, "gate": "round-1 mismatch: continuation stopped"}
+    write_record(dest(first), {**_cont_one(first["job"], first["dir"], max_rounds, cost, hours[first["id"]]), "id": first["id"]})
+    if _mismatch(read(dest(first))):
+        return {"run": 1, "exit": 4, "gate": "round-1 mismatch: continuation stopped"}
     lost, failed = run_cells(_cont_one, rest,                         # a module-level function: workers must unpickle it
-                             [(c["job"], c["dir"], max_rounds, cost) for c in rest], workers, [dest(c) for c in rest],
+                             [(c["job"], c["dir"], max_rounds, cost, hours[c["id"]]) for c in rest], workers, [dest(c) for c in rest],
                              [{"id": c["id"]} for c in rest])
-    return {"run": len(todo), "lost": lost, "failed": failed}
+    mismatch = [c["id"] for c in rest if _mismatch(read(dest(c)))]
+    if lost and not mismatch and not failed:
+        write_record(cdir / "lost_cells.json", {"lost": lost, "restart_hours": restart_hours([hours[k] * max_rounds for k in lost])})
+    code = 4 if mismatch else 6 if failed else 5 if lost else 0
+    return {"run": len(todo), "lost": lost, "failed": failed, "mismatch": mismatch, "exit": code}
 
 
 def collect(base: Path, jobs_by_dir: dict) -> dict:

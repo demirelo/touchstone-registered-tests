@@ -69,3 +69,37 @@ def test_salt_is_installed_and_checked(tmp_path, monkeypatch):
     assert os.environ["TOUCHSTONE_IDENTITY_SALT"] == str(tmp_path / "salt.hex")
     with pytest.raises(SystemExit):
         D.install_checked_salt(root, tmp_path, "0" * 64)
+
+
+def test_rates_split_runs_p0_before_the_gate_and_churn_after(monkeypatch, tmp_path):
+    # plan section 5: the churn-zero gate runs after the p = 0 branch and before any churn spend
+    calls = []
+    import types
+    fake = types.SimpleNamespace(install=lambda: None, _run_rate=lambda out, jobs, steps, a, s, c, p, st: calls.append((Path(out).name, steps[1])))
+    monkeypatch.setitem(sys.modules, "churn_v2", fake)
+    monkeypatch.setattr(D, "_context", lambda a: types.SimpleNamespace(root="r", salt="s", container={}))
+    monkeypatch.setattr(D, "rate_jobs", lambda c, k, p, s: [])
+    import revision_v2 as R
+    monkeypatch.setattr(R, "install_salt", lambda root, out: None)
+    a = types.SimpleNamespace(out=str(tmp_path), smoke=True, rates="p0", workers_search=1, workers_eval=1, stop_usd=1, usd_per_hour=1,
+                              prior_usd=0, started=None)
+    D.stage_rates(a)
+    assert [n for n, _ in calls] == ["menu-p0", "cthr-p0"]
+    calls.clear(); a.rates = "churn"; D.stage_rates(a)
+    assert [n for n, _ in calls] == ["menu-p0.03", "menu-p0.05", "cthr-p0.03", "cthr-p0.05"]
+
+
+def test_root_inventory_lists_every_file_but_itself(tmp_path):
+    import json
+    (tmp_path / "menu" / "search").mkdir(parents=True); (tmp_path / "menu" / "search" / "a.json").write_text("{}")
+    (tmp_path / "menu-p0").mkdir(); (tmp_path / "menu-p0" / "inventory.json").write_text("{}"); (tmp_path / "x.lock").write_text("")
+    (tmp_path / "cfgs.json").write_text("{}")
+    D.root_inventory(tmp_path)
+    recs = json.loads((tmp_path / "inventory.json").read_text())["records"]
+    assert set(recs) == {"menu/search/a.json", "cfgs.json"}
+
+
+def test_main_returns_the_stage_exit_code(monkeypatch):
+    monkeypatch.setattr(D, "_require", lambda a: None)
+    monkeypatch.setitem(D.STAGES, "continue", lambda a: 5)
+    assert D.main(["--stage", "continue", "--out", "o", "--manifest", "m", "--smoke"]) == 5
