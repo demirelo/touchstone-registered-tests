@@ -385,7 +385,8 @@ REALADMIT=1 rcheck pushed_acct.sh "" "== STOPPED BEFORE menu \(cap, admission\)"
 python3 - "$RCALLS" "$RADMIT" <<'PYA' || { echo "SCENARIO FAILED (real admission)"; fail=1; }
 import json, sys
 c = [l.split() for l in sys.argv[1].splitlines()]
-assert [x[3].split("/")[-1] for x in c] == ["guards.py", "rep_v2.py", "guards.py", "rep_v2.py", "guards.py"], c
+assert [x[3].split("/")[-1] for x in c] == ["guards.py", "rep_v2.py", "guards.py", "rep_v2.py", "guards.py", "rep_v2.py"], c
+assert "--stage inventory" in " ".join(c[-1]), c[-1]                    # the stop writes the inventory first (review r1)
 rep = [json.loads(l) for l in sys.argv[2].splitlines() if l.startswith("{")]
 assert len(rep) == 3 and [r["log"][-1]["allowed"] for r in rep] == [True, True, False], rep
 assert rep[2]["prior_usd"] > 1.2 and rep[2]["cap_usd"] == 3.0, rep[2]
