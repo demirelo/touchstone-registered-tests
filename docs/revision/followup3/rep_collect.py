@@ -150,7 +150,12 @@ def _gate_wellformed(g) -> bool:
     if not isinstance(g, dict) or type(g.get("pass")) is not bool or not isinstance(g.get("problems"), list):
         return False
     vals = [g.get(k) for k in ("max_knob_rel", "max_change_abs", "max_gain_abs")]
-    return all(isinstance(v, (int, float)) and not isinstance(v, bool) and not math.isnan(v) for v in vals)
+    if not all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in vals):
+        return False
+    try:
+        return not any(math.isnan(float(v)) for v in vals)
+    except OverflowError:                                  # an int too large for a float (review rep-impl-r7)
+        return False
 
 
 def identical(rec) -> bool:
@@ -207,8 +212,9 @@ def _round1_ready(rec, doubling, search) -> bool:
             _finite(h.get("gain")) and _knobs_ok(h.get("knobs")) and isinstance(search.get("attack"), dict) and
             _knobs_ok(search["attack"].get("best_knobs"))):
         return False
-    r1, fh = rounds[0], rec.get("heldout")                  # the measured values themselves must be well-formed
-    if not (_finite([r1.get("attack_change"), r1.get("reference_change"), g.get("heldout_mean")]) and
+    r1, fh = rounds[0], rec.get("heldout")                  # the measured values and both doubling changes must be
+    if not (_finite([doubling.get("attack_change"), doubling.get("reference_change")]) and   # well-formed (review r7)
+            _finite([r1.get("attack_change"), r1.get("reference_change"), g.get("heldout_mean")]) and
             _knobs_ok(r1.get("best_knobs")) and _knobs_ok(g.get("heldout_knobs"))):
         return False
     return not (isinstance(fh, dict) and _same(fh.get("knobs"), h["knobs"])) or _finite(fh.get("gain"))
@@ -269,6 +275,8 @@ def cont_problem(rec, key: str, job: dict, smoke: bool = False, max_rounds: int 
     st = rec.get("status")
     if st not in STATUSES:
         return f"unknown continuation status {st!r}"
+    if st == STATUSES[3] and not (_gate_wellformed(rec.get("round1_gate")) and not identical(rec)):   # review rep-impl-r7
+        return "a round-1 mismatch status without its failing comparison"
     if st in STATUSES[:2]:
         g = rec.get("round1_gate")
         if not (identical(rec) or (smoke and g == SMOKE_GATE)):
@@ -296,6 +304,22 @@ def _set_aside(cdir: Path, dest: Path) -> None:
         dest.rename(sup / f"{dest.stem}.{n}.json")
 
 
+def _prov_wellformed(prov, like) -> bool:
+    """A provenance shaped like this job's own: the same fields, each of the same JSON type and not empty (review
+    rep-impl-r7: {} or an id of None or [] is a malformed record, not another run's binding)."""
+    if not isinstance(prov, dict) or not isinstance(like, dict) or set(prov) != set(like):
+        return False
+    kind = lambda v: "bool" if isinstance(v, bool) else "num" if isinstance(v, (int, float)) else type(v).__name__
+    return all(prov[k] is not None and kind(prov[k]) == kind(like[k]) and (not isinstance(prov[k], (str, list, dict)) or prov[k])
+               for k in like)
+
+
+def _foreign(prov, like) -> bool:
+    """Plan section 5 ("reuse only this run's records"): a well-formed provenance that names another job or run refuses
+    the resume; a missing or malformed one is an invalid record, rerun."""
+    return _prov_wellformed(prov, like) and not _same(prov, like)
+
+
 def _mismatch(rec, doubling=None, search=None) -> bool:
     """A measured round 1 that differs from the doubling record at all: the recorded status, a comparison that is not
     identical, or (with the cell's doubling and search records) any recorded round-1 value that disagrees with them
@@ -304,10 +328,10 @@ def _mismatch(rec, doubling=None, search=None) -> bool:
     rec = _d(rec)
     if rec is None:
         return False
+    if not _gate_wellformed(rec.get("round1_gate")):      # no comparison, or a malformed one: an invalid record, whatever
+        return False                                      # the status says (review rep-impl-r7: a status proves nothing)
     if str(rec.get("status", "")).startswith("stopped: round 1"):
-        return True
-    if not _gate_wellformed(rec.get("round1_gate")):      # no comparison, or a malformed one: an invalid record
-        return False
+        return not identical(rec)                         # Run B's mismatch record carries its failing comparison
     if not identical(rec):
         return True
     return _round1_ready(rec, doubling, search) and _round1_problem(rec, doubling, search) is not None
@@ -339,9 +363,7 @@ def run_queue(queue: list, base: Path, workers: int, cost=None, max_rounds: int 
     items = [(gate, gdest)] + [(c, dest(c)) for c in queue]
     saved = {d: _d(read_record(d)) for _, d in items}                   # a non-object root counts as no record
     dbl = {d: doubling_of(c["dir"], c["job"]["id"]) for c, d in items}; srch = {d: search_of(c["dir"], c["job"]["id"]) for c, d in items}
-    other = [c["id"] for c, d in items if saved[d] is not None and isinstance(saved[d].get("provenance"), dict)   # a binding
-             and not _same(saved[d]["provenance"], c["job"].get("provenance"))]   # that names another job or run; a missing
-                                                                                  # or malformed one is an invalid record
+    other = [c["id"] for c, d in items if saved[d] is not None and _foreign(saved[d].get("provenance"), c["job"].get("provenance"))]
     if other:                                                            # plan section 5: reuse only this run's records
         raise SystemExit(f"replication refused: saved continuation records of another job or run: {other[:3]}")
     if any(_mismatch(saved[d], dbl[d], srch[d]) for _, d in items):     # a measured disagreement included (review rep-impl-r5)

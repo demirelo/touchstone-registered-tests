@@ -43,11 +43,12 @@ def test_a_saved_round1_mismatch_stops_the_queue_on_resume(tmp_path, monkeypatch
     q = _queue(2)
     (tmp_path / "continuation").mkdir()
     (tmp_path / "continuation" / "c0.json").write_text(json.dumps({"id": "c0", "status": "stopped: round 1 differs from the registered doubling",
-                                                                 "provenance": q[0]["job"]["provenance"]}))
+                                                                 "provenance": q[0]["job"]["provenance"], "round1_gate": FAILING}))
     res = D.run_queue(q, tmp_path, workers=1, gate=_gate())
     assert calls == [] and "mismatch" in res["gate"]
 
 
+FAILING = {"pass": False, "max_knob_rel": 0.0, "max_change_abs": 0.0, "max_gain_abs": 0.3, "problems": ["tolerance exceeded"]}
 EXACT = {"pass": True, "max_knob_rel": 0.0, "max_change_abs": 0.0, "max_gain_abs": 0.0, "problems": [],
          "heldout_knobs": {"u0": 3.0, "x": 2}, "heldout_mean": 0.5}
 CKNOBS = {"u0": 3.0, "x": 2}
@@ -114,7 +115,7 @@ def test_end_codes_mismatch_lost_and_failed(tmp_path, monkeypatch):
                 elif o == "fail":
                     failed[c["id"]] = "ValueError: x"
                 else:
-                    D.write_record(d, {**fn(*a), **e, **({"status": "stopped: round 1 differs"} if o == "mm" else {})})
+                    D.write_record(d, {**fn(*a), **e, **({"status": "stopped: round 1 differs", "round1_gate": FAILING} if o == "mm" else {})})
             return lost, failed
         return f
     for outcome, code in (({}, 0), ({"c2": "lost"}, 5), ({"c2": "fail"}, 6), ({"c1": "mm", "c2": "lost"}, 4)):
@@ -126,7 +127,7 @@ def test_end_codes_mismatch_lost_and_failed(tmp_path, monkeypatch):
 
 
 def test_a_gate_mismatch_exits_4(tmp_path, monkeypatch):
-    monkeypatch.setattr(D, "_cont_one", lambda job, *a: {"status": "stopped: round 1 differs", "provenance": job["provenance"]})
+    monkeypatch.setattr(D, "_cont_one", lambda job, *a: {"status": "stopped: round 1 differs", "provenance": job["provenance"], "round1_gate": FAILING})
     monkeypatch.setattr(D, "run_cells", _pool([]))
     assert D.run_queue(_queue(2), tmp_path, workers=1, gate=_gate())["exit"] == 4
 
@@ -931,9 +932,15 @@ def test_every_mutation_of_every_record_kind_is_handled(tmp_path, monkeypatch, w
     assert base["audit"]["frozen"]["0.05"]["rep0"] == (30, 100) and base["gate_ok"] is True and not base["round1_mismatch"]
     q = [{"id": key, "job": a5, "dir": str(d)}]; g = {**gate, "dir": str(d)}
     calls = []
-    monkeypatch.setattr(D, "run_cells", lambda fn, todo, args, w, dests, extras: (calls.append([c["id"] for c in todo]), ([], {}))[1])
-    assert D.run_queue(q, tmp_path, workers=1, gate=g)["exit"] == 0 and calls == []          # valid records are reused
     good = json.loads(p.read_text()); n = 0
+    def rerun_pool(fn, todo, args, w, dests, extras):            # a rerun restores the valid record of this kind
+        calls.append([c["id"] for c in todo])
+        for dst in dests:
+            dst.parent.mkdir(parents=True, exist_ok=True); dst.write_text(json.dumps(good))
+        return [], {}
+    monkeypatch.setattr(D, "run_cells", rerun_pool)
+    if which in ("cont", "gate"):
+        assert D.run_queue(q, tmp_path, workers=1, gate=g)["exit"] == 0 and calls == []      # valid records are reused
     for path, bad in _all_mutations(good):
         if any(isinstance(k, str) and k in UNREAD for k in path):
             continue
@@ -952,7 +959,7 @@ def test_every_mutation_of_every_record_kind_is_handled(tmp_path, monkeypatch, w
         elif which == "gate":
             ok = col["primary"] is None and col["gate_ok"] is False and col["round1_mismatch"] is measured
         elif which in ("ev", "db"):
-            ok = len(col["unscorable"]) >= 1
+            ok = len(col["unscorable"]) >= 1 and col["round1_mismatch"] is False
         elif which == "cdiag":
             ok = rep0("primary") is None
         else:
@@ -961,14 +968,14 @@ def test_every_mutation_of_every_record_kind_is_handled(tmp_path, monkeypatch, w
         if which in ("cont", "gate"):                                 # resume: a malformed record is rerun, a measured
             calls.clear()                                             # disagreement stops with exit 4 and no rerun
             mut = _put(good, path, bad)
-            if isinstance(mut, dict) and isinstance(mut.get("provenance"), dict) and not D._same(mut["provenance"], good["provenance"]):   # plan s5
+            if isinstance(mut, dict) and D._foreign(mut.get("provenance"), good["provenance"]):   # plan s5
                 with pytest.raises(SystemExit):                       # refuses the resume; nothing is reused or rerun
                     D.run_queue(q, tmp_path, workers=1, gate=g)
                 assert calls == []
             else:
                 res = D.run_queue(q, tmp_path, workers=1, gate=g)
                 want = [g["id"]] if which == "gate" else [key]
-                assert (res["exit"] == 4 and calls == []) if measured else (res["exit"] != 4 and calls and calls[0] == want), (which, path, bad, res, calls)
+                assert (res["exit"] == 4 and calls == []) if measured else (res["exit"] == 0 and calls == [want]), (which, path, bad, res, calls)
             for f in (tmp_path / "continuation" / "superseded").glob("*.json"):
                 f.rename(tmp_path / f"{f.name}.{n}.old")
         p.write_text(json.dumps(good))
@@ -982,8 +989,10 @@ def test_queue_construction_survives_every_mutation_of_a_doubling_record(tmp_pat
     a = _job("fresh0"); _cell(tmp_path, a, 0, incomplete=True); _, db = _paths(tmp_path, a)
     good = json.loads(db.read_text())
     for path, bad in _all_mutations(good):
-        db.write_text(json.dumps(_put(good, path, bad)))
-        D.flagged_cells(tmp_path, {("menu", 0.0): [a]})              # never raises
+        mut = _put(good, path, bad); db.write_text(json.dumps(mut))
+        got = [c["id"] for c in D.flagged_cells(tmp_path, {("menu", 0.0): [a]})]     # never raises; flagged exactly when
+        want = [D._key("menu", 0.0, a["id"])] if isinstance(mut, dict) and mut.get("incomplete") is True else []   # the flag is true
+        assert got == want, (path, bad)
     db.write_text(json.dumps(good))
     assert [c["id"] for c in D.flagged_cells(tmp_path, {("menu", 0.0): [a]})] == [D._key("menu", 0.0, a["id"])]
 
@@ -1045,3 +1054,65 @@ def test_a_doubling_record_with_a_normalizer_zero_after_division_makes_the_cell_
     _, db = _paths(tmp_path, a)
     _edit(db, lambda r: r["heldout"].update(sstar=[5e-324, 4.0]))
     assert len(D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))["unscorable"]) == 1
+
+
+# ---- review rep-impl-r7 (Sol 1-4; Astra 1-5) ------------------------------------------------------------------------------
+
+def test_a_mismatch_status_without_measured_evidence_is_an_invalid_record(tmp_path, monkeypatch):
+    # Sol 1, Astra 1: the status string alone proves no measurement
+    a, gj, key = _flagged_with_gate(tmp_path)
+    _edit(_cpath(tmp_path, key), lambda r: r.update(status="stopped: round 1 differs from the registered doubling",
+                                                    round1_gate={}, rounds=[]))
+    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))
+    assert col["round1_mismatch"] is False and col["primary"] is not None
+    assert D._mismatch({"status": "stopped: round 1 differs from the registered doubling"}) is False
+    calls = []
+    monkeypatch.setattr(D, "_cont_one", _ok); monkeypatch.setattr(D, "run_cells", _pool(calls))
+    q = _queue(2); assert D.run_queue(q, tmp_path / "q", workers=1, gate=_gate())["exit"] == 0
+    _edit(tmp_path / "q" / "continuation" / "c1.json", lambda r: r.update(status="stopped: round 1 differs from the registered doubling",
+                                                                         round1_gate={}, rounds=[]))
+    calls.clear(); assert D.run_queue(q, tmp_path / "q", workers=1, gate=_gate())["exit"] == 0 and calls == [["c1"]]
+
+
+def test_a_genuine_run_b_mismatch_record_is_still_a_mismatch(tmp_path):
+    # what run_cell writes on a mismatch: the status, a well-formed failing comparison, and round 1
+    a, gj, key = _flagged_with_gate(tmp_path)
+    _edit(_cpath(tmp_path, key), lambda r: (r.update(status="stopped: round 1 differs from the registered doubling",
+                                                     rounds=r["rounds"][:1]),
+                                            r["round1_gate"].update({"pass": False, "max_gain_abs": 0.3, "problems": ["tolerance exceeded"]})))
+    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))
+    assert col["round1_mismatch"] is True and col["primary"] is None
+
+
+@pytest.mark.parametrize("value,ok", [(10 ** 400, False), (float("inf"), True), (float("nan"), False)])
+def test_comparison_differences_too_large_for_a_float_are_malformed_not_errors(value, ok):
+    # Sol 2, Astra 3: 10**400 raised OverflowError; Run B's infinite gain difference stays allowed
+    g = {"pass": False, "problems": ["x"], "max_knob_rel": 0.0, "max_change_abs": 0.0, "max_gain_abs": value}
+    assert D._gate_wellformed(g) is ok
+
+
+def test_a_malformed_doubling_change_is_not_a_mismatch(tmp_path):
+    # Sol 4, Astra 2: doubling attack_change None made the cell unscorable and also declared a global mismatch
+    a, gj, key = _flagged_with_gate(tmp_path)
+    _, db = _paths(tmp_path, a)
+    _edit(db, lambda r: r.update(attack_change=None))
+    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))
+    assert len(col["unscorable"]) == 1 and col["round1_mismatch"] is False
+
+
+@pytest.mark.parametrize("prov,refused", [({}, False), ({"id": None, "b": 1}, False), ({"id": [], "b": 1}, False),
+                                          ({"id": "another", "b": 1}, True)])
+def test_only_a_well_formed_foreign_provenance_refuses_the_resume(tmp_path, monkeypatch, prov, refused):
+    # Sol 3, Astra 4: {}, id None or id [] are malformed (rerun), not another run's binding (refusal)
+    calls = []
+    monkeypatch.setattr(D, "_cont_one", _ok); monkeypatch.setattr(D, "run_cells", _pool(calls))
+    q = [{**c, "job": {**c["job"], "provenance": {"id": c["job"]["provenance"]["id"], "b": 1}}} for c in _queue(2)]
+    assert D.run_queue(q, tmp_path, workers=1, gate=_gate())["exit"] == 0
+    _edit(tmp_path / "continuation" / "c1.json", lambda r: r.update(provenance=prov))
+    calls.clear()
+    if refused:
+        with pytest.raises(SystemExit):
+            D.run_queue(q, tmp_path, workers=1, gate=_gate())
+        assert calls == []
+    else:
+        assert D.run_queue(q, tmp_path, workers=1, gate=_gate())["exit"] == 0 and calls == [["c1"]]
