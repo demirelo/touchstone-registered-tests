@@ -40,10 +40,11 @@ def test_a_saved_round1_mismatch_stops_the_queue_on_resume(tmp_path, monkeypatch
     import json
     calls = []
     monkeypatch.setattr(D, "_cont_one", lambda *a: calls.append(a) or {"status": "passed"})
-    q = [{"id": "a", "job": {}, "dir": "x"}, {"id": "b", "job": {}, "dir": "x"}]
+    q = _queue(2)
     (tmp_path / "continuation").mkdir()
-    (tmp_path / "continuation" / "a.json").write_text(json.dumps({"id": "a", "status": "stopped: round 1 differs from the registered doubling"}))
-    res = D.run_queue(q, tmp_path, workers=1, gate={"id": "g", "job": {}, "dir": "x"})
+    (tmp_path / "continuation" / "c0.json").write_text(json.dumps({"id": "c0", "status": "stopped: round 1 differs from the registered doubling",
+                                                                 "provenance": q[0]["job"]["provenance"]}))
+    res = D.run_queue(q, tmp_path, workers=1, gate=_gate())
     assert calls == [] and "mismatch" in res["gate"]
 
 
@@ -77,12 +78,13 @@ def _dbl_dir(jobs):
     for j in jobs:
         _w(d / "doubling" / (R._safe(j["id"]) + ".json"),
            {"heldout": {"knobs": dict(CKNOBS), "gain": [0.5, 0.5]}, "attack_change": 0.0, "reference_change": 0.0})
+        _w(R.path_of(d, j["id"]), {"stage": "search", "attack": {"best_knobs": dict(CKNOBS)}})
     return str(d)
 
 
 def _queue(n, churn=0.05):
-    jobs = [{"id": f"j{i}", "churn": churn, "family": "D2+H3", "provenance": {"id": f"j{i}"}, "mkt": {"seeds_eval": [11, 12]}}
-            for i in range(n)]
+    jobs = [{"id": f"q{i}@rho0.2|F111|D2+H3|profit", "churn": churn, "family": "D2+H3", "provenance": {"id": f"j{i}"},
+             "mkt": {"seeds_eval": [11, 12]}} for i in range(n)]
     d = _dbl_dir(jobs)
     return [{"id": f"c{i}", "job": j, "dir": d} for i, j in enumerate(jobs)]
 
@@ -142,7 +144,7 @@ def test_resume_refuses_a_saved_record_of_another_job(tmp_path, monkeypatch):
 # ---- review rep-impl-r1 (Sol 3, 4, 5, 6; Astra 4, 7, 8): the gate, exact identity, failure paths, validation -----------
 
 def _gate():
-    j = {"id": "g", "churn": 0.05, "family": "D2+H3", "provenance": {"id": "g"}, "mkt": {"seeds_eval": [11, 12]}}
+    j = {"id": "g@rho0.2|F111|D2+H3|profit", "churn": 0.05, "family": "D2+H3", "provenance": {"id": "g"}, "mkt": {"seeds_eval": [11, 12]}}
     return {"id": "menu-p0.05|g", "job": j, "dir": _dbl_dir([j])}
 
 
@@ -286,16 +288,18 @@ def _cont(base, kind, p, job, status="passed", gain=(0.5, 0.7), gate=EXACT, sub=
         _cell(base, job, p, kind); db = D.doubling_of(base / f"{kind}-p{p:g}", job["id"])
     if isinstance(gate, dict):
         gate = {**gate, "heldout_knobs": db["heldout"]["knobs"], "heldout_mean": float(np.mean(db["heldout"]["gain"]))}
-    rd = lambda i, ch: {"round": i, "attack_f": 1.0, "attack_change": ch[0], "reference_f": 1.0, "reference_change": ch[1],
-                        "best_knobs": dict(CKNOBS)}
-    r1 = rd(1, (db["attack_change"], db["reference_change"]))
+    rd = lambda i, ch, k: {"round": i, "attack_f": 1.0, "attack_change": ch[0], "reference_f": 1.0, "reference_change": ch[1],
+                           "best_knobs": dict(k)}
+    r1 = rd(1, (db["attack_change"], db["reference_change"]), db["heldout"]["knobs"])   # round 1 repeats the doubling
     mr = 1 if sub == "gate" else 3
     if status == "passed":
-        rounds = [r1] if _passes(r1) else [r1, rd(2, (0.0, 0.0))]
+        rounds = [r1] if _passes(r1) else [r1, rd(2, (0.0, 0.0), CKNOBS)]
     else:
-        rounds = [r1] + [rd(i, (0.01, 0.0)) for i in range(2, mr + 1)]
+        rounds = [r1] + [rd(i, (0.01, 0.0), CKNOBS) for i in range(2, mr + 1)]
     h = {"knobs": dict(CKNOBS), "seeds": job["mkt"]["seeds_eval"], "gain": list(gain), "profit_attack": [g + 1 for g in gain],
          "profit_ref": [1.0] * len(gain), "sstar": [4.0] * len(gain), "eff_attack": [0.8] * len(gain)}
+    if len(rounds) == 1:                     # a one-round winner is the doubling's winner, with its held-out values
+        h = {**{k: v for k, v in db["heldout"].items()}}
     _w(base / "continuation" / sub / (R._safe(key) + ".json"), {"stage": "convergence", "id": key, "status": status,
                                                                "provenance": job["provenance"], "round1_gate": gate,
                                                                "rounds": rounds, "heldout": h})
@@ -461,8 +465,7 @@ def test_a_near_identical_continuation_round1_is_a_mismatch(tmp_path):
 
 
 @pytest.mark.parametrize("change", [{"rounds": []}, {"rounds": [{"round": 1}]}, {"id": "other"},
-                                    {"heldout": "nan-gain"}, {"heldout": "zero-sstar"}, {"rounds": "two-passed"},
-                                    {"rounds": "other-knobs"}])
+                                    {"heldout": "nan-gain"}, {"heldout": "zero-sstar"}, {"rounds": "two-passed"}])
 def test_a_malformed_continuation_record_falls_back_to_the_frozen_winner(tmp_path, change):
     import json
     import convergence_v2  # noqa: F401
@@ -692,12 +695,15 @@ def test_the_round1_comparison_must_match_this_cells_doubling_record(tmp_path, f
     import revision_v2 as R
     a, gj, key = _flagged_with_gate(tmp_path)
     for p in (tmp_path / "continuation" / (R._safe(key) + ".json"),):
-        r = json.loads(p.read_text()); r["round1_gate"] = {**r["round1_gate"], field: value}; p.write_text(json.dumps(r))
-    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))
-    assert col["primary"]["0"]["rep0"]["R3"]["gain"] == [0.1, 0.3] and col["counts"]["not continued"] == 1
+        r = json.loads(p.read_text()); good = r["round1_gate"][field]
+        r["round1_gate"] = {**r["round1_gate"], field: value}; p.write_text(json.dumps(r))
+    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))     # review rep-impl-r5: a measured disagreement is a
+    assert col["round1_mismatch"] is True and col["primary"] is None      # round-1 mismatch (stop), not a fallback
+    p.write_text(json.dumps({**r, "round1_gate": {**r["round1_gate"], field: good}}))
     gp = tmp_path / "continuation" / "gate" / (R._safe(D._key("menu", 0.05, gj["id"])) + ".json")
     r = json.loads(gp.read_text()); r["round1_gate"] = {**r["round1_gate"], field: value}; gp.write_text(json.dumps(r))
-    assert D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))["gate_ok"] is False
+    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))
+    assert col["gate_ok"] is False and col["round1_mismatch"] is True and col["primary"] is None
 
 
 @pytest.mark.parametrize("where,field,value", [("cont", "gain", 0.5), ("cont", "seeds", 11), ("cont", "sstar", 4.0),
@@ -773,3 +779,174 @@ def good_at(rec, path):
     for k in path:
         x = x[k]
     return x
+
+
+# ---- review rep-impl-r5 (Sol 1-4; Astra 1-4) ------------------------------------------------------------------------------
+
+def _cpath(tmp_path, key, sub=""):
+    import convergence_v2  # noqa: F401
+    import revision_v2 as R
+    return tmp_path / "continuation" / sub / (R._safe(key) + ".json")
+
+
+def _edit(p, fn):
+    import json
+    r = json.loads(p.read_text()); fn(r); p.write_text(json.dumps(r))
+
+
+@pytest.mark.parametrize("edit", ["round1-change", "round1-knobs"])
+def test_a_measured_round1_disagreement_is_a_mismatch_in_collect(tmp_path, edit):
+    # Sol 2, Astra 1: a round 1 that differs from the cell's doubling record must stop everything, not fall back
+    a, gj, key = _flagged_with_gate(tmp_path)
+    if edit == "round1-change":
+        _edit(_cpath(tmp_path, key), lambda r: r["rounds"][0].update(attack_change=0.02))
+    else:
+        _edit(_cpath(tmp_path, key), lambda r: r["rounds"][0].update(best_knobs={"u0": 7.0, "x": 7}))
+    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))
+    assert col["round1_mismatch"] is True and col["primary"] is None
+
+
+def test_a_one_round_gate_whose_heldout_gains_differ_from_its_doubling_is_a_mismatch(tmp_path):
+    # Sol 1: a consistent one-round gate stayed valid after its held-out gains changed
+    a, gj, key = _flagged_with_gate(tmp_path)
+    _edit(_cpath(tmp_path, D._key("menu", 0.05, gj["id"]), "gate"), lambda r: r["heldout"].update(gain=[999.0, 999.0]))
+    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))
+    assert col["round1_mismatch"] is True and col["primary"] is None
+
+
+def test_a_saved_measured_round1_disagreement_stops_the_queue_with_exit_4_and_no_rerun(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(D, "_cont_one", _ok); monkeypatch.setattr(D, "run_cells", _pool(calls))
+    q = _queue(2)
+    assert D.run_queue(q, tmp_path, workers=1, gate=_gate())["exit"] == 0
+    _edit(tmp_path / "continuation" / "c1.json", lambda r: r["rounds"][0].update(attack_change=0.02))
+    calls.clear(); res = D.run_queue(q, tmp_path, workers=1, gate=_gate())
+    assert res["exit"] == 4 and calls == []
+
+
+@pytest.mark.parametrize("what", ["cont-root-list", "cont-root-int", "gate-root-list", "gain-overflow", "tiny-sstar",
+                                  "bool-round", "ev-tiny-sstar", "ev-overflow"])
+def test_remaining_malformed_values_are_failed_checks_not_errors(tmp_path, what):
+    # Sol 3, Astra 2-4: JSON roots that are not objects, 10**400, a normalizer that is zero after division by N, round True
+    import json
+    a, gj, key = _flagged_with_gate(tmp_path)
+    cp, gp = _cpath(tmp_path, key), _cpath(tmp_path, D._key("menu", 0.05, gj["id"]), "gate")
+    ev, _ = _paths(tmp_path, a)
+    if what == "cont-root-list":
+        cp.write_text("[1]")
+    elif what == "cont-root-int":
+        cp.write_text("7")
+    elif what == "gate-root-list":
+        gp.write_text("[]")
+    elif what == "gain-overflow":
+        _edit(cp, lambda r: r["heldout"].update(gain=[10 ** 400, 0.1]))
+    elif what == "tiny-sstar":
+        _edit(cp, lambda r: r["heldout"].update(sstar=[5e-324, 4.0]))
+    elif what == "bool-round":
+        _edit(cp, lambda r: r["rounds"][0].update(round=True))
+    elif what == "ev-tiny-sstar":
+        _edit(ev, lambda r: r.update(sstar=[5e-324, 4.0]))
+    elif what == "ev-overflow":
+        _edit(ev, lambda r: r.update(gain=[10 ** 400, 0.1]))
+    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))          # must not raise
+    if what == "gate-root-list":
+        assert col["gate_ok"] is False and col["primary"] is None
+    elif what.startswith("ev-"):
+        assert len(col["unscorable"]) == 1
+    else:
+        assert col["primary"]["0"]["rep0"]["R3"]["gain"] == [0.1, 0.3] and col["counts"]["not continued"] == 1
+
+
+@pytest.mark.parametrize("what", ["cdiag-seeds-scalar", "cdiag-root-list", "fdiag-root-list", "binding-root-list",
+                                  "binding-cells-list"])
+def test_malformed_diagnostics_and_bindings_give_no_audit_count_and_no_error(tmp_path, what):
+    import json
+    jobs, gate, a5, key = _diag_setup(tmp_path)
+    cd = _cpath(tmp_path, key, "diagnostics")
+    _w(cd, {"stage": "continued diagnostics", "id": key, "provenance": a5["provenance"], "knobs": dict(CKNOBS),
+            "seeds": [11, 12], "normalized": [0.1, 0.2], "shares": _sh(100, 5)})
+    d = tmp_path / "menu-p0.05"
+    if what == "cdiag-seeds-scalar":
+        _edit(cd, lambda r: r.update(seeds=11))
+    elif what == "cdiag-root-list":
+        cd.write_text("[]")
+    elif what == "fdiag-root-list":
+        (d / "diagnostics.json").write_text("[]")
+    elif what == "binding-root-list":
+        (d / D.BINDING).write_text("[]")
+    elif what == "binding-cells-list":
+        _edit(d / D.BINDING, lambda r: r.update(cells=[]))
+    col = D.collect(tmp_path, jobs, gate=gate)                            # must not raise
+    if what.startswith("cdiag"):
+        assert "rep0" not in col["audit"]["primary"].get("0.05", {})
+    else:
+        assert "rep0" not in col["audit"]["frozen"].get("0.05", {})
+
+
+def _all_mutations(rec, path=()):
+    """Review rep-impl-r5: the root itself, every field, and every list element (plain values too), each replaced by
+    every bad value."""
+    for b in BAD_VALUES:
+        yield path, b
+    if isinstance(rec, dict):
+        for k, v in rec.items():
+            yield from _all_mutations(v, path + (k,))
+    elif isinstance(rec, list):
+        for i, v in enumerate(rec):
+            yield from _all_mutations(v, path + (i,))
+
+
+def _put(rec, path, value):
+    import copy
+    if not path:
+        return value
+    r = copy.deepcopy(rec); x = r
+    for k in path[:-1]:
+        x = x[k]
+    x[path[-1]] = value
+    return r
+
+
+UNREAD = ("claim", "cost", "restarts", "frozen_best_f", "min_rounds", "embedded_doubled_d2h3", "passed_round",
+          "best_source", "restarts_total", "cma_seeds", "mean_normalized")
+
+
+@pytest.mark.parametrize("which", ["cont", "gate", "ev", "db", "cdiag", "fdiag", "binding"])
+def test_every_mutation_of_every_record_kind_is_handled(tmp_path, which):
+    # review rep-impl-r5 (Sol 4, Astra 4): the guard covers roots, all list elements and the diagnostics record kinds,
+    # uses strict equality for its exemptions (True is not 1), and requires each kind's failure outcome
+    import json
+    jobs, gate, a5, key = _diag_setup(tmp_path)
+    cd = _cpath(tmp_path, key, "diagnostics")
+    _w(cd, {"stage": "continued diagnostics", "id": key, "provenance": a5["provenance"], "knobs": dict(CKNOBS),
+            "seeds": [11, 12], "normalized": [0.1, 0.2], "shares": _sh(100, 5)})
+    d = tmp_path / "menu-p0.05"; ev, db = _paths(tmp_path, a5, p=0.05)
+    p = {"cont": _cpath(tmp_path, key), "gate": _cpath(tmp_path, gate["id"], "gate"), "ev": ev, "db": db, "cdiag": cd,
+         "fdiag": d / "diagnostics.json", "binding": d / D.BINDING}[which]
+    base = D.collect(tmp_path, jobs, gate=gate)
+    assert base["counts"]["continued"] == 1 and base["audit"]["primary"]["0.05"]["rep0"] == (5, 100)
+    assert base["audit"]["frozen"]["0.05"]["rep0"] == (30, 100) and base["gate_ok"] is True
+    good = json.loads(p.read_text()); n = 0
+    for path, bad in _all_mutations(good):
+        if any(isinstance(k, str) and k in UNREAD for k in path):
+            continue
+        old = good_at(good, path) if path else good
+        if D._same(old, bad) or (bad == 0.5 and D._num(old)):       # same value, or another valid number
+            continue
+        p.write_text(json.dumps(_put(good, path, bad)))
+        col = D.collect(tmp_path, jobs, gate=gate)                    # never raises
+        rep0 = lambda s: col["audit"][s].get("0.05", {}).get("rep0")
+        if which == "cont":
+            ok = col["primary"] is None or col["counts"]["continued"] == 0
+        elif which == "gate":
+            ok = col["primary"] is None and col["gate_ok"] is False
+        elif which in ("ev", "db"):
+            ok = len(col["unscorable"]) >= 1
+        elif which == "cdiag":
+            ok = rep0("primary") is None
+        else:
+            ok = rep0("frozen") is None
+        assert ok, (which, path, bad)
+        n += 1
+    p.write_text(json.dumps(good))
+    assert n > 20
