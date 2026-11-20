@@ -48,7 +48,7 @@ def test_a_saved_round1_mismatch_stops_the_queue_on_resume(tmp_path, monkeypatch
 
 
 EXACT = {"pass": True, "max_knob_rel": 0.0, "max_change_abs": 0.0, "max_gain_abs": 0.0, "problems": [],
-         "heldout_knobs": {"u0": 3.0, "x": 2}, "heldout_mean": 0.6}
+         "heldout_knobs": {"u0": 3.0, "x": 2}, "heldout_mean": 0.5}
 CKNOBS = {"u0": 3.0, "x": 2}
 
 
@@ -68,10 +68,23 @@ def _full(job, status="passed", gate=None, mr=1):
                                                       "profit_ref": [1.0] * len(g), "sstar": [4.0] * len(g), "eff_attack": [0.8] * len(g)}}
 
 
+def _dbl_dir(jobs):
+    """A rate directory holding each job's doubling record, matching _full's round 1 (knobs, gains 0.5, zero changes)."""
+    import tempfile
+    import convergence_v2  # noqa: F401
+    import revision_v2 as R
+    d = Path(tempfile.mkdtemp())
+    for j in jobs:
+        _w(d / "doubling" / (R._safe(j["id"]) + ".json"),
+           {"heldout": {"knobs": dict(CKNOBS), "gain": [0.5, 0.5]}, "attack_change": 0.0, "reference_change": 0.0})
+    return str(d)
+
+
 def _queue(n, churn=0.05):
-    return [{"id": f"c{i}", "job": {"id": f"j{i}", "churn": churn, "family": "D2+H3", "provenance": {"id": f"j{i}"},
-                                    "mkt": {"seeds_eval": [11, 12]}}, "dir": "x"}
+    jobs = [{"id": f"j{i}", "churn": churn, "family": "D2+H3", "provenance": {"id": f"j{i}"}, "mkt": {"seeds_eval": [11, 12]}}
             for i in range(n)]
+    d = _dbl_dir(jobs)
+    return [{"id": f"c{i}", "job": j, "dir": d} for i, j in enumerate(jobs)]
 
 
 def test_every_continuation_round_is_admitted_with_a_nonzero_estimate(tmp_path, monkeypatch):
@@ -129,8 +142,8 @@ def test_resume_refuses_a_saved_record_of_another_job(tmp_path, monkeypatch):
 # ---- review rep-impl-r1 (Sol 3, 4, 5, 6; Astra 4, 7, 8): the gate, exact identity, failure paths, validation -----------
 
 def _gate():
-    return {"id": "menu-p0.05|g", "job": {"id": "g", "churn": 0.05, "family": "D2+H3", "provenance": {"id": "g"},
-                                          "mkt": {"seeds_eval": [11, 12]}}, "dir": "x"}
+    j = {"id": "g", "churn": 0.05, "family": "D2+H3", "provenance": {"id": "g"}, "mkt": {"seeds_eval": [11, 12]}}
+    return {"id": "menu-p0.05|g", "job": j, "dir": _dbl_dir([j])}
 
 
 def _pool(calls, outcome=None):
@@ -260,14 +273,32 @@ def _cell(base, job, p, kind="menu", gain=(0.1, 0.3), incomplete=False, ev_prov=
 
 
 def _cont(base, kind, p, job, status="passed", gain=(0.5, 0.7), gate=EXACT, sub=""):
+    """A continuation record consistent with the cell's own doubling record (written unflagged if missing): round 1
+    repeats the doubling's changes, the comparison carries its held-out knobs and mean; a pass comes in round 1 if the
+    doubling passes, else in round 2; the held-out winner is the last round's."""
+    import numpy as np
     import convergence_v2  # noqa: F401
     import revision_v2 as R
+    from convergence_v2 import _passes
     key = D._key(kind, p, job["id"])
+    db = D.doubling_of(base / f"{kind}-p{p:g}", job["id"])
+    if db is None:
+        _cell(base, job, p, kind); db = D.doubling_of(base / f"{kind}-p{p:g}", job["id"])
+    if isinstance(gate, dict):
+        gate = {**gate, "heldout_knobs": db["heldout"]["knobs"], "heldout_mean": float(np.mean(db["heldout"]["gain"]))}
+    rd = lambda i, ch: {"round": i, "attack_f": 1.0, "attack_change": ch[0], "reference_f": 1.0, "reference_change": ch[1],
+                        "best_knobs": dict(CKNOBS)}
+    r1 = rd(1, (db["attack_change"], db["reference_change"]))
+    mr = 1 if sub == "gate" else 3
+    if status == "passed":
+        rounds = [r1] if _passes(r1) else [r1, rd(2, (0.0, 0.0))]
+    else:
+        rounds = [r1] + [rd(i, (0.01, 0.0)) for i in range(2, mr + 1)]
     h = {"knobs": dict(CKNOBS), "seeds": job["mkt"]["seeds_eval"], "gain": list(gain), "profit_attack": [g + 1 for g in gain],
          "profit_ref": [1.0] * len(gain), "sstar": [4.0] * len(gain), "eff_attack": [0.8] * len(gain)}
     _w(base / "continuation" / sub / (R._safe(key) + ".json"), {"stage": "convergence", "id": key, "status": status,
                                                                "provenance": job["provenance"], "round1_gate": gate,
-                                                               "rounds": _rounds(status, 1 if sub == "gate" else 3), "heldout": h})
+                                                               "rounds": rounds, "heldout": h})
     return key
 
 
@@ -536,9 +567,10 @@ def test_a_saved_continuation_record_with_an_unknown_status_is_not_reused(tmp_pa
     q = _queue(1)
     monkeypatch.setattr(D, "run_cells", _pool(calls, {"c0": {"status": "odd"}}))
     D.run_queue(q, tmp_path, 1, gate=_gate())
-    monkeypatch.setattr(D, "run_cells", _pool(calls))
-    with pytest.raises(SystemExit):
-        D.run_queue(q, tmp_path, 1, gate=_gate())
+    calls.clear(); monkeypatch.setattr(D, "run_cells", _pool(calls))
+    assert D.run_queue(q, tmp_path, 1, gate=_gate())["exit"] == 0       # review rep-impl-r4 (Astra 3): set aside and rerun,
+    assert calls == [["c0"]]                                            # not a refusal
+    assert list((tmp_path / "continuation" / "superseded").glob("c0.*.json"))
 
 
 def test_a_lost_diagnostics_worker_writes_the_restart_estimate(tmp_path, monkeypatch):
@@ -635,3 +667,109 @@ def test_diag_ok_needs_one_episode_per_seed_with_every_age_bin(shares, ok):
     # review rep-impl-r3 (Sol 3, Astra 2), on diag_ok directly: two seeds need two episodes of four age bins each
     row = {"knobs": KNOBS, "seeds": [11, 12], "normalized": [0.1, 0.2], "shares": shares}
     assert D.diag_ok(row, [11, 12], KNOBS) is ok
+
+
+# ---- review rep-impl-r4 (Sol 1; Astra 1-4) ------------------------------------------------------------------------------
+
+def test_a_continued_winners_audit_count_does_not_need_the_frozen_diagnostics(tmp_path):
+    # Sol 1, Astra 4: removing only the frozen binding dropped a valid continued winner's audit count
+    import convergence_v2  # noqa: F401
+    import revision_v2 as R
+    jobs, gate, a5, key = _diag_setup(tmp_path)
+    _w(tmp_path / "continuation" / "diagnostics" / (R._safe(key) + ".json"),
+       {"stage": "continued diagnostics", "id": key, "provenance": a5["provenance"], "knobs": dict(CKNOBS),
+        "seeds": [11, 12], "normalized": [0.1, 0.2], "shares": _sh(100, 5)})
+    (tmp_path / "menu-p0.05" / D.BINDING).rename(tmp_path / "menu-p0.05" / "moved.json")
+    col = D.collect(tmp_path, jobs, gate=gate)
+    assert "rep0" not in col["audit"]["frozen"].get("0.05", {}) and col["audit"]["primary"]["0.05"]["rep0"] == (5, 100)
+
+
+@pytest.mark.parametrize("field,value", [("heldout_knobs", {"u0": 999.0, "x": 999}), ("heldout_mean", 999.0)])
+def test_the_round1_comparison_must_match_this_cells_doubling_record(tmp_path, field, value):
+    # Astra 1: zero-difference summary fields with unrelated knobs and mean passed as identical
+    import json
+    import convergence_v2  # noqa: F401
+    import revision_v2 as R
+    a, gj, key = _flagged_with_gate(tmp_path)
+    for p in (tmp_path / "continuation" / (R._safe(key) + ".json"),):
+        r = json.loads(p.read_text()); r["round1_gate"] = {**r["round1_gate"], field: value}; p.write_text(json.dumps(r))
+    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))
+    assert col["primary"]["0"]["rep0"]["R3"]["gain"] == [0.1, 0.3] and col["counts"]["not continued"] == 1
+    gp = tmp_path / "continuation" / "gate" / (R._safe(D._key("menu", 0.05, gj["id"])) + ".json")
+    r = json.loads(gp.read_text()); r["round1_gate"] = {**r["round1_gate"], field: value}; gp.write_text(json.dumps(r))
+    assert D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))["gate_ok"] is False
+
+
+@pytest.mark.parametrize("where,field,value", [("cont", "gain", 0.5), ("cont", "seeds", 11), ("cont", "sstar", 4.0),
+                                               ("ev", "gain", 0.5), ("ev", "seeds", 11), ("ev", "sstar", 4.0)])
+def test_scalar_values_where_lists_belong_are_invalid_not_errors(tmp_path, where, field, value):
+    # Astra 2: a scalar held-out gain, seed list or normalizer raised TypeError in collect
+    import json
+    import convergence_v2  # noqa: F401
+    import revision_v2 as R
+    a, gj, key = _flagged_with_gate(tmp_path)
+    if where == "cont":
+        p = tmp_path / "continuation" / (R._safe(key) + ".json")
+        r = json.loads(p.read_text()); r["heldout"][field] = value; p.write_text(json.dumps(r))
+        col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))
+        assert col["primary"]["0"]["rep0"]["R3"]["gain"] == [0.1, 0.3] and col["counts"]["not continued"] == 1
+    else:
+        ev, _ = _paths(tmp_path, a)
+        r = json.loads(ev.read_text()); r[field] = value; ev.write_text(json.dumps(r))
+        assert len(D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))["unscorable"]) == 1
+
+
+BAD_VALUES = (None, 0.5, "x", [], {}, [float("nan")], True)
+
+
+def _mutations(rec, path=()):
+    """Every field of a record (nested dicts and the first element of lists), each replaced by each bad value."""
+    if isinstance(rec, dict):
+        for k, v in rec.items():
+            for b in BAD_VALUES:
+                yield path + (k,), b
+            yield from _mutations(v, path + (k,))
+    elif isinstance(rec, list) and rec:
+        yield from _mutations(rec[0], path + (0,))
+
+
+def _set(rec, path, value):
+    import copy
+    r = copy.deepcopy(rec); x = r
+    for k in path[:-1]:
+        x = x[k]
+    x[path[-1]] = value
+    return r
+
+
+@pytest.mark.parametrize("which", ["cont", "gate", "ev", "db"])
+def test_no_malformed_record_field_raises_in_collect(tmp_path, which):
+    # review rep-impl-r4, guard against the class (record checks were incomplete in rounds 2, 3 and 4): every field of
+    # every record kind collect reads, at every nesting level, replaced by every wrong type; collect must never raise, and
+    # a damaged continuation or gate record never yields a continued winner
+    import json
+    import convergence_v2  # noqa: F401
+    import revision_v2 as R
+    a, gj, key = _flagged_with_gate(tmp_path)
+    ev, db = _paths(tmp_path, a)
+    p = {"cont": tmp_path / "continuation" / (R._safe(key) + ".json"),
+         "gate": tmp_path / "continuation" / "gate" / (R._safe(D._key("menu", 0.05, gj["id"])) + ".json"), "ev": ev, "db": db}[which]
+    good = json.loads(p.read_text()); n = 0
+    for path, bad in _mutations(good):
+        if path[0] in ("claim", "cost", "restarts", "frozen_best_f", "min_rounds", "embedded_doubled_d2h3", "passed_round"):
+            continue                                     # fields no consumer reads
+        p.write_text(json.dumps(_set(good, path, bad)))
+        col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))   # must not raise
+        unread = path[0] == "rounds" and path[-1] in ("best_source", "restarts_total", "cma_seeds")
+        if which == "cont" and col["primary"] and bad != 0.5 and not unread:          # 0.5 is a valid number
+            assert col["counts"]["continued"] == 0 or bad == good_at(good, path), (path, bad)
+        n += 1
+    p.write_text(json.dumps(good))
+    assert n > 30
+
+
+def good_at(rec, path):
+    x = rec
+    for k in path:
+        x = x[k]
+    return x

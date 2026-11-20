@@ -92,7 +92,9 @@ Each ruling quotes the plan text it applies (`test_notes.py`); anything the plan
    of `churn_v2.AGE_EDGES`; for continued rows also stage, id and provenance; review r2, r3). A frozen row also needs
    `diagnostics_binding.json`, written by the rate stage after the diagnostics step and before the inventory: it names
    the rate, the hash of `diagnostics.json`, and per cell the job id, its provenance and the hashes of the search and
-   doubling records the diagnostics reran (review r3).
+   doubling records the diagnostics reran (review r3). The primary set's count comes from the primary winner's own
+   diagnostics: a continued winner's from its continued diagnostics, independent of the frozen row; a frozen winner's
+   from the frozen row (review r4).
 9. **Publication height.** `PUBH` is required: a block height, or `none`. Plan: "Without publication before H, the draw
    wrapper records the draw as nonconfirmatory". The push of the manifest commit needs the author's consent first.
 10. **The record binding.** Plan: "Every record binds to this plan's hash, the draw record, the configuration hashes and
@@ -103,8 +105,10 @@ Each ruling quotes the plan text it applies (`test_notes.py`); anything the plan
     set and every dependency hash, positive normalizers, and the doubling flag against the frozen rule; every
     continuation and gate record for stage, id, provenance, a known status, its own identical comparison with a finite
     round-1 winner, rounds that agree with the status (Run B's pass rule) and a held-out winner equal to the last
-    round's, on the job's own evaluation seeds (the gate included). The same check runs before a saved record is reused
-    on resume; a record that fails it is set aside and its cell rerun. In the analysis, a flagged cell whose
+    round's, on the job's own evaluation seeds (the gate included); a measured round 1 must also agree with the cell's
+    own doubling record (held-out knobs, held-out mean, both changes) and carry Run B's empty problems list, and a
+    wrong value type anywhere is a failed check, not an error (review r4). The same check runs before a saved record is reused
+    on resume; a record that fails it, an unknown status included, is set aside and its cell rerun (review r4). In the analysis, a flagged cell whose
     continuation record fails it keeps its validated frozen winner and counts as not continued, as section 4 says for
     missing or nonfinite output (review r2, r3).
 11. **Kept worker counts.** Plan: "lowered if needed, then kept across restarts". Search workers: `search_workers.json`;
