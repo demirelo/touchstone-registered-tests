@@ -1,0 +1,125 @@
+### old launcher 30605c9 (fc9eacb9533c0624a7cb94ded455c53b1661beeb24755e3ff56f57df918372e6  /private/tmp/claude-502/-Users-oemer-demirel-Projects-touchstone/a48c0006-982d-4d16-9bac-5ae26e145fac/scratchpad/hrep/rep_pod_base.sh), harness 48438f65496b980c0b8cee02818e30550ec5f55933d76c828b4104421fe0618e
+case ends ok
+== pod 2: a calibration not made on x86 is refused
+/private/tmp/claude-502/-Users-oemer-demirel-Projects-touchstone/a48c0006-982d-4d16-9bac-5ae26e145fac/scratchpad/hrep/harness_x86_old.sh: line 159: 90929 Alarm clock: 14            POD1TAG=${POD1V-p1} PUBH=${PUBHV:-974999} EXPECT=$C MAXCPH=0.70 HARD=${HARDX:-1.3} LEDGER=$H/ledger.json DRYRUN=${DRY:-} perl -e 'alarm 1500; exec @ARGV' bash rep_pod.sh $r c.tgz $B $T $3 out > run.out 2>&1
+14:09 spend estimate so far (not a record): 1499s at the ceiling 0.70 USD/h = 0.292 USD (pod events in /var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.w0IFJluqTS/ts-rep.attempts)
+14:09 record the spend with: podctl.py spend ts-rep (at least 1 h after the watchdog ends; logs_rep2_t/watchdog.log), then budget_v2.py --record with a tag starting replication-
+14:09 end: RUNNING
+pods left: 0, creation requests: 1 (expected 0), exit 142 (expected 1)
+14:14 WATCHDOG: no pod named ts-rep for 300s after the launcher was done; record the spend with `podctl.py spend ts-rep` from 3600s after now
+SCENARIO FAILED
+SCENARIO FAILED (launcher output lacks: was not made on Linux x86 \('Linux' 'aarch64'\))
+Traceback (most recent call last):
+  File "<stdin>", line 3, in <module>
+AssertionError
+SCENARIO FAILED (ledger snapshot)
+SCENARIO FAILED (no retry after a failed pull on a failure state)
+Traceback (most recent call last):
+  File "<stdin>", line 5, in <module>
+AssertionError: (138856, 189770)
+SCENARIO FAILED (accounting)
+== pod 1: the generated remote script with a stub driver
+SCENARIO FAILED (remote pushed_1.sh, STUB='admit@0.05=refuse': last line '== RUN OK 14:14', expected '== STOPPED BEFORE instances \(cap, admission\)')
+SCENARIO FAILED (remote pushed_1.sh, STUB='admit@0.05=crash': last line '== RUN OK 14:14', expected '== RUN FAILED at admission before instances')
+SCENARIO FAILED (remote pushed_1.sh, STUB='instances=crash': last line '== RUN OK 14:14', expected '== RUN FAILED at instances')
+SCENARIO FAILED (remote pushed_1.sh, STUB='calibrate=crash': last line '== RUN OK 14:14', expected '== RUN FAILED at calibrate')
+SCENARIO FAILED (remote pushed_1.sh, STUB='admit@7.60=refuse': last line '== RUN OK 14:14', expected '== STOPPED BEFORE menu \(cap, admission\)')
+SCENARIO FAILED (remote pushed_1.sh, STUB='menu=crash': last line '== RUN OK 14:14', expected '== RUN FAILED at menu')
+SCENARIO FAILED (remote pushed_1.sh, STUB='cthr=crash': last line '== RUN OK 14:14', expected '== RUN FAILED at cthr')
+SCENARIO FAILED (remote pushed_1.sh, STUB='': last line '== STOPPED BEFORE rates p0 (cap) 14:14', expected '== STOPPED BEFORE instances \(cap\)')
+Traceback (most recent call last):
+  File "<stdin>", line 6, in <module>
+AssertionError
+SCENARIO FAILED (pod 1 remote calls)
+== pod 2: the generated remote script with a stub driver
+remote ok (pod 2): 20 end states; p0, gate0, churn, continue, inventory with the expected flags
+== pod 2: a lost continuation worker restarts the stage once on 3 workers
+restart ok: admission with the driver's estimate for 3 workers, then the stage again on 3 workers
+== the real guards.py admission inside the generated remote script
+SCENARIO FAILED (remote pushed_acct.sh, STUB='': last line '== RUN OK 14:14', expected '== STOPPED BEFORE menu \(cap, admission\)')
+Traceback (most recent call last):
+  File "<stdin>", line 3, in <module>
+AssertionError: [['run', '--frozen', 'python', 'docs/revision/followup2/guards.py', 'admit', '--cap-usd', '33', '--usd-per-hour', '0.70', '--started-at', '1795178681', '--attempts', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/rep.attempts', '--ledger', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/rep.ledger.json', '--run-tag', 'replication', '--stop-file', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/STOP', '--soft-deadline', '1795317537', '--hours', '1.68'], ['run', '--frozen', 'python', 'docs/revision/followup3/rep_v2.py', '--stage', 'rates', '--rates', 'p0', '--out', 'results/v2/followup3-rep', '--manifest', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/bundle/draw/manifest.json', '--draw', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/bundle/draw/draw.json', '--started', '1795178681', '--usd-per-hour', '0.70', '--stop-usd', '33', '--prior-usd', '6.0', '--stop-file', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/STOP', '--soft-deadline', '1795317537', '--workers-search', '16', '--peak-search', '254115840', '--workers-eval', '9'], ['run', '--frozen', 'python', 'docs/revision/followup2/guards.py', 'admit', '--cap-usd', '33', '--usd-per-hour', '0.70', '--started-at', '1795178681', '--attempts', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/rep.attempts', '--ledger', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/rep.ledger.json', '--run-tag', 'replication', '--stop-file', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/STOP', '--soft-deadline', '1795317537', '--hours', '1.20'], ['run', '--frozen', 'python', 'docs/revision/followup3/rep_v2.py', '--stage', 'gate0', '--out', 'results/v2/followup3-rep', '--manifest', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/bundle/draw/manifest.json', '--draw', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/bundle/draw/draw.json', '--started', '1795178681', '--usd-per-hour', '0.70', '--stop-usd', '33', '--prior-usd', '6.0', '--stop-file', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/STOP', '--soft-deadline', '1795317537', '--workers-search', '16', '--peak-search', '254115840', '--workers-eval', '9'], ['run', '--frozen', 'python', 'docs/revision/followup2/guards.py', 'admit', '--cap-usd', '33', '--usd-per-hour', '0.70', '--started-at', '1795178681', '--attempts', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/rep.attempts', '--ledger', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/rep.ledger.json', '--run-tag', 'replication', '--stop-file', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/STOP', '--soft-deadline', '1795317537', '--hours', '9.05'], ['run', '--frozen', 'python', 'docs/revision/followup3/rep_v2.py', '--stage', 'rates', '--rates', 'churn', '--out', 'results/v2/followup3-rep', '--manifest', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/bundle/draw/manifest.json', '--draw', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/bundle/draw/draw.json', '--started', '1795178681', '--usd-per-hour', '0.70', '--stop-usd', '33', '--prior-usd', '6.0', '--stop-file', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/STOP', '--soft-deadline', '1795317537', '--workers-search', '16', '--peak-search', '254115840', '--workers-eval', '9'], ['run', '--frozen', 'python', 'docs/revision/followup2/guards.py', 'admit', '--cap-usd', '33', '--usd-per-hour', '0.70', '--started-at', '1795178681', '--attempts', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/rep.attempts', '--ledger', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/rep.ledger.json', '--run-tag', 'replication', '--stop-file', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/STOP', '--soft-deadline', '1795317537', '--hours', '0.51'], ['run', '--frozen', 'python', 'docs/revision/followup3/rep_v2.py', '--stage', 'continue', '--out', 'results/v2/followup3-rep', '--manifest', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/bundle/draw/manifest.json', '--draw', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/bundle/draw/draw.json', '--started', '1795178681', '--usd-per-hour', '0.70', '--stop-usd', '33', '--prior-usd', '6.0', '--stop-file', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/STOP', '--soft-deadline', '1795317537', '--workers-cont', '5', '--peak-cont', '3540000000'], ['run', '--frozen', 'python', 'docs/revision/followup3/rep_v2.py', '--stage', 'inventory', '--out', 'results/v2/followup3-rep', '--manifest', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/bundle/draw/manifest.json', '--draw', '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.pTBRLTUgqY/bundle/draw/draw.json']]
+SCENARIO FAILED (real admission)
+== the embedded verifier
+verifier ok: complete passes (nested rate inventories are indexes, not records); missing, changed, uninventoried and empty fail
+HARNESS FAILED
+### new launcher f2ac8bc (63cdbb505cab011149f46fbd8d78a4ddbcd1feabe5dce4924549fc56b6bf8abb  docs/revision/followup3/rep_pod.sh), harness 48438f65496b980c0b8cee02818e30550ec5f55933d76c828b4104421fe0618e
+case ends ok
+== pod 2: a calibration not made on x86 is refused
+bundle refused
+pods left: 0, creation requests: 0 (expected 0), exit 1 (expected 1)
+cp: pushed_r_remote.sh: No such file or directory
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+FileNotFoundError: [Errno 2] No such file or directory: 'pushed_rep.ledger.json'
+SCENARIO FAILED (ledger snapshot)
+SCENARIO FAILED (no retry after a failed pull on a failure state)
+cp: pushed_r_remote.sh: No such file or directory
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+FileNotFoundError: [Errno 2] No such file or directory: '/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/tmp.0C3Rb9M4LO/pushed_r_remote.sh'
+SCENARIO FAILED (accounting)
+cp: pushed_r_remote.sh: No such file or directory
+cp: pushed_rep.attempts: No such file or directory
+cp: pushed_rep.ledger.json: No such file or directory
+== pod 1: the generated remote script with a stub driver
+SCENARIO FAILED (remote pushed_1.sh, STUB='admit@0.05=refuse': last line 'bash: pushed_1.sh: No such file or directory', expected '== STOPPED BEFORE instances \(cap, admission\)')
+SCENARIO FAILED (remote pushed_1.sh, STUB='admit@0.05=crash': last line 'bash: pushed_1.sh: No such file or directory', expected '== RUN FAILED at admission before instances')
+SCENARIO FAILED (remote pushed_1.sh, STUB='instances=crash': last line 'bash: pushed_1.sh: No such file or directory', expected '== RUN FAILED at instances')
+SCENARIO FAILED (remote pushed_1.sh, STUB='calibrate=crash': last line 'bash: pushed_1.sh: No such file or directory', expected '== RUN FAILED at calibrate')
+SCENARIO FAILED (remote pushed_1.sh, STUB='admit@7.60=refuse': last line 'bash: pushed_1.sh: No such file or directory', expected '== STOPPED BEFORE menu \(cap, admission\)')
+SCENARIO FAILED (remote pushed_1.sh, STUB='menu=crash': last line 'bash: pushed_1.sh: No such file or directory', expected '== RUN FAILED at menu')
+SCENARIO FAILED (pod 1: a failure exit did not write the inventory first)
+SCENARIO FAILED (remote pushed_1.sh, STUB='cthr=crash': last line 'bash: pushed_1.sh: No such file or directory', expected '== RUN FAILED at cthr')
+SCENARIO FAILED (remote pushed_1.sh, STUB='inventory=crash': last line 'bash: pushed_1.sh: No such file or directory', expected '== RUN FAILED at inventory')
+SCENARIO FAILED (remote pushed_1.sh, STUB='': last line 'bash: pushed_1.sh: No such file or directory', expected '== STOPPED BEFORE instances \(cap\)')
+SCENARIO FAILED (pod 1: a stop exit did not write the inventory first)
+SCENARIO FAILED (remote pushed_1.sh, STUB='': last line 'bash: pushed_1.sh: No such file or directory', expected '== RUN OK')
+Traceback (most recent call last):
+  File "<stdin>", line 4, in <module>
+AssertionError: []
+SCENARIO FAILED (pod 1 remote calls)
+== pod 2: the generated remote script with a stub driver
+SCENARIO FAILED (remote pushed_2.sh, STUB='admit@1.68=refuse': last line 'bash: pushed_2.sh: No such file or directory', expected '== STOPPED BEFORE rates p0 \(cap, admission\)')
+SCENARIO FAILED (remote pushed_2.sh, STUB='rates-p0=cap': last line 'bash: pushed_2.sh: No such file or directory', expected '== STOPPED BEFORE a rates p0 stage \(cap, driver admission\)')
+SCENARIO FAILED (remote pushed_2.sh, STUB='rates-p0=crash': last line 'bash: pushed_2.sh: No such file or directory', expected '== RUN FAILED at rates p0')
+SCENARIO FAILED (remote pushed_2.sh, STUB='gate0=gatefail': last line 'bash: pushed_2.sh: No such file or directory', expected '== GATE FAILED at gate0 \(churn path not bit-identical at p = 0\)')
+SCENARIO FAILED (remote pushed_2.sh, STUB='gate0=cap': last line 'bash: pushed_2.sh: No such file or directory', expected '== STOPPED BEFORE a gate0 stage \(cap, driver admission\)')
+SCENARIO FAILED (remote pushed_2.sh, STUB='gate0=crash': last line 'bash: pushed_2.sh: No such file or directory', expected '== RUN FAILED at gate0')
+SCENARIO FAILED (remote pushed_2.sh, STUB='admit@9.05=refuse': last line 'bash: pushed_2.sh: No such file or directory', expected '== STOPPED BEFORE rates churn \(cap, admission\)')
+SCENARIO FAILED (remote pushed_2.sh, STUB='rates-churn=cap': last line 'bash: pushed_2.sh: No such file or directory', expected '== STOPPED BEFORE a rates churn stage \(cap, driver admission\)')
+SCENARIO FAILED (remote pushed_2.sh, STUB='rates-churn=crash': last line 'bash: pushed_2.sh: No such file or directory', expected '== RUN FAILED at rates churn')
+SCENARIO FAILED (pod 2: a failure exit did not write the inventory first)
+SCENARIO FAILED (remote pushed_2.sh, STUB='admit@0.51=refuse': last line 'bash: pushed_2.sh: No such file or directory', expected '== STOPPED BEFORE continue \(cap, admission\)')
+SCENARIO FAILED (remote pushed_2.sh, STUB='continue=mm': last line 'bash: pushed_2.sh: No such file or directory', expected '== GATE FAILED at continue \(round 1 differs from this run's doubling record\)')
+SCENARIO FAILED (remote pushed_2.sh, STUB='continue=cellerr': last line 'bash: pushed_2.sh: No such file or directory', expected '== RUN FAILED at continue \(a cell error; see continuation records\)')
+SCENARIO FAILED (remote pushed_2.sh, STUB='continue=crash': last line 'bash: pushed_2.sh: No such file or directory', expected '== RUN FAILED at continue')
+SCENARIO FAILED (remote pushed_2.sh, STUB='continue=c3': last line 'bash: pushed_2.sh: No such file or directory', expected '== STOPPED BEFORE a continuation round \(cap, driver admission\)')
+SCENARIO FAILED (remote pushed_2.sh, STUB='continue=lost': last line 'bash: pushed_2.sh: No such file or directory', expected '== RUN FAILED at continue \(a worker lost twice; saved cells kept\)')
+SCENARIO FAILED (remote pushed_2.sh, STUB='continue=lostnoest': last line 'bash: pushed_2.sh: No such file or directory', expected '== RUN FAILED at continue restart \(no restart estimate in lost_cells.json\)')
+SCENARIO FAILED (remote pushed_2.sh, STUB='continue=lostthenerr': last line 'bash: pushed_2.sh: No such file or directory', expected '== RUN FAILED at continue \(a cell error; see continuation records\)')
+SCENARIO FAILED (remote pushed_2.sh, STUB='continue=lostonce admit@2.75=refuse': last line 'bash: pushed_2.sh: No such file or directory', expected '== STOPPED BEFORE continue restart \(cap, admission\)')
+SCENARIO FAILED (remote pushed_2.sh, STUB='inventory=crash': last line 'bash: pushed_2.sh: No such file or directory', expected '== RUN FAILED at inventory')
+SCENARIO FAILED (remote pushed_2.sh, STUB='': last line 'bash: pushed_2.sh: No such file or directory', expected '== RUN OK')
+Traceback (most recent call last):
+  File "<stdin>", line 4, in <module>
+AssertionError: []
+SCENARIO FAILED (pod 2 remote calls)
+== pod 2: a lost continuation worker restarts the stage once on 3 workers
+SCENARIO FAILED (remote pushed_2.sh, STUB='continue=lostonce': last line 'bash: pushed_2.sh: No such file or directory', expected '== RUN OK')
+Traceback (most recent call last):
+  File "<stdin>", line 3, in <module>
+AssertionError: []
+SCENARIO FAILED (pod 2 restart)
+== the real guards.py admission inside the generated remote script
+cp: acct.attempts: No such file or directory
+cp: acct.ledger.json: No such file or directory
+SCENARIO FAILED (remote pushed_acct.sh, STUB='': last line 'bash: pushed_acct.sh: No such file or directory', expected '== STOPPED BEFORE menu \(cap, admission\)')
+Traceback (most recent call last):
+  File "<stdin>", line 3, in <module>
+AssertionError: []
+SCENARIO FAILED (real admission)
+== the embedded verifier
+verifier ok: complete passes (nested rate inventories are indexes, not records); missing, changed, uninventoried and empty fail
+HARNESS FAILED
