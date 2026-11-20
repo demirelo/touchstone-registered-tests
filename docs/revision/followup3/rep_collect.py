@@ -116,6 +116,47 @@ def cost_stopped(rec) -> bool:
     return str((rec or {}).get("status", "")) == "stopped at the cost cap"
 
 
+STATUSES = ("passed", "not passed at the cap", "stopped at the cost cap", "stopped: round 1 differs from the registered doubling")
+SMOKE_GATE = "not compared (smoke)"
+
+
+def _knobs_ok(k) -> bool:
+    return isinstance(k, dict) and bool(k) and _finite(list(k.values()))
+
+
+def cont_problem(rec, key: str, job: dict, smoke: bool = False, max_rounds: int = 3) -> str | None:
+    """A continuation record (review rep-impl-r2): stage, id, provenance, a known status; a winner it supplies ("passed"
+    or "not passed at the cap") needs its own identical round-1 comparison (smoke: not compared), one to max_rounds
+    rounds and a finite held-out result on the job's ordered evaluation seeds with finite knobs."""
+    if not isinstance(rec, dict) or rec.get("stage") != "convergence" or rec.get("id") != key:
+        return "not a continuation record of this cell"
+    if rec.get("provenance") != job.get("provenance"):
+        return "continuation record of another job or run"
+    st = rec.get("status")
+    if st not in STATUSES:
+        return f"unknown continuation status {st!r}"
+    if st in STATUSES[:2]:
+        if not (identical(rec) or (smoke and rec.get("round1_gate") == SMOKE_GATE)):
+            return "a continued winner without its own identical round-1 comparison"
+        rounds = rec.get("rounds")
+        if not isinstance(rounds, list) or not 1 <= len(rounds) <= max_rounds:
+            return "rounds missing or beyond the cap"
+        h = rec.get("heldout")
+        seeds = (job.get("mkt") or {}).get("seeds_eval")
+        if seeds is not None and not (_valid_held(h, seeds) and _knobs_ok(h.get("knobs"))):
+            return "held-out result missing, nonfinite or on other seeds"
+    return None
+
+
+def _set_aside(cdir: Path, dest: Path) -> None:
+    """Move a record that will be rerun out of the way (no deletion), so that a lost worker shows as a missing record and
+    is never masked by the old one (review rep-impl-r2)."""
+    if dest.exists():
+        sup = cdir / "superseded"; sup.mkdir(parents=True, exist_ok=True)
+        n = len(list(sup.glob(dest.stem + ".*.json")))
+        dest.rename(sup / f"{dest.stem}.{n}.json")
+
+
 def _mismatch(rec) -> bool:
     """A measured round 1 that differs from the doubling record at all. A cell refused before round 1 ("not run") or a
     smoke run ("not compared") measured nothing."""
@@ -124,6 +165,9 @@ def _mismatch(rec) -> bool:
     if str(rec.get("status", "")).startswith("stopped: round 1"):
         return True
     return isinstance(rec.get("round1_gate"), dict) and not identical(rec)
+
+
+DIAG_HOURS = 60.0 * 1.33 / 3600     # one continued winner's diagnostics (stage_continue's admission: 60 s per cell at p > 0)
 
 
 def _lost(cdir: Path, ids: list, hours: dict, max_rounds: int) -> None:
@@ -153,9 +197,13 @@ def run_queue(queue: list, base: Path, workers: int, cost=None, max_rounds: int 
         raise SystemExit(f"replication refused: saved continuation records of another job or run: {other[:3]}")
     if any(_mismatch(r) for r in saved.values()):
         return {"run": 0, "exit": 4, "gate": "round-1 mismatch on record: continuation stays stopped"}   # also on resume (plan section 4)
+    bad = [(c["id"], saved[d].get("status")) for c, d in items if saved[d] is not None and saved[d].get("status") not in STATUSES]
+    if bad:                                                              # review rep-impl-r2: no reuse of an unknown record
+        raise SystemExit(f"replication refused: saved continuation records with an unknown status: {bad[:3]}")
     hours = {c["id"]: round_hours(c["job"]) for c, _ in items}
     run = 0
     if saved[gdest] is None or cost_stopped(saved[gdest]):
+        _set_aside(cdir, gdest)
         lost, failed = run_cells(_cont_one, [gate], [(gate["job"], gate["dir"], 1, cost, hours[gate["id"]])], 1, [gdest],
                                  [{"id": gate["id"], "gate": True}])
         run += 1
@@ -172,6 +220,8 @@ def run_queue(queue: list, base: Path, workers: int, cost=None, max_rounds: int 
     if not smoke and not identical(g):                                   # the gate must prove identity, not just not fail
         return {"run": run, "exit": 4, "gate": "the gate has no identical round-1 comparison: continuation stopped"}
     todo = [c for c in queue if saved[dest(c)] is None or cost_stopped(saved[dest(c)])]   # same order; completed cells reused
+    for c in todo:
+        _set_aside(cdir, dest(c))
     lost, failed = ([], {}) if not todo else run_cells(
         _cont_one, todo, [(c["job"], c["dir"], max_rounds, cost, hours[c["id"]]) for c in todo], workers,   # module-level fn
         [dest(c) for c in todo], [{"id": c["id"]} for c in todo])
@@ -197,6 +247,86 @@ def _valid_held(h, seeds) -> bool:
         all(_finite(h.get(f)) and len(h[f]) == len(seeds) for f in FIELDS)
 
 
+def _deps_problem(d: Path, rec: dict, want: set) -> str | None:
+    import revision_v2 as R
+    from sim.records_v2 import sha_file
+    up = rec.get("upstream")
+    if not isinstance(up, dict) or set(up) != set(want):
+        return "dependency set differs"
+    for u, h in up.items():
+        q = R.path_of(d, u)
+        if not q.is_file() or sha_file(q) != h:
+            return f"dependency hash differs: {u}"
+    return None
+
+
+def base_problem(d: Path, job: dict, ev, db) -> str | None:
+    """The evaluation and doubling records of one cell (plan section 4; review rep-impl-r2): stage, id, provenance, finite
+    values on the job's ordered evaluation seeds; the evaluation depends exactly on the context's freeze, the rule's
+    reference and the cell's search, the doubling on those and the reference's menu, every hash equal to the file in
+    the rate directory; the doubling is a profit record with finite changes, a held-out winner with finite knobs, and
+    its flag equals the frozen rule (revision_v2.doubling_report)."""
+    import revision_v2 as R
+    seeds = job["mkt"]["seeds_eval"]; ctx = job["context"]
+    fz, rid = f"freeze/{ctx}", f"reference/{ctx}/{job['rule']}"
+    if ev is None:
+        return "no evaluation record"
+    if ev.get("stage") != "evaluate" or ev.get("id") != job["id"] or ev.get("provenance") != job["provenance"]:
+        return "evaluation record of another stage, cell or run"
+    if not _valid_held(ev, seeds):
+        return "evaluation values nonfinite or on other seeds"
+    if x := _deps_problem(d, ev, {fz, rid, job["id"]}):
+        return "evaluation: " + x
+    if db is None:
+        return "no doubling record"
+    if db.get("stage") != "doubling" or db.get("id") != job["id"] or db.get("provenance") != job["provenance"] or db.get("kind") != "profit":
+        return "doubling record of another stage, cell, run or kind"
+    ch = [db.get("attack_change"), db.get("reference_change")]
+    if not _finite(ch) or not isinstance(db.get("incomplete"), bool):
+        return "doubling changes nonfinite or flag missing"
+    if db["incomplete"] != any(c >= R.THRESHOLD - 1e-12 for c in ch):
+        return "doubling flag differs from its changes"
+    h = db.get("heldout")
+    if not _valid_held(h, seeds) or not _knobs_ok(h.get("knobs")):
+        return "doubling held-out result missing, nonfinite or on other seeds"
+    ref = read_record(R.path_of(d, rid))
+    if ref is None or not isinstance(ref.get("upstream"), dict):
+        return "no reference record"
+    if x := _deps_problem(d, db, set(ref["upstream"]) | {fz, rid, job["id"]}):
+        return "doubling: " + x
+    return None
+
+
+def _shares_ok(sh) -> bool:
+    """Newcomer audit counts: per episode a list of [served, audited] bins, the same number of bins in every episode,
+    finite and nonnegative, audited at most served."""
+    per = (sh or {}).get("per_episode") if isinstance(sh, dict) else None
+    if not isinstance(per, list) or not per:
+        return False
+    nb = None
+    for e in per:
+        f = e.get("focal") if isinstance(e, dict) else None
+        if not isinstance(f, list) or not f or (nb is not None and len(f) != nb):
+            return False
+        nb = len(f)
+        for b in f:
+            if not (isinstance(b, list) and len(b) == 2 and _finite(b) and 0 <= b[1] <= b[0]):
+                return False
+    return True
+
+
+def diag_ok(row, seeds, knobs) -> bool:
+    """A diagnostics row (frozen: diagnostics.json cells[...]["base"]; continued: its own record) for this winner: its
+    knobs, the job's ordered evaluation seeds, finite per-seed profits and well-formed audit counts (review rep-impl-r2)."""
+    return isinstance(row, dict) and row.get("knobs") == knobs and list(row.get("seeds") or []) == list(seeds) and \
+        _finite(row.get("normalized")) and len(row["normalized"]) == len(seeds) and _shares_ok(row.get("shares"))
+
+
+def cont_diag_ok(rec, key: str, job: dict, knobs) -> bool:
+    return isinstance(rec, dict) and rec.get("stage") == "continued diagnostics" and rec.get("id") == key and \
+        rec.get("provenance") == job["provenance"] and diag_ok(rec, job["mkt"]["seeds_eval"], knobs)
+
+
 def terms_of(h: dict, n: int) -> dict:
     """Per seed: gain = attack term - reference term, each normalised by S*/N (sim/reference.evaluate_gain)."""
     sc = [x / n for x in h["sstar"]]
@@ -210,23 +340,27 @@ def _audit_of(shares: dict) -> tuple:
     return fo[1], fo[0]                                                   # (audited, served)
 
 
-def collect(base: Path, jobs_by_dir: dict, gate_id: str | None, smoke: bool = False) -> dict:
+def collect(base: Path, jobs_by_dir: dict, gate: dict | None, smoke: bool = False) -> dict:
     """Records for both winner sets (recs[rate][market][rule] with gains, attack and reference terms, efficiency and
-    seeds), R3's audit counts for both sets, and the winner counts. Before scoring, every base record is checked: the
-    evaluation and doubling records exist with the job's provenance, the evaluation seeds are the job's ordered evaluation
-    seeds and every field is finite (else the cell is unscorable, plan section 4). Only flagged cells look at a
-    continuation record; a flagged cell without one is "not continued". A round-1 mismatch in any continuation record,
-    gate included, makes the primary set unavailable, and so does a continued winner without an identical gate record."""
+    seeds), R3's audit counts for both sets, and the winner counts. Every record is checked before use (review
+    rep-impl-r2): a cell whose evaluation or doubling record fails base_problem is unscorable (plan section 4); a frozen
+    diagnostics row that fails diag_ok gives no audit count. Only flagged cells look at a continuation record; a flagged
+    cell without one is "not continued". The primary set is unavailable after a round-1 mismatch in any continuation
+    record, without this run's identical gate record (also when no cell is flagged), or when a flagged cell's
+    continuation record fails cont_problem. A continued R3 winner's audit count needs its checked continued diagnostics."""
     import convergence_v2  # noqa: F401
     import revision_v2 as R
     base = Path(base); cdir = base / "continuation"
     allrec = [read_record(q) for q in sorted(cdir.glob("*.json")) + sorted((cdir / "gate").glob("*.json")) if q.name != "lost_cells.json"]
     mismatch = any(_mismatch(r) for r in allrec)
-    g = read_record(cdir / "gate" / (R._safe(gate_id) + ".json")) if gate_id else None
-    gate_ok = g is not None and (identical(g) or (smoke and not _mismatch(g)))
+    g = read_record(cdir / "gate" / (R._safe(gate["id"]) + ".json")) if gate else None
+    gjob = {**(gate or {}).get("job", {}), "mkt": None}
+    gate_ok = g is not None and cont_problem(g, gate["id"], gjob, smoke, max_rounds=1) is None and \
+        g.get("status") in STATUSES[:2] and (identical(g) or (smoke and g.get("round1_gate") == SMOKE_GATE))
     frozen, primary, problems, unscorable = {}, {}, [], []
     counts = {"frozen": 0, "continued": 0, "unresolved": 0, "stopped": 0, "not continued": 0}
     audit = {"frozen": {}, "primary": {}}
+    bad_cont = False
     for (kind, p), jobs in jobs_by_dir.items():
         rk = "0" if p == 0 else f"{p:g}"; d = base / f"{kind}-p{p:g}"
         diag = (read_record(d / "diagnostics.json") or {}).get("cells") or {} if kind == "menu" else {}
@@ -234,44 +368,48 @@ def collect(base: Path, jobs_by_dir: dict, gate_id: str | None, smoke: bool = Fa
             m, r = j["mkt"]["label"].replace("fresh", "rep"), analysis_rule(kind, j["rule"])
             ev = read_record(R.eval_path(d, j["id"])); db = read_record(d / "doubling" / (R._safe(j["id"]) + ".json"))
             seeds = j["mkt"]["seeds_eval"]
-            if ev is None or ev.get("provenance") != j["provenance"] or not _valid_held(ev, seeds) or \
-                    db is None or db.get("provenance") != j["provenance"] or not isinstance(db.get("incomplete"), bool):
-                unscorable.append(f"{kind}-p{p:g}|{j['id']}"); continue
+            if (why := base_problem(d, j, ev, db)) is not None:
+                unscorable.append(f"{kind}-p{p:g}|{j['id']}: {why}"); continue
             n = _n_agents(j); fz = terms_of(ev, n)
             frozen.setdefault(rk, {}).setdefault(m, {})[r] = fz
-            ck = f"{j['context']}|{j['rule']}" if "context" in j else "|".join(j["id"].split("|")[:2])
-            fa = _audit_of(diag[ck]["base"]["shares"]) if r == "R3" and ck in diag and "base" in diag[ck] else None
-            if fa is not None:
-                audit["frozen"].setdefault(rk, {})[m] = fa
-            win, kw = fz, "frozen"
+            fa = None
+            if r == "R3" and kind == "menu":
+                ck = f"{j['context']}|{j['rule']}"
+                row = (diag.get(ck) or {}).get("base")
+                sr = read_record(R.path_of(d, j["id"])) or {}
+                if diag_ok(row, seeds, (sr.get("attack") or {}).get("best_knobs")):
+                    fa = _audit_of(row["shares"]); audit["frozen"].setdefault(rk, {})[m] = fa
+                elif ck in diag:
+                    problems.append(f"{kind}-p{p:g}|{j['id']}: frozen diagnostics fail their checks")
+            win, kw, crec = fz, "frozen", None
+            key = _key(kind, p, j["id"])
             if db["incomplete"]:
-                key = _key(kind, p, j["id"]); crec = read_record(cdir / (R._safe(key) + ".json"))
-                if crec is not None and crec.get("provenance") != j["provenance"]:
-                    problems.append(f"{key}: continuation record of another job or run"); crec = None
+                crec = read_record(cdir / (R._safe(key) + ".json"))
                 if crec is None:
                     kw = "not continued"
+                elif (why := cont_problem(crec, key, j, smoke)) is not None:
+                    problems.append(f"{key}: {why}"); bad_cont = True; kw = "not continued"
                 else:
                     try:
                         _, kw = select_winner(fz["gain"], crec)
                     except Round1Mismatch:
                         kw = "frozen"
                     if kw in ("continued", "unresolved"):
-                        if not _valid_held(crec.get("heldout"), seeds):
-                            kw = "not continued"
-                        else:
-                            win = terms_of(crec["heldout"], n)
-                            if not gate_ok:
-                                problems.append(f"{key}: a continued winner without an identical gate record")
+                        win = terms_of(crec["heldout"], n)
             counts[kw] += 1
             primary.setdefault(rk, {}).setdefault(m, {})[r] = win
             if r == "R3" and kind == "menu" and fa is not None:
                 if kw in ("continued", "unresolved"):
-                    cd = read_record(cdir / "diagnostics" / (R._safe(_key(kind, p, j["id"])) + ".json"))
-                    if cd is not None and cd.get("shares"):
+                    cd = read_record(cdir / "diagnostics" / (R._safe(key) + ".json"))
+                    if cont_diag_ok(cd, key, j, crec["heldout"]["knobs"]):
                         audit["primary"].setdefault(rk, {})[m] = _audit_of(cd["shares"])
+                    elif cd is not None:
+                        problems.append(f"{key}: continued diagnostics fail their checks")
                 else:
                     audit["primary"].setdefault(rk, {})[m] = fa
-    bad = mismatch or any("without an identical gate" in x for x in problems)
+    if not gate_ok:
+        problems.append("no identical gate record of this run's gate cell")
+    bad = mismatch or not gate_ok or bad_cont
     return {"frozen": frozen, "primary": None if bad else primary, "audit": audit, "counts": counts,
             "round1_mismatch": mismatch, "gate_ok": gate_ok, "problems": problems, "unscorable": unscorable}
 
@@ -292,7 +430,7 @@ def _diag_cont(job: dict, knobs: dict) -> dict:
             "mean_normalized": float(np.mean(fr.normalized)), "shares": churn_v2.newcomer_shares(fr.results, cell.focal)}
 
 
-def run_diagnostics(base: Path, jobs_by_dir: dict, workers: int) -> dict:
+def run_diagnostics(base: Path, jobs_by_dir: dict, workers: int, smoke: bool = False) -> dict:
     """The diagnostics of R3's continued winners (menu cells at p = 0 and 0.05 whose continuation passed or reached the
     cap) in Run B's pool; records under continuation/diagnostics/, reused on resume when bound to the same job."""
     import convergence_v2  # noqa: F401
@@ -305,11 +443,14 @@ def run_diagnostics(base: Path, jobs_by_dir: dict, workers: int) -> dict:
             if j["rule"] != "F111":
                 continue
             key = _key(kind, p, j["id"]); crec = read_record(cdir / (R._safe(key) + ".json"))
-            if crec is None or crec.get("provenance") != j["provenance"] or crec.get("status") not in ("passed", "not passed at the cap"):
+            if crec is None or cont_problem(crec, key, j, smoke) is not None or crec["status"] not in STATUSES[:2]:
                 continue
             dest = cdir / "diagnostics" / (R._safe(key) + ".json"); old = read_record(dest)
-            if old is not None and old.get("provenance") == j["provenance"]:
+            if cont_diag_ok(old, key, j, crec["heldout"]["knobs"]):
                 continue
+            _set_aside(cdir / "diagnostics", dest)              # a stale or foreign record is rerun, never reused
             todo.append({"id": key}); args.append((j, crec["heldout"]["knobs"])); dests.append(dest); extras.append({"id": key})
     lost, failed = ([], {}) if not todo else run_cells(_diag_cont, todo, args, workers, dests, extras)
+    if lost and not failed:                                     # the launcher's restart reads this estimate (exit 5)
+        _lost(cdir, lost, {k: DIAG_HOURS for k in lost}, 1)
     return {"run": len(todo), "lost": lost, "failed": failed, "exit": 6 if failed else 5 if lost else 0}

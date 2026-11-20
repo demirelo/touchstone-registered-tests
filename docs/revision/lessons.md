@@ -241,3 +241,41 @@ plan cannot be written without the test failing.
 
 Also (same day): a zsh command passed the manifest's file list as one argument (the 2026-11-11 lesson again); the
 manifest builder refused it, fail-closed. Multi-argument commands with a variable list run under `bash -c`.
+
+## 2026-11-20: the replication's record checks were incomplete a second time (implementation review r2)
+
+Mistake: after round 1, `rep_collect.collect` still scored records it had not checked. It accepted an evaluation record
+of the wrong stage, records with missing or changed dependencies, and a doubling record with no held-out result. It
+accepted a continuation record with an unknown status and no comparison, and a gate record from another job. It used
+diagnostics from another job with other seeds as audit counts. This repeats the 2026-11 lesson on checking diagnostics
+before use. Its guard was a rule plus a few example tests, so the guard failed. Sol and Astra both showed the faults on
+in-memory records. Guard (stronger kind): one check function per record kind (`base_problem`, `cont_problem`,
+`diag_ok`, `cont_diag_ok`), each with a parametrized test that changes one field at a time (stage, id, provenance,
+dependency set, dependency hash, nonfinite value, flag, seeds, knobs, bin structure) and requires a refusal, plus a
+test that valid records score (`test_rep_collect.py`). The smoke records pass the same checks (144 records, 0 bad
+hashes). Rule: every record that code reads gets a check of identity (stage, id, provenance), values, dependency set
+and dependency hashes before use. The brief for a review of new loader code lists the record kinds and their checks.
+
+Also (same review): a fake worker pool in a test reported "lost" directly, while the real pool decides from the disk.
+So the test passed with the bug present: a saved cost-stopped record hid a lost worker (exit 3, not 5). Guard: the
+`_disk_pool` fake decides "lost" as `convergence_v2.run_cells` does, and the test was run once without the fix to see it
+fail. Rule: a fake decides each outcome from the same evidence as the real component. Every new regression test is
+run once against the old code.
+
+Also: the manifest's import scan missed a script run as a subprocess (`churn_memory.py`) and a data record that the
+code reads (the runner-up recheck record). Guard: the import closure now follows string literals that name a `.py`
+script, and a test checks that `runnerup_v2.LOG` is in the required set.
+
+Also (2026-11-20, board): I wrote a board time (03:05Z) in the same batch of calls as `date -u`, so the time was a
+guess, not the clock (02:04Z); corrected at once. Rule, now applied: the `date -u` call ends before any board write
+starts; board writes are never sent in the same batch as the clock read.
+
+Also (2026-11-20, harness): the new x86 scenario's expected text held literal parentheses, but the harness matches with
+`grep -E`, so they formed a group and the correct refusal did not match. This is the third harness expectation error
+in this launcher's reviews (r2: p9 bundle, r2b: real-admission call list). Guard: every new scenario runs alone first
+(`ONLY=<name>`) against both the old launcher (must fail) and the new one (must pass) before the full run; the scenario's
+pattern is also checked by hand against the refusal line with the same `grep -E`.
+
+## 2026-11-20: board writes went to the retired board for 8 days
+- Mistake: the memory note `work-board.md` named the retired board (3Txs5Prd, also reachable as code/artifact/13f60ad8). Every Touchstone job and card since 12 Nov went there, not to the master board in `~/.claude/CLAUDE.md`.
+- Guard: the memory note now names the master and both forms of the retired URL. Before the first board write in a session, compare the URL with CLAUDE.md's "Work board" line. The 6 jobs and 25 decisions were copied to the master (tag `copiedFrom: board 3Txs5Prd (20 Nov)`).

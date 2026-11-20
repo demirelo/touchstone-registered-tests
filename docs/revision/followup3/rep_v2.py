@@ -123,10 +123,10 @@ def check_calibration_platform(cal: dict, smoke: bool) -> None:
         _refuse(f"the calibration was made on {cal.get('system')} {cal.get('machine')}, not Linux x86")
 
 
-def rate_search_workers(out, requested: int, limit_bytes, peak_bytes: float) -> int:
-    """Search workers admitted against the pod's memory limit and kept across restarts (plan section 5): the lowest count
-    admitted for this output so far."""
-    p = Path(out) / "search_workers.json"
+def kept_workers(out, name: str, requested: int, limit_bytes, peak_bytes: float) -> int:
+    """Workers admitted against the pod's memory limit and kept across restarts (plan section 5: "lowered if needed, then
+    kept across restarts"): the lowest count admitted for this output so far, in `<name>_workers.json`."""
+    p = Path(out) / f"{name}_workers.json"
     saved = json.loads(p.read_text())["workers"] if p.exists() else None
     w = admit_workers(requested, limit_bytes, peak_bytes)
     if saved is not None:
@@ -135,6 +135,11 @@ def rate_search_workers(out, requested: int, limit_bytes, peak_bytes: float) -> 
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(json.dumps({"workers": w, "limit_bytes": limit_bytes, "peak_bytes": peak_bytes}, sort_keys=True) + "\n")
     return w
+
+
+def rate_search_workers(out, requested: int, limit_bytes, peak_bytes: float) -> int:
+    """Search workers (every search stage), kept in search_workers.json."""
+    return kept_workers(out, "search", requested, limit_bytes, peak_bytes)
 
 
 def gate_item(jobs_by_dir: dict, base) -> dict:
@@ -387,7 +392,7 @@ def stage_continue(a) -> None:
     c = _context(a); churn_v2.install(); jobs = _jobs_by_dir(c, a.smoke)
     queue = continuation_queue(C.flagged_cells(Path(a.out), jobs))
     stop = cost_stop(a); cost = None if stop is None else worker_cost_args(stop)
-    w = admit_workers(a.workers_cont, None if a.smoke else _memory_limit(), a.peak_cont)
+    w = kept_workers(a.out, "continuation", a.workers_cont, None if a.smoke else _memory_limit(), a.peak_cont)
     res = C.run_queue(queue, Path(a.out), w, cost, gate=gate_item(jobs, a.out), smoke=a.smoke)
     print(json.dumps({"stage": "continue", "queued": len(queue), **{k: v for k, v in res.items()}}), flush=True)
     if res["exit"] != 0:
@@ -396,7 +401,8 @@ def stage_continue(a) -> None:
     if stop is not None and not stop.allow("continued diagnostics", 0.1 + 60.0 * 1.33 * 12 / 3600):
         print(json.dumps({"stage": "continued diagnostics", "exit": 3}), flush=True)
         return 3
-    d = C.run_diagnostics(Path(a.out), jobs, admit_workers(a.workers_eval, None if a.smoke else _memory_limit(), a.peak_cont))
+    d = C.run_diagnostics(Path(a.out), jobs, kept_workers(a.out, "diagnostics", a.workers_eval, None if a.smoke else _memory_limit(),
+                                                          a.peak_cont), smoke=a.smoke)
     print(json.dumps({"stage": "continued diagnostics", **d}), flush=True)
     return d["exit"]
 
@@ -423,7 +429,7 @@ def stage_analyse(a) -> None:
     import rep_collect as C
     import replication_analysis as RA
     c = _context(a); jobs = _jobs_by_dir(c, a.smoke)
-    col = C.collect(Path(a.out), jobs, gate_id=gate_item(jobs, a.out)["id"], smoke=a.smoke)
+    col = C.collect(Path(a.out), jobs, gate=gate_item(jobs, a.out), smoke=a.smoke)
     res = {k: col[k] for k in ("counts", "round1_mismatch", "gate_ok", "problems", "unscorable")}
     res["confirmatory"] = c.confirmatory
     for name in ("primary", "frozen"):

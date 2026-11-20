@@ -218,3 +218,15 @@ def test_the_continuation_gate_is_the_first_p005_cell():
     g = D.gate_item(jobs, Path("/b"))
     assert g["job"]["id"] == "fresh0@rho0.2|F111|D2+H3|profit|churn0.05" and g["dir"] == "/b/menu-p0.05"
     assert g["id"] == "menu-p0.05|fresh0@rho0.2|F111|D2+H3|profit|churn0.05"
+
+
+# ---- review rep-impl-r2 (Astra 6): continuation and diagnostics workers are kept across restarts too -------------------
+
+def test_continuation_workers_are_kept_across_restarts(tmp_path):
+    import inspect
+    gb = 1e9
+    assert D.kept_workers(tmp_path, "continuation", 5, 6 * gb, 1.0 * gb) == 3       # (6 - 2) / 1.25 = 3.2
+    assert D.kept_workers(tmp_path, "continuation", 5, 64 * gb, 1.0 * gb) == 3      # a restart keeps the lower count
+    assert D.kept_workers(tmp_path, "diagnostics", 5, 64 * gb, 1.0 * gb) == 5       # its own file
+    src = inspect.getsource(D.stage_continue)
+    assert 'kept_workers(a.out, "continuation"' in src and 'kept_workers(a.out, "diagnostics"' in src

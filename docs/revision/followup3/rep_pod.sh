@@ -90,8 +90,8 @@ if run == "2" and not bad:
     extra = [str(q.relative_to(r)) for q in r.rglob("*") if q.is_file() and q.name != "inventory.json" and not q.name.endswith((".lock", ".tmp")) and str(q.relative_to(r)) not in recs]
     if not recs or wrong or extra:
         bad.append(f"rep/ inventory: {len(recs)} records, {len(wrong)} bad, {len(extra)} not inventoried")
-    if cal.get("system") != "Linux":
-        bad.append(f"rep/calibration.json was not made on Linux ({cal.get('system')!r})")
+    if cal.get("system") != "Linux" or cal.get("machine") not in ("x86_64", "AMD64"):   # plan section 1: Linux x86
+        bad.append(f"rep/calibration.json was not made on Linux x86 ({cal.get('system')!r} {cal.get('machine')!r})")
     if not (r / "cfgs.json").is_file() or sha(r / "cfgs.json") != cal.get("cfgs_sha256"):
         bad.append("rep/cfgs.json does not match the calibration record")
     for n in ("instances.json", "salt.hex"):

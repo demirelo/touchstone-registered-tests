@@ -29,7 +29,11 @@ REQUIRED = tuple(sorted({
     f"{F3}/rep_v2.py", f"{F3}/test_rep_v2.py", f"{F3}/rep_collect.py", f"{F3}/test_rep_collect.py",
     f"{F3}/rep_pod.sh", f"{F3}/test_rep_pod_harness.sh", f"{F3}/cost_estimate.py",
     f"{CH}/churn_v2.py", f"{F1}/reset_followup_v2.py", f"{F2}/common.py", f"{F2}/convergence_v2.py", f"{F2}/guards.py",
-    f"{F2}/runnerup_v2.py", "uv.lock", *FROZEN_INPUTS}))
+    f"{F2}/runnerup_v2.py", "uv.lock", *FROZEN_INPUTS,
+    # Review rep-impl-r2: the preflight task that churn_v2 runs as a subprocess, and the runner-up recheck record that
+    # runnerup_v2.runner_up_cred reads (the C-thr(12) parameters).
+    f"{CH}/churn_memory.py",
+    'experiments/v2/log/Cstar__{"L":10,"cred":{"K":12,"M":null,"variant":"thr"},"tol":0.16}__recheck.json'}))
 # Environment variables the frozen code reads; the driver sets TOUCHSTONE_IDENTITY_SALT itself (checked against the draw).
 OVERRIDES = ("TOUCHSTONE_LOCKED", "TOUCHSTONE_PROPOSED_MODULE", "TOUCHSTONE_PROPOSED_PARAMS", "TOUCHSTONE_SEALED_DIR",
              "TOUCHSTONE_GIT_COMMIT")
@@ -46,9 +50,14 @@ def search_dirs(root) -> list:
 
 
 def _imports(path: Path) -> set:
+    """Module names imported by the file, plus the stems of scripts it names as string literals ending in .py (a script
+    run as a subprocess, review rep-impl-r2)."""
     names = set()
     for n in ast.walk(ast.parse(path.read_text(), filename=str(path))):
-        if isinstance(n, ast.Import):
+        if isinstance(n, ast.Constant) and isinstance(n.value, str) and n.value.endswith(".py") and "/" not in n.value \
+                and n.value[:-3].isidentifier():
+            names.add(n.value[:-3])
+        elif isinstance(n, ast.Import):
             names |= {a.name.split(".")[0] for a in n.names}
         elif isinstance(n, ast.ImportFrom) and n.module and n.level == 0:
             names.add(n.module.split(".")[0])
@@ -104,12 +113,21 @@ def _git(root, *a) -> subprocess.CompletedProcess:
 
 
 def frozen_problems(root, commit: str) -> list:
+    """A git error (an unknown commit included) is a problem, never an empty difference (review rep-impl-r2)."""
+    if _git(root, "cat-file", "-e", f"{commit}^{{commit}}").returncode != 0:
+        return [f"git: commit {commit} not found"]
     out = []
     paths = [*FROZEN, *[f for f in FROZEN_INPUTS if (Path(root) / f).exists() or _git(root, "cat-file", "-e", f"{commit}:{f}").returncode == 0]]
-    changed = _git(root, "diff", "--name-only", commit, "--", *paths).stdout.split()
+    d = _git(root, "diff", "--name-only", commit, "--", *paths)
+    if d.returncode != 0:
+        return [f"git diff failed: {d.stderr.strip()[:200]}"]
+    changed = d.stdout.split()
     if changed:
         out.append(f"differ from commit {commit}: {', '.join(changed[:5])}")
-    untracked = _git(root, "ls-files", "--others", "--exclude-standard", "--", *paths).stdout.split()
+    u = _git(root, "ls-files", "--others", "--exclude-standard", "--", *paths)
+    if u.returncode != 0:
+        return [f"git ls-files failed: {u.stderr.strip()[:200]}"]
+    untracked = u.stdout.split()
     if untracked:
         out.append(f"untracked files under {', '.join(FROZEN)}: {', '.join(untracked[:5])}")
     out += [f"environment override set: {v}" for v in OVERRIDES if os.environ.get(v)]

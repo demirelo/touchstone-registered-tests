@@ -34,13 +34,13 @@ def draw(root, m):
     os.makedirs(f"{root}/draw", exist_ok=True)
     json.dump(m, open(f"{root}/draw/manifest.json", "w")); open(f"{root}/draw/manifest.json.ots", "wb").write(b"ots")
     json.dump({"hash": "ab"}, open(f"{root}/draw/draw.json", "w"))
-def rep(root, system="Linux", tamper=False, extra=False, wrongdraw=False, launch="p1"):
+def rep(root, system="Linux", tamper=False, extra=False, wrongdraw=False, launch="p1", machine="x86_64"):
     r = f"{root}/rep"; os.makedirs(f"{r}/menu/freeze", exist_ok=True)
     files = {"instances.json": b"{}", "salt.hex": b"00", "cfgs.json": b'{"fresh0": {}}', "menu/freeze/fresh0.json": b"{}"}
     bind = {"manifest_sha256": sha(open(f"{root}/draw/manifest.json", "rb").read()),
             "draw_sha256": "0" * 64 if wrongdraw else sha(open(f"{root}/draw/draw.json", "rb").read())}
     files["binding.json"] = json.dumps(bind).encode(); files["launch.json"] = json.dumps({"launch": launch}).encode()
-    files["calibration.json"] = json.dumps({"cfgs_sha256": sha(files["cfgs.json"]), "system": system}).encode()
+    files["calibration.json"] = json.dumps({"cfgs_sha256": sha(files["cfgs.json"]), "system": system, "machine": machine}).encode()
     for k, v in files.items():
         open(f"{r}/{k}", "wb").write(v)
     json.dump({"records": {k: sha(v) for k, v in files.items()}}, open(f"{r}/inventory.json", "w"))
@@ -50,10 +50,10 @@ for root, m in (("b1", man(c)), ("b1nocommit", man("0" * 40)), ("b1badhash", man
     draw(root, m)
 os.makedirs("b1noproof/draw", exist_ok=True); json.dump(man(c), open("b1noproof/draw/manifest.json", "w")); json.dump({}, open("b1noproof/draw/draw.json", "w"))
 for root, kw in (("b2", {}), ("b2mac", {"system": "Darwin"}), ("b2tamper", {"tamper": True}), ("b2extra", {"extra": True}),
-                 ("b2wrongdraw", {"wrongdraw": True}), ("b2otherlaunch", {"launch": "p9"})):
+                 ("b2wrongdraw", {"wrongdraw": True}), ("b2otherlaunch", {"launch": "p9"}), ("b2arm", {"machine": "aarch64"})):
     draw(root, man(c)); rep(root, **kw)
 EOF
-for b in b1 b1nocommit b1badhash b1noproof b1otherlauncher b2 b2mac b2tamper b2extra b2wrongdraw b2otherlaunch; do (cd $b && tar czf ../$b.tgz .); done
+for b in b1 b1nocommit b1badhash b1noproof b1otherlauncher b2 b2mac b2tamper b2extra b2wrongdraw b2otherlaunch b2arm; do (cd $b && tar czf ../$b.tgz .); done
 # prepared remote output with a complete inventory, for the RUN OK scenarios
 python3 - <<'EOF'
 import hashlib, json, os
@@ -155,7 +155,7 @@ if v == "badrow":
 open("ledger.json", "w").write(json.dumps(d))
 EOF
 }
-fail=0; ran=0; TOTAL=46
+fail=0; ran=0; TOTAL=47
 run() { # name state cap creates rc [end-pattern] [watchdog-log-substring] [launcher-output-substring]; env RUNV (1), BUN
   [ -n "${ONLY:-}" ] && ! echo "$1" | grep -q "$ONLY" && return 0   # smoke runs only; a full run sets no ONLY
   r=${RUNV:-1}; T=${TAGV:-t}; N=ts-rep; LG=logs_rep${r}_$T; B=${BUN:-}; [ -n "$B" ] || { [ "$r" = 2 ] && B=b2.tgz || B=b1.tgz; }
@@ -207,6 +207,7 @@ POD1V=t LEDGERV=pod1 RUNV=2 run "pod 2 is refused when its launch tag equals pod
 POD1V=p9 LEDGERV=pod1 RUNV=2 BUN=b2otherlaunch.tgz run "pod 2 is refused when pod 1's named spend row is absent" "$E" 33 0 1 "" "" "^refused: pod 1's spend \(replication-p9\) is not recorded"
 LEDGERV=pod1open RUNV=2 run "pod 2 is refused while pod 1's reservation is open" "$E" 3 0 1 "" "" "^refused: (pod 1's spend|open reservations)"
 LEDGERV=pod1 RUNV=2 BUN=b2mac.tgz run "pod 2: a calibration not made on Linux is refused" "$E" 33 0 1 "" "" "was not made on Linux"
+LEDGERV=pod1 RUNV=2 BUN=b2arm.tgz run "pod 2: a calibration not made on x86 is refused" "$E" 33 0 1 "" "" "was not made on Linux x86 \\('Linux' 'aarch64'\\)"
 LEDGERV=pod1 RUNV=2 BUN=b2tamper.tgz run "pod 2: pod 1 output whose inventory does not verify is refused" "$E" 33 0 1 "" "" "rep/ inventory: 7 records, 1 bad, 0 not inventoried"
 LEDGERV=pod1 RUNV=2 BUN=b2extra.tgz run "pod 2: a file outside pod 1's inventory is refused" "$E" 33 0 1 "" "" "rep/ inventory: 7 records, 0 bad, 1 not inventoried"
 LEDGERV=pod1 RUNV=2 BUN=b2wrongdraw.tgz run "pod 2: pod 1 output bound to another draw is refused" "$E" 33 0 1 "" "" "rep/binding.json does not match this bundle"

@@ -154,3 +154,27 @@ def test_secondary_outputs_absolute_contrasts_terms_and_efficiency():
     t = out["terms"]["0.05"]["rep0"]["R3"]
     assert math.isclose(t["attack"] - t["reference"], t["gain"], abs_tol=1e-12) and math.isclose(t["eff_attack"], 0.9)
     assert set(out) >= {"paired_changes", "criteria", "expectations", "absolute", "terms", "bootstrap"}
+
+
+# ---- review rep-impl-r2 (Sol 5, Astra 5): absolute-contrast intervals at every rate, independent of the baseline -------
+
+def test_absolute_contrasts_have_seed_intervals_at_p0():
+    out = RA.analyse(_recs(_gains({"0": 0.0, "0.03": 0.06, "0.05": 0.20})), _audit(), resamples=99)
+    ab = out["absolute"]["0"]["d"]
+    assert ab["pooled_ci95"] is not None and all(v["ci95"] is not None for v in ab["markets"].values())
+
+
+def test_positive_rate_absolute_intervals_do_not_need_the_baseline():
+    g = _gains({"0": 0.0, "0.03": 0.06, "0.05": 0.20})
+    g.pop("0")
+    out = RA.analyse(_recs(g), _audit(), resamples=99)
+    ab = out["absolute"]["0.05"]["q"]
+    assert ab["pooled_ci95"] is not None and all(v["ci95"] is not None for v in ab["markets"].values())
+    assert out["bootstrap"]["0.05"]["q"]["pooled"] is None              # the paired change still needs the baseline
+
+
+def test_no_market_t_interval_for_an_incomplete_market_sample():
+    g = _gains({"0": 0.0, "0.03": 0.06, "0.05": 0.20})
+    g["0.05"].pop("rep3")
+    ab = RA.analyse(_recs(g), _audit(), resamples=99)["absolute"]["0.05"]["d"]
+    assert ab["complete"] is False and ab["t95"] is None and ab["pooled_ci95"] is None

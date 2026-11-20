@@ -149,32 +149,35 @@ def _ci(boots) -> list:
 
 
 def bootstrap(gains: dict, idx: dict) -> dict:
-    """Per contrast and positive rate: per-market and equal-weight pooled percentile intervals of the paired change
-    Delta_x and of the absolute contrast x, from the shared index arrays. A missing cell gives None."""
+    """Per contrast and rate: per-market and equal-weight pooled percentile intervals of the absolute contrast x at every
+    rate (its own cells only), and of the paired change Delta_x at the positive rates (it also needs the p = 0 cells),
+    from the shared index arrays. A missing cell gives no market entry; a pooled interval needs all six markets."""
     bm = {}                                                  # bm[m][p][r] = resampled means (resamples,)
     for m, ix in idx.items():
         bm[m] = {p: {r: np.asarray(xs)[ix].mean(axis=1) for r, xs in _cell(gains, p, m).items()} for p in ALL_RATES}
     out = {}
-    for p in RATES:
+    for p in ALL_RATES:
         out[p] = {}
         for x, comp in CONTRASTS.items():
             delta, absolute = {}, {}
             for m in MARKETS:
                 b = bm.get(m, {})
-                if all(r in b.get(q, {}) for q in (p, "0") for r in (comp, "R3")):
-                    xp = b[p][comp] - b[p]["R3"]; x0 = b["0"][comp] - b["0"]["R3"]
-                    delta[m] = xp - x0; absolute[m] = xp
-            full = len(delta) == len(MARKETS)
-            out[p][x] = {"markets": {m: {"ci95": _ci(v)} for m, v in delta.items()},
-                         "pooled": {"ci95": _ci(sum(delta.values()) / len(MARKETS))} if full else None,
-                         "absolute_markets": {m: {"ci95": _ci(v)} for m, v in absolute.items()},
-                         "absolute_pooled": {"ci95": _ci(sum(absolute.values()) / len(MARKETS))} if full else None}
+                if all(r in b.get(p, {}) for r in (comp, "R3")):
+                    absolute[m] = b[p][comp] - b[p]["R3"]
+                    if p != "0" and all(r in b.get("0", {}) for r in (comp, "R3")):
+                        delta[m] = absolute[m] - (b["0"][comp] - b["0"]["R3"])
+            row = {"absolute_markets": {m: {"ci95": _ci(v)} for m, v in absolute.items()},
+                   "absolute_pooled": {"ci95": _ci(sum(absolute.values()) / len(MARKETS))} if len(absolute) == len(MARKETS) else None}
+            if p != "0":
+                row.update({"markets": {m: {"ci95": _ci(v)} for m, v in delta.items()},
+                            "pooled": {"ci95": _ci(sum(delta.values()) / len(MARKETS))} if len(delta) == len(MARKETS) else None})
+            out[p][x] = row
     return out
 
 
 def absolute(gains: dict, boot: dict) -> dict:
     """The absolute contrasts x(m, p) at every rate (secondary, descriptive): per market with its seed interval, mean,
-    market t interval and the pooled seed interval (positive rates)."""
+    market t interval (all six markets only) and the pooled seed interval (all six markets only)."""
     out = {}
     for p in ALL_RATES:
         out[p] = {}
@@ -186,7 +189,7 @@ def absolute(gains: dict, boot: dict) -> dict:
             out[p][x] = {"markets": {m: {"estimate": v, "ci95": (b.get("absolute_markets", {}).get(m) or {}).get("ci95")}
                                      for m, v in ms.items()},
                          "complete": len(ms) == len(MARKETS), "mean": _mean(vals) if vals else None,
-                         "t95": _t95(vals) if len(vals) > 1 else None,
+                         "t95": _t95(vals) if len(ms) == len(MARKETS) else None,
                          "pooled_ci95": (b.get("absolute_pooled") or {}).get("ci95")}
     return out
 

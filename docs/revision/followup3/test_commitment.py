@@ -97,3 +97,27 @@ def test_a_change_to_a_frozen_configuration_input_is_refused(tmp_path, monkeypat
     assert C.frozen_problems(root, head) == []
     (root / "experiments" / "locked.yaml").write_text("a: 2\n")
     assert any("experiments/locked.yaml" in p for p in C.frozen_problems(root, head))
+
+
+# ---- review rep-impl-r2 (Sol 1, Astra 1): scripts run as subprocesses, the records the drivers read, git errors -------
+
+def test_import_closure_follows_scripts_named_in_string_literals(tmp_path):
+    root, head = _repo(tmp_path)
+    d = root / "docs"; d.mkdir()
+    (d / "a.py").write_text("import subprocess\nsubprocess.run(['python', str(HERE / 'child.py')])\n")
+    (d / "child.py").write_text("import json\n")
+    assert C.import_closure(root, ["docs/a.py"], [d]) == {"docs/a.py", "docs/child.py"}
+
+
+def test_the_real_required_set_lists_the_runner_up_recheck_record_and_the_memory_task():
+    root = Path(__file__).resolve().parents[3]
+    sys.path.insert(0, str(root / "docs/revision/followup2"))
+    import runnerup_v2
+    assert str(runnerup_v2.LOG.relative_to(root)) in C.REQUIRED
+    assert "docs/revision/churn/churn_memory.py" in C.REQUIRED
+
+
+def test_freeze_check_refuses_an_unknown_commit(tmp_path, monkeypatch):
+    root, head = _repo(tmp_path)
+    monkeypatch.delenv("TOUCHSTONE_LOCKED", raising=False)
+    assert any("git" in p for p in C.frozen_problems(root, "0" * 40))

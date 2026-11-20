@@ -77,23 +77,32 @@ Each ruling quotes the plan text it applies (`test_notes.py`); anything the plan
    searches and a copy of the bank, as Run A did".
 7. **The calibration runs once, on pod 1.** Plan: "The instances are calibrated once, on the pod's Linux x86 stack".
    Pod 2 reuses it only after the launcher and every driver stage check the configuration hash against the calibration
-   record and the record says Linux x86; no stage overwrites an existing calibration or `instances.json`.
+   record and the record says Linux x86 (the launcher's pod 2 bundle guard checks both the system and the machine, review
+   r2); no stage overwrites an existing calibration or `instances.json`.
 8. **Expectation 5 uses the primary winners** (r1 ruling withdrawn: it had used the frozen winners). Plan: "primary
    winners; frozen winners reported beside". The continue stage reruns the churn arm's diagnostics for every R3 menu cell
    at p = 0 and 0.05 whose continued winner enters the primary set; a missing one makes that market's expectation 5
-   "not scorable" for the primary set.
+   "not scorable" for the primary set. Every diagnostics row is checked before its counts are used or reused (the
+   winner's knobs, the ordered evaluation seeds, finite profits, the bin structure; for continued rows also stage, id
+   and provenance; review r2).
 9. **Publication height.** `PUBH` is required: a block height, or `none`. Plan: "Without publication before H, the draw
    wrapper records the draw as nonconfirmatory". The push of the manifest commit needs the author's consent first.
 10. **The record binding.** Plan: "Every record binds to this plan's hash, the draw record, the configuration hashes and
     the driver hashes." Every provenance built by the driver carries the manifest's hash (which covers the plan, the
     drivers, the analysis and the parameters) and the draw record's hash, beside the draw root, seeds, salt and
-    configuration hash it already had; every stage checks `binding.json` against its `--manifest` and `--draw`.
+    configuration hash it already had; every stage checks `binding.json` against its `--manifest` and `--draw`. Before
+    scoring, every evaluation and doubling record is checked for stage, id, provenance and values, its exact dependency
+    set and every dependency hash, and the doubling flag against the frozen rule; every continuation and gate record for
+    stage, id, provenance, a known status and its own identical comparison (review r2).
 11. **Kept worker counts.** Plan: "lowered if needed, then kept across restarts". Search workers: `search_workers.json`;
-    evaluation and doubling: the churn arm's saved counts.
+    continuation: `continuation_workers.json`; continued diagnostics: `diagnostics_workers.json` (review r2); evaluation
+    and doubling: the churn arm's saved counts.
 12. **What the manifest cannot list** (partial decline of Astra r1 item 1). Plan: "every imported helper outside `sim/`
     and `scripts/`". The Mac-side launcher helpers (`results/pods/podctl.py`, `runpod.py`, `case_end_check.py`) are not
     in the repository and are not imported by the drivers; the launcher checks its own bytes against the manifest's
-    `rep_pod.sh`, and the pod-side code guard checks every listed file in the tarball.
+    `rep_pod.sh`, and the pod-side code guard checks every listed file in the tarball. Caveat (Astra r2): the launcher's
+    self-check does not verify these Mac helpers, so their correctness rests on their own harnesses
+    (`test_rep_pod_harness.sh` runs the real `podctl.py` and `case_end_check.py`), not on the manifest.
 
 ## Pre-launch steps (after review consensus; none done yet)
 
