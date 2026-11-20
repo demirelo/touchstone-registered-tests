@@ -25,6 +25,11 @@ Round 1 (2026-11-19, `run2`): the full chain ran in smoke mode on the registered
 ones; calibration matches the registered Mac calibration; menus, references, C-thr, every rate, the churn-zero gate
 bit-identical, continuation with round 1 equal to the doubling record at differences 0.0, the analysis). Round 2
 (`run3`, after the record binding changed the provenance): every stage, instances to inventory, ran (`chain3.sh`): the continuation gate ran with no flagged cell and its round 1 matched the doubling record at differences 0.0; every evaluation and reference provenance carries the manifest and draw hashes (spawned workers included); the analysis scored all 72 cells (0 unscorable, 0 problems); the root inventory verifies (1355 records, 0 bad, 0 not inventoried). No smoke cell was flagged, so the continued-winner diagnostics were run on a copy (`diagprobe.py`) with the gate's continued record: with the frozen winner's knobs they reproduce the frozen diagnostics exactly (audit 23 of 1325 jobs, identical per-seed profits).
+Round 3 (`run4`, commit 0bdc0cb, manifest built at that commit; `chain4.sh`): every stage, instances to inventory, ran
+(CHAIN_OK); each of the six rate directories has `diagnostics_binding.json` in its inventory; the analysis scored all 72
+cells (0 unscorable, 0 problems, gate_ok true, no mismatch); expectation 5 is scored in both sets, so every frozen R3
+audit count passed the binding and completeness checks (6 markets at p = 0 and 0.05); the root inventory verifies with
+the launcher's verifier (1361 records, 0 bad, 0 not inventoried; 6 more than round 2, the binding files).
 
 ## Memory (plan section 5)
 
@@ -83,8 +88,11 @@ Each ruling quotes the plan text it applies (`test_notes.py`); anything the plan
    winners; frozen winners reported beside". The continue stage reruns the churn arm's diagnostics for every R3 menu cell
    at p = 0 and 0.05 whose continued winner enters the primary set; a missing one makes that market's expectation 5
    "not scorable" for the primary set. Every diagnostics row is checked before its counts are used or reused (the
-   winner's knobs, the ordered evaluation seeds, finite profits, the bin structure; for continued rows also stage, id
-   and provenance; review r2).
+   winner's knobs, the ordered evaluation seeds, finite profits, one episode per evaluation seed with the four age bins
+   of `churn_v2.AGE_EDGES`; for continued rows also stage, id and provenance; review r2, r3). A frozen row also needs
+   `diagnostics_binding.json`, written by the rate stage after the diagnostics step and before the inventory: it names
+   the rate, the hash of `diagnostics.json`, and per cell the job id, its provenance and the hashes of the search and
+   doubling records the diagnostics reran (review r3).
 9. **Publication height.** `PUBH` is required: a block height, or `none`. Plan: "Without publication before H, the draw
    wrapper records the draw as nonconfirmatory". The push of the manifest commit needs the author's consent first.
 10. **The record binding.** Plan: "Every record binds to this plan's hash, the draw record, the configuration hashes and
@@ -92,11 +100,17 @@ Each ruling quotes the plan text it applies (`test_notes.py`); anything the plan
     drivers, the analysis and the parameters) and the draw record's hash, beside the draw root, seeds, salt and
     configuration hash it already had; every stage checks `binding.json` against its `--manifest` and `--draw`. Before
     scoring, every evaluation and doubling record is checked for stage, id, provenance and values, its exact dependency
-    set and every dependency hash, and the doubling flag against the frozen rule; every continuation and gate record for
-    stage, id, provenance, a known status and its own identical comparison (review r2).
+    set and every dependency hash, positive normalizers, and the doubling flag against the frozen rule; every
+    continuation and gate record for stage, id, provenance, a known status, its own identical comparison with a finite
+    round-1 winner, rounds that agree with the status (Run B's pass rule) and a held-out winner equal to the last
+    round's, on the job's own evaluation seeds (the gate included). The same check runs before a saved record is reused
+    on resume; a record that fails it is set aside and its cell rerun. In the analysis, a flagged cell whose
+    continuation record fails it keeps its validated frozen winner and counts as not continued, as section 4 says for
+    missing or nonfinite output (review r2, r3).
 11. **Kept worker counts.** Plan: "lowered if needed, then kept across restarts". Search workers: `search_workers.json`;
-    continuation: `continuation_workers.json`; continued diagnostics: `diagnostics_workers.json` (review r2); evaluation
-    and doubling: the churn arm's saved counts.
+    continuation: `continuation_workers.json`; continued diagnostics: `diagnostics_workers.json` (review r2), requested
+    from `--workers-cont`, which the launcher lowers on its restart after a lost worker, so a diagnostics loss also
+    restarts on fewer workers (review r3); evaluation and doubling: the churn arm's saved counts.
 12. **What the manifest cannot list** (partial decline of Astra r1 item 1). Plan: "every imported helper outside `sim/`
     and `scripts/`". The Mac-side launcher helpers (`results/pods/podctl.py`, `runpod.py`, `case_end_check.py`) are not
     in the repository and are not imported by the drivers; the launcher checks its own bytes against the manifest's
