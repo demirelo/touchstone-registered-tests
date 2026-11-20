@@ -101,8 +101,8 @@ def flagged_cells(base: Path, jobs_by_dir: dict) -> list:
     for (kind, p), jobs in jobs_by_dir.items():
         d = Path(base) / f"{kind}-p{p:g}"
         for j in jobs:
-            rec = read(d / "doubling" / (R._safe(j["id"]) + ".json"))
-            if rec is not None and rec.get("incomplete"):
+            rec = _d(read(d / "doubling" / (R._safe(j["id"]) + ".json")))       # a non-object root counts as absent
+            if rec is not None and rec.get("incomplete") is True:
                 out.append({"rate": p, "market": j["mkt"]["label"], "rule": "Cthr" if kind == "cthr" else j["rule"],
                             "id": _key(kind, p, j["id"]), "job": j, "dir": str(d)})
     return out
@@ -141,6 +141,16 @@ def _cont_one(job: dict, rate_dir: str, max_rounds: int, cost, hours: float) -> 
 def read_record(path):
     from sim.records_v2 import read
     return read(path)
+
+
+def _gate_wellformed(g) -> bool:
+    """Run B's comparison as compare_round1 writes it: a boolean pass, a list of problems, and three differences that
+    are numbers (not booleans, not NaN; an infinite gain difference is how Run B reports unequal lengths). Anything else
+    is a malformed record, not a measurement (review rep-impl-r6)."""
+    if not isinstance(g, dict) or type(g.get("pass")) is not bool or not isinstance(g.get("problems"), list):
+        return False
+    vals = [g.get(k) for k in ("max_knob_rel", "max_change_abs", "max_gain_abs")]
+    return all(isinstance(v, (int, float)) and not isinstance(v, bool) and not math.isnan(v) for v in vals)
 
 
 def identical(rec) -> bool:
@@ -268,6 +278,8 @@ def cont_problem(rec, key: str, job: dict, smoke: bool = False, max_rounds: int 
         h = rec.get("heldout")
         if not (_valid_held(h, seeds) and _knobs_ok(h.get("knobs"))):
             return "held-out result missing, nonfinite, on other seeds or with a zero normalizer"
+        if (n := _n_of(job)) is None or safe_terms(h, n) is None:          # review rep-impl-r6: the same normalizer and
+            return "held-out normalizer not positive after division by N, or a term not finite"   # term checks as scoring
         if x := _rounds_problem(rec, max_rounds):
             return x
         if isinstance(g, dict) and (x := _round1_problem(rec, doubling, search)):
@@ -294,7 +306,7 @@ def _mismatch(rec, doubling=None, search=None) -> bool:
         return False
     if str(rec.get("status", "")).startswith("stopped: round 1"):
         return True
-    if not isinstance(rec.get("round1_gate"), dict):
+    if not _gate_wellformed(rec.get("round1_gate")):      # no comparison, or a malformed one: an invalid record
         return False
     if not identical(rec):
         return True
@@ -327,7 +339,9 @@ def run_queue(queue: list, base: Path, workers: int, cost=None, max_rounds: int 
     items = [(gate, gdest)] + [(c, dest(c)) for c in queue]
     saved = {d: _d(read_record(d)) for _, d in items}                   # a non-object root counts as no record
     dbl = {d: doubling_of(c["dir"], c["job"]["id"]) for c, d in items}; srch = {d: search_of(c["dir"], c["job"]["id"]) for c, d in items}
-    other = [c["id"] for c, d in items if saved[d] is not None and not _same(saved[d].get("provenance"), c["job"].get("provenance"))]
+    other = [c["id"] for c, d in items if saved[d] is not None and isinstance(saved[d].get("provenance"), dict)   # a binding
+             and not _same(saved[d]["provenance"], c["job"].get("provenance"))]   # that names another job or run; a missing
+                                                                                  # or malformed one is an invalid record
     if other:                                                            # plan section 5: reuse only this run's records
         raise SystemExit(f"replication refused: saved continuation records of another job or run: {other[:3]}")
     if any(_mismatch(saved[d], dbl[d], srch[d]) for _, d in items):     # a measured disagreement included (review rep-impl-r5)
@@ -356,7 +370,7 @@ def run_queue(queue: list, base: Path, workers: int, cost=None, max_rounds: int 
         return {"run": run, "exit": 4, "gate": "round-1 mismatch at the gate: continuation stopped"}
     if cost_stopped(g):
         return {"run": run, "exit": 3, "gate": "the gate cell was refused at the cost cap: no further cell started"}
-    if not smoke and not identical(g):                                   # the gate must prove identity, not just not fail
+    if not smoke and _gate_wellformed((g or {}).get("round1_gate")) and not identical(g):   # a measured, not identical gate
         return {"run": run, "exit": 4, "gate": "the gate has no identical round-1 comparison: continuation stopped"}
     if (why := cont_problem(g, gate["id"], gate["job"], smoke, max_rounds=1, doubling=dbl[gdest], search=srch[gdest])) is not None:
         return {"run": run, "exit": 6, "gate": f"the gate record fails its checks: {why}"}
@@ -419,6 +433,8 @@ def base_problem(d: Path, job: dict, ev, db) -> str | None:
         return "evaluation record of another stage, cell or run"
     if not _valid_held(ev, seeds):
         return "evaluation values nonfinite or on other seeds"
+    if (n := _n_of(job)) is None or safe_terms(ev, n) is None:
+        return "evaluation normalizer not positive after division by N, or a term not finite"
     if x := _deps_problem(d, ev, {fz, rid, job["id"]}):
         return "evaluation: " + x
     if db is None:
@@ -433,6 +449,8 @@ def base_problem(d: Path, job: dict, ev, db) -> str | None:
     h = db.get("heldout")
     if not _valid_held(h, seeds) or not _knobs_ok(h.get("knobs")):
         return "doubling held-out result missing, nonfinite or on other seeds"
+    if safe_terms(h, n) is None:
+        return "doubling normalizer not positive after division by N, or a term not finite"
     ref = read_record(R.path_of(d, rid))
     if ref is None or not isinstance(ref.get("upstream"), dict):
         return "no reference record"
@@ -504,6 +522,14 @@ def cont_diag_ok(rec, key: str, job: dict, knobs) -> bool:
         _same(rec.get("provenance"), job["provenance"]) and diag_ok(rec, job["mkt"]["seeds_eval"], knobs)
 
 
+def _n_of(job) -> int | None:
+    try:
+        n = _n_agents(job)
+        return n if type(n) is int and n > 0 else None
+    except (KeyError, TypeError, AttributeError, ValueError):
+        return None
+
+
 def safe_terms(h: dict, n: int):
     """terms_of, or None when a normalizer S*/N is not positive after the division or any term is not finite (review
     rep-impl-r5: S* = 5e-324 passed as positive, then became 0 after division by N)."""
@@ -559,7 +585,9 @@ def collect(base: Path, jobs_by_dir: dict, gate: dict | None, smoke: bool = Fals
         for j in jobs:
             m, r = j["mkt"]["label"].replace("fresh", "rep"), analysis_rule(kind, j["rule"])
             ev = _d(read_record(R.eval_path(d, j["id"]))); db = doubling_of(d, j["id"]); sr = search_of(d, j["id"]) or {}
-            seeds = j["mkt"]["seeds_eval"]
+            seeds = j["mkt"]["seeds_eval"]; key = _key(kind, p, j["id"])
+            if _mismatch(_d(read_record(cdir / (R._safe(key) + ".json"))), db, sr):   # review rep-impl-r6: before any
+                mismatch = True; problems.append(f"{key}: round 1 differs from the doubling record")   # base exclusion
             if (why := base_problem(d, j, ev, db)) is not None:
                 unscorable.append(f"{kind}-p{p:g}|{j['id']}: {why}"); continue
             n = _n_agents(j); fz = safe_terms(ev, n)
@@ -578,8 +606,6 @@ def collect(base: Path, jobs_by_dir: dict, gate: dict | None, smoke: bool = Fals
             key = _key(kind, p, j["id"])
             if db["incomplete"]:
                 crec = _d(read_record(cdir / (R._safe(key) + ".json")))
-                if _mismatch(crec, db, sr):                                    # plan section 4: a round-1 mismatch stops
-                    mismatch = True; problems.append(f"{key}: round 1 differs from the doubling record")   # everything
                 if crec is None:
                     kw = "not continued"
                 elif (why := cont_problem(crec, key, j, smoke, doubling=db, search=sr)) is not None:   # plan section 4: invalid output keeps

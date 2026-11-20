@@ -108,7 +108,10 @@ Each ruling quotes the plan text it applies (`test_notes.py`); anything the plan
     round's, on the job's own evaluation seeds (the gate included); a measured round 1 must also agree with the cell's
     own doubling record and frozen search (held-out knobs and mean, both changes, round 1's best knobs, the doubling
     winner's held-out gains) and carry Run B's empty problems list; a well-formed round 1 that disagrees is a round-1
-    mismatch (all continuation stops, no primary set), a malformed one an invalid record. A wrong value type anywhere,
+    mismatch (all continuation stops, no primary set), checked for every cell before any base-record exclusion; a
+    malformed round 1 or comparison is an invalid record. The normalizer checks run in the shared validation (gate,
+    continuation, resume, evaluation and doubling records). On resume, a saved record whose well-formed provenance
+    names another job or run refuses the run; a missing or malformed provenance makes it an invalid record (review r6). A wrong value type anywhere,
     a record root that is not an object, a number too large for a float, or a normalizer that is not positive after
     the division by N is a failed check, not an error; identity comparisons use strict JSON equality (review r4, r5). The same check runs before a saved record is reused
     on resume; a record that fails it, an unknown status included, is set aside and its cell rerun (review r4). In the analysis, a flagged cell whose
