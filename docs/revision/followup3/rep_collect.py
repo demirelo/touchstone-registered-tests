@@ -275,8 +275,8 @@ def cont_problem(rec, key: str, job: dict, smoke: bool = False, max_rounds: int 
     st = rec.get("status")
     if st not in STATUSES:
         return f"unknown continuation status {st!r}"
-    if st == STATUSES[3] and not (_gate_wellformed(rec.get("round1_gate")) and not identical(rec)):   # review rep-impl-r7
-        return "a round-1 mismatch status without its failing comparison"
+    if st == STATUSES[3] and not _mismatch(rec, doubling, search):      # reviews rep-impl-r7, r8: the status needs
+        return "a round-1 mismatch status without measured evidence"    # measured evidence (a failing comparison or values)
     if st in STATUSES[:2]:
         g = rec.get("round1_gate")
         if not (identical(rec) or (smoke and g == SMOKE_GATE)):
@@ -330,10 +330,8 @@ def _mismatch(rec, doubling=None, search=None) -> bool:
         return False
     if not _gate_wellformed(rec.get("round1_gate")):      # no comparison, or a malformed one: an invalid record, whatever
         return False                                      # the status says (review rep-impl-r7: a status proves nothing)
-    if str(rec.get("status", "")).startswith("stopped: round 1"):
-        return not identical(rec)                         # Run B's mismatch record carries its failing comparison
-    if not identical(rec):
-        return True
+    if not identical(rec):                                # a failing comparison, whatever the status
+        return True                                       # (review rep-impl-r8: no status shortcut either way)
     return _round1_ready(rec, doubling, search) and _round1_problem(rec, doubling, search) is not None
 
 

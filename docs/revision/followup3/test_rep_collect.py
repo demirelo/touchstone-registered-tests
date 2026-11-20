@@ -1116,3 +1116,47 @@ def test_only_a_well_formed_foreign_provenance_refuses_the_resume(tmp_path, monk
         assert calls == []
     else:
         assert D.run_queue(q, tmp_path, workers=1, gate=_gate())["exit"] == 0 and calls == [["c1"]]
+
+
+# ---- review rep-impl-r8 (Sol 1, Astra 1) ----------------------------------------------------------------------------------
+
+@pytest.mark.parametrize("status", ["passed", "stopped: round 1 differs from the registered doubling"])
+def test_a_measured_disagreement_is_a_mismatch_whatever_the_status(tmp_path, monkeypatch, status):
+    # Sol 1, Astra 1: with the mismatch status, the status branch returned before the measured round-1 values were checked
+    a, gj, key = _flagged_with_gate(tmp_path)
+    _edit(_cpath(tmp_path, key), lambda r: (r.update(status=status), r["rounds"][0].update(attack_change=0.02)))
+    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))
+    assert col["round1_mismatch"] is True and col["primary"] is None
+    calls = []
+    monkeypatch.setattr(D, "_cont_one", _ok); monkeypatch.setattr(D, "run_cells", _pool(calls))
+    q = _queue(2); assert D.run_queue(q, tmp_path / "q", workers=1, gate=_gate())["exit"] == 0
+    _edit(tmp_path / "q" / "continuation" / "c1.json", lambda r: (r.update(status=status), r["rounds"][0].update(attack_change=0.02)))
+    calls.clear(); res = D.run_queue(q, tmp_path / "q", workers=1, gate=_gate())
+    assert res["exit"] == 4 and calls == []
+
+
+_DISAGREE = {
+    "attack_change": lambda r: r["rounds"][0].update(attack_change=r["rounds"][0]["attack_change"] + 0.01),
+    "reference_change": lambda r: r["rounds"][0].update(reference_change=r["rounds"][0]["reference_change"] + 0.01),
+    "round1_best_knobs": lambda r: r["rounds"][0].update(best_knobs={"u0": 7.0, "x": 7}),
+    "heldout_knobs": lambda r: r["round1_gate"].update(heldout_knobs={"u0": 7.0, "x": 7}),
+    "heldout_mean": lambda r: r["round1_gate"].update(heldout_mean=r["round1_gate"]["heldout_mean"] + 0.01),
+}
+
+
+@pytest.mark.parametrize("status", D.STATUSES)
+@pytest.mark.parametrize("field", sorted(_DISAGREE))
+def test_every_status_with_every_well_formed_round1_disagreement_is_a_mismatch(tmp_path, monkeypatch, status, field):
+    # review rep-impl-r8 guard against the class: the status must never decide whether measured evidence counts
+    def damage(r):
+        r["status"] = status; _DISAGREE[field](r)
+    a, gj, key = _flagged_with_gate(tmp_path)
+    _edit(_cpath(tmp_path, key), damage)
+    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))
+    assert col["round1_mismatch"] is True and col["primary"] is None
+    calls = []
+    monkeypatch.setattr(D, "_cont_one", _ok); monkeypatch.setattr(D, "run_cells", _pool(calls))
+    q = _queue(2); assert D.run_queue(q, tmp_path / "q", workers=1, gate=_gate())["exit"] == 0
+    _edit(tmp_path / "q" / "continuation" / "c1.json", damage)
+    calls.clear(); res = D.run_queue(q, tmp_path / "q", workers=1, gate=_gate())
+    assert res["exit"] == 4 and calls == []
