@@ -1192,3 +1192,16 @@ def test_a_malformed_round1_with_a_disagreement_is_an_invalid_record(tmp_path, m
     _edit(tmp_path / "q" / "continuation" / "c1.json", damage)
     calls.clear(); res = D.run_queue(q, tmp_path / "q", workers=1, gate=_gate())
     assert res["exit"] == 0 and calls == [["c1"]]
+
+
+# ---- review rep-impl-r10 caveats (Sol 1, Astra 1) -------------------------------------------------------------------------
+
+def test_a_cost_stopped_record_with_a_malformed_measured_round_counts_as_not_continued(tmp_path):
+    # both r10 caveats: a cost-stop status bypassed round validation, so a malformed measured round counted as "stopped"
+    a, gj, key = _flagged_with_gate(tmp_path)
+    _edit(_cpath(tmp_path, key), lambda r: (r.update(status="stopped at the cost cap"), r["rounds"][0].update(attack_f=None)))
+    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))
+    assert col["counts"]["not continued"] == 1 and col["counts"]["stopped"] == 0 and col["round1_mismatch"] is False
+    _edit(_cpath(tmp_path, key), lambda r: r["rounds"][0].update(attack_f=1.0))       # well-formed: counted as stopped
+    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))
+    assert col["counts"]["stopped"] == 1 and col["primary"]["0"]["rep0"]["R3"]["gain"] == [0.1, 0.3]

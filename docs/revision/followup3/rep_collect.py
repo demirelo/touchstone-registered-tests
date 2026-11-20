@@ -179,6 +179,15 @@ def _knobs_ok(k) -> bool:
     return isinstance(k, dict) and bool(k) and all(isinstance(x, str) for x in k) and _finite(list(k.values()))
 
 
+def _round_fields_problem(rounds: list) -> str | None:
+    """Each measured round well-formed: numbered 1..k, finite search and reference values, well-formed knobs."""
+    for i, r in enumerate(rounds):
+        if not isinstance(r, dict) or type(r.get("round")) is not int or r["round"] != i + 1 or not _finite([r.get(k) for k in ("attack_f", "attack_change", "reference_f", "reference_change")]) \
+                or not _knobs_ok(r.get("best_knobs")):
+            return f"round {i + 1} malformed or nonfinite"
+    return None
+
+
 def _rounds_problem(rec: dict, max_rounds: int) -> str | None:
     """Run B's rounds (convergence_v2.run_cell; review rep-impl-r3): numbered 1..k with k <= max_rounds, finite search and
     reference values with finite knobs; "passed" exactly when the last round is the first that passes the doubling
@@ -187,10 +196,8 @@ def _rounds_problem(rec: dict, max_rounds: int) -> str | None:
     rounds = rec.get("rounds")
     if not isinstance(rounds, list) or not 1 <= len(rounds) <= max_rounds:
         return "rounds missing or beyond the cap"
-    for i, r in enumerate(rounds):
-        if not isinstance(r, dict) or type(r.get("round")) is not int or r["round"] != i + 1 or not _finite([r.get(k) for k in ("attack_f", "attack_change", "reference_f", "reference_change")]) \
-                or not _knobs_ok(r.get("best_knobs")):
-            return f"round {i + 1} malformed or nonfinite"
+    if (x := _round_fields_problem(rounds)):
+        return x
     ok = [_passes(r) for r in rounds]
     if rec["status"] == "passed" and not (ok[-1] and not any(ok[:-1])):
         return "status passed without a final passing round"
@@ -277,6 +284,9 @@ def cont_problem(rec, key: str, job: dict, smoke: bool = False, max_rounds: int 
     st = rec.get("status")
     if st not in STATUSES:
         return f"unknown continuation status {st!r}"
+    if st == STATUSES[2] and rec.get("rounds") not in (None, []) and \
+            (not isinstance(rec["rounds"], list) or len(rec["rounds"]) > max_rounds or _round_fields_problem(rec["rounds"])):
+        return "a cost-stopped record with malformed measured rounds"   # review rep-impl-r10 caveat: counted not continued
     if st == STATUSES[3] and not _mismatch(rec, doubling, search):      # reviews rep-impl-r7, r8: the status needs
         return "a round-1 mismatch status without measured evidence"    # measured evidence (a failing comparison or values)
     if st in STATUSES[:2]:

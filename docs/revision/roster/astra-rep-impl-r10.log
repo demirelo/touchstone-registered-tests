@@ -1,0 +1,1688 @@
+OpenAI Codex v0.167.1
+--------
+workdir: /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+model: gpt-6-astra
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1f983-edfe-7e40-ac28-1a0ef69201d3
+--------
+user
+# Churn replication: implementation and launcher review, round 10 (read-only; no paid APIs; do not read `sealed/`, `~/touchstone-h4`, or `~/h4-session.out`; `sealed2/h4/` may be read; reasoning effort high; under 400 words)
+
+Round 9: `docs/revision/roster/{sol,astra}-rep-impl-r9.md` (Sol reject on one finding; Astra accept). The response ledger `docs/revision/followup3/rep-impl-r9-response.md` (item P1) gives the correction and its test (20 of 24 cases failed first on a5baace); `git diff a5baace..HEAD -- docs/revision/followup3/` shows the change (a few lines in `_round1_ready` plus tests). Plan of record and rulings unchanged.
+
+Evidence you cannot rerun in a read-only sandbox: launcher and harness unchanged since `results/pods/logs_harness/rep_pod_r3_20261120T023740Z.log` (HARNESS OK, 47 of 47). Checks you can run: `uv run --frozen pytest -q docs/revision/followup3/` (229 pass, 1 skip).
+
+Check:
+1. P1: is a malformed round 1 now always an invalid record and a well-formed disagreement always a mismatch, in collect and on resume?
+2. Anything else you can show with a probe or a line that makes the result uninterpretable; accept-with-caveat is available for minor items.
+
+Output exactly:
+VERDICT: accept | accept-with-caveat | reject
+CORRECTIONS: numbered, each with file and line or section, or "none".
+CONFIDENCE: 0 to 1.
+
+2026-11-20T15:12:15.775286Z ERROR codex_api::endpoint::responses_websocket: failed to connect to Responses WebSocket stage=Unknown
+hook: SessionStart
+hook: SessionStart Completed
+codex
+I will check the P1 change, trace collect and resume, and run the permitted tests. I will not access the excluded paths or paid APIs.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg -n 'touchstone|churn|rep-impl' /Users/oemer.demirel/.codex/memories/MEMORY.md" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+645:- Symptom: Astro build errors with `Cannot find module '@rollup/rollup-darwin-arm64'` -> run `npm install && npm run build`, then remove unrelated lockfile churn before finalizing. [Task 1]
+759:# Task Group: researchos-public-demo-realistic-churn-study
+764:## Task 1: Redesign and publish a realistic public churn-study demo
+768:- rollout_summaries/2026-11-06T10-21-00-6Yvt-redesign_public_demo_realistic_churn_study.md (cwd=/Users/oemer.demirel/Documents/ChatGPT/researchos, rollout_path=/Users/oemer.demirel/.codex/sessions/2026/11/06/rollout-2026-11-06T11-21-00-01a1b060-4152-7a40-bcd5-386dfb1c082f.jsonl, updated_at=2026-11-06T22:21:46+00:00, thread_id=01a1b060-4152-7a40-bcd5-386dfb1c082f, success; visual browser inspection unavailable)
+772:- ResearchOS, public demo, churn study, synthetic data, `tools/build_public_demo.py`, `tools/public_demo/experiment.py`, GitHub Pages, SHA-256, PR #20
+780:- `tools/public_demo/experiment.py` computes the synthetic churn experiment; `tools/build_public_demo.py` builds it; `tools/public_demo/index.html`, `demo.css`, and `demo.js` implement the UI. The builder requires an empty output directory, labels data synthetic, packages reproducible ZIPs, and produces a SHA-256 manifest. [Task 1]
+1079:# Task Group: anthropic-residency-application-writing-and-touchstone-research
+1088:- rollout_summaries/2026-11-03T12-32-03-zdzn-anthropic_residency_writing_touchstone_research_plan.md (cwd=/Users/oemer.demirel/Documents/Codex/2026-11-03/why-anthropic-anthropic-sets-the-frontier, rollout_path=/Users/oemer.demirel/.codex/sessions/2026/11/03/rollout-2026-11-03T13-32-03-01a1a165-260e-7180-9d34-c9dc6bf34b4d.jsonl, updated_at=2026-11-03T13:02:09+00:00, thread_id=01a1a165-260e-7180-9d34-c9dc6bf34b4d, success; application answers finalized)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'git status --short; git diff a5baace..HEAD -- docs/revision/followup3/' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+?? docs/paper/astra-pro-ext12-triage.md
+?? docs/revision/roster/astra-rep-impl-r10.log
+?? docs/revision/roster/sol-rep-impl-r10.log
+diff --git a/docs/revision/followup3/rep-impl-r9-response.md b/docs/revision/followup3/rep-impl-r9-response.md
+new file mode 100644
+index 0000000..092c40e
+--- /dev/null
++++ b/docs/revision/followup3/rep-impl-r9-response.md
+@@ -0,0 +1,10 @@
++# Replication implementation review r9: response ledger
++
++Reviews: `docs/revision/roster/{sol,astra}-rep-impl-r9.md` (Sol reject, one finding; Astra accept, 0.95). Plan of record
++unchanged.
++
++| # | Correction (Sol #) | Plan text | Status |
++|---|---|---|---|
++| P1 | A measured round 1 counts as evidence only when every round-1 field `_rounds_problem` checks is well-formed (round number exactly the integer 1, attack_f, attack_change, reference_f, reference_change finite, best knobs well-formed), so a malformed round 1 combined with a disagreement follows the invalid-record path: not continued in the analysis, rerun on resume (S1) | ruling 10: a malformed round 1 is an invalid record | fixed in `rep_collect._round1_ready`: test_a_malformed_round1_with_a_disagreement_is_an_invalid_record (5 malformations x 5 disagreements, 24 cases, collection and resume; 20 failed first on a5baace, the 4 empty-knobs cases already passed) |
++
++Checks: `uv run --frozen pytest -q docs/revision/followup3/` (229 pass, 1 skip). Launcher and harness unchanged.
+diff --git a/docs/revision/followup3/rep_collect.py b/docs/revision/followup3/rep_collect.py
+index 8841a34..5c37814 100644
+--- a/docs/revision/followup3/rep_collect.py
++++ b/docs/revision/followup3/rep_collect.py
+@@ -214,7 +214,9 @@ def _round1_ready(rec, doubling, search) -> bool:
+         return False
+     r1, fh = rounds[0], rec.get("heldout")                  # the measured values and both doubling changes must be
+     if not (_finite([doubling.get("attack_change"), doubling.get("reference_change")]) and   # well-formed (review r7)
+-            _finite([r1.get("attack_change"), r1.get("reference_change"), g.get("heldout_mean")]) and
++            type(r1.get("round")) is int and r1["round"] == 1 and           # review rep-impl-r9: every round-1 field
++            _finite([r1.get(k) for k in ("attack_f", "attack_change", "reference_f", "reference_change")]) and   # _rounds_problem checks
++            _finite([g.get("heldout_mean")]) and
+             _knobs_ok(r1.get("best_knobs")) and _knobs_ok(g.get("heldout_knobs"))):
+         return False
+     return not (isinstance(fh, dict) and _same(fh.get("knobs"), h["knobs"])) or _finite(fh.get("gain"))
+diff --git a/docs/revision/followup3/test_rep_collect.py b/docs/revision/followup3/test_rep_collect.py
+index 80e4b1c..ed50ad9 100644
+--- a/docs/revision/followup3/test_rep_collect.py
++++ b/docs/revision/followup3/test_rep_collect.py
+@@ -1160,3 +1160,35 @@ def test_every_status_with_every_well_formed_round1_disagreement_is_a_mismatch(t
+     _edit(tmp_path / "q" / "continuation" / "c1.json", damage)
+     calls.clear(); res = D.run_queue(q, tmp_path / "q", workers=1, gate=_gate())
+     assert res["exit"] == 4 and calls == []
++
++
++# ---- review rep-impl-r9 (Sol 1) -------------------------------------------------------------------------------------------
++
++_MALFORM = {
++    "round": lambda r: r["rounds"][0].update(round=True),
++    "round-number": lambda r: r["rounds"][0].update(round=2),
++    "attack_f": lambda r: r["rounds"][0].update(attack_f=None),
++    "reference_f": lambda r: r["rounds"][0].update(reference_f=float("nan")),
++    "best_knobs": lambda r: r["rounds"][0].update(best_knobs={}),
++}
++
++
++@pytest.mark.parametrize("field", sorted(_DISAGREE))
++@pytest.mark.parametrize("bad", sorted(_MALFORM))
++def test_a_malformed_round1_with_a_disagreement_is_an_invalid_record(tmp_path, monkeypatch, bad, field):
++    # Sol 1 (r9): a malformed round 1 combined with a disagreement was classified as a mismatch; ruling 10 prescribes the
++    # invalid-record path (not continued in the analysis, rerun on resume)
++    if bad == "best_knobs" and field == "round1_best_knobs":
++        pytest.skip("the same field")
++    def damage(r):
++        _DISAGREE[field](r); _MALFORM[bad](r)
++    a, gj, key = _flagged_with_gate(tmp_path)
++    _edit(_cpath(tmp_path, key), damage)
++    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))
++    assert col["round1_mismatch"] is False and col["primary"] is not None and col["counts"]["not continued"] == 1
++    calls = []
++    monkeypatch.setattr(D, "_cont_one", _ok); monkeypatch.setattr(D, "run_cells", _pool(calls))
++    q = _queue(2); assert D.run_queue(q, tmp_path / "q", workers=1, gate=_gate())["exit"] == 0
++    _edit(tmp_path / "q" / "continuation" / "c1.json", damage)
++    calls.clear(); res = D.run_queue(q, tmp_path / "q", workers=1, gate=_gate())
++    assert res["exit"] == 0 and calls == [["c1"]]
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "cat docs/revision/roster/sol-rep-impl-r9.md docs/revision/roster/astra-rep-impl-r9.md; nl -ba docs/revision/followup3/rep_collect.py | sed -n '1,400p'; rg -n 'round1|_rounds_problem|validate|record_problem|ruling 10|Plan of record' docs/revision/followup3/ --glob '"'!*.json'"'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+VERDICT: reject
+
+CORRECTIONS:
+1. `docs/revision/followup3/rep_collect.py:204–220` — `_round1_ready` omits the round number, `attack_f`, and `reference_f` checks required at lines 191–193. An in-memory probe with an identical comparison, `rounds[0].attack_f=None`, and `attack_change=0.02` against doubling’s `0.01` makes `cont_problem` report “round 1 malformed or nonfinite”. However, collection removes the primary set, and resume exits 4 without rerunning. Ruling 10 requires the invalid-record path for a malformed round 1. Validate the required first-round fields independently of status before classifying a recomputed disagreement. Add collection and resume tests that combine malformed fields with disagreements. N1/N2’s status shortcut is corrected; this classification defect remains.
+
+CONFIDENCE: 0.99.VERDICT: accept
+CORRECTIONS: none.
+CONFIDENCE: 0.95.     1	"""The replication's continuation stage and record loader (replication-plan.md, sections 2 and 4).
+     2	continue: the flagged cells of every rate directory, in the fixed queue order; the first cell runs alone as the
+     3	  nonzero-churn continuation gate (round 1 against this run's own doubling record); the rest run in workers that each
+     4	  install the churn-aware adapter and save their own record.
+     5	collect: per winner set (frozen, primary), gains[rate][market][rule] for replication_analysis, R3's audited share of the
+     6	  attacker's jobs per market from the diagnostics (frozen winners), and the counts of continued, unresolved, stopped and
+     7	  not-continued cells. A round-1 mismatch anywhere makes the primary set unavailable (plan section 4)."""
+     8	from __future__ import annotations
+     9	
+    10	import json
+    11	import math
+    12	import sys
+    13	from pathlib import Path
+    14	
+    15	HERE = Path(__file__).resolve().parent
+    16	for p in (HERE, HERE.parent / "churn", HERE.parent / "followup2", HERE.parent / "followup"):
+    17	    if str(p) not in sys.path:
+    18	        sys.path.insert(0, str(p))
+    19	
+    20	RATE_DIRS = (0.0, 0.03, 0.05)
+    21	
+    22	
+    23	class Round1Mismatch(Exception):
+    24	    """Round 1 of a continuation differs from this run's doubling record: an environment or code fault."""
+    25	
+    26	
+    27	def analysis_rule(kind: str, rule: str) -> str:
+    28	    if kind == "cthr":
+    29	        return "C-thr"
+    30	    return {"F111": "R3", "C*": "C*", "F000": "B3"}[rule]
+    31	
+    32	
+    33	def _num(x) -> bool:
+    34	    """A finite number: not a boolean, and an int too large for a float is not (review rep-impl-r5: 10**400)."""
+    35	    if isinstance(x, bool) or not isinstance(x, (int, float)):
+    36	        return False
+    37	    try:
+    38	        return math.isfinite(float(x))
+    39	    except OverflowError:
+    40	        return False
+    41	
+    42	
+    43	def _finite(xs) -> bool:
+    44	    """A nonempty list of finite numbers; any other type is not (reviews rep-impl-r4, r5)."""
+    45	    return isinstance(xs, (list, tuple)) and bool(xs) and all(_num(x) for x in xs)
+    46	
+    47	
+    48	def _same(a, b) -> bool:
+    49	    """Equality that does not let True stand for 1 or 1.0 for 1 (review rep-impl-r5): the canonical JSON texts agree."""
+    50	    try:
+    51	        return json.dumps(a, sort_keys=True) == json.dumps(b, sort_keys=True)
+    52	    except (TypeError, ValueError):
+    53	        return False
+    54	
+    55	
+    56	def _d(x):
+    57	    """A record is a JSON object; any other root (a list, a number) counts as no valid record (review rep-impl-r5)."""
+    58	    return x if isinstance(x, dict) else None
+    59	
+    60	
+    61	def _checked(fn):
+    62	    """A record check never raises on a malformed record: a wrong type anywhere is a problem, not an error (review
+    63	    rep-impl-r4). The explicit type checks come first; this is the last line."""
+    64	    import functools
+    65	
+    66	    @functools.wraps(fn)
+    67	    def run(*a, **k):
+    68	        try:
+    69	            return fn(*a, **k)
+    70	        except (TypeError, ValueError, KeyError, AttributeError, IndexError, OverflowError, ZeroDivisionError) as e:
+    71	            return f"malformed record ({type(e).__name__})"
+    72	    return run
+    73	
+    74	
+    75	def select_winner(frozen: list, rec: dict | None) -> tuple:
+    76	    """(gains, kind) for one flagged cell: a passed cell uses its continued winner ("continued"); a cell at the round cap
+    77	    uses its last winner ("unresolved"); a cost-stopped cell keeps the frozen winner and drops its partial rounds
+    78	    ("stopped"); a missing or nonfinite continuation keeps the frozen winner ("not continued"); a round-1 mismatch raises."""
+    79	    if rec is None:
+    80	        return frozen, "frozen"
+    81	    st = str(rec.get("status", ""))
+    82	    if st.startswith("stopped: round 1"):
+    83	        raise Round1Mismatch(rec.get("id", "?"))
+    84	    if st == "stopped at the cost cap":
+    85	        return frozen, "stopped"
+    86	    g = (rec.get("heldout") or {}).get("gain")
+    87	    if not _finite(g):
+    88	        return frozen, "not continued"
+    89	    return list(g), ("continued" if st == "passed" else "unresolved")
+    90	
+    91	
+    92	def _key(kind: str, p: float, jid: str) -> str:
+    93	    return f"{kind}-p{p:g}|{jid}"
+    94	
+    95	
+    96	def flagged_cells(base: Path, jobs_by_dir: dict) -> list:
+    97	    """Every cell whose doubling record says incomplete, as queue items (rate, market, rule, id, job, dir)."""
+    98	    import revision_v2 as R
+    99	    from sim.records_v2 import read
+   100	    out = []
+   101	    for (kind, p), jobs in jobs_by_dir.items():
+   102	        d = Path(base) / f"{kind}-p{p:g}"
+   103	        for j in jobs:
+   104	            rec = _d(read(d / "doubling" / (R._safe(j["id"]) + ".json")))       # a non-object root counts as absent
+   105	            if rec is not None and rec.get("incomplete") is True:
+   106	                out.append({"rate": p, "market": j["mkt"]["label"], "rule": "Cthr" if kind == "cthr" else j["rule"],
+   107	                            "id": _key(kind, p, j["id"]), "job": j, "dir": str(d)})
+   108	    return out
+   109	
+   110	
+   111	def round_hours(job: dict) -> float:
+   112	    """One continuation round's admission estimate (Run B's rule): a doubling-size search and its 200-seed evaluation from
+   113	    the benchmark, times the churn slowdown (1.33 at p > 0, the churn arm's rate stages), plus 0.1 h shutdown."""
+   114	    import json as _j
+   115	    from convergence_v2 import ROOT as _ROOT
+   116	    t = _j.loads((_ROOT / "experiments/v2/benchmark/timings.json").read_text())["timings"]
+   117	    base = (t["doubling_x7"] if job.get("family") == "X7-SC" else t["doubling"]) + t["eval160"]["profit"] * 200 / 160
+   118	    return base * (1.33 if float(job.get("churn") or 0) > 0 else 1.0) / 3600 + 0.1
+   119	
+   120	
+   121	def run_cells(*args):
+   122	    """Run B's worker pool (each worker saves its own record); a module-level name so tests can replace it."""
+   123	    from convergence_v2 import run_cells as rc
+   124	    return rc(*args)
+   125	
+   126	
+   127	def write_record(dest, rec: dict) -> None:
+   128	    from sim.records_v2 import write
+   129	    write(dest, rec)
+   130	
+   131	
+   132	def _cont_one(job: dict, rate_dir: str, max_rounds: int, cost, hours: float) -> dict:
+   133	    """In a worker: install the churn-aware adapter, then continue one cell; round 1 is compared with this run's
+   134	    doubling record in the same rate directory. Every round is admitted with `hours` against the cost stop."""
+   135	    from continuation import install_continuation
+   136	    install_continuation()
+   137	    import convergence_v2 as B
+   138	    return B.run_cell(job, rate_dir, max_rounds=max_rounds, src=rate_dir, cost=cost, round_hours=hours)
+   139	
+   140	
+   141	def read_record(path):
+   142	    from sim.records_v2 import read
+   143	    return read(path)
+   144	
+   145	
+   146	def _gate_wellformed(g) -> bool:
+   147	    """Run B's comparison as compare_round1 writes it: a boolean pass, a list of problems, and three differences that
+   148	    are numbers (not booleans, not NaN; an infinite gain difference is how Run B reports unequal lengths). Anything else
+   149	    is a malformed record, not a measurement (review rep-impl-r6)."""
+   150	    if not isinstance(g, dict) or type(g.get("pass")) is not bool or not isinstance(g.get("problems"), list):
+   151	        return False
+   152	    vals = [g.get(k) for k in ("max_knob_rel", "max_change_abs", "max_gain_abs")]
+   153	    if not all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in vals):
+   154	        return False
+   155	    try:
+   156	        return not any(math.isnan(float(v)) for v in vals)
+   157	    except OverflowError:                                  # an int too large for a float (review rep-impl-r7)
+   158	        return False
+   159	
+   160	
+   161	def identical(rec) -> bool:
+   162	    rec = _d(rec)
+   163	    """Round 1 equals this run's doubling record exactly (plan section 5: "required identical"); Run B's comparison
+   164	    allowed 1e-9 on the continuous values, so its pass alone is not enough."""
+   165	    g = (rec or {}).get("round1_gate")
+   166	    return isinstance(g, dict) and g.get("pass") is True and g.get("problems") == [] and \
+   167	        all(g.get(k) == 0.0 and not isinstance(g.get(k), bool) for k in ("max_knob_rel", "max_change_abs", "max_gain_abs"))
+   168	
+   169	
+   170	def cost_stopped(rec) -> bool:
+   171	    return str((_d(rec) or {}).get("status", "")) == "stopped at the cost cap"
+   172	
+   173	
+   174	STATUSES = ("passed", "not passed at the cap", "stopped at the cost cap", "stopped: round 1 differs from the registered doubling")
+   175	SMOKE_GATE = "not compared (smoke)"
+   176	
+   177	
+   178	def _knobs_ok(k) -> bool:
+   179	    return isinstance(k, dict) and bool(k) and all(isinstance(x, str) for x in k) and _finite(list(k.values()))
+   180	
+   181	
+   182	def _rounds_problem(rec: dict, max_rounds: int) -> str | None:
+   183	    """Run B's rounds (convergence_v2.run_cell; review rep-impl-r3): numbered 1..k with k <= max_rounds, finite search and
+   184	    reference values with finite knobs; "passed" exactly when the last round is the first that passes the doubling
+   185	    threshold, "not passed at the cap" when k equals the cap and no round passes; the held-out winner is the last round's."""
+   186	    from convergence_v2 import _passes
+   187	    rounds = rec.get("rounds")
+   188	    if not isinstance(rounds, list) or not 1 <= len(rounds) <= max_rounds:
+   189	        return "rounds missing or beyond the cap"
+   190	    for i, r in enumerate(rounds):
+   191	        if not isinstance(r, dict) or type(r.get("round")) is not int or r["round"] != i + 1 or not _finite([r.get(k) for k in ("attack_f", "attack_change", "reference_f", "reference_change")]) \
+   192	                or not _knobs_ok(r.get("best_knobs")):
+   193	            return f"round {i + 1} malformed or nonfinite"
+   194	    ok = [_passes(r) for r in rounds]
+   195	    if rec["status"] == "passed" and not (ok[-1] and not any(ok[:-1])):
+   196	        return "status passed without a final passing round"
+   197	    if rec["status"] == STATUSES[1] and (len(rounds) != max_rounds or any(ok)):
+   198	        return "status at the cap without the capped, unpassed rounds"
+   199	    if not _same((rec.get("heldout") or {}).get("knobs"), rounds[-1]["best_knobs"]):
+   200	        return "held-out winner differs from the last round's winner"
+   201	    return None
+   202	
+   203	
+   204	def _round1_ready(rec, doubling, search) -> bool:
+   205	    """Round 1 was measured and both records it is compared with are well-formed: then any disagreement below is a
+   206	    round-1 mismatch, not a malformed record."""
+   207	    rec, doubling, search = _d(rec), _d(doubling), _d(search)
+   208	    if rec is None or doubling is None or search is None or not isinstance(rec.get("round1_gate"), dict):
+   209	        return False
+   210	    rounds, h, g = rec.get("rounds"), doubling.get("heldout"), rec["round1_gate"]
+   211	    if not (isinstance(rounds, list) and rounds and isinstance(rounds[0], dict) and isinstance(h, dict) and
+   212	            _finite(h.get("gain")) and _knobs_ok(h.get("knobs")) and isinstance(search.get("attack"), dict) and
+   213	            _knobs_ok(search["attack"].get("best_knobs"))):
+   214	        return False
+   215	    r1, fh = rounds[0], rec.get("heldout")                  # the measured values and both doubling changes must be
+   216	    if not (_finite([doubling.get("attack_change"), doubling.get("reference_change")]) and   # well-formed (review r7)
+   217	            type(r1.get("round")) is int and r1["round"] == 1 and           # review rep-impl-r9: every round-1 field
+   218	            _finite([r1.get(k) for k in ("attack_f", "attack_change", "reference_f", "reference_change")]) and   # _rounds_problem checks
+   219	            _finite([g.get("heldout_mean")]) and
+   220	            _knobs_ok(r1.get("best_knobs")) and _knobs_ok(g.get("heldout_knobs"))):
+   221	        return False
+   222	    return not (isinstance(fh, dict) and _same(fh.get("knobs"), h["knobs"])) or _finite(fh.get("gain"))
+   223	
+   224	
+   225	def _round1_problem(rec: dict, doubling, search=None) -> str | None:
+   226	    """Round 1 against this cell's own doubling record and frozen search (reviews rep-impl-r4, r5): with zero
+   227	    differences, the comparison's round-1 winner equals the doubling's held-out knobs, its held-out mean equals the mean
+   228	    of the doubling's held-out gains (the same np.mean of the same values), and round 1's two changes equal the
+   229	    doubling's; round 1's best knobs are the doubling's winner or the frozen search winner (the better of the two); and a
+   230	    final winner equal to the doubling's winner has the doubling's held-out gains exactly. All five hold on every Run B
+   231	    record with an identical round 1 (76 records; 48 with that final winner)."""
+   232	    import numpy as np
+   233	    if not _round1_ready(rec, doubling, search):
+   234	        return "no valid doubling or search record to check round 1 against"
+   235	    g, r1, h = rec["round1_gate"], rec["rounds"][0], doubling["heldout"]
+   236	    if not _same(g.get("heldout_knobs"), h["knobs"]):
+   237	        return "round-1 winner differs from the doubling record's held-out winner"
+   238	    if not _same(g.get("heldout_mean"), float(np.mean(h["gain"]))):
+   239	        return "round-1 held-out mean differs from the doubling record's"
+   240	    if not (_same(r1.get("attack_change"), doubling.get("attack_change")) and _same(r1.get("reference_change"), doubling.get("reference_change"))):
+   241	        return "round-1 changes differ from the doubling record's"
+   242	    if not any(_same(r1.get("best_knobs"), k) for k in (h["knobs"], search["attack"]["best_knobs"])):
+   243	        return "round-1 best knobs are neither the doubling winner nor the frozen winner"
+   244	    fh = rec.get("heldout")
+   245	    if isinstance(fh, dict) and _same(fh.get("knobs"), h["knobs"]) and not _same(fh.get("gain"), h["gain"]):
+   246	        return "the doubling winner's held-out gains differ from the doubling record's"
+   247	    return None
+   248	
+   249	
+   250	def doubling_of(d, jid: str):
+   251	    import revision_v2 as R
+   252	    return _d(read_record(Path(d) / "doubling" / (R._safe(jid) + ".json")))
+   253	
+   254	
+   255	def search_of(d, jid: str):
+   256	    import revision_v2 as R
+   257	    try:
+   258	        return _d(read_record(R.path_of(d, jid)))
+   259	    except ValueError:                                   # not a cell id: no search record
+   260	        return None
+   261	
+   262	
+   263	@_checked
+   264	def cont_problem(rec, key: str, job: dict, smoke: bool = False, max_rounds: int = 3, doubling=None, search=None) -> str | None:
+   265	    """A continuation record (reviews rep-impl-r2, r3): stage, id, provenance, a known status; a winner it supplies
+   266	    ("passed" or "not passed at the cap") needs its own identical round-1 comparison with a finite round-1 winner (smoke:
+   267	    not compared), well-formed rounds (_rounds_problem) and a finite held-out result with positive normalizers on the
+   268	    job's ordered evaluation seeds; a measured round 1 must agree with this cell's doubling record (`doubling`;
+   269	    _round1_problem). The job must carry its evaluation seeds: no check is skipped."""
+   270	    seeds = (job.get("mkt") or {}).get("seeds_eval")
+   271	    if not seeds:
+   272	        return "the job has no evaluation seeds to check against"
+   273	    if not isinstance(rec, dict) or rec.get("stage") != "convergence" or not _same(rec.get("id"), key):
+   274	        return "not a continuation record of this cell"
+   275	    if not _same(rec.get("provenance"), job.get("provenance")):
+   276	        return "continuation record of another job or run"
+   277	    st = rec.get("status")
+   278	    if st not in STATUSES:
+   279	        return f"unknown continuation status {st!r}"
+   280	    if st == STATUSES[3] and not _mismatch(rec, doubling, search):      # reviews rep-impl-r7, r8: the status needs
+   281	        return "a round-1 mismatch status without measured evidence"    # measured evidence (a failing comparison or values)
+   282	    if st in STATUSES[:2]:
+   283	        g = rec.get("round1_gate")
+   284	        if not (identical(rec) or (smoke and g == SMOKE_GATE)):
+   285	            return "a continued winner without its own identical round-1 comparison"
+   286	        if isinstance(g, dict) and not (_knobs_ok(g.get("heldout_knobs")) and _finite([g.get("heldout_mean")])):
+   287	            return "round-1 comparison without a finite round-1 winner"
+   288	        h = rec.get("heldout")
+   289	        if not (_valid_held(h, seeds) and _knobs_ok(h.get("knobs"))):
+   290	            return "held-out result missing, nonfinite, on other seeds or with a zero normalizer"
+   291	        if (n := _n_of(job)) is None or safe_terms(h, n) is None:          # review rep-impl-r6: the same normalizer and
+   292	            return "held-out normalizer not positive after division by N, or a term not finite"   # term checks as scoring
+   293	        if x := _rounds_problem(rec, max_rounds):
+   294	            return x
+   295	        if isinstance(g, dict) and (x := _round1_problem(rec, doubling, search)):
+   296	            return x
+   297	    return None
+   298	
+   299	
+   300	def _set_aside(cdir: Path, dest: Path) -> None:
+   301	    """Move a record that will be rerun out of the way (no deletion), so that a lost worker shows as a missing record and
+   302	    is never masked by the old one (review rep-impl-r2)."""
+   303	    if dest.exists():
+   304	        sup = cdir / "superseded"; sup.mkdir(parents=True, exist_ok=True)
+   305	        n = len(list(sup.glob(dest.stem + ".*.json")))
+   306	        dest.rename(sup / f"{dest.stem}.{n}.json")
+   307	
+   308	
+   309	def _prov_wellformed(prov, like) -> bool:
+   310	    """A provenance shaped like this job's own: the same fields, each of the same JSON type and not empty (review
+   311	    rep-impl-r7: {} or an id of None or [] is a malformed record, not another run's binding)."""
+   312	    if not isinstance(prov, dict) or not isinstance(like, dict) or set(prov) != set(like):
+   313	        return False
+   314	    kind = lambda v: "bool" if isinstance(v, bool) else "num" if isinstance(v, (int, float)) else type(v).__name__
+   315	    return all(prov[k] is not None and kind(prov[k]) == kind(like[k]) and (not isinstance(prov[k], (str, list, dict)) or prov[k])
+   316	               for k in like)
+   317	
+   318	
+   319	def _foreign(prov, like) -> bool:
+   320	    """Plan section 5 ("reuse only this run's records"): a well-formed provenance that names another job or run refuses
+   321	    the resume; a missing or malformed one is an invalid record, rerun."""
+   322	    return _prov_wellformed(prov, like) and not _same(prov, like)
+   323	
+   324	
+   325	def _mismatch(rec, doubling=None, search=None) -> bool:
+   326	    """A measured round 1 that differs from the doubling record at all: the recorded status, a comparison that is not
+   327	    identical, or (with the cell's doubling and search records) any recorded round-1 value that disagrees with them
+   328	    (_round1_problem; review rep-impl-r5). A cell refused before round 1 ("not run") or a smoke run ("not compared")
+   329	    measured nothing."""
+   330	    rec = _d(rec)
+   331	    if rec is None:
+   332	        return False
+   333	    if not _gate_wellformed(rec.get("round1_gate")):      # no comparison, or a malformed one: an invalid record, whatever
+   334	        return False                                      # the status says (review rep-impl-r7: a status proves nothing)
+   335	    if not identical(rec):                                # a failing comparison, whatever the status
+   336	        return True                                       # (review rep-impl-r8: no status shortcut either way)
+   337	    return _round1_ready(rec, doubling, search) and _round1_problem(rec, doubling, search) is not None
+   338	
+   339	
+   340	DIAG_HOURS = 60.0 * 1.33 / 3600     # one continued winner's diagnostics (stage_continue's admission: 60 s per cell at p > 0)
+   341	
+   342	
+   343	def _lost(cdir: Path, ids: list, hours: dict, max_rounds: int) -> None:
+   344	    from convergence_v2 import restart_hours
+   345	    write_record(cdir / "lost_cells.json", {"lost": ids, "restart_hours": restart_hours([hours[k] * max_rounds for k in ids])})
+   346	
+   347	
+   348	def run_queue(queue: list, base: Path, workers: int, cost=None, max_rounds: int = 3, gate: dict | None = None,
+   349	              smoke: bool = False) -> dict:
+   350	    """The nonzero-churn gate first, then the flagged cells, every cell in a child process that saves its own record
+   351	    (Run B's pool). The gate is the first p = 0.05 cell whether flagged or not (plan section 5); it runs round 1 only and
+   352	    its record (continuation/gate/) never enters a result. Exit codes: 4 a round-1 mismatch anywhere, measured or saved
+   353	    (no restart); 6 a cell error; 5 a lost worker (lost_cells.json holds the restart estimate); 3 a cost stop (a
+   354	    cost-refused gate stops before the queue); 0 otherwise. A resume reuses this run's completed records and reruns only
+   355	    cost-stopped ones."""
+   356	    import convergence_v2  # noqa: F401  (first: it puts scripts/ on the path)
+   357	    import revision_v2 as R
+   358	    if gate is None:
+   359	        raise SystemExit("replication refused: the continuation needs its gate cell (the first p = 0.05 cell)")
+   360	    cdir = Path(base) / "continuation"; cdir.mkdir(parents=True, exist_ok=True)
+   361	    gdest = cdir / "gate" / (R._safe(gate["id"]) + ".json")
+   362	    dest = lambda c: cdir / (R._safe(c["id"]) + ".json")
+   363	    items = [(gate, gdest)] + [(c, dest(c)) for c in queue]
+   364	    saved = {d: _d(read_record(d)) for _, d in items}                   # a non-object root counts as no record
+   365	    dbl = {d: doubling_of(c["dir"], c["job"]["id"]) for c, d in items}; srch = {d: search_of(c["dir"], c["job"]["id"]) for c, d in items}
+   366	    other = [c["id"] for c, d in items if saved[d] is not None and _foreign(saved[d].get("provenance"), c["job"].get("provenance"))]
+   367	    if other:                                                            # plan section 5: reuse only this run's records
+   368	        raise SystemExit(f"replication refused: saved continuation records of another job or run: {other[:3]}")
+   369	    if any(_mismatch(saved[d], dbl[d], srch[d]) for _, d in items):     # a measured disagreement included (review rep-impl-r5)
+   370	        return {"run": 0, "exit": 4, "gate": "round-1 mismatch on record: continuation stays stopped"}   # also on resume (plan section 4)
+   371	    hours = {c["id"]: round_hours(c["job"]) for c, _ in items}
+   372	    # review rep-impl-r3: a saved record is reused only if it passes the same checks collect applies; any other record
+   373	    # (incomplete, malformed, nonfinite) means "no passing record" and its cell is rerun (plan section 4: a resume
+   374	    # continues from the first cell without a passing record); the old record is set aside, never deleted
+   375	    # (an unknown status included: review rep-impl-r4; a measured round-1 mismatch stopped above and is never rerun)
+   376	    invalid = lambda c, d, mr: saved[d] is not None and not cost_stopped(saved[d]) and \
+   377	        cont_problem(saved[d], c["id"], c["job"], smoke, mr, dbl[d], srch[d]) is not None
+   378	    rerun = lambda c, d, mr: saved[d] is None or cost_stopped(saved[d]) or invalid(c, d, mr)
+   379	    run = 0
+   380	    if rerun(gate, gdest, 1):
+   381	        _set_aside(cdir, gdest)
+   382	        lost, failed = run_cells(_cont_one, [gate], [(gate["job"], gate["dir"], 1, cost, hours[gate["id"]])], 1, [gdest],
+   383	                                 [{"id": gate["id"], "gate": True}])
+   384	        run += 1
+   385	        if failed:
+   386	            return {"run": run, "failed": failed, "exit": 6, "gate": "the gate cell raised an error"}
+   387	        if lost:
+   388	            _lost(cdir, lost, hours, 1)
+   389	            return {"run": run, "lost": lost, "exit": 5, "gate": "the gate cell's worker was lost"}
+   390	    g = _d(read_record(gdest))
+   391	    if _mismatch(g, dbl[gdest], srch[gdest]):
+   392	        return {"run": run, "exit": 4, "gate": "round-1 mismatch at the gate: continuation stopped"}
+   393	    if cost_stopped(g):
+   394	        return {"run": run, "exit": 3, "gate": "the gate cell was refused at the cost cap: no further cell started"}
+   395	    if not smoke and _gate_wellformed((g or {}).get("round1_gate")) and not identical(g):   # a measured, not identical gate
+   396	        return {"run": run, "exit": 4, "gate": "the gate has no identical round-1 comparison: continuation stopped"}
+   397	    if (why := cont_problem(g, gate["id"], gate["job"], smoke, max_rounds=1, doubling=dbl[gdest], search=srch[gdest])) is not None:
+   398	        return {"run": run, "exit": 6, "gate": f"the gate record fails its checks: {why}"}
+   399	    todo = [c for c in queue if rerun(c, dest(c), max_rounds)]          # same order; completed, valid cells reused
+   400	    for c in todo:
+docs/revision/followup3/rep-impl-r9-response.md:3:Reviews: `docs/revision/roster/{sol,astra}-rep-impl-r9.md` (Sol reject, one finding; Astra accept, 0.95). Plan of record
+docs/revision/followup3/rep-impl-r9-response.md:8:| P1 | A measured round 1 counts as evidence only when every round-1 field `_rounds_problem` checks is well-formed (round number exactly the integer 1, attack_f, attack_change, reference_f, reference_change finite, best knobs well-formed), so a malformed round 1 combined with a disagreement follows the invalid-record path: not continued in the analysis, rerun on resume (S1) | ruling 10: a malformed round 1 is an invalid record | fixed in `rep_collect._round1_ready`: test_a_malformed_round1_with_a_disagreement_is_an_invalid_record (5 malformations x 5 disagreements, 24 cases, collection and resume; 20 failed first on a5baace, the 4 empty-knobs cases already passed) |
+docs/revision/followup3/rep-launcher-notes.md:122:    continuation record fails it keeps its validated frozen winner and counts as not continued, as section 4 says for
+docs/revision/followup3/rep-impl-r1-response.md:3:Reviews: `docs/revision/roster/{sol,astra}-rep-impl-r1.md` (both reject). Plan of record: `replication-plan.md`.
+docs/revision/followup3/rep-impl-r1-response.md:10:| A2 | Records bound to manifest, draw, configuration and driver hashes; resume reuses only this binding (S2, A2) | s5: "Every record binds to this plan's hash, the draw record, the configuration hashes and the driver hashes" | fixed in rep_v2 (test_every_provenance_carries_the_manifest_and_draw_hashes); ruling 10 |
+docs/revision/followup3/rep-impl-r1-response.md:14:| B2 | Gate round 1 required identical, not within 1e-9 (S4, A7) | s5: "required identical" | fixed (test_a_gate_round1_that_is_not_identical_is_a_mismatch, test_a_queue_cell_that_is_not_identical_is_a_mismatch, test_a_gate_without_a_measured_comparison_does_not_pass_outside_smoke); smoke records show 0.0 differences |
+docs/revision/followup3/rep-impl-r4-response.md:3:Reviews: `docs/revision/roster/{sol,astra}-rep-impl-r4.md` (both reject). Plan of record: `replication-plan.md`
+docs/revision/followup3/rep-impl-r4-response.md:10:| J2 | A measured round 1 must agree with this cell's own doubling record: the comparison's round-1 winner equals the doubling's held-out knobs, its held-out mean equals np.mean of the doubling's held-out gains, round 1's two changes equal the doubling's; `identical` also needs Run B's empty problems list. Applied to the gate, every continuation record, saved records before reuse, and continued diagnostics (A1) | s5 Gates: "required identical"; s4: round 1 "is checked against this run's doubling record" | fixed in `rep_collect._round1_problem`, `cont_problem(doubling=...)`, `identical`: test_the_round1_comparison_must_match_this_cells_doubling_record (2 cases, continuation and gate; failed first). On real data: all 76 Run B continuation records with an identical round 1 agree exactly with a registered doubling record under the new check **Incomplete after r4; completed in r5 (K1, K2, `rep-impl-r5-response.md`).** |
+docs/revision/followup3/rep-impl-r4-response.md:11:| J3 | Wrong types are invalid, never errors: `_finite` accepts only lists of numbers (not booleans), seeds must be a list, and `base_problem` and `cont_problem` turn any remaining type error into a problem (base cell unscorable, continuation not continued or rerun) (A2) | s4: "missing or invalid is unscorable"; "missing or nonfinite, keeps its validated frozen winner" | fixed: test_scalar_values_where_lists_belong_are_invalid_not_errors (6 cases; failed first with TypeError) **Incomplete after r4; completed in r5 (K3, `rep-impl-r5-response.md`).** |
+docs/revision/followup3/rep-impl-r4-response.md:13:| J5 | Guard against the class (record checks were incomplete in rounds 2, 3 and 4): every field of the continuation, gate, evaluation and doubling records, at every nesting level, replaced by each of seven wrong values; collect must never raise, and a damaged continuation never gives a continued winner. It found one more gap at once: `round1_gate.problems` was unread (now part of J2) | | test_no_malformed_record_field_raises_in_collect (4 record kinds) **Incomplete after r4; completed in r5 (K4, `rep-impl-r5-response.md`).** |
+docs/revision/followup3/rep-impl-r2-response.md:3:Reviews: `docs/revision/roster/{sol,astra}-rep-impl-r2.md` (both reject). Plan of record: `replication-plan.md`.
+docs/revision/followup3/rep-impl-r3-response.md:3:Reviews: `docs/revision/roster/{sol,astra}-rep-impl-r3.md` (both reject; the six findings agree). Plan of record:
+docs/revision/followup3/rep-impl-r3-response.md:11:| H2 | The gate is checked with the gate job's own market: its held-out result must be on that job's evaluation seeds; `cont_problem` refuses a job without seeds instead of skipping the check; the round-1 comparison must carry a finite round-1 winner; rounds must be numbered, finite and agree with the status by Run B's pass rule, and the held-out winner must be the last round's (S1) | s5 Gates: "required identical"; s4 | fixed in `rep_collect.cont_problem`, `_rounds_problem`, `collect`: test_the_gate_check_uses_the_gate_jobs_evaluation_seeds (failed first: gate_ok True), test_a_malformed_continuation_record_falls_back_to_the_frozen_winner (7 cases: empty rounds, a bare round, another id, a NaN gain, a zero normalizer, a second passing round, other knobs; all failed first) **Incomplete after r3; completed in r4 (J2, J3, `rep-impl-r4-response.md`).** |
+docs/revision/followup3/rep-impl-r3-response.md:12:| H3 | Zero normalizers: every held-out and evaluation result needs S* > 0 on every seed; a base record with S* = 0 makes its cell unscorable, a continuation with S* = 0 is not continued (S2, A3) | s4: "missing or invalid is unscorable"; "missing or nonfinite, keeps its validated frozen winner" | fixed in `rep_collect._valid_held`: test_a_zero_normalizer_makes_the_base_cell_unscorable_not_an_error (failed first: ZeroDivisionError in terms_of) and the zero-sstar case of H2 |
+docs/revision/followup3/rep-impl-r3-response.md:13:| H4 | Section 4's fallback restored: a flagged cell whose continuation record fails `cont_problem` keeps its validated frozen winner and counts as not continued; the primary set stays available (a round-1 mismatch or a missing identical gate still removes it) (S4, A5) | s4: "a cell ... whose continuation output is missing or nonfinite, keeps its validated frozen winner and is counted as not continued" | fixed in `rep_collect.collect`: test_an_invalid_continuation_keeps_the_frozen_winner_as_not_continued (2 cases) and the 7 cases of H2 (all failed first: primary None); test_a_near_identical_continuation_round1_is_a_mismatch keeps the mismatch rule **Incomplete after r3; completed in r4 (J1, J3, `rep-impl-r4-response.md`).** |
+docs/revision/followup3/rep-impl-r8-response.md:3:Reviews: `docs/revision/roster/{sol,astra}-rep-impl-r8.md` (both reject on one shared finding). Plan of record:
+docs/revision/followup3/rep-impl-r8-response.md:9:| N2 | Guard against the class: every status times every kind of well-formed round-1 disagreement (both changes, round 1's best knobs, the comparison's knobs and mean) must remove the primary set and stop the resume with exit 4 and no rerun | | test_every_status_with_every_well_formed_round1_disagreement_is_a_mismatch (20 cases) |
+docs/revision/followup3/rep-impl-r8-response.md:10:| N3 | Completion claims: r7 item M1 marked incomplete and completed here; ruling 10 states the evidence rule regardless of status | | done in `rep-impl-r7-response.md`, `rep-launcher-notes.md` |
+docs/revision/followup3/rep-impl-r7-response.md:3:Reviews: `docs/revision/roster/{sol,astra}-rep-impl-r7.md` (both reject; the findings agree). Plan of record:
+docs/revision/followup3/rep-impl-r7-response.md:12:| M3 | Both doubling changes must be finite numbers before any disagreement counts; a malformed doubling change makes the cell unscorable with no mismatch (S4, A2) | s4: "missing or invalid is unscorable" | fixed in `_round1_ready`: test_a_malformed_doubling_change_is_not_a_mismatch (failed first) |
+docs/revision/followup3/rep-impl-r7-response.md:14:| M5 | The guard asserts exact outcomes everywhere: doubling and evaluation damage gives an unscorable cell and no mismatch; on resume the rerun restores a valid record and the exit must be exactly 0 (or 4 with no rerun for a measured mismatch, or the refusal for a well-formed foreign provenance, by the same `_foreign` rule); queue construction must return exactly the flagged cell when `incomplete` is true and none otherwise. Completion claims of r6 corrected; ruling 10 amended (S3, S4, A5) | | test_every_mutation_of_every_record_kind_is_handled, test_queue_construction_survives_every_mutation_of_a_doubling_record; done in `rep-impl-r6-response.md`, `rep-launcher-notes.md` |
+docs/revision/followup3/test_rep_pod_harness.sh:232:print("ledger snapshot ok: the pushed copy is the one validated before the deadlines")
+docs/revision/followup3/rep-impl-r6-response.md:3:Reviews: `docs/revision/roster/{sol,astra}-rep-impl-r6.md` (both reject; the five findings agree). Plan of record:
+docs/revision/followup3/rep-impl-r6-response.md:9:| L1 | A comparison is a measurement only if it is well-formed as Run B writes it (boolean pass, list of problems, three numeric differences, not NaN; an infinite gain difference allowed); a missing or malformed comparison is an invalid record (rerun on resume, not continued in the analysis), never a mismatch; a fresh gate without a measured comparison exits 6 (invalid gate), not 4 (S1, A1) | s4: mismatch "round 1 differs from this run's doubling record"; "missing or nonfinite, keeps its validated frozen winner" | fixed in `rep_collect._gate_wellformed`, `_mismatch`, `run_queue`: test_a_malformed_comparison_is_an_invalid_record_not_a_mismatch (3 cases, analysis and resume; all failed first); test_a_gate_without_a_measured_comparison_does_not_pass_outside_smoke now expects exit 6 **Incomplete after r6; completed in r7 (M1, M2, M3, `rep-impl-r7-response.md`).** |
+docs/revision/followup3/rep-impl-r6-response.md:13:| L5 | The guard asserts one exact outcome per kind, in the analysis and on resume: a malformed continuation is not continued with the primary set kept and no mismatch, and is rerun; a malformed gate removes the primary set without a mismatch and is rerun; only a non-empty problems list is a mismatch (exit 4, no rerun); a well-formed provenance naming another job or run refuses the resume (plan section 5), a missing or malformed one is an invalid record. Completion claims of r5 corrected; ruling 10 amended (S5, A5) | s5: "reuse only this run's records" | test_every_mutation_of_every_record_kind_is_handled (7 kinds, collect and run_queue); done in `rep-impl-r5-response.md`, `rep-launcher-notes.md` **Incomplete after r6; completed in r7 (M4, M5, `rep-impl-r7-response.md`).** |
+docs/revision/followup3/rep_collect.py:147:    """Run B's comparison as compare_round1 writes it: a boolean pass, a list of problems, and three differences that
+docs/revision/followup3/rep_collect.py:165:    g = (rec or {}).get("round1_gate")
+docs/revision/followup3/rep_collect.py:182:def _rounds_problem(rec: dict, max_rounds: int) -> str | None:
+docs/revision/followup3/rep_collect.py:204:def _round1_ready(rec, doubling, search) -> bool:
+docs/revision/followup3/rep_collect.py:208:    if rec is None or doubling is None or search is None or not isinstance(rec.get("round1_gate"), dict):
+docs/revision/followup3/rep_collect.py:210:    rounds, h, g = rec.get("rounds"), doubling.get("heldout"), rec["round1_gate"]
+docs/revision/followup3/rep_collect.py:218:            _finite([r1.get(k) for k in ("attack_f", "attack_change", "reference_f", "reference_change")]) and   # _rounds_problem checks
+docs/revision/followup3/rep_collect.py:225:def _round1_problem(rec: dict, doubling, search=None) -> str | None:
+docs/revision/followup3/rep_collect.py:233:    if not _round1_ready(rec, doubling, search):
+docs/revision/followup3/rep_collect.py:235:    g, r1, h = rec["round1_gate"], rec["rounds"][0], doubling["heldout"]
+docs/revision/followup3/rep_collect.py:267:    not compared), well-formed rounds (_rounds_problem) and a finite held-out result with positive normalizers on the
+docs/revision/followup3/rep_collect.py:269:    _round1_problem). The job must carry its evaluation seeds: no check is skipped."""
+docs/revision/followup3/rep_collect.py:283:        g = rec.get("round1_gate")
+docs/revision/followup3/rep_collect.py:293:        if x := _rounds_problem(rec, max_rounds):
+docs/revision/followup3/rep_collect.py:295:        if isinstance(g, dict) and (x := _round1_problem(rec, doubling, search)):
+docs/revision/followup3/rep_collect.py:328:    (_round1_problem; review rep-impl-r5). A cell refused before round 1 ("not run") or a smoke run ("not compared")
+docs/revision/followup3/rep_collect.py:333:    if not _gate_wellformed(rec.get("round1_gate")):      # no comparison, or a malformed one: an invalid record, whatever
+docs/revision/followup3/rep_collect.py:337:    return _round1_ready(rec, doubling, search) and _round1_problem(rec, doubling, search) is not None
+docs/revision/followup3/rep_collect.py:395:    if not smoke and _gate_wellformed((g or {}).get("round1_gate")) and not identical(g):   # a measured, not identical gate
+docs/revision/followup3/rep_collect.py:587:    record fails cont_problem keeps its validated frozen winner and counts as not continued (plan section 4; review
+docs/revision/followup3/rep_collect.py:600:        g.get("status") in STATUSES[:2] and (identical(g) or (smoke and g.get("round1_gate") == SMOKE_GATE))
+docs/revision/followup3/rep_collect.py:634:                    problems.append(f"{key}: {why}"); kw = "not continued"     # the validated frozen winner
+docs/revision/followup3/rep_collect.py:660:            "round1_mismatch": mismatch, "gate_ok": gate_ok, "problems": problems, "unscorable": unscorable}
+docs/revision/followup3/rep_v2.py:275:    """A follow-up freeze per context: every search record and the targets' references, each validated (stage,
+docs/revision/followup3/rep_v2.py:279:    from runnerup_v2 import _validate_new
+docs/revision/followup3/rep_v2.py:283:        recs = {j["id"]: _validate_new(out, j["id"], "search", j["provenance"], jobs) for j in cj}
+docs/revision/followup3/rep_v2.py:286:            recs[rid] = _validate_new(out, rid, "reference", R.reference_provenance(next(j for j in cj if j["rule"] == t)), jobs)
+docs/revision/followup3/rep_v2.py:445:    res = {k: col[k] for k in ("counts", "round1_mismatch", "gate_ok", "problems", "unscorable")}
+docs/revision/followup3/rep_pod.sh:169:# The ledger is read only under the run lock (review r2, Sol 1): a second launch delayed before the lock validates
+docs/revision/followup3/rep_pod.sh:174:# One snapshot of the ledger (review r1, Astra 2): it is validated here, gives PRIOR for the deadlines, and is the copy
+docs/revision/followup3/replication-plan.md:31:   validated frozen winner; a missing base evaluation or doubling makes the cell unscorable; the inherited tie rule;
+docs/revision/followup3/replication-plan.md:37:   pod-memory admission against the allocated pod, validated configuration reuse across pods (section 5).
+docs/revision/followup3/replication-plan.md:126:counted as unresolved; a cell whose continuation stops between rounds at the cost cap keeps its validated frozen winner,
+docs/revision/followup3/replication-plan.md:129:nonfinite, keeps its validated frozen winner and is counted as not continued. A round-1 mismatch (round 1 differs from
+docs/revision/followup3/rep-impl-r5-response.md:3:Reviews: `docs/revision/roster/{sol,astra}-rep-impl-r5.md` (both reject). Plan of record: `replication-plan.md`
+docs/revision/followup3/rep-impl-r5-response.md:9:| K1 | A measured round-1 disagreement is a round-1 mismatch: when round 1 was measured and its values are well-formed, any disagreement with the cell's doubling record or frozen search (held-out knobs and mean, both changes, round 1's best knobs, and the doubling winner's held-out gains) stops all continuation (exit 4, no rerun) and removes the primary set, at the gate, in the queue, on resume and in the analysis. A malformed round 1 (missing or nonfinite values) is an invalid record instead (rerun, or not continued) (S2, A1) | s4: "A round-1 mismatch (round 1 differs from this run's doubling record) ... stops all continuation, no continued winner of this run enters any result, and the primary analysis is reported as not available" | fixed in `rep_collect._mismatch(rec, doubling, search)`, `_round1_ready`, `run_queue`, `collect`: test_a_measured_round1_disagreement_is_a_mismatch_in_collect (2 cases), test_a_saved_measured_round1_disagreement_stops_the_queue_with_exit_4_and_no_rerun (all failed first); test_the_round1_comparison_must_match_this_cells_doubling_record now requires the mismatch **Incomplete after r5; completed in r6 (L1, L2, `rep-impl-r6-response.md`).** |
+docs/revision/followup3/rep-impl-r5-response.md:10:| K2 | Two more cross-checks of the recorded round-1 data against each other: round 1's best knobs are the doubling winner or the frozen search winner; a final winner equal to the doubling winner has the doubling's held-out gains exactly. Both hold on every Run B record with an identical round 1 (76 and 48 records) (S1) | s4: round 1 "is checked against this run's doubling record" | fixed in `_round1_problem`: test_a_one_round_gate_whose_heldout_gains_differ_from_its_doubling_is_a_mismatch and the round1-knobs case of K1 (failed first). Run B's per-seed round-1 gains are not stored in its records (frozen code), so the held-out mean and the final-winner gains are the per-seed evidence available |
+docs/revision/followup3/rep-impl-r5-response.md:11:| K3 | Remaining crash paths closed: a JSON root that is not an object counts as no record; numbers too large for a float and booleans are not finite numbers; a normalizer is checked after the division by N, and every term must be finite (cell unscorable, or not continued); diagnostics and binding containers are checked before use; round numbers must be integers (not True); every identity comparison (ids, provenance, seeds, knobs, rate) uses strict JSON equality (S3, A2, A3) | s4: "missing or invalid is unscorable"; "missing or nonfinite, keeps its validated frozen winner" | fixed: `_d`, `_num`, `_same`, `safe_terms`, `diag_ok`, `diag_bound`, `cont_diag_ok`, `_rounds_problem`, `base_problem`: test_remaining_malformed_values_are_failed_checks_not_errors (8 cases, all failed first), test_malformed_diagnostics_and_bindings_give_no_audit_count_and_no_error (5 cases; the continued-diagnostics scalar-seeds case failed first, 4 already passed) **Incomplete after r5; completed in r6 (L3, L4, `rep-impl-r6-response.md`).** |
+docs/revision/followup3/rep-impl-r5-response.md:13:| K5 | Completion claims corrected: r4 items J2 to J6 marked incomplete and completed here; ruling 10 amended (S4, A4) | | done in `rep-impl-r4-response.md` and `rep-launcher-notes.md` |
+docs/revision/followup3/test_rep_collect.py:39:def test_a_saved_round1_mismatch_stops_the_queue_on_resume(tmp_path, monkeypatch):
+docs/revision/followup3/test_rep_collect.py:46:                                                                 "provenance": q[0]["job"]["provenance"], "round1_gate": FAILING}))
+docs/revision/followup3/test_rep_collect.py:68:    return {"stage": "convergence", "provenance": job["provenance"], "status": status, "round1_gate": gate or EXACT,
+docs/revision/followup3/test_rep_collect.py:118:                    D.write_record(d, {**fn(*a), **e, **({"status": "stopped: round 1 differs", "round1_gate": FAILING} if o == "mm" else {})})
+docs/revision/followup3/test_rep_collect.py:130:    monkeypatch.setattr(D, "_cont_one", lambda job, *a: {"status": "stopped: round 1 differs", "provenance": job["provenance"], "round1_gate": FAILING})
+docs/revision/followup3/test_rep_collect.py:182:def test_a_gate_round1_that_is_not_identical_is_a_mismatch(tmp_path, monkeypatch):
+docs/revision/followup3/test_rep_collect.py:186:    monkeypatch.setattr(D, "run_cells", _pool(calls, {"menu-p0.05|g": {"round1_gate": near}}))
+docs/revision/followup3/test_rep_collect.py:194:    monkeypatch.setattr(D, "run_cells", _pool(calls, {"menu-p0.05|g": {"status": "stopped at the cost cap", "round1_gate": "not run"}}))
+docs/revision/followup3/test_rep_collect.py:211:    monkeypatch.setattr(D, "run_cells", _pool([], {"c1": {"round1_gate": {**EXACT, "max_knob_rel": 2e-16}}}))
+docs/revision/followup3/test_rep_collect.py:218:    monkeypatch.setattr(D, "run_cells", _pool(calls, {"c2": {"status": "stopped at the cost cap", "round1_gate": "not run"}}))
+docs/revision/followup3/test_rep_collect.py:306:                                                               "provenance": job["provenance"], "round1_gate": gate,
+docs/revision/followup3/test_rep_collect.py:456:    # plan section 4 (review rep-impl-r3, Sol 4, Astra 5): invalid or nonfinite continuation output keeps the validated
+docs/revision/followup3/test_rep_collect.py:463:def test_a_near_identical_continuation_round1_is_a_mismatch(tmp_path):
+docs/revision/followup3/test_rep_collect.py:466:    assert col["primary"] is None and col["round1_mismatch"] is True
+docs/revision/followup3/test_rep_collect.py:561:    monkeypatch.setattr(D, "run_cells", _pool(calls, {"c2": {"status": "stopped at the cost cap", "round1_gate": "not run"}}))
+docs/revision/followup3/test_rep_collect.py:599:    _w(p, {"id": g["id"], "provenance": g["job"]["provenance"], "status": "passed", "round1_gate": EXACT})
+docs/revision/followup3/test_rep_collect.py:693:def test_the_round1_comparison_must_match_this_cells_doubling_record(tmp_path, field, value):
+docs/revision/followup3/test_rep_collect.py:700:        r = json.loads(p.read_text()); good = r["round1_gate"][field]
+docs/revision/followup3/test_rep_collect.py:701:        r["round1_gate"] = {**r["round1_gate"], field: value}; p.write_text(json.dumps(r))
+docs/revision/followup3/test_rep_collect.py:703:    assert col["round1_mismatch"] is True and col["primary"] is None      # round-1 mismatch (stop), not a fallback
+docs/revision/followup3/test_rep_collect.py:704:    p.write_text(json.dumps({**r, "round1_gate": {**r["round1_gate"], field: good}}))
+docs/revision/followup3/test_rep_collect.py:706:    r = json.loads(gp.read_text()); r["round1_gate"] = {**r["round1_gate"], field: value}; gp.write_text(json.dumps(r))
+docs/revision/followup3/test_rep_collect.py:708:    assert col["gate_ok"] is False and col["round1_mismatch"] is True and col["primary"] is None
+docs/revision/followup3/test_rep_collect.py:799:@pytest.mark.parametrize("edit", ["round1-change", "round1-knobs"])
+docs/revision/followup3/test_rep_collect.py:800:def test_a_measured_round1_disagreement_is_a_mismatch_in_collect(tmp_path, edit):
+docs/revision/followup3/test_rep_collect.py:803:    if edit == "round1-change":
+docs/revision/followup3/test_rep_collect.py:808:    assert col["round1_mismatch"] is True and col["primary"] is None
+docs/revision/followup3/test_rep_collect.py:816:    assert col["round1_mismatch"] is True and col["primary"] is None
+docs/revision/followup3/test_rep_collect.py:819:def test_a_saved_measured_round1_disagreement_stops_the_queue_with_exit_4_and_no_rerun(tmp_path, monkeypatch):
+docs/revision/followup3/test_rep_collect.py:932:    assert base["audit"]["frozen"]["0.05"]["rep0"] == (30, 100) and base["gate_ok"] is True and not base["round1_mismatch"]
+docs/revision/followup3/test_rep_collect.py:955:            ok = col["round1_mismatch"] is True and col["primary"] is None
+docs/revision/followup3/test_rep_collect.py:957:            ok = col["round1_mismatch"] is False and col["primary"] is not None and col["counts"]["continued"] == 0 and \
+docs/revision/followup3/test_rep_collect.py:960:            ok = col["primary"] is None and col["gate_ok"] is False and col["round1_mismatch"] is measured
+docs/revision/followup3/test_rep_collect.py:962:            ok = len(col["unscorable"]) >= 1 and col["round1_mismatch"] is False
+docs/revision/followup3/test_rep_collect.py:1004:    # Sol 1, Astra 1: round1_gate {} or a None/NaN difference stopped everything; it must follow the invalid-record rule
+docs/revision/followup3/test_rep_collect.py:1006:    fix = (lambda r: r.update(round1_gate={})) if gate == {} else \
+docs/revision/followup3/test_rep_collect.py:1007:        (lambda r: r["round1_gate"].update(max_gain_abs=None if gate == "max-none" else float("nan")))
+docs/revision/followup3/test_rep_collect.py:1010:    assert col["round1_mismatch"] is False and col["primary"]["0"]["rep0"]["R3"]["gain"] == [0.1, 0.3]
+docs/revision/followup3/test_rep_collect.py:1031:    assert col["round1_mismatch"] is True and col["primary"] is None
+docs/revision/followup3/test_rep_collect.py:1065:                                                    round1_gate={}, rounds=[]))
+docs/revision/followup3/test_rep_collect.py:1067:    assert col["round1_mismatch"] is False and col["primary"] is not None
+docs/revision/followup3/test_rep_collect.py:1073:                                                                         round1_gate={}, rounds=[]))
+docs/revision/followup3/test_rep_collect.py:1082:                                            r["round1_gate"].update({"pass": False, "max_gain_abs": 0.3, "problems": ["tolerance exceeded"]})))
+docs/revision/followup3/test_rep_collect.py:1084:    assert col["round1_mismatch"] is True and col["primary"] is None
+docs/revision/followup3/test_rep_collect.py:1100:    assert len(col["unscorable"]) == 1 and col["round1_mismatch"] is False
+docs/revision/followup3/test_rep_collect.py:1129:    assert col["round1_mismatch"] is True and col["primary"] is None
+docs/revision/followup3/test_rep_collect.py:1141:    "round1_best_knobs": lambda r: r["rounds"][0].update(best_knobs={"u0": 7.0, "x": 7}),
+docs/revision/followup3/test_rep_collect.py:1142:    "heldout_knobs": lambda r: r["round1_gate"].update(heldout_knobs={"u0": 7.0, "x": 7}),
+docs/revision/followup3/test_rep_collect.py:1143:    "heldout_mean": lambda r: r["round1_gate"].update(heldout_mean=r["round1_gate"]["heldout_mean"] + 0.01),
+docs/revision/followup3/test_rep_collect.py:1149:def test_every_status_with_every_well_formed_round1_disagreement_is_a_mismatch(tmp_path, monkeypatch, status, field):
+docs/revision/followup3/test_rep_collect.py:1156:    assert col["round1_mismatch"] is True and col["primary"] is None
+docs/revision/followup3/test_rep_collect.py:1178:def test_a_malformed_round1_with_a_disagreement_is_an_invalid_record(tmp_path, monkeypatch, bad, field):
+docs/revision/followup3/test_rep_collect.py:1179:    # Sol 1 (r9): a malformed round 1 combined with a disagreement was classified as a mismatch; ruling 10 prescribes the
+docs/revision/followup3/test_rep_collect.py:1181:    if bad == "best_knobs" and field == "round1_best_knobs":
+docs/revision/followup3/test_rep_collect.py:1188:    assert col["round1_mismatch"] is False and col["primary"] is not None and col["counts"]["not continued"] == 1
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '1,210p' docs/revision/followup3/rep-launcher-notes.md; nl -ba docs/revision/followup3/rep_collect.py | sed -n '300,455p'; nl -ba docs/revision/followup3/rep_collect.py | sed -n '580,665p'; sed -n '1,150p' docs/revision/followup3/test_rep_collect.py; sed -n '1035,1165p' docs/revision/followup3/test_rep_collect.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+# Churn replication: implementation and pod launcher (notes for review; no spend)
+
+Scope of this review: the replication's code under `docs/revision/followup3/` against the consensus plan
+(`replication-plan.md`, draft 3 with the r3 caveats, commit 3bcd6b1; the cost paragraph of section 6 updated in
+implementation review r1), before the manifest is built and stamped. Round 1's corrections and their tests:
+`rep-impl-r1-response.md`.
+
+| File | Role |
+|---|---|
+| `replication_analysis.py` (+ tests) | paired changes over the six named markets, the support criterion, the five expectations, absolute contrasts, attack and reference terms, efficiency, seed-bootstrap intervals with one index array per market |
+| `commitment.py` (+ tests) | manifest bytes, the required file set and the import closure, hash verification, frozen-code, frozen-input and environment-override checks |
+| `continuation.py` (+ tests) | the churn-aware adapter: churn in every worker, every menu candidate replayed under the cell's churn |
+| `rep_v2.py` (+ tests) | the driver: instances, calibrate, menu, cthr, gate0, rates (p0 / churn), continue, inventory, analyse; the output binding |
+| `rep_collect.py` (+ tests) | the continuation gate and queue, the continued-winner diagnostics, the record loader with validation |
+| `rep_pod.sh` (+ `test_rep_pod_harness.sh`) | the two-pod launcher, generated from the reviewed Run B launcher `followup2_pod.sh` |
+| `cost_estimate.py` | the committed cost schedule (step estimates below come from it) |
+| `test_notes.py` | every ruling below quotes the plan sentence it rests on |
+
+Run the checks: `uv run --frozen pytest -q docs/revision/followup3/` and `bash docs/revision/followup3/test_rep_pod_harness.sh`
+(about an hour; the reviewers' read-only sandbox cannot run it, so its log is named in the brief).
+
+## Smoke evidence (Mac; scratchpad `repsmoke`)
+
+Round 1 (2026-11-19, `run2`): the full chain ran in smoke mode on the registered draw (instances reproduce the registered
+ones; calibration matches the registered Mac calibration; menus, references, C-thr, every rate, the churn-zero gate
+bit-identical, continuation with round 1 equal to the doubling record at differences 0.0, the analysis). Round 2
+(`run3`, after the record binding changed the provenance): every stage, instances to inventory, ran (`chain3.sh`): the continuation gate ran with no flagged cell and its round 1 matched the doubling record at differences 0.0; every evaluation and reference provenance carries the manifest and draw hashes (spawned workers included); the analysis scored all 72 cells (0 unscorable, 0 problems); the root inventory verifies (1355 records, 0 bad, 0 not inventoried). No smoke cell was flagged, so the continued-winner diagnostics were run on a copy (`diagprobe.py`) with the gate's continued record: with the frozen winner's knobs they reproduce the frozen diagnostics exactly (audit 23 of 1325 jobs, identical per-seed profits).
+Round 3 (`run4`, commit 0bdc0cb, manifest built at that commit; `chain4.sh`): every stage, instances to inventory, ran
+(CHAIN_OK); each of the six rate directories has `diagnostics_binding.json` in its inventory; the analysis scored all 72
+cells (0 unscorable, 0 problems, gate_ok true, no mismatch); expectation 5 is scored in both sets, so every frozen R3
+audit count passed the binding and completeness checks (6 markets at p = 0 and 0.05); the root inventory verifies with
+the launcher's verifier (1361 records, 0 bad, 0 not inventoried; 6 more than round 2, the binding files).
+
+## Memory (plan section 5)
+
+Mac peaks, one task in a child process (`ru_maxrss`): a target's reference 254 MB (16.7 s); a full X7-SC menu search
+232 MB (5669 s; fresh0, R3, registered market; scratchpad `memsearch`); a full D2+H3 search 183 MB (operations ledger);
+one Run B X7-SC continuation cell over three rounds 3.54 GB (`results/pods/memprobe3`). The launcher uses 254 MB for
+searches and refuses before any marker unless 16 search workers and 5 continuation workers fit the 28 GB pod floor at
+1.25 x the peak plus 2 GB; on the pod every search stage (menu, C-thr, churn search, gate0) admits its workers against
+the cgroup limit and keeps the lowest count for the output (`search_workers.json`); evaluation and doubling use the churn
+arm's pod-side preflight, whose counts are kept the same way.
+
+## The two pods
+
+| Pod | Step (launcher admission `--hours`, from `cost_estimate.py` at flag share 0.5) | Driver call |
+|---|---|---|
+| 1 | instances 0.05; calibrate 0.25; menu 7.60 (4 of 5 search waves of both families + references); cthr 1.95 (1 wave of each family); inventory | `rep_v2.py --stage <s> --out results/v2/followup3-rep --manifest <bundle>/draw/manifest.json --draw <bundle>/draw/draw.json` |
+| 2 | rates p0 1.68; gate0 1.20; rates churn 9.05; continue 0.51 (the gate cell's round; every later round is admitted inside); inventory | the same, with pod 1's verified output copied in as `results/v2/followup3-rep` |
+
+End states on pod 2: a churn stage stopped by the driver's cap (`churn arm stopped between stages`, exit 1) is "STOPPED
+BEFORE a <step> stage (cap, driver admission)"; the churn-zero gate failing is "GATE FAILED at gate0"; continue exit 3 is
+"STOPPED BEFORE a continuation round", 4 "GATE FAILED at continue", 5 restarts once on 3 workers with the driver's own
+restart estimate, 6 "RUN FAILED at continue (a cell error)". Every failure or stop exit writes the inventory first.
+
+## Rulings
+
+Each ruling quotes the plan text it applies (`test_notes.py`); anything the plan does not say is marked as an addition.
+
+1. **One run tag, one stop cap, one pod name for both pods.** Plan: "The run may use two pods (menus and references; then
+   evaluation, churn and continuation) to stay under a day per pod. The stop cap is set on the spend card; the
+   reservation covers 1.3 times that cap." Both pods record spend under `replication-<launch tag>` and run under the pod
+   name `ts-rep`, so one launch lock covers the replication and pod 2 is refused while pod 1's spend is unrecorded. Pod 2
+   names pod 1's launch tag (`POD1TAG`): that spend row must be in the ledger exactly once, pod 1's output must name the
+   same launch (`launch.json`), and the two launch tags differ. Pod 2's PRIOR is pod 1's recorded spend.
+2. **PLANCAP 33 USD.** Plan: "with the 1.25 headroom 29.78 and 32.13" (rounded up); the spend card sets the cap at or
+   below it; the reservation must cover 1.3 x the cap less PRIOR (42.9 at the full 33).
+3. **The driver's own admissions count PRIOR plus this launch's closed attempts at the ceiling** (`--prior-usd`, the
+   rule of `guards.paid_cost_stop`). Plan: "the reservation covers 1.3 times that cap". The launcher computes it from the
+   fixed attempts file.
+4. **Menu and C-thr searches have no in-stage cost check** (the frozen `R._pool` runs a whole family); the launcher's
+   step admission and the watchdog bound them. Plan: "the reservation covers 1.3 times that cap". A long stage can pass
+   the cap by at most that stage (the author's rule: do not kill jobs), plus the transfer and deletion time after it; the
+   watchdog deletes the pod at 1.3 x the cap.
+5. **The continuation gate is the first p = 0.05 cell, rep0 R3, whether flagged or not** (r1 ruling withdrawn: it had
+   taken the first flagged cell). Plan: "then, after the first p = 0.05 cell's search, evaluation and doubling (reused in
+   production), its continuation round 1 against its own doubling record, required identical". The gate runs round 1
+   in a child process before any queued cell, also when no cell is flagged; its record (`continuation/gate/`) never
+   enters a result. "Identical" means all three of Run B's differences are exactly 0.0, for the gate and for every
+   continued cell; a gate without a measured comparison does not pass (smoke runs excepted).
+6. **References run serially** (18 targets plus 6 C-thr, 12.7 s each in the benchmark). Plan: "C-thr(12) uses its own
+   searches and a copy of the bank, as Run A did".
+7. **The calibration runs once, on pod 1.** Plan: "The instances are calibrated once, on the pod's Linux x86 stack".
+   Pod 2 reuses it only after the launcher and every driver stage check the configuration hash against the calibration
+   record and the record says Linux x86 (the launcher's pod 2 bundle guard checks both the system and the machine, review
+   r2); no stage overwrites an existing calibration or `instances.json`.
+8. **Expectation 5 uses the primary winners** (r1 ruling withdrawn: it had used the frozen winners). Plan: "primary
+   winners; frozen winners reported beside". The continue stage reruns the churn arm's diagnostics for every R3 menu cell
+   at p = 0 and 0.05 whose continued winner enters the primary set; a missing one makes that market's expectation 5
+   "not scorable" for the primary set. Every diagnostics row is checked before its counts are used or reused (the
+   winner's knobs, the ordered evaluation seeds, finite profits, one episode per evaluation seed with the four age bins
+   of `churn_v2.AGE_EDGES`; for continued rows also stage, id and provenance; review r2, r3). A frozen row also needs
+   `diagnostics_binding.json`, written by the rate stage after the diagnostics step and before the inventory: it names
+   the rate, the hash of `diagnostics.json`, and per cell the job id, its provenance and the hashes of the search and
+   doubling records the diagnostics reran (review r3). The primary set's count comes from the primary winner's own
+   diagnostics: a continued winner's from its continued diagnostics, independent of the frozen row; a frozen winner's
+   from the frozen row (review r4).
+9. **Publication height.** `PUBH` is required: a block height, or `none`. Plan: "Without publication before H, the draw
+   wrapper records the draw as nonconfirmatory". The push of the manifest commit needs the author's consent first.
+10. **The record binding.** Plan: "Every record binds to this plan's hash, the draw record, the configuration hashes and
+    the driver hashes." Every provenance built by the driver carries the manifest's hash (which covers the plan, the
+    drivers, the analysis and the parameters) and the draw record's hash, beside the draw root, seeds, salt and
+    configuration hash it already had; every stage checks `binding.json` against its `--manifest` and `--draw`. Before
+    scoring, every evaluation and doubling record is checked for stage, id, provenance and values, its exact dependency
+    set and every dependency hash, positive normalizers, and the doubling flag against the frozen rule; every
+    continuation and gate record for stage, id, provenance, a known status, its own identical comparison with a finite
+    round-1 winner, rounds that agree with the status (Run B's pass rule) and a held-out winner equal to the last
+    round's, on the job's own evaluation seeds (the gate included); a measured round 1 must also agree with the cell's
+    own doubling record and frozen search (held-out knobs and mean, both changes, round 1's best knobs, the doubling
+    winner's held-out gains) and carry Run B's empty problems list; a well-formed round 1 that disagrees is a round-1
+    mismatch (all continuation stops, no primary set), checked for every cell before any base-record exclusion; a
+    malformed round 1 or comparison is an invalid record. The normalizer checks run in the shared validation (gate,
+    continuation, resume, evaluation and doubling records). On resume, a saved record whose well-formed provenance (the
+    job's own fields, each of the same JSON type and not empty) names another job or run refuses the run; a missing or
+    malformed provenance makes it an invalid record. A mismatch needs measured evidence, and measured evidence counts
+    whatever the status says: a well-formed failing comparison, or well-formed round-1 values that disagree with the
+    doubling record (both doubling changes finite); a mismatch status without such evidence is an invalid record
+    (review r6, r7, r8). A wrong value type anywhere,
+    a record root that is not an object, a number too large for a float, or a normalizer that is not positive after
+    the division by N is a failed check, not an error; identity comparisons use strict JSON equality (review r4, r5). The same check runs before a saved record is reused
+    on resume; a record that fails it, an unknown status included, is set aside and its cell rerun (review r4). In the analysis, a flagged cell whose
+    continuation record fails it keeps its validated frozen winner and counts as not continued, as section 4 says for
+    missing or nonfinite output (review r2, r3).
+11. **Kept worker counts.** Plan: "lowered if needed, then kept across restarts". Search workers: `search_workers.json`;
+    continuation: `continuation_workers.json`; continued diagnostics: `diagnostics_workers.json` (review r2), requested
+    from `--workers-cont`, which the launcher lowers on its restart after a lost worker, so a diagnostics loss also
+    restarts on fewer workers (review r3); evaluation and doubling: the churn arm's saved counts.
+12. **What the manifest cannot list** (partial decline of Astra r1 item 1). Plan: "every imported helper outside `sim/`
+    and `scripts/`". The Mac-side launcher helpers (`results/pods/podctl.py`, `runpod.py`, `case_end_check.py`) are not
+    in the repository and are not imported by the drivers; the launcher checks its own bytes against the manifest's
+    `rep_pod.sh`, and the pod-side code guard checks every listed file in the tarball. Caveat (Astra r2): the launcher's
+    self-check does not verify these Mac helpers, so their correctness rests on their own harnesses
+    (`test_rep_pod_harness.sh` runs the real `podctl.py` and `case_end_check.py`), not on the manifest.
+
+## Pre-launch steps (after review consensus; none done yet)
+
+1. Commit every correction; build the manifest (`commitment.py build`, which refuses a list without the required set
+   and the drivers' import closure).
+2. Author's consent, then push the manifest commit (no `sealed/` files); record the publication height.
+3. Stamp the manifest (OpenTimestamps); wait for H = A + 144 and six confirmations; draw once.
+4. Spend card with the stop cap; reserve `replication-<pod 1 tag>` in the ledger (1.3 x cap).
+5. Code tarball from a clean clone at the launch commit (`tar --uid 0 --gid 0`, `COPYFILE_DISABLE=1`); bundle 1 =
+   `draw/{manifest.json, manifest.json.ots, draw.json}`.
+6. `DRYRUN=1` guard check; launch pod 1 detached with a pid file.
+7. After pod 1: record its spend; bundle 2 = bundle 1 + `rep/` (pod 1's verified output); reserve
+   `replication-<pod 2 tag>`; dry run with `POD1TAG`; pod 2.
+   300	def _set_aside(cdir: Path, dest: Path) -> None:
+   301	    """Move a record that will be rerun out of the way (no deletion), so that a lost worker shows as a missing record and
+   302	    is never masked by the old one (review rep-impl-r2)."""
+   303	    if dest.exists():
+   304	        sup = cdir / "superseded"; sup.mkdir(parents=True, exist_ok=True)
+   305	        n = len(list(sup.glob(dest.stem + ".*.json")))
+   306	        dest.rename(sup / f"{dest.stem}.{n}.json")
+   307	
+   308	
+   309	def _prov_wellformed(prov, like) -> bool:
+   310	    """A provenance shaped like this job's own: the same fields, each of the same JSON type and not empty (review
+   311	    rep-impl-r7: {} or an id of None or [] is a malformed record, not another run's binding)."""
+   312	    if not isinstance(prov, dict) or not isinstance(like, dict) or set(prov) != set(like):
+   313	        return False
+   314	    kind = lambda v: "bool" if isinstance(v, bool) else "num" if isinstance(v, (int, float)) else type(v).__name__
+   315	    return all(prov[k] is not None and kind(prov[k]) == kind(like[k]) and (not isinstance(prov[k], (str, list, dict)) or prov[k])
+   316	               for k in like)
+   317	
+   318	
+   319	def _foreign(prov, like) -> bool:
+   320	    """Plan section 5 ("reuse only this run's records"): a well-formed provenance that names another job or run refuses
+   321	    the resume; a missing or malformed one is an invalid record, rerun."""
+   322	    return _prov_wellformed(prov, like) and not _same(prov, like)
+   323	
+   324	
+   325	def _mismatch(rec, doubling=None, search=None) -> bool:
+   326	    """A measured round 1 that differs from the doubling record at all: the recorded status, a comparison that is not
+   327	    identical, or (with the cell's doubling and search records) any recorded round-1 value that disagrees with them
+   328	    (_round1_problem; review rep-impl-r5). A cell refused before round 1 ("not run") or a smoke run ("not compared")
+   329	    measured nothing."""
+   330	    rec = _d(rec)
+   331	    if rec is None:
+   332	        return False
+   333	    if not _gate_wellformed(rec.get("round1_gate")):      # no comparison, or a malformed one: an invalid record, whatever
+   334	        return False                                      # the status says (review rep-impl-r7: a status proves nothing)
+   335	    if not identical(rec):                                # a failing comparison, whatever the status
+   336	        return True                                       # (review rep-impl-r8: no status shortcut either way)
+   337	    return _round1_ready(rec, doubling, search) and _round1_problem(rec, doubling, search) is not None
+   338	
+   339	
+   340	DIAG_HOURS = 60.0 * 1.33 / 3600     # one continued winner's diagnostics (stage_continue's admission: 60 s per cell at p > 0)
+   341	
+   342	
+   343	def _lost(cdir: Path, ids: list, hours: dict, max_rounds: int) -> None:
+   344	    from convergence_v2 import restart_hours
+   345	    write_record(cdir / "lost_cells.json", {"lost": ids, "restart_hours": restart_hours([hours[k] * max_rounds for k in ids])})
+   346	
+   347	
+   348	def run_queue(queue: list, base: Path, workers: int, cost=None, max_rounds: int = 3, gate: dict | None = None,
+   349	              smoke: bool = False) -> dict:
+   350	    """The nonzero-churn gate first, then the flagged cells, every cell in a child process that saves its own record
+   351	    (Run B's pool). The gate is the first p = 0.05 cell whether flagged or not (plan section 5); it runs round 1 only and
+   352	    its record (continuation/gate/) never enters a result. Exit codes: 4 a round-1 mismatch anywhere, measured or saved
+   353	    (no restart); 6 a cell error; 5 a lost worker (lost_cells.json holds the restart estimate); 3 a cost stop (a
+   354	    cost-refused gate stops before the queue); 0 otherwise. A resume reuses this run's completed records and reruns only
+   355	    cost-stopped ones."""
+   356	    import convergence_v2  # noqa: F401  (first: it puts scripts/ on the path)
+   357	    import revision_v2 as R
+   358	    if gate is None:
+   359	        raise SystemExit("replication refused: the continuation needs its gate cell (the first p = 0.05 cell)")
+   360	    cdir = Path(base) / "continuation"; cdir.mkdir(parents=True, exist_ok=True)
+   361	    gdest = cdir / "gate" / (R._safe(gate["id"]) + ".json")
+   362	    dest = lambda c: cdir / (R._safe(c["id"]) + ".json")
+   363	    items = [(gate, gdest)] + [(c, dest(c)) for c in queue]
+   364	    saved = {d: _d(read_record(d)) for _, d in items}                   # a non-object root counts as no record
+   365	    dbl = {d: doubling_of(c["dir"], c["job"]["id"]) for c, d in items}; srch = {d: search_of(c["dir"], c["job"]["id"]) for c, d in items}
+   366	    other = [c["id"] for c, d in items if saved[d] is not None and _foreign(saved[d].get("provenance"), c["job"].get("provenance"))]
+   367	    if other:                                                            # plan section 5: reuse only this run's records
+   368	        raise SystemExit(f"replication refused: saved continuation records of another job or run: {other[:3]}")
+   369	    if any(_mismatch(saved[d], dbl[d], srch[d]) for _, d in items):     # a measured disagreement included (review rep-impl-r5)
+   370	        return {"run": 0, "exit": 4, "gate": "round-1 mismatch on record: continuation stays stopped"}   # also on resume (plan section 4)
+   371	    hours = {c["id"]: round_hours(c["job"]) for c, _ in items}
+   372	    # review rep-impl-r3: a saved record is reused only if it passes the same checks collect applies; any other record
+   373	    # (incomplete, malformed, nonfinite) means "no passing record" and its cell is rerun (plan section 4: a resume
+   374	    # continues from the first cell without a passing record); the old record is set aside, never deleted
+   375	    # (an unknown status included: review rep-impl-r4; a measured round-1 mismatch stopped above and is never rerun)
+   376	    invalid = lambda c, d, mr: saved[d] is not None and not cost_stopped(saved[d]) and \
+   377	        cont_problem(saved[d], c["id"], c["job"], smoke, mr, dbl[d], srch[d]) is not None
+   378	    rerun = lambda c, d, mr: saved[d] is None or cost_stopped(saved[d]) or invalid(c, d, mr)
+   379	    run = 0
+   380	    if rerun(gate, gdest, 1):
+   381	        _set_aside(cdir, gdest)
+   382	        lost, failed = run_cells(_cont_one, [gate], [(gate["job"], gate["dir"], 1, cost, hours[gate["id"]])], 1, [gdest],
+   383	                                 [{"id": gate["id"], "gate": True}])
+   384	        run += 1
+   385	        if failed:
+   386	            return {"run": run, "failed": failed, "exit": 6, "gate": "the gate cell raised an error"}
+   387	        if lost:
+   388	            _lost(cdir, lost, hours, 1)
+   389	            return {"run": run, "lost": lost, "exit": 5, "gate": "the gate cell's worker was lost"}
+   390	    g = _d(read_record(gdest))
+   391	    if _mismatch(g, dbl[gdest], srch[gdest]):
+   392	        return {"run": run, "exit": 4, "gate": "round-1 mismatch at the gate: continuation stopped"}
+   393	    if cost_stopped(g):
+   394	        return {"run": run, "exit": 3, "gate": "the gate cell was refused at the cost cap: no further cell started"}
+   395	    if not smoke and _gate_wellformed((g or {}).get("round1_gate")) and not identical(g):   # a measured, not identical gate
+   396	        return {"run": run, "exit": 4, "gate": "the gate has no identical round-1 comparison: continuation stopped"}
+   397	    if (why := cont_problem(g, gate["id"], gate["job"], smoke, max_rounds=1, doubling=dbl[gdest], search=srch[gdest])) is not None:
+   398	        return {"run": run, "exit": 6, "gate": f"the gate record fails its checks: {why}"}
+   399	    todo = [c for c in queue if rerun(c, dest(c), max_rounds)]          # same order; completed, valid cells reused
+   400	    for c in todo:
+   401	        _set_aside(cdir, dest(c))
+   402	    lost, failed = ([], {}) if not todo else run_cells(
+   403	        _cont_one, todo, [(c["job"], c["dir"], max_rounds, cost, hours[c["id"]]) for c in todo], workers,   # module-level fn
+   404	        [dest(c) for c in todo], [{"id": c["id"]} for c in todo])
+   405	    recs = [_d(read_record(dest(c))) for c in todo]
+   406	    mismatch = [c["id"] for c, r in zip(todo, recs) if _mismatch(r, dbl[dest(c)], srch[dest(c)])]
+   407	    stopped = [c["id"] for c, r in zip(todo, recs) if cost_stopped(r)]
+   408	    if lost and not mismatch and not failed:
+   409	        _lost(cdir, lost, hours, max_rounds)
+   410	    code = 4 if mismatch else 6 if failed else 5 if lost else 3 if stopped else 0
+   411	    return {"run": run + len(todo), "lost": lost, "failed": failed, "mismatch": mismatch, "stopped": stopped, "exit": code}
+   412	
+   413	
+   414	FIELDS = ("gain", "profit_attack", "profit_ref", "sstar", "eff_attack")
+   415	
+   416	
+   417	def _n_agents(job: dict) -> int:
+   418	    cfg = job["mkt"]["cfg"]
+   419	    return int(cfg["N"] if isinstance(cfg, dict) else cfg.N)
+   420	
+   421	
+   422	def _valid_held(h, seeds) -> bool:
+   423	    """Finite per-seed values on the ordered seeds, and a positive normalizer S* on every seed (terms_of divides by it;
+   424	    review rep-impl-r3)."""
+   425	    return isinstance(h, dict) and isinstance(h.get("seeds"), list) and _same(h["seeds"], list(seeds)) and \
+   426	        all(_finite(h.get(f)) and len(h[f]) == len(seeds) for f in FIELDS) and all(x > 0 for x in h["sstar"])
+   427	
+   428	
+   429	def _deps_problem(d: Path, rec: dict, want: set) -> str | None:
+   430	    import revision_v2 as R
+   431	    from sim.records_v2 import sha_file
+   432	    up = rec.get("upstream")
+   433	    if not isinstance(up, dict) or set(up) != set(want):
+   434	        return "dependency set differs"
+   435	    for u, h in up.items():
+   436	        q = R.path_of(d, u)
+   437	        if not q.is_file() or sha_file(q) != h:
+   438	            return f"dependency hash differs: {u}"
+   439	    return None
+   440	
+   441	
+   442	@_checked
+   443	def base_problem(d: Path, job: dict, ev, db) -> str | None:
+   444	    """The evaluation and doubling records of one cell (plan section 4; review rep-impl-r2): stage, id, provenance, finite
+   445	    values on the job's ordered evaluation seeds; the evaluation depends exactly on the context's freeze, the rule's
+   446	    reference and the cell's search, the doubling on those and the reference's menu, every hash equal to the file in
+   447	    the rate directory; the doubling is a profit record with finite changes, a held-out winner with finite knobs, and
+   448	    its flag equals the frozen rule (revision_v2.doubling_report)."""
+   449	    import revision_v2 as R
+   450	    seeds = job["mkt"]["seeds_eval"]; ctx = job["context"]
+   451	    fz, rid = f"freeze/{ctx}", f"reference/{ctx}/{job['rule']}"
+   452	    if ev is None:
+   453	        return "no evaluation record"
+   454	    if ev.get("stage") != "evaluate" or not _same(ev.get("id"), job["id"]) or not _same(ev.get("provenance"), job["provenance"]):
+   455	        return "evaluation record of another stage, cell or run"
+   580	def collect(base: Path, jobs_by_dir: dict, gate: dict | None, smoke: bool = False) -> dict:
+   581	    """Records for both winner sets (recs[rate][market][rule] with gains, attack and reference terms, efficiency and
+   582	    seeds), R3's audit counts for both sets, and the winner counts. Every record is checked before use (review
+   583	    rep-impl-r2): a cell whose evaluation or doubling record fails base_problem is unscorable (plan section 4); a frozen
+   584	    diagnostics row that fails diag_ok gives no audit count. Only flagged cells look at a continuation record; a flagged
+   585	    cell without one is "not continued". The primary set is unavailable after a round-1 mismatch in any continuation
+   586	    record or without this run's identical gate record (also when no cell is flagged). A flagged cell whose continuation
+   587	    record fails cont_problem keeps its validated frozen winner and counts as not continued (plan section 4; review
+   588	    rep-impl-r3). A frozen R3 audit count needs diagnostics bound to this job, rate and run (diag_bound) and complete
+   589	    (diag_ok); a continued R3 winner's audit count needs its checked continued diagnostics."""
+   590	    import convergence_v2  # noqa: F401
+   591	    import revision_v2 as R
+   592	    base = Path(base); cdir = base / "continuation"
+   593	    allrec = [_d(read_record(q)) for q in sorted(cdir.glob("*.json")) + sorted((cdir / "gate").glob("*.json")) if q.name != "lost_cells.json"]
+   594	    mismatch = any(_mismatch(r) for r in allrec)
+   595	    g = _d(read_record(cdir / "gate" / (R._safe(gate["id"]) + ".json"))) if gate else None
+   596	    gdir = (gate.get("dir") or base / "menu-p0.05") if gate else None
+   597	    gdb, gsr = (doubling_of(gdir, gate["job"]["id"]), search_of(gdir, gate["job"]["id"])) if gate else (None, None)
+   598	    mismatch = mismatch or _mismatch(g, gdb, gsr)                        # a measured disagreement at the gate (review r5)
+   599	    gate_ok = g is not None and cont_problem(g, gate["id"], gate["job"], smoke, max_rounds=1, doubling=gdb, search=gsr) is None and \
+   600	        g.get("status") in STATUSES[:2] and (identical(g) or (smoke and g.get("round1_gate") == SMOKE_GATE))
+   601	    frozen, primary, problems, unscorable = {}, {}, [], []
+   602	    counts = {"frozen": 0, "continued": 0, "unresolved": 0, "stopped": 0, "not continued": 0}
+   603	    audit = {"frozen": {}, "primary": {}}
+   604	    for (kind, p), jobs in jobs_by_dir.items():
+   605	        rk = "0" if p == 0 else f"{p:g}"; d = base / f"{kind}-p{p:g}"
+   606	        diag = (_d((_d(read_record(d / "diagnostics.json")) or {}).get("cells")) or {}) if kind == "menu" else {}
+   607	        for j in jobs:
+   608	            m, r = j["mkt"]["label"].replace("fresh", "rep"), analysis_rule(kind, j["rule"])
+   609	            ev = _d(read_record(R.eval_path(d, j["id"]))); db = doubling_of(d, j["id"]); sr = search_of(d, j["id"]) or {}
+   610	            seeds = j["mkt"]["seeds_eval"]; key = _key(kind, p, j["id"])
+   611	            if _mismatch(_d(read_record(cdir / (R._safe(key) + ".json"))), db, sr):   # review rep-impl-r6: before any
+   612	                mismatch = True; problems.append(f"{key}: round 1 differs from the doubling record")   # base exclusion
+   613	            if (why := base_problem(d, j, ev, db)) is not None:
+   614	                unscorable.append(f"{kind}-p{p:g}|{j['id']}: {why}"); continue
+   615	            n = _n_agents(j); fz = safe_terms(ev, n)
+   616	            if fz is None:
+   617	                unscorable.append(f"{kind}-p{p:g}|{j['id']}: a normalizer or term is not finite and positive"); continue
+   618	            frozen.setdefault(rk, {}).setdefault(m, {})[r] = fz
+   619	            fa = None
+   620	            if r == "R3" and kind == "menu":
+   621	                ck = f"{j['context']}|{j['rule']}"
+   622	                row = (_d(diag.get(ck)) or {}).get("base")
+   623	                if diag_bound(d, kind, p, ck, j) and diag_ok(row, seeds, (_d(sr.get("attack")) or {}).get("best_knobs")):
+   624	                    fa = _audit_of(row["shares"]); audit["frozen"].setdefault(rk, {})[m] = fa
+   625	                elif ck in diag:
+   626	                    problems.append(f"{kind}-p{p:g}|{j['id']}: frozen diagnostics fail their checks")
+   627	            win, kw, crec = fz, "frozen", None
+   628	            key = _key(kind, p, j["id"])
+   629	            if db["incomplete"]:
+   630	                crec = _d(read_record(cdir / (R._safe(key) + ".json")))
+   631	                if crec is None:
+   632	                    kw = "not continued"
+   633	                elif (why := cont_problem(crec, key, j, smoke, doubling=db, search=sr)) is not None:   # plan section 4: invalid output keeps
+   634	                    problems.append(f"{key}: {why}"); kw = "not continued"     # the validated frozen winner
+   635	                else:
+   636	                    try:
+   637	                        _, kw = select_winner(fz["gain"], crec)
+   638	                    except Round1Mismatch:
+   639	                        kw = "frozen"
+   640	                    if kw in ("continued", "unresolved"):
+   641	                        win = safe_terms(crec["heldout"], n)
+   642	                        if win is None:
+   643	                            problems.append(f"{key}: a continued normalizer or term is not finite and positive")
+   644	                            win, kw = fz, "not continued"
+   645	            counts[kw] += 1
+   646	            primary.setdefault(rk, {}).setdefault(m, {})[r] = win
+   647	            if r == "R3" and kind == "menu":                # review rep-impl-r4: the primary count comes from the primary
+   648	                if kw in ("continued", "unresolved"):           # winner's own diagnostics; frozen ones only for a frozen winner
+   649	                    cd = _d(read_record(cdir / "diagnostics" / (R._safe(key) + ".json")))
+   650	                    if cont_diag_ok(cd, key, j, crec["heldout"]["knobs"]):
+   651	                        audit["primary"].setdefault(rk, {})[m] = _audit_of(cd["shares"])
+   652	                    elif cd is not None:
+   653	                        problems.append(f"{key}: continued diagnostics fail their checks")
+   654	                elif fa is not None:
+   655	                    audit["primary"].setdefault(rk, {})[m] = fa
+   656	    if not gate_ok:
+   657	        problems.append("no identical gate record of this run's gate cell")
+   658	    bad = mismatch or not gate_ok
+   659	    return {"frozen": frozen, "primary": None if bad else primary, "audit": audit, "counts": counts,
+   660	            "round1_mismatch": mismatch, "gate_ok": gate_ok, "problems": problems, "unscorable": unscorable}
+   661	
+   662	
+   663	def _diag_cont(job: dict, knobs: dict) -> dict:
+   664	    """In a worker: the churn arm's diagnostic run (churn_v2._diag_one) for a continued winner's knobs on the evaluation
+   665	    seeds under the cell's churn: per-seed normalised profits and newcomer audit counts (plan section 3, expectation 5
+"""Tests for the replication's continuation stage and record loader (plan sections 2 and 4)."""
+import sys
+from pathlib import Path
+
+import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import rep_collect as D  # noqa: E402
+
+
+def _w(p, obj):
+    import json
+    p.parent.mkdir(parents=True, exist_ok=True); p.write_text(json.dumps(obj))
+
+
+def test_winner_selection_rules(tmp_path):
+    # plan section 4: passed and round-cap cells use their continued winner; cost-stopped or missing cells keep the frozen one
+    frozen = [0.1, 0.2]
+    rec = lambda status, **k: {"status": status, **k}
+    assert D.select_winner(frozen, None) == (frozen, "frozen")
+    assert D.select_winner(frozen, rec("passed", heldout={"gain": [0.3, 0.4]})) == ([0.3, 0.4], "continued")
+    assert D.select_winner(frozen, rec("not passed at the cap", heldout={"gain": [0.5, 0.6]})) == ([0.5, 0.6], "unresolved")
+    assert D.select_winner(frozen, rec("stopped at the cost cap", partial={"gain": [9, 9]})) == (frozen, "stopped")
+    assert D.select_winner(frozen, rec("passed", heldout={"gain": [float("nan"), 0.1]})) == (frozen, "not continued")
+    with pytest.raises(D.Round1Mismatch):
+        D.select_winner(frozen, rec("stopped: round 1 differs from the registered doubling"))
+
+
+def test_rule_names_map_to_the_analysis_labels():
+    assert D.analysis_rule("menu", "F111") == "R3" and D.analysis_rule("menu", "F000") == "B3"
+    assert D.analysis_rule("menu", "C*") == "C*" and D.analysis_rule("cthr", "C*") == "C-thr"
+
+
+def test_the_worker_function_is_picklable():
+    import pickle
+    assert pickle.loads(pickle.dumps(D._cont_one)) is D._cont_one
+
+
+def test_a_saved_round1_mismatch_stops_the_queue_on_resume(tmp_path, monkeypatch):
+    import json
+    calls = []
+    monkeypatch.setattr(D, "_cont_one", lambda *a: calls.append(a) or {"status": "passed"})
+    q = _queue(2)
+    (tmp_path / "continuation").mkdir()
+    (tmp_path / "continuation" / "c0.json").write_text(json.dumps({"id": "c0", "status": "stopped: round 1 differs from the registered doubling",
+                                                                 "provenance": q[0]["job"]["provenance"], "round1_gate": FAILING}))
+    res = D.run_queue(q, tmp_path, workers=1, gate=_gate())
+    assert calls == [] and "mismatch" in res["gate"]
+
+
+FAILING = {"pass": False, "max_knob_rel": 0.0, "max_change_abs": 0.0, "max_gain_abs": 0.3, "problems": ["tolerance exceeded"]}
+EXACT = {"pass": True, "max_knob_rel": 0.0, "max_change_abs": 0.0, "max_gain_abs": 0.0, "problems": [],
+         "heldout_knobs": {"u0": 3.0, "x": 2}, "heldout_mean": 0.5}
+CKNOBS = {"u0": 3.0, "x": 2}
+
+
+def _rounds(status="passed", mr=1):
+    """Run B rounds that agree with the status: a pass in the last round, or mr unpassed rounds at the cap."""
+    ch = 0.0 if status == "passed" else 0.01
+    n = 1 if status == "passed" else mr
+    return [{"round": i + 1, "attack_f": 1.0, "attack_change": ch, "reference_f": 1.0, "reference_change": 0.0,
+             "best_knobs": dict(CKNOBS)} for i in range(n)]
+
+
+def _full(job, status="passed", gate=None, mr=1):
+    """A complete continuation record as convergence_v2.run_cell writes it (the id comes from the pool's extras)."""
+    seeds = job["mkt"]["seeds_eval"]; g = [0.5] * len(seeds)
+    return {"stage": "convergence", "provenance": job["provenance"], "status": status, "round1_gate": gate or EXACT,
+            "rounds": _rounds(status, mr), "heldout": {"knobs": dict(CKNOBS), "seeds": list(seeds), "gain": g, "profit_attack": [1.5] * len(g),
+                                                      "profit_ref": [1.0] * len(g), "sstar": [4.0] * len(g), "eff_attack": [0.8] * len(g)}}
+
+
+def _dbl_dir(jobs):
+    """A rate directory holding each job's doubling record, matching _full's round 1 (knobs, gains 0.5, zero changes)."""
+    import tempfile
+    import convergence_v2  # noqa: F401
+    import revision_v2 as R
+    d = Path(tempfile.mkdtemp())
+    for j in jobs:
+        _w(d / "doubling" / (R._safe(j["id"]) + ".json"),
+           {"heldout": {"knobs": dict(CKNOBS), "gain": [0.5, 0.5]}, "attack_change": 0.0, "reference_change": 0.0})
+        _w(R.path_of(d, j["id"]), {"stage": "search", "attack": {"best_knobs": dict(CKNOBS)}})
+    return str(d)
+
+
+def _queue(n, churn=0.05):
+    jobs = [{"id": f"q{i}@rho0.2|F111|D2+H3|profit", "churn": churn, "family": "D2+H3", "provenance": {"id": f"j{i}"},
+             "mkt": {"seeds_eval": [11, 12], "cfg": {"N": 4}}} for i in range(n)]
+    d = _dbl_dir(jobs)
+    return [{"id": f"c{i}", "job": j, "dir": d} for i, j in enumerate(jobs)]
+
+
+def test_every_continuation_round_is_admitted_with_a_nonzero_estimate(tmp_path, monkeypatch):
+    # review gap 2026-11-19: run_cell's round admission used round_hours = 0, so the cost stop could never refuse a round
+    seen = []
+    monkeypatch.setattr(D, "_cont_one", lambda job, d, mr, cost, hours: seen.append(hours) or _full(job))
+    monkeypatch.setattr(D, "run_cells", lambda fn, todo, args, w, dests, extras: (
+        [D.write_record(d, {**fn(*a), **e}) for a, d, e in zip(args, dests, extras)], ([], {}))[1])
+    D.run_queue(_queue(3), tmp_path, workers=2, gate=_gate())
+    assert len(seen) == 4 and all(h > 0.3 for h in seen)
+    assert D.round_hours({"churn": 0.05, "family": "D2+H3"}) > D.round_hours({"family": "D2+H3"})
+
+
+def test_end_codes_mismatch_lost_and_failed(tmp_path, monkeypatch):
+    # Run B's codes: 4 a measured round-1 mismatch (outranks the rest), 5 a lost worker (restart estimate saved), 6 a cell error
+    ok = lambda job, *a: _full(job)
+    monkeypatch.setattr(D, "_cont_one", ok)
+    def cells(outcome):
+        def f(fn, todo, args, w, dests, extras):
+            lost, failed = [], {}
+            for c, a, d, e in zip(todo, args, dests, extras):
+                o = outcome.get(c["id"], "ok")
+                if o == "lost":
+                    lost.append(c["id"])
+                elif o == "fail":
+                    failed[c["id"]] = "ValueError: x"
+                else:
+                    D.write_record(d, {**fn(*a), **e, **({"status": "stopped: round 1 differs", "round1_gate": FAILING} if o == "mm" else {})})
+            return lost, failed
+        return f
+    for outcome, code in (({}, 0), ({"c2": "lost"}, 5), ({"c2": "fail"}, 6), ({"c1": "mm", "c2": "lost"}, 4)):
+        d = tmp_path / str(code); monkeypatch.setattr(D, "run_cells", cells(outcome))
+        res = D.run_queue(_queue(3), d, workers=2, gate=_gate())
+        assert res["exit"] == code, (outcome, res)
+    import json
+    assert json.loads((tmp_path / "5" / "continuation" / "lost_cells.json").read_text())["restart_hours"]["1"] > 0
+
+
+def test_a_gate_mismatch_exits_4(tmp_path, monkeypatch):
+    monkeypatch.setattr(D, "_cont_one", lambda job, *a: {"status": "stopped: round 1 differs", "provenance": job["provenance"], "round1_gate": FAILING})
+    monkeypatch.setattr(D, "run_cells", _pool([]))
+    assert D.run_queue(_queue(2), tmp_path, workers=1, gate=_gate())["exit"] == 4
+
+
+def test_resume_refuses_a_saved_record_of_another_job(tmp_path, monkeypatch):
+    # plan section 5: a resume reuses only records with this run's binding (here the job's provenance)
+    import json
+    monkeypatch.setattr(D, "_cont_one", lambda job, *a: {"status": "passed", "provenance": job["provenance"]})
+    (tmp_path / "continuation").mkdir()
+    (tmp_path / "continuation" / "c0.json").write_text(json.dumps({"id": "c0", "status": "passed", "provenance": {"id": "other"}}))
+    with pytest.raises(SystemExit):
+        D.run_queue(_queue(2), tmp_path, workers=1, gate=_gate())
+
+
+# ---- review rep-impl-r1 (Sol 3, 4, 5, 6; Astra 4, 7, 8): the gate, exact identity, failure paths, validation -----------
+
+def _gate():
+    j = {"id": "g@rho0.2|F111|D2+H3|profit", "churn": 0.05, "family": "D2+H3", "provenance": {"id": "g"}, "mkt": {"seeds_eval": [11, 12], "cfg": {"N": 4}}}
+    return {"id": "menu-p0.05|g", "job": j, "dir": _dbl_dir([j])}
+
+    # Sol 3, Astra 3
+    a = _job("fresh0"); _, db = _paths(tmp_path, a); _cell(tmp_path, a, 0, incomplete=True)
+    db.write_text("[]")
+    assert D.flagged_cells(tmp_path, {("menu", 0.0): [a]}) == []
+
+
+def test_a_saved_gate_or_continuation_with_a_normalizer_zero_after_division_is_rerun(tmp_path, monkeypatch):
+    # Sol 4: S* = 5e-324 with N = 4 passed the shared validation, so resume reused it
+    calls = []
+    monkeypatch.setattr(D, "_cont_one", _ok); monkeypatch.setattr(D, "run_cells", _pool(calls))
+    q, g = _queue(2), _gate()
+    assert D.run_queue(q, tmp_path, workers=1, gate=g)["exit"] == 0
+    _edit(tmp_path / "continuation" / "c1.json", lambda r: r["heldout"].update(sstar=[5e-324, 4.0]))
+    calls.clear(); assert D.run_queue(q, tmp_path, workers=1, gate=g)["exit"] == 0 and calls == [["c1"]]
+
+
+def test_a_doubling_record_with_a_normalizer_zero_after_division_makes_the_cell_unscorable(tmp_path):
+    # Astra 4
+    a, gj, key = _flagged_with_gate(tmp_path)
+    _, db = _paths(tmp_path, a)
+    _edit(db, lambda r: r["heldout"].update(sstar=[5e-324, 4.0]))
+    assert len(D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))["unscorable"]) == 1
+
+
+# ---- review rep-impl-r7 (Sol 1-4; Astra 1-5) ------------------------------------------------------------------------------
+
+def test_a_mismatch_status_without_measured_evidence_is_an_invalid_record(tmp_path, monkeypatch):
+    # Sol 1, Astra 1: the status string alone proves no measurement
+    a, gj, key = _flagged_with_gate(tmp_path)
+    _edit(_cpath(tmp_path, key), lambda r: r.update(status="stopped: round 1 differs from the registered doubling",
+                                                    round1_gate={}, rounds=[]))
+    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))
+    assert col["round1_mismatch"] is False and col["primary"] is not None
+    assert D._mismatch({"status": "stopped: round 1 differs from the registered doubling"}) is False
+    calls = []
+    monkeypatch.setattr(D, "_cont_one", _ok); monkeypatch.setattr(D, "run_cells", _pool(calls))
+    q = _queue(2); assert D.run_queue(q, tmp_path / "q", workers=1, gate=_gate())["exit"] == 0
+    _edit(tmp_path / "q" / "continuation" / "c1.json", lambda r: r.update(status="stopped: round 1 differs from the registered doubling",
+                                                                         round1_gate={}, rounds=[]))
+    calls.clear(); assert D.run_queue(q, tmp_path / "q", workers=1, gate=_gate())["exit"] == 0 and calls == [["c1"]]
+
+
+def test_a_genuine_run_b_mismatch_record_is_still_a_mismatch(tmp_path):
+    # what run_cell writes on a mismatch: the status, a well-formed failing comparison, and round 1
+    a, gj, key = _flagged_with_gate(tmp_path)
+    _edit(_cpath(tmp_path, key), lambda r: (r.update(status="stopped: round 1 differs from the registered doubling",
+                                                     rounds=r["rounds"][:1]),
+                                            r["round1_gate"].update({"pass": False, "max_gain_abs": 0.3, "problems": ["tolerance exceeded"]})))
+    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))
+    assert col["round1_mismatch"] is True and col["primary"] is None
+
+
+@pytest.mark.parametrize("value,ok", [(10 ** 400, False), (float("inf"), True), (float("nan"), False)])
+def test_comparison_differences_too_large_for_a_float_are_malformed_not_errors(value, ok):
+    # Sol 2, Astra 3: 10**400 raised OverflowError; Run B's infinite gain difference stays allowed
+    g = {"pass": False, "problems": ["x"], "max_knob_rel": 0.0, "max_change_abs": 0.0, "max_gain_abs": value}
+    assert D._gate_wellformed(g) is ok
+
+
+def test_a_malformed_doubling_change_is_not_a_mismatch(tmp_path):
+    # Sol 4, Astra 2: doubling attack_change None made the cell unscorable and also declared a global mismatch
+    a, gj, key = _flagged_with_gate(tmp_path)
+    _, db = _paths(tmp_path, a)
+    _edit(db, lambda r: r.update(attack_change=None))
+    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))
+    assert len(col["unscorable"]) == 1 and col["round1_mismatch"] is False
+
+
+@pytest.mark.parametrize("prov,refused", [({}, False), ({"id": None, "b": 1}, False), ({"id": [], "b": 1}, False),
+                                          ({"id": "another", "b": 1}, True)])
+def test_only_a_well_formed_foreign_provenance_refuses_the_resume(tmp_path, monkeypatch, prov, refused):
+    # Sol 3, Astra 4: {}, id None or id [] are malformed (rerun), not another run's binding (refusal)
+    calls = []
+    monkeypatch.setattr(D, "_cont_one", _ok); monkeypatch.setattr(D, "run_cells", _pool(calls))
+    q = [{**c, "job": {**c["job"], "provenance": {"id": c["job"]["provenance"]["id"], "b": 1}}} for c in _queue(2)]
+    assert D.run_queue(q, tmp_path, workers=1, gate=_gate())["exit"] == 0
+    _edit(tmp_path / "continuation" / "c1.json", lambda r: r.update(provenance=prov))
+    calls.clear()
+    if refused:
+        with pytest.raises(SystemExit):
+            D.run_queue(q, tmp_path, workers=1, gate=_gate())
+        assert calls == []
+    else:
+        assert D.run_queue(q, tmp_path, workers=1, gate=_gate())["exit"] == 0 and calls == [["c1"]]
+
+
+# ---- review rep-impl-r8 (Sol 1, Astra 1) ----------------------------------------------------------------------------------
+
+@pytest.mark.parametrize("status", ["passed", "stopped: round 1 differs from the registered doubling"])
+def test_a_measured_disagreement_is_a_mismatch_whatever_the_status(tmp_path, monkeypatch, status):
+    # Sol 1, Astra 1: with the mismatch status, the status branch returned before the measured round-1 values were checked
+    a, gj, key = _flagged_with_gate(tmp_path)
+    _edit(_cpath(tmp_path, key), lambda r: (r.update(status=status), r["rounds"][0].update(attack_change=0.02)))
+    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))
+    assert col["round1_mismatch"] is True and col["primary"] is None
+    calls = []
+    monkeypatch.setattr(D, "_cont_one", _ok); monkeypatch.setattr(D, "run_cells", _pool(calls))
+    q = _queue(2); assert D.run_queue(q, tmp_path / "q", workers=1, gate=_gate())["exit"] == 0
+    _edit(tmp_path / "q" / "continuation" / "c1.json", lambda r: (r.update(status=status), r["rounds"][0].update(attack_change=0.02)))
+    calls.clear(); res = D.run_queue(q, tmp_path / "q", workers=1, gate=_gate())
+    assert res["exit"] == 4 and calls == []
+
+
+_DISAGREE = {
+    "attack_change": lambda r: r["rounds"][0].update(attack_change=r["rounds"][0]["attack_change"] + 0.01),
+    "reference_change": lambda r: r["rounds"][0].update(reference_change=r["rounds"][0]["reference_change"] + 0.01),
+    "round1_best_knobs": lambda r: r["rounds"][0].update(best_knobs={"u0": 7.0, "x": 7}),
+    "heldout_knobs": lambda r: r["round1_gate"].update(heldout_knobs={"u0": 7.0, "x": 7}),
+    "heldout_mean": lambda r: r["round1_gate"].update(heldout_mean=r["round1_gate"]["heldout_mean"] + 0.01),
+}
+
+
+@pytest.mark.parametrize("status", D.STATUSES)
+@pytest.mark.parametrize("field", sorted(_DISAGREE))
+def test_every_status_with_every_well_formed_round1_disagreement_is_a_mismatch(tmp_path, monkeypatch, status, field):
+    # review rep-impl-r8 guard against the class: the status must never decide whether measured evidence counts
+    def damage(r):
+        r["status"] = status; _DISAGREE[field](r)
+    a, gj, key = _flagged_with_gate(tmp_path)
+    _edit(_cpath(tmp_path, key), damage)
+    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))
+    assert col["round1_mismatch"] is True and col["primary"] is None
+    calls = []
+    monkeypatch.setattr(D, "_cont_one", _ok); monkeypatch.setattr(D, "run_cells", _pool(calls))
+    q = _queue(2); assert D.run_queue(q, tmp_path / "q", workers=1, gate=_gate())["exit"] == 0
+    _edit(tmp_path / "q" / "continuation" / "c1.json", damage)
+    calls.clear(); res = D.run_queue(q, tmp_path / "q", workers=1, gate=_gate())
+    assert res["exit"] == 4 and calls == []
+
+
+# ---- review rep-impl-r9 (Sol 1) -------------------------------------------------------------------------------------------
+
+hook: PostToolUse
+hook: PostToolUse Completed
+exec
+/bin/zsh -lc 'uv run --frozen pytest -q docs/revision/followup3/' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 6903ms:
+........................................................................ [ 31%]
+........................................................................ [ 62%]
+...............................s........................................ [ 93%]
+..............                                                           [100%]
+229 passed, 1 skipped in 6.69s
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "nl -ba docs/revision/followup3/rep_collect.py | sed -n '369,454p'; nl -ba docs/revision/followup3/rep_collect.py | sed -n '587,615p'; sed -n '115,140p' docs/revision/followup3/replication-plan.md; tail -n 8 results/pods/logs_harness/rep_pod_r3_20261120T023740Z.log; git diff a5baace..HEAD --stat; rg -n 'sealed|touchstone-h4|h4-session' docs/revision/followup3/test*.py docs/revision/followup3/conftest.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ exited 2 in 0ms:
+   369	    if any(_mismatch(saved[d], dbl[d], srch[d]) for _, d in items):     # a measured disagreement included (review rep-impl-r5)
+   370	        return {"run": 0, "exit": 4, "gate": "round-1 mismatch on record: continuation stays stopped"}   # also on resume (plan section 4)
+   371	    hours = {c["id"]: round_hours(c["job"]) for c, _ in items}
+   372	    # review rep-impl-r3: a saved record is reused only if it passes the same checks collect applies; any other record
+   373	    # (incomplete, malformed, nonfinite) means "no passing record" and its cell is rerun (plan section 4: a resume
+   374	    # continues from the first cell without a passing record); the old record is set aside, never deleted
+   375	    # (an unknown status included: review rep-impl-r4; a measured round-1 mismatch stopped above and is never rerun)
+   376	    invalid = lambda c, d, mr: saved[d] is not None and not cost_stopped(saved[d]) and \
+   377	        cont_problem(saved[d], c["id"], c["job"], smoke, mr, dbl[d], srch[d]) is not None
+   378	    rerun = lambda c, d, mr: saved[d] is None or cost_stopped(saved[d]) or invalid(c, d, mr)
+   379	    run = 0
+   380	    if rerun(gate, gdest, 1):
+   381	        _set_aside(cdir, gdest)
+   382	        lost, failed = run_cells(_cont_one, [gate], [(gate["job"], gate["dir"], 1, cost, hours[gate["id"]])], 1, [gdest],
+   383	                                 [{"id": gate["id"], "gate": True}])
+   384	        run += 1
+   385	        if failed:
+   386	            return {"run": run, "failed": failed, "exit": 6, "gate": "the gate cell raised an error"}
+   387	        if lost:
+   388	            _lost(cdir, lost, hours, 1)
+   389	            return {"run": run, "lost": lost, "exit": 5, "gate": "the gate cell's worker was lost"}
+   390	    g = _d(read_record(gdest))
+   391	    if _mismatch(g, dbl[gdest], srch[gdest]):
+   392	        return {"run": run, "exit": 4, "gate": "round-1 mismatch at the gate: continuation stopped"}
+   393	    if cost_stopped(g):
+   394	        return {"run": run, "exit": 3, "gate": "the gate cell was refused at the cost cap: no further cell started"}
+   395	    if not smoke and _gate_wellformed((g or {}).get("round1_gate")) and not identical(g):   # a measured, not identical gate
+   396	        return {"run": run, "exit": 4, "gate": "the gate has no identical round-1 comparison: continuation stopped"}
+   397	    if (why := cont_problem(g, gate["id"], gate["job"], smoke, max_rounds=1, doubling=dbl[gdest], search=srch[gdest])) is not None:
+   398	        return {"run": run, "exit": 6, "gate": f"the gate record fails its checks: {why}"}
+   399	    todo = [c for c in queue if rerun(c, dest(c), max_rounds)]          # same order; completed, valid cells reused
+   400	    for c in todo:
+   401	        _set_aside(cdir, dest(c))
+   402	    lost, failed = ([], {}) if not todo else run_cells(
+   403	        _cont_one, todo, [(c["job"], c["dir"], max_rounds, cost, hours[c["id"]]) for c in todo], workers,   # module-level fn
+   404	        [dest(c) for c in todo], [{"id": c["id"]} for c in todo])
+   405	    recs = [_d(read_record(dest(c))) for c in todo]
+   406	    mismatch = [c["id"] for c, r in zip(todo, recs) if _mismatch(r, dbl[dest(c)], srch[dest(c)])]
+   407	    stopped = [c["id"] for c, r in zip(todo, recs) if cost_stopped(r)]
+   408	    if lost and not mismatch and not failed:
+   409	        _lost(cdir, lost, hours, max_rounds)
+   410	    code = 4 if mismatch else 6 if failed else 5 if lost else 3 if stopped else 0
+   411	    return {"run": run + len(todo), "lost": lost, "failed": failed, "mismatch": mismatch, "stopped": stopped, "exit": code}
+   412	
+   413	
+   414	FIELDS = ("gain", "profit_attack", "profit_ref", "sstar", "eff_attack")
+   415	
+   416	
+   417	def _n_agents(job: dict) -> int:
+   418	    cfg = job["mkt"]["cfg"]
+   419	    return int(cfg["N"] if isinstance(cfg, dict) else cfg.N)
+   420	
+   421	
+   422	def _valid_held(h, seeds) -> bool:
+   423	    """Finite per-seed values on the ordered seeds, and a positive normalizer S* on every seed (terms_of divides by it;
+   424	    review rep-impl-r3)."""
+   425	    return isinstance(h, dict) and isinstance(h.get("seeds"), list) and _same(h["seeds"], list(seeds)) and \
+   426	        all(_finite(h.get(f)) and len(h[f]) == len(seeds) for f in FIELDS) and all(x > 0 for x in h["sstar"])
+   427	
+   428	
+   429	def _deps_problem(d: Path, rec: dict, want: set) -> str | None:
+   430	    import revision_v2 as R
+   431	    from sim.records_v2 import sha_file
+   432	    up = rec.get("upstream")
+   433	    if not isinstance(up, dict) or set(up) != set(want):
+   434	        return "dependency set differs"
+   435	    for u, h in up.items():
+   436	        q = R.path_of(d, u)
+   437	        if not q.is_file() or sha_file(q) != h:
+   438	            return f"dependency hash differs: {u}"
+   439	    return None
+   440	
+   441	
+   442	@_checked
+   443	def base_problem(d: Path, job: dict, ev, db) -> str | None:
+   444	    """The evaluation and doubling records of one cell (plan section 4; review rep-impl-r2): stage, id, provenance, finite
+   445	    values on the job's ordered evaluation seeds; the evaluation depends exactly on the context's freeze, the rule's
+   446	    reference and the cell's search, the doubling on those and the reference's menu, every hash equal to the file in
+   447	    the rate directory; the doubling is a profit record with finite changes, a held-out winner with finite knobs, and
+   448	    its flag equals the frozen rule (revision_v2.doubling_report)."""
+   449	    import revision_v2 as R
+   450	    seeds = job["mkt"]["seeds_eval"]; ctx = job["context"]
+   451	    fz, rid = f"freeze/{ctx}", f"reference/{ctx}/{job['rule']}"
+   452	    if ev is None:
+   453	        return "no evaluation record"
+   454	    if ev.get("stage") != "evaluate" or not _same(ev.get("id"), job["id"]) or not _same(ev.get("provenance"), job["provenance"]):
+   587	    record fails cont_problem keeps its validated frozen winner and counts as not continued (plan section 4; review
+   588	    rep-impl-r3). A frozen R3 audit count needs diagnostics bound to this job, rate and run (diag_bound) and complete
+   589	    (diag_ok); a continued R3 winner's audit count needs its checked continued diagnostics."""
+   590	    import convergence_v2  # noqa: F401
+   591	    import revision_v2 as R
+   592	    base = Path(base); cdir = base / "continuation"
+   593	    allrec = [_d(read_record(q)) for q in sorted(cdir.glob("*.json")) + sorted((cdir / "gate").glob("*.json")) if q.name != "lost_cells.json"]
+   594	    mismatch = any(_mismatch(r) for r in allrec)
+   595	    g = _d(read_record(cdir / "gate" / (R._safe(gate["id"]) + ".json"))) if gate else None
+   596	    gdir = (gate.get("dir") or base / "menu-p0.05") if gate else None
+   597	    gdb, gsr = (doubling_of(gdir, gate["job"]["id"]), search_of(gdir, gate["job"]["id"])) if gate else (None, None)
+   598	    mismatch = mismatch or _mismatch(g, gdb, gsr)                        # a measured disagreement at the gate (review r5)
+   599	    gate_ok = g is not None and cont_problem(g, gate["id"], gate["job"], smoke, max_rounds=1, doubling=gdb, search=gsr) is None and \
+   600	        g.get("status") in STATUSES[:2] and (identical(g) or (smoke and g.get("round1_gate") == SMOKE_GATE))
+   601	    frozen, primary, problems, unscorable = {}, {}, [], []
+   602	    counts = {"frozen": 0, "continued": 0, "unresolved": 0, "stopped": 0, "not continued": 0}
+   603	    audit = {"frozen": {}, "primary": {}}
+   604	    for (kind, p), jobs in jobs_by_dir.items():
+   605	        rk = "0" if p == 0 else f"{p:g}"; d = base / f"{kind}-p{p:g}"
+   606	        diag = (_d((_d(read_record(d / "diagnostics.json")) or {}).get("cells")) or {}) if kind == "menu" else {}
+   607	        for j in jobs:
+   608	            m, r = j["mkt"]["label"].replace("fresh", "rep"), analysis_rule(kind, j["rule"])
+   609	            ev = _d(read_record(R.eval_path(d, j["id"]))); db = doubling_of(d, j["id"]); sr = search_of(d, j["id"]) or {}
+   610	            seeds = j["mkt"]["seeds_eval"]; key = _key(kind, p, j["id"])
+   611	            if _mismatch(_d(read_record(cdir / (R._safe(key) + ".json"))), db, sr):   # review rep-impl-r6: before any
+   612	                mismatch = True; problems.append(f"{key}: round 1 differs from the doubling record")   # base exclusion
+   613	            if (why := base_problem(d, j, ev, db)) is not None:
+   614	                unscorable.append(f"{kind}-p{p:g}|{j['id']}: {why}"); continue
+   615	            n = _n_agents(j); fz = safe_terms(ev, n)
+A failure of an expectation is reported as such and is not read as evidence for a particular cause.
+
+## 4. Search quality
+
+Every evaluation cell at every rate gets the registered doubling check; the menu X7-SC winners get none (reference
+selection uses training scores). Each flagged cell then gets continued search with Run B's stopping rule, up to three
+rounds in total, where round 1 repeats the doubling (it is checked against this run's doubling record). Under churn the
+continuation runs through a churn-aware adapter under `docs/`: it installs churn in every worker and replaces the
+direct `sim.reference.select_reference` import of `convergence_v2.run_cell`, so that every menu candidate is replayed
+under the cell's churn and no cached no-churn score is used; tests require the replay and the round-1 agreement.
+Winners: a cell that passes keeps its final winner; a cell that reaches the round cap keeps its last winner and is
+counted as unresolved; a cell whose continuation stops between rounds at the cost cap keeps its validated frozen winner,
+its partial rounds are excluded from every result, and it is counted as stopped; a cell not continued because of the
+cost cap, or whose continuation output is missing or
+nonfinite, keeps its validated frozen winner and is counted as not continued. A round-1 mismatch (round 1 differs from
+this run's doubling record) signals an environment or code fault, as in Run B (exit 4): it stops all continuation, no
+continued winner of this run enters any result, and the primary analysis is reported as not available; the all-frozen
+set is then reported, labelled as such, and no fallback is substituted. A cell whose base evaluation or doubling record is missing or
+invalid is unscorable, and so is every expectation that needs it. Ties in reference selection follow the frozen
+`select_reference` rule (training score, then its fixed order). A reference reselected during continuation affects only
+the diagnostics and the stopping decision; gains always use the rule's selected no-churn reference candidate.
+Continuation order, fixed now (it decides which cells a cost stop leaves out): p = 0.05, then 0.03, then 0; within a
+rate, markets rep0 to rep5; within a market, R3, C*, C-thr(12), B3. The five continuation workers take cells from one
+queue in this order, and a resume continues the same queue from the first cell without a passing record. Passing the
+continuation's incremental check is not a claim of convergence or of bounded search error.
+
+remote ok (pod 2): 20 end states; p0, gate0, churn, continue, inventory with the expected flags
+== pod 2: a lost continuation worker restarts the stage once on 3 workers
+restart ok: admission with the driver's estimate for 3 workers, then the stage again on 3 workers
+== the real guards.py admission inside the generated remote script
+real admission ok: instances and calibration admitted, menu refused (prior 1.2471 USD incl. the deleted attempt)
+== the embedded verifier
+verifier ok: complete passes (nested rate inventories are indexes, not records); missing, changed, uninventoried and empty fail
+HARNESS OK (47 of 47 scenarios)
+ docs/revision/followup3/rep-impl-r9-response.md |   10 +
+ docs/revision/followup3/rep_collect.py          |    4 +-
+ docs/revision/followup3/test_rep_collect.py     |   32 +
+ docs/revision/roster/astra-rep-impl-r9.log      | 4497 +++++++++++++++++++++++
+ docs/revision/roster/astra-rep-impl-r9.md       |    3 +
+ docs/revision/roster/brief-rep-impl-r10.md      |   14 +
+ docs/revision/roster/sol-rep-impl-r9.log        | 3760 +++++++++++++++++++
+ docs/revision/roster/sol-rep-impl-r9.md         |    6 +
+ 8 files changed, 8325 insertions(+), 1 deletion(-)
+rg: docs/revision/followup3/conftest.py: No such file or directory (os error 2)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+The tests passed: 229 passed and 1 skipped. The P1 change checks all required first-round fields before it recomputes a disagreement. I am checking one remaining case: how collection classifies a malformed record with a cost-stop status.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "ls -l .venv/bin/python; command -v python3; sed -n '1,55p' pyproject.toml" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+lrwxr-xr-x@ 1 oemer.demirel  staff  93 Oct 22 19:36 .venv/bin/python -> /Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/bin/python3.12
+/opt/homebrew/bin/python3
+[project]
+name = "touchstone"
+version = "0.1.0"
+description = "Audit-and-allocation rules for markets of adaptive agents: simulator"
+requires-python = ">=3.12"
+dependencies = ["numpy>=2.0", "scipy>=1.13", "cma>=4.0", "pyyaml>=6.0", "pandas>=2.2", "matplotlib>=3.9", "anthropic>=1.0", "typesafe-sdk>=0.3"]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["sim"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore:Could not import matplotlib.pyplot:UserWarning"]   # cma plotting is not used
+markers = ["slow: end-to-end smoke paths that take more than ten minutes; selected with --runslow"]
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -c 'import sys, copy
+from pathlib import Path
+from unittest.mock import patch
+sys.path.insert(0,'\\''docs/revision/followup3'\\'')
+import test_rep_collect as T
+D=T.D
+import convergence_v2, revision_v2 as R
+j={'\\''id'\\'':'\\''fresh0@rho0.2|F111|D2+H3|profit'\\'','\\''rule'\\'':'\\''F111'\\'','\\''context'\\'':'\\''fresh0@rho0.2'\\'','\\''provenance'\\'':{'\\''id'\\'':'\\''j'\\''},'\\''mkt'\\'':{'\\''label'\\'':'\\''fresh0'\\'','\\''seeds_eval'\\'':[11,12],'\\''cfg'\\'':{'\\''N'\\'':4}}}
+key=D._key('\\''menu'\\'',0.0,j['\\''id'\\''])
+good=copy.deepcopy(T._full(j)); good['\\''id'\\'']=key
+g=copy.deepcopy(good); g['\\''id'\\'']='\\''gate'\\''
+ev=copy.deepcopy(good['\\''heldout'\\''])
+db={'\\''incomplete'\\'':True,'\\''attack_change'\\'':0.0,'\\''reference_change'\\'':0.0,'\\''heldout'\\'':ev}
+sr={'\\''attack'\\'':{'\\''best_knobs'\\'':dict(T.CKNOBS)}}
+rec=copy.deepcopy(good); rec['\\''status'\\'']='\\''stopped at the cost cap'\\''; rec['\\''rounds'\\''][0].update(attack_f=None,attack_change=0.02)
+def read(p):
+ s=str(p)
+ if '\\''/continuation/gate/'\\'' in s: return g
+ if '\\''/continuation/'\\'' in s: return rec
+ if s.endswith('\\''/ev'\\''): return ev
+ return None
+with patch.object(D,'\\''read_record'\\'',read),patch.object(D,'\\''doubling_of'\\'',return_value=db),patch.object(D,'\\''search_of'\\'',return_value=sr),patch.object(D,'\\''base_problem'\\'',return_value=None),patch.object(D,'\\''diag_bound'\\'',return_value=False),patch.object(R,'\\''eval_path'\\'',return_value=Path('\\''/virtual/ev'\\'')),patch.object(Path,'\\''glob'\\'',return_value=[]):
+ col=D.collect(Path('\\''/virtual'\\''),{('\\''menu'\\'',0.0):[j]},gate={'\\''id'\\'':'\\''gate'\\'','\\''job'\\'':j,'\\''dir'\\'':'\\''/virtual/gatedir'\\''})
+print({'\\''cont_problem'\\'':D.cont_problem(rec,key,j,doubling=db,search=sr),'\\''mismatch'\\'':col['\\''round1_mismatch'\\''],'\\''primary_available'\\'':col['\\''primary'\\''] is not None,'\\''counts'\\'':col['\\''counts'\\'']})
+'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ exited 1 in 476ms:
+/Users/oemer.demirel/.matplotlib is not a writable directory
+Traceback (most recent call last):
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/matplotlib/__init__.py", line 587, in _get_config_or_cache_dir
+    tmpdir = tempfile.mkdtemp(prefix="matplotlib-")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 373, in mkdtemp
+    prefix, suffix, dir, output_type = _sanitize_params(prefix, suffix, dir)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 126, in _sanitize_params
+    dir = gettempdir()
+          ^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 315, in gettempdir
+    return _os.fsdecode(_gettempdir())
+                        ^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 308, in _gettempdir
+    tempdir = _get_default_tempdir()
+              ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 223, in _get_default_tempdir
+    raise FileNotFoundError(_errno.ENOENT,
+FileNotFoundError: [Errno 2] No usable temporary directory found in ['/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/', '/tmp', '/var/tmp', '/usr/tmp', '/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79']
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<string>", line 7, in <module>
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/docs/revision/followup2/convergence_v2.py", line 29, in <module>
+    import guards as G  # noqa: E402
+    ^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/docs/revision/followup2/guards.py", line 18, in <module>
+    import reset_followup_v2 as F  # noqa: E402
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/docs/revision/followup/reset_followup_v2.py", line 23, in <module>
+    import revision_v2 as R  # noqa: E402
+    ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/scripts/revision_v2.py", line 27, in <module>
+    from sim import families_v2 as FV2  # noqa: E402
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/sim/families_v2.py", line 11, in <module>
+    from .reference import Candidate
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/sim/reference.py", line 12, in <module>
+    from .search import Objective, SearchResult, SearchSettings, best_archived, cma_search
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/sim/search.py", line 10, in <module>
+    import cma
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/cma/__init__.py", line 128, in <module>
+    from . import s
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/cma/s.py", line 14, in <module>
+    try: from matplotlib import pyplot as _pyplot  # like this it doesn't show up in the interface
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/matplotlib/__init__.py", line 1002, in <module>
+    rcParams._update_raw(_rc_params_in_file(matplotlib_fname()))
+                                            ^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/matplotlib/__init__.py", line 680, in matplotlib_fname
+    for fname in gen_candidates():
+                 ^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/matplotlib/__init__.py", line 677, in gen_candidates
+    yield os.path.join(get_configdir(), 'matplotlibrc')
+                       ^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/matplotlib/__init__.py", line 345, in wrapper
+    ret = func(**kwargs)
+          ^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/matplotlib/__init__.py", line 622, in get_configdir
+    return _get_config_or_cache_dir(_get_xdg_config_dir)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/matplotlib/__init__.py", line 589, in _get_config_or_cache_dir
+    raise OSError(
+OSError: Matplotlib requires access to a writable cache directory, but there was an issue with the default path (/Users/oemer.demirel/.matplotlib), and a temporary directory could not be created; set the MPLCONFIGDIR environment variable to a writable directory
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -c 'import sys,copy; sys.path.insert(0,\"docs/revision/followup3\"); import test_rep_collect as T; D=T.D; j={\"provenance\":{\"id\":\"j\"},\"mkt\":{\"seeds_eval\":[11,12]}}; r=copy.deepcopy(T._full(j)); r.update(id=\"c1\",status=\"stopped at the cost cap\"); r[\"rounds\"][0].update(attack_f=None,attack_change=0.02); db={\"attack_change\":0.0,\"reference_change\":0.0,\"heldout\":copy.deepcopy(r[\"heldout\"])}; sr={\"attack\":{\"best_knobs\":dict(T.CKNOBS)}}; print({\"round1_ready\":D._round1_ready(r,db,sr),\"mismatch\":D._mismatch(r,db,sr),\"cont_problem\":D.cont_problem(r,\"c1\",j,doubling=db,search=sr),\"selection\":D.select_winner([0.1,0.3],r)})'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 38ms:
+{'round1_ready': False, 'mismatch': False, 'cont_problem': None, 'selection': ([0.1, 0.3], 'stopped')}
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+VERDICT: accept-with-caveat
+
+CORRECTIONS:
+1. `docs/revision/followup3/rep_collect.py:282–297, 633–637`: A cost-stop status still bypasses round validation. An in-memory probe with `attack_f=None` and a disagreeing `attack_change` returns no validation problem and selects “stopped”, rather than “not continued”. Validate malformed measured rounds for this status and add a regression test. This affects counts only: collection retains the frozen winner, and resume reruns the cell. The P1 correction otherwise passes the supplied tests: 229 passed, 1 skipped.
+
+CONFIDENCE: 0.96.
+hook: Stop
+hook: Stop Completed
+tokens used
+57'218
+VERDICT: accept-with-caveat
+
+CORRECTIONS:
+1. `docs/revision/followup3/rep_collect.py:282–297, 633–637`: A cost-stop status still bypasses round validation. An in-memory probe with `attack_f=None` and a disagreeing `attack_change` returns no validation problem and selects “stopped”, rather than “not continued”. Validate malformed measured rounds for this status and add a regression test. This affects counts only: collection retains the frozen winner, and resume reruns the cell. The P1 correction otherwise passes the supplied tests: 229 passed, 1 skipped.
+
+CONFIDENCE: 0.96.
