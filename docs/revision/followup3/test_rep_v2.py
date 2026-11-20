@@ -75,7 +75,7 @@ def test_rates_split_runs_p0_before_the_gate_and_churn_after(monkeypatch, tmp_pa
     # plan section 5: the churn-zero gate runs after the p = 0 branch and before any churn spend
     calls = []
     import types
-    fake = types.SimpleNamespace(install=lambda: None, _run_rate=lambda out, jobs, steps, a, s, c, p, st: calls.append((Path(out).name, steps[1])))
+    fake = types.SimpleNamespace(install=lambda: None, _run_rate=lambda out, jobs, steps, a, s, c, p, st: steps != ("inventory",) and calls.append((Path(out).name, steps[1])))
     monkeypatch.setitem(sys.modules, "churn_v2", fake)
     monkeypatch.setattr(D, "_context", lambda a: types.SimpleNamespace(root="r", salt="s", container={}))
     monkeypatch.setattr(D, "rate_jobs", lambda c, k, p, s: [])
@@ -184,7 +184,7 @@ def test_churn_rates_need_a_passed_churn_zero_gate(monkeypatch, tmp_path):
     import json
     import types
     calls = []
-    fake = types.SimpleNamespace(install=lambda: None, _run_rate=lambda out, jobs, steps, a, s, c, p, st: calls.append(Path(out).name))
+    fake = types.SimpleNamespace(install=lambda: None, _run_rate=lambda out, jobs, steps, a, s, c, p, st: steps != ("inventory",) and calls.append(Path(out).name))
     monkeypatch.setitem(sys.modules, "churn_v2", fake)
     monkeypatch.setattr(D, "_context", lambda a: types.SimpleNamespace(root="r", salt="s", container={}))
     monkeypatch.setattr(D, "rate_jobs", lambda c, k, p, s: [])
@@ -230,3 +230,46 @@ def test_continuation_workers_are_kept_across_restarts(tmp_path):
     assert D.kept_workers(tmp_path, "diagnostics", 5, 64 * gb, 1.0 * gb) == 5       # its own file
     src = inspect.getsource(D.stage_continue)
     assert 'kept_workers(a.out, "continuation"' in src and 'kept_workers(a.out, "diagnostics"' in src
+
+
+def test_each_rate_binds_its_diagnostics_after_the_diagnostics_step_and_before_the_inventory(monkeypatch, tmp_path):
+    # review rep-impl-r3 (Sol 3): frozen diagnostics carry no job, rate or run identity; the rate stage now writes
+    # diagnostics_binding.json between the diagnostics step and the inventory, so the inventory covers it
+    import json
+    import types
+    import rep_collect as C
+    seen = []
+    def run_rate(out, jobs, steps, a, s, c, p, st):
+        seen.append((Path(out).name, tuple(steps), (Path(out) / C.BINDING).exists()))
+    monkeypatch.setitem(sys.modules, "churn_v2", types.SimpleNamespace(install=lambda: None, _run_rate=run_rate))
+    monkeypatch.setattr(D, "_context", lambda a: types.SimpleNamespace(root="r", salt="s", container={}))
+    monkeypatch.setattr(D, "rate_jobs", lambda c, k, p, s: [])
+    import revision_v2 as R
+    monkeypatch.setattr(R, "install_salt", lambda root, out: None)
+    a = types.SimpleNamespace(out=str(tmp_path), smoke=True, rates="p0", workers_search=1, workers_eval=1, stop_usd=1, usd_per_hour=1,
+                              prior_usd=0, started=None, peak_search=2.5e8)
+    D.stage_rates(a)
+    for name in ("menu-p0", "cthr-p0"):
+        mine = [x for x in seen if x[0] == name]
+        assert mine[0][1][-1] == "diagnostics" and mine[0][2] is False
+        assert mine[1][1] == ("inventory",) and mine[1][2] is True
+        b = json.loads((tmp_path / name / C.BINDING).read_text())
+        assert b["stage"] == "diagnostics binding" and b["rate"] == 0.0
+
+
+def test_continued_diagnostics_use_the_continuation_worker_count(monkeypatch, tmp_path):
+    # review rep-impl-r3 (Sol 6, Astra 6): the launcher's restart lowers only --workers-cont, so the diagnostics pool must
+    # follow it; with --workers-eval 9 and --workers-cont 3 the diagnostics run on 3 workers
+    import types
+    import rep_collect as C
+    got = {}
+    monkeypatch.setattr(D, "_context", lambda a: types.SimpleNamespace())
+    monkeypatch.setitem(sys.modules, "churn_v2", types.SimpleNamespace(install=lambda: None))
+    monkeypatch.setattr(D, "_jobs_by_dir", lambda c, smoke: {})
+    monkeypatch.setattr(C, "flagged_cells", lambda base, jobs: [])
+    monkeypatch.setattr(D, "continuation_queue", lambda q: q)
+    monkeypatch.setattr(D, "gate_item", lambda jobs, out: {"id": "g"})
+    monkeypatch.setattr(C, "run_queue", lambda *a, **k: {"exit": 0})
+    monkeypatch.setattr(C, "run_diagnostics", lambda base, jobs, w, smoke=False: got.setdefault("w", w) and {"exit": 0})
+    a = types.SimpleNamespace(out=str(tmp_path), smoke=True, workers_cont=3, workers_eval=9, peak_cont=1e9)
+    assert D.stage_continue(a) == 0 and got["w"] == 3

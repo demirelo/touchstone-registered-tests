@@ -178,3 +178,12 @@ def test_no_market_t_interval_for_an_incomplete_market_sample():
     g["0.05"].pop("rep3")
     ab = RA.analyse(_recs(g), _audit(), resamples=99)["absolute"]["0.05"]["d"]
     assert ab["complete"] is False and ab["t95"] is None and ab["pooled_ci95"] is None
+
+
+def test_no_paired_change_t_interval_for_an_incomplete_market_sample():
+    # review rep-impl-r3 (Sol 5, Astra 1): paired_changes still gave a five-market t interval with complete = False
+    g = _gains({"0": 0.0, "0.03": 0.06, "0.05": 0.20})
+    g["0.05"].pop("rep3")
+    pc = RA.paired_changes(g)["0.05"]["d"]
+    assert pc["complete"] is False and pc["t95"] is None
+    assert RA.paired_changes(_gains({"0": 0.0, "0.03": 0.06, "0.05": 0.20}))["0.05"]["d"]["t95"] is not None

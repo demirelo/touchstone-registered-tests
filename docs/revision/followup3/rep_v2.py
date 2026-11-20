@@ -335,6 +335,13 @@ def rate_jobs(c, rules_kind: str, p: float, smoke: bool) -> list[dict]:
     return churn_v2.build_jobs(c.root, c.cfgs, params, c.salt, p, MARKETS, rules, smoke)
 
 
+def write_diag_binding(out, kind: str, p: float, jobs: list) -> None:
+    """rep_collect.diagnostics_binding for one rate directory, saved next to diagnostics.json."""
+    import rep_collect as C
+    from sim.records_v2 import write
+    write(Path(out) / C.BINDING, C.diagnostics_binding(out, kind, p, jobs))
+
+
 def stage_rates(a) -> None:
     import churn_v2
     import revision_v2 as R
@@ -350,7 +357,10 @@ def stage_rates(a) -> None:
             out = Path(a.out) / f"{kind}-p{p:g}"; out.mkdir(parents=True, exist_ok=True); R.install_salt(c.root, out)
             steps = ("inputs", "freeze", "evaluate", "doubling", "diagnostics", "inventory") if p == 0 else \
                     ("inputs", "search", "freeze", "evaluate", "doubling", "diagnostics", "inventory")
-            churn_v2._run_rate(out, rate_jobs(c, kind, p, a.smoke), steps, _rate_args(a, src), c.salt, c.container, p, a.started)
+            js = rate_jobs(c, kind, p, a.smoke)
+            churn_v2._run_rate(out, js, steps[:-1], _rate_args(a, src), c.salt, c.container, p, a.started)
+            write_diag_binding(out, kind, p, js)         # review rep-impl-r3: binds the diagnostics before the inventory
+            churn_v2._run_rate(out, js, ("inventory",), _rate_args(a, src), c.salt, c.container, p, a.started)
 
 
 def stage_gate0(a) -> None:
@@ -401,7 +411,9 @@ def stage_continue(a) -> None:
     if stop is not None and not stop.allow("continued diagnostics", 0.1 + 60.0 * 1.33 * 12 / 3600):
         print(json.dumps({"stage": "continued diagnostics", "exit": 3}), flush=True)
         return 3
-    d = C.run_diagnostics(Path(a.out), jobs, kept_workers(a.out, "diagnostics", a.workers_eval, None if a.smoke else _memory_limit(),
+    # review rep-impl-r3: the diagnostics pool follows --workers-cont, which the launcher lowers on its restart after a lost
+    # worker (exit 5), so a diagnostics loss is retried on fewer workers too
+    d = C.run_diagnostics(Path(a.out), jobs, kept_workers(a.out, "diagnostics", a.workers_cont, None if a.smoke else _memory_limit(),
                                                           a.peak_cont), smoke=a.smoke)
     print(json.dumps({"stage": "continued diagnostics", **d}), flush=True)
     return d["exit"]

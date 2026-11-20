@@ -124,10 +124,36 @@ def _knobs_ok(k) -> bool:
     return isinstance(k, dict) and bool(k) and _finite(list(k.values()))
 
 
+def _rounds_problem(rec: dict, max_rounds: int) -> str | None:
+    """Run B's rounds (convergence_v2.run_cell; review rep-impl-r3): numbered 1..k with k <= max_rounds, finite search and
+    reference values with finite knobs; "passed" exactly when the last round is the first that passes the doubling
+    threshold, "not passed at the cap" when k equals the cap and no round passes; the held-out winner is the last round's."""
+    from convergence_v2 import _passes
+    rounds = rec.get("rounds")
+    if not isinstance(rounds, list) or not 1 <= len(rounds) <= max_rounds:
+        return "rounds missing or beyond the cap"
+    for i, r in enumerate(rounds):
+        if not isinstance(r, dict) or r.get("round") != i + 1 or not _finite([r.get(k) for k in ("attack_f", "attack_change", "reference_f", "reference_change")]) \
+                or not _knobs_ok(r.get("best_knobs")):
+            return f"round {i + 1} malformed or nonfinite"
+    ok = [_passes(r) for r in rounds]
+    if rec["status"] == "passed" and not (ok[-1] and not any(ok[:-1])):
+        return "status passed without a final passing round"
+    if rec["status"] == STATUSES[1] and (len(rounds) != max_rounds or any(ok)):
+        return "status at the cap without the capped, unpassed rounds"
+    if (rec.get("heldout") or {}).get("knobs") != rounds[-1]["best_knobs"]:
+        return "held-out winner differs from the last round's winner"
+    return None
+
+
 def cont_problem(rec, key: str, job: dict, smoke: bool = False, max_rounds: int = 3) -> str | None:
-    """A continuation record (review rep-impl-r2): stage, id, provenance, a known status; a winner it supplies ("passed"
-    or "not passed at the cap") needs its own identical round-1 comparison (smoke: not compared), one to max_rounds
-    rounds and a finite held-out result on the job's ordered evaluation seeds with finite knobs."""
+    """A continuation record (reviews rep-impl-r2, r3): stage, id, provenance, a known status; a winner it supplies
+    ("passed" or "not passed at the cap") needs its own identical round-1 comparison with a finite round-1 winner (smoke:
+    not compared), well-formed rounds (_rounds_problem) and a finite held-out result with positive normalizers on the
+    job's ordered evaluation seeds. The job must carry its evaluation seeds: no check is skipped."""
+    seeds = (job.get("mkt") or {}).get("seeds_eval")
+    if not seeds:
+        return "the job has no evaluation seeds to check against"
     if not isinstance(rec, dict) or rec.get("stage") != "convergence" or rec.get("id") != key:
         return "not a continuation record of this cell"
     if rec.get("provenance") != job.get("provenance"):
@@ -136,15 +162,16 @@ def cont_problem(rec, key: str, job: dict, smoke: bool = False, max_rounds: int 
     if st not in STATUSES:
         return f"unknown continuation status {st!r}"
     if st in STATUSES[:2]:
-        if not (identical(rec) or (smoke and rec.get("round1_gate") == SMOKE_GATE)):
+        g = rec.get("round1_gate")
+        if not (identical(rec) or (smoke and g == SMOKE_GATE)):
             return "a continued winner without its own identical round-1 comparison"
-        rounds = rec.get("rounds")
-        if not isinstance(rounds, list) or not 1 <= len(rounds) <= max_rounds:
-            return "rounds missing or beyond the cap"
+        if isinstance(g, dict) and not (_knobs_ok(g.get("heldout_knobs")) and _finite([g.get("heldout_mean")])):
+            return "round-1 comparison without a finite round-1 winner"
         h = rec.get("heldout")
-        seeds = (job.get("mkt") or {}).get("seeds_eval")
-        if seeds is not None and not (_valid_held(h, seeds) and _knobs_ok(h.get("knobs"))):
-            return "held-out result missing, nonfinite or on other seeds"
+        if not (_valid_held(h, seeds) and _knobs_ok(h.get("knobs"))):
+            return "held-out result missing, nonfinite, on other seeds or with a zero normalizer"
+        if x := _rounds_problem(rec, max_rounds):
+            return x
     return None
 
 
@@ -201,8 +228,13 @@ def run_queue(queue: list, base: Path, workers: int, cost=None, max_rounds: int 
     if bad:                                                              # review rep-impl-r2: no reuse of an unknown record
         raise SystemExit(f"replication refused: saved continuation records with an unknown status: {bad[:3]}")
     hours = {c["id"]: round_hours(c["job"]) for c, _ in items}
+    # review rep-impl-r3: a saved record is reused only if it passes the same checks collect applies; any other record
+    # (incomplete, malformed, nonfinite) means "no passing record" and its cell is rerun (plan section 4: a resume
+    # continues from the first cell without a passing record); the old record is set aside, never deleted
+    invalid = lambda c, d, mr: saved[d] is not None and not cost_stopped(saved[d]) and cont_problem(saved[d], c["id"], c["job"], smoke, mr) is not None
+    rerun = lambda c, d, mr: saved[d] is None or cost_stopped(saved[d]) or invalid(c, d, mr)
     run = 0
-    if saved[gdest] is None or cost_stopped(saved[gdest]):
+    if rerun(gate, gdest, 1):
         _set_aside(cdir, gdest)
         lost, failed = run_cells(_cont_one, [gate], [(gate["job"], gate["dir"], 1, cost, hours[gate["id"]])], 1, [gdest],
                                  [{"id": gate["id"], "gate": True}])
@@ -219,7 +251,9 @@ def run_queue(queue: list, base: Path, workers: int, cost=None, max_rounds: int 
         return {"run": run, "exit": 3, "gate": "the gate cell was refused at the cost cap: no further cell started"}
     if not smoke and not identical(g):                                   # the gate must prove identity, not just not fail
         return {"run": run, "exit": 4, "gate": "the gate has no identical round-1 comparison: continuation stopped"}
-    todo = [c for c in queue if saved[dest(c)] is None or cost_stopped(saved[dest(c)])]   # same order; completed cells reused
+    if (why := cont_problem(g, gate["id"], gate["job"], smoke, max_rounds=1)) is not None:
+        return {"run": run, "exit": 6, "gate": f"the gate record fails its checks: {why}"}
+    todo = [c for c in queue if rerun(c, dest(c), max_rounds)]          # same order; completed, valid cells reused
     for c in todo:
         _set_aside(cdir, dest(c))
     lost, failed = ([], {}) if not todo else run_cells(
@@ -243,8 +277,10 @@ def _n_agents(job: dict) -> int:
 
 
 def _valid_held(h, seeds) -> bool:
+    """Finite per-seed values on the ordered seeds, and a positive normalizer S* on every seed (terms_of divides by it;
+    review rep-impl-r3)."""
     return isinstance(h, dict) and list(h.get("seeds") or []) == list(seeds) and \
-        all(_finite(h.get(f)) and len(h[f]) == len(seeds) for f in FIELDS)
+        all(_finite(h.get(f)) and len(h[f]) == len(seeds) for f in FIELDS) and all(x > 0 for x in h["sstar"])
 
 
 def _deps_problem(d: Path, rec: dict, want: set) -> str | None:
@@ -297,18 +333,22 @@ def base_problem(d: Path, job: dict, ev, db) -> str | None:
     return None
 
 
-def _shares_ok(sh) -> bool:
-    """Newcomer audit counts: per episode a list of [served, audited] bins, the same number of bins in every episode,
-    finite and nonnegative, audited at most served."""
+def _n_bins() -> int:
+    from churn_v2 import AGE_EDGES
+    return len(AGE_EDGES) - 1
+
+
+def _shares_ok(sh, n_episodes: int) -> bool:
+    """Newcomer audit counts (churn_v2.newcomer_shares): one episode per evaluation seed, each with the prescribed number
+    of age bins of [served, audited], finite and nonnegative, audited at most served (review rep-impl-r3)."""
     per = (sh or {}).get("per_episode") if isinstance(sh, dict) else None
-    if not isinstance(per, list) or not per:
+    if not isinstance(per, list) or len(per) != n_episodes:
         return False
-    nb = None
+    nb = _n_bins()
     for e in per:
         f = e.get("focal") if isinstance(e, dict) else None
-        if not isinstance(f, list) or not f or (nb is not None and len(f) != nb):
+        if not isinstance(f, list) or len(f) != nb:
             return False
-        nb = len(f)
         for b in f:
             if not (isinstance(b, list) and len(b) == 2 and _finite(b) and 0 <= b[1] <= b[0]):
                 return False
@@ -319,7 +359,35 @@ def diag_ok(row, seeds, knobs) -> bool:
     """A diagnostics row (frozen: diagnostics.json cells[...]["base"]; continued: its own record) for this winner: its
     knobs, the job's ordered evaluation seeds, finite per-seed profits and well-formed audit counts (review rep-impl-r2)."""
     return isinstance(row, dict) and row.get("knobs") == knobs and list(row.get("seeds") or []) == list(seeds) and \
-        _finite(row.get("normalized")) and len(row["normalized"]) == len(seeds) and _shares_ok(row.get("shares"))
+        _finite(row.get("normalized")) and len(row["normalized"]) == len(seeds) and _shares_ok(row.get("shares"), len(seeds))
+
+
+BINDING = "diagnostics_binding.json"
+
+
+def diagnostics_binding(d: Path, kind: str, p: float, jobs: list) -> dict:
+    """Written by rep_v2's rate stage right after the diagnostics step and before the inventory (review rep-impl-r3): the
+    sha256 of diagnostics.json, the rate, and per cell the job id, its provenance (this run's commit, draw and salt) and
+    the hashes of the search and doubling records whose winners the diagnostics reran."""
+    import revision_v2 as R
+    from sim.records_v2 import sha_file
+    d = Path(d); h = lambda q: sha_file(q) if q.is_file() else None
+    return {"stage": "diagnostics binding", "kind": kind, "rate": float(p), "diagnostics": h(d / "diagnostics.json"),
+            "cells": {f"{j['context']}|{j['rule']}": {"id": j["id"], "provenance": j["provenance"], "search": h(R.path_of(d, j["id"])),
+                                                       "doubling": h(d / "doubling" / (R._safe(j["id"]) + ".json"))} for j in jobs}}
+
+
+def diag_bound(d: Path, kind: str, p: float, ck: str, job: dict) -> bool:
+    """The frozen diagnostics of cell `ck` belong to this job, rate and run: the binding names this rate, the current
+    diagnostics.json, this job's id and provenance, and the current search and doubling records."""
+    import revision_v2 as R
+    from sim.records_v2 import sha_file
+    b = read_record(Path(d) / BINDING); c = ((b or {}).get("cells") or {}).get(ck)
+    q = Path(d) / "diagnostics.json"
+    return isinstance(c, dict) and b.get("stage") == "diagnostics binding" and b.get("kind") == kind and b.get("rate") == float(p) and \
+        q.is_file() and b.get("diagnostics") == sha_file(q) and c.get("id") == job["id"] and c.get("provenance") == job["provenance"] and \
+        R.path_of(d, job["id"]).is_file() and c.get("search") == sha_file(R.path_of(d, job["id"])) and \
+        c.get("doubling") == sha_file(Path(d) / "doubling" / (R._safe(job["id"]) + ".json"))
 
 
 def cont_diag_ok(rec, key: str, job: dict, knobs) -> bool:
@@ -346,21 +414,21 @@ def collect(base: Path, jobs_by_dir: dict, gate: dict | None, smoke: bool = Fals
     rep-impl-r2): a cell whose evaluation or doubling record fails base_problem is unscorable (plan section 4); a frozen
     diagnostics row that fails diag_ok gives no audit count. Only flagged cells look at a continuation record; a flagged
     cell without one is "not continued". The primary set is unavailable after a round-1 mismatch in any continuation
-    record, without this run's identical gate record (also when no cell is flagged), or when a flagged cell's
-    continuation record fails cont_problem. A continued R3 winner's audit count needs its checked continued diagnostics."""
+    record or without this run's identical gate record (also when no cell is flagged). A flagged cell whose continuation
+    record fails cont_problem keeps its validated frozen winner and counts as not continued (plan section 4; review
+    rep-impl-r3). A frozen R3 audit count needs diagnostics bound to this job, rate and run (diag_bound) and complete
+    (diag_ok); a continued R3 winner's audit count needs its checked continued diagnostics."""
     import convergence_v2  # noqa: F401
     import revision_v2 as R
     base = Path(base); cdir = base / "continuation"
     allrec = [read_record(q) for q in sorted(cdir.glob("*.json")) + sorted((cdir / "gate").glob("*.json")) if q.name != "lost_cells.json"]
     mismatch = any(_mismatch(r) for r in allrec)
     g = read_record(cdir / "gate" / (R._safe(gate["id"]) + ".json")) if gate else None
-    gjob = {**(gate or {}).get("job", {}), "mkt": None}
-    gate_ok = g is not None and cont_problem(g, gate["id"], gjob, smoke, max_rounds=1) is None and \
+    gate_ok = g is not None and cont_problem(g, gate["id"], gate["job"], smoke, max_rounds=1) is None and \
         g.get("status") in STATUSES[:2] and (identical(g) or (smoke and g.get("round1_gate") == SMOKE_GATE))
     frozen, primary, problems, unscorable = {}, {}, [], []
     counts = {"frozen": 0, "continued": 0, "unresolved": 0, "stopped": 0, "not continued": 0}
     audit = {"frozen": {}, "primary": {}}
-    bad_cont = False
     for (kind, p), jobs in jobs_by_dir.items():
         rk = "0" if p == 0 else f"{p:g}"; d = base / f"{kind}-p{p:g}"
         diag = (read_record(d / "diagnostics.json") or {}).get("cells") or {} if kind == "menu" else {}
@@ -377,7 +445,7 @@ def collect(base: Path, jobs_by_dir: dict, gate: dict | None, smoke: bool = Fals
                 ck = f"{j['context']}|{j['rule']}"
                 row = (diag.get(ck) or {}).get("base")
                 sr = read_record(R.path_of(d, j["id"])) or {}
-                if diag_ok(row, seeds, (sr.get("attack") or {}).get("best_knobs")):
+                if diag_bound(d, kind, p, ck, j) and diag_ok(row, seeds, (sr.get("attack") or {}).get("best_knobs")):
                     fa = _audit_of(row["shares"]); audit["frozen"].setdefault(rk, {})[m] = fa
                 elif ck in diag:
                     problems.append(f"{kind}-p{p:g}|{j['id']}: frozen diagnostics fail their checks")
@@ -387,8 +455,8 @@ def collect(base: Path, jobs_by_dir: dict, gate: dict | None, smoke: bool = Fals
                 crec = read_record(cdir / (R._safe(key) + ".json"))
                 if crec is None:
                     kw = "not continued"
-                elif (why := cont_problem(crec, key, j, smoke)) is not None:
-                    problems.append(f"{key}: {why}"); bad_cont = True; kw = "not continued"
+                elif (why := cont_problem(crec, key, j, smoke)) is not None:     # plan section 4: invalid output keeps
+                    problems.append(f"{key}: {why}"); kw = "not continued"     # the validated frozen winner
                 else:
                     try:
                         _, kw = select_winner(fz["gain"], crec)
@@ -409,7 +477,7 @@ def collect(base: Path, jobs_by_dir: dict, gate: dict | None, smoke: bool = Fals
                     audit["primary"].setdefault(rk, {})[m] = fa
     if not gate_ok:
         problems.append("no identical gate record of this run's gate cell")
-    bad = mismatch or not gate_ok or bad_cont
+    bad = mismatch or not gate_ok
     return {"frozen": frozen, "primary": None if bad else primary, "audit": audit, "counts": counts,
             "round1_mismatch": mismatch, "gate_ok": gate_ok, "problems": problems, "unscorable": unscorable}
 

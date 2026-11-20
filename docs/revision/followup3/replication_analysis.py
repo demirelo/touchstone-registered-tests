@@ -94,7 +94,7 @@ def paired_changes(gains: dict) -> dict:
                     ms[m] = a - b
             vals = list(ms.values())
             out[p][x] = {"markets": ms, "complete": len(ms) == len(MARKETS),
-                         "mean": _mean(vals) if vals else None, "t95": _t95(vals) if len(vals) > 1 else None,
+                         "mean": _mean(vals) if vals else None, "t95": _t95(vals) if len(ms) == len(MARKETS) else None,
                          "lower": sum(1 for v in vals if v < 0)}
     return out
 

@@ -47,15 +47,37 @@ def test_a_saved_round1_mismatch_stops_the_queue_on_resume(tmp_path, monkeypatch
     assert calls == [] and "mismatch" in res["gate"]
 
 
+EXACT = {"pass": True, "max_knob_rel": 0.0, "max_change_abs": 0.0, "max_gain_abs": 0.0, "problems": [],
+         "heldout_knobs": {"u0": 3.0, "x": 2}, "heldout_mean": 0.6}
+CKNOBS = {"u0": 3.0, "x": 2}
+
+
+def _rounds(status="passed", mr=1):
+    """Run B rounds that agree with the status: a pass in the last round, or mr unpassed rounds at the cap."""
+    ch = 0.0 if status == "passed" else 0.01
+    n = 1 if status == "passed" else mr
+    return [{"round": i + 1, "attack_f": 1.0, "attack_change": ch, "reference_f": 1.0, "reference_change": 0.0,
+             "best_knobs": dict(CKNOBS)} for i in range(n)]
+
+
+def _full(job, status="passed", gate=None, mr=1):
+    """A complete continuation record as convergence_v2.run_cell writes it (the id comes from the pool's extras)."""
+    seeds = job["mkt"]["seeds_eval"]; g = [0.5] * len(seeds)
+    return {"stage": "convergence", "provenance": job["provenance"], "status": status, "round1_gate": gate or EXACT,
+            "rounds": _rounds(status, mr), "heldout": {"knobs": dict(CKNOBS), "seeds": list(seeds), "gain": g, "profit_attack": [1.5] * len(g),
+                                                      "profit_ref": [1.0] * len(g), "sstar": [4.0] * len(g), "eff_attack": [0.8] * len(g)}}
+
+
 def _queue(n, churn=0.05):
-    return [{"id": f"c{i}", "job": {"id": f"j{i}", "churn": churn, "family": "D2+H3", "provenance": {"id": f"j{i}"}}, "dir": "x"}
+    return [{"id": f"c{i}", "job": {"id": f"j{i}", "churn": churn, "family": "D2+H3", "provenance": {"id": f"j{i}"},
+                                    "mkt": {"seeds_eval": [11, 12]}}, "dir": "x"}
             for i in range(n)]
 
 
 def test_every_continuation_round_is_admitted_with_a_nonzero_estimate(tmp_path, monkeypatch):
     # review gap 2026-11-19: run_cell's round admission used round_hours = 0, so the cost stop could never refuse a round
     seen = []
-    monkeypatch.setattr(D, "_cont_one", lambda job, d, mr, cost, hours: seen.append(hours) or {"status": "passed", "provenance": job["provenance"], "round1_gate": EXACT})
+    monkeypatch.setattr(D, "_cont_one", lambda job, d, mr, cost, hours: seen.append(hours) or _full(job))
     monkeypatch.setattr(D, "run_cells", lambda fn, todo, args, w, dests, extras: (
         [D.write_record(d, {**fn(*a), **e}) for a, d, e in zip(args, dests, extras)], ([], {}))[1])
     D.run_queue(_queue(3), tmp_path, workers=2, gate=_gate())
@@ -65,7 +87,7 @@ def test_every_continuation_round_is_admitted_with_a_nonzero_estimate(tmp_path, 
 
 def test_end_codes_mismatch_lost_and_failed(tmp_path, monkeypatch):
     # Run B's codes: 4 a measured round-1 mismatch (outranks the rest), 5 a lost worker (restart estimate saved), 6 a cell error
-    ok = lambda job, *a: {"status": "passed", "provenance": job["provenance"], "round1_gate": EXACT}
+    ok = lambda job, *a: _full(job)
     monkeypatch.setattr(D, "_cont_one", ok)
     def cells(outcome):
         def f(fn, todo, args, w, dests, extras):
@@ -106,11 +128,9 @@ def test_resume_refuses_a_saved_record_of_another_job(tmp_path, monkeypatch):
 
 # ---- review rep-impl-r1 (Sol 3, 4, 5, 6; Astra 4, 7, 8): the gate, exact identity, failure paths, validation -----------
 
-EXACT = {"pass": True, "max_knob_rel": 0.0, "max_change_abs": 0.0, "max_gain_abs": 0.0, "problems": []}
-
-
 def _gate():
-    return {"id": "menu-p0.05|g", "job": {"id": "g", "churn": 0.05, "family": "D2+H3", "provenance": {"id": "g"}}, "dir": "x"}
+    return {"id": "menu-p0.05|g", "job": {"id": "g", "churn": 0.05, "family": "D2+H3", "provenance": {"id": "g"},
+                                          "mkt": {"seeds_eval": [11, 12]}}, "dir": "x"}
 
 
 def _pool(calls, outcome=None):
@@ -131,7 +151,7 @@ def _pool(calls, outcome=None):
 
 
 def _ok(job, d, mr, cost, hours):
-    return {"status": "passed", "provenance": job["provenance"], "round1_gate": EXACT, "max_rounds": mr}
+    return {**_full(job), "max_rounds": mr}
 
 
 def test_the_gate_runs_in_a_child_even_when_no_cell_is_flagged(tmp_path, monkeypatch):
@@ -187,7 +207,7 @@ def test_a_cost_stop_in_the_queue_exits_3_and_a_resume_reruns_only_cost_stopped_
 
 
 def test_a_gate_without_a_measured_comparison_does_not_pass_outside_smoke(tmp_path, monkeypatch):
-    monkeypatch.setattr(D, "_cont_one", lambda job, *a: {"status": "passed", "provenance": job["provenance"], "round1_gate": "not compared (smoke)"})
+    monkeypatch.setattr(D, "_cont_one", lambda job, *a: _full(job, gate="not compared (smoke)"))
     monkeypatch.setattr(D, "run_cells", _pool([]))
     assert D.run_queue(_queue(1), tmp_path / "p", workers=1, gate=_gate())["exit"] == 4
     assert D.run_queue(_queue(1), tmp_path / "s", workers=1, gate=_gate(), smoke=True)["exit"] == 0
@@ -243,11 +263,11 @@ def _cont(base, kind, p, job, status="passed", gain=(0.5, 0.7), gate=EXACT, sub=
     import convergence_v2  # noqa: F401
     import revision_v2 as R
     key = D._key(kind, p, job["id"])
-    h = {"knobs": {"u0": 3.0, "x": 2}, "seeds": job["mkt"]["seeds_eval"], "gain": list(gain), "profit_attack": [g + 1 for g in gain],
+    h = {"knobs": dict(CKNOBS), "seeds": job["mkt"]["seeds_eval"], "gain": list(gain), "profit_attack": [g + 1 for g in gain],
          "profit_ref": [1.0] * len(gain), "sstar": [4.0] * len(gain), "eff_attack": [0.8] * len(gain)}
     _w(base / "continuation" / sub / (R._safe(key) + ".json"), {"stage": "convergence", "id": key, "status": status,
                                                                "provenance": job["provenance"], "round1_gate": gate,
-                                                               "rounds": [{"round": 1}], "heldout": h})
+                                                               "rounds": _rounds(status, 1 if sub == "gate" else 3), "heldout": h})
     return key
 
 
@@ -296,10 +316,11 @@ def test_primary_audit_uses_the_continued_r3_winners_diagnostics(tmp_path):
     import revision_v2 as R
     a0, a5 = _job("fresh0"), _job("fresh0", p=0.05)
     d0 = _cell(tmp_path, a0, 0); d5 = _cell(tmp_path, a5, 0.05, incomplete=True)
-    sh = lambda served, audited: {"per_episode": [{"focal": [[served, audited]]}]}
-    for d, ck in ((d0, "fresh0@rho0.2|F111"), (d5, "fresh0@rho0.2|F111")):
+    sh = _sh
+    for d, ck, j, p in ((d0, "fresh0@rho0.2|F111", a0, 0.0), (d5, "fresh0@rho0.2|F111", a5, 0.05)):
         _w(d / "diagnostics.json", {"cells": {ck: {"base": {"knobs": KNOBS, "seeds": [11, 12], "normalized": [0.1, 0.2],
                                                              "shares": sh(100, 30)}}}})
+        _w(d / D.BINDING, D.diagnostics_binding(d, "menu", p, [j]))
     gj = _job("fresh1", p=0.05); _cont(tmp_path, "menu", 0.05, gj, sub="gate"); gid = _gi(gj)
     key = _cont(tmp_path, "menu", 0.05, a5)
     col = D.collect(tmp_path, {("menu", 0.0): [a0], ("menu", 0.05): [a5]}, gate=gid)
@@ -311,9 +332,14 @@ def test_primary_audit_uses_the_continued_r3_winners_diagnostics(tmp_path):
     assert col["audit"]["primary"]["0.05"]["rep0"] == (5, 100) and col["audit"]["primary"]["0"]["rep0"] == (30, 100)
 
 
+def _sh(served, audited, n=2):
+    """Audit counts as newcomer_shares writes them: one episode per evaluation seed, four age bins each."""
+    return {"per_episode": [{"focal": [[served, audited] if (e, b) == (0, 0) else [0, 0] for b in range(4)]} for e in range(n)]}
+
+
 def _fake_diag(job, knobs):
     return {"stage": "continued diagnostics", "provenance": job["provenance"], "knobs": dict(knobs), "seeds": [11, 12],
-            "normalized": [0.1, 0.2], "shares": {"per_episode": [{"focal": [[10, 1]]}]}}
+            "normalized": [0.1, 0.2], "shares": _sh(10, 1)}
 
 
 def test_continued_diagnostics_run_only_for_continued_r3_menu_cells_at_p0_and_p005(tmp_path, monkeypatch):
@@ -388,21 +414,42 @@ def _flagged_with_gate(tmp_path, **cont):
     return a, gj, key
 
 
-@pytest.mark.parametrize("cont", [{"status": "something else"}, {"gate": "not compared (smoke)"},
-                                  {"gate": {**EXACT, "max_gain_abs": 1e-15}}])
-def test_a_continued_winner_needs_a_known_status_and_its_own_identical_comparison(tmp_path, cont):
+@pytest.mark.parametrize("cont", [{"status": "something else"}, {"gate": "not compared (smoke)"}])
+def test_an_invalid_continuation_keeps_the_frozen_winner_as_not_continued(tmp_path, cont):
+    # plan section 4 (review rep-impl-r3, Sol 4, Astra 5): invalid or nonfinite continuation output keeps the validated
+    # frozen winner and counts as not continued; it does not remove the primary analysis
     a, gj, _ = _flagged_with_gate(tmp_path, **cont)
     col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))
-    assert col["primary"] is None and col["problems"]
+    assert col["primary"]["0"]["rep0"]["R3"]["gain"] == [0.1, 0.3] and col["counts"]["not continued"] == 1 and col["problems"]
 
 
-def test_a_continuation_record_without_rounds_or_with_another_id_is_refused(tmp_path):
+def test_a_near_identical_continuation_round1_is_a_mismatch(tmp_path):
+    a, gj, _ = _flagged_with_gate(tmp_path, gate={**EXACT, "max_gain_abs": 1e-15})
+    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))
+    assert col["primary"] is None and col["round1_mismatch"] is True
+
+
+@pytest.mark.parametrize("change", [{"rounds": []}, {"rounds": [{"round": 1}]}, {"id": "other"},
+                                    {"heldout": "nan-gain"}, {"heldout": "zero-sstar"}, {"rounds": "two-passed"},
+                                    {"rounds": "other-knobs"}])
+def test_a_malformed_continuation_record_falls_back_to_the_frozen_winner(tmp_path, change):
+    import json
     import convergence_v2  # noqa: F401
     import revision_v2 as R
     a, gj, key = _flagged_with_gate(tmp_path)
     p = tmp_path / "continuation" / (R._safe(key) + ".json")
-    _rw(p, rounds=[]); assert D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))["primary"] is None
-    _rw(p, rounds=[{"round": 1}], id="other"); assert D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))["primary"] is None
+    r = json.loads(p.read_text())
+    if change.get("heldout") == "nan-gain":
+        change = {"heldout": {**r["heldout"], "gain": [float("nan"), 0.1]}}
+    elif change.get("heldout") == "zero-sstar":
+        change = {"heldout": {**r["heldout"], "sstar": [0.0, 1.0]}}
+    elif change.get("rounds") == "two-passed":
+        change = {"rounds": r["rounds"] + [{**r["rounds"][0], "round": 2}]}
+    elif change.get("rounds") == "other-knobs":
+        change = {"rounds": [{**r["rounds"][0], "best_knobs": {"u0": 9.0, "x": 9}}]}
+    _rw(p, **change)
+    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))
+    assert col["primary"]["0"]["rep0"]["R3"]["gain"] == [0.1, 0.3] and col["counts"]["not continued"] == 1
 
 
 def test_a_gate_of_another_job_does_not_pass(tmp_path):
@@ -422,10 +469,11 @@ def test_the_primary_set_needs_the_gate_even_when_no_cell_is_flagged(tmp_path):
 def _diag_setup(tmp_path, base=None):
     a0, a5 = _job("fresh0"), _job("fresh0", p=0.05)
     d0 = _cell(tmp_path, a0, 0); d5 = _cell(tmp_path, a5, 0.05, incomplete=True)
-    sh = {"per_episode": [{"focal": [[100, 30]]}]}
+    sh = _sh(100, 30)
     row = {"knobs": KNOBS, "seeds": [11, 12], "normalized": [0.1, 0.2], "shares": sh, **(base or {})}
-    for d in (d0, d5):
+    for d, j, p in ((d0, a0, 0.0), (d5, a5, 0.05)):
         _w(d / "diagnostics.json", {"cells": {"fresh0@rho0.2|F111": {"base": row}}})
+        _w(d / D.BINDING, D.diagnostics_binding(d, "menu", p, [j]))
     gj = _job("fresh1", p=0.05); _cont(tmp_path, "menu", 0.05, gj, sub="gate")
     key = _cont(tmp_path, "menu", 0.05, a5)
     return {("menu", 0.0): [a0], ("menu", 0.05): [a5]}, _gi(gj), a5, key
@@ -433,8 +481,14 @@ def _diag_setup(tmp_path, base=None):
 
 @pytest.mark.parametrize("base", [{"seeds": [12, 11]}, {"knobs": {"u0": 9.0, "x": 0}}, {"normalized": [float("nan"), 0.2]},
                                   {"shares": {"per_episode": [{"focal": [[100]]}]}},
-                                  {"shares": {"per_episode": [{"focal": [[100, 30]]}, {"focal": [[1, 0], [2, 0]]}]}}])
+                                  {"shares": {"per_episode": [{"focal": [[100, 30]]}, {"focal": [[1, 0], [2, 0]]}]}},
+                                  {"shares": "one-episode"}, {"shares": "one-bin"}])
 def test_frozen_diagnostics_are_checked_before_their_audit_counts_are_used(tmp_path, base):
+    # review rep-impl-r3 (Sol 3, Astra 2): one episode for two seeds, or one age bin per episode, gave audit counts
+    if base.get("shares") == "one-episode":
+        base = {"shares": _sh(100, 30, n=1)}
+    elif base.get("shares") == "one-bin":
+        base = {"shares": {"per_episode": [{"focal": [[100, 30]]}, {"focal": [[0, 0]]}]}}
     jobs, gate, _, _ = _diag_setup(tmp_path, base)
     col = D.collect(tmp_path, jobs, gate=gate)
     assert col["audit"]["frozen"].get("0", {}) == {} and col["audit"]["frozen"].get("0.05", {}) == {}
@@ -447,7 +501,7 @@ def test_continued_diagnostics_are_checked_before_use(tmp_path, change):
     import revision_v2 as R
     jobs, gate, a5, key = _diag_setup(tmp_path)
     rec = {"stage": "continued diagnostics", "id": key, "provenance": a5["provenance"], "knobs": {"u0": 3.0, "x": 2},
-           "seeds": [11, 12], "normalized": [0.1, 0.2], "shares": {"per_episode": [{"focal": [[100, 5]]}]}}
+           "seeds": [11, 12], "normalized": [0.1, 0.2], "shares": _sh(100, 5)}
     p = tmp_path / "continuation" / "diagnostics" / (R._safe(key) + ".json")
     _w(p, rec); assert D.collect(tmp_path, jobs, gate=gate)["audit"]["primary"]["0.05"]["rep0"] == (5, 100)
     _w(p, {**rec, **change}); assert "rep0" not in D.collect(tmp_path, jobs, gate=gate)["audit"]["primary"].get("0.05", {})
@@ -495,3 +549,89 @@ def test_a_lost_diagnostics_worker_writes_the_restart_estimate(tmp_path, monkeyp
     res = D.run_diagnostics(tmp_path, {("menu", 0.0): [a0]}, workers=2)
     lc = json.loads((tmp_path / "continuation" / "lost_cells.json").read_text())
     assert res["exit"] == 5 and lc["lost"] == [key] and lc["restart_hours"]["3"] > 0
+
+
+# ---- review rep-impl-r3 (Sol 1-4, Astra 2-5) ---------------------------------------------------------------------------
+
+def test_a_saved_gate_record_that_fails_its_checks_is_rerun_not_reused(tmp_path, monkeypatch):
+    # Sol 1, Astra 4: a saved gate holding only provenance, status and an exact comparison returned exit 0 unrun
+    import convergence_v2  # noqa: F401
+    import revision_v2 as R
+    calls = []
+    g = _gate(); p = tmp_path / "continuation" / "gate" / (R._safe(g["id"]) + ".json")
+    _w(p, {"id": g["id"], "provenance": g["job"]["provenance"], "status": "passed", "round1_gate": EXACT})
+    monkeypatch.setattr(D, "_cont_one", _ok); monkeypatch.setattr(D, "run_cells", _pool(calls))
+    res = D.run_queue([], tmp_path, workers=1, gate=g)
+    assert calls == [[g["id"]]] and res["exit"] == 0
+    assert list((tmp_path / "continuation" / "superseded").glob("*.json"))   # set aside, not deleted
+
+
+def test_a_saved_queue_record_that_fails_its_checks_is_rerun(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(D, "_cont_one", _ok); monkeypatch.setattr(D, "run_cells", _pool(calls))
+    assert D.run_queue(_queue(2), tmp_path, workers=1, gate=_gate())["exit"] == 0
+    import json
+    p = tmp_path / "continuation" / "c1.json"
+    r = json.loads(p.read_text()); r["heldout"]["gain"] = [float("nan"), 0.1]; p.write_text(json.dumps(r))
+    calls.clear(); assert D.run_queue(_queue(2), tmp_path, workers=1, gate=_gate())["exit"] == 0
+    assert calls == [["c1"]]
+
+
+def test_the_gate_check_uses_the_gate_jobs_evaluation_seeds(tmp_path):
+    # Sol 1: collect replaced the gate job's market with None, which skipped the held-out seed check
+    import convergence_v2  # noqa: F401
+    import revision_v2 as R
+    a, gj, _ = _flagged_with_gate(tmp_path)
+    p = tmp_path / "continuation" / "gate" / (R._safe(D._key("menu", 0.05, gj["id"])) + ".json")
+    import json
+    r = json.loads(p.read_text()); r["heldout"]["seeds"] = [12, 11]; p.write_text(json.dumps(r))
+    assert D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))["gate_ok"] is False
+
+
+def test_a_zero_normalizer_makes_the_base_cell_unscorable_not_an_error(tmp_path):
+    # Sol 2, Astra 3: sstar = 0 passed validation, then terms_of divided by it
+    a = _job("fresh0"); _cell(tmp_path, a, 0)
+    ev, _ = _paths(tmp_path, a)
+    import json
+    r = json.loads(ev.read_text()); r["sstar"] = [0.0, 1.0]; ev.write_text(json.dumps(r))
+    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=None)
+    assert len(col["unscorable"]) == 1
+
+
+@pytest.mark.parametrize("bad", ["no-binding", "other-provenance", "other-rate", "diag-changed",
+                                 "search-changed"])
+def test_frozen_audit_counts_need_complete_diagnostics_bound_to_this_job_rate_and_run(tmp_path, bad):
+    # Sol 3, Astra 2: one episode for 200 seeds, or one age bin, passed; and the row was not bound to job, rate or run
+    import json
+    import convergence_v2  # noqa: F401
+    import revision_v2 as R
+    jobs, gate, a5, _ = _diag_setup(tmp_path)
+    d = tmp_path / "menu-p0.05"; q = d / "diagnostics.json"; b = d / D.BINDING
+    assert D.collect(tmp_path, jobs, gate=gate)["audit"]["frozen"]["0.05"]["rep0"] == (30, 100)
+    row = json.loads(q.read_text())
+    base = row["cells"]["fresh0@rho0.2|F111"]["base"]
+    if bad == "one-episode":
+        base["shares"] = _sh(100, 30, n=1)
+    elif bad == "one-bin":
+        base["shares"] = {"per_episode": [{"focal": [[100, 30]]}, {"focal": [[0, 0]]}]}
+    if bad in ("one-episode", "one-bin"):
+        q.write_text(json.dumps(row)); _w(b, D.diagnostics_binding(d, "menu", 0.05, [a5]))
+    elif bad == "no-binding":
+        b.rename(d / "moved.json")
+    elif bad == "other-provenance":
+        _w(b, D.diagnostics_binding(d, "menu", 0.05, [{**a5, "provenance": {"id": "another run"}}]))
+    elif bad == "other-rate":
+        _w(b, D.diagnostics_binding(d, "menu", 0.03, [a5]))
+    elif bad == "diag-changed":
+        q.write_text(json.dumps(row) + " ")
+    elif bad == "search-changed":
+        sp = R.path_of(d, a5["id"]); sp.write_text(sp.read_text() + " ")
+    assert "rep0" not in D.collect(tmp_path, jobs, gate=gate)["audit"]["frozen"].get("0.05", {})
+
+
+@pytest.mark.parametrize("shares,ok", [(_sh(100, 30), True), (_sh(100, 30, n=1), False),
+                                       ({"per_episode": [{"focal": [[100, 30]]}, {"focal": [[0, 0]]}]}, False)])
+def test_diag_ok_needs_one_episode_per_seed_with_every_age_bin(shares, ok):
+    # review rep-impl-r3 (Sol 3, Astra 2), on diag_ok directly: two seeds need two episodes of four age bins each
+    row = {"knobs": KNOBS, "seeds": [11, 12], "normalized": [0.1, 0.2], "shares": shares}
+    assert D.diag_ok(row, [11, 12], KNOBS) is ok
