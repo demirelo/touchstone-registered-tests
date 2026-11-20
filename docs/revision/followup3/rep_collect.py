@@ -214,7 +214,9 @@ def _round1_ready(rec, doubling, search) -> bool:
         return False
     r1, fh = rounds[0], rec.get("heldout")                  # the measured values and both doubling changes must be
     if not (_finite([doubling.get("attack_change"), doubling.get("reference_change")]) and   # well-formed (review r7)
-            _finite([r1.get("attack_change"), r1.get("reference_change"), g.get("heldout_mean")]) and
+            type(r1.get("round")) is int and r1["round"] == 1 and           # review rep-impl-r9: every round-1 field
+            _finite([r1.get(k) for k in ("attack_f", "attack_change", "reference_f", "reference_change")]) and   # _rounds_problem checks
+            _finite([g.get("heldout_mean")]) and
             _knobs_ok(r1.get("best_knobs")) and _knobs_ok(g.get("heldout_knobs"))):
         return False
     return not (isinstance(fh, dict) and _same(fh.get("knobs"), h["knobs"])) or _finite(fh.get("gain"))

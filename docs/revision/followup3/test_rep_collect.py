@@ -1160,3 +1160,35 @@ def test_every_status_with_every_well_formed_round1_disagreement_is_a_mismatch(t
     _edit(tmp_path / "q" / "continuation" / "c1.json", damage)
     calls.clear(); res = D.run_queue(q, tmp_path / "q", workers=1, gate=_gate())
     assert res["exit"] == 4 and calls == []
+
+
+# ---- review rep-impl-r9 (Sol 1) -------------------------------------------------------------------------------------------
+
+_MALFORM = {
+    "round": lambda r: r["rounds"][0].update(round=True),
+    "round-number": lambda r: r["rounds"][0].update(round=2),
+    "attack_f": lambda r: r["rounds"][0].update(attack_f=None),
+    "reference_f": lambda r: r["rounds"][0].update(reference_f=float("nan")),
+    "best_knobs": lambda r: r["rounds"][0].update(best_knobs={}),
+}
+
+
+@pytest.mark.parametrize("field", sorted(_DISAGREE))
+@pytest.mark.parametrize("bad", sorted(_MALFORM))
+def test_a_malformed_round1_with_a_disagreement_is_an_invalid_record(tmp_path, monkeypatch, bad, field):
+    # Sol 1 (r9): a malformed round 1 combined with a disagreement was classified as a mismatch; ruling 10 prescribes the
+    # invalid-record path (not continued in the analysis, rerun on resume)
+    if bad == "best_knobs" and field == "round1_best_knobs":
+        pytest.skip("the same field")
+    def damage(r):
+        _DISAGREE[field](r); _MALFORM[bad](r)
+    a, gj, key = _flagged_with_gate(tmp_path)
+    _edit(_cpath(tmp_path, key), damage)
+    col = D.collect(tmp_path, {("menu", 0.0): [a]}, gate=_gi(gj))
+    assert col["round1_mismatch"] is False and col["primary"] is not None and col["counts"]["not continued"] == 1
+    calls = []
+    monkeypatch.setattr(D, "_cont_one", _ok); monkeypatch.setattr(D, "run_cells", _pool(calls))
+    q = _queue(2); assert D.run_queue(q, tmp_path / "q", workers=1, gate=_gate())["exit"] == 0
+    _edit(tmp_path / "q" / "continuation" / "c1.json", damage)
+    calls.clear(); res = D.run_queue(q, tmp_path / "q", workers=1, gate=_gate())
+    assert res["exit"] == 0 and calls == [["c1"]]
