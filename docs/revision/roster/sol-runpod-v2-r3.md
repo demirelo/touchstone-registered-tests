@@ -1,0 +1,6 @@
+VERDICT: accept
+
+CORRECTIONS:
+None.
+
+CONFIDENCE: 0.95
