@@ -182,3 +182,76 @@ def test_list_rejects_a_bad_later_page(monkeypatch, capsys):
 def test_create_classifies_by_http_status(monkeypatch, answer, amb):
     code, out, _ = run_create(monkeypatch, answer)
     assert code == 1 and out == {"id": "", "ambiguous": amb}
+
+
+# Review r2: Sol 1 (cluster member pods are hidden unless includeClusterPods=true), Astra 1 (urlopen followed redirects).
+def test_list_includes_cluster_pods_on_every_page(monkeypatch, capsys):
+    h = fake_http([(200, {"pods": [POD], "pagination": {"hasNextPage": True, "nextCursor": "c/1"}}),
+                   (200, {"pods": [], "pagination": END})])
+    monkeypatch.setattr(RP, "_http", h)
+    assert RP.main(["list"]) == 0
+    assert h.calls[0][1] == "/pods?includeClusterPods=true"
+    assert h.calls[1][1] == "/pods?includeClusterPods=true&cursor=c%2F1"
+
+
+import http.server, threading
+
+
+class _Srv:
+    """A local HTTP server: POST/GET /v2/pods answers STATUS with a Location to /v2/next, which answers 404."""
+    def __init__(self, status):
+        hits = self.hits = []
+        class H(http.server.BaseHTTPRequestHandler):
+            def _go(self):
+                hits.append((self.command, self.path))
+                n = int(self.headers.get("Content-Length") or 0); self.rfile.read(n)
+                if self.path.startswith("/v2/pods"):
+                    self.send_response(status); self.send_header("Location", "/v2/next"); self.send_header("Content-Length", "0"); self.end_headers()
+                else:
+                    self.send_response(404); self.send_header("Content-Length", "0"); self.end_headers()
+            do_GET = do_POST = _go
+            def log_message(self, *a): pass
+        self.s = http.server.HTTPServer(("127.0.0.1", 0), H)
+        threading.Thread(target=self.s.serve_forever, daemon=True).start()
+        self.base = f"http://127.0.0.1:{self.s.server_address[1]}/v2"
+    def close(self): self.s.shutdown(); self.s.server_close()
+
+
+@pytest.mark.parametrize("status", [301, 302, 303, 307, 308])
+def test_transport_never_follows_a_redirect(monkeypatch, status):
+    srv = _Srv(status)
+    try:
+        monkeypatch.setattr(RP, "BASE", srv.base)
+        code, body = RP._http("POST", "/pods", {"name": "x"})
+        assert code == status and srv.hits == [("POST", "/v2/pods")]
+    finally:
+        srv.close()
+
+
+@pytest.mark.parametrize("status", [301, 302, 303])
+def test_create_after_a_redirect_is_ambiguous_with_one_request(monkeypatch, status):
+    srv = _Srv(status)
+    try:
+        monkeypatch.setattr(RP, "BASE", srv.base)
+        import importlib, io, contextlib, os
+        monkeypatch.setattr(sys, "argv", ["create_one.py", "ts-rep", "0"])
+        monkeypatch.syspath_prepend(os.path.dirname(os.path.abspath(__file__)))
+        sys.modules.pop("create_one", None)
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf), pytest.raises(SystemExit) as e:
+            importlib.import_module("create_one")
+        assert e.value.code == 1 and json.loads(buf.getvalue().strip().splitlines()[-1]) == {"id": "", "ambiguous": True}
+        assert srv.hits == [("POST", "/v2/pods")]
+    finally:
+        srv.close()
+
+
+@pytest.mark.parametrize("status", [301, 302, 303])
+def test_list_after_a_redirect_fails_with_no_stdout(monkeypatch, capsys, status):
+    srv = _Srv(status)
+    try:
+        monkeypatch.setattr(RP, "BASE", srv.base)
+        assert RP.main(["list"]) != 0
+        assert capsys.readouterr().out == "" and len(srv.hits) == 1
+    finally:
+        srv.close()

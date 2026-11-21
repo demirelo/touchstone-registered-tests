@@ -7,6 +7,12 @@ import json, os, re, subprocess, sys, urllib.parse, urllib.request
 KEY = re.search(r"apikey\s*=\s*'([^']+)'", open(os.path.expanduser("~/.runpod/config.toml")).read()).group(1)
 SSHKEY = os.path.expanduser("~/.runpod/ssh/runpodctl-ssh-key")
 BASE = "https://api.runpod.io/v2"
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *a, **k):
+        return None   # review r2: classify the original answer; a 3xx surfaces as an HTTPError with its own status
+
+
+_OPENER = urllib.request.build_opener(_NoRedirect)
 HEADERS = {"Authorization": f"Bearer {KEY}", "Content-Type": "application/json", "User-Agent": "curl/8.7.1"}
 
 
@@ -14,7 +20,7 @@ def _http(method, path, body=None):
     """(HTTP status, parsed body); an HTTP error is (code, {"error": code, "body": text}); network errors raise."""
     req = urllib.request.Request(BASE + path, data=json.dumps(body).encode() if body else None, method=method, headers=HEADERS)
     try:
-        with urllib.request.urlopen(req, timeout=60) as r:
+        with _OPENER.open(req, timeout=60) as r:
             t = r.read().decode(); return r.status, (json.loads(t) if t else None)
     except urllib.error.HTTPError as e:
         return e.code, {"error": e.code, "body": e.read().decode()[:500]}
@@ -40,7 +46,8 @@ def list_pods():
     """Every non-terminated pod in the v1 shape, following the cursor; ValueError on any answer it cannot read."""
     out, cursor = [], None
     for _ in range(1000):
-        status, d = _http("GET", "/pods" + (f"?cursor={urllib.parse.quote(cursor)}" if cursor else ""))
+        # includeClusterPods: the v2 default hides cluster member pods, which would vanish from reconcile (review r2)
+        status, d = _http("GET", "/pods?includeClusterPods=true" + (f"&cursor={urllib.parse.quote(cursor, safe='')}" if cursor else ""))
         if status != 200 or not isinstance(d, dict) or not isinstance(d.get("pods"), list) or not isinstance(d.get("pagination"), dict):
             raise ValueError(f"unreadable pod listing (HTTP {status})")
         for p in d["pods"]:
@@ -90,7 +97,7 @@ def main(argv) -> int:
     elif cmd == "balance":   # read-only account balance (r16 spend record); any failure exits non-zero
         q = json.dumps({"query": "query { myself { clientBalance currentSpendPerHr } }"}).encode()
         req = urllib.request.Request("https://api.runpod.io/graphql", data=q, method="POST", headers=HEADERS)
-        with urllib.request.urlopen(req, timeout=60) as r:
+        with _OPENER.open(req, timeout=60) as r:
             m = json.loads(r.read().decode())["data"]["myself"]
         print(json.dumps({"balance": m["clientBalance"], "spendPerHr": m["currentSpendPerHr"]}))
     elif cmd == "get":
