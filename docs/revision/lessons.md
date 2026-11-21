@@ -289,3 +289,7 @@ pattern is also checked by hand against the refusal line with the same `grep -E`
 ## 2026-11-21: unknown board stage
 
 Mistake: the replication job was written with stage "waiting-you", which the board schema does not list, so the job landed in the wrong group. Guard: before any `stage` write, read the stage table in the work-board skill's `references/schema.md`; a job that waits on a card uses `needs-answer` with `waitingOn: "you: card <id>"`.
+
+## 2026-11-21: launch reported before the pod existed; dry run never touches the API
+
+Mistake: pod 1 was reported as started at 13:53Z when only the launcher process had started. Twenty minutes later it ended with "RECONCILE FAILED BEFORE REQUEST 1": Runpod retired `rest.runpod.io` (NXDOMAIN, also at 1.1.1.1), and `DRYRUN=1` had passed because it never calls the Runpod API. No pod was created and nothing was charged. Guard: (1) report a launch only after the launcher prints the pod line (`pod <id> (... USD/h)`) or "remote started"; (2) pre-launch steps add a read-only API preflight before the dry run: `python3 results/pods/runpod.py list` must exit 0 with a JSON list, and `runpod.py balance` must exit 0. The preflight is a step in `rep-launcher-notes.md` because the launcher is frozen in the manifest.
