@@ -1,0 +1,51 @@
+2026-11-21T15:47:52Z PREFLIGHT
+list0: []
+{"balance": 27.1765378159, "spendPerHr": 0}
+2026-11-21T15:47:53Z CREATE
+create: {"id": "vpurc1b5qronv8", "vcpu": 16, "flavor": "cpu5c", "cloud": "SECURE"}
+2026-11-21T15:48:16Z READY after 20s
+{
+ "id": "vpurc1b5qronv8",
+ "name": "ts-smoke",
+ "desiredStatus": "RUNNING",
+ "publicIp": "185.226.157.242",
+ "portMappings": {
+  "22": 50199
+ },
+ "costPerHr": 0.56,
+ "vcpuCount": 16
+}
+2026-11-21T15:48:16Z LIST
+[
+ {
+  "id": "vpurc1b5qronv8",
+  "name": "ts-smoke",
+  "desiredStatus": "RUNNING",
+  "publicIp": null,
+  "portMappings": {},
+  "costPerHr": 0.56,
+  "vcpuCount": 16
+ }
+]
+2026-11-21T15:48:16Z SSH
+smoke-ok
+16
+x86_64
+  exit 0
+2026-11-21T15:48:18Z PUSH
+  exit 0
+2026-11-21T15:48:20Z PULL
+  exit 0
+hello-smoke
+2026-11-21T15:48:23Z TESTS DONE
+2026-11-21T15:48:23Z DELETE vpurc1b5qronv8
+None
+2026-11-21T15:48:34Z GONE from list
+2026-11-21T15:48:34Z get after delete:
+{
+ "error": 404,
+ "body": "{\"detail\":\"pod not found\",\"status\":404,\"title\":\"Not Found\"}\n"
+}
+2026-11-21T15:48:35Z END
+
+[exited with code 0]
