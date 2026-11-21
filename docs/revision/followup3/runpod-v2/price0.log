@@ -1,0 +1,14 @@
+[]
+2026-11-21T15:51:33Z CREATE
+{"id": "266bkomzs4905g", "vcpu": 16, "flavor": "cpu5c", "cloud": "SECURE"}
+2026-11-21T15:51:34Z PRICE immediately: 0.56
+ exit 0
+2026-11-21T15:51:38Z PRICE +3s: 0.56
+ exit 0
+2026-11-21T15:51:38Z DELETE
+podctl delete exit 0
+[]
+{
+ "error": 404,
+ "body": "{\"detail\":\"pod not found\",\"status\":404,\"title\":\"Not Found\"}\n"
+2026-11-21T15:51:40Z END
