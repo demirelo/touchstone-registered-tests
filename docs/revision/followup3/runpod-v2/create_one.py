@@ -19,9 +19,14 @@ try:
                                         "ports": ["22/tcp"], "disk": 20, "env": {"OMP_NUM_THREADS": "1"}, "startSsh": True})
 except Exception as e:
     exc = e
-if exc is None and status != 201 and not (isinstance(r, dict) and isinstance(r.get("error"), int)):
-    r = None   # 200, 202 (queued) or any other non-error status: not a created pod, and not a clear refusal
-pid, amb = classify_creation(r, exc)
+# Classified by the HTTP status (review r1): only 201 with a non-empty string id is a pod; an HTTP error status goes to
+# the r11 rule; every other answer (200, 202 queued, 3xx, a body "error" on a success status, a non-string id) is ambiguous.
+if exc is None and status == 201 and isinstance(r, dict) and isinstance(r.get("id"), str) and r["id"]:
+    pid, amb = r["id"], False
+elif exc is None and isinstance(status, int) and status >= 400:
+    pid, amb = classify_creation({"error": status}, None)
+else:
+    pid, amb = "", True
 if pid:
     print(json.dumps({"id": pid, "vcpu": 16, "flavor": f, "cloud": c})); sys.exit(0)
 print(json.dumps({"id": "", "ambiguous": amb})); sys.exit(1)

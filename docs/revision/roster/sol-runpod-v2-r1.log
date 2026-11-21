@@ -1,0 +1,1377 @@
+OpenAI Codex v0.167.1
+--------
+workdir: /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+model: gpt-6.1-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a1fe83-8667-7fe2-9c0a-8db9dd03cede
+--------
+user
+# Review brief: Runpod v2 port of the Mac pod helpers (round 1)
+
+You are a read-only reviewer. Return exactly: `VERDICT: accept | accept-with-caveat | reject`, then `CORRECTIONS:` (numbered,
+each with file:line, the concrete failure, and a fix), then `CONFIDENCE: <0-1>`. No other sections.
+
+## Context
+
+On 2026-11-21 the churn replication launch (`docs/revision/followup3/rep_pod.sh`, frozen in the published manifest
+`experiments/v2/replication-manifest.json`) failed before any creation request: Runpod retired `rest.runpod.io`
+(NXDOMAIN, also at 1.1.1.1). No pod was created. The Mac helpers `results/pods/runpod.py` and `create_one.py` (outside
+the manifest and the repository) must move to `https://api.runpod.io/v2`. The launcher and `podctl.py` cannot change, so
+the port must keep the helpers' output contract exactly.
+
+Files (copies for review, in `docs/revision/followup3/runpod-v2/`):
+- `runpod.py`, `create_one.py`: the port. `old/runpod.py`, `old/create_one.py`: the v1 originals (diff them).
+- `podctl.py` (unchanged; reads `runpod.py list|delete|balance` and calls `classify_creation`), `test_podctl.py`,
+  `test_runpod.py` (unchanged), `test_runpod_v2.py` (new, 30 tests; HTTP faked, no request reaches Runpod).
+- The launcher's uses: `rep_pod.sh` lines 252, 283-320, 398-430 (`runpod.py ssh|pull`, `podctl.py price|reconcile`,
+  `create_one.py NAME INDEX`).
+- The v2 contract: `https://api.runpod.io/v2/openapi.json` is not reachable from your sandbox; the facts below were read
+  from it on 2026-11-21:
+  - `GET /v2/pods` -> 200 `{pods: [Pod], pagination: {nextCursor: string|null, hasNextPage: bool}}`; query `cursor`.
+  - `Pod` requires id, name, status (PROVISIONING|STARTING|RUNNING|EXITED|ERROR|TERMINATED), cost (number), ssh
+    `{proxy, direct}`, each `null` or `{host, port, username, command}`; `direct` is null unless `22/tcp` is in ports and
+    the pod runs; cpu `{id, vcpuCount, memory}`.
+  - `POST /v2/pods` -> 201 Pod, or 202 a queued request `{id, status, podId, failureReason, ...}` whose id is not a pod
+    id; 400/401/403/404/409/413/422/429 errors. Body: name, cloud (SECURE|COMMUNITY), cpu `{id, vcpuCount}`, image,
+    ports, disk, env, startSsh (SSH keys reach the pod only with startSsh), optional queue (not sent).
+  - `DELETE /v2/pods/{id}` -> 204 with no body; 404; 409 for cluster pods.
+  - CPU catalog ids are unchanged (cpu3c, cpu3g, cpu3m, cpu5c, cpu5g, cpu5m).
+  - Live read-only checks: the staged `runpod.py list` returned `[]` with exit 0; `get nosuchpod` returned the 404
+    error dict; the account's registered SSH keys include the local `runpodctl-ssh-key`.
+
+## What to check
+
+1. `list` fails closed: no answer shape, status, network error or pagination state may print a list that hides a pod
+   (podctl's reconcile, delete_verified and watchdog treat the printed list as the truth). Is dropping TERMINATED pods
+   safe (they no longer bill)? Any shape that could make a live pod disappear?
+2. Creation classification: only 201 with an id is a pod; 202 and any other non-error status are ambiguous; HTTP errors
+   keep the r11 rule (4xx other than 408/429 unambiguous). Any path that returns a non-pod id as a pod id, or that calls
+   an ambiguous answer unambiguous?
+3. The old field contract: id, name, desiredStatus, publicIp, portMappings["22"], costPerHr, vcpuCount. `podctl.price`
+   reads costPerHr from the list; `rep_pod.sh` refuses a price outside (0, MAXCPH] and checks vcpu. Is `cost` the right
+   per-hour price field? Is the port the right one for ssh and rsync?
+4. `ssh`/`rsync` without a direct endpoint return 255 (the launcher's readiness loop retries for 240 s). Correct?
+5. Anything the tests miss that a live pod would show (field types, a pod listed before its ssh block exists).
+
+A smoke pod (create, list, get, ssh echo, delete, list) runs after this review and before the real launch.
+
+hook: SessionStart
+hook: SessionStart Completed
+codex
+I will compare the helpers with the originals, check the caller contracts, and run the tests.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'rg -n "touchstone|runpod|podctl" /Users/oemer.demirel/.codex/memories/MEMORY.md' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+1098:# Task Group: anthropic-residency-application-writing-and-touchstone-research
+1107:- rollout_summaries/2026-11-03T12-32-03-zdzn-anthropic_residency_writing_touchstone_research_plan.md (cwd=/Users/oemer.demirel/Documents/Codex/2026-11-03/why-anthropic-anthropic-sets-the-frontier, rollout_path=/Users/oemer.demirel/.codex/sessions/2026/11/03/rollout-2026-11-03T13-32-03-01a1a165-260e-7180-9d34-c9dc6bf34b4d.jsonl, updated_at=2026-11-03T13:02:09+00:00, thread_id=01a1a165-260e-7180-9d34-c9dc6bf34b4d, success; application answers finalized)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "pwd; rg --files -g AGENTS.md -g '*runpod*' -g 'create_one.py' -g 'podctl.py' -g 'rep_pod.sh' -g 'test_podctl.py' docs/revision/followup3" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+docs/revision/followup3/rep_pod.sh
+docs/revision/followup3/runpod-v2/runpod.py
+docs/revision/followup3/runpod-v2/test_podctl.py
+docs/revision/followup3/runpod-v2/create_one.py
+docs/revision/followup3/runpod-v2/test_runpod_v2.py
+docs/revision/followup3/runpod-v2/old/runpod.py
+docs/revision/followup3/runpod-v2/old/create_one.py
+docs/revision/followup3/runpod-v2/test_runpod.py
+docs/revision/followup3/runpod-v2/podctl.py
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'ls -la AGENTS.md docs/AGENTS.md docs/revision/AGENTS.md docs/revision/followup3/AGENTS.md docs/revision/followup3/runpod-v2/AGENTS.md' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ exited 1 in 0ms:
+ls: AGENTS.md: No such file or directory
+ls: docs/AGENTS.md: No such file or directory
+ls: docs/revision/AGENTS.md: No such file or directory
+ls: docs/revision/followup3/AGENTS.md: No such file or directory
+ls: docs/revision/followup3/runpod-v2/AGENTS.md: No such file or directory
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'nl -ba docs/revision/followup3/runpod-v2/podctl.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+     1	"""Pod safety primitives for the follow-up launchers (internal reviews r8-r16 of reset_pod.sh). Every function fails
+     2	closed: a failed listing counts as "pods may still exist", and success needs a successful listing that shows no pod.
+     3	Elapsed budgets use the monotonic clock; deadlines (HARD_TS) are wall-clock epoch seconds.
+     4	
+     5	Spend (r16): the record is the account balance difference, NAME.bal0 (written before the first creation request) minus
+     6	the balance at least an hour after the watchdog ended. Other usage on the account during that time is included, so the
+     7	record can overstate the spend, never understate it. The launcher prints only estimates.
+     8	
+     9	CLI (exit 0 = success):
+    10	  podctl.py reconcile NAME [KEEP_ID]          delete every pod named NAME except KEEP_ID; verified by a fresh listing
+    11	  podctl.py delete ID SECONDS                 delete one pod and verify it is gone within SECONDS
+    12	  podctl.py price ID                          print ID's price (finite, positive); exit 1 when unknown
+    13	  podctl.py balance                           print "BALANCE SPEND_PER_HR"; exit 1 when unknown
+    14	  podctl.py spend NAME                        print the recorded spend (USD, rounded up to a cent); refused until the
+    15	                                              watchdog ended at least WAIT_AFTER_WATCHDOG s ago and no pod is named NAME
+    16	  podctl.py watchdog NAME HARD_TS DONE_FILE   after DONE_FILE, or from HARD_TS (also writes NAME.blocked): delete every
+    17	                                              pod named NAME; exits only with DONE_FILE and the settle time of empty
+    18	                                              listings; then writes NAME.wdend and releases NAME.launchlock
+    19	  podctl.py unlock NAME                       release NAME.launchlock (only an empty directory)
+    20	  podctl.py may-create NAME HARD_TS           exit 0 only before HARD_TS and while NAME.blocked does not exist
+    21	  podctl.py remaining UNTIL_TS                print the seconds left (0 when past)
+    22	"""
+    23	from __future__ import annotations
+    24	
+    25	import datetime
+    26	import json
+    27	import math
+    28	import os
+    29	import subprocess
+    30	import sys
+    31	import time
+    32	from decimal import ROUND_CEILING, Decimal, InvalidOperation
+    33	
+    34	HERE = os.path.dirname(os.path.abspath(__file__))
+    35	PY = sys.executable
+    36	
+    37	SETTLE = 300               # seconds of consecutive empty listings, counted only after DONE, before the watchdog ends
+    38	AMBIGUOUS_SETTLE = 1800    # the same while NAME.request is "pending" (an outstanding or ambiguous creation request)
+    39	WAIT_AFTER_WATCHDOG = 3600  # assumed bound on the delay before the account balance shows the last charge
+    40	
+    41	
+    42	def _run(args, timeout=60):
+    43	    try:
+    44	        r = subprocess.run([PY, os.path.join(HERE, "runpod.py")] + args, capture_output=True, text=True, timeout=timeout)
+    45	        return r.returncode, r.stdout
+    46	    except subprocess.TimeoutExpired:
+    47	        return 124, ""
+    48	
+    49	
+    50	def list_pods(run=_run, timeout=60):
+    51	    """The pods as a list, or None when the listing failed (never an empty list on failure). No command runs without a
+    52	    positive budget, and the budget is passed unchanged (r12, r13)."""
+    53	    if float(timeout) <= 0:
+    54	        return None
+    55	    rc, out = run(["list"], timeout=float(timeout))
+    56	    if rc != 0:
+    57	        return None
+    58	    try:
+    59	        pods = json.loads(out)
+    60	    except ValueError:
+    61	        return None
+    62	    return pods if isinstance(pods, list) else None
+    63	
+    64	
+    65	def named(pods, name):
+    66	    return [p["id"] for p in pods if p.get("name") == name]
+    67	
+    68	
+    69	def delete_verified(pid, seconds, run=_run, clock=time.monotonic, sleep=time.sleep):
+    70	    """Delete PID until a successful listing no longer shows it, within SECONDS of elapsed time."""
+    71	    end = clock() + seconds
+    72	    while clock() < end:
+    73	        run(["delete", pid], timeout=min(60.0, end - clock()))
+    74	        if clock() >= end:
+    75	            break
+    76	        pods = list_pods(run, min(60, end - clock()))
+    77	        if clock() < end + 1e-9 and pods is not None and pid not in [p["id"] for p in pods]:
+    78	            return clock() <= end
+    79	        sleep(min(15, max(0.0, end - clock())))
+    80	    return False
+    81	
+    82	
+    83	def reconcile(name, keep="", seconds=600, run=_run, clock=time.monotonic, sleep=time.sleep):
+    84	    """Delete every pod named NAME except KEEP; True only when a successful listing shows none left."""
+    85	    end = clock() + seconds
+    86	    while clock() < end:
+    87	        pods = list_pods(run, min(60, end - clock()))
+    88	        if pods is not None and clock() <= end:
+    89	            extra = [i for i in named(pods, name) if i != keep]
+    90	            if not extra:
+    91	                return True
+    92	            for i in extra:
+    93	                if clock() >= end:
+    94	                    break
+    95	                delete_verified(i, end - clock(), run, clock, sleep)
+    96	        sleep(min(15, max(0.0, end - clock())))
+    97	    return False
+    98	
+    99	
+   100	def may_create(name, hard_ts, clock=time.time, here=HERE):
+   101	    return clock() < hard_ts and not os.path.exists(os.path.join(here, f"{name}.blocked"))
+   102	
+   103	
+   104	def classify_creation(answer, exc=None):
+   105	    """(pod id, ambiguous) for one creation request. Only a clear client refusal (HTTP 4xx other than 408 and 429) is
+   106	    unambiguous; a timeout, exception, server or gateway error, or unreadable answer may still create a pod (r11)."""
+   107	    if exc is not None:
+   108	        return "", True
+   109	    if isinstance(answer, dict) and answer.get("id"):
+   110	        return str(answer["id"]), False
+   111	    if isinstance(answer, dict) and isinstance(answer.get("error"), int):
+   112	        code = answer["error"]
+   113	        return "", not (400 <= code < 500 and code not in (408, 429))
+   114	    return "", True
+   115	
+   116	
+   117	def _finite(v, minimum):
+   118	    try:
+   119	        v = float(v)
+   120	    except (TypeError, ValueError):
+   121	        return None
+   122	    return v if math.isfinite(v) and v >= minimum else None
+   123	
+   124	
+   125	def price_of(pod):
+   126	    """The pod's price in USD/h when it is finite and positive, else None (missing, null, zero or unreadable: r12)."""
+   127	    v = _finite((pod or {}).get("costPerHr"), 0)
+   128	    return v if v is not None and v > 0 else None
+   129	
+   130	
+   131	def price(pid, run=_run):
+   132	    pods = list_pods(run)
+   133	    pod = next((p for p in pods or [] if p.get("id") == pid), None)
+   134	    return price_of(pod)
+   135	
+   136	
+   137	def balance(run=_run):
+   138	    """(balance USD, account spend USD/h) from `runpod.py balance`, or None when either is missing or unreadable."""
+   139	    rc, out = run(["balance"], timeout=60)
+   140	    if rc != 0:
+   141	        return None
+   142	    try:
+   143	        d = json.loads(out)
+   144	    except ValueError:
+   145	        return None
+   146	    if not isinstance(d, dict):
+   147	        return None
+   148	    b, s = _finite(d.get("balance"), -math.inf), _finite(d.get("spendPerHr"), 0)
+   149	    return None if b is None or s is None else (b, s)
+   150	
+   151	
+   152	def _utc(ts):
+   153	    return datetime.datetime.fromtimestamp(ts, datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+   154	
+   155	
+   156	def spend(name, run=_run, clock=time.time, here=HERE, mono=time.monotonic):
+   157	    """(USD rounded up to a cent, note) or (None, reason); on success also writes NAME.spent. Needs NAME.bal0, NAME.wdend
+   158	    at least WAIT_AFTER_WATCHDOG s old by both wall and monotonic time (r17; after a restart the wait cannot be verified
+   159	    and spend is refused), a successful listing with no pod named NAME, a readable balance, and a balance that did not
+   160	    rise (a rise proves a credit or deposit). The difference is valid only if no deposit or credit was added in the
+   161	    window (r16): the author confirms that on the Runpod billing page; the note names the window. It holds
+   162	    NAME.launchlock while it works, so it cannot overlap a launch (r17), and publishes NAME.spent atomically."""
+   163	    lock = os.path.join(here, f"{name}.launchlock")
+   164	    try:
+   165	        os.mkdir(lock)
+   166	    except OSError:
+   167	        return None, "a launch or its watchdog holds NAME.launchlock"
+   168	    try:
+   169	        return _spend_locked(name, run, clock, here, mono)
+   170	    finally:
+   171	        try:
+   172	            os.rmdir(lock)
+   173	        except OSError:
+   174	            pass
+   175	
+   176	
+   177	def _spend_locked(name, run, clock, here, mono):
+   178	    f0 = os.path.join(here, f"{name}.bal0")
+   179	    try:
+   180	        bal0 = Decimal(open(f0).read().split()[0]); t0 = os.path.getmtime(f0)
+   181	    except (OSError, IndexError, InvalidOperation):
+   182	        return None, "no starting balance (NAME.bal0)"
+   183	    try:
+   184	        wdend, wdmono = (float(x) for x in open(os.path.join(here, f"{name}.wdend")).read().split()[:2])
+   185	    except (OSError, ValueError):
+   186	        return None, "the watchdog has not ended"
+   187	    if mono() < wdmono:
+   188	        return None, "the machine restarted since the watchdog ended, so the wait cannot be verified; take the spend from the Runpod billing page"
+   189	    if clock() - wdend < WAIT_AFTER_WATCHDOG or mono() - wdmono < WAIT_AFTER_WATCHDOG:
+   190	        return None, f"wait until {WAIT_AFTER_WATCHDOG} s after the watchdog ended"
+   191	    pods = list_pods(run)
+   192	    if pods is None or named(pods, name):
+   193	        return None, "a pod named NAME may still exist"
+   194	    b = balance(run)
+   195	    if b is None:
+   196	        return None, "balance unknown"
+   197	    now = Decimal(str(b[0]))
+   198	    if now > bal0:
+   199	        return None, "the balance rose (a credit or deposit was added); take the spend from the Runpod billing page"
+   200	    usd = float((bal0 - now).quantize(Decimal("0.01"), rounding=ROUND_CEILING))
+   201	    note = (f"balance difference; valid only if no deposit or credit was added between {_utc(t0)} and {_utc(clock())} "
+   202	            f"(check the Runpod billing page)"
+   203	            + (f"; the account still bills {b[1]} USD/h elsewhere, so this overstates" if b[1] > 0 else ""))
+   204	    final, tmp = os.path.join(here, f"{name}.spent"), os.path.join(here, f"{name}.spent.tmp")
+   205	    try:
+   206	        with open(tmp, "w") as f:
+   207	            f.write(f"{usd} USD {note}\n"); f.flush(); os.fsync(f.fileno())
+   208	        os.replace(tmp, final)     # published only when complete (r17)
+   209	    except OSError as e:
+   210	        return None, f"could not write the spend record ({e})"
+   211	    return usd, note
+   212	
+   213	
+   214	def _request_pending(here, name):
+   215	    try:
+   216	        return open(os.path.join(here, f"{name}.request")).read().strip() == "pending"
+   217	    except OSError:
+   218	        return False
+   219	
+   220	
+   221	def watchdog(name, hard_ts, done_file, run=_run, clock=time.time, sleep=time.sleep, here=HERE, settle=SETTLE,
+   222	             mono=time.monotonic):
+   223	    """Ends only when DONE_FILE exists and successful listings show no pod named NAME for the settle time, counted from
+   224	    DONE onwards (r11); while NAME.request is "pending" (an outstanding or ambiguous creation request) the settle time is
+   225	    at least AMBIGUOUS_SETTLE. After DONE (the launcher reconciles first) any pod named NAME is an orphan and is deleted.
+   226	    From HARD_TS it also blocks creation and deletes every pod named NAME, with no retry limit. On exit it writes
+   227	    NAME.wdend and releases NAME.launchlock (it is the last process of a launch). Wall time (CLOCK) is used only for the
+   228	    hard deadline; the settle time and deletion budgets use MONO, so a clock change cannot shorten them (r16)."""
+   229	    blocked = False
+   230	    empty_since = None
+   231	    while True:
+   232	        if not blocked and clock() >= hard_ts:
+   233	            open(os.path.join(here, f"{name}.blocked"), "w").write(str(int(clock())))
+   234	            print(f"{time.strftime('%H:%M')} WATCHDOG: hard deadline; creation blocked; deleting every pod named {name}", flush=True)
+   235	            blocked = True
+   236	        done = os.path.exists(done_file)
+   237	        need = max(settle, AMBIGUOUS_SETTLE) if _request_pending(here, name) else settle
+   238	        if done or blocked:
+   239	            pods = list_pods(run)
+   240	            if pods is None:
+   241	                empty_since = None
+   242	            else:
+   243	                ids = named(pods, name)
+   244	                if ids:
+   245	                    empty_since = None
+   246	                    for i in ids:
+   247	                        print(f"{time.strftime('%H:%M')} WATCHDOG: deleting {i}", flush=True)
+   248	                        delete_verified(i, 120, run, mono, sleep)
+   249	                elif done:
+   250	                    empty_since = mono() if empty_since is None else empty_since
+   251	                    if mono() - empty_since >= need:
+   252	                        open(os.path.join(here, f"{name}.wdend"), "w").write(f"{time.time()} {time.monotonic()}")   # wall, monotonic (r17)
+   253	                        try:
+   254	                            os.rmdir(os.path.join(here, f"{name}.launchlock"))
+   255	                        except OSError:
+   256	                            pass
+   257	                        print(f"{time.strftime('%H:%M')} WATCHDOG: no pod named {name} for {need}s after the launcher was done; "
+   258	                              f"record the spend with `podctl.py spend {name}` from {WAIT_AFTER_WATCHDOG}s after now", flush=True)
+   259	                        return 0
+   260	                else:
+   261	                    empty_since = None
+   262	        sleep(30 if blocked else min(30, max(0.0, hard_ts - clock())) or 30)
+   263	
+   264	
+   265	def main(argv) -> int:
+   266	    cmd, a = argv[0], argv[1:]
+   267	    if cmd == "reconcile":
+   268	        return 0 if reconcile(a[0], a[1] if len(a) > 1 else "") else 1
+   269	    if cmd == "delete":
+   270	        return 0 if delete_verified(a[0], float(a[1])) else 1
+   271	    if cmd == "price":
+   272	        p = price(a[0]); print(p if p is not None else "unknown"); return 0 if p is not None else 1
+   273	    if cmd == "balance":
+   274	        b = balance(); print(f"{b[0]} {b[1]}" if b else "unknown"); return 0 if b else 1
+   275	    if cmd == "spend":
+   276	        usd, note = spend(a[0]); print(f"{usd} USD ({note})" if usd is not None else f"refused: {note}"); return 0 if usd is not None else 1
+   277	    if cmd == "watchdog":
+   278	        return watchdog(a[0], float(a[1]), a[2])
+   279	    if cmd == "unlock":      # release NAME.launchlock (an empty directory; os.rmdir refuses anything else)
+   280	        try:
+   281	            os.rmdir(os.path.join(HERE, f"{a[0]}.launchlock")); return 0
+   282	        except OSError:
+   283	            return 1
+   284	    if cmd == "may-create":
+   285	        return 0 if may_create(a[0], float(a[1])) else 1
+   286	    if cmd == "remaining":
+   287	        print(max(0, int(float(a[0]) - time.time()))); return 0
+   288	    print(__doc__); return 2
+   289	
+   290	
+   291	if __name__ == "__main__":
+   292	    sys.exit(main(sys.argv[1:]))
+
+exec
+/bin/zsh -lc 'diff -u docs/revision/followup3/runpod-v2/old/runpod.py docs/revision/followup3/runpod-v2/runpod.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc 'diff -u docs/revision/followup3/runpod-v2/old/create_one.py docs/revision/followup3/runpod-v2/create_one.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ exited 1 in 0ms:
+--- docs/revision/followup3/runpod-v2/old/runpod.py	2026-11-21 15:29:54
++++ docs/revision/followup3/runpod-v2/runpod.py	2026-11-21 15:29:54
+@@ -1,40 +1,101 @@
+-"""Minimal Runpod REST helper. Usage:
+-  python runpod.py list | balance | get ID | delete ID | ssh ID 'cmd' | push ID LOCAL REMOTE | pull ID REMOTE LOCAL"""
+-import json, os, re, subprocess, sys, urllib.request
++"""Minimal Runpod REST helper on the v2 API (api.runpod.io/v2; rest.runpod.io/v1 was retired, 2026-11-21). Usage:
++  python runpod.py list | balance | get ID | delete ID | ssh ID 'cmd' | push ID LOCAL REMOTE | pull ID REMOTE LOCAL
++The output the launchers and podctl.py read is the v1 shape: `list` prints id, name, desiredStatus, publicIp,
++portMappings, costPerHr and vcpuCount per pod, and exits non-zero (printing nothing) on any answer it cannot read, so a
++failed listing is never mistaken for "no pod"."""
++import json, os, re, subprocess, sys, urllib.parse, urllib.request
+ KEY = re.search(r"apikey\s*=\s*'([^']+)'", open(os.path.expanduser("~/.runpod/config.toml")).read()).group(1)
+ SSHKEY = os.path.expanduser("~/.runpod/ssh/runpodctl-ssh-key")
+-BASE = "https://rest.runpod.io/v1"
+-def api(method, path, body=None):
+-    req = urllib.request.Request(BASE + path, data=json.dumps(body).encode() if body else None, method=method,
+-                                 headers={"Authorization": f"Bearer {KEY}", "Content-Type": "application/json", "User-Agent": "curl/8.7.1"})
++BASE = "https://api.runpod.io/v2"
++HEADERS = {"Authorization": f"Bearer {KEY}", "Content-Type": "application/json", "User-Agent": "curl/8.7.1"}
++
++
++def _http(method, path, body=None):
++    """(HTTP status, parsed body); an HTTP error is (code, {"error": code, "body": text}); network errors raise."""
++    req = urllib.request.Request(BASE + path, data=json.dumps(body).encode() if body else None, method=method, headers=HEADERS)
+     try:
+         with urllib.request.urlopen(req, timeout=60) as r:
+-            t = r.read().decode(); return json.loads(t) if t else None
++            t = r.read().decode(); return r.status, (json.loads(t) if t else None)
+     except urllib.error.HTTPError as e:
+-        return {"error": e.code, "body": e.read().decode()[:500]}
++        return e.code, {"error": e.code, "body": e.read().decode()[:500]}
++
++
++def api(method, path, body=None):
++    return _http(method, path, body)[1]
++
++
++def _direct(p):
++    d = (p.get("ssh") or {}).get("direct") if isinstance(p.get("ssh"), dict) else None
++    return (d.get("host"), d.get("port")) if isinstance(d, dict) else (None, None)
++
++
++def _v1(p):
++    host, port = _direct(p)
++    cpu = p.get("cpu") if isinstance(p.get("cpu"), dict) else {}
++    return {"id": p["id"], "name": p.get("name"), "desiredStatus": p.get("status"), "publicIp": host,
++            "portMappings": {"22": port} if port is not None else {}, "costPerHr": p.get("cost"), "vcpuCount": cpu.get("vcpuCount")}
++
++
++def list_pods():
++    """Every non-terminated pod in the v1 shape, following the cursor; ValueError on any answer it cannot read."""
++    out, cursor = [], None
++    for _ in range(1000):
++        status, d = _http("GET", "/pods" + (f"?cursor={urllib.parse.quote(cursor)}" if cursor else ""))
++        if status != 200 or not isinstance(d, dict) or not isinstance(d.get("pods"), list) or not isinstance(d.get("pagination"), dict):
++            raise ValueError(f"unreadable pod listing (HTTP {status})")
++        for p in d["pods"]:
++            if not isinstance(p, dict) or not isinstance(p.get("id"), str) or not p["id"]:
++                raise ValueError("a pod without an id")
++            if p.get("status") != "TERMINATED":
++                out.append(_v1(p))
++        pg = d["pagination"]
++        if pg.get("hasNextPage") is False:
++            return out
++        if pg.get("hasNextPage") is not True or not isinstance(pg.get("nextCursor"), str) or not pg["nextCursor"]:
++            raise ValueError("unreadable pagination")
++        cursor = pg["nextCursor"]
++    raise ValueError("too many pages")
++
++
+ def target(pod_id):
+-    p = api("GET", f"/pods/{pod_id}"); pm = p.get("portMappings") or {}
+-    return p.get("publicIp"), pm.get("22") or pm.get(22)
++    status, p = _http("GET", f"/pods/{pod_id}")
++    return _direct(p) if status == 200 and isinstance(p, dict) else (None, None)
++
++
+ def ssh(pod_id, cmd, timeout=None):
+     ip, port = target(pod_id)
++    if not ip or not port:
++        return subprocess.CompletedProcess([], 255, "", "no direct ssh endpoint")
+     return subprocess.run(["ssh", "-i", SSHKEY, "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", "-o", "LogLevel=ERROR", "-o", "ConnectTimeout=20", "-p", str(port), f"root@{ip}", cmd],
+                           capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
++
++
+ def rsync(pod_id, src, dst, pull=False):
+     ip, port = target(pod_id)
++    if not ip or not port:
++        return subprocess.CompletedProcess([], 255, "", "no direct ssh endpoint")
+     e = f"ssh -i {SSHKEY} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -p {port}"
+     a, b = (f"root@{ip}:{src}", dst) if pull else (src, f"root@{ip}:{dst}")
+     return subprocess.run(["rsync", "-az", "-e", e, a, b], capture_output=True, text=True)
++
++
+ def main(argv) -> int:
+     cmd, args = argv[0], argv[1:]
+-    if cmd == "list": print(json.dumps([{k: p.get(k) for k in ("id", "name", "desiredStatus", "publicIp", "portMappings", "costPerHr", "vcpuCount")} for p in api("GET", "/pods")], indent=1))
++    if cmd == "list":
++        try:
++            pods = list_pods()
++        except (ValueError, OSError) as e:
++            print(f"list failed: {e}", file=sys.stderr); return 1
++        print(json.dumps(pods, indent=1))
+     elif cmd == "balance":   # read-only account balance (r16 spend record); any failure exits non-zero
+         q = json.dumps({"query": "query { myself { clientBalance currentSpendPerHr } }"}).encode()
+-        req = urllib.request.Request("https://api.runpod.io/graphql", data=q, method="POST",
+-                                     headers={"Authorization": f"Bearer {KEY}", "Content-Type": "application/json", "User-Agent": "curl/8.7.1"})
++        req = urllib.request.Request("https://api.runpod.io/graphql", data=q, method="POST", headers=HEADERS)
+         with urllib.request.urlopen(req, timeout=60) as r:
+             m = json.loads(r.read().decode())["data"]["myself"]
+         print(json.dumps({"balance": m["clientBalance"], "spendPerHr": m["currentSpendPerHr"]}))
+-    elif cmd == "get": print(json.dumps(api("GET", f"/pods/{args[0]}"), indent=1)[:1500])
++    elif cmd == "get":
++        status, p = _http("GET", f"/pods/{args[0]}")
++        print(json.dumps(_v1(p) if status == 200 and isinstance(p, dict) and p.get("id") else p, indent=1)[:1500])
+     elif cmd == "delete": print(api("DELETE", f"/pods/{args[0]}"))
+     elif cmd == "ssh": r = ssh(args[0], args[1]); print(r.stdout, r.stderr, "exit", r.returncode); return r.returncode
+     elif cmd == "push": r = rsync(args[0], args[1], args[2]); print(r.stdout[-300:], r.stderr[-300:], "exit", r.returncode); return r.returncode
+
+hook: PostToolUse
+ exited 1 in 0ms:
+--- docs/revision/followup3/runpod-v2/old/create_one.py	2026-11-21 15:29:54
++++ docs/revision/followup3/runpod-v2/create_one.py	2026-11-21 15:29:54
+@@ -1,10 +1,11 @@
+ """One creation request per call (internal review r10: no hidden retries). Usage: create_one.py NAME INDEX
+ INDEX selects one (flavor, cloud) combination; prints {"id": ..., "vcpu": ...} or {"id": "", "ambiguous": bool}.
+ Only a clear client refusal (HTTP 4xx other than 408/429) is unambiguous (podctl.classify_creation, r11); after an
+-ambiguous answer the launcher sends no further request."""
++ambiguous answer the launcher sends no further request. Runpod v2 (2026-11-21): only HTTP 201 with an id is a pod; a 202
++answer is a queued request whose id is not a pod id, so it is ambiguous (it may still become a pod)."""
+ import json, sys
+ sys.path.insert(0, "/Users/oemer.demirel/Projects/touchstone/results/pods")
+-from runpod import api
++from runpod import _http
+ from podctl import classify_creation
+ IMAGE = "runpod/base:0.6.2-cpu"
+ COMBOS = [(f, c) for c in ("SECURE", "COMMUNITY") for f in ("cpu5c", "cpu3c", "cpu5g", "cpu3g", "cpu5m", "cpu3m")]
+@@ -12,12 +13,14 @@
+ if not 0 <= i < len(COMBOS):
+     print(json.dumps({"id": "", "ambiguous": False, "exhausted": True})); sys.exit(1)
+ f, c = COMBOS[i]
+-r, exc = None, None
++status, r, exc = None, None, None
+ try:
+-    r = api("POST", "/pods", {"name": name, "computeType": "CPU", "cloudType": c, "cpuFlavorIds": [f], "cpuFlavorPriority": "availability",
+-                              "vcpuCount": 16, "imageName": IMAGE, "ports": ["22/tcp"], "containerDiskInGb": 20, "env": {"OMP_NUM_THREADS": "1"}})
++    status, r = _http("POST", "/pods", {"name": name, "cloud": c, "cpu": {"id": f, "vcpuCount": 16}, "image": IMAGE,
++                                        "ports": ["22/tcp"], "disk": 20, "env": {"OMP_NUM_THREADS": "1"}, "startSsh": True})
+ except Exception as e:
+     exc = e
++if exc is None and status != 201 and not (isinstance(r, dict) and isinstance(r.get("error"), int)):
++    r = None   # 200, 202 (queued) or any other non-error status: not a created pod, and not a clear refusal
+ pid, amb = classify_creation(r, exc)
+ if pid:
+     print(json.dumps({"id": pid, "vcpu": 16, "flavor": f, "cloud": c})); sys.exit(0)
+
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'nl -ba docs/revision/followup3/runpod-v2/test_runpod_v2.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc 'ls -la /Users/AGENTS.md /Users/oemer.demirel/AGENTS.md /Users/oemer.demirel/Projects/AGENTS.md /Users/oemer.demirel/Projects/touchstone/AGENTS.md /Users/oemer.demirel/Projects/touchstone/.claude/AGENTS.md /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/AGENTS.md' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+     1	"""runpod.py and create_one.py on the Runpod v2 API (rest.runpod.io retired 2026-11-21). The output contract the frozen
+     2	launcher and podctl.py read is unchanged; every test fakes the HTTP layer, so no request reaches Runpod."""
+     3	import json, subprocess, sys
+     4	import pytest
+     5	import runpod as RP
+     6	
+     7	POD = {"id": "p1", "name": "ts-rep", "status": "RUNNING", "cost": 0.48, "cpu": {"id": "cpu3c", "vcpuCount": 16, "memory": 32},
+     8	       "ssh": {"proxy": None, "direct": {"host": "1.2.3.4", "port": 40022, "username": "root", "command": "ssh"}}}
+     9	
+    10	
+    11	def fake_http(pages):
+    12	    calls = []
+    13	    def h(method, path, body=None):
+    14	        calls.append((method, path, body))
+    15	        return pages[len(calls) - 1]
+    16	    h.calls = calls
+    17	    return h
+    18	
+    19	
+    20	def test_base_is_v2():
+    21	    assert RP.BASE == "https://api.runpod.io/v2"
+    22	
+    23	
+    24	def test_list_maps_v2_to_the_old_fields(monkeypatch, capsys):
+    25	    monkeypatch.setattr(RP, "_http", fake_http([(200, {"pods": [POD], "pagination": {"hasNextPage": False, "nextCursor": None}})]))
+    26	    assert RP.main(["list"]) == 0
+    27	    out = json.loads(capsys.readouterr().out)
+    28	    assert out == [{"id": "p1", "name": "ts-rep", "desiredStatus": "RUNNING", "publicIp": "1.2.3.4",
+    29	                    "portMappings": {"22": 40022}, "costPerHr": 0.48, "vcpuCount": 16}]
+    30	
+    31	
+    32	def test_list_follows_the_cursor(monkeypatch, capsys):
+    33	    p2 = dict(POD, id="p2")
+    34	    h = fake_http([(200, {"pods": [POD], "pagination": {"hasNextPage": True, "nextCursor": "c1"}}),
+    35	                   (200, {"pods": [p2], "pagination": {"hasNextPage": False, "nextCursor": None}})])
+    36	    monkeypatch.setattr(RP, "_http", h)
+    37	    assert RP.main(["list"]) == 0
+    38	    assert [p["id"] for p in json.loads(capsys.readouterr().out)] == ["p1", "p2"]
+    39	    assert h.calls[1][1].endswith("cursor=c1")
+    40	
+    41	
+    42	def test_list_drops_terminated_pods(monkeypatch, capsys):
+    43	    monkeypatch.setattr(RP, "_http", fake_http([(200, {"pods": [POD, dict(POD, id="gone", status="TERMINATED")],
+    44	                                                       "pagination": {"hasNextPage": False, "nextCursor": None}})]))
+    45	    assert RP.main(["list"]) == 0
+    46	    assert [p["id"] for p in json.loads(capsys.readouterr().out)] == ["p1"]
+    47	
+    48	
+    49	def test_list_without_direct_ssh_has_no_address(monkeypatch, capsys):
+    50	    monkeypatch.setattr(RP, "_http", fake_http([(200, {"pods": [dict(POD, ssh={"proxy": None, "direct": None})],
+    51	                                                       "pagination": {"hasNextPage": False, "nextCursor": None}})]))
+    52	    assert RP.main(["list"]) == 0
+    53	    p = json.loads(capsys.readouterr().out)[0]
+    54	    assert p["publicIp"] is None and p["portMappings"] == {}
+    55	
+    56	
+    57	@pytest.mark.parametrize("answer", [
+    58	    (200, []), (200, {"pods": "x", "pagination": {}}), (200, {"pagination": {"hasNextPage": False}}),
+    59	    (200, {"pods": [], "pagination": "x"}), (200, {"pods": [], "pagination": {"hasNextPage": True, "nextCursor": None}}),
+    60	    (200, {"pods": ["x"], "pagination": {"hasNextPage": False, "nextCursor": None}}),
+    61	    (200, {"pods": [{"name": "n"}], "pagination": {"hasNextPage": False, "nextCursor": None}}),
+    62	    (401, {"error": 401, "body": ""}), (500, {"error": 500, "body": ""}), (200, None)])
+    63	def test_list_fails_closed_on_any_unexpected_answer(monkeypatch, capsys, answer):
+    64	    """A wrong shape must never print [] (no pod) while a pod may bill: podctl reads a non-zero exit as a failed listing."""
+    65	    monkeypatch.setattr(RP, "_http", fake_http([answer]))
+    66	    assert RP.main(["list"]) != 0
+    67	    assert capsys.readouterr().out == ""
+    68	
+    69	
+    70	def test_list_fails_closed_on_a_network_error(monkeypatch, capsys):
+    71	    def boom(*a, **k): raise OSError("no route")
+    72	    monkeypatch.setattr(RP, "_http", boom)
+    73	    assert RP.main(["list"]) != 0
+    74	    assert capsys.readouterr().out == ""
+    75	
+    76	
+    77	def test_target_reads_the_direct_ssh_endpoint(monkeypatch):
+    78	    monkeypatch.setattr(RP, "_http", fake_http([(200, POD)]))
+    79	    assert RP.target("p1") == ("1.2.3.4", 40022)
+    80	    monkeypatch.setattr(RP, "_http", fake_http([(200, dict(POD, ssh={"proxy": None, "direct": None}))]))
+    81	    assert RP.target("p1") == (None, None)
+    82	
+    83	
+    84	def test_ssh_without_an_address_fails(monkeypatch):
+    85	    monkeypatch.setattr(RP, "_http", fake_http([(200, dict(POD, ssh={"proxy": None, "direct": None}))]))
+    86	    assert RP.main(["ssh", "p1", "echo up"]) != 0
+    87	
+    88	
+    89	def test_delete_accepts_204(monkeypatch, capsys):
+    90	    h = fake_http([(204, None)])
+    91	    monkeypatch.setattr(RP, "_http", h)
+    92	    assert RP.main(["delete", "p1"]) == 0
+    93	    assert h.calls == [("DELETE", "/pods/p1", None)]
+    94	
+    95	
+    96	def test_api_returns_the_old_error_dict(monkeypatch):
+    97	    monkeypatch.setattr(RP, "_http", fake_http([(400, {"error": 400, "body": "bad"})]))
+    98	    assert RP.api("POST", "/pods", {})["error"] == 400
+    99	
+   100	
+   101	# create_one.py: one request per call; 201 with an id is a pod; 202 (queued) and every unclear answer are ambiguous.
+   102	def run_create(monkeypatch, answer, index="0"):
+   103	    import importlib, io, contextlib
+   104	    h = fake_http([answer]) if not isinstance(answer, Exception) else None
+   105	    if h is None:
+   106	        def h(*a, **k): raise answer
+   107	        h.calls = []
+   108	    monkeypatch.setattr(RP, "_http", h)
+   109	    monkeypatch.setattr(sys, "argv", ["create_one.py", "ts-rep", index])
+   110	    sys.modules.pop("create_one", None)
+   111	    import os
+   112	    monkeypatch.syspath_prepend(os.path.dirname(os.path.abspath(__file__)))   # create_one.py inserts results/pods first
+   113	    buf = io.StringIO()
+   114	    with contextlib.redirect_stdout(buf), pytest.raises(SystemExit) as e:
+   115	        importlib.import_module("create_one")
+   116	    return e.value.code, json.loads(buf.getvalue().strip().splitlines()[-1]), h.calls
+   117	
+   118	
+   119	def test_create_sends_the_v2_cpu_body(monkeypatch):
+   120	    code, out, calls = run_create(monkeypatch, (201, dict(POD, id="new")))
+   121	    assert code == 0 and out["id"] == "new" and out["vcpu"] == 16
+   122	    method, path, body = calls[0]
+   123	    assert (method, path) == ("POST", "/pods")
+   124	    assert body["name"] == "ts-rep" and body["cpu"] == {"id": "cpu5c", "vcpuCount": 16} and body["cloud"] == "SECURE"
+   125	    assert body["ports"] == ["22/tcp"] and body["startSsh"] is True and body["disk"] == 20
+   126	    assert body["image"] == "runpod/base:0.6.2-cpu" and body["env"] == {"OMP_NUM_THREADS": "1"}
+   127	    assert "gpu" not in body and "queue" not in body
+   128	
+   129	
+   130	def test_create_202_queued_is_ambiguous(monkeypatch):
+   131	    code, out, _ = run_create(monkeypatch, (202, {"id": "q1", "status": "QUEUED", "podId": None}))
+   132	    assert code == 1 and out == {"id": "", "ambiguous": True}
+   133	
+   134	
+   135	@pytest.mark.parametrize("answer,amb", [((400, {"error": 400, "body": ""}), False), ((404, {"error": 404, "body": ""}), False),
+   136	                                         ((429, {"error": 429, "body": ""}), True), ((500, {"error": 500, "body": ""}), True),
+   137	                                         ((201, None), True), ((201, {"name": "x"}), True), ((200, dict(POD, id="x")), True)])
+   138	def test_create_classifies_other_answers(monkeypatch, answer, amb):
+   139	    code, out, _ = run_create(monkeypatch, answer)
+   140	    assert code == 1 and out == {"id": "", "ambiguous": amb}
+   141	
+   142	
+   143	def test_create_exception_is_ambiguous(monkeypatch):
+   144	    code, out, _ = run_create(monkeypatch, OSError("timeout"))
+   145	    assert code == 1 and out == {"id": "", "ambiguous": True}
+
+ exited 1 in 0ms:
+ls: /Users/AGENTS.md: No such file or directory
+ls: /Users/oemer.demirel/AGENTS.md: No such file or directory
+ls: /Users/oemer.demirel/Projects/AGENTS.md: No such file or directory
+ls: /Users/oemer.demirel/Projects/touchstone/.claude/AGENTS.md: No such file or directory
+ls: /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/AGENTS.md: No such file or directory
+ls: /Users/oemer.demirel/Projects/touchstone/AGENTS.md: No such file or directory
+
+exec
+/bin/zsh -lc 'nl -ba docs/revision/followup3/runpod-v2/runpod.py; nl -ba docs/revision/followup3/runpod-v2/create_one.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc "nl -ba docs/revision/followup3/runpod-v2/test_runpod.py; sed -n '235,335p' docs/revision/followup3/rep_pod.sh; sed -n '385,450p' docs/revision/followup3/rep_pod.sh" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+     1	"""Minimal Runpod REST helper on the v2 API (api.runpod.io/v2; rest.runpod.io/v1 was retired, 2026-11-21). Usage:
+     2	  python runpod.py list | balance | get ID | delete ID | ssh ID 'cmd' | push ID LOCAL REMOTE | pull ID REMOTE LOCAL
+     3	The output the launchers and podctl.py read is the v1 shape: `list` prints id, name, desiredStatus, publicIp,
+     4	portMappings, costPerHr and vcpuCount per pod, and exits non-zero (printing nothing) on any answer it cannot read, so a
+     5	failed listing is never mistaken for "no pod"."""
+     6	import json, os, re, subprocess, sys, urllib.parse, urllib.request
+     7	KEY = re.search(r"apikey\s*=\s*'([^']+)'", open(os.path.expanduser("~/.runpod/config.toml")).read()).group(1)
+     8	SSHKEY = os.path.expanduser("~/.runpod/ssh/runpodctl-ssh-key")
+     9	BASE = "https://api.runpod.io/v2"
+    10	HEADERS = {"Authorization": f"Bearer {KEY}", "Content-Type": "application/json", "User-Agent": "curl/8.7.1"}
+    11	
+    12	
+    13	def _http(method, path, body=None):
+    14	    """(HTTP status, parsed body); an HTTP error is (code, {"error": code, "body": text}); network errors raise."""
+    15	    req = urllib.request.Request(BASE + path, data=json.dumps(body).encode() if body else None, method=method, headers=HEADERS)
+    16	    try:
+    17	        with urllib.request.urlopen(req, timeout=60) as r:
+    18	            t = r.read().decode(); return r.status, (json.loads(t) if t else None)
+    19	    except urllib.error.HTTPError as e:
+    20	        return e.code, {"error": e.code, "body": e.read().decode()[:500]}
+    21	
+    22	
+    23	def api(method, path, body=None):
+    24	    return _http(method, path, body)[1]
+    25	
+    26	
+    27	def _direct(p):
+    28	    d = (p.get("ssh") or {}).get("direct") if isinstance(p.get("ssh"), dict) else None
+    29	    return (d.get("host"), d.get("port")) if isinstance(d, dict) else (None, None)
+    30	
+    31	
+    32	def _v1(p):
+    33	    host, port = _direct(p)
+    34	    cpu = p.get("cpu") if isinstance(p.get("cpu"), dict) else {}
+    35	    return {"id": p["id"], "name": p.get("name"), "desiredStatus": p.get("status"), "publicIp": host,
+    36	            "portMappings": {"22": port} if port is not None else {}, "costPerHr": p.get("cost"), "vcpuCount": cpu.get("vcpuCount")}
+    37	
+    38	
+    39	def list_pods():
+    40	    """Every non-terminated pod in the v1 shape, following the cursor; ValueError on any answer it cannot read."""
+    41	    out, cursor = [], None
+    42	    for _ in range(1000):
+    43	        status, d = _http("GET", "/pods" + (f"?cursor={urllib.parse.quote(cursor)}" if cursor else ""))
+    44	        if status != 200 or not isinstance(d, dict) or not isinstance(d.get("pods"), list) or not isinstance(d.get("pagination"), dict):
+    45	            raise ValueError(f"unreadable pod listing (HTTP {status})")
+    46	        for p in d["pods"]:
+    47	            if not isinstance(p, dict) or not isinstance(p.get("id"), str) or not p["id"]:
+    48	                raise ValueError("a pod without an id")
+    49	            if p.get("status") != "TERMINATED":
+    50	                out.append(_v1(p))
+    51	        pg = d["pagination"]
+    52	        if pg.get("hasNextPage") is False:
+    53	            return out
+    54	        if pg.get("hasNextPage") is not True or not isinstance(pg.get("nextCursor"), str) or not pg["nextCursor"]:
+    55	            raise ValueError("unreadable pagination")
+    56	        cursor = pg["nextCursor"]
+    57	    raise ValueError("too many pages")
+    58	
+    59	
+    60	def target(pod_id):
+    61	    status, p = _http("GET", f"/pods/{pod_id}")
+    62	    return _direct(p) if status == 200 and isinstance(p, dict) else (None, None)
+    63	
+    64	
+    65	def ssh(pod_id, cmd, timeout=None):
+    66	    ip, port = target(pod_id)
+    67	    if not ip or not port:
+    68	        return subprocess.CompletedProcess([], 255, "", "no direct ssh endpoint")
+    69	    return subprocess.run(["ssh", "-i", SSHKEY, "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", "-o", "LogLevel=ERROR", "-o", "ConnectTimeout=20", "-p", str(port), f"root@{ip}", cmd],
+    70	                          capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
+    71	
+    72	
+    73	def rsync(pod_id, src, dst, pull=False):
+    74	    ip, port = target(pod_id)
+    75	    if not ip or not port:
+    76	        return subprocess.CompletedProcess([], 255, "", "no direct ssh endpoint")
+    77	    e = f"ssh -i {SSHKEY} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -p {port}"
+    78	    a, b = (f"root@{ip}:{src}", dst) if pull else (src, f"root@{ip}:{dst}")
+    79	    return subprocess.run(["rsync", "-az", "-e", e, a, b], capture_output=True, text=True)
+    80	
+    81	
+    82	def main(argv) -> int:
+    83	    cmd, args = argv[0], argv[1:]
+    84	    if cmd == "list":
+    85	        try:
+    86	            pods = list_pods()
+    87	        except (ValueError, OSError) as e:
+    88	            print(f"list failed: {e}", file=sys.stderr); return 1
+    89	        print(json.dumps(pods, indent=1))
+    90	    elif cmd == "balance":   # read-only account balance (r16 spend record); any failure exits non-zero
+    91	        q = json.dumps({"query": "query { myself { clientBalance currentSpendPerHr } }"}).encode()
+    92	        req = urllib.request.Request("https://api.runpod.io/graphql", data=q, method="POST", headers=HEADERS)
+    93	        with urllib.request.urlopen(req, timeout=60) as r:
+    94	            m = json.loads(r.read().decode())["data"]["myself"]
+    95	        print(json.dumps({"balance": m["clientBalance"], "spendPerHr": m["currentSpendPerHr"]}))
+    96	    elif cmd == "get":
+    97	        status, p = _http("GET", f"/pods/{args[0]}")
+    98	        print(json.dumps(_v1(p) if status == 200 and isinstance(p, dict) and p.get("id") else p, indent=1)[:1500])
+    99	    elif cmd == "delete": print(api("DELETE", f"/pods/{args[0]}"))
+   100	    elif cmd == "ssh": r = ssh(args[0], args[1]); print(r.stdout, r.stderr, "exit", r.returncode); return r.returncode
+   101	    elif cmd == "push": r = rsync(args[0], args[1], args[2]); print(r.stdout[-300:], r.stderr[-300:], "exit", r.returncode); return r.returncode
+   102	    elif cmd == "pull": r = rsync(args[0], args[1], args[2], pull=True); print(r.stdout[-300:], r.stderr[-300:], "exit", r.returncode); return r.returncode
+   103	    return 0
+   104	
+   105	
+   106	if __name__ == "__main__":
+   107	    sys.exit(main(sys.argv[1:]))
+     1	"""One creation request per call (internal review r10: no hidden retries). Usage: create_one.py NAME INDEX
+     2	INDEX selects one (flavor, cloud) combination; prints {"id": ..., "vcpu": ...} or {"id": "", "ambiguous": bool}.
+     3	Only a clear client refusal (HTTP 4xx other than 408/429) is unambiguous (podctl.classify_creation, r11); after an
+     4	ambiguous answer the launcher sends no further request. Runpod v2 (2026-11-21): only HTTP 201 with an id is a pod; a 202
+     5	answer is a queued request whose id is not a pod id, so it is ambiguous (it may still become a pod)."""
+     6	import json, sys
+     7	sys.path.insert(0, "/Users/oemer.demirel/Projects/touchstone/results/pods")
+     8	from runpod import _http
+     9	from podctl import classify_creation
+    10	IMAGE = "runpod/base:0.6.2-cpu"
+    11	COMBOS = [(f, c) for c in ("SECURE", "COMMUNITY") for f in ("cpu5c", "cpu3c", "cpu5g", "cpu3g", "cpu5m", "cpu3m")]
+    12	name, i = sys.argv[1], int(sys.argv[2])
+    13	if not 0 <= i < len(COMBOS):
+    14	    print(json.dumps({"id": "", "ambiguous": False, "exhausted": True})); sys.exit(1)
+    15	f, c = COMBOS[i]
+    16	status, r, exc = None, None, None
+    17	try:
+    18	    status, r = _http("POST", "/pods", {"name": name, "cloud": c, "cpu": {"id": f, "vcpuCount": 16}, "image": IMAGE,
+    19	                                        "ports": ["22/tcp"], "disk": 20, "env": {"OMP_NUM_THREADS": "1"}, "startSsh": True})
+    20	except Exception as e:
+    21	    exc = e
+    22	if exc is None and status != 201 and not (isinstance(r, dict) and isinstance(r.get("error"), int)):
+    23	    r = None   # 200, 202 (queued) or any other non-error status: not a created pod, and not a clear refusal
+    24	pid, amb = classify_creation(r, exc)
+    25	if pid:
+    26	    print(json.dumps({"id": pid, "vcpu": 16, "flavor": f, "cloud": c})); sys.exit(0)
+    27	print(json.dumps({"id": "", "ambiguous": amb})); sys.exit(1)
+
+ succeeded in 0ms:
+     1	"""runpod.py propagates the exit status of ssh, push and pull (internal review r7 of the reset plan)."""
+     2	import subprocess
+     3	import runpod as RP
+     4	
+     5	
+     6	def test_ssh_push_pull_return_the_subprocess_status(monkeypatch):
+     7	    fake = lambda *a, **k: subprocess.CompletedProcess([], 255, "", "boom")
+     8	    monkeypatch.setattr(RP, "ssh", fake); monkeypatch.setattr(RP, "rsync", fake)
+     9	    for argv in (["ssh", "p", "true"], ["push", "p", "a", "b"], ["pull", "p", "a", "b"]):
+    10	        assert RP.main(argv) == 255
+    11	    ok = lambda *a, **k: subprocess.CompletedProcess([], 0, "up", "")
+    12	    monkeypatch.setattr(RP, "ssh", ok)
+    13	    assert RP.main(["ssh", "p", "echo up"]) == 0
+        # (lessons.md: Run A went unverified after STOPPED; rerun review r1: one failed pull skipped every check)
+        if [ -d "$LOUT/$d" ]; then seen=1; verify "$LOUT/$d" || ok=0; fi
+      done
+      rem=$(( hard - 120 - $(date +%s) )); [ $rem -gt 0 ] && tmo $(( rem < 300 ? rem : 300 )) $PY runpod.py pull $id /root/touchstone/results/logs/ $LOGD/ >/dev/null 2>&1
+      [ $ok = 1 ] && break
+      # implementation review r1: a failure state retries too (the remote writes its inventory on every failure exit),
+      # so a partial pull is not deleted with the pod after one try
+      echo "$(date +%H:%M) pull or verification failed (try $try)"
+      if [ "$state" = "RUN OK" ]; then [ "$(date +%s)" -ge $(( hard - 120 )) ] && break
+      else [ $try -ge 3 ] && { [ $seen = 1 ] && echo "$(date +%H:%M) end state $state: pulled records do not all verify after $try tries (see above)"; break; }; fi
+      sleep 60
+    done
+    [ $ok = 1 ] || { [ "$state" = "RUN OK" ] && state="RUN OK BUT RECORDS NOT VERIFIED"; rc=1; }
+  fi
+  if [ -n "$id" ]; then
+    if $PY podctl.py delete $id 1800; then echo "$(date +%H:%M) $id deleted (verified)"; echo "$id $(date +%s) deleted" >> "$ATT"; else echo "$(date +%H:%M) $id: deletion not verified in 30 min; the watchdog keeps trying (billing may continue)"; rc=1; unresolved=1; fi
+  fi
+  $PY podctl.py reconcile $NAME || { echo "$(date +%H:%M) reconcile failed; the watchdog keeps trying"; rc=1; unresolved=1; }
+  grep -qx pending "$P/$NAME.request" 2>/dev/null && { echo "$(date +%H:%M) a creation request is outstanding or ambiguous; the watchdog settles for 30 minutes"; unresolved=1; }
+  touch "$DONE"     # the watchdog then deletes any orphan pod and exits only after its settle time of empty listings
+  if [ -z "$wd" ] || ! kill -0 "$wd" 2>/dev/null; then
+    echo "$(date +%H:%M) WATCHDOG NOT RUNNING"; rc=1
+    if [ $req = 0 ]; then unlock; else unresolved=1; echo "$(date +%H:%M) $NAME.launchlock kept: no process deletes a late pod; check the Runpod console"; fi
+  fi
+  if [ "$req" = 0 ] && [ -e "$P/$NAME.bal0" ]; then   # no request was sent: nothing to record; keep the baseline as unused
+    mkdir -p "$P/spend_records" && mv -- "$P/$NAME.bal0" "$P/spend_records/$NAME.$(date +%s).bal0.unused"
+  fi
+  [ "$tfirst" -gt 0 ] && echo "$(date +%H:%M) spend estimate so far (not a record): $(( $(date +%s) - tfirst ))s at the ceiling $MAXCPH USD/h = $($PY -c "import math; print(math.ceil(($(date +%s)-$tfirst)/3600*float('$MAXCPH')*1000)/1000)") USD (pod events in $ATT)"
+  [ "$req" -gt 0 ] && echo "$(date +%H:%M) record the spend with: podctl.py spend $NAME (at least 1 h after the watchdog ends; $LOGD/watchdog.log), then budget_v2.py --record with a tag starting $RUNTAG-"
+  [ -n "$unresolved" ] && { echo "$(date +%H:%M) UNRESOLVED: check the Runpod console the next day before any relaunch"; rc=1; }
+  echo "$(date +%H:%M) end: $state"
+  exit $rc
+}
+trap cleanup EXIT INT TERM
+# Deadlines from the first creation request at the price ceiling MAXCPH (a bound across attempts), less PRIOR: the
+# soft deadline leaves CAP - PRIOR, the hard deadline HARD x CAP - PRIOR (churn r1 review).
+t0=$(date +%s); soft=$(( t0 + $($PY -c "print(int(3600*(float('$CAP')-float('$PRIOR'))/float('$MAXCPH')))") )); hard=$(( t0 + $($PY -c "print(int(3600*(float('$CAP')*float('$HARD')-float('$PRIOR'))/float('$MAXCPH')))") ))
+nohup $PY podctl.py watchdog $NAME $hard "$DONE" >> $LOGD/watchdog.log 2>&1 &
+wd=$!; echo $wd > "$P/$NAME.wdpid"; disown
+sleep 1; kill -0 "$wd" 2>/dev/null || { state="WATCHDOG DID NOT START"; exit 1; }
+# One creation request at a time (create_one.py, no hidden retries). Before EVERY request: reconciliation must succeed (no
+# untracked pod), the watchdog must allow creation, and the soft deadline must be ahead. An unambiguous refusal (HTTP 4xx,
+# e.g. no capacity) tries the next flavor. An AMBIGUOUS answer ends creation for this launch (r11): no further request,
+# so two pods can never overlap. NAME.request is "pending" from before each request until a clear answer (r15), so a stop
+# during creation also makes the watchdog delete a late pod and settle for 30 minutes.
+tries=0
+while [ $tries -lt 3 ] && [ $req -lt 36 ]; do
+  kill -0 "$wd" 2>/dev/null || { state="WATCHDOG NOT RUNNING BEFORE REQUEST $((req+1))"; exit 1; }
+  $PY podctl.py reconcile $NAME || { state="RECONCILE FAILED BEFORE REQUEST $((req+1))"; exit 1; }
+  $PY podctl.py may-create $NAME $hard || { state="CREATION BLOCKED (hard deadline)"; exit 1; }
+  [ "$(date +%s)" -lt "$soft" ] || { state="SOFT DEADLINE BEFORE START"; exit 1; }
+  [ "$tfirst" -gt 0 ] || tfirst=$(date +%s)
+  cph=0; id=""
+  { echo pending > "$P/$NAME.request" && grep -qx pending "$P/$NAME.request"; } || { state="CANNOT WRITE $NAME.request BEFORE REQUEST $((req+1))"; exit 1; }
+  req=$((req+1)); rq0=$(date +%s)   # billing may start with the request (churn r1 review): every charge counts from here
+  out=$(tmo 120 $PY create_one.py $NAME $(( (req-1) % 12 )) 2>/dev/null | tail -n 1)
+  id=$(echo "$out" | $PY -c 'import sys,json; print(json.loads(sys.stdin.read()).get("id",""))' 2>/dev/null)
+  amb=$(echo "$out" | $PY -c 'import sys,json; d=json.loads(sys.stdin.read() or "{}"); print(1 if d.get("ambiguous", True) else 0)' 2>/dev/null || echo 1)
+  if [ -z "$id" ]; then
+    if [ "$amb" = 1 ]; then echo "$(date +%H:%M) ambiguous creation answer; no further request"; state="AMBIGUOUS CREATION ANSWER (no retry)"; exit 1; fi
+    echo clear > "$P/$NAME.request"; continue
+  fi
+  echo clear > "$P/$NAME.request"
+  v=16; a0=$rq0; echo "$id $rq0 start" >> "$ATT"
+  # Only a finite positive price at or below the ceiling is accepted; otherwise (above, missing, null, zero, failed
+  # listing, timeout) the pod is deleted at once, with no retrieval (r15); the balance difference records what it cost.
+  cph=$(tmo 60 $PY podctl.py price $id 2>/dev/null) || cph=""
+  if ! $PY -c "import sys; sys.exit(0 if 0<float(sys.argv[1])<=float(sys.argv[2]) else 1)" "${cph:-0}" "$MAXCPH" 2>/dev/null; then
+    state="PRICE ${cph:-unknown} NOT IN (0, $MAXCPH]"; echo "$(date +%H:%M) $id: $state; deleting"
+    $PY podctl.py delete $id 600 && { echo "$id $(date +%s) deleted" >> "$ATT"; id=""; }; exit 1
+  fi
+  u0=$(date +%s); up=""; while [ "$(date +%s)" -lt "$soft" ] && [ $(( $(date +%s) - u0 )) -lt 240 ]; do r=$(tmo 30 $PY runpod.py ssh $id 'echo up' 2>/dev/null | head -c 2); [ "$r" = up ] && { up=1; break; }; sleep 10; done
+  [ -n "$up" ] && break
+  echo "$(date +%H:%M) $id unreachable; deleting"; $PY podctl.py delete $id 600 || { state="UNREACHABLE POD NOT DELETED"; exit 1; }; echo "$id $(date +%s) deleted" >> "$ATT"; id=""; tries=$((tries+1))
+done
+[ -z "$id" ] && { state="NO POD"; exit 1; }
+echo "$(date +%H:%M) pod $id ($v vCPU, $cph USD/h): soft stop in $(( soft - $(date +%s) ))s, hard stop in $(( hard - $(date +%s) ))s (run $RUN, cap $CAP USD, PRIOR $PRIOR USD)"
+tmo 900 $PY runpod.py push $id $TGZ /root/rc.tgz >/dev/null 2>&1 || { state="UPLOAD FAILED (code)"; exit 1; }
+tmo 1800 $PY runpod.py push $id $BTGZ /root/rb.tgz >/dev/null 2>&1 || { state="UPLOAD FAILED (bundle)"; exit 1; }
+tmo 900 $PY runpod.py ssh $id 'set -e; mkdir -p touchstone bundle; tar xzf rc.tgz -C touchstone; tar xzf rb.tgz -C bundle; which uv >/dev/null || { curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1; }; export PATH=$HOME/.local/bin:$PATH; cd touchstone; uv sync --frozen -q; mkdir -p results/logs' >/dev/null 2>&1 || { state="PREP FAILED (unpack or sync)"; exit 1; }
+chk=$(tmo 300 $PY runpod.py ssh $id "cd touchstone; export PATH=\$HOME/.local/bin:\$PATH; echo git=\$(git rev-parse HEAD 2>&1) env=\${TOUCHSTONE_IDENTITY_SALT:-unset} bundle=\$(ls /root/bundle/draw | wc -l); m=\$(cat /sys/fs/cgroup/memory.max 2>/dev/null || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null); case \$m in max|''|9223372036854*) m=\$(awk '/MemTotal/ {print \$2*1024}' /proc/meminfo);; esac; echo memgb=\$((m/1073741824)); echo py=\$(uv run --frozen python -c 'import platform,numpy;print(platform.python_version(),numpy.__version__)' 2>&1 | tail -n 1 | tr ' ' _)" 2>/dev/null | tr '\n' ' ')
+echo "$(date +%H:%M) prep: $chk"
+case "$chk" in *"git=$EXPECT"*"env=unset"*) ;; *) state="PREP FAILED"; exit 1 ;; esac
+memgb=$(echo "$chk" | sed -n 's/.*memgb=\([0-9]*\).*/\1/p'); [ -n "$memgb" ] && [ "$memgb" -ge "$MINMEM" ] || { state="PREP FAILED (memory ${memgb:-unknown} GB < $MINMEM GB)"; exit 1; }
+# The admission inputs (plans section 5, launcher handoff): this launch's attempts file (closed attempts count at the
+# ceiling; the open start is this pod's request time) and the ledger (earlier launches of the run tag). Both are fixed
+# for the pod's life (no attempt event or ledger row can appear while it runs), so one push covers every paid step.
+tmo 120 $PY runpod.py push $id "$ATT" /root/rep.attempts >/dev/null 2>&1 || { state="UPLOAD FAILED (attempts)"; exit 1; }
+tmo 120 $PY runpod.py push $id "$SNAP" /root/rep.ledger.json >/dev/null 2>&1 || { state="UPLOAD FAILED (ledger)"; exit 1; }
+# The driver's own admissions (churn stages, continuation rounds) count PRIOR plus this launch's closed attempts at the
+# ceiling (guards.paid_cost_stop's rule), from the same fixed attempts file.
+PRIORX=$($PY - "$ATT" "$PRIOR" "$MAXCPH" <<'PYX'
+import sys
+st, closed = {}, 0.0
+for l in open(sys.argv[1]):
+    f = l.split()
+    if len(f) == 3 and f[2] == "start": st[f[0]] = float(f[1])
+    elif len(f) == 3 and f[2] == "deleted" and f[0] in st: closed += float(f[1]) - st.pop(f[0])
+print(round(float(sys.argv[2]) + closed / 3600 * float(sys.argv[3]), 6))
+PYX
+) || { state="PRIOR WITH ATTEMPTS UNKNOWN"; exit 1; }
+R2
+)
+fi
+RBODY=${RBODY//@CWR@/$CONTRETRY}; RBODY=${RBODY//@CW@/$CONTW}; RBODY=${RBODY//@SW@/$SEARCHW}; RBODY=${RBODY//@EW@/$EVALW}
+RBODY=${RBODY//@PS@/$PEAKSEARCH}; RBODY=${RBODY//@PC@/$PEAKCONT}; RBODY=${RBODY//@PUBARG@/$PUBARG}; RBODY=${RBODY//@TAG@/$TAG}
+RS=$(mktemp "/tmp/${NAME}_remote.XXXXXX") || { state="CANNOT WRITE THE REMOTE SCRIPT"; exit 1; }   # private path (churn r1 review)
+cat > "$RS" <<EOS
+#!/bin/bash
+R=\${REMOTE_ROOT:-/root}   # the pod's root; the offline harness runs this script under another root with a stub driver
+echo "== remote started \$(date +%H:%M)"
+cd \$R/touchstone || { echo "== RUN FAILED at setup \$(date +%H:%M)"; exit 1; }; export OMP_NUM_THREADS=1 PATH=\$HOME/.local/bin:\$PATH; unset TOUCHSTONE_IDENTITY_SALT TOUCHSTONE_LOCKED TOUCHSTONE_PROPOSED_MODULE TOUCHSTONE_PROPOSED_PARAMS TOUCHSTONE_SEALED_DIR TOUCHSTONE_GIT_COMMIT
+B=\$R/bundle; L=results/logs; O=results/v2/followup3-rep; D=docs/revision/followup3/rep_v2.py
+IN="--out \$O --manifest \$B/draw/manifest.json --draw \$B/draw/draw.json"
+RP="--started $a0 --usd-per-hour $MAXCPH --stop-usd $CAP --prior-usd $PRIORX --stop-file \$R/STOP --soft-deadline $soft"
+PAID="--cap-usd $CAP --usd-per-hour $MAXCPH --started-at $a0 --attempts \$R/rep.attempts --ledger \$R/rep.ledger.json --run-tag $RUNTAG --stop-file \$R/STOP --soft-deadline $soft"
+# step NAME HOURS: before a paid step, the launcher's STOP file and soft deadline, then the admission (guards.py admit;
+# exit 3 = refused by the cap, the STOP file or the soft deadline); the step starts only on exit 0.
+# endinv LINE: every failure or stop exit writes the output's inventory first (implementation review r1), so that what was
+# pulled verifies; the end line stays the log's last line, which the launcher reads as the end state.
+endinv() {
+  [ -d \$O ] && uv run --frozen python \$D --stage inventory \$IN >> \$L/rep.log 2>&1
+  echo "\$1 \$(date +%H:%M)"; exit 1
+}
+step() {
+  { [ -e \$R/STOP ] || [ \$(date +%s) -ge $soft ]; } && endinv "== STOPPED BEFORE \$1 (cap)"
+  uv run --frozen python docs/revision/followup2/guards.py admit \$PAID --hours \$2 >> \$L/rep_admit.log 2>&1; arc=\$?
+  [ \$arc = 3 ] && endinv "== STOPPED BEFORE \$1 (cap, admission)"
+  [ \$arc = 0 ] || endinv "== RUN FAILED at admission before \$1"
+  echo "== \$1 start \$(date +%H:%M)"
+}
+$RBODY
+echo "== RUN OK \$(date +%H:%M)"
+EOS
+tmo 120 $PY runpod.py push $id "$RS" /root/r_remote.sh >/dev/null 2>&1 || { state="UPLOAD FAILED (remote script)"; exit 1; }
+tmo 120 $PY runpod.py ssh $id "chmod +x /root/r_remote.sh && (nohup /root/r_remote.sh > /root/touchstone/results/logs/r_remote.log 2>&1 < /dev/null &)" >/dev/null 2>&1 || { state="REMOTE START FAILED"; exit 1; }
+# the run counts as started only when the remote script's first line is in its log (r16)
+for i in 1 2 3 4 5 6; do sleep 10; tmo 30 $PY runpod.py ssh $id "grep -q 'remote started' /root/touchstone/results/logs/r_remote.log" >/dev/null 2>&1 && { started=1; break; }; done
+[ -n "$started" ] || { state="REMOTE START FAILED (no start line)"; exit 1; }
+state="RUNNING"; stopped=""
+while true; do
+  sleep 120
+  now=$(date +%s)
+  [ "$now" -ge "$hard" ] && { state="HARD DEADLINE ($HARD x cap at $MAXCPH USD/h; the watchdog deletes the pod)"; exit 1; }
+  if [ "$now" -ge "$soft" ] && [ -z "$stopped" ]; then tmo 60 $PY runpod.py ssh $id 'touch /root/STOP && test -e /root/STOP' >/dev/null 2>&1 && stopped=1 && echo "$(date +%H:%M) cap reached: the pod stops after the running step"; fi
+  st=$(tmo 90 $PY runpod.py ssh $id "tail -c 240 /root/touchstone/results/logs/r_remote.log" 2>/dev/null | tr '\n' ' ')
+  echo "$(date +%H:%M) [soft $(( soft - now ))s, hard $(( hard - now ))s] $st" | tail -c 320
+  # the end state is the LAST "== ..." line of the polled tail (earlier lines of the joined tail are not part of it)
+  # split on the " == " marker only: a state may itself contain "=" (the gate0 state says "p = 0")
+  last="== ${st##*== }"; last="$(echo "$last" | sed "s/[[:space:]]*\$//")"
+  case "$last" in
+    "== RUN OK"*) state="RUN OK"; rc=0; exit 0 ;;
+    "== GATE FAILED"*|"== RUN FAILED"*|"== STOPPED BEFORE"*) state="$(echo "$last" | head -c 160)"; exit 1 ;;
+  esac
+done
+
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+web search: 
+exec
+/bin/zsh -lc 'PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q -p no:cacheprovider test_podctl.py test_runpod.py test_runpod_v2.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/docs/revision/followup3/runpod-v2
+ exited 1 in 0ms:
+/opt/homebrew/opt/python@3.15/bin/python3.15: No module named pytest
+
+hook: PostToolUse
+hook: PostToolUse Completed
+web search: site.docs.runpod.io api v2 pods cost hourly ssh direct ...
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+The list helper accepts pods with missing names, so name-based cleanup can miss them. Creation also uses a body field to classify refusals, which can mark a successful HTTP response as a clear refusal. I will check both cases with fake responses.
+
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+web search: 
+exec
+/bin/zsh -lc "ls -l .venv/bin/python* /Users/oemer.demirel/Projects/touchstone/.venv/bin/python*; rg --files -g 'pyproject.toml' -g 'uv.lock' -g 'pytest.ini' -g 'conftest.py' -g '*README*' docs/revision/followup3/runpod-v2 .venv" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ exited 1 in 0ms:
+lrwxr-xr-x@ 1 oemer.demirel  staff  93 Oct 22 19:36 .venv/bin/python -> /Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/bin/python3.12
+lrwxr-xr-x@ 1 oemer.demirel  staff   6 Oct 22 19:36 .venv/bin/python3 -> python
+lrwxr-xr-x@ 1 oemer.demirel  staff   6 Oct 22 19:36 .venv/bin/python3.12 -> python
+lrwxr-xr-x@ 1 oemer.demirel  staff  93 Oct 14 22:26 /Users/oemer.demirel/Projects/touchstone/.venv/bin/python -> /Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/bin/python3.12
+lrwxr-xr-x@ 1 oemer.demirel  staff   6 Oct 14 22:26 /Users/oemer.demirel/Projects/touchstone/.venv/bin/python3 -> python
+lrwxr-xr-x@ 1 oemer.demirel  staff   6 Oct 14 22:26 /Users/oemer.demirel/Projects/touchstone/.venv/bin/python3.12 -> python
+
+hook: PostToolUse
+hook: PostToolUse Completed
+web search: https://api.runpod.io/v2/openapi.json
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'PYTHONDONTWRITEBYTECODE=1 /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/bin/python -m pytest -q -p no:cacheprovider test_podctl.py test_runpod.py test_runpod_v2.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/docs/revision/followup3/runpod-v2
+ exited 1 in 269ms:
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/pytest/__main__.py", line 9, in <module>
+    raise SystemExit(_console_main())
+                     ^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py", line 253, in _console_main
+    code = _main(prog=_get_prog_name(sys.argv))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py", line 223, in _main
+    config = _prepareconfig(new_args, plugins, prog=prog)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py", line 410, in _prepareconfig
+    config: Config = pluginmanager.hook.pytest_cmdline_parse(
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 167, in _multicall
+    raise exception
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 139, in _multicall
+    teardown.throw(exception)
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/_pytest/helpconfig.py", line 124, in pytest_cmdline_parse
+    config = yield
+             ^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py", line 1232, in pytest_cmdline_parse
+    self.parse(args)
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py", line 1605, in parse
+    self.hook.pytest_load_initial_conftests(
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 167, in _multicall
+    raise exception
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 139, in _multicall
+    teardown.throw(exception)
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/_pytest/warnings.py", line 129, in pytest_load_initial_conftests
+    return (yield)
+            ^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 116, in _multicall
+    next(function_gen)  # first yield
+    ^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/_pytest/capture.py", line 170, in pytest_load_initial_conftests
+    capman.start_global_capturing()
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/_pytest/capture.py", line 773, in start_global_capturing
+    self._global_capturing = _get_multicapture(self._method)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/_pytest/capture.py", line 714, in _get_multicapture
+    return MultiCapture(in_=FDCapture(0), out=FDCapture(1), err=FDCapture(2))
+                                              ^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/_pytest/capture.py", line 493, in __init__
+    TemporaryFile(buffering=0),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 631, in TemporaryFile
+    prefix, suffix, dir, output_type = _sanitize_params(prefix, suffix, dir)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 126, in _sanitize_params
+    dir = gettempdir()
+          ^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 315, in gettempdir
+    return _os.fsdecode(_gettempdir())
+                        ^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 308, in _gettempdir
+    tempdir = _get_default_tempdir()
+              ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 223, in _get_default_tempdir
+    raise FileNotFoundError(_errno.ENOENT,
+FileNotFoundError: [Errno 2] No usable temporary directory found in ['/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/', '/tmp', '/var/tmp', '/usr/tmp', '/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/docs/revision/followup3/runpod-v2']
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg -n 'tmp_path|tmpdir|open\\(|write|def test_' docs/revision/followup3/runpod-v2/test_podctl.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+44:def test_a_failed_listing_is_never_an_empty_list():
+49:def test_delete_is_verified_and_bounded_by_elapsed_time():
+56:def test_reconcile_fails_closed_on_listing_failures_and_survivors():
+65:def test_creation_is_blocked_after_the_hard_deadline_or_the_block_file(tmp_path):
+66:    assert C.may_create("n", 10, clock=lambda: 5, here=str(tmp_path))
+67:    assert not C.may_create("n", 10, clock=lambda: 11, here=str(tmp_path))
+68:    (tmp_path / "n.blocked").write_text("1")
+69:    assert not C.may_create("n", 10, clock=lambda: 5, here=str(tmp_path))
+72:def test_watchdog_blocks_creation_and_keeps_deleting_until_none_remain(tmp_path):
+73:    f = Fake({"a": "ts-r-x", "b": "ts-r-x"}, fail_list=0, stuck={"a": 30}); f.t = 100; (tmp_path / "done").write_text("")
+74:    assert C.watchdog("ts-r-x", 50, str(tmp_path / "done"), f.run, f.clock, f.sleep, here=str(tmp_path), settle=60, mono=f.clock) == 0
+75:    assert (tmp_path / "ts-r-x.blocked").exists() and not [i for i, n in f.pods.items() if n == "ts-r-x"]
+78:def test_watchdog_waits_for_done_and_an_empty_listing_before_the_deadline(tmp_path):
+79:    f = Fake({"a": "ts-r-x"}); done = tmp_path / "done"; done.write_text("")
+85:    assert C.watchdog("ts-r-x", 10**6, str(done), f.run, f.clock, sleep, here=str(tmp_path), mono=f.clock) == 0
+86:    assert not (tmp_path / "ts-r-x.blocked").exists()
+89:def test_r10_delete_respects_the_budget_even_with_slow_commands():
+97:def test_r10_watchdog_after_the_deadline_needs_done_and_a_settled_empty_listing(tmp_path):
+98:    f = Fake({}); f.t = 100; done = tmp_path / "done"
+105:            done.write_text("")
+106:    assert C.watchdog("ts-r-x", 50, str(done), f.run, f.clock, sleep, here=str(tmp_path), settle=60, mono=f.clock) == 0
+110:def test_r11_watchdog_before_the_deadline_settles_so_a_delayed_creation_is_deleted(tmp_path):
+112:    f = Fake({}); done = tmp_path / "done"; done.write_text("")
+118:    assert C.watchdog("ts-r-x", 10**6, str(done), f.run, f.clock, sleep, here=str(tmp_path), settle=60, mono=f.clock) == 0
+120:    assert "late" not in f.pods and "delete" in f.calls and not (tmp_path / "ts-r-x.blocked").exists()
+123:def test_r12_settle_counts_only_after_done(tmp_path):
+125:    f = Fake({}); f.t = 100; done = tmp_path / "done"
+129:            done.write_text(""); sleep.at = f.t
+131:    assert C.watchdog("ts-r-x", 50, str(done), f.run, f.clock, sleep, here=str(tmp_path), settle=300, mono=f.clock) == 0
+135:def test_r12_after_an_ambiguous_answer_the_settle_is_long_enough_for_a_late_pod(tmp_path):
+137:    f = Fake({}); done = tmp_path / "done"; done.write_text(""); (tmp_path / "ts-r-x.request").write_text("pending")
+143:    assert C.watchdog("ts-r-x", 10**6, str(done), f.run, f.clock, sleep, here=str(tmp_path), settle=300, mono=f.clock) == 0
+148:def test_r12_fractional_budget_is_passed_as_a_fractional_timeout():
+168:def test_r12_creation_answers_are_ambiguous_unless_clearly_refused(answer, exc, ambiguous):
+176:def test_r13_only_a_finite_positive_price_counts(value, price):
+182:def test_r13_no_command_gets_more_time_than_the_budget_left():
+208:def test_r16_balance_parses_or_fails_closed(out, rc, expect):
+212:def _spend_setup(tmp_path, wd_ago, pods=None, bal_now=9.123, rate_now=0.0):
+213:    (tmp_path / "n.bal0").write_text("10.0 0.0")
+216:        (tmp_path / "n.wdend").write_text(f"{1_000_000 - wd_ago} {_t.monotonic() - wd_ago}")
+225:def test_r16_spend_is_refused_until_the_watchdog_ended_an_hour_ago_and_no_pod_is_named(tmp_path):
+227:    assert C.spend("n", _spend_setup(tmp_path, None), clock, here=str(tmp_path))[0] is None          # watchdog not ended
+228:    assert C.spend("n", _spend_setup(tmp_path, 3599), clock, here=str(tmp_path))[0] is None          # less than an hour
+229:    assert C.spend("n", _spend_setup(tmp_path, 4000, {"x": "n"}), clock, here=str(tmp_path))[0] is None  # a pod named n
+232:def test_r16_spend_is_the_balance_difference_rounded_up_to_a_cent(tmp_path):
+233:    usd, note = C.spend("n", _spend_setup(tmp_path, 4000), lambda: 1_000_000, here=str(tmp_path))
+235:    usd, note = C.spend("n", _spend_setup(tmp_path, 4000, rate_now=0.3), lambda: 1_000_000, here=str(tmp_path))
+239:def test_r16_watchdog_writes_its_end_time_and_releases_the_launch_lock(tmp_path):
+240:    f = Fake({}); done = tmp_path / "done"; done.write_text(""); (tmp_path / "ts-r-x.launchlock").mkdir()
+241:    assert C.watchdog("ts-r-x", 10**6, str(done), f.run, f.clock, f.sleep, here=str(tmp_path), settle=60, mono=f.clock) == 0
+242:    assert not (tmp_path / "ts-r-x.launchlock").exists() and all(float(x) > 0 for x in (tmp_path / "ts-r-x.wdend").read_text().split()) and len((tmp_path / "ts-r-x.wdend").read_text().split()) == 2
+245:def test_r16_a_cleared_request_needs_only_the_normal_settle(tmp_path):
+246:    f = Fake({}); done = tmp_path / "done"; done.write_text(""); (tmp_path / "ts-r-x.request").write_text("clear")
+247:    assert C.watchdog("ts-r-x", 10**6, str(done), f.run, f.clock, f.sleep, here=str(tmp_path), settle=60, mono=f.clock) == 0
+251:def test_r16_elapsed_budgets_use_the_monotonic_clock():
+260:def test_r17_a_wall_clock_jump_does_not_shorten_the_settle(tmp_path):
+262:    f = Fake({}); done = tmp_path / "done"; done.write_text(""); (tmp_path / "ts-r-x.request").write_text("pending")
+269:    assert C.watchdog("ts-r-x", 10**9, str(done), f.run, lambda: wall["t"], sleep, here=str(tmp_path), settle=300,
+274:def test_r17_spend_rounds_up_exactly(tmp_path):
+276:    usd, _ = C.spend("n", _spend_setup(tmp_path, 4000, bal_now=9.989999999), lambda: 1_000_000, here=str(tmp_path))
+280:def test_r17_spend_refuses_a_balance_that_rose_and_states_the_credit_condition(tmp_path):
+282:    usd, why = C.spend("n", _spend_setup(tmp_path, 4000, bal_now=10.5), lambda: 1_000_000, here=str(tmp_path))
+284:    usd, note = C.spend("n", _spend_setup(tmp_path, 4000), lambda: 1_000_000, here=str(tmp_path))
+288:def test_r17_spend_writes_its_record(tmp_path):
+289:    usd, note = C.spend("n", _spend_setup(tmp_path, 4000), lambda: 1_000_000, here=str(tmp_path))
+290:    rec = (tmp_path / "n.spent").read_text()
+296:def test_r18_a_wall_clock_jump_does_not_shorten_the_billing_wait(tmp_path):
+299:    run = _spend_setup(tmp_path, 4000)
+300:    (tmp_path / "n.wdend").write_text(f"{1_000_000 - 4000} {_t.monotonic() - 30}")
+301:    usd, why = C.spend("n", run, lambda: 1_000_000, here=str(tmp_path))
+302:    assert usd is None and not (tmp_path / "n.spent").exists()
+305:def test_r18_after_a_restart_the_wait_cannot_be_verified_and_spend_is_refused(tmp_path):
+307:    run = _spend_setup(tmp_path, 4000)
+308:    (tmp_path / "n.wdend").write_text(f"{1_000_000 - 4000} {_t.monotonic() + 10**6}")   # monotonic went backwards
+309:    usd, why = C.spend("n", run, lambda: 1_000_000, here=str(tmp_path))
+313:def test_r18_spend_holds_the_launch_lock_and_refuses_while_it_is_held(tmp_path):
+315:    run = _spend_setup(tmp_path, 4000)
+316:    (tmp_path / "n.launchlock").mkdir()
+317:    assert C.spend("n", run, lambda: 1_000_000, here=str(tmp_path))[0] is None and not (tmp_path / "n.spent").exists()
+318:    (tmp_path / "n.launchlock").rmdir()
+321:        seen.append((tmp_path / "n.launchlock").is_dir()); return run(args, timeout)
+322:    assert C.spend("n", run2, lambda: 1_000_000, here=str(tmp_path))[0] == 0.88
+323:    assert seen and all(seen) and not (tmp_path / "n.launchlock").exists()
+326:def test_r18_a_failed_record_write_publishes_no_record(tmp_path, monkeypatch):
+327:    # r17 Astra 2: a failed write left an empty .spent that the launcher accepted
+328:    run = _spend_setup(tmp_path, 4000)
+332:    usd, why = C.spend("n", run, lambda: 1_000_000, here=str(tmp_path))
+333:    assert usd is None and not (tmp_path / "n.spent").exists() and not (tmp_path / "n.launchlock").exists()
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "PYTHONDONTWRITEBYTECODE=1 /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/bin/python -s -c 'import io,sys; from unittest.mock import patch; import pytest; sys.path.insert(0,\".\"); exec(\"with patch(\\\"builtins.open\\\", return_value=io.StringIO(\\\"apikey = '\\''fake'\\''\\\")):\\n import runpod\"); sys.exit(pytest.main([\"-q\",\"-s\",\"-p\",\"no:cacheprovider\",\"test_runpod.py\",\"test_runpod_v2.py\"]))'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/docs/revision/followup3/runpod-v2
+ succeeded in 262ms:
+ boom exit 255
+ boom exit 255
+ boom exit 255
+up  exit 0
+.................. no direct ssh endpoint exit 255
+.None
+............
+31 passed in 0.03s
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "PYTHONDONTWRITEBYTECODE=1 python3 -c 'import io,json,sys,runpy,contextlib; from unittest.mock import patch; from pathlib import Path
+base=Path(\"docs/revision/followup3/runpod-v2\"); sys.path.insert(0,str(base.resolve()))
+with patch(\"builtins.open\",return_value=io.StringIO(\"apikey = '\\''fake'\\''\")):
+ import runpod as rp
+import podctl
+for label,pod,pg in [(\"missing-name\",{\"id\":\"live\",\"status\":\"RUNNING\"},{\"hasNextPage\":False,\"nextCursor\":None}),(\"contradictory-pagination\",None,{\"hasNextPage\":False,\"nextCursor\":\"more\"}),(\"missing-next-cursor\",None,{\"hasNextPage\":False})]:
+ rp._http=lambda *a,pod=pod,pg=pg:(200,{\"pods\":[] if pod is None else [pod],\"pagination\":pg})
+ pods=rp.list_pods(); print(label,json.dumps(pods),\"named=\",podctl.named(pods,\"ts-rep\"))
+for answer in [(202,{\"id\":\"queue-id\",\"error\":400}),(200,{\"error\":400}),(201,{\"error\":400}),(201,{\"id\":{\"request\":\"not-a-pod\"}})]:
+ rp._http=lambda *args,answer=answer:answer; buf=io.StringIO()
+ with patch.object(sys,\"argv\",[\"create_one.py\",\"ts-rep\",\"0\"]),contextlib.redirect_stdout(buf):
+  try: runpy.run_path(str(base/\"create_one.py\"),run_name=\"__main__\")
+  except SystemExit as exc: rc=exc.code
+ print(\"creation\",answer,\"=>\",rc,buf.getvalue().strip())
+for ssh in [None,{}, {\"direct\":None}]:
+ rp._http=lambda *args,ssh=ssh:(200,{\"id\":\"p1\",\"ssh\":ssh})
+ print(\"missing-direct\",repr(ssh),\"ssh=\",rp.ssh(\"p1\",\"echo up\").returncode,\"rsync=\",rp.rsync(\"p1\",\"a\",\"b\").returncode)'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 17ms:
+missing-name [{"id": "live", "name": null, "desiredStatus": "RUNNING", "publicIp": null, "portMappings": {}, "costPerHr": null, "vcpuCount": null}] named= []
+contradictory-pagination [] named= []
+missing-next-cursor [] named= []
+creation (202, {'id': 'queue-id', 'error': 400}) => 0 {"id": "queue-id", "vcpu": 16, "flavor": "cpu5c", "cloud": "SECURE"}
+creation (200, {'error': 400}) => 1 {"id": "", "ambiguous": false}
+creation (201, {'error': 400}) => 1 {"id": "", "ambiguous": false}
+creation (201, {'id': {'request': 'not-a-pod'}}) => 0 {"id": "{'request': 'not-a-pod'}", "vcpu": 16, "flavor": "cpu5c", "cloud": "SECURE"}
+missing-direct None ssh= 255 rsync= 255
+missing-direct {} ssh= 255 rsync= 255
+missing-direct {'direct': None} ssh= 255 rsync= 255
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -s -c 'import sys,inspect; sys.path.insert(0,\"docs/revision/followup3/runpod-v2\"); import pytest,test_podctl as t; names=[name for name,fn in vars(t).items() if name.startswith(\"test_\") and \"tmp_path\" not in inspect.signature(fn).parameters]; sys.exit(pytest.main([\"-q\",\"-s\",\"-p\",\"no:cacheprovider\"]+[\"docs/revision/followup3/runpod-v2/test_podctl.py::\"+name for name in names]))'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 275ms:
+.................................
+33 passed in 0.02s
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+web search: 
+web search: 'NextCursor'
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+VERDICT: reject
+
+CORRECTIONS:
+
+1. `docs/revision/followup3/runpod-v2/runpod.py:47`: Listing validates only the id. A live pod with a missing, null, or non-string name passes through; `podctl.named()` misses it, so reconciliation and the watchdog can report no matching pod. Require a string name for every retained pod. Reject the complete listing before printing if validation fails. Add regression tests.
+
+2. `docs/revision/followup3/runpod-v2/create_one.py:22`: A numeric body `error` bypasses the HTTP-status guard. Reproduced: HTTP 202 with `{"id":"queue-id","error":400}` returns the queue id as a pod id; HTTP 200 or 201 with `{"error":400}` returns `ambiguous:false`. Classify HTTP errors from the actual status. Accept a pod only for HTTP 201 with a nonempty string id; treat every other successful or unreadable answer as ambiguous. Add tests for these cases and non-string ids, which currently become strings through `classify_creation()`.
+
+3. `docs/revision/followup3/runpod-v2/runpod.py:52`: `hasNextPage:false` returns success without checking `nextCursor`. Reproduced: an empty page with `nextCursor:"more"` prints `[]`, despite conflicting pagination metadata. Require both pagination fields and require `nextCursor:null` on the final page; reject conflicting metadata without stdout. The [Runpod SDK](https://pkg.go.dev/github.com/runpod/go-sdk/v2@v2.2.0/lib/types#Pagination) specifies null on the final page. Add regression tests.
+
+CONFIDENCE: 0.98
+hook: Stop
+hook: Stop Completed
+tokens used
+86'753
+VERDICT: reject
+
+CORRECTIONS:
+
+1. `docs/revision/followup3/runpod-v2/runpod.py:47`: Listing validates only the id. A live pod with a missing, null, or non-string name passes through; `podctl.named()` misses it, so reconciliation and the watchdog can report no matching pod. Require a string name for every retained pod. Reject the complete listing before printing if validation fails. Add regression tests.
+
+2. `docs/revision/followup3/runpod-v2/create_one.py:22`: A numeric body `error` bypasses the HTTP-status guard. Reproduced: HTTP 202 with `{"id":"queue-id","error":400}` returns the queue id as a pod id; HTTP 200 or 201 with `{"error":400}` returns `ambiguous:false`. Classify HTTP errors from the actual status. Accept a pod only for HTTP 201 with a nonempty string id; treat every other successful or unreadable answer as ambiguous. Add tests for these cases and non-string ids, which currently become strings through `classify_creation()`.
+
+3. `docs/revision/followup3/runpod-v2/runpod.py:52`: `hasNextPage:false` returns success without checking `nextCursor`. Reproduced: an empty page with `nextCursor:"more"` prints `[]`, despite conflicting pagination metadata. Require both pagination fields and require `nextCursor:null` on the final page; reject conflicting metadata without stdout. The [Runpod SDK](https://pkg.go.dev/github.com/runpod/go-sdk/v2@v2.2.0/lib/types#Pagination) specifies null on the final page. Add regression tests.
+
+CONFIDENCE: 0.98

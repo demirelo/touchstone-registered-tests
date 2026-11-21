@@ -44,15 +44,15 @@ def list_pods():
         if status != 200 or not isinstance(d, dict) or not isinstance(d.get("pods"), list) or not isinstance(d.get("pagination"), dict):
             raise ValueError(f"unreadable pod listing (HTTP {status})")
         for p in d["pods"]:
-            if not isinstance(p, dict) or not isinstance(p.get("id"), str) or not p["id"]:
-                raise ValueError("a pod without an id")
+            if not isinstance(p, dict) or not isinstance(p.get("id"), str) or not p["id"] or not isinstance(p.get("name"), str):
+                raise ValueError("a pod without a string id and name")   # it would vanish from podctl.named()
             if p.get("status") != "TERMINATED":
                 out.append(_v1(p))
         pg = d["pagination"]
-        if pg.get("hasNextPage") is False:
+        if "nextCursor" in pg and pg.get("hasNextPage") is False and pg["nextCursor"] is None:
             return out
         if pg.get("hasNextPage") is not True or not isinstance(pg.get("nextCursor"), str) or not pg["nextCursor"]:
-            raise ValueError("unreadable pagination")
+            raise ValueError("unreadable or inconsistent pagination")
         cursor = pg["nextCursor"]
     raise ValueError("too many pages")
 

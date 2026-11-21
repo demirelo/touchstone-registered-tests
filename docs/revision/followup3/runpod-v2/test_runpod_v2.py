@@ -143,3 +143,42 @@ def test_create_classifies_other_answers(monkeypatch, answer, amb):
 def test_create_exception_is_ambiguous(monkeypatch):
     code, out, _ = run_create(monkeypatch, OSError("timeout"))
     assert code == 1 and out == {"id": "", "ambiguous": True}
+
+
+# Review r1 (Sol 1-3, Astra 1-3).
+END = {"hasNextPage": False, "nextCursor": None}
+
+
+@pytest.mark.parametrize("pod", [{k: v for k, v in POD.items() if k != "name"}, dict(POD, name=None), dict(POD, name=7),
+                                 dict(POD, id=7), dict(POD, id=""), dict(POD, name=None, status="TERMINATED")])
+def test_list_rejects_a_pod_without_a_string_id_and_name(monkeypatch, capsys, pod):
+    """A live pod whose name is missing would vanish from podctl.named(): reconcile and the watchdog would see no pod."""
+    monkeypatch.setattr(RP, "_http", fake_http([(200, {"pods": [POD, pod], "pagination": END})]))
+    assert RP.main(["list"]) != 0
+    assert capsys.readouterr().out == ""
+
+
+@pytest.mark.parametrize("pg", [{"hasNextPage": False, "nextCursor": "more"}, {"hasNextPage": False}, {"nextCursor": None},
+                                {"hasNextPage": None, "nextCursor": None}, {"hasNextPage": True, "nextCursor": ""},
+                                {"hasNextPage": True, "nextCursor": 5}, {"hasNextPage": "false", "nextCursor": None}])
+def test_list_rejects_inconsistent_pagination(monkeypatch, capsys, pg):
+    monkeypatch.setattr(RP, "_http", fake_http([(200, {"pods": [], "pagination": pg})]))
+    assert RP.main(["list"]) != 0
+    assert capsys.readouterr().out == ""
+
+
+def test_list_rejects_a_bad_later_page(monkeypatch, capsys):
+    monkeypatch.setattr(RP, "_http", fake_http([(200, {"pods": [POD], "pagination": {"hasNextPage": True, "nextCursor": "c"}}),
+                                                (200, {"pods": [], "pagination": {"hasNextPage": False, "nextCursor": "x"}})]))
+    assert RP.main(["list"]) != 0
+    assert capsys.readouterr().out == ""
+
+
+@pytest.mark.parametrize("answer,amb", [
+    ((202, {"id": "queue-id", "error": 400}), True), ((200, {"error": 400}), True), ((201, {"error": 400}), True),
+    ((201, {"id": 7}), True), ((201, {"id": ""}), True), ((201, dict(POD, id=None)), True),
+    ((403, {"error": 403, "body": ""}), False), ((408, {"error": 408, "body": ""}), True), ((503, None), True),
+    ((404, None), False), ((301, None), True)])
+def test_create_classifies_by_http_status(monkeypatch, answer, amb):
+    code, out, _ = run_create(monkeypatch, answer)
+    assert code == 1 and out == {"id": "", "ambiguous": amb}
