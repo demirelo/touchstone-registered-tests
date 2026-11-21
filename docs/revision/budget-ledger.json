@@ -4,7 +4,13 @@
   "evaluation": 43.0,
   "followup": 72.0
  },
- "reservations": [],
+ "reservations": [
+  {
+   "op": "followup",
+   "tag": "replication-p1",
+   "cap": 42.9
+  }
+ ],
  "spent": [
   {
    "op": "development",
