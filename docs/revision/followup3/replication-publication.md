@@ -14,3 +14,15 @@
 | H = A + 144 | **976904**; draw after six confirmations (tip at least 976909) | plan section 5 |
 
 The publication height (976752) is below any possible A, so the commitment was public before H.
+
+## Draw (plan section 5)
+
+| Item | Value | Source |
+|---|---|---|
+| Draw record | `experiments/v2/replication-draw.json`, sha256 `f16d523942381a9e8165ca7cbca33de9f7905be85f5bbd1d61de51467a532b3b`, status final, written 2026-11-21T13:46:27Z | `.venv/bin/python scripts/block_draw.py --ots experiments/v2/replication-manifest.json.ots --protocol experiments/v2/replication-manifest.json --out experiments/v2/replication-draw.json --poll 300` |
+| Block H | 976904, hash `0000000000000000000187abd78f409c52630927b65e12ac57b2906293513cbf`; both explorers agree; tips 976912 at the draw (H + 8) | draw record `answers_at_h`, `tips` |
+| Anchor | verified, A = 976760, merkle root `43bf5084...5a672f`; header chain A to the tip kept in the record | draw record `anchor`, `headers` |
+| Protocol | `protocol_sha256` 6f59f245...db68c5, equal to the manifest sha256 | draw record |
+| Instances check | `draw_v2.instances(draw, manifest, proof, 976752, calibrate=False)`: confirmatory true, salt sha256 `324e48754c60450def1ac9abb7aed84c83c9e92281c11465c213d7b21c18f390`; no calibration on the Mac | local call, 2026-11-21 |
+
+One draw: the script ran once and wrote the record once. No restamp and no redraw.
