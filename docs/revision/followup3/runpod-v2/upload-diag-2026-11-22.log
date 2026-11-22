@@ -1,0 +1,89 @@
+2026-11-22T16:15:36Z PREFLIGHT
+list0: []
+{"balance": 16.042315328, "spendPerHr": 0}
+2026-11-22T16:15:37Z CREATE
+create: {"id": "b8a6l3p9it3dqe", "vcpu": 16, "flavor": "cpu5c", "cloud": "SECURE"}
+2026-11-22T16:15:59Z READY after 20s
+{
+ "id": "b8a6l3p9it3dqe",
+ "name": "ts-diag",
+ "desiredStatus": "RUNNING",
+ "publicIp": "157.157.221.30",
+ "portMappings": {
+  "22": 48100
+ },
+ "costPerHr": 0.56,
+ "vcpuCount": 16
+}
+2026-11-22T16:15:59Z LIST
+[
+ {
+  "id": "b8a6l3p9it3dqe",
+  "name": "ts-diag",
+  "desiredStatus": "RUNNING",
+  "publicIp": null,
+  "portMappings": {},
+  "costPerHr": 0.56,
+  "vcpuCount": 16
+ }
+]
+2026-11-22T16:15:59Z SSH
+smoke-ok
+16
+x86_64
+  exit 0
+2026-11-22T16:16:01Z DF
+df: /workspace: No such file or directory
+Filesystem      Size  Used Avail Use% Mounted on
+overlay          20G   16M   20G   1% /
+overlay          20G   16M   20G   1% /
+total 12
+drwx------ 1 root root   47 Nov 22 16:15 .
+drwxr-xr-x 1 root root   62 Nov 22 16:15 ..
+-rw-r--r-- 1 root root 3330 Nov 22 16:15 .bashrc
+drwxr-xr-x 1 root root   34 Nov 22 16:16 .cache
+drwxr-xr-x 3 root root   28 Feb 27  2024 .cargo
+drwxr-xr-x 3 root root   16 Feb 27  2024 .config
+-rw-r--r-- 1 root root  182 Feb 27  2024 .profile
+drwx------ 2 root root   29 Nov 22 16:15 .ssh
+-rw-r--r-- 1 root root   21 Feb 27  2024 .zshrc
+  exit 0
+2026-11-22T16:16:03Z PUSH code
+  exit 0
+
+real	0m44.636s
+user	0m4.435s
+sys	0m0.872s
+2026-11-22T16:16:48Z PUSH bundle2
+  exit 0
+
+real	4m23.373s
+user	0m15.553s
+sys	0m3.376s
+2026-11-22T16:21:11Z DF after
+Filesystem      Size  Used Avail Use% Mounted on
+overlay          20G  504M   20G   3% /
+overlay          20G  504M   20G   3% /
+total 499504
+drwx------ 1 root root         75 Nov 22 16:21 .
+drwxr-xr-x 1 root root         62 Nov 22 16:15 ..
+-rw-r--r-- 1 root root       3330 Nov 22 16:15 .bashrc
+drwxr-xr-x 1 root root         34 Nov 22 16:16 .cache
+drwxr-xr-x 3 root root         28 Feb 27  2024 .cargo
+drwxr-xr-x 3 root root         16 Feb 27  2024 .config
+-rw-r--r-- 1 root root        182 Feb 27  2024 .profile
+drwx------ 2 root root         29 Nov 22 16:15 .ssh
+-rw-r--r-- 1 root root         21 Feb 27  2024 .zshrc
+-rw-r--r-- 1  502 staff 389302006 Nov 22 16:12 rb.tgz
+-rw-r--r-- 1  502 staff 122172752 Nov 21 13:53 rc.tgz
+  exit 0
+2026-11-22T16:21:13Z TESTS DONE
+2026-11-22T16:21:13Z DELETE b8a6l3p9it3dqe
+None
+2026-11-22T16:21:24Z GONE from list
+2026-11-22T16:21:24Z get after delete:
+{
+ "error": 404,
+ "body": "{\"detail\":\"pod not found\",\"status\":404,\"title\":\"Not Found\"}\n"
+}
+2026-11-22T16:21:24Z END

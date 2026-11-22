@@ -9,6 +9,11 @@
    "op": "followup",
    "tag": "replication-p2",
    "cap": 31.775
+  },
+  {
+   "op": "followup",
+   "tag": "smoke-v2-upload",
+   "cap": 0.5
   }
  ],
  "spent": [
