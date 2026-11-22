@@ -4,18 +4,7 @@
   "evaluation": 43.0,
   "followup": 72.0
  },
- "reservations": [
-  {
-   "op": "followup",
-   "tag": "replication-p1",
-   "cap": 42.9
-  },
-  {
-   "op": "followup",
-   "tag": "smoke-v2",
-   "cap": 0.5
-  }
- ],
+ "reservations": [],
  "spent": [
   {
    "op": "development",
@@ -156,6 +145,16 @@
    "op": "followup",
    "tag": "convergence2-1",
    "usd": 3.4
+  },
+  {
+   "op": "followup",
+   "tag": "replication-p1",
+   "usd": 11.13
+  },
+  {
+   "op": "followup",
+   "tag": "smoke-v2",
+   "usd": 0.01
   }
  ],
  "approval": {
