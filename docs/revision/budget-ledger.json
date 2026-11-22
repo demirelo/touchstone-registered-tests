@@ -7,13 +7,8 @@
  "reservations": [
   {
    "op": "followup",
-   "tag": "replication-p2",
-   "cap": 31.775
-  },
-  {
-   "op": "followup",
-   "tag": "smoke-v2-upload",
-   "cap": 0.5
+   "tag": "replication-p3",
+   "cap": 31.7625
   }
  ],
  "spent": [
@@ -166,6 +161,16 @@
    "op": "followup",
    "tag": "smoke-v2",
    "usd": 0.01
+  },
+  {
+   "op": "followup",
+   "tag": "replication-p2",
+   "usd": 0.02
+  },
+  {
+   "op": "followup",
+   "tag": "smoke-v2-upload",
+   "usd": 0.05
   }
  ],
  "approval": {
