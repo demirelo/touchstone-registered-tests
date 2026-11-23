@@ -1,0 +1,301 @@
+{
+ "audit": {
+  "frozen": {
+   "0": {
+    "rep0": [
+     112797,
+     164572
+    ],
+    "rep1": [
+     173876,
+     199406
+    ],
+    "rep2": [
+     34810,
+     122683
+    ],
+    "rep3": [
+     158242,
+     273823
+    ],
+    "rep4": [
+     68812,
+     275961
+    ],
+    "rep5": [
+     130916,
+     200000
+    ]
+   },
+   "0.03": {
+    "rep0": [
+     3139,
+     129082
+    ],
+    "rep1": [
+     2963,
+     106820
+    ],
+    "rep2": [
+     12533,
+     138747
+    ],
+    "rep3": [
+     18932,
+     259332
+    ],
+    "rep4": [
+     3734,
+     136885
+    ],
+    "rep5": [
+     24132,
+     197728
+    ]
+   },
+   "0.05": {
+    "rep0": [
+     2174,
+     180781
+    ],
+    "rep1": [
+     7201,
+     152276
+    ],
+    "rep2": [
+     1603,
+     125378
+    ],
+    "rep3": [
+     2692,
+     196133
+    ],
+    "rep4": [
+     8097,
+     201522
+    ],
+    "rep5": [
+     18896,
+     199776
+    ]
+   }
+  },
+  "primary": {
+   "0": {
+    "rep0": [
+     112797,
+     164572
+    ],
+    "rep1": [
+     173876,
+     199406
+    ],
+    "rep2": [
+     104869,
+     142062
+    ],
+    "rep3": [
+     237111,
+     276665
+    ],
+    "rep4": [
+     266361,
+     279928
+    ],
+    "rep5": [
+     130916,
+     200000
+    ]
+   },
+   "0.03": {
+    "rep0": [
+     3139,
+     129082
+    ],
+    "rep1": [
+     2963,
+     106820
+    ],
+    "rep5": [
+     24132,
+     197728
+    ]
+   },
+   "0.05": {
+    "rep0": [
+     2174,
+     180781
+    ],
+    "rep1": [
+     6176,
+     149468
+    ],
+    "rep2": [
+     1603,
+     125378
+    ],
+    "rep3": [
+     56288,
+     279773
+    ],
+    "rep4": [
+     8097,
+     201522
+    ],
+    "rep5": [
+     18896,
+     199776
+    ]
+   }
+  }
+ },
+ "continued": [
+  {
+   "kind": "cthr",
+   "market": "rep2",
+   "policy": "Cstar",
+   "rate": "0.03",
+   "stem": "cthr-p0.03__fresh2@rho0.2__Cstar__D2+H3__profit__churn0.03"
+  },
+  {
+   "kind": "cthr",
+   "market": "rep4",
+   "policy": "Cstar",
+   "rate": "0.03",
+   "stem": "cthr-p0.03__fresh4@rho0.2__Cstar__D2+H3__profit__churn0.03"
+  },
+  {
+   "kind": "cthr",
+   "market": "rep0",
+   "policy": "Cstar",
+   "rate": "0.05",
+   "stem": "cthr-p0.05__fresh0@rho0.2__Cstar__D2+H3__profit__churn0.05"
+  },
+  {
+   "kind": "cthr",
+   "market": "rep3",
+   "policy": "Cstar",
+   "rate": "0.05",
+   "stem": "cthr-p0.05__fresh3@rho0.2__Cstar__D2+H3__profit__churn0.05"
+  },
+  {
+   "kind": "cthr",
+   "market": "rep5",
+   "policy": "Cstar",
+   "rate": "0.05",
+   "stem": "cthr-p0.05__fresh5@rho0.2__Cstar__D2+H3__profit__churn0.05"
+  },
+  {
+   "kind": "menu",
+   "market": "rep2",
+   "policy": "Cstar",
+   "rate": "0.03",
+   "stem": "menu-p0.03__fresh2@rho0.2__Cstar__D2+H3__profit__churn0.03"
+  },
+  {
+   "kind": "menu",
+   "market": "rep2",
+   "policy": "F111",
+   "rate": "0.03",
+   "stem": "menu-p0.03__fresh2@rho0.2__F111__D2+H3__profit__churn0.03"
+  },
+  {
+   "kind": "menu",
+   "market": "rep3",
+   "policy": "F111",
+   "rate": "0.03",
+   "stem": "menu-p0.03__fresh3@rho0.2__F111__D2+H3__profit__churn0.03"
+  },
+  {
+   "kind": "menu",
+   "market": "rep4",
+   "policy": "F111",
+   "rate": "0.03",
+   "stem": "menu-p0.03__fresh4@rho0.2__F111__D2+H3__profit__churn0.03"
+  },
+  {
+   "kind": "menu",
+   "market": "rep1",
+   "policy": "F111",
+   "rate": "0.05",
+   "stem": "menu-p0.05__fresh1@rho0.2__F111__D2+H3__profit__churn0.05"
+  },
+  {
+   "kind": "menu",
+   "market": "rep3",
+   "policy": "Cstar",
+   "rate": "0.05",
+   "stem": "menu-p0.05__fresh3@rho0.2__Cstar__D2+H3__profit__churn0.05"
+  },
+  {
+   "kind": "menu",
+   "market": "rep3",
+   "policy": "F111",
+   "rate": "0.05",
+   "stem": "menu-p0.05__fresh3@rho0.2__F111__D2+H3__profit__churn0.05"
+  },
+  {
+   "kind": "menu",
+   "market": "rep4",
+   "policy": "Cstar",
+   "rate": "0.05",
+   "stem": "menu-p0.05__fresh4@rho0.2__Cstar__D2+H3__profit__churn0.05"
+  },
+  {
+   "kind": "menu",
+   "market": "rep4",
+   "policy": "F000",
+   "rate": "0.05",
+   "stem": "menu-p0.05__fresh4@rho0.2__F000__D2+H3__profit__churn0.05"
+  },
+  {
+   "kind": "menu",
+   "market": "rep0",
+   "policy": "Cstar",
+   "rate": "0",
+   "stem": "menu-p0__fresh0@rho0.2__Cstar__D2+H3__profit"
+  },
+  {
+   "kind": "menu",
+   "market": "rep2",
+   "policy": "Cstar",
+   "rate": "0",
+   "stem": "menu-p0__fresh2@rho0.2__Cstar__D2+H3__profit"
+  },
+  {
+   "kind": "menu",
+   "market": "rep2",
+   "policy": "F111",
+   "rate": "0",
+   "stem": "menu-p0__fresh2@rho0.2__F111__D2+H3__profit"
+  },
+  {
+   "kind": "menu",
+   "market": "rep3",
+   "policy": "F111",
+   "rate": "0",
+   "stem": "menu-p0__fresh3@rho0.2__F111__D2+H3__profit"
+  },
+  {
+   "kind": "menu",
+   "market": "rep4",
+   "policy": "Cstar",
+   "rate": "0",
+   "stem": "menu-p0__fresh4@rho0.2__Cstar__D2+H3__profit"
+  },
+  {
+   "kind": "menu",
+   "market": "rep4",
+   "policy": "F111",
+   "rate": "0",
+   "stem": "menu-p0__fresh4@rho0.2__F111__D2+H3__profit"
+  }
+ ],
+ "counts": {
+  "continued": 20,
+  "frozen": 52,
+  "not continued": 0,
+  "stopped": 0,
+  "unresolved": 0
+ }
+}
