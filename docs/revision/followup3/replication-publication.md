@@ -26,3 +26,15 @@ The publication height (976752) is below any possible A, so the commitment was p
 | Instances check | `draw_v2.instances(draw, manifest, proof, 976752, calibrate=False)`: confirmatory true, salt sha256 `324e48754c60450def1ac9abb7aed84c83c9e92281c11465c213d7b21c18f390`; no calibration on the Mac | local call, 2026-11-21 |
 
 One draw: the script ran once and wrote the record once. No restamp and no redraw.
+
+## Run and analysis
+
+| Item | Value | Source |
+|---|---|---|
+| Pod 1 | RUN OK, 11.13 USD recorded | ledger `replication-p1` |
+| Pod 2 launch p2 | UPLOAD FAILED (bundle) after 96 s, pod deleted (verified); transient: a diagnostic pod then pushed both tarballs (`runpod-v2/upload-diag-2026-11-22.log`) | `rep_p2_launch.log` |
+| Pod 2 launch p3 | pod eo8edyb2i8q028, remote 2026-11-22T17:25Z to 2026-11-23T20:30Z (UTC, pod clock); gate0 bit-identical; continue queued 20, ran 21, 0 lost, 0 failed, 0 mismatch; RUN OK; pod deleted (verified, list empty, get 404) | `rep_p3_launch.log`, `logs_rep2_p3/rep.log` |
+| Output | `followup3-rep`: 1419 records, 0 bad, 0 not inventoried | launcher `verify` line |
+| Analysis | `rep_v2.py --stage analyse` on a clone of the pulled output, Mac, 2026-11-23T20:36Z; counts continued 20, frozen 52, stopped 0, unresolved 0; round-1 mismatch false; gate ok; 0 problems; 0 unscorable | `replication-analysis.json`, sha256 `28da11c0cf9a6485ff1238a53b339d1079e7bc9de3b917d38370551ce718c37f` |
+| Expectations, primary winners | 1 met, 2 met, 3 met, 4 met, 5 met | `replication-analysis.json` `primary.expectations` |
+| Expectations, all-frozen (sensitivity) | 1 met, 2 met, 3 not met (d at p = 0.03: 4 of 6 markets lower), 4 met, 5 met | `replication-analysis.json` `frozen.expectations` |
