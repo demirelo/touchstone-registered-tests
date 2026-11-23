@@ -28,6 +28,41 @@
   }
  },
  "frozen": {
+  "absneg": {
+   "0": {
+    "d": {
+     "negative": 1
+    },
+    "q": {
+     "negative": 0
+    },
+    "u": {
+     "negative": 0
+    }
+   },
+   "0.03": {
+    "d": {
+     "negative": 3
+    },
+    "q": {
+     "negative": 0
+    },
+    "u": {
+     "negative": 2
+    }
+   },
+   "0.05": {
+    "d": {
+     "negative": 6
+    },
+    "q": {
+     "negative": 5
+    },
+    "u": {
+     "negative": 6
+    }
+   }
+  },
   "audit": {
    "0": {
     "focal_audit_max": 0.8719697501579692,
@@ -103,9 +138,48 @@
      "eff_min": 0.9292571486462902
     }
    }
+  },
+  "exp": {
+   "failed": 1,
+   "fulfilled": 4
   }
  },
  "primary": {
+  "absneg": {
+   "0": {
+    "d": {
+     "negative": 0
+    },
+    "q": {
+     "negative": 0
+    },
+    "u": {
+     "negative": 1
+    }
+   },
+   "0.03": {
+    "d": {
+     "negative": 4
+    },
+    "q": {
+     "negative": 1
+    },
+    "u": {
+     "negative": 4
+    }
+   },
+   "0.05": {
+    "d": {
+     "negative": 6
+    },
+    "q": {
+     "negative": 6
+    },
+    "u": {
+     "negative": 6
+    }
+   }
+  },
   "audit": {
    "0": {
     "focal_audit_max": 0.9515339658769398,
@@ -181,6 +255,10 @@
      "eff_min": 0.9292571486462902
     }
    }
+  },
+  "exp": {
+   "failed": 0,
+   "fulfilled": 5
   }
  }
 }

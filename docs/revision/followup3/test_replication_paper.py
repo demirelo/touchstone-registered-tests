@@ -97,3 +97,18 @@ def test_committed_files_are_current():
     ex = json.loads((HERE / "replication-extract.json").read_text())
     tex = HERE.parent / "paper-v2" / "tables" / "replication.tex"
     assert RP.check(an, ex, HERE / "replication_paper.json", tex) == []
+
+
+def test_absolute_contrast_negative_market_count():
+    an = _analysis()
+    an["primary"]["absolute"]["0.05"]["q"]["markets"] = {f"rep{i}": {"estimate": -0.01 if i < 4 else 0.02, "ci95": [0, 0]} for i in range(6)}
+    s = RP.summary(an, _extract())
+    assert s["primary"]["absneg"]["0.05"]["q"]["negative"] == 4
+    assert s["primary"]["absneg"]["0.05"]["d"]["negative"] == 0      # no market estimates given: none counted
+
+
+def test_expectation_tally():
+    an = _analysis(); an["frozen"]["expectations"]["3"]["verdict"] = "not met"
+    s = RP.summary(an, _extract())
+    assert s["primary"]["exp"] == {"fulfilled": 5, "failed": 0}
+    assert s["frozen"]["exp"] == {"fulfilled": 4, "failed": 1}

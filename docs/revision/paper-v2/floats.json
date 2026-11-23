@@ -28,5 +28,6 @@
  "tab:ph-churn-audit",
  "tab:ph-churn-t",
  "tab:ph-runnerup",
- "tab:ph-churn-delta"
+ "tab:ph-churn-delta",
+ "tab:replication"
 ]

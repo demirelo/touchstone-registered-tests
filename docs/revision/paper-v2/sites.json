@@ -1553,5 +1553,210 @@
   "path": "churnpaper.r3_p05.replacing_newest_max",
   "kind": "alloc",
   "section": "churn"
+ },
+ "abs_rp_fmet": {
+  "path": "reppaper.frozen.exp.fulfilled",
+  "kind": "count",
+  "section": "abstract"
+ },
+ "abs_rp_met": {
+  "path": "reppaper.primary.exp.fulfilled",
+  "kind": "count",
+  "section": "abstract"
+ },
+ "c_rp_dn": {
+  "path": "reppaper.primary.absneg.0.05.d.negative",
+  "kind": "count",
+  "section": "conclusion"
+ },
+ "c_rp_qn": {
+  "path": "reppaper.primary.absneg.0.05.q.negative",
+  "kind": "count",
+  "section": "conclusion"
+ },
+ "rp_ad0": {
+  "path": "replication.primary.absolute.0.d.mean",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rp_ad5": {
+  "path": "replication.primary.absolute.0.05.d.mean",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rp_ad5_n": {
+  "path": "reppaper.primary.absneg.0.05.d.negative",
+  "kind": "count",
+  "section": "churn"
+ },
+ "rp_aq5": {
+  "path": "replication.primary.absolute.0.05.q.mean",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rp_aq5_n": {
+  "path": "reppaper.primary.absneg.0.05.q.negative",
+  "kind": "count",
+  "section": "churn"
+ },
+ "rp_au5": {
+  "path": "replication.primary.absolute.0.05.u.mean",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rp_au5_n": {
+  "path": "reppaper.primary.absneg.0.05.u.negative",
+  "kind": "count",
+  "section": "churn"
+ },
+ "rp_cont": {
+  "path": "reppaper.continued.all.cells",
+  "kind": "count",
+  "section": "churn"
+ },
+ "rp_cont0": {
+  "path": "reppaper.continued.0.cells",
+  "kind": "count",
+  "section": "churn"
+ },
+ "rp_cont3": {
+  "path": "reppaper.continued.0.03.cells",
+  "kind": "count",
+  "section": "churn"
+ },
+ "rp_cont5": {
+  "path": "reppaper.continued.0.05.cells",
+  "kind": "count",
+  "section": "churn"
+ },
+ "rp_cont_r3": {
+  "path": "reppaper.continued.rules.R3.cells",
+  "kind": "count",
+  "section": "churn"
+ },
+ "rp_d3": {
+  "path": "replication.primary.paired_changes.0.03.d.mean",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rp_d5": {
+  "path": "replication.primary.paired_changes.0.05.d.mean",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rp_e1": {
+  "path": "replication.primary.expectations.1.verdict",
+  "kind": "label",
+  "section": "churn"
+ },
+ "rp_e2": {
+  "path": "replication.primary.expectations.2.verdict",
+  "kind": "label",
+  "section": "churn"
+ },
+ "rp_e3": {
+  "path": "replication.primary.expectations.3.verdict",
+  "kind": "label",
+  "section": "churn"
+ },
+ "rp_e4": {
+  "path": "replication.primary.expectations.4.verdict",
+  "kind": "label",
+  "section": "churn"
+ },
+ "rp_e5": {
+  "path": "replication.primary.expectations.5.verdict",
+  "kind": "label",
+  "section": "churn"
+ },
+ "rp_eff5": {
+  "path": "reppaper.primary.eff.0.05.R3.eff",
+  "kind": "eff",
+  "section": "churn"
+ },
+ "rp_eff5_min": {
+  "path": "reppaper.primary.eff.0.05.R3.eff_min",
+  "kind": "eff",
+  "section": "churn"
+ },
+ "rp_effc5": {
+  "path": "reppaper.primary.eff.0.05.C*.eff",
+  "kind": "eff",
+  "section": "churn"
+ },
+ "rp_fa0_hi": {
+  "path": "reppaper.primary.audit.0.focal_audit_max",
+  "kind": "alloc",
+  "section": "churn"
+ },
+ "rp_fa0_lo": {
+  "path": "reppaper.primary.audit.0.focal_audit_min",
+  "kind": "alloc",
+  "section": "churn"
+ },
+ "rp_fa5_hi": {
+  "path": "reppaper.primary.audit.0.05.focal_audit_max",
+  "kind": "alloc",
+  "section": "churn"
+ },
+ "rp_fa5_lo": {
+  "path": "reppaper.primary.audit.0.05.focal_audit_min",
+  "kind": "alloc",
+  "section": "churn"
+ },
+ "rp_fa_below": {
+  "path": "reppaper.primary.audit.below.markets",
+  "kind": "count",
+  "section": "churn"
+ },
+ "rp_q3": {
+  "path": "replication.primary.paired_changes.0.03.q.mean",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rp_q5": {
+  "path": "replication.primary.paired_changes.0.05.q.mean",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rp_q5_hi": {
+  "path": "replication.primary.paired_changes.0.05.q.t95.1",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rp_q5_lo": {
+  "path": "replication.primary.paired_changes.0.05.q.t95.0",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rp_u3": {
+  "path": "replication.primary.paired_changes.0.03.u.mean",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rp_u5": {
+  "path": "replication.primary.paired_changes.0.05.u.mean",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rpf_ad0": {
+  "path": "replication.frozen.absolute.0.d.mean",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rpf_aq5_n": {
+  "path": "reppaper.frozen.absneg.0.05.q.negative",
+  "kind": "count",
+  "section": "churn"
+ },
+ "rpf_d3_k": {
+  "path": "replication.frozen.paired_changes.0.03.d.lower",
+  "kind": "count",
+  "section": "churn"
+ },
+ "rpf_e3": {
+  "path": "replication.frozen.expectations.3.verdict",
+  "kind": "label",
+  "section": "churn"
  }
 }

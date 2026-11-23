@@ -65,7 +65,13 @@ def summary(analysis: dict, extract: dict) -> dict:
     for s, _ in SETS:
         if isinstance(analysis[s], str):
             raise ValueError(f"winner set {s} not available")
-        res[s] = {"audit": _audit(extract["audit"][s]), "eff": _eff(analysis[s]["terms"])}
+        res[s] = {"audit": _audit(extract["audit"][s]), "eff": _eff(analysis[s]["terms"]),
+                  "absneg": {p: {x: {"negative": sum(v["estimate"] < 0 for v in analysis[s]["absolute"][p][x]["markets"].values())}
+                                 for x, _ in X} for p in RATES}}
+        v = [e["verdict"] for e in analysis[s]["expectations"].values()]
+        if any(x not in ("met", "not met") for x in v):
+            raise ValueError(f"expectation not scorable in {s}")
+        res[s]["exp"] = {"fulfilled": v.count("met"), "failed": v.count("not met")}
     return res
 
 
