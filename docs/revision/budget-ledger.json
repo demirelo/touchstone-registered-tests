@@ -4,13 +4,7 @@
   "evaluation": 43.0,
   "followup": 72.0
  },
- "reservations": [
-  {
-   "op": "followup",
-   "tag": "replication-p3",
-   "cap": 31.7625
-  }
- ],
+ "reservations": [],
  "spent": [
   {
    "op": "development",
@@ -171,6 +165,11 @@
    "op": "followup",
    "tag": "smoke-v2-upload",
    "usd": 0.05
+  },
+  {
+   "op": "followup",
+   "tag": "replication-p3",
+   "usd": 15.3
   }
  ],
  "approval": {
