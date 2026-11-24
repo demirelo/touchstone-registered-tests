@@ -1012,7 +1012,7 @@
  "ch_d_5_neg": {
   "path": "churn.statistics.base.0.05.d.signs.negative",
   "kind": "count",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_q_5": {
   "path": "churn.statistics.base.0.05.q.pooled.estimate",
@@ -1022,27 +1022,27 @@
  "ch_q_5_neg": {
   "path": "churn.statistics.base.0.05.q.signs.negative",
   "kind": "count",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_pa_5": {
   "path": "churn.statistics.base.0.05.change.profit.F111.attack.pooled.estimate",
   "kind": "gain",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_pr_5": {
   "path": "churn.statistics.base.0.05.change.profit.F111.reference.pooled.estimate",
   "kind": "gain",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_pr_5_lo": {
   "path": "churn.statistics.base.0.05.change.profit.F111.reference.pooled.ci95.0",
   "kind": "gain",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_pr_5_hi": {
   "path": "churn.statistics.base.0.05.change.profit.F111.reference.pooled.ci95.1",
   "kind": "gain",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_d_1": {
   "path": "churn.statistics.base.0.01.d.pooled.estimate",
@@ -1052,7 +1052,7 @@
  "ch_d_1_d": {
   "path": "churn.statistics.doubled.0.01.d.pooled.estimate",
   "kind": "gain",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_q_1": {
   "path": "churn.statistics.base.0.01.q.pooled.estimate",
@@ -1062,47 +1062,47 @@
  "ch_sh_r3": {
   "path": "churn.diagnostics.0.05.F111|base.pooled_bins.honest_replacement.0.share",
   "kind": "age_share",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_sh_c": {
   "path": "churn.diagnostics.0.05.C*|base.pooled_bins.honest_replacement.0.share",
   "kind": "age_share",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_sh_b": {
   "path": "churn.diagnostics.0.05.F000|base.pooled_bins.honest_replacement.0.share",
   "kind": "age_share",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_e1": {
   "path": "churn.expectations.1.verdict",
   "kind": "label",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_e2": {
   "path": "churn.expectations.2.verdict",
   "kind": "label",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_e3": {
   "path": "churn.expectations.3.verdict",
   "kind": "label",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_e4": {
   "path": "churn.expectations.4.verdict",
   "kind": "label",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_inc": {
   "path": "churn.flag_summary.incomplete_n",
   "kind": "count",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_inc_n": {
   "path": "churn.flag_summary.cells",
   "kind": "count",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_reps2": {
   "path": "churnmid.diagnostics.0.02.F111|base.honest_replacements_per_episode",
@@ -1142,162 +1142,162 @@
  "ch_d_5_dneg": {
   "path": "churn.statistics.doubled.0.05.d.signs.negative",
   "kind": "count",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_q_5_dneg": {
   "path": "churn.statistics.doubled.0.05.q.signs.negative",
   "kind": "count",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_d_5_d": {
   "path": "churn.statistics.doubled.0.05.d.pooled.estimate",
   "kind": "gain",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_q_5_d": {
   "path": "churn.statistics.doubled.0.05.q.pooled.estimate",
   "kind": "gain",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_d_3_neg": {
   "path": "churnmid.statistics.base.0.03.d.signs.negative",
   "kind": "count",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_d_2_neg": {
   "path": "churnmid.statistics.base.0.02.d.signs.negative",
   "kind": "count",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_d_1_x": {
   "path": "churn.statistics.base.0.01.d.pooled.estimate",
   "kind": "gain",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_q_1_x": {
   "path": "churn.statistics.base.0.01.q.pooled.estimate",
   "kind": "gain",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_q_1_d": {
   "path": "churn.statistics.doubled.0.01.q.pooled.estimate",
   "kind": "gain",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_inc_mid": {
   "path": "churnmid.flag_summary.incomplete_n",
   "kind": "count",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_inc_mid_n": {
   "path": "churnmid.flag_summary.cells",
   "kind": "count",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_flag_max": {
   "path": "churnpaper.flags.max_attack_change",
   "kind": "gain",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_resel": {
   "path": "churnpaper.flags.reselected",
   "kind": "count",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_resel_n": {
   "path": "churnpaper.flags.cells",
   "kind": "count",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_resel_max": {
   "path": "churnpaper.flags.max_reference_change",
   "kind": "gain",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_fa_1": {
   "path": "churnpaper.rates.0.01.R3.focal_audit_rate",
   "kind": "alloc",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_fa_2": {
   "path": "churnpaper.rates.0.02.R3.focal_audit_rate",
   "kind": "alloc",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_fa_3": {
   "path": "churnpaper.rates.0.03.R3.focal_audit_rate",
   "kind": "alloc",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_fa_5": {
   "path": "churnpaper.rates.0.05.R3.focal_audit_rate",
   "kind": "alloc",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_fa_c5": {
   "path": "churnpaper.rates.0.05.C*.focal_audit_rate",
   "kind": "alloc",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_fa_b5": {
   "path": "churnpaper.rates.0.05.B3.focal_audit_rate",
   "kind": "alloc",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_yj_5": {
   "path": "churnpaper.rates.0.05.R3.young_honest_job_share",
   "kind": "alloc",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_ya_5": {
   "path": "churnpaper.rates.0.05.R3.young_honest_audit_share",
   "kind": "alloc",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_est_5": {
   "path": "churnpaper.rates.0.05.R3.established_honest_audit_rate",
   "kind": "alloc",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_eff_1": {
   "path": "churnpaper.rates.0.01.R3.eff",
   "kind": "eff",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_eff_5": {
   "path": "churnpaper.rates.0.05.R3.eff",
   "kind": "eff",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_eff_c5": {
   "path": "churnpaper.rates.0.05.C*.eff",
   "kind": "eff",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_eff_b5": {
   "path": "churnpaper.rates.0.05.B3.eff",
   "kind": "eff",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_e5": {
   "path": "churnmid.expectations.5.verdict",
   "kind": "label",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_e6": {
   "path": "churnmid.expectations.6.verdict",
   "kind": "label",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_e7": {
   "path": "churnmid.expectations.7.verdict",
   "kind": "label",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_e8": {
   "path": "churnmid.expectations.8.verdict",
   "kind": "label",
-  "section": "churn"
+  "section": "app-churn"
  },
  "abs_ch_fa1": {
   "path": "churnpaper.rates.0.01.R3.focal_audit_rate",
@@ -1387,12 +1387,12 @@
  "ch_q_3_neg": {
   "path": "churnmid.statistics.base.0.03.q.signs.negative",
   "kind": "count",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_q_3_dneg": {
   "path": "churnmid.statistics.doubled.0.03.q.signs.negative",
   "kind": "count",
-  "section": "churn"
+  "section": "app-churn"
  },
  "abs_ch_q5d": {
   "path": "churn.statistics.doubled.0.05.q.pooled.estimate",
@@ -1412,47 +1412,47 @@
  "ch_fa_c1": {
   "path": "churnpaper.rates.0.01.C*.focal_audit_rate",
   "kind": "alloc",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_fa_1d": {
   "path": "churnpaper.rates.0.01.R3.focal_audit_rate_doubled",
   "kind": "alloc",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_rep_n": {
   "path": "churnpaper.r3_p05.replacing_markets",
   "kind": "count",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_rep_lo": {
   "path": "churnpaper.r3_p05.replacing_audit_min",
   "kind": "alloc",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_rep_hi": {
   "path": "churnpaper.r3_p05.replacing_audit_max",
   "kind": "alloc",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_eff_5d": {
   "path": "churnpaper.rates.0.05.R3.eff_doubled",
   "kind": "eff",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_eff_b5d": {
   "path": "churnpaper.rates.0.05.B3.eff_doubled",
   "kind": "eff",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_eff_minm": {
   "path": "churnpaper.r3_p05.eff_min_market",
   "kind": "label",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_eff_min": {
   "path": "churnpaper.r3_p05.eff_min",
   "kind": "eff",
-  "section": "churn"
+  "section": "app-churn"
  },
  "c_ch_q5d": {
   "path": "churn.statistics.doubled.0.05.q.pooled.estimate",
@@ -1477,17 +1477,17 @@
  "ch_d_3_dneg": {
   "path": "churnmid.statistics.doubled.0.03.d.signs.negative",
   "kind": "count",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_rep_lo_d": {
   "path": "churnpaper.r3_p05.replacing_audit_min_doubled",
   "kind": "alloc",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_rep_hi_d": {
   "path": "churnpaper.r3_p05.replacing_audit_max_doubled",
   "kind": "alloc",
-  "section": "churn"
+  "section": "app-churn"
  },
  "r_ru_flag": {
   "path": "churnpaper.runner_up_flags.D2+H3.incomplete",
@@ -1512,27 +1512,27 @@
  "ch_stay_n": {
   "path": "churnpaper.r3_p05.staying_markets",
   "kind": "count",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_stay_lo": {
   "path": "churnpaper.r3_p05.staying_audit_min",
   "kind": "alloc",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_stay_hi": {
   "path": "churnpaper.r3_p05.staying_audit_max",
   "kind": "alloc",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_stay_lo_d": {
   "path": "churnpaper.r3_p05.staying_audit_min_doubled",
   "kind": "alloc",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_stay_hi_d": {
   "path": "churnpaper.r3_p05.staying_audit_max_doubled",
   "kind": "alloc",
-  "section": "churn"
+  "section": "app-churn"
  },
  "r_rb_flagged": {
   "path": "conv.selection.flagged",
@@ -1547,12 +1547,12 @@
  "ch_new_lo": {
   "path": "churnpaper.r3_p05.replacing_newest_min",
   "kind": "alloc",
-  "section": "churn"
+  "section": "app-churn"
  },
  "ch_new_hi": {
   "path": "churnpaper.r3_p05.replacing_newest_max",
   "kind": "alloc",
-  "section": "churn"
+  "section": "app-churn"
  },
  "abs_rp_fmet": {
   "path": "reppaper.frozen.exp.fulfilled",
