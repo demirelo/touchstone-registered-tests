@@ -112,3 +112,12 @@ def test_refuses_an_out_dir_without_analysis(tmp_path):
     with pytest.raises(SystemExit):
         RE.main(["--out", str(tmp_path), "--manifest", "m", "--draw", "d", "--check", "x"])
     assert list(tmp_path.iterdir()) == []                 # nothing written before the refusal
+
+
+def test_records_digest_ignores_analysis_and_sees_any_record_change(tmp_path):
+    (tmp_path / "a").mkdir(); (tmp_path / "a" / "r.json").write_text("1"); (tmp_path / "analysis.json").write_text("x")
+    n, d = RE.records_digest(tmp_path)
+    (tmp_path / "analysis.json").write_text("y")
+    assert RE.records_digest(tmp_path) == (n, d) and n == 1
+    (tmp_path / "a" / "r.json").write_text("2")
+    assert RE.records_digest(tmp_path)[1] != d

@@ -1,0 +1,2777 @@
+2026-11-24T10:03:24.393097Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-11-24T10:03:24.400824Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+OpenAI Codex v0.171.0
+--------
+workdir: /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+model: gpt-6.1-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a20d02-87e5-7803-9d1d-1af8a63c157d
+--------
+user
+# Churn replication in the paper: review round 4 (read-only; no paid APIs; do not read `sealed/`, `~/touchstone-h4`, or `~/h4-session.out`; `sealed2/h4/` may be read; reasoning effort high; under 400 words)
+
+Round 3 (brief `docs/revision/roster/brief-rep-paper-r3.md`; reports `sol-rep-paper-r3.md`, `astra-rep-paper-r3.md`,
+`fable-rep-paper-r3.md`) left two items: the Table 30 caption, and extract-only values (allocation shares, x, audit
+counts) that an in-range hand edit could change without detection. Commit `e875923` claims to close both. Check the
+files, not the commit message.
+
+What changed (`git diff 184b608 e875923 -- docs/revision/`):
+- `replication_extract.py --check` rebuilds the extract from the run records (after recomputing the analysis byte for
+  byte) and compares it with the committed file. It was run on 2026-11-24 on the analysed clone of the pulled pod output:
+  "ok: the extract rebuilt from the run records is byte-identical" (row "Paper extract" in
+  `docs/revision/followup3/replication-publication.md`). The records are not in the worktree, so you cannot rerun it.
+- `test_replication_extract.py` pins the committed extract's sha256 (`EXTRACT_SHA256`); the gate runs this test, so any
+  later edit of the extract fails the gate until it is rebuilt from the records. Proved: an in-range edit of a share made
+  the pin test fail; restoring the file made it pass.
+- `_validate`: x must be an int in {0, 1}; shares must be present where the attacker's counts are nonzero. Refusal tests
+  added. The extract refuses an --out without analysis.json before it touches that folder.
+- Table 30 caption now describes the interval lines.
+
+Check:
+1. Are your round-3 items closed? Repeat your probes: does any edited extract now pass the gate's tests?
+2. Is pinning plus a recorded rebuild an adequate authentication for values that only the run records hold? If not,
+   say what would be, given that the records cannot ship inside the paper source.
+3. Any new error in the diff.
+
+Output exactly:
+VERDICT: accept | accept-with-caveat | reject
+CORRECTIONS: numbered, each with main.tex line, file, or site name, or "none".
+CONFIDENCE: 0 to 1.
+
+2026-11-24T10:03:29.496653Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+warning: `[features].multi_agent` is deprecated. It still controls the V1 fallback. `[agents].enabled = false` disables subagent tools even when the model selects a subagent version, unless `[features].multi_agent_v2` is enabled.
+warning: `[features].multi_agent` is deprecated. It still controls the V1 fallback. `[agents].enabled = false` disables subagent tools even when the model selects a subagent version, unless `[features].multi_agent_v2` is enabled.
+hook: SessionStart
+hook: SessionStart Completed
+2026-11-24T10:03:45.879656Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+codex
+I will check the diff, repeat the extract edit tests without changing files, and review the recorded rebuild evidence.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg -n -i 'touchstone|rep-paper|replication_extract' /Users/oemer.demirel/.codex/memories/MEMORY.md" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+1249:# Task Group: anthropic-residency-application-writing-and-touchstone-research
+1251:scope: Write precise, human Anthropic-residency application answers grounded in Touchstone, with primary-source policy checking and bounded research claims.
+1254:## Task 1: Why Anthropic statement and Touchstone proposal
+1258:- rollout_summaries/2026-11-03T12-32-03-zdzn-anthropic_residency_writing_touchstone_research_plan.md (cwd=/Users/oemer.demirel/Documents/Codex/2026-11-03/why-anthropic-anthropic-sets-the-frontier, rollout_path=/Users/oemer.demirel/.codex/sessions/2026/11/03/rollout-2026-11-03T13-32-03-01a1a165-260e-7180-9d34-c9dc6bf34b4d.jsonl, updated_at=2026-11-03T13:02:09+00:00, thread_id=01a1a165-260e-7180-9d34-c9dc6bf34b4d, success; application answers finalized)
+1262:- Anthropic residency, Why Anthropic, Touchstone, Responsible Scaling Policy v3.4, American English, remove-ai-slop, audit rules, LLM agents, `opt/takehome-955`
+1272:- Touchstone is evidence of empirical research discipline about checking work when only a sample can be checked; it is not itself a demonstrated general AI-safety or AI-control result. [Task 1]
+1279:- Generic motivation -> replace abstractions with the verified RSP point, Touchstone, the career transition, and the concrete audit research direction; do not cite third-party policy summaries. [Task 1]
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'git status --short; git diff --stat 184b608 e875923 -- docs/revision/' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+?? docs/paper/astra-pro-ext12-triage.md
+?? docs/revision/roster/astra-rep-paper-r4.log
+?? docs/revision/roster/astra-rep-paper-r4.md
+?? docs/revision/roster/sol-rep-paper-r4.log
+?? docs/revision/roster/sol-rep-paper-r4.md
+ docs/revision/followup3/replication-publication.md |    1 +
+ docs/revision/followup3/replication_extract.py     |   18 +-
+ docs/revision/followup3/replication_paper.py       |   10 +-
+ .../revision/followup3/test_replication_extract.py |   16 +
+ docs/revision/followup3/test_replication_paper.py  |    2 +
+ docs/revision/lessons.md                           |    1 +
+ docs/revision/paper-v2/main.tex                    |    2 +-
+ docs/revision/roster/astra-rep-paper-r3.log        | 5409 ++++++++++++++++++++
+ docs/revision/roster/astra-rep-paper-r3.md         |   19 +
+ docs/revision/roster/sol-rep-paper-r3.log          | 4835 +++++++++++++++++
+ docs/revision/roster/sol-rep-paper-r3.md           |   21 +
+ 11 files changed, 10327 insertions(+), 7 deletions(-)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+2026-11-24T10:03:51.730678Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+2026-11-24T10:03:54.488405Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://ai.engineer/mcp)")))
+2026-11-24T10:03:54.488405Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc pwd in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg --files -g AGENTS.md -g '*rep-paper-r3*' -g '*replication*' -g '*gate*' docs/revision .github" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ exited 2 in 0ms:
+rg: .github: No such file or directory (os error 2)
+docs/revision/followup3/replication_extract.py
+docs/revision/followup3/replication-publication.md
+docs/revision/followup3/test_replication_paper.py
+docs/revision/followup3/test_replication_extract.py
+docs/revision/followup3/test_replication_analysis.py
+docs/revision/followup3/replication_paper.json
+docs/revision/followup3/replication-plan.md
+docs/revision/followup3/replication_paper.py
+docs/revision/followup3/replication-analysis.json
+docs/revision/followup3/replication-extract.json
+docs/revision/followup3/replication_analysis.py
+docs/revision/paper-v2/tables/replication_absolute.tex
+docs/revision/paper-v2/tables/replication.tex
+docs/revision/paper-v2/tables/replication_alloc.tex
+docs/revision/paper-v2/tables/replication_terms.tex
+docs/revision/paper-v2/tables/replication_markets.tex
+docs/revision/roster/astra-replication-plan-r3.md
+docs/revision/roster/brief-replication-plan-r1.md
+docs/revision/roster/astra-replication-plan-r2.md
+docs/revision/roster/sol-rep-paper-r3.log
+docs/revision/roster/sol-replication-plan-r1.md
+docs/revision/roster/sol-rep-paper-r3.md
+docs/revision/roster/astra-rep-paper-r3.md
+docs/revision/roster/astra-replication-plan-r2.log
+docs/revision/roster/sol-replication-plan-r3.md
+docs/revision/roster/astra-replication-plan-r3.log
+docs/revision/roster/astra-replication-plan-r1.log
+docs/revision/roster/sol-replication-plan-r3.log
+docs/revision/roster/sol-replication-plan-r2.log
+docs/revision/roster/sol-replication-plan-r2.md
+docs/revision/roster/sol-replication-plan-r1.log
+docs/revision/roster/astra-rep-paper-r3.log
+docs/revision/roster/brief-replication-plan-r2.md
+docs/revision/roster/astra-replication-plan-r1.md
+docs/revision/roster/brief-replication-plan-r3.md
+docs/revision/roster/fable-rep-paper-r3.md
+docs/revision/roster/brief-rep-paper-r3.md
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'git diff 184b608 e875923 -- docs/revision/followup3/replication_extract.py docs/revision/followup3/replication_paper.py docs/revision/followup3/test_replication_extract.py docs/revision/followup3/test_replication_paper.py docs/revision/followup3/replication-publication.md docs/revision/paper-v2/main.tex docs/revision/lessons.md' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+diff --git a/docs/revision/followup3/replication-publication.md b/docs/revision/followup3/replication-publication.md
+index cc2d009..0794fee 100644
+--- a/docs/revision/followup3/replication-publication.md
++++ b/docs/revision/followup3/replication-publication.md
+@@ -38,3 +38,4 @@ One draw: the script ran once and wrote the record once. No restamp and no redra
+ | Analysis | `rep_v2.py --stage analyse` on a clone of the pulled output, Mac, 2026-11-23T20:36Z; counts continued 20, frozen 52, stopped 0, unresolved 0; round-1 mismatch false; gate ok; 0 problems; 0 unscorable | `replication-analysis.json`, sha256 `28da11c0cf9a6485ff1238a53b339d1079e7bc9de3b917d38370551ce718c37f` |
+ | Expectations, primary winners | 1 met, 2 met, 3 met, 4 met, 5 met | `replication-analysis.json` `primary.expectations` |
+ | Expectations, all-frozen (sensitivity) | 1 met, 2 met, 3 not met (d at p = 0.03: 4 of 6 markets lower), 4 met, 5 met | `replication-analysis.json` `frozen.expectations` |
++| Paper extract | `replication_extract.py --out <analysed clone> --manifest experiments/v2/replication-manifest.json --draw experiments/v2/replication-draw.json --check replication-extract.json` rebuilds the extract from the run records (the analysis is recomputed and must be byte-identical first): ok, byte-identical, 2026-11-24 | `replication-extract.json`, sha256 `36e7c69be53db5c606c2a0ff365c4cae380efe4db081da35fba0eec8a9750cae` (pinned in `test_replication_extract.py`) |
+diff --git a/docs/revision/followup3/replication_extract.py b/docs/revision/followup3/replication_extract.py
+index e68a3b6..9d1faab 100644
+--- a/docs/revision/followup3/replication_extract.py
++++ b/docs/revision/followup3/replication_extract.py
+@@ -10,7 +10,11 @@ continuation record produced which winner kind. Nothing the collector decides ch
+ recomputed from the same collected records exactly as rep_v2's analyse stage does, and the extract is written only if
+ it is byte-identical to the run's analysis.json.
+ 
+-Usage: replication_extract.py --out <followup3-rep dir> --manifest <manifest> --draw <draw.json> --write <json>"""
++Authentication of the extract's own fields: --check rebuilds the extract from the run records and requires it to be
++byte-identical to the committed file; test_replication_extract.py pins the committed file's sha256 (EXTRACT_SHA256), so
++any later edit fails the gate until the extract is rebuilt from the records and the pin is updated deliberately.
++
++Usage: replication_extract.py --out <followup3-rep dir> --manifest <manifest> --draw <draw.json> (--write | --check) <json>"""
+ import argparse
+ import hashlib
+ import json
+@@ -94,7 +98,7 @@ def recompute(col: dict, confirmatory: bool, analyse) -> str:
+ def main(argv=None) -> int:
+     ap = argparse.ArgumentParser()
+     ap.add_argument("--out", required=True); ap.add_argument("--manifest", required=True); ap.add_argument("--draw", required=True)
+-    ap.add_argument("--write", required=True)
++    g = ap.add_mutually_exclusive_group(required=True); g.add_argument("--write"); g.add_argument("--check")
+     a = ap.parse_args(argv)
+     import rep_v2 as V
+     import rep_collect as C
+@@ -102,6 +106,8 @@ def main(argv=None) -> int:
+     import revision_v2 as R
+     ns = V.main.__globals__["argparse"].Namespace(out=a.out, manifest=a.manifest, draw=a.draw, smoke=False,
+                                                   params=str(V.ROOT / "experiments/v2/params.json"))
++    if not (Path(a.out) / "analysis.json").is_file():   # before _context, which reinstalls salt.hex in --out
++        raise SystemExit("no analysis.json in --out: run on the analysed clone of the pulled output, never on the pod output")
+     V._require(ns)
+     c = V._context(ns); jobs = V._jobs_by_dir(c, False)
+     winners, last = {}, {}
+@@ -140,8 +146,12 @@ def main(argv=None) -> int:
+         raise SystemExit("the analysis recomputed from the collected records differs from analysis.json")
+     hashes = {"analysis": sha_file(Path(a.out) / "analysis.json"), "draw": sha_file(a.draw), "manifest": sha_file(a.manifest),
+               "recomputed": True}
+-    res = build(col, winners, R._safe, hashes)
+-    Path(a.write).write_text(json.dumps(res, indent=1, sort_keys=True) + "\n")
++    text = json.dumps(build(col, winners, R._safe, hashes), indent=1, sort_keys=True) + "\n"
++    if a.check:
++        same = Path(a.check).is_file() and Path(a.check).read_text() == text
++        print("ok: the extract rebuilt from the run records is byte-identical" if same else f"differs: {a.check}")
++        return 0 if same else 1
++    Path(a.write).write_text(text)
+     return 0
+ 
+ 
+diff --git a/docs/revision/followup3/replication_paper.py b/docs/revision/followup3/replication_paper.py
+index 9508c61..73a3c7c 100644
+--- a/docs/revision/followup3/replication_paper.py
++++ b/docs/revision/followup3/replication_paper.py
+@@ -9,7 +9,10 @@ unresolved counts and whose (rate, market, rule) set equals the cells where the
+ counts must be integers with 0 <= audited <= served, the allocation shares must lie in [0, 1] with the attacker's
+ audited rate equal to audited over served and x in {0, 1}; the frozen set must cover every rate and market, and the
+ primary set may miss exactly the continued R3 cells at a rate where the run code computed no continued diagnostics
+-(p = 0.03). Expectation 5 must agree with the audit counts (lower on at least five of six markets).
++(p = 0.03). The continued-cells rule would refuse a future continued winner whose terms equal its frozen winner's; in
++this run the two sets are equal (20 cells). Values that exist only in the extract (allocation shares, x) cannot be
++derived here; they are authenticated by replication_extract.py --check against the run records and by the sha256 pin
++in test_replication_extract.py. Expectation 5 must agree with the audit counts (lower on at least five of six markets).
+ 
+ The summary holds the derived values the analysis file does not store, per winner set: R3's audited share of the
+ attacker's jobs (min, max, markets with a count, markets lower at p = 0.05 than at p = 0, a zero denominator at either
+@@ -115,8 +118,11 @@ def _validate_counts(extract: dict) -> None:
+                         and 0 <= c[0] <= c[1]):
+                     raise ValueError(f"impossible audit count {s} {p} {m}: {c}")
+                 al = extract["alloc"][s][p][m]
+-                if any(al[k] is not None and not 0 <= al[k] <= 1 for k in ALLOC) or al.get("x") not in (0, 1):
++                if any(al[k] is not None and not 0 <= al[k] <= 1 for k in ALLOC) or type(al.get("x")) is not int or al["x"] not in (0, 1):
+                     raise ValueError(f"allocation out of range {s} {p} {m}")
++                need = (["young_honest_job_share", "focal_job_share"] if c[1] else []) + (["young_honest_audit_share"] if c[0] else [])
++                if any(al[k] is None for k in need):
++                    raise ValueError(f"allocation share missing although the attacker's counts are nonzero {s} {p} {m}")
+                 want = c[0] / c[1] if c[1] else None
+                 if (want is None) != (al["focal_audit_rate"] is None) or (want is not None and abs(want - al["focal_audit_rate"]) > 1e-12):
+                     raise ValueError(f"the attacker's audited rate disagrees with its counts {s} {p} {m}")
+diff --git a/docs/revision/followup3/test_replication_extract.py b/docs/revision/followup3/test_replication_extract.py
+index fb99300..35f8dd0 100644
+--- a/docs/revision/followup3/test_replication_extract.py
++++ b/docs/revision/followup3/test_replication_extract.py
+@@ -96,3 +96,19 @@ def test_recompute_matches_the_analyse_stage_layout():
+     out = json.loads(RE.recompute(col, True, lambda g, au: seen.update(au=au) or {"ok": g}))
+     assert out["confirmatory"] is True and out["frozen"] == {"ok": {"g": 1}} and out["primary"].startswith("not available")
+     assert seen["au"] == {"0": {"rep0": (1, 2)}}
++
++
++# Rebuild with `replication_extract.py --out <analysed clone> ... --check replication-extract.json` before changing this.
++EXTRACT_SHA256 = "36e7c69be53db5c606c2a0ff365c4cae380efe4db081da35fba0eec8a9750cae"
++
++
++def test_committed_extract_is_pinned():
++    """Values that exist only in the extract (allocation, x, counts) are authenticated by this pin: the committed file was
++    rebuilt from the run records with --check (byte-identical) on 2026-11-24; any later edit fails here."""
++    assert hashlib.sha256((HERE / "replication-extract.json").read_bytes()).hexdigest() == EXTRACT_SHA256
++
++
++def test_refuses_an_out_dir_without_analysis(tmp_path):
++    with pytest.raises(SystemExit):
++        RE.main(["--out", str(tmp_path), "--manifest", "m", "--draw", "d", "--check", "x"])
++    assert list(tmp_path.iterdir()) == []                 # nothing written before the refusal
+diff --git a/docs/revision/followup3/test_replication_paper.py b/docs/revision/followup3/test_replication_paper.py
+index fde0a4d..75fcc14 100644
+--- a/docs/revision/followup3/test_replication_paper.py
++++ b/docs/revision/followup3/test_replication_paper.py
+@@ -131,6 +131,8 @@ def test_continued_split_by_rate_and_rule():
+     lambda an, ex: [ex[k]["primary"]["0.05"].pop("rep5") for k in ("audit", "alloc")],          # primary gap not allowed
+     lambda an, ex: ex["continued"].append({"kind": "cthr", "rate": "0", "market": "rep1", "policy": "F111",
+                                            "stem": "cthr-p0__fresh1@rho0.2__F111__D2+H3__profit"}),   # impossible identity
++    lambda an, ex: ex["alloc"]["primary"]["0.05"]["rep2"].update(x=True),                        # bool, not int
++    lambda an, ex: ex["alloc"]["primary"]["0.05"]["rep2"].update(young_honest_job_share=None),   # missing with counts
+ ])
+ def test_refusals(mutate):
+     an, ex = _analysis(), _extract()
+diff --git a/docs/revision/lessons.md b/docs/revision/lessons.md
+index 7d9d4e7..4488e33 100644
+--- a/docs/revision/lessons.md
++++ b/docs/revision/lessons.md
+@@ -297,3 +297,4 @@ Mistake: pod 1 was reported as started at 13:53Z when only the launcher process
+ - 2026-11-23: I reported the churn stage start as 20:00Z. The "== stage" times come from the pod clock (UTC), so the start was 21:00Z; only the leading HH:MM of each rep_p*_launch.log line is Mac local time. Guard: read stage times as UTC, and confirm with `date -u` on the pod before converting.
+ - 2026-11-24: in a negative test of the gate I corrupted `replication-extract.json` and then restored it with `git checkout --`, which brought back the old committed extract and silently dropped my uncommitted regeneration (caught at once by `cmp` against the saved summary, and regenerated). Guard: a negative test corrupts a copy, or saves the working file first (`cp f f.keep`) and restores from that copy, never from git, when the file has uncommitted changes. The gate now also runs the replication generator and extract tests, so a stale or unbound extract is refused (proved by the corrupted binding: "the extract is not bound to this analysis file").
+ - 2026-11-24: round 1 fixed the label "prospective-exploratory" only at the places the reviewers named, so round 2 found four more bare "prospective replication" mentions, and one claim ("rest mainly on two markets") was missing its winner-set qualifier. Guard: when a reviewer names a label or qualifier rule, grep the whole paper for every variant (`grep -n "rospective replication" main.tex` must print nothing) before sending the next round, instead of fixing only the cited lines.
++- 2026-11-24: I ran `replication_extract.py --check` on the durable pod output (`results/pods/rep_p3_out/followup3-rep`) instead of the analysed clone. `rep_v2._context` reinstalled `salt.hex` there (same bytes; `install_checked_salt` verifies them against the draw's recorded salt hash; only the mtime changed) before the extract stopped on the missing analysis.json. Guard: the extract now refuses an --out without analysis.json before calling `_context`, so it cannot touch the pod output (proved by rerunning on the pod output: refused, salt.hex untouched by that run).
+diff --git a/docs/revision/paper-v2/main.tex b/docs/revision/paper-v2/main.tex
+index 323e939..4ba8b57 100644
+--- a/docs/revision/paper-v2/main.tex
++++ b/docs/revision/paper-v2/main.tex
+@@ -379,7 +379,7 @@ Tables~\ref{tab:rep-markets} to~\ref{tab:rep-alloc} complete Table~\ref{tab:repl
+ 
+ \begin{table}[t]\centering\small
+ \adjustbox{max width=\linewidth}{\input{tables/replication_markets.tex}}
+-\caption{Prospective-exploratory replication: the paired change of each contrast from the same market's no-churn value, per market, with the equal-weight mean over the six markets.}\label{tab:rep-markets}
++\caption{Prospective-exploratory replication: the paired change of each contrast from the same market's no-churn value, per market, with its seed-bootstrap interval (second line; \const{95}\% paired percentile intervals, \const{9999} resamples, seed \const{0}), and the equal-weight mean over the six markets with its pooled seed-bootstrap interval, which holds the six markets fixed.}\label{tab:rep-markets}
+ \end{table}
+ \begin{table}[t]\centering\small
+ \adjustbox{max width=\linewidth}{\input{tables/replication_absolute.tex}}
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'cat docs/revision/roster/brief-rep-paper-r3.md docs/revision/roster/sol-rep-paper-r3.md docs/revision/roster/astra-rep-paper-r3.md docs/revision/roster/fable-rep-paper-r3.md' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+# Churn replication in the paper: review round 3 (read-only; no paid APIs; do not read `sealed/`, `~/touchstone-h4`, or `~/h4-session.out`; `sealed2/h4/` may be read; reasoning effort high; under 500 words)
+
+Round 2 (brief `docs/revision/roster/brief-rep-paper-r2.md`; reports `sol-rep-paper-r2.md`, `astra-rep-paper-r2.md`,
+`fable-rep-paper-r2.md` in the same folder) asked for corrections. Commit `852c45e` claims to apply all of them. Check the
+files, not the commit message.
+
+Inputs:
+- Plan: `docs/revision/followup3/replication-plan.md`, sections 2, 3, 4 and 8.
+- Analysis: `docs/revision/followup3/replication-analysis.json`; committed draw and manifest
+  `experiments/v2/replication-draw.json`, `experiments/v2/replication-manifest.json`.
+- Extract: `docs/revision/followup3/replication_extract.py` (now recomputes the analysis from the collected records and
+  writes only on a byte-identical match; records R3's replacement switch x), `replication-extract.json`, tests.
+- Generator: `docs/revision/followup3/replication_paper.py`, tests, `replication_paper.json`, five tables
+  `docs/revision/paper-v2/tables/replication*.tex`.
+- Diff: `git diff 7d8d273 852c45e -- docs/revision/paper-v2/ docs/revision/followup3/`.
+- Gate `results/pods/paper_check.sh` passes; it now also refuses an unlabelled "prospective replication".
+- PDF: `/private/tmp/claude-502/-Users-oemer-demirel-Projects-touchstone/a48c0006-982d-4d16-9bac-5ae26e145fac/scratchpad/pdf-rep3/main.pdf`.
+
+Check:
+1. Each round-2 correction of all three reports: fixed, partly fixed, or not fixed.
+2. Repeat your round-2 probes against the new `_validate` (edited extract with the same analysis hash). Does any wrong
+   or stale input still pass? Is any new check too strict or wrong for the committed data?
+3. The new sentences and table columns against the JSON (the 0.03 allocation gap and its markets, replacing markets,
+   paired seed-bootstrap intervals, four-decimal bounds).
+4. Any new overclaim, contradiction with the plan or other sections, or stale text.
+
+Output exactly:
+VERDICT: accept | accept-with-caveat | reject
+CORRECTIONS: numbered, each with main.tex line, file, or site name, or "none".
+CONFIDENCE: 0 to 1.
+VERDICT: reject
+
+CORRECTIONS:
+
+1. **main.tex:206,208 — Sol 1,5; Astra 1,4: fixed.** Baseline differences, support counts, material-companion counts, frozen expectation verdicts, the 0.5 forecast, and the audit denominator agree with the JSON. The failed expectation receives no causal explanation.
+
+2. **main.tex:206,208,237; replication*.tex — Sol 2,3,8; Astra 2: fixed.** Market intervals now explicitly state 95%. Profit terms, efficiency, absolute contrasts, paired changes, and interval methods agree with the analysis and plan §2. Rep0 and rep1 contribute approximately 72–88% of the primary mean changes. All five tables and the summary pass the freshness check.
+
+3. **main.tex:210,394; replication_alloc.tex — Sol 4; Astra 3; Fable 1: fixed.** The text attributes missing primary allocation diagnostics at 0.03 to the run code, identifies rep2–rep4, and states the gap against the plan. Replacement counts match the extract: primary 4/6 at 0.05 (rep1, rep3–rep5), frozen 3/6 (rep1, rep4, rep5).
+
+4. **main.tex:21,35,37,206,248,252,377 — Sol 7; Astra 6; Fable 2,3: fixed.** Concentration claims specify primary winners. Replication labels consistently say “prospective-exploratory.” Comparator scope and the two nonzero rates are correctly qualified.
+
+5. **replication_paper.py:110–170; replication_extract.py — Sol 6; Astra 5; Fable 4: partly fixed.** Hash changes, substituted continuation identities, missing required cells, impossible counts, and inconsistent focal rates now fail. Extraction recomputes the analysis before writing. However, with the unchanged analysis hash, `_validate` and `summary` still accept a primary 0.05 rep0 young-honest job share changed to 0.5, a flipped replacement switch, or altered audit counts with a matching rate. More decisively, doubling both rep0 audit counts, or swapping rep0/rep1 replacement switches, also passes the **full freshness check unchanged**. Validate the complete extract against accepted source records; `recomputed: true` does not establish that correspondence. No new check rejects the committed data; the continued-cell and differing-term sets both contain 20 cells.
+
+6. **replication_markets.tex; main.tex:382 — Fable 5: fixed numerically; caption needs correction.** Paired-change seed-bootstrap intervals now match the JSON. The caption remains stale: identify the second lines as 95% paired seed-bootstrap intervals and the Mean interval as pooled over the six fixed markets.
+
+7. **replication.tex — Fable 6: fixed.** The primary absolute q interval at 0.05 now prints its positive upper bound as 0.0005.
+
+8. **results/pods/paper_check.sh — Verification gap.** This checkout lacks the gate script. The 65 read-only tests passed; the temporary-file test was excluded. No additional substantive overclaim or plan contradiction was found.
+
+CONFIDENCE: 0.97.VERDICT: reject
+
+CORRECTIONS:
+
+1. **replication_paper.py:110–170; replication_extract.py:138–144 — Partly fixed (Sol 6; Astra 5; Fable 4).** Repeated probes now reject wrong draw/manifest hashes, substituted continuation identities, impossible cthr/F111 identities, missing required markets, negative or excessive audit counts, out-of-range shares, and inconsistent focal rates. However, with the analysis hash unchanged, the **full `check()` still passes** after doubling primary p=0 rep0 counts from `[112797,164572]` to `[225594,329144]`; swapping primary p=0.05 rep0/rep1 young-honest job shares; or swapping their replacement switches. An arbitrary within-range allocation edit also passes `_validate()` and `summary()`, although freshness checking detects changed outputs. Producer-side analysis recomputation does not authenticate these extract fields; `recomputed: true` survives edits. Compare the extract against source-derived records and add rejection tests. The new checks accept the committed data; the 20 continuation identities match the 20 differing cells.
+
+2. **main.tex:206–210; replication*.tex — Fixed (Sol 1–3, 5, 8; Astra 1–2, 4).** Market intervals now explicitly state 95%. Baseline differences, attack/reference terms, efficiencies, support/material counts, expectation verdicts, concentration, the mixed 0.03 comparison, and pooled intervals agree with the JSON. All five tables reproduce. Interval construction matches plan §2.
+
+3. **main.tex:210,394; replication_alloc.tex — Fixed (Sol 4; Astra 3; Fable 1).** The text correctly attributes missing primary 0.03 diagnostics to the run code, identifies rep2/rep3/rep4, and calls this a gap against the plan. Allocation means agree. Replacement counts are primary 6/6, 1/3, 4/6 and frozen 5/6, 3/6, 3/6 across the three rates. The new sentence and column match these counts.
+
+4. **main.tex:21,35,37,206,248,252,377 — Fixed (Sol 7; Astra 6; Fable 2–3).** Concentration statements specify primary winners. Replication labels consistently say “prospective-exploratory.” Earlier-comparator and rate qualifications remain correct. I found no additional substantive contradiction with plan §§3,4,8.
+
+5. **replication_markets.tex; main.tex:382 — Fixed numerically, caption partly fixed (Fable 5).** Per-market and pooled paired-change bootstrap intervals now appear and match the JSON. The unchanged caption does not identify the second-line intervals. State that these are 95% paired seed-bootstrap intervals and that the pooled interval holds markets fixed.
+
+6. **replication.tex — Fixed (Fable 6).** The primary 0.05 absolute q upper bound, 0.0004752422, now prints as 0.0005.
+
+7. **test_replication_extract.py; test_replication_paper.py; paper_check.sh — Verification limit.** Forty-eight read-only tests passed; the file-writing test was excluded. I inspected the updated label guard but did not execute the full gate because it writes files.
+
+CONFIDENCE: 0.97.# Fable 5.2, review round 3 (rep-paper-r3), as returned to the session on 2026-11-24
+
+VERDICT: accept-with-caveat
+
+CORRECTIONS:
+1. main.tex:382 (caption of Table 30): new gap. The table prints a second line of paired seed-bootstrap intervals and a pooled interval under "Mean"; the caption describes only the changes and the mean. Add the Table 31 wording.
+2. replication_paper.py _validate: partly fixed, rest does not block. All requested guards present and hold on the committed data. Still passing with the same analysis hash: an in-range allocation share edit; audit counts edited together with focal_audit_rate; flipped x; x = True; a share set to None with nonzero counts. These values exist only in the extract and binding.recomputed is self-declared. Closure: pin the sha256 of replication-extract.json in the gate or a test; require type(x) is int and non-None shares where counts are nonzero.
+3. replication_extract.py recompute binding: fixed by code reading only (records not in the worktree); state that the byte-identical recompute was run on the pod records.
+4. Other round-2 corrections fixed: run-code attribution and rep2-rep4; winner-set qualifiers; label everywhere (gate refuses); 95% t intervals; replacement switch (Table 33: 6/6, 1/3, 4/6 primary; 5/6, 3/6, 3/6 frozen); four-decimal bounds.
+5. No new check is too strict; --check ok; 49 tests pass; continued cells 20 = 20 differing cells. Note in the docstring that the rule would refuse a future continued winner with identical terms.
+6. Brief items 3 and 4: none. No new overclaim, contradiction or stale text.
+
+CONFIDENCE: 0.88
+
+hook: PostToolUse
+hook: PostToolUse Completed
+2026-11-24T10:04:00.647534Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'cat docs/revision/followup3/replication_extract.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc 'cat docs/revision/followup3/test_replication_extract.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+"""Tests for replication_extract.py: the allocation, the cell parser, the extract builder and the committed binding."""
+import hashlib
+import json
+from pathlib import Path
+
+import pytest
+
+import replication_extract as RE
+
+HERE = Path(__file__).resolve().parent
+
+
+def _shares():
+    # two episodes, two age bins; [served, audited]
+    e = {"honest_replacement": [[10, 4], [20, 1]], "honest_initial": [[5, 1], [15, 3]], "focal": [[4, 2], [6, 0]]}
+    return {"per_episode": [e, e]}
+
+
+def test_allocation_matches_hand_count():
+    a = RE.allocation(_shares())
+    served, audits = 2 * (10 + 20 + 5 + 15 + 4 + 6), 2 * (4 + 1 + 1 + 3 + 2 + 0)
+    assert a["young_honest_job_share"] == pytest.approx(2 * 15 / served)
+    assert a["young_honest_audit_share"] == pytest.approx(2 * 5 / audits)
+    assert a["established_honest_audit_rate"] == pytest.approx(4 / 35)
+    assert a["focal_job_share"] == pytest.approx(20 / served)
+    assert a["focal_audit_rate"] == pytest.approx(4 / 20)
+
+
+def test_allocation_zero_denominator_is_none():
+    e = {"honest_replacement": [[0, 0], [0, 0]], "honest_initial": [[0, 0], [0, 0]], "focal": [[0, 0], [0, 0]]}
+    a = RE.allocation({"per_episode": [e]})
+    assert all(v is None for v in a.values())
+
+
+def test_parse_cell_accepts_the_run_shapes():
+    assert RE.parse_cell("menu-p0.05__fresh3@rho0.2__F111__D2+H3__profit__churn0.05") == \
+        {"kind": "menu", "rate": "0.05", "market": "rep3", "policy": "F111"}
+    assert RE.parse_cell("cthr-p0__fresh0@rho0.2__Cstar__D2+H3__profit")["rate"] == "0"
+
+
+@pytest.mark.parametrize("stem", ["menu-p0.05__fresh3@rho0.2__F111__D2+H3__profit__churn0.03",   # suffix disagrees
+                                  "menu-p0__fresh3@rho0.2__F111__D2+H3__profit__churn0.05",      # churn at p = 0
+                                  "menu-p0.05__fresh3@rho0.2__F111__D2+H3__profit",              # suffix missing
+                                  "menu-p0.05__fresh6@rho0.2__F111__D2+H3__profit__churn0.05",   # no such market
+                                  "menu-p0.05__fresh3@rho0.2__F222__D2+H3__profit__churn0.05",   # no such policy
+                                  "menu-p0.02__fresh3@rho0.2__F111__D2+H3__profit__churn0.02",   # no such rate
+                                  "cthr-p0__fresh1@rho0.2__F111__D2+H3__profit"])                # cthr on another policy
+def test_parse_cell_refuses_other_shapes(stem):
+    with pytest.raises(ValueError):
+        RE.parse_cell(stem)
+
+
+def _col(continued=2):
+    c0, c1 = RE.Counts((5, 10)), RE.Counts((1, 10))
+    c0.alloc, c1.alloc = {"focal_audit_rate": 0.5}, {"focal_audit_rate": 0.1}
+    return {"audit": {"frozen": {"0": {"rep0": c0}, "0.05": {"rep0": c1}}, "primary": {"0": {"rep0": c0}}},
+            "counts": {"continued": continued, "frozen": 1, "unresolved": 0}, "problems": [], "unscorable": [],
+            "round1_mismatch": False, "gate_ok": True}
+
+
+SAFE = lambda k: k.replace("|", "__")
+WIN = {"menu-p0.05|fresh3@rho0.2__F111__D2+H3__profit__churn0.05": "continued",
+       "cthr-p0|fresh0@rho0.2__Cstar__D2+H3__profit": "continued",
+       "menu-p0|fresh1@rho0.2__F111__D2+H3__profit": "frozen"}
+
+
+def test_build_keeps_counts_alloc_status_and_only_winning_continuations():
+    r = RE.build(_col(), WIN, SAFE, {"analysis": "a"})
+    assert r["audit"]["frozen"]["0.05"]["rep0"] == [1, 10]
+    assert r["alloc"]["frozen"]["0"]["rep0"] == {"focal_audit_rate": 0.5}
+    assert [c["market"] for c in r["continued"]] == ["rep0", "rep3"]          # the "frozen" outcome is not listed
+    assert r["status"] == {"problems": [], "unscorable": [], "round1_mismatch": False, "gate_ok": True}
+    assert r["binding"] == {"analysis": "a"}
+
+
+def test_build_refuses_a_count_mismatch():
+    with pytest.raises(ValueError):
+        RE.build(_col(continued=3), WIN, SAFE, {})
+
+
+def test_build_refuses_a_duplicate_identity():
+    with pytest.raises(ValueError):
+        RE.build(_col(), {"a|x": "continued", "a__x": "continued"}, lambda k: "menu-p0__fresh1@rho0.2__F111__D2+H3__profit", {})
+
+
+def test_committed_extract_is_bound_to_the_committed_analysis():
+    ex = json.loads((HERE / "replication-extract.json").read_text())
+    assert ex["binding"]["analysis"] == hashlib.sha256((HERE / "replication-analysis.json").read_bytes()).hexdigest()
+    assert ex["status"] == {"problems": [], "unscorable": [], "round1_mismatch": False, "gate_ok": True}
+
+
+def test_recompute_matches_the_analyse_stage_layout():
+    col = {"counts": {"continued": 0}, "round1_mismatch": False, "gate_ok": True, "problems": [], "unscorable": [],
+           "primary": None, "frozen": {"g": 1}, "audit": {"frozen": {"0": {"rep0": RE.Counts((1, 2))}}, "primary": {}}}
+    seen = {}
+    out = json.loads(RE.recompute(col, True, lambda g, au: seen.update(au=au) or {"ok": g}))
+    assert out["confirmatory"] is True and out["frozen"] == {"ok": {"g": 1}} and out["primary"].startswith("not available")
+    assert seen["au"] == {"0": {"rep0": (1, 2)}}
+
+
+# Rebuild with `replication_extract.py --out <analysed clone> ... --check replication-extract.json` before changing this.
+EXTRACT_SHA256 = "36e7c69be53db5c606c2a0ff365c4cae380efe4db081da35fba0eec8a9750cae"
+
+
+def test_committed_extract_is_pinned():
+    """Values that exist only in the extract (allocation, x, counts) are authenticated by this pin: the committed file was
+    rebuilt from the run records with --check (byte-identical) on 2026-11-24; any later edit fails here."""
+    assert hashlib.sha256((HERE / "replication-extract.json").read_bytes()).hexdigest() == EXTRACT_SHA256
+
+
+def test_refuses_an_out_dir_without_analysis(tmp_path):
+    with pytest.raises(SystemExit):
+        RE.main(["--out", str(tmp_path), "--manifest", "m", "--draw", "d", "--check", "x"])
+    assert list(tmp_path.iterdir()) == []                 # nothing written before the refusal
+
+ succeeded in 0ms:
+"""Post-analysis extract for the paper (not part of the stamped manifest): R3's audit counts and full audit allocation per
+winner set, rate and market, from exactly the diagnostics records the committed collector (rep_collect.collect) accepts
+for expectation 5, the list of cells whose continued search produced the primary winner, the collector's status fields,
+and the sha256 of the run's analysis, draw and manifest, so that replication_paper.py can refuse a stale extract.
+
+Exactness: the collector is run unchanged. Four of its module functions are wrapped for the duration of the call only:
+diag_ok and cont_diag_ok remember the diagnostics row they accept, _audit_of returns the same (audited, served) tuple
+with that row's allocation and the winner's replacement switch x attached, and select_winner records which
+continuation record produced which winner kind. Nothing the collector decides changes. Binding: the analysis is
+recomputed from the same collected records exactly as rep_v2's analyse stage does, and the extract is written only if
+it is byte-identical to the run's analysis.json.
+
+Authentication of the extract's own fields: --check rebuilds the extract from the run records and requires it to be
+byte-identical to the committed file; test_replication_extract.py pins the committed file's sha256 (EXTRACT_SHA256), so
+any later edit fails the gate until the extract is rebuilt from the records and the pin is updated deliberately.
+
+Usage: replication_extract.py --out <followup3-rep dir> --manifest <manifest> --draw <draw.json> (--write | --check) <json>"""
+import argparse
+import hashlib
+import json
+import re
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+
+CATS = ("honest_replacement", "honest_initial", "focal")
+STEM = re.compile(r"^(menu|cthr)-p(0|0\.03|0\.05)__fresh([0-5])@rho0\.2__(F111|Cstar|F000)__D2\+H3__profit(__churn(0\.03|0\.05))?$")
+CTHR_POLICY = "Cstar"          # every cthr-directory cell is C-thr, run on the C* policy slot
+WINNER_KINDS = ("continued", "unresolved")
+
+
+def sha_file(p) -> str:
+    return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+
+
+def allocation(shares: dict) -> dict:
+    """The draft-10 audit allocation (docs/revision/posthoc/churn_block.py, audit_allocation) for one winner: per-episode
+    [served, audited] counts summed over episodes; young = the first age bin (younger than ten rounds); established =
+    the other bins. A zero denominator gives None."""
+    per = shares["per_episode"]
+    nb = len(per[0]["focal"]) if per else 0
+    t = {c: [[sum(e[c][b][j] for e in per) for j in (0, 1)] for b in range(nb)] for c in CATS}
+    served = sum(t[c][b][0] for c in CATS for b in range(nb))
+    audits = sum(t[c][b][1] for c in CATS for b in range(nb))
+    yh = [t["honest_replacement"][0][j] + t["honest_initial"][0][j] for j in (0, 1)]
+    eh = [sum(t[c][b][j] for c in ("honest_replacement", "honest_initial") for b in range(1, nb)) for j in (0, 1)]
+    fo = [sum(t["focal"][b][j] for b in range(nb)) for j in (0, 1)]
+    div = lambda a, b: a / b if b else None
+    return {"young_honest_job_share": div(yh[0], served), "young_honest_audit_share": div(yh[1], audits),
+            "established_honest_audit_rate": div(eh[1], eh[0]), "focal_job_share": div(fo[0], served),
+            "focal_audit_rate": div(fo[1], fo[0])}
+
+
+class Counts(tuple):
+    """(audited, served), as the collector stores it, carrying the allocation of the same shares."""
+    alloc: dict
+
+
+def parse_cell(stem: str) -> dict:
+    """'menu-p0.05__fresh3@rho0.2__F111__D2+H3__profit__churn0.05' -> kind, rate, market, policy. Refuses any other
+    shape, a churn suffix that disagrees with the rate, a churn suffix at p = 0, or a cthr cell on another policy."""
+    m = STEM.match(stem)
+    if not m or (m.group(2) == "0") != (m.group(6) is None) or (m.group(6) and m.group(6) != m.group(2)) or \
+            (m.group(1) == "cthr" and m.group(4) != CTHR_POLICY):
+        raise ValueError(f"unexpected cell identity: {stem}")
+    return {"kind": m.group(1), "rate": m.group(2), "market": "rep" + m.group(3), "policy": m.group(4)}
+
+
+def build(col: dict, winners: dict, safe, hashes: dict) -> dict:
+    """The extract from the collector output, the recorded winner kind per continuation key, the collector's file-name
+    function and the input hashes. The continued list holds the flagged cells whose primary winner is the continued
+    one; its length must equal the collector's continued plus unresolved counts."""
+    stems = sorted(safe(k) for k, kw in winners.items() if kw in WINNER_KINDS)
+    if len(set(stems)) != len(stems):
+        raise ValueError("duplicate continued cell")
+    if len(stems) != sum(col["counts"].get(k, 0) for k in WINNER_KINDS):
+        raise ValueError("the continued list disagrees with the collector's counts")
+    sets = ("frozen", "primary")
+    return {"audit": {s: {rk: {m: [v[0], v[1]] for m, v in sorted(ms.items())} for rk, ms in sorted(col["audit"][s].items())} for s in sets},
+            "alloc": {s: {rk: {m: v.alloc for m, v in sorted(ms.items())} for rk, ms in sorted(col["audit"][s].items())} for s in sets},
+            "counts": col["counts"], "continued": [dict(parse_cell(s), stem=s) for s in stems],
+            "status": {k: col[k] for k in ("problems", "unscorable", "round1_mismatch", "gate_ok")}, "binding": hashes}
+
+
+def recompute(col: dict, confirmatory: bool, analyse) -> str:
+    """analysis.json as rep_v2.stage_analyse writes it, from these collected records (default resamples and seed)."""
+    res = {k: col[k] for k in ("counts", "round1_mismatch", "gate_ok", "problems", "unscorable")}
+    res["confirmatory"] = confirmatory
+    for name in ("primary", "frozen"):
+        g = col[name]
+        res[name] = ("not available (a round-1 mismatch or a continued winner without an identical gate)" if g is None
+                     else analyse(g, {rk: {m: tuple(v) for m, v in ms.items()} for rk, ms in col["audit"][name].items()}))
+    return json.dumps(res, indent=1, sort_keys=True) + "\n"
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--out", required=True); ap.add_argument("--manifest", required=True); ap.add_argument("--draw", required=True)
+    g = ap.add_mutually_exclusive_group(required=True); g.add_argument("--write"); g.add_argument("--check")
+    a = ap.parse_args(argv)
+    import rep_v2 as V
+    import rep_collect as C
+    import replication_analysis as RA
+    import revision_v2 as R
+    ns = V.main.__globals__["argparse"].Namespace(out=a.out, manifest=a.manifest, draw=a.draw, smoke=False,
+                                                  params=str(V.ROOT / "experiments/v2/params.json"))
+    if not (Path(a.out) / "analysis.json").is_file():   # before _context, which reinstalls salt.hex in --out
+        raise SystemExit("no analysis.json in --out: run on the analysed clone of the pulled output, never on the pod output")
+    V._require(ns)
+    c = V._context(ns); jobs = V._jobs_by_dir(c, False)
+    winners, last = {}, {}
+    orig = {k: getattr(C, k) for k in ("_audit_of", "select_winner", "diag_ok", "cont_diag_ok")}
+
+    def diag_ok(row, *a, **k):
+        ok = orig["diag_ok"](row, *a, **k)
+        last["row"] = row if ok else None
+        return ok
+
+    def cont_diag_ok(rec, *a, **k):
+        ok = orig["cont_diag_ok"](rec, *a, **k)
+        last["row"] = rec if ok else None
+        return ok
+
+    def audit_of(shares):
+        row = last.pop("row", None)
+        if row is None or row.get("shares") is not shares:
+            raise RuntimeError("an audit count without the accepted diagnostics row")
+        out = Counts(orig["_audit_of"](shares)); out.alloc = dict(allocation(shares), x=(row.get("knobs") or {}).get("x")); return out
+
+    def select_winner(frozen, rec):
+        g, kw = orig["select_winner"](frozen, rec)
+        if rec is not None:
+            winners[rec["id"]] = kw
+        return g, kw
+
+    C._audit_of, C.select_winner, C.diag_ok, C.cont_diag_ok = audit_of, select_winner, diag_ok, cont_diag_ok
+    try:
+        col = C.collect(Path(a.out), jobs, gate=V.gate_item(jobs, a.out), smoke=False)
+    finally:
+        for k, f in orig.items():
+            setattr(C, k, f)
+    recomputed = recompute(col, c.confirmatory, RA.analyse)
+    if recomputed != (Path(a.out) / "analysis.json").read_text():
+        raise SystemExit("the analysis recomputed from the collected records differs from analysis.json")
+    hashes = {"analysis": sha_file(Path(a.out) / "analysis.json"), "draw": sha_file(a.draw), "manifest": sha_file(a.manifest),
+              "recomputed": True}
+    text = json.dumps(build(col, winners, R._safe, hashes), indent=1, sort_keys=True) + "\n"
+    if a.check:
+        same = Path(a.check).is_file() and Path(a.check).read_text() == text
+        print("ok: the extract rebuilt from the run records is byte-identical" if same else f"differs: {a.check}")
+        return 0 if same else 1
+    Path(a.write).write_text(text)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+
+exec
+/bin/zsh -lc 'cat docs/revision/followup3/test_replication_paper.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc 'cat AGENTS.md' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc "sed -n '350,405p' docs/revision/paper-v2/main.tex" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc 'cat docs/revision/followup3/replication_paper.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc 'git rev-parse HEAD' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc 'git ls-files results/pods/paper_check.sh' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ exited 1 in 0ms:
+cat: AGENTS.md: No such file or directory
+
+ succeeded in 0ms:
+"""Tests for replication_paper.py: the paper summary and tables built from the committed analysis and extract."""
+import json
+from pathlib import Path
+
+import pytest
+
+import replication_paper as RP
+
+HERE = Path(__file__).resolve().parent
+SHA = "a" * 64
+XOFF = {"d": 0.0, "q": 0.3, "u": 0.6}            # distinct values per contrast, so that a column swap is visible
+
+
+CONT = [("menu", "0", "rep2", "F111"), ("menu", "0.03", "rep4", "F111"), ("menu", "0.05", "rep1", "Cstar"), ("cthr", "0.05", "rep3", "Cstar")]
+RULE = {("menu", "F111"): "R3", ("menu", "Cstar"): "C*", ("cthr", "Cstar"): "C-thr"}
+
+
+def _stem(k, p, m, pol):
+    return f"{k}-p{p}__fresh{m[3]}@rho0.2__{pol}__D2+H3__profit" + ("" if p == "0" else f"__churn{p}")
+
+
+def _analysis():
+    mk = lambda v: {f"rep{i}": v + 0.01 * i for i in range(6)}
+    pc = lambda mean: {"complete": True, "lower": 5, "markets": mk(mean), "mean": mean, "t95": [mean - 0.1, mean + 0.1]}
+    ab = lambda mean: {"complete": True, "markets": {f"rep{i}": {"estimate": mean, "ci95": [mean - 0.002, mean + 0.002]} for i in range(6)},
+                       "mean": mean, "pooled_ci95": [mean - 0.01, mean + 0.01], "t95": [mean - 0.2, mean + 0.2]}
+    bs = lambda mean: {"markets": {f"rep{i}": {"ci95": [mean - 0.003, mean + 0.003]} for i in range(6)}, "pooled": {"ci95": [mean - 0.004, mean + 0.004]}}
+    terms = {p: {f"rep{i}": {r: {"attack": 0.3, "eff_attack": e, "gain": 0.1, "reference": 0.2}
+                             for r, e in (("R3", 0.95 - float(p)), ("C*", 0.99), ("C-thr", 0.98), ("B3", 0.97))}
+                 for i in range(6)} for p in ("0", "0.03", "0.05")}
+    s = {"paired_changes": {p: {x: pc((-0.1 if p == "0.05" else -0.05) - XOFF[x]) for x in "dqu"} for p in ("0.03", "0.05")},
+         "bootstrap": {p: {x: bs(-0.1 - XOFF[x]) for x in "dqu"} for p in ("0.03", "0.05")},
+         "absolute": {p: {x: ab(0.02 - float(p) * 4 - XOFF[x]) for x in "dqu"} for p in ("0", "0.03", "0.05")},
+         "criteria": {p: {x: {"material": True, "support": True} for x in "dqu"} for p in ("0.03", "0.05")},
+         "expectations": {str(k): {"text": "t", "verdict": "met"} for k in range(1, 6)}, "terms": terms}
+    an = {"primary": s, "frozen": json.loads(json.dumps(s)), "counts": {"continued": 4, "frozen": 68, "unresolved": 0},
+          "gate_ok": True, "problems": [], "unscorable": [], "round1_mismatch": False, "confirmatory": True}
+    for k, p, m, pol in CONT:                             # a continued cell's primary terms differ from its frozen terms
+        an["primary"]["terms"][p][m][RULE[(k, pol)]]["gain"] = 0.05
+    return an
+
+
+def _al(c, x=1):
+    return {"young_honest_job_share": 0.1, "young_honest_audit_share": 0.3, "established_honest_audit_rate": 0.2,
+            "focal_job_share": 0.08, "focal_audit_rate": c[0] / c[1] if c[1] else None, "x": x}
+
+
+def _extract():
+    fr = {"0": {f"rep{i}": [80, 100] for i in range(6)}, "0.05": {f"rep{i}": [2 + i, 100] for i in range(6)},
+          "0.03": {f"rep{i}": [5, 100] for i in range(6)}}
+    pr = json.loads(json.dumps(fr)); del pr["0.03"]["rep4"]      # continued R3 cell at 0.03: no continued diagnostics
+    al = lambda au: {p: {m: _al(c, x=int(m != "rep0")) for m, c in ms.items()} for p, ms in au.items()}
+    sha = {k: RP.sha_file(v) for k, v in RP.COMMITTED.items()}
+    return {"audit": {"primary": pr, "frozen": fr}, "alloc": {"primary": al(pr), "frozen": al(fr)},
+            "counts": {"continued": 4, "frozen": 68, "unresolved": 0},
+            "status": {"problems": [], "unscorable": [], "round1_mismatch": False, "gate_ok": True},
+            "binding": dict(sha, analysis=SHA, recomputed=True),
+            "continued": [{"kind": k, "rate": p, "market": m, "policy": pol, "stem": _stem(k, p, m, pol)} for k, p, m, pol in CONT]}
+
+
+def _sum(an=None, ex=None, sha=SHA):
+    return RP.summary(an or _analysis(), ex or _extract(), sha)
+
+
+def test_audit_shares_min_max_and_count_below():
+    a = _sum()["primary"]["audit"]
+    assert a["0"]["focal_audit_min"] == pytest.approx(0.8) and a["0"]["focal_audit_max"] == pytest.approx(0.8)
+    assert a["0.05"]["focal_audit_min"] == pytest.approx(0.02) and a["0.05"]["focal_audit_max"] == pytest.approx(0.07)
+    assert a["0.05"]["markets"] == 6 and a["below"]["markets"] == 6
+    assert a["0.03"]["markets"] == 5                      # missing counts are not imputed
+
+
+def test_zero_denominator_counts_as_not_below():
+    ex = _extract(); ex["audit"]["primary"]["0.05"]["rep0"] = [0, 0]; ex["alloc"]["primary"]["0.05"]["rep0"]["focal_audit_rate"] = None
+    assert _sum(ex=ex)["primary"]["audit"]["below"]["markets"] == 5
+
+
+def test_allocation_means_and_market_count():
+    a = _sum()["primary"]["alloc"]
+    assert a["0.05"]["young_honest_job_share"] == pytest.approx(0.1) and a["0.05"]["markets"] == 6
+    assert a["0.03"]["markets"] == 5 and a["0.05"]["replacing_markets"] == 5
+    assert a["0.05"]["focal_audit_rate"] == pytest.approx(sum(2 + i for i in range(6)) / 600)
+
+
+def test_efficiency_means_per_rule():
+    e = _sum()["primary"]["eff"]
+    assert e["0.05"]["R3"]["eff"] == pytest.approx(0.90) and e["0"]["C*"]["eff"] == pytest.approx(0.99)
+    assert e["0.05"]["R3"]["eff_min"] == pytest.approx(0.90)
+
+
+def test_spread_two_most_negative_and_rest():
+    sp = _sum()["primary"]["spread"]["0.05"]["q"]
+    assert sp["top"] == {"0": pytest.approx(-0.4), "1": pytest.approx(-0.39)} and sp["top_markets"] == ["rep0", "rep1"]
+    assert sp["rest"] == {"min": pytest.approx(-0.38), "max": pytest.approx(-0.35)}
+
+
+def test_setdiff_and_criteria_counts():
+    an = _analysis(); an["frozen"]["absolute"]["0.05"]["d"]["mean"] -= 0.04; an["frozen"]["criteria"]["0.03"]["d"]["support"] = False
+    s = _sum(an=an)
+    assert s["setdiff"]["0.05"]["d"]["difference"] == pytest.approx(0.04) and s["setdiff"]["0"]["q"]["difference"] == 0
+    assert s["frozen"]["criteria"] == {"support": {"cells": 5}, "material": {"cells": 6}}
+
+
+def test_continued_split_by_rate_and_rule():
+    c = _sum()["continued"]
+    assert c["all"]["cells"] == 4 and c["0"]["cells"] == 1 and c["0.05"]["cells"] == 2 and c["0.03"]["cells"] == 1
+    assert c["rules"]["R3"]["cells"] == 2 and c["rules"]["C-thr"]["cells"] == 1 and c["rules"]["C*"]["cells"] == 1
+
+
+@pytest.mark.parametrize("mutate", [
+    lambda an, ex: ex.update(counts={"continued": 5, "frozen": 67, "unresolved": 0}),
+    lambda an, ex: an.update(problems=["x"]),
+    lambda an, ex: an.update(confirmatory=False),
+    lambda an, ex: ex.update(binding={"analysis": "b" * 64}),                        # stale extract, equal counts
+    lambda an, ex: ex["status"].update(problems=["y"]),
+    lambda an, ex: ex["continued"].append(dict(ex["continued"][0])),                 # duplicate identity
+    lambda an, ex: ex["continued"][2].update(rate="0.03"),                           # fields disagree with the stem
+    lambda an, ex: ex["audit"]["primary"].update({"0.02": {"rep0": [1, 2]}}),        # unplanned rate
+    lambda an, ex: ex["alloc"]["primary"]["0.05"].pop("rep5"),                       # allocation misses a cell
+    lambda an, ex: an["primary"]["expectations"]["5"].update(verdict="not met"),     # audit counts say met
+    lambda an, ex: ex["binding"].update(draw="c" * 64),                              # not the committed draw
+    lambda an, ex: ex["binding"].update(manifest="c" * 64),                          # not the committed manifest
+    lambda an, ex: ex["binding"].pop("recomputed"),                                  # analysis not recomputed
+    lambda an, ex: ex["continued"][2].update(market="rep2", stem=_stem("menu", "0.05", "rep2", "Cstar")),  # swapped cell
+    lambda an, ex: ex["audit"]["primary"]["0.05"].update(rep2=[120, 100]),           # audited above served
+    lambda an, ex: ex["audit"]["primary"]["0.05"].update(rep2=[-1, 100]),            # negative count
+    lambda an, ex: ex["alloc"]["primary"]["0.05"]["rep2"].update(young_honest_job_share=1.2),   # share above one
+    lambda an, ex: ex["alloc"]["primary"]["0.05"]["rep2"].update(focal_audit_rate=0.5),         # rate disagrees with counts
+    lambda an, ex: ex["alloc"]["primary"]["0.05"]["rep2"].update(x=2),                          # impossible switch
+    lambda an, ex: [ex[k]["frozen"]["0.03"].pop("rep1") for k in ("audit", "alloc")],           # frozen coverage gap
+    lambda an, ex: [ex[k]["primary"]["0.05"].pop("rep5") for k in ("audit", "alloc")],          # primary gap not allowed
+    lambda an, ex: ex["continued"].append({"kind": "cthr", "rate": "0", "market": "rep1", "policy": "F111",
+                                           "stem": "cthr-p0__fresh1@rho0.2__F111__D2+H3__profit"}),   # impossible identity
+    lambda an, ex: ex["alloc"]["primary"]["0.05"]["rep2"].update(x=True),                        # bool, not int
+    lambda an, ex: ex["alloc"]["primary"]["0.05"]["rep2"].update(young_honest_job_share=None),   # missing with counts
+])
+def test_refusals(mutate):
+    an, ex = _analysis(), _extract()
+    mutate(an, ex)
+    with pytest.raises(ValueError):
+        RP.summary(an, ex, SHA)
+
+
+def test_table_columns_follow_the_contrasts():
+    t = RP.table(_analysis())
+    row = next(l for l in t.splitlines() if l.startswith("Primary & 0.05"))
+    assert row.index("$-$0.100") < row.index("$-$0.400") < row.index("$-$0.700")       # d, q, u in that order
+    assert "All-frozen" in t and "nan" not in t.lower() and "5/6" in t
+
+
+def test_appendix_tables_have_every_row():
+    an = _analysis()
+    assert RP.table_markets(an).count("\\\\") == 1 + 2 * 2 * 3 * 2 and "rep5" in RP.table_markets(an)
+    assert RP.table_absolute(an).count("\\\\") == 1 + 2 * 3 * 3 * 2
+    assert RP.table_terms(an).count("\\\\") == 1 + 2 * 3 * 4 and "C-thr" in RP.table_terms(an)
+    assert RP.table_alloc(_sum()).count("\\\\") == 1 + 2 * 3 and "5/6" in RP.table_alloc(_sum()) and "4/5" in RP.table_alloc(_sum())
+
+
+def test_check_reports_stale_files(tmp_path):
+    an, ex = _analysis(), _extract()
+    RP.write(an, ex, SHA, tmp_path / "s.json", tmp_path / "t.tex")
+    assert RP.check(an, ex, SHA, tmp_path / "s.json", tmp_path / "t.tex") == []
+    (tmp_path / "replication_terms.tex").write_text("stale")
+    assert RP.check(an, ex, SHA, tmp_path / "s.json", tmp_path / "t.tex")
+
+
+def test_committed_files_are_current():
+    p = HERE / "replication-analysis.json"
+    an, ex = json.loads(p.read_text()), json.loads((HERE / "replication-extract.json").read_text())
+    tex = HERE.parent / "paper-v2" / "tables" / "replication.tex"
+    assert RP.check(an, ex, RP.sha_file(p), HERE / "replication_paper.json", tex) == []
+
+
+def test_expectation_tally():
+    an = _analysis(); an["frozen"]["expectations"]["3"]["verdict"] = "not met"
+    s = _sum(an=an)
+    assert s["primary"]["exp"] == {"fulfilled": 5, "failed": 0} and s["frozen"]["exp"] == {"fulfilled": 4, "failed": 1}
+
+ succeeded in 0ms:
+72483a45462c7d4e399cdeba806d74143cf54537
+
+ succeeded in 0ms:
+"""Paper summary and tables for the churn replication, built from the committed analysis (replication-analysis.json) and
+the post-analysis extract (replication-extract.json); not part of the stamped manifest.
+
+Refusals: the analysis must be confirmatory and report no problem, unscorable cell, round-1 mismatch or failed gate; the
+extract must be bound to this analysis file (sha256; the extract recomputed it from the collected records) and to the
+committed draw and manifest (experiments/v2/replication-draw.json, replication-manifest.json), carry the same collector
+status and counts, and list unique continued cells of the run's shapes whose number equals the continued plus
+unresolved counts and whose (rate, market, rule) set equals the cells where the primary and frozen terms differ. Audit
+counts must be integers with 0 <= audited <= served, the allocation shares must lie in [0, 1] with the attacker's
+audited rate equal to audited over served and x in {0, 1}; the frozen set must cover every rate and market, and the
+primary set may miss exactly the continued R3 cells at a rate where the run code computed no continued diagnostics
+(p = 0.03). The continued-cells rule would refuse a future continued winner whose terms equal its frozen winner's; in
+this run the two sets are equal (20 cells). Values that exist only in the extract (allocation shares, x) cannot be
+derived here; they are authenticated by replication_extract.py --check against the run records and by the sha256 pin
+in test_replication_extract.py. Expectation 5 must agree with the audit counts (lower on at least five of six markets).
+
+The summary holds the derived values the analysis file does not store, per winner set: R3's audited share of the
+attacker's jobs (min, max, markets with a count, markets lower at p = 0.05 than at p = 0, a zero denominator at either
+rate counted as not lower), R3's audit allocation (the draft-10 statistics, equal-weight means over the markets with
+diagnostics), mean and lowest efficiency under attack per rule, the markets with a negative absolute contrast, the two
+most negative paired changes per contrast and rate with the range of the other four, the number of contrast-rate pairs
+meeting the support criterion and the material companion, and the expectation tally; across sets, the primary minus
+all-frozen difference of each pooled absolute contrast; and the continued cells by rate and rule.
+
+Usage: replication_paper.py --analysis A --extract E --summary S --table T (--write | --check); the appendix tables are
+written next to T (replication_markets.tex, replication_absolute.tex, replication_terms.tex, replication_alloc.tex)."""
+import argparse
+import hashlib
+import json
+import math
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from replication_extract import parse_cell  # noqa: E402
+
+RATES = ("0", "0.03", "0.05")
+MARKETS = tuple(f"rep{i}" for i in range(6))
+RULES = ("R3", "C*", "C-thr", "B3")
+POLICY = {"F111": "R3", "Cstar": "C*", "F000": "B3"}   # menu policies; every cthr-directory cell is C-thr
+SETS = (("primary", "Primary"), ("frozen", "All-frozen"))
+X = (("d", "$d$ (C$^*$)"), ("q", "$q$ (B3)"), ("u", "$u$ (C-thr)"))
+ALLOC = ("young_honest_job_share", "young_honest_audit_share", "established_honest_audit_rate", "focal_job_share", "focal_audit_rate")
+STATUS = ("problems", "unscorable", "round1_mismatch", "gate_ok")
+ROOT = Path(__file__).resolve().parents[3]
+COMMITTED = {"draw": ROOT / "experiments/v2/replication-draw.json", "manifest": ROOT / "experiments/v2/replication-manifest.json"}
+CONT_DIAG_RATES = ("0", "0.05")       # rep_collect.run_diagnostics: continued R3 winners get diagnostics only at these rates
+APPENDIX = ("markets", "absolute", "terms", "alloc")
+
+
+def sha_file(p) -> str:
+    return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+
+
+def _share(c):
+    return c[0] / c[1] if c and c[1] > 0 else None
+
+
+def _audit(au: dict) -> dict:
+    out = {}
+    for p in RATES:
+        sh = [s for s in (_share(c) for c in au.get(p, {}).values()) if s is not None]
+        out[p] = {"markets": len(sh), "focal_audit_min": min(sh) if sh else None, "focal_audit_max": max(sh) if sh else None}
+    below = 0
+    for m, c5 in au.get("0.05", {}).items():
+        s0, s5 = _share(au.get("0", {}).get(m)), _share(c5)
+        below += int(s0 is not None and s5 is not None and s5 < s0)
+    out["below"] = {"markets": below}
+    return out
+
+
+def _alloc(al: dict) -> dict:
+    out = {}
+    for p in RATES:
+        rows = list(al.get(p, {}).values())
+        mean = lambda k: (sum(r[k] for r in rows if r[k] is not None) / sum(r[k] is not None for r in rows)
+                          if any(r[k] is not None for r in rows) else None)
+        out[p] = {k: mean(k) for k in ALLOC}
+        out[p]["markets"] = len(rows)
+        out[p]["replacing_markets"] = sum(r["x"] == 1 for r in rows)
+    return out
+
+
+def _eff(terms: dict) -> dict:
+    out = {}
+    for p in RATES:
+        out[p] = {}
+        for r in RULES:
+            v = [terms[p][m][r]["eff_attack"] for m in sorted(terms[p])]
+            if not all(math.isfinite(x) for x in v):
+                raise ValueError(f"nonfinite efficiency at {p} {r}")
+            out[p][r] = {"eff": sum(v) / len(v), "eff_min": min(v)}
+    return out
+
+
+def _spread(pc: dict) -> dict:
+    """The two most negative market changes, their markets, and the range of the other four."""
+    v = sorted(pc["markets"].items(), key=lambda kv: kv[1])
+    rest = [x for _, x in v[2:]]
+    return {"top": {"0": v[0][1], "1": v[1][1]}, "top_markets": sorted(m for m, _ in v[:2]), "rest": {"min": min(rest), "max": max(rest)}}
+
+
+def _continued(cells: list) -> dict:
+    out = {"all": {"cells": len(cells)}, "rules": {r: {"cells": sum(_rule(c) == r for c in cells)} for r in RULES}}
+    out.update({p: {"cells": sum(c["rate"] == p for c in cells)} for p in RATES})
+    return out
+
+
+def _rule(c: dict) -> str:
+    return "C-thr" if c["kind"] == "cthr" else POLICY[c["policy"]]
+
+
+def _validate_counts(extract: dict) -> None:
+    for s, _ in SETS:
+        for p, ms in extract["audit"][s].items():
+            for m, c in ms.items():
+                if not (isinstance(c, list) and len(c) == 2 and all(isinstance(v, int) and not isinstance(v, bool) for v in c)
+                        and 0 <= c[0] <= c[1]):
+                    raise ValueError(f"impossible audit count {s} {p} {m}: {c}")
+                al = extract["alloc"][s][p][m]
+                if any(al[k] is not None and not 0 <= al[k] <= 1 for k in ALLOC) or type(al.get("x")) is not int or al["x"] not in (0, 1):
+                    raise ValueError(f"allocation out of range {s} {p} {m}")
+                need = (["young_honest_job_share", "focal_job_share"] if c[1] else []) + (["young_honest_audit_share"] if c[0] else [])
+                if any(al[k] is None for k in need):
+                    raise ValueError(f"allocation share missing although the attacker's counts are nonzero {s} {p} {m}")
+                want = c[0] / c[1] if c[1] else None
+                if (want is None) != (al["focal_audit_rate"] is None) or (want is not None and abs(want - al["focal_audit_rate"]) > 1e-12):
+                    raise ValueError(f"the attacker's audited rate disagrees with its counts {s} {p} {m}")
+
+
+def _validate_coverage(analysis: dict, extract: dict) -> None:
+    full = {(p, m) for p in RATES for m in MARKETS}
+    have = lambda s: {(p, m) for p, ms in extract["audit"][s].items() for m in ms}
+    if have("frozen") != full:
+        raise ValueError("the frozen audit counts do not cover every rate and market")
+    gaps = {(c["rate"], c["market"]) for c in extract["continued"] if _rule(c) == "R3" and c["rate"] not in CONT_DIAG_RATES}
+    if have("primary") != full - gaps:
+        raise ValueError("the primary audit counts miss cells other than continued R3 cells without diagnostics")
+    differ = {(p, m, r) for p in RATES for m in MARKETS for r in RULES
+              if analysis["primary"]["terms"][p][m][r] != analysis["frozen"]["terms"][p][m][r]}
+    if differ != {(c["rate"], c["market"], _rule(c)) for c in extract["continued"]}:
+        raise ValueError("the continued cells are not the cells whose primary and frozen terms differ")
+
+
+def _validate(analysis: dict, extract: dict, analysis_sha: str) -> None:
+    if analysis.get("problems") or analysis.get("unscorable") or analysis.get("round1_mismatch") or not analysis.get("gate_ok"):
+        raise ValueError("the analysis reports problems, unscorable cells, a round-1 mismatch or a failed gate")
+    if analysis.get("confirmatory") is not True:
+        raise ValueError("the analysis is not the confirmatory run")
+    b = extract.get("binding") or {}
+    if b.get("analysis") != analysis_sha or b.get("recomputed") is not True:
+        raise ValueError("the extract is not bound to this analysis file")
+    for k, path in COMMITTED.items():
+        if b.get(k) != sha_file(path):
+            raise ValueError(f"the extract's {k} is not the committed {path.name}")
+    if extract.get("status") != {k: analysis.get(k) for k in STATUS}:
+        raise ValueError("the extract's collector status differs from the analysis")
+    if analysis["counts"] != extract["counts"]:
+        raise ValueError("the extract's counts differ from the analysis")
+    stems = [c["stem"] for c in extract["continued"]]
+    if len(set(stems)) != len(stems):
+        raise ValueError("duplicate continued cell")
+    for c in extract["continued"]:
+        if dict(parse_cell(c["stem"]), stem=c["stem"]) != c:
+            raise ValueError(f"continued cell fields disagree with its identity: {c['stem']}")
+    if len(stems) != analysis["counts"]["continued"] + analysis["counts"].get("unresolved", 0):
+        raise ValueError("the continued-cell list does not match the continued count")
+    for s, _ in SETS:
+        for part in ("audit", "alloc"):
+            for p, ms in extract[part][s].items():
+                if p not in RATES or not set(ms) <= set(MARKETS):
+                    raise ValueError(f"unexpected rate or market in the extract's {part} ({s}, {p})")
+        if {p: set(ms) for p, ms in extract["audit"][s].items()} != {p: set(ms) for p, ms in extract["alloc"][s].items()}:
+            raise ValueError(f"audit counts and allocation cover different cells ({s})")
+    _validate_counts(extract)
+    _validate_coverage(analysis, extract)
+
+
+def summary(analysis: dict, extract: dict, analysis_sha: str) -> dict:
+    _validate(analysis, extract, analysis_sha)
+    res = {"continued": _continued(extract["continued"])}
+    for s, _ in SETS:
+        if isinstance(analysis[s], str):
+            raise ValueError(f"winner set {s} not available")
+        a = analysis[s]
+        res[s] = {"audit": _audit(extract["audit"][s]), "alloc": _alloc(extract["alloc"][s]), "eff": _eff(a["terms"]),
+                  "absneg": {p: {x: {"negative": sum(v["estimate"] < 0 for v in a["absolute"][p][x]["markets"].values())}
+                                 for x, _ in X} for p in RATES},
+                  "spread": {p: {x: _spread(a["paired_changes"][p][x]) for x, _ in X} for p in ("0.03", "0.05")},
+                  "criteria": {k: {"cells": sum(c[k] for p in a["criteria"] for c in a["criteria"][p].values())}
+                               for k in ("support", "material")}}
+        v = [e["verdict"] for e in a["expectations"].values()]
+        if any(x not in ("met", "not met") for x in v):
+            raise ValueError(f"expectation not scorable in {s}")
+        res[s]["exp"] = {"fulfilled": v.count("met"), "failed": v.count("not met")}
+        if (res[s]["audit"]["below"]["markets"] >= 5) != (a["expectations"]["5"]["verdict"] == "met"):
+            raise ValueError(f"the audit counts disagree with expectation 5 ({s})")
+    res["setdiff"] = {p: {x: {"difference": analysis["primary"]["absolute"][p][x]["mean"] - analysis["frozen"]["absolute"][p][x]["mean"]}
+                          for x, _ in X} for p in RATES}
+    return res
+
+
+def _f(v) -> str:
+    """Three decimals; four where a nonzero value would print as 0.000, so that a bound's sign stays visible."""
+    if v is None:
+        return "--"
+    s = f"{v:.3f}" if v == 0 or abs(v) >= 0.0005 else f"{v:.4f}"
+    return s.replace("-", "$-$")
+
+
+def _ci(c) -> str:
+    return f"[{_f(c[0])}, {_f(c[1])}]"
+
+
+def table(analysis: dict) -> str:
+    cols = "ll" + "rr" * len(X)
+    head = " & ".join(["Winners", "$p$"] + [f"\\multicolumn{{2}}{{c}}{{{lab}}}" for _, lab in X])
+    lines = [f"\\begin{{tabular}}{{{cols}}}", "\\toprule", head + " \\\\",
+             "\\midrule", f"\\multicolumn{{{len(cols)}}}{{l}}{{\\emph{{Paired change from the market's no-churn value: mean [market $t$ interval], markets lower}}}} \\\\"]
+    for s, lab in SETS:
+        for p in ("0.03", "0.05"):
+            cells = []
+            for x, _ in X:
+                c = analysis[s]["paired_changes"][p][x]
+                cells += [f"{_f(c['mean'])} {_ci(c['t95'])}", f"{c['lower']}/6"]
+            lines.append(" & ".join([lab, p] + cells) + " \\\\")
+    lines += ["\\midrule", f"\\multicolumn{{{len(cols)}}}{{l}}{{\\emph{{Absolute contrast: mean [market $t$ interval]}}}} \\\\"]
+    for s, lab in SETS:
+        for p in RATES:
+            cells = []
+            for x, _ in X:
+                c = analysis[s]["absolute"][p][x]
+                cells += [f"\\multicolumn{{2}}{{r}}{{{_f(c['mean'])} {_ci(c['t95'])}}}"]
+            lines.append(" & ".join([lab, p] + cells) + " \\\\")
+    lines += ["\\bottomrule", "\\end{tabular}", ""]
+    return "\n".join(lines)
+
+
+def table_markets(analysis: dict) -> str:
+    """Per-market paired changes with their seed-bootstrap intervals (second line), and the equal-weight mean with its
+    pooled seed-bootstrap interval; both sets, both churn rates, all three contrasts."""
+    lines = ["\\begin{tabular}{lll" + "r" * (len(MARKETS) + 1) + "}", "\\toprule",
+             " & ".join(["Winners", "$p$", "Contrast"] + list(MARKETS) + ["Mean"]) + " \\\\", "\\midrule"]
+    for s, lab in SETS:
+        for p in ("0.03", "0.05"):
+            for x, xl in X:
+                c, b = analysis[s]["paired_changes"][p][x], analysis[s]["bootstrap"][p][x]
+                lines.append(" & ".join([lab, p, xl] + [_f(c["markets"][m]) for m in MARKETS] + [_f(c["mean"])]) + " \\\\")
+                lines.append(" & ".join(["", "", ""] + [f"{{\\scriptsize {_ci(b['markets'][m]['ci95'])}}}" for m in MARKETS]
+                                        + [f"{{\\scriptsize {_ci(b['pooled']['ci95'])}}}"]) + " \\\\")
+    return "\n".join(lines + ["\\bottomrule", "\\end{tabular}", ""])
+
+
+def table_absolute(analysis: dict) -> str:
+    """Per-market absolute contrasts with their seed-bootstrap intervals (second line), and the pooled mean with its
+    pooled seed-bootstrap interval."""
+    lines = ["\\begin{tabular}{lll" + "r" * (len(MARKETS) + 1) + "}", "\\toprule",
+             " & ".join(["Winners", "$p$", "Contrast"] + list(MARKETS) + ["Pooled"]) + " \\\\", "\\midrule"]
+    for s, lab in SETS:
+        for p in RATES:
+            for x, xl in X:
+                c = analysis[s]["absolute"][p][x]
+                lines.append(" & ".join([lab, p, xl] + [_f(c["markets"][m]["estimate"]) for m in MARKETS] + [_f(c["mean"])]) + " \\\\")
+                lines.append(" & ".join(["", "", ""] + [f"{{\\scriptsize {_ci(c['markets'][m]['ci95'])}}}" for m in MARKETS]
+                                        + [f"{{\\scriptsize {_ci(c['pooled_ci95'])}}}"]) + " \\\\")
+    return "\n".join(lines + ["\\bottomrule", "\\end{tabular}", ""])
+
+
+def table_terms(analysis: dict) -> str:
+    """Equal-weight means over the six markets of each rule's normalised attacked profit, reference profit and gain, and
+    its gross efficiency under the selected attack (mean and lowest market)."""
+    lines = ["\\begin{tabular}{lllrrrrr}", "\\toprule",
+             "Winners & $p$ & Rule & Attack & Reference & Gain & Efficiency & Lowest \\\\", "\\midrule"]
+    for s, lab in SETS:
+        for p in RATES:
+            t = analysis[s]["terms"][p]
+            for r in RULES:
+                v = {k: [t[m][r][k] for m in MARKETS] for k in ("attack", "reference", "gain", "eff_attack")}
+                mean = lambda k: sum(v[k]) / len(v[k])
+                lines.append(" & ".join([lab, p, r.replace("C*", "C$^*$"), _f(mean("attack")), _f(mean("reference")), _f(mean("gain")),
+                                         _f(mean("eff_attack")), _f(min(v["eff_attack"]))]) + " \\\\")
+    return "\n".join(lines + ["\\bottomrule", "\\end{tabular}", ""])
+
+
+def table_alloc(summ: dict) -> str:
+    """R3's audit allocation per set and rate: equal-weight means over the markets with diagnostics, and the range of
+    the audited share of the attacker's jobs over those markets."""
+    lines = ["\\begin{tabular}{llrrrrrrrr}", "\\toprule",
+             "Winners & $p$ & Markets & Young honest jobs & Young honest audits & Established honest rate & Attacker jobs & "
+             "Attacker rate & Attacker range & Replacing \\\\", "\\midrule"]
+    for s, lab in SETS:
+        for p in RATES:
+            a, au = summ[s]["alloc"][p], summ[s]["audit"][p]
+            lines.append(" & ".join([lab, p, f"{a['markets']}/6"] + [_f(a[k]) for k in ALLOC]
+                                    + [f"{_f(au['focal_audit_min'])}--{_f(au['focal_audit_max'])}", f"{a['replacing_markets']}/{a['markets']}"]) + " \\\\")
+    return "\n".join(lines + ["\\bottomrule", "\\end{tabular}", ""])
+
+
+def _dump(d: dict) -> str:
+    return json.dumps(d, indent=1, sort_keys=True) + "\n"
+
+
+def outputs(analysis, extract, analysis_sha, summary_path, table_path) -> dict:
+    s = summary(analysis, extract, analysis_sha)
+    d = Path(table_path).parent
+    return {Path(summary_path): _dump(s), Path(table_path): table(analysis),
+            d / "replication_markets.tex": table_markets(analysis), d / "replication_absolute.tex": table_absolute(analysis),
+            d / "replication_terms.tex": table_terms(analysis), d / "replication_alloc.tex": table_alloc(s)}
+
+
+def write(analysis, extract, analysis_sha, summary_path, table_path) -> None:
+    for path, text in outputs(analysis, extract, analysis_sha, summary_path, table_path).items():
+        path.write_text(text)
+
+
+def check(analysis, extract, analysis_sha, summary_path, table_path) -> list:
+    return [f"stale: {p} (run replication_paper.py --write)"
+            for p, want in outputs(analysis, extract, analysis_sha, summary_path, table_path).items()
+            if not p.exists() or p.read_text() != want]
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser()
+    for k in ("analysis", "extract", "summary", "table"):
+        ap.add_argument(f"--{k}", required=True)
+    g = ap.add_mutually_exclusive_group(required=True); g.add_argument("--write", action="store_true"); g.add_argument("--check", action="store_true")
+    a = ap.parse_args(argv)
+    an, ex = (json.loads(Path(p).read_text()) for p in (a.analysis, a.extract))
+    sha = sha_file(a.analysis)
+    if a.write:
+        write(an, ex, sha, a.summary, a.table); return 0
+    probs = check(an, ex, sha, a.summary, a.table)
+    print("\n".join(probs) or "ok")
+    return 1 if probs else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+
+ succeeded in 0ms:
+\adjustbox{max width=\linewidth}{\input{tables/posthoc_honest.tex}}
+\caption{Registered honest-replacement diagnostic at the headline market (computed from unrounded report values, displayed rounded): an honest provider replaces its identity at round \const{50} while all others are honest. Audited share of the replacement's served jobs in its first three ten-round age bins; its profit per round and the refunds deducted from its receipts on false audit failures per ten-round bin, both divided by $S^*/N$ and averaged over the fifteen bins.}\label{tab:ph-honest}
+\end{table}
+\begin{table}[t]\centering\small
+\adjustbox{max width=\linewidth}{\input{tables/q1_side.tex}}
+\caption{Q1 side evidence, R3 minus C$^*$, pooled over the fresh markets (descriptive).}\label{tab:q1-side}
+\end{table}
+\begin{figure}[t]\centering
+\includegraphics[width=0.7\linewidth]{figures/fig_q1.pdf}
+\caption{Q1: pooled intervals of $d$ against the equivalence and materiality margins. These registered intervals hold the six markets fixed; the exploratory market-level intervals are in the text.}\label{fig:q1}
+\end{figure}
+\begin{table}[t]\centering\small
+\adjustbox{max width=\linewidth}{\input{tables/posthoc_q4_diag.tex}}
+\caption{Exploratory, after the report: per fresh market, the B3 minus R3 gain difference split into its two terms, and under the selected attack R3's audit cost divided by the realised first-best surplus $S^*$ and the market's service fraction, the number of jobs served by all providers divided by the first-best number $T\min(J, \sum_i k_i)$; the service fraction is not the attacker's allocation share.}\label{tab:ph-q4}
+\end{table}
+\begin{figure}[t]\centering
+\includegraphics[width=0.7\linewidth]{figures/fig_q4.pdf}
+\caption{Q4: per-market lower bounds against the registered thresholds.}\label{fig:q4}
+\end{figure}
+
+\paragraph{Identity replacement follow-up: details (exploratory).} The two searched winners can differ in every knob, not only $x$. With every other knob held fixed, switching replacement off in the D2+H3 winner lowers the gain by \site{rs_fx_b3} against B3, \site{rs_fx_r3} against R3, and \site{rs_fx_c} against C$^*$, and switching it on in the D2 winner raises the gain by only \site{rs_rev_b3}, \site{rs_rev_r3}, and \site{rs_rev_c}. No D2 winner replaces its identity. The truthful references can: \site{rs_ref_any} of the \site{rs_ref_n} frozen references replace an identity on the evaluation seeds. Each rule's reference cancels in $I$ but not in $G$. As a sensitivity calculation, we measured on the Mac each frozen reference's profit with replacement and with replacement disabled, and added the signed difference to the stored Linux gains; the adjustment can increase or decrease a gain, and it is not a re-evaluation with non-replacing references. The largest absolute difference is \site{rs_ref_max}; the adjustment moves G(D2+H3) and G(D2) by the same amount, less than \const{0.001}, leaves $S$ at \site{rs_ref_s}, and moves the C$^*$ minus R3 difference by less than \const{0.002}. The Mac reproduces the stored reference profits only on average, with a largest absolute mean discrepancy of about \site{rs_ref_val}, close to the largest replacement difference. $S$ is a ratio of two searched gaps and carries their search error (Table~\ref{tab:ph-reset}). \site{rs_flag} of the \site{rs_flag_n} D2 doubling checks are flagged (largest change \site{rs_flag_max}), and on fresh0 the D2 gap moves from \site{rs_f0_g0} to \site{rs_f0_g0_d} under doubling; an unflagged cell is not a converged one. In two frozen comparisons the evaluated D2+H3 winner earns less than the evaluated D2 winner: $I$ is \site{rs_nest_c} for C$^*$ on fresh3 and \site{rs_nest_r} for R3 on fresh4. These reversals can reflect finite search or differences between training and evaluation outcomes; they disappear under doubling, which does not establish convergence. We keep the frozen searches as primary and report the doubled results as sensitivity.
+
+\begin{table}[t]\centering\small
+\adjustbox{max width=\linewidth}{\input{tables/posthoc_runnerup.tex}}
+\caption{Exploratory follow-up, after the report, without churn: the development runner-up comparator C-thr(\const{12}) against R3 on the six fresh markets, per attack family and search version, with the market-level $t$ interval (\const{5} degrees of freedom) over the six market differences, the number of markets on which R3 has the lower or higher gain, and C$^*$ minus runner-up.}\label{tab:ph-runnerup}
+\end{table}
+
+\section{Prospective-exploratory replication: details}\label{sec:app-rep}
+Tables~\ref{tab:rep-markets} to~\ref{tab:rep-alloc} complete Table~\ref{tab:replication}. All values condition on the selected search outputs and omit search uncertainty; the primary set uses the continued winner of every flagged cell and the all-frozen set the frozen winner of every cell.
+
+\begin{table}[t]\centering\small
+\adjustbox{max width=\linewidth}{\input{tables/replication_markets.tex}}
+\caption{Prospective-exploratory replication: the paired change of each contrast from the same market's no-churn value, per market, with its seed-bootstrap interval (second line; \const{95}\% paired percentile intervals, \const{9999} resamples, seed \const{0}), and the equal-weight mean over the six markets with its pooled seed-bootstrap interval, which holds the six markets fixed.}\label{tab:rep-markets}
+\end{table}
+\begin{table}[t]\centering\small
+\adjustbox{max width=\linewidth}{\input{tables/replication_absolute.tex}}
+\caption{Prospective-exploratory replication: the absolute contrasts per market with their seed-bootstrap intervals (second line; \const{95}\% paired percentile intervals, \const{9999} resamples, seed \const{0}), and the equal-weight pooled value with its pooled seed-bootstrap interval, which holds the six markets fixed.}\label{tab:rep-absolute}
+\end{table}
+\begin{table}[t]\centering\small
+\adjustbox{max width=\linewidth}{\input{tables/replication_terms.tex}}
+\caption{Prospective-exploratory replication: per rule, the attacked profit and the truthful reference's profit (both normalised as in the gain), the gain, and gross efficiency under the selected attack, as equal-weight means over the six markets, with the lowest market's efficiency.}\label{tab:rep-terms}
+\end{table}
+\begin{table}[t]\centering\small
+\adjustbox{max width=\linewidth}{\input{tables/replication_alloc.tex}}
+\caption{Prospective-exploratory replication: R3's audit allocation under its selected attack, as equal-weight means over the markets with diagnostics: the share of served jobs held by honest identities younger than ten rounds, their share of R3's audits, the audited rate of established honest jobs, the attacker's share of served jobs, its audited rate, and the range of that rate over the markets. At $p = \const{0.03}$ the primary set lacks rep2, rep3, and rep4, whose continued R3 winners have no diagnostics because the run code computed them only at $p = \const{0}$ and \const{0.05}. The last column counts the markets where the selected attack replaces its identity (switch $x = \const{1}$).}\label{tab:rep-alloc}
+\end{table}
+
+\clearpage
+% END-EV2
+
+\section{The first test (October 2026)}\label{sec:eval1}
+\paragraph{Claims.} The original claim was locked and timestamped on 17 October 2026, before the rule was implemented. At $\beta = \evone{0.05}$, the median position, and on 40 fresh seeds, its \emph{rule clause} required, for each confirmatory family, a one-sided 95\% lower bound of R3's gross efficiency of at least \evone{0.90}, a one-sided 95\% upper bound of its gain of at most \evone{0.30}, and audit cost within budget on every seed. Its \emph{baseline clause} required, for each of B2 and B3, a confirmatory family in which either the paired inflation-caused efficiency-loss difference exceeded \evone{0.05} or the baseline's gain exceeded \evone{1.0}, at the 98.75\% level. Amendment 1, registered after the baselines' development results showed that the baseline clause was unlikely to pass, added an amended claim on the public identity-replacement family D2+H3: the same absolute part as the rule clause (gross-efficiency lower bound at least \evone{0.90}, gain upper bound at most \evone{0.30}, budget compliance) and paired gain reductions of at least \evone{0.10} against B2 and B3 at the 98.75\% level, plus the H2 rule clause. After a development test killed the first rule, Amendment 3 registered one successor, R3, before its implementation.
+
+\paragraph{Sealing.} The sealed family H2 was written in a separate session from a pinned copy of the repository, and only its hash was committed. Before unsealing, at the author's request, the custodian disclosed that H2 contains D2; that H2 does not exit or re-enter was stated in the public specification before the lock.
+
+\begin{table}[t]\centering\small
+
+hook: PostToolUse
+hook: PostToolUse
+ succeeded in 0ms:
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+codex
+The caption now describes both interval lines. The new hash test can detect the edits that passed round 3. I will repeat those edits in memory and check how the gate runs the test.
+
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '1,100p' docs/revision/followup3/replication-publication.md" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc "sed -n '1,90p' docs/revision/followup3/replication_analysis.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc 'cat results/pods/paper_check.sh' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+# Churn replication: commitment publication record (plan section 5)
+
+| Item | Value | Source |
+|---|---|---|
+| Manifest | `experiments/v2/replication-manifest.json`, sha256 `6f59f245830fb1279c1e98071c2a35ec8833c3becb381430dd7c513175db68c5`, 28 files, code commit `d59e7db3d15a481eee7ef32f12e0a7646ecb6893` | `commitment.py check` passes |
+| Manifest commit | `4e9978c983409bea27ebdbc2ebedd14853db9b2f` (signed by the author), parent d59e7db | `git log` |
+| Push | `e8ea98b..4e9978c HEAD -> main` on github.com/demirelo/touchstone, by the author | author's terminal output |
+| Remote record | GitHub API `repos/demirelo/touchstone/commits/main`: sha 4e9978c, committer date 2026-11-20T16:04:06Z; read 2026-11-20T16:04:41Z | `gh api` |
+| Bitcoin tip at publication | height 976752, read 2026-11-20T16:04:41Z | `https://mempool.space/api/blocks/tip/height` |
+| OpenTimestamps stamp | `experiments/v2/replication-manifest.json.ots`, submitted 2026-11-20T16:04:57Z to a.pool and b.pool.opentimestamps.org, a.pool.eternitywall.com, ots.btc.catallaxy.com; pending until upgraded | `uvx --from opentimestamps-client ots stamp` |
+| Upgraded proof | upgraded 2026-11-20T18:26:16Z; Bitcoin attestations at blocks 976760 (catallaxy calendar) and 976761 (bob calendar); the other calendars still pending | `ots upgrade`, `ots info` |
+| Attestation check | merkle roots in the proof match the block headers: 976760 `43bf5084...5a672f` (block `...a6d49fd2`), 976761 `7e423ef5...ae53598` (block `...dc4ae7a3`); read 2026-11-20T18:26:39Z | `https://mempool.space/api/block/<hash>` |
+| A (lowest attestation) | **976760** | `ots info` |
+| H = A + 144 | **976904**; draw after six confirmations (tip at least 976909) | plan section 5 |
+
+The publication height (976752) is below any possible A, so the commitment was public before H.
+
+## Draw (plan section 5)
+
+| Item | Value | Source |
+|---|---|---|
+| Draw record | `experiments/v2/replication-draw.json`, sha256 `f16d523942381a9e8165ca7cbca33de9f7905be85f5bbd1d61de51467a532b3b`, status final, written 2026-11-21T13:46:27Z | `.venv/bin/python scripts/block_draw.py --ots experiments/v2/replication-manifest.json.ots --protocol experiments/v2/replication-manifest.json --out experiments/v2/replication-draw.json --poll 300` |
+| Block H | 976904, hash `0000000000000000000187abd78f409c52630927b65e12ac57b2906293513cbf`; both explorers agree; tips 976912 at the draw (H + 8) | draw record `answers_at_h`, `tips` |
+| Anchor | verified, A = 976760, merkle root `43bf5084...5a672f`; header chain A to the tip kept in the record | draw record `anchor`, `headers` |
+| Protocol | `protocol_sha256` 6f59f245...db68c5, equal to the manifest sha256 | draw record |
+| Instances check | `draw_v2.instances(draw, manifest, proof, 976752, calibrate=False)`: confirmatory true, salt sha256 `324e48754c60450def1ac9abb7aed84c83c9e92281c11465c213d7b21c18f390`; no calibration on the Mac | local call, 2026-11-21 |
+
+One draw: the script ran once and wrote the record once. No restamp and no redraw.
+
+## Run and analysis
+
+| Item | Value | Source |
+|---|---|---|
+| Pod 1 | RUN OK, 11.13 USD recorded | ledger `replication-p1` |
+| Pod 2 launch p2 | UPLOAD FAILED (bundle) after 96 s, pod deleted (verified); transient: a diagnostic pod then pushed both tarballs (`runpod-v2/upload-diag-2026-11-22.log`) | `rep_p2_launch.log` |
+| Pod 2 launch p3 | pod eo8edyb2i8q028, remote 2026-11-22T17:25Z to 2026-11-23T20:30Z (UTC, pod clock); gate0 bit-identical; continue queued 20, ran 21, 0 lost, 0 failed, 0 mismatch; RUN OK; pod deleted (verified, list empty, get 404) | `rep_p3_launch.log`, `logs_rep2_p3/rep.log` |
+| Output | `followup3-rep`: 1419 records, 0 bad, 0 not inventoried | launcher `verify` line |
+| Analysis | `rep_v2.py --stage analyse` on a clone of the pulled output, Mac, 2026-11-23T20:36Z; counts continued 20, frozen 52, stopped 0, unresolved 0; round-1 mismatch false; gate ok; 0 problems; 0 unscorable | `replication-analysis.json`, sha256 `28da11c0cf9a6485ff1238a53b339d1079e7bc9de3b917d38370551ce718c37f` |
+| Expectations, primary winners | 1 met, 2 met, 3 met, 4 met, 5 met | `replication-analysis.json` `primary.expectations` |
+| Expectations, all-frozen (sensitivity) | 1 met, 2 met, 3 not met (d at p = 0.03: 4 of 6 markets lower), 4 met, 5 met | `replication-analysis.json` `frozen.expectations` |
+| Paper extract | `replication_extract.py --out <analysed clone> --manifest experiments/v2/replication-manifest.json --draw experiments/v2/replication-draw.json --check replication-extract.json` rebuilds the extract from the run records (the analysis is recomputed and must be byte-identical first): ok, byte-identical, 2026-11-24 | `replication-extract.json`, sha256 `36e7c69be53db5c606c2a0ff365c4cae380efe4db081da35fba0eec8a9750cae` (pinned in `test_replication_extract.py`) |
+
+ succeeded in 0ms:
+"""Analysis of the churn replication (docs/revision/followup3/replication-plan.md, sections 2 and 3), fixed before the
+draw. Input per winner set: recs[rate][market][rule] = per-seed lists {"gain", "attack", "reference", "eff_attack",
+"seeds"} for markets rep0..rep5, rules R3, C*, C-thr, B3 and rates "0", "0.03", "0.05"; audit[rate][market] =
+(audited jobs, served jobs) of the attacker under R3. Output: the paired changes from each market's own no-churn value,
+the descriptive support criterion and its material companion, the five expectations, the absolute contrasts, the attack
+and reference terms and efficiency under attack, and the seed-bootstrap intervals with one index vector per market
+shared by every rule, rate and winner set. A missing cell makes what needs it "not scorable"; a malformed cell (nonfinite
+values, unequal seed vectors within a market) is refused. Exploratory; intervals omit search uncertainty."""
+import math
+
+import numpy as np
+
+MARKETS = tuple(f"rep{i}" for i in range(6))
+RULES = ("R3", "C*", "C-thr", "B3")
+CONTRASTS = {"d": "C*", "q": "B3", "u": "C-thr"}   # x = g(comparator) - g(R3)
+RATES = ("0.03", "0.05")
+ALL_RATES = ("0",) + RATES
+T5 = 2.570581835636314                             # 0.975 quantile of Student's t, 5 degrees of freedom
+MATERIAL = -0.05                                   # the registered Q1 margin
+RESAMPLES, SEED = 9999, 0
+FIELDS = ("gain", "attack", "reference", "eff_attack")
+
+
+def _mean(xs):
+    return sum(xs) / len(xs)
+
+
+def _finite(xs) -> bool:
+    return bool(xs) and all(isinstance(x, (int, float)) and math.isfinite(x) for x in xs)
+
+
+def _check(gains: dict) -> None:
+    """Every present cell finite; within a market every rule and rate has the same number of seeds."""
+    for m in MARKETS:
+        lens = set()
+        for p in ALL_RATES:
+            for r, xs in (gains.get(p, {}).get(m) or {}).items():
+                if not _finite(xs):
+                    raise ValueError(f"{p} {m} {r}: missing or nonfinite gains")
+                lens.add(len(xs))
+        if len(lens) > 1:
+            raise ValueError(f"{m}: unequal seed vectors {sorted(lens)}")
+
+
+def _check_recs(recs: dict) -> None:
+    for m in MARKETS:
+        seeds = None
+        for p in ALL_RATES:
+            for r, c in (recs.get(p, {}).get(m) or {}).items():
+                for f in FIELDS:
+                    if not _finite(c.get(f)):
+                        raise ValueError(f"{p} {m} {r}: missing or nonfinite {f}")
+                if len({len(c[f]) for f in FIELDS} | {len(c["seeds"])}) != 1:
+                    raise ValueError(f"{p} {m} {r}: fields of unequal length")
+                if seeds is None:
+                    seeds = list(c["seeds"])
+                elif list(c["seeds"]) != seeds:
+                    raise ValueError(f"{p} {m} {r}: seeds differ from the market's other cells")
+
+
+def gains_of(recs: dict) -> dict:
+    return {p: {m: {r: list(c["gain"]) for r, c in rs.items()} for m, rs in ms.items()} for p, ms in recs.items()}
+
+
+def _t95(xs: list) -> list:
+    n = len(xs); m = _mean(xs); sd = math.sqrt(sum((x - m) ** 2 for x in xs) / (n - 1))
+    half = T5 * sd / math.sqrt(n)
+    return [m - half, m + half]
+
+
+def contrast(cell: dict, comparator: str):
+    """Mean of g(comparator) - g(R3) over the seeds of one market, or None if a rule is missing."""
+    if comparator not in cell or "R3" not in cell:
+        return None
+    return _mean(cell[comparator]) - _mean(cell["R3"])
+
+
+def _cell(gains, p, m):
+    return gains.get(p, {}).get(m) or {}
+
+
+def paired_changes(gains: dict) -> dict:
+    """Delta_x(m, p) = x(m, p) - x(m, 0) per contrast and positive rate over the six named markets; mean, market t interval
+    and markets lower. A market missing a needed rule at either rate leaves that contrast incomplete."""
+    _check(gains)
+    out = {}
+    for p in RATES:
+        out[p] = {}
+        for x, comp in CONTRASTS.items():
+            ms = {}
+
+ exited 1 in 0ms:
+cat: results/pods/paper_check.sh: No such file or directory
+
+exec
+/bin/zsh -lc "sed -n '290,370p' docs/revision/followup3/replication_paper.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc "sed -n '40,205p' docs/revision/followup3/replication_paper.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+             "Attacker rate & Attacker range & Replacing \\\\", "\\midrule"]
+    for s, lab in SETS:
+        for p in RATES:
+            a, au = summ[s]["alloc"][p], summ[s]["audit"][p]
+            lines.append(" & ".join([lab, p, f"{a['markets']}/6"] + [_f(a[k]) for k in ALLOC]
+                                    + [f"{_f(au['focal_audit_min'])}--{_f(au['focal_audit_max'])}", f"{a['replacing_markets']}/{a['markets']}"]) + " \\\\")
+    return "\n".join(lines + ["\\bottomrule", "\\end{tabular}", ""])
+
+
+def _dump(d: dict) -> str:
+    return json.dumps(d, indent=1, sort_keys=True) + "\n"
+
+
+def outputs(analysis, extract, analysis_sha, summary_path, table_path) -> dict:
+    s = summary(analysis, extract, analysis_sha)
+    d = Path(table_path).parent
+    return {Path(summary_path): _dump(s), Path(table_path): table(analysis),
+            d / "replication_markets.tex": table_markets(analysis), d / "replication_absolute.tex": table_absolute(analysis),
+            d / "replication_terms.tex": table_terms(analysis), d / "replication_alloc.tex": table_alloc(s)}
+
+
+def write(analysis, extract, analysis_sha, summary_path, table_path) -> None:
+    for path, text in outputs(analysis, extract, analysis_sha, summary_path, table_path).items():
+        path.write_text(text)
+
+
+def check(analysis, extract, analysis_sha, summary_path, table_path) -> list:
+    return [f"stale: {p} (run replication_paper.py --write)"
+            for p, want in outputs(analysis, extract, analysis_sha, summary_path, table_path).items()
+            if not p.exists() or p.read_text() != want]
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser()
+    for k in ("analysis", "extract", "summary", "table"):
+        ap.add_argument(f"--{k}", required=True)
+    g = ap.add_mutually_exclusive_group(required=True); g.add_argument("--write", action="store_true"); g.add_argument("--check", action="store_true")
+    a = ap.parse_args(argv)
+    an, ex = (json.loads(Path(p).read_text()) for p in (a.analysis, a.extract))
+    sha = sha_file(a.analysis)
+    if a.write:
+        write(an, ex, sha, a.summary, a.table); return 0
+    probs = check(an, ex, sha, a.summary, a.table)
+    print("\n".join(probs) or "ok")
+    return 1 if probs else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+
+ succeeded in 0ms:
+POLICY = {"F111": "R3", "Cstar": "C*", "F000": "B3"}   # menu policies; every cthr-directory cell is C-thr
+SETS = (("primary", "Primary"), ("frozen", "All-frozen"))
+X = (("d", "$d$ (C$^*$)"), ("q", "$q$ (B3)"), ("u", "$u$ (C-thr)"))
+ALLOC = ("young_honest_job_share", "young_honest_audit_share", "established_honest_audit_rate", "focal_job_share", "focal_audit_rate")
+STATUS = ("problems", "unscorable", "round1_mismatch", "gate_ok")
+ROOT = Path(__file__).resolve().parents[3]
+COMMITTED = {"draw": ROOT / "experiments/v2/replication-draw.json", "manifest": ROOT / "experiments/v2/replication-manifest.json"}
+CONT_DIAG_RATES = ("0", "0.05")       # rep_collect.run_diagnostics: continued R3 winners get diagnostics only at these rates
+APPENDIX = ("markets", "absolute", "terms", "alloc")
+
+
+def sha_file(p) -> str:
+    return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+
+
+def _share(c):
+    return c[0] / c[1] if c and c[1] > 0 else None
+
+
+def _audit(au: dict) -> dict:
+    out = {}
+    for p in RATES:
+        sh = [s for s in (_share(c) for c in au.get(p, {}).values()) if s is not None]
+        out[p] = {"markets": len(sh), "focal_audit_min": min(sh) if sh else None, "focal_audit_max": max(sh) if sh else None}
+    below = 0
+    for m, c5 in au.get("0.05", {}).items():
+        s0, s5 = _share(au.get("0", {}).get(m)), _share(c5)
+        below += int(s0 is not None and s5 is not None and s5 < s0)
+    out["below"] = {"markets": below}
+    return out
+
+
+def _alloc(al: dict) -> dict:
+    out = {}
+    for p in RATES:
+        rows = list(al.get(p, {}).values())
+        mean = lambda k: (sum(r[k] for r in rows if r[k] is not None) / sum(r[k] is not None for r in rows)
+                          if any(r[k] is not None for r in rows) else None)
+        out[p] = {k: mean(k) for k in ALLOC}
+        out[p]["markets"] = len(rows)
+        out[p]["replacing_markets"] = sum(r["x"] == 1 for r in rows)
+    return out
+
+
+def _eff(terms: dict) -> dict:
+    out = {}
+    for p in RATES:
+        out[p] = {}
+        for r in RULES:
+            v = [terms[p][m][r]["eff_attack"] for m in sorted(terms[p])]
+            if not all(math.isfinite(x) for x in v):
+                raise ValueError(f"nonfinite efficiency at {p} {r}")
+            out[p][r] = {"eff": sum(v) / len(v), "eff_min": min(v)}
+    return out
+
+
+def _spread(pc: dict) -> dict:
+    """The two most negative market changes, their markets, and the range of the other four."""
+    v = sorted(pc["markets"].items(), key=lambda kv: kv[1])
+    rest = [x for _, x in v[2:]]
+    return {"top": {"0": v[0][1], "1": v[1][1]}, "top_markets": sorted(m for m, _ in v[:2]), "rest": {"min": min(rest), "max": max(rest)}}
+
+
+def _continued(cells: list) -> dict:
+    out = {"all": {"cells": len(cells)}, "rules": {r: {"cells": sum(_rule(c) == r for c in cells)} for r in RULES}}
+    out.update({p: {"cells": sum(c["rate"] == p for c in cells)} for p in RATES})
+    return out
+
+
+def _rule(c: dict) -> str:
+    return "C-thr" if c["kind"] == "cthr" else POLICY[c["policy"]]
+
+
+def _validate_counts(extract: dict) -> None:
+    for s, _ in SETS:
+        for p, ms in extract["audit"][s].items():
+            for m, c in ms.items():
+                if not (isinstance(c, list) and len(c) == 2 and all(isinstance(v, int) and not isinstance(v, bool) for v in c)
+                        and 0 <= c[0] <= c[1]):
+                    raise ValueError(f"impossible audit count {s} {p} {m}: {c}")
+                al = extract["alloc"][s][p][m]
+                if any(al[k] is not None and not 0 <= al[k] <= 1 for k in ALLOC) or type(al.get("x")) is not int or al["x"] not in (0, 1):
+                    raise ValueError(f"allocation out of range {s} {p} {m}")
+                need = (["young_honest_job_share", "focal_job_share"] if c[1] else []) + (["young_honest_audit_share"] if c[0] else [])
+                if any(al[k] is None for k in need):
+                    raise ValueError(f"allocation share missing although the attacker's counts are nonzero {s} {p} {m}")
+                want = c[0] / c[1] if c[1] else None
+                if (want is None) != (al["focal_audit_rate"] is None) or (want is not None and abs(want - al["focal_audit_rate"]) > 1e-12):
+                    raise ValueError(f"the attacker's audited rate disagrees with its counts {s} {p} {m}")
+
+
+def _validate_coverage(analysis: dict, extract: dict) -> None:
+    full = {(p, m) for p in RATES for m in MARKETS}
+    have = lambda s: {(p, m) for p, ms in extract["audit"][s].items() for m in ms}
+    if have("frozen") != full:
+        raise ValueError("the frozen audit counts do not cover every rate and market")
+    gaps = {(c["rate"], c["market"]) for c in extract["continued"] if _rule(c) == "R3" and c["rate"] not in CONT_DIAG_RATES}
+    if have("primary") != full - gaps:
+        raise ValueError("the primary audit counts miss cells other than continued R3 cells without diagnostics")
+    differ = {(p, m, r) for p in RATES for m in MARKETS for r in RULES
+              if analysis["primary"]["terms"][p][m][r] != analysis["frozen"]["terms"][p][m][r]}
+    if differ != {(c["rate"], c["market"], _rule(c)) for c in extract["continued"]}:
+        raise ValueError("the continued cells are not the cells whose primary and frozen terms differ")
+
+
+def _validate(analysis: dict, extract: dict, analysis_sha: str) -> None:
+    if analysis.get("problems") or analysis.get("unscorable") or analysis.get("round1_mismatch") or not analysis.get("gate_ok"):
+        raise ValueError("the analysis reports problems, unscorable cells, a round-1 mismatch or a failed gate")
+    if analysis.get("confirmatory") is not True:
+        raise ValueError("the analysis is not the confirmatory run")
+    b = extract.get("binding") or {}
+    if b.get("analysis") != analysis_sha or b.get("recomputed") is not True:
+        raise ValueError("the extract is not bound to this analysis file")
+    for k, path in COMMITTED.items():
+        if b.get(k) != sha_file(path):
+            raise ValueError(f"the extract's {k} is not the committed {path.name}")
+    if extract.get("status") != {k: analysis.get(k) for k in STATUS}:
+        raise ValueError("the extract's collector status differs from the analysis")
+    if analysis["counts"] != extract["counts"]:
+        raise ValueError("the extract's counts differ from the analysis")
+    stems = [c["stem"] for c in extract["continued"]]
+    if len(set(stems)) != len(stems):
+        raise ValueError("duplicate continued cell")
+    for c in extract["continued"]:
+        if dict(parse_cell(c["stem"]), stem=c["stem"]) != c:
+            raise ValueError(f"continued cell fields disagree with its identity: {c['stem']}")
+    if len(stems) != analysis["counts"]["continued"] + analysis["counts"].get("unresolved", 0):
+        raise ValueError("the continued-cell list does not match the continued count")
+    for s, _ in SETS:
+        for part in ("audit", "alloc"):
+            for p, ms in extract[part][s].items():
+                if p not in RATES or not set(ms) <= set(MARKETS):
+                    raise ValueError(f"unexpected rate or market in the extract's {part} ({s}, {p})")
+        if {p: set(ms) for p, ms in extract["audit"][s].items()} != {p: set(ms) for p, ms in extract["alloc"][s].items()}:
+            raise ValueError(f"audit counts and allocation cover different cells ({s})")
+    _validate_counts(extract)
+    _validate_coverage(analysis, extract)
+
+
+def summary(analysis: dict, extract: dict, analysis_sha: str) -> dict:
+    _validate(analysis, extract, analysis_sha)
+    res = {"continued": _continued(extract["continued"])}
+    for s, _ in SETS:
+        if isinstance(analysis[s], str):
+            raise ValueError(f"winner set {s} not available")
+        a = analysis[s]
+        res[s] = {"audit": _audit(extract["audit"][s]), "alloc": _alloc(extract["alloc"][s]), "eff": _eff(a["terms"]),
+                  "absneg": {p: {x: {"negative": sum(v["estimate"] < 0 for v in a["absolute"][p][x]["markets"].values())}
+                                 for x, _ in X} for p in RATES},
+                  "spread": {p: {x: _spread(a["paired_changes"][p][x]) for x, _ in X} for p in ("0.03", "0.05")},
+                  "criteria": {k: {"cells": sum(c[k] for p in a["criteria"] for c in a["criteria"][p].values())}
+                               for k in ("support", "material")}}
+        v = [e["verdict"] for e in a["expectations"].values()]
+        if any(x not in ("met", "not met") for x in v):
+            raise ValueError(f"expectation not scorable in {s}")
+        res[s]["exp"] = {"fulfilled": v.count("met"), "failed": v.count("not met")}
+        if (res[s]["audit"]["below"]["markets"] >= 5) != (a["expectations"]["5"]["verdict"] == "met"):
+            raise ValueError(f"the audit counts disagree with expectation 5 ({s})")
+    res["setdiff"] = {p: {x: {"difference": analysis["primary"]["absolute"][p][x]["mean"] - analysis["frozen"]["absolute"][p][x]["mean"]}
+                          for x, _ in X} for p in RATES}
+    return res
+
+
+def _f(v) -> str:
+    """Three decimals; four where a nonzero value would print as 0.000, so that a bound's sign stays visible."""
+    if v is None:
+
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse
+exec
+/bin/zsh -lc 'git diff e875923 -- docs/revision/followup3/replication_extract.py docs/revision/followup3/replication_paper.py docs/revision/followup3/test_replication_extract.py docs/revision/followup3/test_replication_paper.py docs/revision/followup3/replication-publication.md docs/revision/paper-v2/main.tex' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+exec
+/bin/zsh -lc "rg -n 'def test_|tmp_path|open\\(|write_|subprocess|sealed' docs/revision/followup3/test_replication_analysis.py docs/revision/followup3/rep_v2.py docs/revision/followup3/revision_v2.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ exited 2 in 0ms:
+rg: docs/revision/followup3/revision_v2.py: No such file or directory (os error 2)
+docs/revision/followup3/test_replication_analysis.py:28:def test_paired_change_uses_each_market_s_own_no_churn_value():
+docs/revision/followup3/test_replication_analysis.py:38:def test_support_and_material_criteria():
+docs/revision/followup3/test_replication_analysis.py:47:def test_support_needs_five_of_six_markets():
+docs/revision/followup3/test_replication_analysis.py:54:def test_expectations_scored_as_written_and_unscorable_when_a_cell_is_missing():
+docs/revision/followup3/test_replication_analysis.py:64:def test_expectation5_zero_denominator_counts_as_not_below():
+docs/revision/followup3/test_replication_analysis.py:72:def test_seed_bootstrap_is_paired_and_deterministic():
+docs/revision/followup3/test_replication_analysis.py:80:def test_nonfinite_gain_is_refused():
+docs/revision/followup3/test_replication_analysis.py:100:def test_a_market_missing_everywhere_makes_the_contrast_incomplete():
+docs/revision/followup3/test_replication_analysis.py:108:def test_unequal_seed_vectors_are_refused():
+docs/revision/followup3/test_replication_analysis.py:119:def test_a_missing_rate_or_r3_cell_is_not_scorable_and_does_not_crash():
+docs/revision/followup3/test_replication_analysis.py:127:def test_expectation5_needs_all_six_markets():
+docs/revision/followup3/test_replication_analysis.py:135:def test_bootstrap_uses_one_index_vector_per_market_shared_by_rules_and_rates():
+docs/revision/followup3/test_replication_analysis.py:149:def test_secondary_outputs_absolute_contrasts_terms_and_efficiency():
+docs/revision/followup3/test_replication_analysis.py:161:def test_absolute_contrasts_have_seed_intervals_at_p0():
+docs/revision/followup3/test_replication_analysis.py:167:def test_positive_rate_absolute_intervals_do_not_need_the_baseline():
+docs/revision/followup3/test_replication_analysis.py:176:def test_no_market_t_interval_for_an_incomplete_market_sample():
+docs/revision/followup3/test_replication_analysis.py:183:def test_no_paired_change_t_interval_for_an_incomplete_market_sample():
+docs/revision/followup3/rep_v2.py:101:def write_binding(out, manifest, draw) -> None:
+docs/revision/followup3/rep_v2.py:108:        p.write_text(json.dumps(body, indent=1, sort_keys=True) + "\n")
+docs/revision/followup3/rep_v2.py:136:        p.write_text(json.dumps({"workers": w, "limit_bytes": limit_bytes, "peak_bytes": peak_bytes}, sort_keys=True) + "\n")
+docs/revision/followup3/rep_v2.py:187:    p.write_text(body)
+docs/revision/followup3/rep_v2.py:188:    write_binding(out, a.manifest, a.draw)
+docs/revision/followup3/rep_v2.py:202:    p = out / "cfgs.json"; p.write_text(json.dumps(cfgs, indent=1, sort_keys=True) + "\n")
+docs/revision/followup3/rep_v2.py:210:    (out / "calibration.json").write_text(json.dumps(rec, indent=1, sort_keys=True) + "\n")
+docs/revision/followup3/rep_v2.py:338:def write_diag_binding(out, kind: str, p: float, jobs: list) -> None:
+docs/revision/followup3/rep_v2.py:362:            write_diag_binding(out, kind, p, js)         # review rep-impl-r3: binds the diagnostics before the inventory
+docs/revision/followup3/rep_v2.py:379:    (out / "gate.json").write_text(json.dumps({"gate_ok": bool(g["gate_ok"]), "comparison": g}, indent=1, sort_keys=True, default=str) + "\n")
+docs/revision/followup3/rep_v2.py:452:    (Path(a.out) / "analysis.json").write_text(json.dumps(res, indent=1, sort_keys=True) + "\n")
+
+hook: PostToolUse
+hook: PostToolUse Completed
+2026-11-24T10:04:24.488207Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+2026-11-24T10:04:26.671444Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://ai.engineer/mcp)")))
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'ls -l .venv/bin/python .venv/bin/pytest' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+-rwxr-xr-x@ 1 oemer.demirel  staff  397 Oct 22 19:36 .venv/bin/pytest
+lrwxr-xr-x@ 1 oemer.demirel  staff   93 Oct 22 19:36 .venv/bin/python -> /Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/bin/python3.12
+
+hook: PostToolUse
+hook: PostToolUse Completed
+exec
+/bin/zsh -lc "sed -n '15,80p' docs/revision/followup3/rep_v2.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc "sed -n '1,65p' docs/revision/followup3/rep_collect.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc "rg -n 'def seed_bootstrap|bootstrap|percentile' docs/revision/followup3/replication_analysis.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+
+import argparse
+import json
+import os
+import sys
+from pathlib import Path
+from types import SimpleNamespace
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parents[2]
+for p in (HERE, HERE.parent / "churn", HERE.parent / "followup2", HERE.parent / "followup", ROOT, ROOT / "scripts"):
+    if str(p) not in sys.path:
+        sys.path.insert(0, str(p))
+
+import commitment as K  # noqa: E402
+
+MARKETS = tuple(f"fresh{i}" for i in range(6))
+TARGETS = ("F111", "C*", "F000")                     # R3, C*, B3
+RATES = (0.03, 0.05)
+FAMS = ("D2+H3", "X7-SC")
+CONT_RATE_ORDER = (0.05, 0.03, 0.0)                  # plan section 4: the continuation queue order
+CONT_RULE_ORDER = ("F111", "C*", "Cthr", "F000")
+
+
+def _refuse(msg: str):
+    raise SystemExit(f"replication refused: {msg}")
+
+
+# ---- pure helpers (tested) ------------------------------------------------------------------------------------------
+
+def continuation_queue(flagged: list[dict]) -> list[dict]:
+    """The flagged cells in the fixed order: rate 0.05, 0.03, 0; markets fresh0..5; rules R3, C*, C-thr, B3.
+    Each item: {"rate": float, "market": str, "rule": "F111" | "C*" | "Cthr" | "F000", ...}."""
+    rk = {r: i for i, r in enumerate(CONT_RATE_ORDER)}; uk = {r: i for i, r in enumerate(CONT_RULE_ORDER)}
+    bad = [c for c in flagged if c["rate"] not in rk or c["rule"] not in uk or c["market"] not in MARKETS]
+    if bad:
+        _refuse(f"unknown cells in the flag list: {bad[:3]}")
+    return sorted(flagged, key=lambda c: (rk[c["rate"]], MARKETS.index(c["market"]), uk[c["rule"]]))
+
+
+def resume_point(queue: list[dict], passed: set) -> int:
+    """A resume continues the same queue from the first cell without a passing record (plan section 4)."""
+    for i, c in enumerate(queue):
+        if c["id"] not in passed:
+            return i
+    return len(queue)
+
+
+def admit_workers(requested: int, limit_bytes: int | None, peak_bytes: float, parent_bytes: float = 2e9, headroom: float = 1.25) -> int:
+    """Pod-memory admission (plan section 5): the largest worker count whose measured peak with 25 percent headroom,
+    plus the parent, fits the pod's cgroup limit; at least 1 only if one task fits, else refuse."""
+    if limit_bytes is None:
+        return requested
+    fit = int((limit_bytes - parent_bytes) // (peak_bytes * headroom))
+    if fit < 1:
+        _refuse(f"one task needs {peak_bytes * headroom / 1e9:.1f} GB with headroom; the limit is {limit_bytes / 1e9:.1f} GB")
+    return min(requested, fit)
+
+
+def check_params_listed(manifest, params) -> None:
+    """The parameter file is one the manifest lists (plan section 5: the parameter files are committed)."""
+    files = json.loads(Path(manifest).read_text())["files"]
+    try:
+        rel = str(Path(os.path.abspath(params)).relative_to(os.path.abspath(ROOT)))
+    except ValueError:
+        rel = None
+
+ succeeded in 0ms:
+"""The replication's continuation stage and record loader (replication-plan.md, sections 2 and 4).
+continue: the flagged cells of every rate directory, in the fixed queue order; the first cell runs alone as the
+  nonzero-churn continuation gate (round 1 against this run's own doubling record); the rest run in workers that each
+  install the churn-aware adapter and save their own record.
+collect: per winner set (frozen, primary), gains[rate][market][rule] for replication_analysis, R3's audited share of the
+  attacker's jobs per market from the diagnostics (frozen winners), and the counts of continued, unresolved, stopped and
+  not-continued cells. A round-1 mismatch anywhere makes the primary set unavailable (plan section 4)."""
+from __future__ import annotations
+
+import json
+import math
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+for p in (HERE, HERE.parent / "churn", HERE.parent / "followup2", HERE.parent / "followup"):
+    if str(p) not in sys.path:
+        sys.path.insert(0, str(p))
+
+RATE_DIRS = (0.0, 0.03, 0.05)
+
+
+class Round1Mismatch(Exception):
+    """Round 1 of a continuation differs from this run's doubling record: an environment or code fault."""
+
+
+def analysis_rule(kind: str, rule: str) -> str:
+    if kind == "cthr":
+        return "C-thr"
+    return {"F111": "R3", "C*": "C*", "F000": "B3"}[rule]
+
+
+def _num(x) -> bool:
+    """A finite number: not a boolean, and an int too large for a float is not (review rep-impl-r5: 10**400)."""
+    if isinstance(x, bool) or not isinstance(x, (int, float)):
+        return False
+    try:
+        return math.isfinite(float(x))
+    except OverflowError:
+        return False
+
+
+def _finite(xs) -> bool:
+    """A nonempty list of finite numbers; any other type is not (reviews rep-impl-r4, r5)."""
+    return isinstance(xs, (list, tuple)) and bool(xs) and all(_num(x) for x in xs)
+
+
+def _same(a, b) -> bool:
+    """Equality that does not let True stand for 1 or 1.0 for 1 (review rep-impl-r5): the canonical JSON texts agree."""
+    try:
+        return json.dumps(a, sort_keys=True) == json.dumps(b, sort_keys=True)
+    except (TypeError, ValueError):
+        return False
+
+
+def _d(x):
+    """A record is a JSON object; any other root (a list, a number) counts as no valid record (review rep-impl-r5)."""
+    return x if isinstance(x, dict) else None
+
+
+def _checked(fn):
+    """A record check never raises on a malformed record: a wrong type anywhere is a problem, not an error (review
+    rep-impl-r4). The explicit type checks come first; this is the last line."""
+    import functools
+
+
+ succeeded in 0ms:
+6:and reference terms and efficiency under attack, and the seed-bootstrap intervals with one index vector per market
+151:def bootstrap(gains: dict, idx: dict) -> dict:
+152:    """Per contrast and rate: per-market and equal-weight pooled percentile intervals of the absolute contrast x at every
+213:    boot = bootstrap(g, boot_indices(n, resamples, seed))
+215:            "terms": terms(recs), "bootstrap": boot, "resamples": resamples, "seed": seed}
+
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse
+exec
+/bin/zsh -lc 'git ls-tree -r --name-only e875923 docs/revision/followup3 docs/revision/paper-v2' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+docs/revision/followup3/commitment.py
+docs/revision/followup3/continuation.py
+docs/revision/followup3/cost_estimate.py
+docs/revision/followup3/rep-impl-r1-response.md
+docs/revision/followup3/rep-impl-r10-response.md
+docs/revision/followup3/rep-impl-r2-response.md
+docs/revision/followup3/rep-impl-r3-response.md
+docs/revision/followup3/rep-impl-r4-response.md
+docs/revision/followup3/rep-impl-r5-response.md
+docs/revision/followup3/rep-impl-r6-response.md
+docs/revision/followup3/rep-impl-r7-response.md
+docs/revision/followup3/rep-impl-r8-response.md
+docs/revision/followup3/rep-impl-r9-response.md
+docs/revision/followup3/rep-launcher-notes.md
+docs/revision/followup3/rep_collect.py
+docs/revision/followup3/rep_pod.sh
+docs/revision/followup3/rep_v2.py
+docs/revision/followup3/replication-analysis.json
+docs/revision/followup3/replication-extract.json
+docs/revision/followup3/replication-plan.md
+docs/revision/followup3/replication-publication.md
+docs/revision/followup3/replication_analysis.py
+docs/revision/followup3/replication_extract.py
+docs/revision/followup3/replication_paper.json
+docs/revision/followup3/replication_paper.py
+docs/revision/followup3/runpod-v2/create_one.py
+docs/revision/followup3/runpod-v2/old/create_one.py
+docs/revision/followup3/runpod-v2/old/runpod.py
+docs/revision/followup3/runpod-v2/podctl.py
+docs/revision/followup3/runpod-v2/price0.log
+docs/revision/followup3/runpod-v2/price0.sh
+docs/revision/followup3/runpod-v2/r1-response.md
+docs/revision/followup3/runpod-v2/r2-response.md
+docs/revision/followup3/runpod-v2/runpod.py
+docs/revision/followup3/runpod-v2/smoke-2026-11-21.log
+docs/revision/followup3/runpod-v2/smoke.sh
+docs/revision/followup3/runpod-v2/test_podctl.py
+docs/revision/followup3/runpod-v2/test_runpod.py
+docs/revision/followup3/runpod-v2/test_runpod_v2.py
+docs/revision/followup3/runpod-v2/upload-diag-2026-11-22.log
+docs/revision/followup3/runpod-v2/upload-diag.sh
+docs/revision/followup3/test_commitment.py
+docs/revision/followup3/test_continuation.py
+docs/revision/followup3/test_notes.py
+docs/revision/followup3/test_rep_collect.py
+docs/revision/followup3/test_rep_pod_harness.sh
+docs/revision/followup3/test_rep_v2.py
+docs/revision/followup3/test_replication_analysis.py
+docs/revision/followup3/test_replication_extract.py
+docs/revision/followup3/test_replication_paper.py
+docs/revision/paper-v2/anonymize.py
+docs/revision/paper-v2/cells_v2.py
+docs/revision/paper-v2/comparator_table.py
+docs/revision/paper-v2/figures/fig_churn.data.json
+docs/revision/paper-v2/figures/fig_churn.pdf
+docs/revision/paper-v2/figures/fig_q1.data.json
+docs/revision/paper-v2/figures/fig_q1.pdf
+docs/revision/paper-v2/figures/fig_q2.data.json
+docs/revision/paper-v2/figures/fig_q2.pdf
+docs/revision/paper-v2/figures/fig_q4.data.json
+docs/revision/paper-v2/figures/fig_q4.pdf
+docs/revision/paper-v2/figures_v2.py
+docs/revision/paper-v2/floats.json
+docs/revision/paper-v2/main.tex
+docs/revision/paper-v2/numbers.tex
+docs/revision/paper-v2/numbers_v2.py
+docs/revision/paper-v2/outline-draft10.md
+docs/revision/paper-v2/outline.md
+docs/revision/paper-v2/refs.bib
+docs/revision/paper-v2/score_v2.py
+docs/revision/paper-v2/sites.json
+docs/revision/paper-v2/tables/audit_q1_p.tex
+docs/revision/paper-v2/tables/audit_q4_p.tex
+docs/revision/paper-v2/tables/audit_q4_stability.tex
+docs/revision/paper-v2/tables/coalitions.tex
+docs/revision/paper-v2/tables/comparator_dev.tex
+docs/revision/paper-v2/tables/envelope.tex
+docs/revision/paper-v2/tables/posthoc_churn.tex
+docs/revision/paper-v2/tables/posthoc_churn_all.tex
+docs/revision/paper-v2/tables/posthoc_churn_audit.tex
+docs/revision/paper-v2/tables/posthoc_churn_delta.tex
+docs/revision/paper-v2/tables/posthoc_churn_mid.tex
+docs/revision/paper-v2/tables/posthoc_churn_t.tex
+docs/revision/paper-v2/tables/posthoc_doubled.tex
+docs/revision/paper-v2/tables/posthoc_honest.tex
+docs/revision/paper-v2/tables/posthoc_q1_split.tex
+docs/revision/paper-v2/tables/posthoc_q4_diag.tex
+docs/revision/paper-v2/tables/posthoc_reset.tex
+docs/revision/paper-v2/tables/posthoc_runnerup.tex
+docs/revision/paper-v2/tables/posthoc_stability.tex
+docs/revision/paper-v2/tables/posthoc_welfare_mix.tex
+docs/revision/paper-v2/tables/posthoc_welfare_sens.tex
+docs/revision/paper-v2/tables/pred_eligibility.tex
+docs/revision/paper-v2/tables/predictions.tex
+docs/revision/paper-v2/tables/predictions_b.tex
+docs/revision/paper-v2/tables/q1.tex
+docs/revision/paper-v2/tables/q1_side.tex
+docs/revision/paper-v2/tables/q2_d2h3.tex
+docs/revision/paper-v2/tables/q2_x7sc.tex
+docs/revision/paper-v2/tables/q4.tex
+docs/revision/paper-v2/tables/repair.tex
+docs/revision/paper-v2/tables/replication.tex
+docs/revision/paper-v2/tables/replication_absolute.tex
+docs/revision/paper-v2/tables/replication_alloc.tex
+docs/revision/paper-v2/tables/replication_markets.tex
+docs/revision/paper-v2/tables/replication_terms.tex
+docs/revision/paper-v2/tables/welfare.tex
+docs/revision/paper-v2/tables_v2.py
+docs/revision/paper-v2/test_anonymize.py
+docs/revision/paper-v2/test_comparator_table.py
+docs/revision/paper-v2/test_facts.py
+docs/revision/paper-v2/test_figures.py
+docs/revision/paper-v2/test_numbers.py
+docs/revision/paper-v2/test_scoring.py
+docs/revision/paper-v2/test_tables.py
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '1,80p' docs/revision/followup/revision_v2.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc 'nl -ba docs/revision/followup3/replication_extract.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc "sed -n '140,225p' docs/revision/followup3/replication_analysis.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+exec
+/bin/zsh -lc 'nl -ba docs/revision/followup3/test_replication_extract.py | tail -n 30' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ exited 1 in 0ms:
+sed: docs/revision/followup/revision_v2.py: No such file or directory
+
+ succeeded in 0ms:
+     1	"""Post-analysis extract for the paper (not part of the stamped manifest): R3's audit counts and full audit allocation per
+     2	winner set, rate and market, from exactly the diagnostics records the committed collector (rep_collect.collect) accepts
+     3	for expectation 5, the list of cells whose continued search produced the primary winner, the collector's status fields,
+     4	and the sha256 of the run's analysis, draw and manifest, so that replication_paper.py can refuse a stale extract.
+     5	
+     6	Exactness: the collector is run unchanged. Four of its module functions are wrapped for the duration of the call only:
+     7	diag_ok and cont_diag_ok remember the diagnostics row they accept, _audit_of returns the same (audited, served) tuple
+     8	with that row's allocation and the winner's replacement switch x attached, and select_winner records which
+     9	continuation record produced which winner kind. Nothing the collector decides changes. Binding: the analysis is
+    10	recomputed from the same collected records exactly as rep_v2's analyse stage does, and the extract is written only if
+    11	it is byte-identical to the run's analysis.json.
+    12	
+    13	Authentication of the extract's own fields: --check rebuilds the extract from the run records and requires it to be
+    14	byte-identical to the committed file; test_replication_extract.py pins the committed file's sha256 (EXTRACT_SHA256), so
+    15	any later edit fails the gate until the extract is rebuilt from the records and the pin is updated deliberately.
+    16	
+    17	Usage: replication_extract.py --out <followup3-rep dir> --manifest <manifest> --draw <draw.json> (--write | --check) <json>"""
+    18	import argparse
+    19	import hashlib
+    20	import json
+    21	import re
+    22	import sys
+    23	from pathlib import Path
+    24	
+    25	HERE = Path(__file__).resolve().parent
+    26	sys.path.insert(0, str(HERE))
+    27	
+    28	CATS = ("honest_replacement", "honest_initial", "focal")
+    29	STEM = re.compile(r"^(menu|cthr)-p(0|0\.03|0\.05)__fresh([0-5])@rho0\.2__(F111|Cstar|F000)__D2\+H3__profit(__churn(0\.03|0\.05))?$")
+    30	CTHR_POLICY = "Cstar"          # every cthr-directory cell is C-thr, run on the C* policy slot
+    31	WINNER_KINDS = ("continued", "unresolved")
+    32	
+    33	
+    34	def sha_file(p) -> str:
+    35	    return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+    36	
+    37	
+    38	def allocation(shares: dict) -> dict:
+    39	    """The draft-10 audit allocation (docs/revision/posthoc/churn_block.py, audit_allocation) for one winner: per-episode
+    40	    [served, audited] counts summed over episodes; young = the first age bin (younger than ten rounds); established =
+    41	    the other bins. A zero denominator gives None."""
+    42	    per = shares["per_episode"]
+    43	    nb = len(per[0]["focal"]) if per else 0
+    44	    t = {c: [[sum(e[c][b][j] for e in per) for j in (0, 1)] for b in range(nb)] for c in CATS}
+    45	    served = sum(t[c][b][0] for c in CATS for b in range(nb))
+    46	    audits = sum(t[c][b][1] for c in CATS for b in range(nb))
+    47	    yh = [t["honest_replacement"][0][j] + t["honest_initial"][0][j] for j in (0, 1)]
+    48	    eh = [sum(t[c][b][j] for c in ("honest_replacement", "honest_initial") for b in range(1, nb)) for j in (0, 1)]
+    49	    fo = [sum(t["focal"][b][j] for b in range(nb)) for j in (0, 1)]
+    50	    div = lambda a, b: a / b if b else None
+    51	    return {"young_honest_job_share": div(yh[0], served), "young_honest_audit_share": div(yh[1], audits),
+    52	            "established_honest_audit_rate": div(eh[1], eh[0]), "focal_job_share": div(fo[0], served),
+    53	            "focal_audit_rate": div(fo[1], fo[0])}
+    54	
+    55	
+    56	class Counts(tuple):
+    57	    """(audited, served), as the collector stores it, carrying the allocation of the same shares."""
+    58	    alloc: dict
+    59	
+    60	
+    61	def parse_cell(stem: str) -> dict:
+    62	    """'menu-p0.05__fresh3@rho0.2__F111__D2+H3__profit__churn0.05' -> kind, rate, market, policy. Refuses any other
+    63	    shape, a churn suffix that disagrees with the rate, a churn suffix at p = 0, or a cthr cell on another policy."""
+    64	    m = STEM.match(stem)
+    65	    if not m or (m.group(2) == "0") != (m.group(6) is None) or (m.group(6) and m.group(6) != m.group(2)) or \
+    66	            (m.group(1) == "cthr" and m.group(4) != CTHR_POLICY):
+    67	        raise ValueError(f"unexpected cell identity: {stem}")
+    68	    return {"kind": m.group(1), "rate": m.group(2), "market": "rep" + m.group(3), "policy": m.group(4)}
+    69	
+    70	
+    71	def build(col: dict, winners: dict, safe, hashes: dict) -> dict:
+    72	    """The extract from the collector output, the recorded winner kind per continuation key, the collector's file-name
+    73	    function and the input hashes. The continued list holds the flagged cells whose primary winner is the continued
+    74	    one; its length must equal the collector's continued plus unresolved counts."""
+    75	    stems = sorted(safe(k) for k, kw in winners.items() if kw in WINNER_KINDS)
+    76	    if len(set(stems)) != len(stems):
+    77	        raise ValueError("duplicate continued cell")
+    78	    if len(stems) != sum(col["counts"].get(k, 0) for k in WINNER_KINDS):
+    79	        raise ValueError("the continued list disagrees with the collector's counts")
+    80	    sets = ("frozen", "primary")
+    81	    return {"audit": {s: {rk: {m: [v[0], v[1]] for m, v in sorted(ms.items())} for rk, ms in sorted(col["audit"][s].items())} for s in sets},
+    82	            "alloc": {s: {rk: {m: v.alloc for m, v in sorted(ms.items())} for rk, ms in sorted(col["audit"][s].items())} for s in sets},
+    83	            "counts": col["counts"], "continued": [dict(parse_cell(s), stem=s) for s in stems],
+    84	            "status": {k: col[k] for k in ("problems", "unscorable", "round1_mismatch", "gate_ok")}, "binding": hashes}
+    85	
+    86	
+    87	def recompute(col: dict, confirmatory: bool, analyse) -> str:
+    88	    """analysis.json as rep_v2.stage_analyse writes it, from these collected records (default resamples and seed)."""
+    89	    res = {k: col[k] for k in ("counts", "round1_mismatch", "gate_ok", "problems", "unscorable")}
+    90	    res["confirmatory"] = confirmatory
+    91	    for name in ("primary", "frozen"):
+    92	        g = col[name]
+    93	        res[name] = ("not available (a round-1 mismatch or a continued winner without an identical gate)" if g is None
+    94	                     else analyse(g, {rk: {m: tuple(v) for m, v in ms.items()} for rk, ms in col["audit"][name].items()}))
+    95	    return json.dumps(res, indent=1, sort_keys=True) + "\n"
+    96	
+    97	
+    98	def main(argv=None) -> int:
+    99	    ap = argparse.ArgumentParser()
+   100	    ap.add_argument("--out", required=True); ap.add_argument("--manifest", required=True); ap.add_argument("--draw", required=True)
+   101	    g = ap.add_mutually_exclusive_group(required=True); g.add_argument("--write"); g.add_argument("--check")
+   102	    a = ap.parse_args(argv)
+   103	    import rep_v2 as V
+   104	    import rep_collect as C
+   105	    import replication_analysis as RA
+   106	    import revision_v2 as R
+   107	    ns = V.main.__globals__["argparse"].Namespace(out=a.out, manifest=a.manifest, draw=a.draw, smoke=False,
+   108	                                                  params=str(V.ROOT / "experiments/v2/params.json"))
+   109	    if not (Path(a.out) / "analysis.json").is_file():   # before _context, which reinstalls salt.hex in --out
+   110	        raise SystemExit("no analysis.json in --out: run on the analysed clone of the pulled output, never on the pod output")
+   111	    V._require(ns)
+   112	    c = V._context(ns); jobs = V._jobs_by_dir(c, False)
+   113	    winners, last = {}, {}
+   114	    orig = {k: getattr(C, k) for k in ("_audit_of", "select_winner", "diag_ok", "cont_diag_ok")}
+   115	
+   116	    def diag_ok(row, *a, **k):
+   117	        ok = orig["diag_ok"](row, *a, **k)
+   118	        last["row"] = row if ok else None
+   119	        return ok
+   120	
+   121	    def cont_diag_ok(rec, *a, **k):
+   122	        ok = orig["cont_diag_ok"](rec, *a, **k)
+   123	        last["row"] = rec if ok else None
+   124	        return ok
+   125	
+   126	    def audit_of(shares):
+   127	        row = last.pop("row", None)
+   128	        if row is None or row.get("shares") is not shares:
+   129	            raise RuntimeError("an audit count without the accepted diagnostics row")
+   130	        out = Counts(orig["_audit_of"](shares)); out.alloc = dict(allocation(shares), x=(row.get("knobs") or {}).get("x")); return out
+   131	
+   132	    def select_winner(frozen, rec):
+   133	        g, kw = orig["select_winner"](frozen, rec)
+   134	        if rec is not None:
+   135	            winners[rec["id"]] = kw
+   136	        return g, kw
+   137	
+   138	    C._audit_of, C.select_winner, C.diag_ok, C.cont_diag_ok = audit_of, select_winner, diag_ok, cont_diag_ok
+   139	    try:
+   140	        col = C.collect(Path(a.out), jobs, gate=V.gate_item(jobs, a.out), smoke=False)
+   141	    finally:
+   142	        for k, f in orig.items():
+   143	            setattr(C, k, f)
+   144	    recomputed = recompute(col, c.confirmatory, RA.analyse)
+   145	    if recomputed != (Path(a.out) / "analysis.json").read_text():
+   146	        raise SystemExit("the analysis recomputed from the collected records differs from analysis.json")
+   147	    hashes = {"analysis": sha_file(Path(a.out) / "analysis.json"), "draw": sha_file(a.draw), "manifest": sha_file(a.manifest),
+   148	              "recomputed": True}
+   149	    text = json.dumps(build(col, winners, R._safe, hashes), indent=1, sort_keys=True) + "\n"
+   150	    if a.check:
+   151	        same = Path(a.check).is_file() and Path(a.check).read_text() == text
+   152	        print("ok: the extract rebuilt from the run records is byte-identical" if same else f"differs: {a.check}")
+   153	        return 0 if same else 1
+   154	    Path(a.write).write_text(text)
+   155	    return 0
+   156	
+   157	
+   158	if __name__ == "__main__":
+   159	    sys.exit(main())
+
+ succeeded in 0ms:
+    """One (resamples x n) index array per market, drawn in market order from one generator seeded with `seed`; the
+    same arrays serve every rule, rate and winner set (the churn arm's pairing)."""
+    rng = np.random.default_rng(seed)
+    return {m: rng.integers(0, n_by_market[m], size=(resamples, n_by_market[m])) for m in MARKETS if m in n_by_market}
+
+
+def _ci(boots) -> list:
+    b = np.sort(np.asarray(boots)); k = len(b)
+    return [float(b[int(0.025 * (k + 1)) - 1]), float(b[int(0.975 * (k + 1)) - 1])]
+
+
+def bootstrap(gains: dict, idx: dict) -> dict:
+    """Per contrast and rate: per-market and equal-weight pooled percentile intervals of the absolute contrast x at every
+    rate (its own cells only), and of the paired change Delta_x at the positive rates (it also needs the p = 0 cells),
+    from the shared index arrays. A missing cell gives no market entry; a pooled interval needs all six markets."""
+    bm = {}                                                  # bm[m][p][r] = resampled means (resamples,)
+    for m, ix in idx.items():
+        bm[m] = {p: {r: np.asarray(xs)[ix].mean(axis=1) for r, xs in _cell(gains, p, m).items()} for p in ALL_RATES}
+    out = {}
+    for p in ALL_RATES:
+        out[p] = {}
+        for x, comp in CONTRASTS.items():
+            delta, absolute = {}, {}
+            for m in MARKETS:
+                b = bm.get(m, {})
+                if all(r in b.get(p, {}) for r in (comp, "R3")):
+                    absolute[m] = b[p][comp] - b[p]["R3"]
+                    if p != "0" and all(r in b.get("0", {}) for r in (comp, "R3")):
+                        delta[m] = absolute[m] - (b["0"][comp] - b["0"]["R3"])
+            row = {"absolute_markets": {m: {"ci95": _ci(v)} for m, v in absolute.items()},
+                   "absolute_pooled": {"ci95": _ci(sum(absolute.values()) / len(MARKETS))} if len(absolute) == len(MARKETS) else None}
+            if p != "0":
+                row.update({"markets": {m: {"ci95": _ci(v)} for m, v in delta.items()},
+                            "pooled": {"ci95": _ci(sum(delta.values()) / len(MARKETS))} if len(delta) == len(MARKETS) else None})
+            out[p][x] = row
+    return out
+
+
+def absolute(gains: dict, boot: dict) -> dict:
+    """The absolute contrasts x(m, p) at every rate (secondary, descriptive): per market with its seed interval, mean,
+    market t interval (all six markets only) and the pooled seed interval (all six markets only)."""
+    out = {}
+    for p in ALL_RATES:
+        out[p] = {}
+        for x, comp in CONTRASTS.items():
+            ms = {m: contrast(_cell(gains, p, m), comp) for m in MARKETS}
+            ms = {m: v for m, v in ms.items() if v is not None}
+            b = boot.get(p, {}).get(x, {})
+            vals = list(ms.values())
+            out[p][x] = {"markets": {m: {"estimate": v, "ci95": (b.get("absolute_markets", {}).get(m) or {}).get("ci95")}
+                                     for m, v in ms.items()},
+                         "complete": len(ms) == len(MARKETS), "mean": _mean(vals) if vals else None,
+                         "t95": _t95(vals) if len(ms) == len(MARKETS) else None,
+                         "pooled_ci95": (b.get("absolute_pooled") or {}).get("ci95")}
+    return out
+
+
+def terms(recs: dict) -> dict:
+    """Per cell: the mean gain, attack term and reference term (gain = attack - reference) and efficiency under attack."""
+    return {p: {m: {r: {f: _mean(c[f]) for f in FIELDS} for r, c in (recs.get(p, {}).get(m) or {}).items()}
+                for m in MARKETS} for p in ALL_RATES}
+
+
+def analyse(recs: dict, audit: dict, resamples: int = RESAMPLES, seed: int = SEED) -> dict:
+    """Everything the plan reports for one winner set."""
+    _check_recs(recs)
+    g = gains_of(recs)
+    pc = paired_changes(g); cr = criteria(pc)
+    n = {}
+    for p in ALL_RATES:
+        for m, rs in (g.get(p) or {}).items():
+            for xs in rs.values():
+                n[m] = len(xs)
+    boot = bootstrap(g, boot_indices(n, resamples, seed))
+    return {"paired_changes": pc, "criteria": cr, "expectations": expectations(cr, audit), "absolute": absolute(g, boot),
+            "terms": terms(recs), "bootstrap": boot, "resamples": resamples, "seed": seed}
+
+ succeeded in 0ms:
+    85	
+    86	def test_committed_extract_is_bound_to_the_committed_analysis():
+    87	    ex = json.loads((HERE / "replication-extract.json").read_text())
+    88	    assert ex["binding"]["analysis"] == hashlib.sha256((HERE / "replication-analysis.json").read_bytes()).hexdigest()
+    89	    assert ex["status"] == {"problems": [], "unscorable": [], "round1_mismatch": False, "gate_ok": True}
+    90	
+    91	
+    92	def test_recompute_matches_the_analyse_stage_layout():
+    93	    col = {"counts": {"continued": 0}, "round1_mismatch": False, "gate_ok": True, "problems": [], "unscorable": [],
+    94	           "primary": None, "frozen": {"g": 1}, "audit": {"frozen": {"0": {"rep0": RE.Counts((1, 2))}}, "primary": {}}}
+    95	    seen = {}
+    96	    out = json.loads(RE.recompute(col, True, lambda g, au: seen.update(au=au) or {"ok": g}))
+    97	    assert out["confirmatory"] is True and out["frozen"] == {"ok": {"g": 1}} and out["primary"].startswith("not available")
+    98	    assert seen["au"] == {"0": {"rep0": (1, 2)}}
+    99	
+   100	
+   101	# Rebuild with `replication_extract.py --out <analysed clone> ... --check replication-extract.json` before changing this.
+   102	EXTRACT_SHA256 = "36e7c69be53db5c606c2a0ff365c4cae380efe4db081da35fba0eec8a9750cae"
+   103	
+   104	
+   105	def test_committed_extract_is_pinned():
+   106	    """Values that exist only in the extract (allocation, x, counts) are authenticated by this pin: the committed file was
+   107	    rebuilt from the run records with --check (byte-identical) on 2026-11-24; any later edit fails here."""
+   108	    assert hashlib.sha256((HERE / "replication-extract.json").read_bytes()).hexdigest() == EXTRACT_SHA256
+   109	
+   110	
+   111	def test_refuses_an_out_dir_without_analysis(tmp_path):
+   112	    with pytest.raises(SystemExit):
+   113	        RE.main(["--out", str(tmp_path), "--manifest", "m", "--draw", "d", "--check", "x"])
+   114	    assert list(tmp_path.iterdir()) == []                 # nothing written before the refusal
+
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+exec
+/bin/zsh -lc "PYTHONDONTWRITEBYTECODE=1 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -B -m pytest -q -p no:cacheprovider docs/revision/followup3/test_replication_extract.py docs/revision/followup3/test_replication_paper.py docs/revision/followup3/test_replication_analysis.py -k 'not test_check_reports_stale_files and not test_refuses_an_out_dir_without_analysis'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ exited 1 in 100ms:
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/pytest/__main__.py", line 9, in <module>
+    raise SystemExit(_console_main())
+                     ^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py", line 253, in _console_main
+    code = _main(prog=_get_prog_name(sys.argv))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py", line 223, in _main
+    config = _prepareconfig(new_args, plugins, prog=prog)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py", line 410, in _prepareconfig
+    config: Config = pluginmanager.hook.pytest_cmdline_parse(
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 167, in _multicall
+    raise exception
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 139, in _multicall
+    teardown.throw(exception)
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/_pytest/helpconfig.py", line 124, in pytest_cmdline_parse
+    config = yield
+             ^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py", line 1232, in pytest_cmdline_parse
+    self.parse(args)
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/_pytest/config/__init__.py", line 1605, in parse
+    self.hook.pytest_load_initial_conftests(
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/pluggy/_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/pluggy/_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 167, in _multicall
+    raise exception
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 139, in _multicall
+    teardown.throw(exception)
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/_pytest/warnings.py", line 129, in pytest_load_initial_conftests
+    return (yield)
+            ^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/pluggy/_callers.py", line 116, in _multicall
+    next(function_gen)  # first yield
+    ^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/_pytest/capture.py", line 170, in pytest_load_initial_conftests
+    capman.start_global_capturing()
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/_pytest/capture.py", line 773, in start_global_capturing
+    self._global_capturing = _get_multicapture(self._method)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/_pytest/capture.py", line 714, in _get_multicapture
+    return MultiCapture(in_=FDCapture(0), out=FDCapture(1), err=FDCapture(2))
+                                              ^^^^^^^^^^^^
+  File "/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79/.venv/lib/python3.12/site-packages/_pytest/capture.py", line 493, in __init__
+    TemporaryFile(buffering=0),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 631, in TemporaryFile
+    prefix, suffix, dir, output_type = _sanitize_params(prefix, suffix, dir)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 126, in _sanitize_params
+    dir = gettempdir()
+          ^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 315, in gettempdir
+    return _os.fsdecode(_gettempdir())
+                        ^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 308, in _gettempdir
+    tempdir = _get_default_tempdir()
+              ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/oemer.demirel/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/python3.12/tempfile.py", line 223, in _get_default_tempdir
+    raise FileNotFoundError(_errno.ENOENT,
+FileNotFoundError: [Errno 2] No usable temporary directory found in ['/var/folders/_f/9zpbqmhx7xjbszf28ysts3c00000gp/T/', '/tmp', '/var/tmp', '/usr/tmp', '/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79']
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "PYTHONDONTWRITEBYTECODE=1 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -B -m pytest -q -s -p no:cacheprovider docs/revision/followup3/test_replication_extract.py docs/revision/followup3/test_replication_paper.py docs/revision/followup3/test_replication_analysis.py -k 'not test_check_reports_stale_files and not test_refuses_an_out_dir_without_analysis'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 312ms:
+....................................................................
+68 passed, 2 deselected in 0.23s
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+All 68 tests that do not write files passed. The gate script is absent from this checkout, so I cannot verify the full gate here. I will finish the edit probes in memory and check whether `--check` compares bytes exactly.
+
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -B -c 'import copy, json, sys
+from pathlib import Path
+from unittest.mock import patch
+here = Path(\"docs/revision/followup3\").resolve()
+sys.path.insert(0,str(here))
+import replication_paper as RP
+import test_replication_extract as TE
+p = here / \"replication-extract.json\"
+original = p.read_bytes()
+ex = json.loads(original)
+an_path = here / \"replication-analysis.json\"
+an = json.loads(an_path.read_text())
+sha = RP.sha_file(an_path)
+summary = here / \"replication_paper.json\"
+table = here.parent / \"paper-v2/tables/replication.tex\"
+orig_read = Path.read_bytes
+
+def probe(name, mutate):
+    e = copy.deepcopy(ex)
+    mutate(e)
+    payload = (json.dumps(e, indent=1, sort_keys=True)+\"\\n\").encode()
+    assert payload "'!= original
+    try:
+        stale = RP.check(an, e, sha, summary, table)
+        result = "fresh" if not stale else f"{len(stale)} stale outputs"
+    except Exception as err:
+        result = type(err).__name__ + ": " + str(err)
+    def read_bytes(path):
+        return payload if path == p else orig_read(path)
+    with patch.object(Path, "read_bytes", read_bytes):
+        try:
+            TE.test_committed_extract_is_pinned()
+            pin="PASS"
+        except AssertionError:
+            pin="FAIL (detected)"
+    print(f"{name}: generator={result}; pin={pin}")
+
+TE.test_committed_extract_is_pinned()
+assert not RP.check(an,ex,sha,summary,table)
+print("baseline: generator=fresh; pin=PASS")
+probe("in-range job share", lambda e: e["alloc"]["primary"]["0.05"]["rep0"].update(young_honest_job_share=0.5))
+def swap_share(e):
+    a,b=e["alloc"]["primary"]["0.05"]["rep0"],e["alloc"]["primary"]["0.05"]["rep1"]
+    a["young_honest_job_share"],b["young_honest_job_share"]=b["young_honest_job_share"],a["young_honest_job_share"]
+probe("swap job shares", swap_share)
+def swap_x(e):
+    a,b=e["alloc"]["primary"]["0.05"]["rep0"],e["alloc"]["primary"]["0.05"]["rep1"]
+    a["x"],b["x"]=b["x"],a["x"]
+probe("swap x",swap_x)
+probe("flip x",lambda e:e["alloc"]["primary"]["0.05"]["rep0"].update(x=1-e["alloc"]["primary"]["0.05"]["rep0"]["x"]))
+def double_counts(e):
+    c=e["audit"]["primary"]["0"]["rep0"]
+    e["audit"]["primary"]["0"]["rep0"]=[2*v for v in c]
+probe("double audit counts, same ratio",double_counts)
+def alter_counts(e):
+    c=e["audit"]["primary"]["0.05"]["rep0"]
+    c[0]+=1
+    e["alloc"]["primary"]["0.05"]["rep0"]["focal_audit_rate"]=c[0]/c[1]
+probe("edit audit count and matching rate",alter_counts)
+probe("boolean x",lambda e:e["alloc"]["primary"]["0.05"]["rep0"].update(x=True))
+probe("float x",lambda e:e["alloc"]["primary"]["0.05"]["rep0"].update(x=0.0))
+for field in ("young_honest_job_share","focal_job_share","young_honest_audit_share"):
+    probe("missing "+field,lambda e,f=field:e["alloc"]["primary"]["0.05"]["rep0"].update({f:None}))
+TE.test_committed_extract_is_pinned()
+assert p.read_bytes()==original
+print("unchanged baseline pin: PASS")
+'"'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 164ms:
+baseline: generator=fresh; pin=PASS
+in-range job share: generator=2 stale outputs; pin=FAIL (detected)
+swap job shares: generator=fresh; pin=FAIL (detected)
+swap x: generator=fresh; pin=FAIL (detected)
+flip x: generator=2 stale outputs; pin=FAIL (detected)
+double audit counts, same ratio: generator=fresh; pin=FAIL (detected)
+edit audit count and matching rate: generator=1 stale outputs; pin=FAIL (detected)
+boolean x: generator=ValueError: allocation out of range primary 0.05 rep0; pin=FAIL (detected)
+float x: generator=ValueError: allocation out of range primary 0.05 rep0; pin=FAIL (detected)
+missing young_honest_job_share: generator=ValueError: allocation share missing although the attacker's counts are nonzero primary 0.05 rep0; pin=FAIL (detected)
+missing focal_job_share: generator=ValueError: allocation share missing although the attacker's counts are nonzero primary 0.05 rep0; pin=FAIL (detected)
+missing young_honest_audit_share: generator=ValueError: allocation share missing although the attacker's counts are nonzero primary 0.05 rep0; pin=FAIL (detected)
+unchanged baseline pin: PASS
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'rg --files docs/revision/churn docs/revision/followup2 scripts -g revision_v2.py' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+scripts/revision_v2.py
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '1,75p' scripts/revision_v2.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+"""The protocol-v2 runner (design 5 to 9; plan docs/superpowers/plans/2026-10-22-revision-build.md Task 11). Stages, in
+order: search (profit and W0 searches; X7-SC after the same rule's D2+H3 search, with its embedding as an incumbent),
+reference (one menu per rule and context from its D2+H3 and X7-SC searches), dependent (W1 after the reference; the
+coalition joint twin, joint reference, then the total and minimum searches), freeze (envelope choices and the fixed-attack
+bank, then a complete freeze of the context), then evaluate, cross, and doubling (continued searches, diagnostic only),
+each only after the freeze is accepted again. Every record carries provenance and upstream hashes; outputs stay under
+--out. Development markets (dev0, dev1) run the fresh0 template of the manifest."""
+from __future__ import annotations
+
+import argparse
+import fnmatch
+import hashlib
+import json
+import os
+import subprocess
+import sys
+from concurrent.futures import ProcessPoolExecutor
+from dataclasses import replace
+from functools import lru_cache
+from pathlib import Path
+
+import numpy as np
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from sim import instances as INST  # noqa: E402
+from sim import families_v2 as FV2  # noqa: E402
+from sim import manifest_v2 as MAN  # noqa: E402
+from sim.calibrate import cell_config, load_calibration  # noqa: E402
+from sim.cell import Abstain, Cell, SeedCache, run_focal  # noqa: E402
+from sim.h4_loader import Excluded, load as load_h4  # noqa: E402
+from sim.locked import load_locked, market_config_from_locked  # noqa: E402
+from sim.objectives_v2 import (CoalitionObjective, WelfareObjective, gross_efficiency, pick_joint, profile_descriptor, profile_factories,  # noqa: E402
+                               select_w1, select_welfare, _member_rows)
+from sim.diagnostic_v2 import envelope_rule, extras, honest_replacement  # noqa: E402
+from sim.policies.families import D2, Family, exact_key  # noqa: E402
+from sim.policies.honest import HonestMax  # noqa: E402
+from sim.policies.identity import h3_family  # noqa: E402
+from sim.policies.v2 import x5v2_family, x6v2_family, x6v2_member, x6v2_members  # noqa: E402
+from sim.policies.x7 import corner_vectors, embed_h3, x7_family  # noqa: E402
+from sim.positions import positions  # noqa: E402
+from sim.records import cfg_to_dict, search_from_json, search_to_json  # noqa: E402
+from sim.records_v2 import read, sha_file, validate, write  # noqa: E402
+from sim.reference import Candidate, evaluate_gain, reference_candidates, select_reference, twin_search  # noqa: E402
+from sim.rng import SALT_ENV, load_identity_salt  # noqa: E402
+from sim.rules_v2 import CORE, FIXED, make_rule, public_constants, registered_b2_params  # noqa: E402
+from sim.search import Objective, SearchSettings, cma_search, settings_from_locked  # noqa: E402
+
+ROOT = Path(__file__).resolve().parents[1]
+STAGES = ("search", "reference", "dependent", "freeze", "evaluate", "cross", "doubling", "verify")
+CATEGORIES = ("abstain", "honest_max", "twin_search", "attack_projection", "archive_clip1", "archive_truthful_clip0", "bank")
+MENU = ("D2+H3", "X7-SC")
+SMOKE = (1, 16, 1, 2)
+DEV_ROOT = INST.DEV_ROOT
+THRESHOLD = 0.005
+
+
+# ---- context ---------------------------------------------------------------------------------------------------------
+
+def git_commit() -> str:
+    try:
+        return subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
+    except Exception:
+        return "unknown"
+
+
+def _sha(b: bytes) -> str:
+    return hashlib.sha256(b).hexdigest()
+
+
+def _sha_json(obj) -> str:
+    return _sha(json.dumps(obj, sort_keys=True, default=float).encode())
+
+
+def install_salt(root: str, out: Path) -> Path:
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '1,55p' docs/revision/followup3/commitment.py" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+"""Commitment manifest and run-time freeze check of the churn replication (replication-plan.md, section 5).
+build(): deterministic manifest bytes (sorted JSON) with the frozen code's git commit and the SHA-256 of every listed
+file; these bytes are what is stamped and what block_draw.py and the instance wrapper read as --protocol.
+frozen_problems(): sim/, scripts/ and the frozen configuration inputs equal the commit (no change, no untracked file)
+  and no outside override is set.
+verify() / require(): every required file is listed and every listed file still matches its hash; require() stops the
+  run on any problem. build() refuses a file list without a required file or without a file of the drivers' import
+  closure (imports inside functions included, review rep-impl-r1).
+Usage: commitment.py build <out> <commit> <file>...   |   commitment.py check <manifest>"""
+import ast
+import hashlib
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+FROZEN = ("sim", "scripts")
+# Files outside sim/ and scripts/ that the frozen code reads (plan section 5: "the frozen configuration inputs").
+FROZEN_INPUTS = ("experiments/locked.yaml", "experiments/revision-v2-manifest.yaml", "experiments/calibration.json",
+                 "experiments/v2/params.json", "experiments/v2/benchmark/timings.json")
+F3, CH, F2, F1 = "docs/revision/followup3", "docs/revision/churn", "docs/revision/followup2", "docs/revision/followup"
+# Plan section 5: this plan, the analysis and its tests, the drivers and adapters, every imported helper outside sim/
+# and scripts/ (test_the_real_required_set_covers_the_drivers_import_closure keeps this complete), the parameter files
+# and uv.lock; also the launcher and its harness, the cost schedule and the frozen configuration inputs.
+REQUIRED = tuple(sorted({
+    f"{F3}/replication-plan.md", f"{F3}/replication_analysis.py", f"{F3}/test_replication_analysis.py",
+    f"{F3}/commitment.py", f"{F3}/test_commitment.py", f"{F3}/continuation.py", f"{F3}/test_continuation.py",
+    f"{F3}/rep_v2.py", f"{F3}/test_rep_v2.py", f"{F3}/rep_collect.py", f"{F3}/test_rep_collect.py",
+    f"{F3}/rep_pod.sh", f"{F3}/test_rep_pod_harness.sh", f"{F3}/cost_estimate.py",
+    f"{CH}/churn_v2.py", f"{F1}/reset_followup_v2.py", f"{F2}/common.py", f"{F2}/convergence_v2.py", f"{F2}/guards.py",
+    f"{F2}/runnerup_v2.py", "uv.lock", *FROZEN_INPUTS,
+    # Review rep-impl-r2: the preflight task that churn_v2 runs as a subprocess, and the runner-up recheck record that
+    # runnerup_v2.runner_up_cred reads (the C-thr(12) parameters).
+    f"{CH}/churn_memory.py",
+    'experiments/v2/log/Cstar__{"L":10,"cred":{"K":12,"M":null,"variant":"thr"},"tol":0.16}__recheck.json'}))
+# Environment variables the frozen code reads; the driver sets TOUCHSTONE_IDENTITY_SALT itself (checked against the draw).
+OVERRIDES = ("TOUCHSTONE_LOCKED", "TOUCHSTONE_PROPOSED_MODULE", "TOUCHSTONE_PROPOSED_PARAMS", "TOUCHSTONE_SEALED_DIR",
+             "TOUCHSTONE_GIT_COMMIT")
+
+
+def _sha(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def search_dirs(root) -> list:
+    """The drivers' import path outside the standard library (rep_v2.py, rep_collect.py): their own folders and the repo."""
+    root = Path(root)
+    return [root / F3, root / CH, root / F2, root / F1, root, root / "scripts"]
+
+
+def _imports(path: Path) -> set:
+    """Module names imported by the file, plus the stems of scripts it names as string literals ending in .py (a script
+    run as a subprocess, review rep-impl-r2)."""
+    names = set()
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'git status --short' in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+?? docs/paper/astra-pro-ext12-triage.md
+?? docs/revision/roster/astra-rep-paper-r4.log
+?? docs/revision/roster/astra-rep-paper-r4.md
+?? docs/revision/roster/sol-rep-paper-r4.log
+?? docs/revision/roster/sol-rep-paper-r4.md
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -B -c 'import argparse, io, json, sys
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
+here=Path(\"docs/revision/followup3\").resolve()
+sys.path.insert(0,str(here))
+import replication_extract as RE
+
+def driver_main():
+    pass
+
+V=SimpleNamespace(ROOT=here,main=driver_main,_require=Mock(),_context=Mock(return_value=SimpleNamespace(confirmatory=True)),_jobs_by_dir=Mock(return_value={}),gate_item=Mock(return_value={}))
+C=SimpleNamespace(_audit_of=lambda x: (),select_winner=lambda *x: (None,None),diag_ok=lambda *x: True,cont_diag_ok=lambda *x: True,collect=lambda *a,**kw:{})
+modules={\"rep_v2\":V,\"rep_collect\":C,\"replication_analysis\":SimpleNamespace(analyse=lambda *x:None),\"revision_v2\":SimpleNamespace(_safe=lambda x:x)}
+
+with patch.dict(sys.modules,modules),patch.object(Path,\"is_file\",return_value=False):
+    try:
+        RE.main([\"--out\",\"/__review_missing__\",\"--manifest\",\"m\",\"--draw\",\"d\",\"--check\",\"x\"])
+        raise AssertionError(\"unexpected acceptance\")
+    except SystemExit as err:
+        assert str(err).startswith(\"no analysis.json\")
+V._require.assert_not_called()
+V._context.assert_not_called()
+print(\"missing-analysis guard: refused before require/context\")
+
+rebuilt=json.dumps({\"probe\":1},indent=1,sort_keys=True)+\"\\n\"
+crlf=rebuilt.replace(\"\\n\",\"\\r\\n\").encode()
+analysis=\"/__review_r4_out__/analysis.json\"
+target=\"/__review_r4_extract__.json\"
+raw={analysis:b\"{}\\n\",target:crlf}
+old_open=io.open
+old_isfile=Path.is_file
+def fake_open(path,mode=\"r\",buffering=-1,encoding=None,errors=None,newline=None,closefd=True,opener=None):
+    s=str(path)
+    if s not in raw:
+        return old_open(path,mode,buffering,encoding,errors,newline,closefd,opener)
+    assert \"w\" not in mode and \"a\" not in mode
+    stream=io.BytesIO(raw[s])
+    return stream if \"b\" in mode else io.TextIOWrapper(stream,encoding=encoding or \"utf-8\",errors=errors,newline=newline)
+def fake_isfile(path):
+    return True if str(path) in raw else old_isfile(path)
+with patch.dict(sys.modules,modules),patch.object(Path,\"is_file\",fake_isfile),patch.object(io,\"open\",fake_open),patch.object(RE,\"recompute\",return_value=\"{}\\n\"),patch.object(RE,\"build\",return_value={\"probe\":1}),patch.object(RE,\"sha_file\",return_value=\"a\"*64):
+    code=RE.main([\"--out\",\"/__review_r4_out__\",\"--manifest\",\"m\",\"--draw\",\"d\",\"--check\",target])
+assert code==0
+assert crlf"'!=rebuilt.encode()
+print("synthetic CLI newline probe: --check returned 0 for different bytes (CRLF versus LF)")
+'"'" in /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+ succeeded in 0ms:
+missing-analysis guard: refused before require/context
+ok: the extract rebuilt from the run records is byte-identical
+synthetic CLI newline probe: --check returned 0 for different bytes (CRLF versus LF)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+VERDICT: accept-with-caveat
+
+CORRECTIONS:
+
+1. **main.tex:382 — Closed.** The Table 30 caption now identifies the second-line intervals as 95% paired percentile seed-bootstrap intervals and states that the pooled interval holds the six markets fixed.
+
+2. **test_replication_extract.py:102–108; replication_paper.py:121–126 — Closed for extract-only edits.** All 11 in-memory edit probes failed the hash test, including share swaps, replacement-switch swaps, and doubled audit counts. Some still pass generator freshness checks, but the pin detects them. Boolean or floating-point `x` values and required missing shares also fail validation. The unchanged files pass 68 tests; two file-writing tests were excluded. `results/pods/paper_check.sh` is absent, so I could not verify the complete gate.
+
+3. **replication-publication.md, “Paper extract” — Authentication caveat.** The pin plus recorded rebuild adequately protects the reviewed extract against later silent edits. The initial correspondence with run records remains author-reported because those records are unavailable here. Independent verification would require an external archive or controlled reviewer access, committed record hashes, and a rebuild receipt that binds the code, inputs, analysis, and extract hashes. The records need not ship inside the paper source.
+
+4. **replication_extract.py:151 — Minor new error.** `read_text()` normalizes line endings. A synthetic CLI probe accepted CRLF bytes against an LF rebuild and printed “byte-identical.” Compare `read_bytes()` with explicitly UTF-8-encoded rebuild bytes. The separate hash pin still detects this edit, so this does not reopen the numeric-edit gap.
+
+CONFIDENCE: 0.96.
+hook: Stop
+hook: Stop Completed
+tokens used
+64'772
+VERDICT: accept-with-caveat
+
+CORRECTIONS:
+
+1. **main.tex:382 — Closed.** The Table 30 caption now identifies the second-line intervals as 95% paired percentile seed-bootstrap intervals and states that the pooled interval holds the six markets fixed.
+
+2. **test_replication_extract.py:102–108; replication_paper.py:121–126 — Closed for extract-only edits.** All 11 in-memory edit probes failed the hash test, including share swaps, replacement-switch swaps, and doubled audit counts. Some still pass generator freshness checks, but the pin detects them. Boolean or floating-point `x` values and required missing shares also fail validation. The unchanged files pass 68 tests; two file-writing tests were excluded. `results/pods/paper_check.sh` is absent, so I could not verify the complete gate.
+
+3. **replication-publication.md, “Paper extract” — Authentication caveat.** The pin plus recorded rebuild adequately protects the reviewed extract against later silent edits. The initial correspondence with run records remains author-reported because those records are unavailable here. Independent verification would require an external archive or controlled reviewer access, committed record hashes, and a rebuild receipt that binds the code, inputs, analysis, and extract hashes. The records need not ship inside the paper source.
+
+4. **replication_extract.py:151 — Minor new error.** `read_text()` normalizes line endings. A synthetic CLI probe accepted CRLF bytes against an LF rebuild and printed “byte-identical.” Compare `read_bytes()` with explicitly UTF-8-encoded rebuild bytes. The separate hash pin still detects this edit, so this does not reopen the numeric-edit gap.
+
+CONFIDENCE: 0.96.

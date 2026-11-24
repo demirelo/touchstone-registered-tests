@@ -35,6 +35,14 @@ def sha_file(p) -> str:
     return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 
 
+def records_digest(out) -> tuple:
+    """(file count, sha256 over "<relative path> <sha256>" lines of every file under --out except analysis.json, sorted by
+    path): identifies the run records an extract was built from, so that an archived copy can be matched."""
+    out = Path(out)
+    lines = sorted(f"{q.relative_to(out).as_posix()} {sha_file(q)}" for q in out.rglob("*") if q.is_file() and q != out / "analysis.json")
+    return len(lines), hashlib.sha256("\n".join(lines).encode()).hexdigest()
+
+
 def allocation(shares: dict) -> dict:
     """The draft-10 audit allocation (docs/revision/posthoc/churn_block.py, audit_allocation) for one winner: per-episode
     [served, audited] counts summed over episodes; young = the first age bin (younger than ten rounds); established =
@@ -142,14 +150,16 @@ def main(argv=None) -> int:
         for k, f in orig.items():
             setattr(C, k, f)
     recomputed = recompute(col, c.confirmatory, RA.analyse)
-    if recomputed != (Path(a.out) / "analysis.json").read_text():
+    if recomputed.encode() != (Path(a.out) / "analysis.json").read_bytes():
         raise SystemExit("the analysis recomputed from the collected records differs from analysis.json")
     hashes = {"analysis": sha_file(Path(a.out) / "analysis.json"), "draw": sha_file(a.draw), "manifest": sha_file(a.manifest),
               "recomputed": True}
     text = json.dumps(build(col, winners, R._safe, hashes), indent=1, sort_keys=True) + "\n"
     if a.check:
-        same = Path(a.check).is_file() and Path(a.check).read_text() == text
-        print("ok: the extract rebuilt from the run records is byte-identical" if same else f"differs: {a.check}")
+        same = Path(a.check).is_file() and Path(a.check).read_bytes() == text.encode()
+        n, dig = records_digest(a.out)
+        print(("ok: the extract rebuilt from the run records is byte-identical" if same else f"differs: {a.check}")
+              + f"; records {n} files, digest {dig}")
         return 0 if same else 1
     Path(a.write).write_text(text)
     return 0
