@@ -69,6 +69,7 @@
     "focal_audit_rate": 0.5538230230457771,
     "focal_job_share": 0.10323128966439205,
     "markets": 6,
+    "replacing_markets": 5,
     "young_honest_audit_share": 0.03696595789379114,
     "young_honest_job_share": 0.04490007790175163
    },
@@ -77,6 +78,7 @@
     "focal_audit_rate": 0.060785628960238904,
     "focal_job_share": 0.08145279880523729,
     "markets": 6,
+    "replacing_markets": 3,
     "young_honest_audit_share": 0.6946380613392643,
     "young_honest_job_share": 0.2752045402667496
    },
@@ -85,6 +87,7 @@
     "focal_audit_rate": 0.036765103759230436,
     "focal_job_share": 0.08868550325426679,
     "markets": 6,
+    "replacing_markets": 3,
     "young_honest_audit_share": 0.8318202086359054,
     "young_honest_job_share": 0.3917446975577355
    }
@@ -310,6 +313,7 @@
     "focal_audit_rate": 0.7931174038002493,
     "focal_job_share": 0.10540673629614218,
     "markets": 6,
+    "replacing_markets": 6,
     "young_honest_audit_share": 0.035297560540271535,
     "young_honest_job_share": 0.044789229712785296
    },
@@ -318,6 +322,7 @@
     "focal_audit_rate": 0.058034191456022954,
     "focal_job_share": 0.07340698097822475,
     "markets": 3,
+    "replacing_markets": 1,
     "young_honest_audit_share": 0.6991186385068118,
     "young_honest_job_share": 0.27816220595814106
    },
@@ -326,6 +331,7 @@
     "focal_audit_rate": 0.06701461183583975,
     "focal_job_share": 0.09538499301762221,
     "markets": 6,
+    "replacing_markets": 4,
     "young_honest_audit_share": 0.8175203308943334,
     "young_honest_job_share": 0.3884392290328423
    }

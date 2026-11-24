@@ -1898,5 +1898,15 @@
   "path": "reppaper.primary.absneg.0.03.d.negative",
   "kind": "count",
   "section": "conclusion"
+ },
+ "rp_x5": {
+  "path": "reppaper.primary.alloc.0.05.replacing_markets",
+  "kind": "count",
+  "section": "churn"
+ },
+ "rpf_x5": {
+  "path": "reppaper.frozen.alloc.0.05.replacing_markets",
+  "kind": "count",
+  "section": "churn"
  }
 }

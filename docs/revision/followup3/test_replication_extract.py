@@ -43,7 +43,8 @@ def test_parse_cell_accepts_the_run_shapes():
                                   "menu-p0.05__fresh3@rho0.2__F111__D2+H3__profit",              # suffix missing
                                   "menu-p0.05__fresh6@rho0.2__F111__D2+H3__profit__churn0.05",   # no such market
                                   "menu-p0.05__fresh3@rho0.2__F222__D2+H3__profit__churn0.05",   # no such policy
-                                  "menu-p0.02__fresh3@rho0.2__F111__D2+H3__profit__churn0.02"])  # no such rate
+                                  "menu-p0.02__fresh3@rho0.2__F111__D2+H3__profit__churn0.02",   # no such rate
+                                  "cthr-p0__fresh1@rho0.2__F111__D2+H3__profit"])                # cthr on another policy
 def test_parse_cell_refuses_other_shapes(stem):
     with pytest.raises(ValueError):
         RE.parse_cell(stem)
@@ -86,3 +87,12 @@ def test_committed_extract_is_bound_to_the_committed_analysis():
     ex = json.loads((HERE / "replication-extract.json").read_text())
     assert ex["binding"]["analysis"] == hashlib.sha256((HERE / "replication-analysis.json").read_bytes()).hexdigest()
     assert ex["status"] == {"problems": [], "unscorable": [], "round1_mismatch": False, "gate_ok": True}
+
+
+def test_recompute_matches_the_analyse_stage_layout():
+    col = {"counts": {"continued": 0}, "round1_mismatch": False, "gate_ok": True, "problems": [], "unscorable": [],
+           "primary": None, "frozen": {"g": 1}, "audit": {"frozen": {"0": {"rep0": RE.Counts((1, 2))}}, "primary": {}}}
+    seen = {}
+    out = json.loads(RE.recompute(col, True, lambda g, au: seen.update(au=au) or {"ok": g}))
+    assert out["confirmatory"] is True and out["frozen"] == {"ok": {"g": 1}} and out["primary"].startswith("not available")
+    assert seen["au"] == {"0": {"rep0": (1, 2)}}
