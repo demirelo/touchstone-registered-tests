@@ -1,33 +1,40 @@
 # Publishing the Touchstone release (author steps)
 
-Prepared 2026-11-05. Run each command yourself, in order, from a terminal. Nothing here was run by Claude. The current
-repository `demirelo/touchstone` stays private; the steps create a new public repository with only the release branch
-and the tag.
+Rewritten 2026-11-24 (replaces the 2026-11-05 version). Run each command yourself, in order, from a terminal. Nothing
+here was run by Claude. The repository `demirelo/touchstone` stays private; the steps create a new public repository with
+the release branch and the record tags. Decided on 2026-11-24: `sealed/` (the first test's H2 family, unsealed on 18
+October) is published with the history.
 
-## Before you start: two decisions
+W=/Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79
+R=/Users/oemer.demirel/Projects/touchstone/results/v2
 
-1. **External review first (recommended).** The paper in the artifact is the one at commit 8dd9e5e. If the external
-   review changes the paper, the artifact must be rebuilt after the last change (plan, Operation 9). Publish after the
-   review.
-2. **`sealed/` becomes public.** The branch history tracks `sealed/` (the first test's sealed attacker family, 8 files).
-   Any push of this history publishes it. If it must stay private, stop here and tell Claude; the history would need a
-   rewrite before publication, which also changes the tagged commit and needs a new plan.
-
-## Steps
-
-**1. Sign Claude's latest commits** (refuses unless the tag stays on the branch):
+**1. Sign Claude's commits.** Signing rewrites the commit ids after `origin/main`, never the content. Note the tree first:
 
 ```bash
-cd /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79 && bash docs/revision/sign_after_tag.sh
+cd /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79 && git rev-parse HEAD^{tree}
 ```
 
-Expected last line: `ok: tag on branch; unsigned commits after the tag: 0`.
-
-**2. Check the artifact you will upload.** Expected: `f6cf682bda2fa5883ff35de00bea2228f2ee8e0c7f2b91168532968fec10812c`.
+Write the printed hash down. Then sign:
 
 ```bash
-shasum -a 256 /Users/oemer.demirel/Projects/touchstone/results/v2/release/touchstone-v2.tar.gz
+cd /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79 && bash docs/revision/sign_after_tag.sh && git rev-parse HEAD^{tree}
 ```
+
+Expected: `ok: tag on branch; unsigned commits after the tag: 0`, then the same tree hash you wrote down.
+
+**2. Check the seven release files.**
+
+```bash
+cd /Users/oemer.demirel/Projects/touchstone/results/v2 && shasum -a 256 release/touchstone-v2.tar.gz release-followups/*.tar.gz
+```
+
+Expected: the hashes in `docs/revision/release-notes.md`. Then the follow-up manifests:
+
+```bash
+cd /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79 && uv run python docs/revision/release/followups.py --check /Users/oemer.demirel/Projects/touchstone/results/v2/release-followups
+```
+
+Expected: six lines ending in `ok`.
 
 **3. Connect Zenodo before the release exists.** Zenodo archives a GitHub release only if the repository is switched on
 in Zenodo first. Sign in at zenodo.org with GitHub, open Settings > GitHub, and switch on the new repository after
@@ -39,17 +46,23 @@ step 4 creates it (then continue with step 5).
 gh repo create demirelo/touchstone-registered-tests --public --description "Touchstone: two registered tests of age-ranked audit targeting under free identity replacement"
 ```
 
-**5. Push the release branch as main, and the signed tag:**
+**5. Push the branch as main, and the nine record tags:**
 
 ```bash
-cd /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79 && git push git@github.com:demirelo/touchstone-registered-tests.git claude/vigorous-villani-bbac79:main refs/tags/protocol-v2
+cd /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79 && git push git@github.com:demirelo/touchstone-registered-tests.git claude/vigorous-villani-bbac79:main refs/tags/lock-2026-10-17 refs/tags/lock-2026-10-17-amendment-1 refs/tags/lock-2026-10-17-amendment-2 refs/tags/lock-2026-10-17-amendment-3 refs/tags/lock-2026-10-17-amendment-4 refs/tags/freeze-2026-10-18 refs/tags/final-eval-2026-10-20 refs/tags/h4-base refs/tags/protocol-v2
 ```
 
-**6. Create the GitHub release with the artifact** (Zenodo archives it and mints the DOI):
+**6. Create the GitHub release with the seven files** (Zenodo archives it and mints the DOI):
 
 ```bash
-cd /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79 && gh release create v2.0 --repo demirelo/touchstone-registered-tests --title "Touchstone v2: second registered test" --notes-file docs/revision/release-notes.md /Users/oemer.demirel/Projects/touchstone/results/v2/release/touchstone-v2.tar.gz
+cd /Users/oemer.demirel/Projects/touchstone/.claude/worktrees/vigorous-villani-bbac79 && gh release create v2.1 --repo demirelo/touchstone-registered-tests --title "Touchstone: two registered tests, follow-ups and replication" --notes-file docs/revision/release-notes.md /Users/oemer.demirel/Projects/touchstone/results/v2/release/touchstone-v2.tar.gz /Users/oemer.demirel/Projects/touchstone/results/v2/release-followups/*.tar.gz
 ```
 
 **7. Tell Claude** the repository URL and the Zenodo DOI. Claude then puts them into the paper's availability sentence
-(the `TODO at submission` marker) and rechecks the paper.
+(the `TODO at submission` marker), rechecks the paper, and you sign and push that last commit.
+
+Checks already done by Claude on 2026-11-24 (no external effect):
+- `touchstone-v2.tar.gz` still reproduces the second test's report from a clean clone of this branch (`reproduce_deviation.py`: ok).
+- Each follow-up archive was built by `docs/revision/release/followups.py` (explicit folder list; refuses `sealed` and `mac_diag` paths) and passes `--check`.
+- The replication archive, unpacked alone, rebuilds the paper extract byte for byte (records digest `51086341…`).
+- Secret scan: the tracked files (pattern scan) and all 702 commits (`gitleaks git`, `sealed/` excluded from the log): no findings.
