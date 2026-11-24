@@ -457,3 +457,10 @@ def test_round5_kinds():
     assert N.KINDS["alloc"]("staying_audit_min", 0.012) and N.KINDS["count"]("staying_markets", 3) and N.KINDS["count"]("incomplete", 1)
     assert N.KINDS["alloc"]("staying_audit_max_doubled", 0.015) and N.KINDS["count"]("staying_markets_doubled", 3)
     assert N.KINDS["alloc"]("replacing_newest_max", 0.033) and N.KINDS["count"]("unflagged", 5)
+
+
+def test_sideways_floats_are_floats():
+    """Landscape tables (rotating's sidewaystable) are found by label and checked like any float (2026-11-24)."""
+    tex = "% BEGIN-EV2\n\\begin{sidewaystable}\\centering\n\\input{tables/x.tex}\n\\caption{c}\\label{tab:x}\n\\end{sidewaystable}\n% END-EV2\n"
+    f = N._floats(tex)
+    assert [x["labels"] for x in f] == [["tab:x"]] and f[0]["whole"]

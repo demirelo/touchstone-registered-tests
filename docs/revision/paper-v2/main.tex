@@ -3,6 +3,7 @@
 \usepackage[margin=1in]{geometry}
 \usepackage{amsmath,amssymb,amsthm,booktabs,graphicx,hyperref,adjustbox,placeins}
 \usepackage{xurl}
+\usepackage{rotating}
 \emergencystretch=2em
 \newtheorem{theorem}{Theorem}\newtheorem{lemma}{Lemma}\newtheorem{corollary}{Corollary}\newtheorem{proposition}{Proposition}
 \input{numbers.tex}
@@ -234,10 +235,10 @@ In the registered markets every honest provider keeps one identity for the whole
 
 
 
-\begin{table}[t]\centering\small
+\begin{sidewaystable}\centering\small
 \adjustbox{max width=\linewidth}{\input{tables/posthoc_churn_audit.tex}}
 \caption{Exploratory follow-up: per churn rate and rule, under the rule's selected attack, the share of the attacker's jobs audited, the share of jobs served by honest identities younger than ten rounds and the share of all audits they receive, the audited share of established honest jobs, the number of markets whose selected attack never replaces its identity, and gross efficiency; means over the six markets; frozen / doubled searches where two values are given. These statistics were defined after the results at $p$ = \const{0.01} and \const{0.05} and before the runs at \const{0.02} and \const{0.03}.}\label{tab:ph-churn-audit}
-\end{table}
+\end{sidewaystable}
 \begin{table}[t]\centering\small
 \adjustbox{max width=\linewidth}{\input{tables/replication.tex}}
 \caption{Prospective-exploratory replication on six new markets (rep0 to rep5), planned and timestamped before they were drawn: the change of $d$ = C$^*$ minus R3, $q$ = B3 minus R3, and $u$ = C-thr(\const{12}) minus R3 from the same market's no-churn value, as the mean over the six markets with its market $t$ interval (\const{5} degrees of freedom) and the number of markets where the contrast is lower than without churn; and the absolute contrasts at each churn rate $p$. Primary winners (the continued winner where the doubling check was flagged) and all-frozen winners. The intervals omit search uncertainty; per-market values and seed-bootstrap intervals are in Appendix~\ref{sec:app-rep}.}\label{tab:replication}
@@ -382,22 +383,22 @@ For the uniform-audit baselines B2 and B3 with refund-and-ban enforcement and no
 \section{Prospective-exploratory replication: details}\label{sec:app-rep}
 Tables~\ref{tab:rep-markets} to~\ref{tab:rep-alloc} complete Table~\ref{tab:replication}. All values condition on the selected search outputs and omit search uncertainty; the primary set uses the continued winner of every flagged cell and the all-frozen set the frozen winner of every cell.
 
-\begin{table}[t]\centering\small
+\begin{sidewaystable}\centering\small
 \adjustbox{max width=\linewidth}{\input{tables/replication_markets.tex}}
 \caption{Prospective-exploratory replication: the paired change of each contrast from the same market's no-churn value, per market, with its seed-bootstrap interval (second line; \const{95}\% paired percentile intervals, \const{9999} resamples, seed \const{0}), and the equal-weight mean over the six markets with its pooled seed-bootstrap interval, which holds the six markets fixed.}\label{tab:rep-markets}
-\end{table}
-\begin{table}[t]\centering\small
+\end{sidewaystable}
+\begin{sidewaystable}\centering\small
 \adjustbox{max width=\linewidth}{\input{tables/replication_absolute.tex}}
 \caption{Prospective-exploratory replication: the absolute contrasts per market with their seed-bootstrap intervals (second line; \const{95}\% paired percentile intervals, \const{9999} resamples, seed \const{0}), and the equal-weight pooled value with its pooled seed-bootstrap interval, which holds the six markets fixed.}\label{tab:rep-absolute}
-\end{table}
+\end{sidewaystable}
 \begin{table}[t]\centering\small
 \adjustbox{max width=\linewidth}{\input{tables/replication_terms.tex}}
 \caption{Prospective-exploratory replication: per rule, the attacked profit and the truthful reference's profit (both normalised as in the gain), the gain, and gross efficiency under the selected attack, as equal-weight means over the six markets, with the lowest market's efficiency.}\label{tab:rep-terms}
 \end{table}
-\begin{table}[t]\centering\small
+\begin{sidewaystable}\centering\small
 \adjustbox{max width=\linewidth}{\input{tables/replication_alloc.tex}}
 \caption{Prospective-exploratory replication: R3's audit allocation under its selected attack, as equal-weight means over the markets with diagnostics: the share of served jobs held by honest identities younger than ten rounds, their share of R3's audits, the audited rate of established honest jobs, the attacker's share of served jobs, its audited rate, and the range of that rate over the markets. At $p = \const{0.03}$ the primary set lacks rep2, rep3, and rep4, whose continued R3 winners have no diagnostics because the run code computed them only at $p = \const{0}$ and \const{0.05}. The last column counts the markets where the selected attack replaces its identity (switch $x = \const{1}$).}\label{tab:rep-alloc}
-\end{table}
+\end{sidewaystable}
 
 \clearpage
 % END-EV2

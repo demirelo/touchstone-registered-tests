@@ -290,15 +290,15 @@ def _floats(tex: str) -> list[dict]:
             if cur is not None:
                 cur["whole"] = False
             continue
-        if len(re.findall(r"\\(?:begin|end)\{(?:figure|table)\*?\}", line)) > 1:
+        if len(re.findall(r"\\(?:begin|end)\{(?:sideways)?(?:figure|table)\*?\}", line)) > 1:
             out.append({"labels": [], "outside": [], "whole": False, "layout": line.strip()[:80]})
-        if cur is None and re.search(r"\\begin\{(figure|table)\*?\}", line):
+        if cur is None and re.search(r"\\begin\{(?:sideways)?(figure|table)\*?\}", line):
             cur = {"labels": [], "outside": [], "whole": region}
         if cur is not None:
             cur["labels"] += re.findall(r"\\label\{([^}]*)\}", line)
             if not region:
                 cur["outside"].append(line); cur["whole"] = False
-            if re.search(r"\\end\{(figure|table)\*?\}", line):
+            if re.search(r"\\end\{(?:sideways)?(figure|table)\*?\}", line):
                 out.append(cur); cur = None
     return out
 
