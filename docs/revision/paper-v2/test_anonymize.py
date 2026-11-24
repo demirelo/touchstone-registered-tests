@@ -46,3 +46,13 @@ def test_pdf_check_flags_identifiers_and_allows_third_party_github():
     import check_anon_pdf as C
     assert C.findings("see https://github.com/BOINC/boinc/wiki and block 123") == []
     assert len(C.findings("Demirel, block 974451, tag protocol-v2, zenodo.24499068")) == 4
+
+
+def test_dates_paths_model_and_timestamps_are_masked():
+    tex = ("\\documentclass[11pt]{article}\n\\date{November 2026}\n\\section{The first test (October 2026)}\n"
+           "locked on 17 October 2026; approved 12 November 2026; in October~\\const{2026}; \\texttt{docs/revision/audit}; "
+           "\\texttt{sealed2/h4/}; wrote H4 (gpt-6.1-sol)")
+    out = A.anonymize(tex)
+    assert A.problems(out) == [], A.problems(out)
+    assert "\\pdfinfoomitdate=1" in out and "\\date{}" in out and "\\section{The first test}" in out
+    assert len(A.problems(tex)) >= 6
