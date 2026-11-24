@@ -308,3 +308,7 @@ Mistake: pod 1 was reported as started at 13:53Z when only the launcher process 
 ## 2026-11-24: "the authors is" after anonymization
 - Mistake: the AI-use statement said "the author is responsible"; the anonymizer's author -> authors substitution produced "the authors is" in the WEIS PDF.
 - Guard: `test_author_to_authors_keeps_verb_agreement` (paper-v2/test_anonymize.py) anonymizes both versions and refuses "the authors is/was/has/does"; it failed on the draft, passes after the rewording.
+
+## 2026-11-25: figure creation dates inside the anonymized PDF
+- Mistake: `check_anon_pdf.py` read only pdftotext and pdfinfo, so the figures' own creation dates (`D:20261104...`, inside compressed streams) passed the anonymity check; two reviewers found them.
+- Guard: `raw_findings` scans the raw file and every Flate stream for dates and identifiers (`test_pdf_check_scans_compressed_streams_for_embedded_dates`; the round-2 PDF fails it); the anonymizer adds `\pdfsuppressptexinfo=-1` so embedded figure info is not copied.

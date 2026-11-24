@@ -22,7 +22,7 @@ SUBS = [
     (r"17 October 2026", "[date withheld for review]"),
     (r"\(published erratum\)", "(erratum)"),
     (r"timestamped with OpenTimestamps, and published,", "timestamped with OpenTimestamps,"),
-    (r"\\documentclass(\[[^]]*\])?\{[^}]*\}", lambda m: m.group(0) + "\n\\pdfinfoomitdate=1\\pdftrailerid{}"),   # no build timestamps
+    (r"\\documentclass(\[[^]]*\])?\{[^}]*\}", lambda m: m.group(0) + "\n\\pdfinfoomitdate=1\\pdftrailerid{}\\pdfsuppressptexinfo=-1"),   # no build timestamps
     (r"\\date\{[^}]*\}", r"\\date{}"),
     (r"\s*\((?:January|February|March|April|May|June|July|August|September|October|November|December)(?:~| )2026\)\}", "}"),                                     # section titles such as "(October 2026)"
     (r"(?:\d{1,2} )?(?:January|February|March|April|May|June|July|August|September|October|November|December)(?:~| )(?:\\const\{2026\}|2026)", "[date withheld for review]"),

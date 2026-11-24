@@ -70,3 +70,14 @@ def test_author_to_authors_keeps_verb_agreement():
     for d in ("paper-v2", "paper-weis"):
         out = A.anonymize((Path(__file__).resolve().parents[1] / d / "main.tex").read_text())
         assert not re.search(r"\bthe authors (is|was|has|does)\b", out), d
+
+
+def test_pdf_check_scans_compressed_streams_for_embedded_dates(tmp_path):
+    # Figure PDFs carried their own creation dates inside compressed streams (round 2, 2026-11-25); pdftotext missed them.
+    import zlib
+    import check_anon_pdf as C
+    pdf = tmp_path / "x.pdf"
+    pdf.write_bytes(b"%PDF-1.5\n1 0 obj<</Filter/FlateDecode>>stream\n" + zlib.compress(b"/CreationDate (D:20261104210106+02'00')")
+                    + b"\nendstream endobj\n%%EOF")
+    assert C.raw_findings(pdf.read_bytes())
+    assert C.raw_findings(b"%PDF-1.5 plain /Producer (pdfTeX)") == []
