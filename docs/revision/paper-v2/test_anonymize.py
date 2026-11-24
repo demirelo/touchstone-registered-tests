@@ -14,11 +14,11 @@ at the author's request; started by the author, wrote; bundle SHA-256 \texttt{cb
 def test_anonymize_removes_identifying_strings():
     out = A.anonymize(SRC)
     assert A.problems(out) == []
-    assert "\\author{Anonymous submission}" in out and "the author's" in out and "by the author," in out
+    assert "\\author{Anonymous submission}" in out and "the authors'" in out and "by the authors," in out
 
 
 def test_check_finds_each_identifying_string():
-    for bad in ("Ömer", "Demirel", "progfi", "house.markets", "oemer", "cba512aa", "\\author{X}"):
+    for bad in ("Ömer", "Demirel", "progfi", "house.markets", "oemer", "cba512aa", "the author's", "\\author{X}"):
         assert A.problems("\\author{Anonymous submission}\n" + bad), bad
 
 
@@ -64,9 +64,9 @@ def test_pdf_check_flags_the_public_title():
     assert C.findings("Checking newcomers is an old idea.") == []
 
 
-def test_anonymized_copy_keeps_the_singular_author():
-    # The author asked for "author", not "authors", in the WEIS copy (2026-11-24).
+def test_author_to_authors_keeps_verb_agreement():
+    # "the author is" became "the authors is" in the AI-use statement (2026-11-24).
     import re
     for d in ("paper-v2", "paper-weis"):
         out = A.anonymize((Path(__file__).resolve().parents[1] / d / "main.tex").read_text())
-        assert not re.search(r"\bauthors\b", out), d
+        assert not re.search(r"\bthe authors (is|was|has|does)\b", out), d

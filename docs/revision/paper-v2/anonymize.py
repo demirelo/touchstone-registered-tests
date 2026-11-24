@@ -6,7 +6,7 @@ from pathlib import Path
 
 # Strings that identify the author or let a reviewer find the repository. Checked case-insensitively.
 FORBIDDEN = [r"ömer", r"demirel", r"progfi", r"house\.markets", r"oemer", r"cba512aa",
-             r"\\author\{(?!Anonymous submission\})", r"zenodo\.\d", r"github\.com/",
+             r"\bthe author\b", r"\\author\{(?!Anonymous submission\})", r"zenodo\.\d", r"github\.com/",
              # searchable identifiers of the public release (WEIS review, 2026-11-24): block heights, tags, branch, dates
              r"\b97\d{4}\b", r"protocol-v2", r"two20k", r"17 October 2026", r"published erratum", r"release v\d",
              r"(?:January|February|March|April|May|June|July|August|September|October|November|December)(?:~| )(?:\\const\{)?2026", r"docs/revision", r"sealed2/", r"gpt-\d", r"\\date\{[^}]"]
@@ -28,6 +28,8 @@ SUBS = [
     (r"(?:\d{1,2} )?(?:January|February|March|April|May|June|July|August|September|October|November|December)(?:~| )(?:\\const\{2026\}|2026)", "[date withheld for review]"),
     (r"\\texttt\{(?:docs/revision|sealed2)[^}]*\}", r"\\texttt{[path withheld for review]}"),
     (r"gpt-\d[\w.-]*", "[model withheld for review]"),
+    (r"\bthe author's\b", "the authors'"),
+    (r"\bthe author\b", "the authors"),
 ]
 
 
