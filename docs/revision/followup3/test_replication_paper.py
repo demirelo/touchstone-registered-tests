@@ -131,6 +131,8 @@ def test_continued_split_by_rate_and_rule():
     lambda an, ex: [ex[k]["primary"]["0.05"].pop("rep5") for k in ("audit", "alloc")],          # primary gap not allowed
     lambda an, ex: ex["continued"].append({"kind": "cthr", "rate": "0", "market": "rep1", "policy": "F111",
                                            "stem": "cthr-p0__fresh1@rho0.2__F111__D2+H3__profit"}),   # impossible identity
+    lambda an, ex: ex["alloc"]["primary"]["0.05"]["rep2"].update(x=True),                        # bool, not int
+    lambda an, ex: ex["alloc"]["primary"]["0.05"]["rep2"].update(young_honest_job_share=None),   # missing with counts
 ])
 def test_refusals(mutate):
     an, ex = _analysis(), _extract()

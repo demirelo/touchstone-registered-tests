@@ -9,7 +9,10 @@ unresolved counts and whose (rate, market, rule) set equals the cells where the 
 counts must be integers with 0 <= audited <= served, the allocation shares must lie in [0, 1] with the attacker's
 audited rate equal to audited over served and x in {0, 1}; the frozen set must cover every rate and market, and the
 primary set may miss exactly the continued R3 cells at a rate where the run code computed no continued diagnostics
-(p = 0.03). Expectation 5 must agree with the audit counts (lower on at least five of six markets).
+(p = 0.03). The continued-cells rule would refuse a future continued winner whose terms equal its frozen winner's; in
+this run the two sets are equal (20 cells). Values that exist only in the extract (allocation shares, x) cannot be
+derived here; they are authenticated by replication_extract.py --check against the run records and by the sha256 pin
+in test_replication_extract.py. Expectation 5 must agree with the audit counts (lower on at least five of six markets).
 
 The summary holds the derived values the analysis file does not store, per winner set: R3's audited share of the
 attacker's jobs (min, max, markets with a count, markets lower at p = 0.05 than at p = 0, a zero denominator at either
@@ -115,8 +118,11 @@ def _validate_counts(extract: dict) -> None:
                         and 0 <= c[0] <= c[1]):
                     raise ValueError(f"impossible audit count {s} {p} {m}: {c}")
                 al = extract["alloc"][s][p][m]
-                if any(al[k] is not None and not 0 <= al[k] <= 1 for k in ALLOC) or al.get("x") not in (0, 1):
+                if any(al[k] is not None and not 0 <= al[k] <= 1 for k in ALLOC) or type(al.get("x")) is not int or al["x"] not in (0, 1):
                     raise ValueError(f"allocation out of range {s} {p} {m}")
+                need = (["young_honest_job_share", "focal_job_share"] if c[1] else []) + (["young_honest_audit_share"] if c[0] else [])
+                if any(al[k] is None for k in need):
+                    raise ValueError(f"allocation share missing although the attacker's counts are nonzero {s} {p} {m}")
                 want = c[0] / c[1] if c[1] else None
                 if (want is None) != (al["focal_audit_rate"] is None) or (want is not None and abs(want - al["focal_audit_rate"]) > 1e-12):
                     raise ValueError(f"the attacker's audited rate disagrees with its counts {s} {p} {m}")

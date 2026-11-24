@@ -10,7 +10,11 @@ continuation record produced which winner kind. Nothing the collector decides ch
 recomputed from the same collected records exactly as rep_v2's analyse stage does, and the extract is written only if
 it is byte-identical to the run's analysis.json.
 
-Usage: replication_extract.py --out <followup3-rep dir> --manifest <manifest> --draw <draw.json> --write <json>"""
+Authentication of the extract's own fields: --check rebuilds the extract from the run records and requires it to be
+byte-identical to the committed file; test_replication_extract.py pins the committed file's sha256 (EXTRACT_SHA256), so
+any later edit fails the gate until the extract is rebuilt from the records and the pin is updated deliberately.
+
+Usage: replication_extract.py --out <followup3-rep dir> --manifest <manifest> --draw <draw.json> (--write | --check) <json>"""
 import argparse
 import hashlib
 import json
@@ -94,7 +98,7 @@ def recompute(col: dict, confirmatory: bool, analyse) -> str:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True); ap.add_argument("--manifest", required=True); ap.add_argument("--draw", required=True)
-    ap.add_argument("--write", required=True)
+    g = ap.add_mutually_exclusive_group(required=True); g.add_argument("--write"); g.add_argument("--check")
     a = ap.parse_args(argv)
     import rep_v2 as V
     import rep_collect as C
@@ -102,6 +106,8 @@ def main(argv=None) -> int:
     import revision_v2 as R
     ns = V.main.__globals__["argparse"].Namespace(out=a.out, manifest=a.manifest, draw=a.draw, smoke=False,
                                                   params=str(V.ROOT / "experiments/v2/params.json"))
+    if not (Path(a.out) / "analysis.json").is_file():   # before _context, which reinstalls salt.hex in --out
+        raise SystemExit("no analysis.json in --out: run on the analysed clone of the pulled output, never on the pod output")
     V._require(ns)
     c = V._context(ns); jobs = V._jobs_by_dir(c, False)
     winners, last = {}, {}
@@ -140,8 +146,12 @@ def main(argv=None) -> int:
         raise SystemExit("the analysis recomputed from the collected records differs from analysis.json")
     hashes = {"analysis": sha_file(Path(a.out) / "analysis.json"), "draw": sha_file(a.draw), "manifest": sha_file(a.manifest),
               "recomputed": True}
-    res = build(col, winners, R._safe, hashes)
-    Path(a.write).write_text(json.dumps(res, indent=1, sort_keys=True) + "\n")
+    text = json.dumps(build(col, winners, R._safe, hashes), indent=1, sort_keys=True) + "\n"
+    if a.check:
+        same = Path(a.check).is_file() and Path(a.check).read_text() == text
+        print("ok: the extract rebuilt from the run records is byte-identical" if same else f"differs: {a.check}")
+        return 0 if same else 1
+    Path(a.write).write_text(text)
     return 0
 
 

@@ -96,3 +96,19 @@ def test_recompute_matches_the_analyse_stage_layout():
     out = json.loads(RE.recompute(col, True, lambda g, au: seen.update(au=au) or {"ok": g}))
     assert out["confirmatory"] is True and out["frozen"] == {"ok": {"g": 1}} and out["primary"].startswith("not available")
     assert seen["au"] == {"0": {"rep0": (1, 2)}}
+
+
+# Rebuild with `replication_extract.py --out <analysed clone> ... --check replication-extract.json` before changing this.
+EXTRACT_SHA256 = "36e7c69be53db5c606c2a0ff365c4cae380efe4db081da35fba0eec8a9750cae"
+
+
+def test_committed_extract_is_pinned():
+    """Values that exist only in the extract (allocation, x, counts) are authenticated by this pin: the committed file was
+    rebuilt from the run records with --check (byte-identical) on 2026-11-24; any later edit fails here."""
+    assert hashlib.sha256((HERE / "replication-extract.json").read_bytes()).hexdigest() == EXTRACT_SHA256
+
+
+def test_refuses_an_out_dir_without_analysis(tmp_path):
+    with pytest.raises(SystemExit):
+        RE.main(["--out", str(tmp_path), "--manifest", "m", "--draw", "d", "--check", "x"])
+    assert list(tmp_path.iterdir()) == []                 # nothing written before the refusal
