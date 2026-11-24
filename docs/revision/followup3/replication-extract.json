@@ -1,4 +1,253 @@
 {
+ "alloc": {
+  "frozen": {
+   "0": {
+    "rep0": {
+     "established_honest_audit_rate": 0.21152691799421858,
+     "focal_audit_rate": 0.6853960576525776,
+     "focal_job_share": 0.08261099164111615,
+     "young_honest_audit_share": 0.03786697348850821,
+     "young_honest_job_share": 0.046010003353191456
+    },
+    "rep1": {
+     "established_honest_audit_rate": 0.18023955701771566,
+     "focal_audit_rate": 0.8719697501579692,
+     "focal_job_share": 0.09971212365931482,
+     "young_honest_audit_share": 0.03544471940097264,
+     "young_honest_job_share": 0.04500611805980247
+    },
+    "rep2": {
+     "established_honest_audit_rate": 0.25078361403300586,
+     "focal_audit_rate": 0.283739393395988,
+     "focal_job_share": 0.061769220970610994,
+     "young_honest_audit_share": 0.03957731753959638,
+     "young_honest_job_share": 0.04721846425573886
+    },
+    "rep3": {
+     "established_honest_audit_rate": 0.19751725214599866,
+     "focal_audit_rate": 0.5778988616734168,
+     "focal_job_share": 0.13692882149591923,
+     "young_honest_audit_share": 0.03545063519055717,
+     "young_honest_job_share": 0.043069448285208076
+    },
+    "rep4": {
+     "established_honest_audit_rate": 0.25219138636785493,
+     "focal_audit_rate": 0.24935407539471158,
+     "focal_job_share": 0.13799429942994298,
+     "young_honest_audit_share": 0.03620591023830574,
+     "young_honest_job_share": 0.04303580358035804
+    },
+    "rep5": {
+     "established_honest_audit_rate": 0.20506872524290945,
+     "focal_audit_rate": 0.65458,
+     "focal_job_share": 0.10037228078944806,
+     "young_honest_audit_share": 0.03725019150480667,
+     "young_honest_job_share": 0.045060629876210866
+    }
+   },
+   "0.03": {
+    "rep0": {
+     "established_honest_audit_rate": 0.10955026455026455,
+     "focal_audit_rate": 0.02431787545901055,
+     "focal_job_share": 0.0674317660966817,
+     "young_honest_audit_share": 0.7150498181758883,
+     "young_honest_job_share": 0.28093295532845314
+    },
+    "rep1": {
+     "established_honest_audit_rate": 0.11199362893058454,
+     "focal_audit_rate": 0.027738251263808276,
+     "focal_job_share": 0.05346306208912346,
+     "young_honest_audit_share": 0.6976616638576741,
+     "young_honest_job_share": 0.28476663088114956
+    },
+    "rep2": {
+     "established_honest_audit_rate": 0.10442200527405794,
+     "focal_audit_rate": 0.09032988100643617,
+     "focal_job_share": 0.07023230057138692,
+     "young_honest_audit_share": 0.7030434580881507,
+     "young_honest_job_share": 0.27693030375430766
+    },
+    "rep3": {
+     "established_honest_audit_rate": 0.11816129390428957,
+     "focal_audit_rate": 0.07300294603057085,
+     "focal_job_share": 0.12972677699502216,
+     "young_honest_audit_share": 0.674545541887007,
+     "young_honest_job_share": 0.26206077547330925
+    },
+    "rep4": {
+     "established_honest_audit_rate": 0.11458155417810113,
+     "focal_audit_rate": 0.027278372356357525,
+     "focal_job_share": 0.06853677233034039,
+     "young_honest_audit_share": 0.6928834525399932,
+     "young_honest_job_share": 0.2777495444984576
+    },
+    "rep5": {
+     "established_honest_audit_rate": 0.10588889047884797,
+     "focal_audit_rate": 0.12204644764525004,
+     "focal_job_share": 0.09932611474886911,
+     "young_honest_audit_share": 0.684644433486873,
+     "young_honest_job_share": 0.2687870316648206
+    }
+   },
+   "0.05": {
+    "rep0": {
+     "established_honest_audit_rate": 0.07354072793044361,
+     "focal_audit_rate": 0.01202560003540195,
+     "focal_job_share": 0.09265147391802148,
+     "young_honest_audit_share": 0.8446579813840287,
+     "young_honest_job_share": 0.3905121684466024
+    },
+    "rep1": {
+     "established_honest_audit_rate": 0.07668516068862474,
+     "focal_audit_rate": 0.04728913289027818,
+     "focal_job_share": 0.07617220131839196,
+     "young_honest_audit_share": 0.8243262715086795,
+     "young_honest_job_share": 0.3981967903588711
+    },
+    "rep2": {
+     "established_honest_audit_rate": 0.07108890318864494,
+     "focal_audit_rate": 0.012785337140487166,
+     "focal_job_share": 0.06388036887960463,
+     "young_honest_audit_share": 0.844975303681517,
+     "young_honest_job_share": 0.4000840678656952
+    },
+    "rep3": {
+     "established_honest_audit_rate": 0.07871563953146153,
+     "focal_audit_rate": 0.013725380226682914,
+     "focal_job_share": 0.09829306551601441,
+     "young_honest_audit_share": 0.8335190259668563,
+     "young_honest_job_share": 0.39085943098842835
+    },
+    "rep4": {
+     "established_honest_audit_rate": 0.07822316479904029,
+     "focal_audit_rate": 0.040179236013933965,
+     "focal_job_share": 0.1008334488329865,
+     "young_honest_audit_share": 0.8229895411099435,
+     "young_honest_job_share": 0.38531134620224633
+    },
+    "rep5": {
+     "established_honest_audit_rate": 0.0689645747041384,
+     "focal_audit_rate": 0.09458593624859843,
+     "focal_job_share": 0.10028246106058179,
+     "young_honest_audit_share": 0.8204531281644079,
+     "young_honest_job_share": 0.38550438148456956
+    }
+   }
+  },
+  "primary": {
+   "0": {
+    "rep0": {
+     "established_honest_audit_rate": 0.21152691799421858,
+     "focal_audit_rate": 0.6853960576525776,
+     "focal_job_share": 0.08261099164111615,
+     "young_honest_audit_share": 0.03786697348850821,
+     "young_honest_job_share": 0.046010003353191456
+    },
+    "rep1": {
+     "established_honest_audit_rate": 0.18023955701771566,
+     "focal_audit_rate": 0.8719697501579692,
+     "focal_job_share": 0.09971212365931482,
+     "young_honest_audit_share": 0.03544471940097264,
+     "young_honest_job_share": 0.04500611805980247
+    },
+    "rep2": {
+     "established_honest_audit_rate": 0.21347137202316305,
+     "focal_audit_rate": 0.7381917754219989,
+     "focal_job_share": 0.07143126509395398,
+     "young_honest_audit_share": 0.03843661539510931,
+     "young_honest_job_share": 0.046626270305657753
+    },
+    "rep3": {
+     "established_honest_audit_rate": 0.15030282668784264,
+     "focal_audit_rate": 0.8570328736920102,
+     "focal_job_share": 0.13834695725703336,
+     "young_honest_audit_share": 0.03339721763206645,
+     "young_honest_job_share": 0.04302999663464832
+    },
+    "rep4": {
+     "established_honest_audit_rate": 0.13397375444377058,
+     "focal_audit_rate": 0.9515339658769398,
+     "focal_job_share": 0.1399667993359867,
+     "young_honest_audit_share": 0.02938964582016593,
+     "young_honest_job_share": 0.04300236004720094
+    },
+    "rep5": {
+     "established_honest_audit_rate": 0.20506872524290945,
+     "focal_audit_rate": 0.65458,
+     "focal_job_share": 0.10037228078944806,
+     "young_honest_audit_share": 0.03725019150480667,
+     "young_honest_job_share": 0.045060629876210866
+    }
+   },
+   "0.03": {
+    "rep0": {
+     "established_honest_audit_rate": 0.10955026455026455,
+     "focal_audit_rate": 0.02431787545901055,
+     "focal_job_share": 0.0674317660966817,
+     "young_honest_audit_share": 0.7150498181758883,
+     "young_honest_job_share": 0.28093295532845314
+    },
+    "rep1": {
+     "established_honest_audit_rate": 0.11199362893058454,
+     "focal_audit_rate": 0.027738251263808276,
+     "focal_job_share": 0.05346306208912346,
+     "young_honest_audit_share": 0.6976616638576741,
+     "young_honest_job_share": 0.28476663088114956
+    },
+    "rep5": {
+     "established_honest_audit_rate": 0.10588889047884797,
+     "focal_audit_rate": 0.12204644764525004,
+     "focal_job_share": 0.09932611474886911,
+     "young_honest_audit_share": 0.684644433486873,
+     "young_honest_job_share": 0.2687870316648206
+    }
+   },
+   "0.05": {
+    "rep0": {
+     "established_honest_audit_rate": 0.07354072793044361,
+     "focal_audit_rate": 0.01202560003540195,
+     "focal_job_share": 0.09265147391802148,
+     "young_honest_audit_share": 0.8446579813840287,
+     "young_honest_job_share": 0.3905121684466024
+    },
+    "rep1": {
+     "established_honest_audit_rate": 0.07676866035692244,
+     "focal_audit_rate": 0.04131988117858003,
+     "focal_job_share": 0.07476465350793826,
+     "young_honest_audit_share": 0.8260798216490657,
+     "young_honest_job_share": 0.3992191798637441
+    },
+    "rep2": {
+     "established_honest_audit_rate": 0.07108890318864494,
+     "focal_audit_rate": 0.012785337140487166,
+     "focal_job_share": 0.06388036887960463,
+     "young_honest_audit_share": 0.844975303681517,
+     "young_honest_job_share": 0.4000840678656952
+    },
+    "rep3": {
+     "established_honest_audit_rate": 0.07213817913947183,
+     "focal_audit_rate": 0.20119168039803698,
+     "focal_job_share": 0.1398975519066006,
+     "young_honest_audit_share": 0.745966209377038,
+     "young_honest_job_share": 0.3700042303341964
+    },
+    "rep4": {
+     "established_honest_audit_rate": 0.07822316479904029,
+     "focal_audit_rate": 0.040179236013933965,
+     "focal_job_share": 0.1008334488329865,
+     "young_honest_audit_share": 0.8229895411099435,
+     "young_honest_job_share": 0.38531134620224633
+    },
+    "rep5": {
+     "established_honest_audit_rate": 0.0689645747041384,
+     "focal_audit_rate": 0.09458593624859843,
+     "focal_job_share": 0.10028246106058179,
+     "young_honest_audit_share": 0.8204531281644079,
+     "young_honest_job_share": 0.38550438148456956
+    }
+   }
+  }
+ },
  "audit": {
   "frozen": {
    "0": {
@@ -149,6 +398,11 @@
    }
   }
  },
+ "binding": {
+  "analysis": "28da11c0cf9a6485ff1238a53b339d1079e7bc9de3b917d38370551ce718c37f",
+  "draw": "f16d523942381a9e8165ca7cbca33de9f7905be85f5bbd1d61de51467a532b3b",
+  "manifest": "6f59f245830fb1279c1e98071c2a35ec8833c3becb381430dd7c513175db68c5"
+ },
  "continued": [
   {
    "kind": "cthr",
@@ -297,5 +551,11 @@
   "not continued": 0,
   "stopped": 0,
   "unresolved": 0
+ },
+ "status": {
+  "gate_ok": true,
+  "problems": [],
+  "round1_mismatch": false,
+  "unscorable": []
  }
 }

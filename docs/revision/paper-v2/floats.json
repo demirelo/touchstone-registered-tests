@@ -29,5 +29,9 @@
  "tab:ph-churn-t",
  "tab:ph-runnerup",
  "tab:ph-churn-delta",
- "tab:replication"
+ "tab:replication",
+ "tab:rep-markets",
+ "tab:rep-absolute",
+ "tab:rep-terms",
+ "tab:rep-alloc"
 ]

@@ -1574,11 +1574,6 @@
   "kind": "count",
   "section": "conclusion"
  },
- "rp_ad0": {
-  "path": "replication.primary.absolute.0.d.mean",
-  "kind": "gain",
-  "section": "churn"
- },
  "rp_ad5": {
   "path": "replication.primary.absolute.0.05.d.mean",
   "kind": "gain",
@@ -1739,11 +1734,6 @@
   "kind": "gain",
   "section": "churn"
  },
- "rpf_ad0": {
-  "path": "replication.frozen.absolute.0.d.mean",
-  "kind": "gain",
-  "section": "churn"
- },
  "rpf_aq5_n": {
   "path": "reppaper.frozen.absneg.0.05.q.negative",
   "kind": "count",
@@ -1758,5 +1748,155 @@
   "path": "replication.frozen.expectations.3.verdict",
   "kind": "label",
   "section": "churn"
+ },
+ "rp_mat": {
+  "path": "reppaper.primary.criteria.material.cells",
+  "kind": "count",
+  "section": "churn"
+ },
+ "rpf_mat": {
+  "path": "reppaper.frozen.criteria.material.cells",
+  "kind": "count",
+  "section": "churn"
+ },
+ "rp_sup": {
+  "path": "reppaper.primary.criteria.support.cells",
+  "kind": "count",
+  "section": "churn"
+ },
+ "rpf_sup": {
+  "path": "reppaper.frozen.criteria.support.cells",
+  "kind": "count",
+  "section": "churn"
+ },
+ "rp_d5_t0": {
+  "path": "reppaper.primary.spread.0.05.d.top.0",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rp_d5_t1": {
+  "path": "reppaper.primary.spread.0.05.d.top.1",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rp_d5_rlo": {
+  "path": "reppaper.primary.spread.0.05.d.rest.min",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rp_d5_rhi": {
+  "path": "reppaper.primary.spread.0.05.d.rest.max",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rpf_e1": {
+  "path": "replication.frozen.expectations.1.verdict",
+  "kind": "label",
+  "section": "churn"
+ },
+ "rpf_e2": {
+  "path": "replication.frozen.expectations.2.verdict",
+  "kind": "label",
+  "section": "churn"
+ },
+ "rpf_e4": {
+  "path": "replication.frozen.expectations.4.verdict",
+  "kind": "label",
+  "section": "churn"
+ },
+ "rpf_e5": {
+  "path": "replication.frozen.expectations.5.verdict",
+  "kind": "label",
+  "section": "churn"
+ },
+ "rp_sd0": {
+  "path": "reppaper.setdiff.0.d.difference",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rp_sd3": {
+  "path": "reppaper.setdiff.0.03.d.difference",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rp_sd5": {
+  "path": "reppaper.setdiff.0.05.d.difference",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rpf_d5": {
+  "path": "replication.frozen.paired_changes.0.05.d.mean",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rpf_q5": {
+  "path": "replication.frozen.paired_changes.0.05.q.mean",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rpf_u5": {
+  "path": "replication.frozen.paired_changes.0.05.u.mean",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rp_ad3": {
+  "path": "replication.primary.absolute.0.03.d.mean",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rp_ad3_lo": {
+  "path": "replication.primary.absolute.0.03.d.t95.0",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rp_ad3_hi": {
+  "path": "replication.primary.absolute.0.03.d.t95.1",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rp_ad3_n": {
+  "path": "reppaper.primary.absneg.0.03.d.negative",
+  "kind": "count",
+  "section": "churn"
+ },
+ "rpf_ad3_n": {
+  "path": "reppaper.frozen.absneg.0.03.d.negative",
+  "kind": "count",
+  "section": "churn"
+ },
+ "rp_aq5_blo": {
+  "path": "replication.primary.absolute.0.05.q.pooled_ci95.0",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rp_aq5_bhi": {
+  "path": "replication.primary.absolute.0.05.q.pooled_ci95.1",
+  "kind": "gain",
+  "section": "churn"
+ },
+ "rp_yj5": {
+  "path": "reppaper.primary.alloc.0.05.young_honest_job_share",
+  "kind": "alloc",
+  "section": "churn"
+ },
+ "rp_ya5": {
+  "path": "reppaper.primary.alloc.0.05.young_honest_audit_share",
+  "kind": "alloc",
+  "section": "churn"
+ },
+ "rp_est5": {
+  "path": "reppaper.primary.alloc.0.05.established_honest_audit_rate",
+  "kind": "alloc",
+  "section": "churn"
+ },
+ "rp_al3_n": {
+  "path": "reppaper.primary.alloc.0.03.markets",
+  "kind": "count",
+  "section": "churn"
+ },
+ "c_rp_d3n": {
+  "path": "reppaper.primary.absneg.0.03.d.negative",
+  "kind": "count",
+  "section": "conclusion"
  }
 }
