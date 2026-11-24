@@ -1202,47 +1202,47 @@
  "ch_fa_1": {
   "path": "churnpaper.rates.0.01.R3.focal_audit_rate",
   "kind": "alloc",
-  "section": "app-churn"
+  "section": "churn"
  },
  "ch_fa_2": {
   "path": "churnpaper.rates.0.02.R3.focal_audit_rate",
   "kind": "alloc",
-  "section": "app-churn"
+  "section": "churn"
  },
  "ch_fa_3": {
   "path": "churnpaper.rates.0.03.R3.focal_audit_rate",
   "kind": "alloc",
-  "section": "app-churn"
+  "section": "churn"
  },
  "ch_fa_5": {
   "path": "churnpaper.rates.0.05.R3.focal_audit_rate",
   "kind": "alloc",
-  "section": "app-churn"
+  "section": "churn"
  },
  "ch_fa_c5": {
   "path": "churnpaper.rates.0.05.C*.focal_audit_rate",
   "kind": "alloc",
-  "section": "app-churn"
+  "section": "churn"
  },
  "ch_fa_b5": {
   "path": "churnpaper.rates.0.05.B3.focal_audit_rate",
   "kind": "alloc",
-  "section": "app-churn"
+  "section": "churn"
  },
  "ch_yj_5": {
   "path": "churnpaper.rates.0.05.R3.young_honest_job_share",
   "kind": "alloc",
-  "section": "app-churn"
+  "section": "churn"
  },
  "ch_ya_5": {
   "path": "churnpaper.rates.0.05.R3.young_honest_audit_share",
   "kind": "alloc",
-  "section": "app-churn"
+  "section": "churn"
  },
  "ch_est_5": {
   "path": "churnpaper.rates.0.05.R3.established_honest_audit_rate",
   "kind": "alloc",
-  "section": "app-churn"
+  "section": "churn"
  },
  "ch_eff_1": {
   "path": "churnpaper.rates.0.01.R3.eff",
@@ -1372,12 +1372,12 @@
  "ch_fa_c1": {
   "path": "churnpaper.rates.0.01.C*.focal_audit_rate",
   "kind": "alloc",
-  "section": "app-churn"
+  "section": "churn"
  },
  "ch_fa_1d": {
   "path": "churnpaper.rates.0.01.R3.focal_audit_rate_doubled",
   "kind": "alloc",
-  "section": "app-churn"
+  "section": "churn"
  },
  "ch_rep_n": {
   "path": "churnpaper.r3_p05.replacing_markets",
