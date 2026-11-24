@@ -53,3 +53,11 @@ def test_weis_title_differs_from_the_public_title():
 def test_both_versions_state_ai_use():
     for d in (FULL, HERE):
         assert "\\section*{Use of AI tools}" in (d / "main.tex").read_text(), d
+
+
+MIRROR = "https://anonymous.4open.science/r/audit-newcomers/"
+
+
+def test_weis_points_to_the_anonymous_mirror_and_full_does_not():
+    assert MIRROR in (HERE / "main.tex").read_text()
+    assert "anonymous.4open.science" not in (FULL / "main.tex").read_text()
