@@ -1,4 +1,4 @@
-"""Follow-up record archives for the public release (separately dated from the second test's artifact
+"""Record archives for the public release: the first test's raw records and the follow-ups (separately dated from the second test's artifact
 touchstone-v2.tar.gz, which stays as built on 2026-11-05). One gzip tarball per follow-up, each under GitHub's 2 GiB
 release-asset limit, each holding MANIFEST.json (sha256 and size of every packed file, plus the source folder's record
 digest as replication_extract.records_digest computes it). Packing is deterministic: sorted paths, fixed mtime, uid and
@@ -25,6 +25,12 @@ FORBIDDEN = ("sealed", "mac_diag")       # never packed, at any depth
 
 # archive name -> [(source folder, name inside the archive)]
 SPEC = {
+    "touchstone-first-test": [
+        (RESULTS / "final", "first-test/final"),                         # final evaluation records (verdict in docs/final-evaluation-2026-10-20)
+        (RESULTS / "sweep", "first-test/sweep"),                         # registered sweep
+        (RESULTS / "sweep_proposed", "first-test/sweep_proposed"),       # proposed-rule sweep (bank-from for the final evaluation)
+        (RESULTS / "h1_final", "first-test/h1_final"),                   # H1 final run
+    ],
     "touchstone-followup-paper-inputs": [
         (RESULTS / "v2/paper", "v2/paper"),                              # cells, scoring, eligibility (paper_check.sh)
         (RESULTS / "v2/deviation/stability", "v2/deviation/stability"),  # audit_v2.py --stability-work (inferred; see notes)
