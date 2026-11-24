@@ -11,7 +11,7 @@
 % Evaluation-2 numbers enter only through \site{} (sites.json) inside % BEGIN-EV2 ... % END-EV2 regions; evaluation-1
 % numbers in result-bearing sections are wrapped in \evone{}; protocol constants in \const{}. Check:
 % uv run python docs/revision/paper-v2/numbers_v2.py --report <report.json> --numbers numbers.tex --check main.tex
-\title{Checking Newcomers When Identities Are Free:\\Registered Tests of Age-Ranked Audits\\and an Exploratory Limit Under Honest Churn}
+\title{Audit the Newest Identities First?\\Preregistered Simulation Tests of a Verification Rule\\and Their Limits Under Honest Turnover}
 \author{Ömer Demirel}
 \date{November 2026}
 \begin{document}
@@ -235,6 +235,9 @@ For the uniform-audit baselines with refund-and-ban enforcement and no bonds, ag
 % END-EV2
 
 \paragraph{Availability.} The repository is public at \url{https://github.com/demirelo/touchstone-registered-tests} (release v2.1, archived at \url{https://doi.org/10.5281/zenodo.24498973}), and its eight record files, with their SHA-\const{256} hashes, are archived at \url{https://doi.org/10.5281/zenodo.24499068}. The release identifies the frozen evaluation code by the signed tag \texttt{protocol-v2} and preserves the original tagged-code report. It contains the code, the tuned files, all records of both tests (including incomplete, failed, and cut cells), the market generator, the block headers, the released H4 bundle, and the deviation evidence, and, separately dated, the decision-stability re-evaluation, the exploratory post hoc analyses with the per-seed evaluation and training inputs of the lottery analysis, the prediction-scoring correction with its regression test, the inference audit, the identity-replacement and churn follow-ups with their run records, the prospective-exploratory replication with its timestamped plan and manifest, block-hash draw, run records, analysis, and the record digest that its paper extract is checked against, and the paper sources. One command (\texttt{docs/revision/deviation/reproduce\_deviation.py}) checks the artifact against the tag and reproduces the second test's report under the disclosed configuration substitution; the paper's second-test tables and figures are regenerated from the tagged report, the disclosed stability output, and the exploratory post hoc and audit outputs by the scripts in \texttt{docs/revision/paper-v2}, \texttt{docs/revision/posthoc}, \texttt{docs/revision/audit}, \texttt{docs/revision/followup2}, and \texttt{docs/revision/followup3}, and the first test's records and verdict are in the release as recorded in October~\const{2026}.
+
+\section*{Use of AI tools}\label{sec:ai-use}
+AI tools were used throughout this work; responsibility for all of it rests with the author. AI coding assistants (Anthropic's Claude models) wrote most of the simulator, analysis, test and release code to the author's specifications, and drafted parts of the text; the author set the research questions, the registered hypotheses, decision rules and every amendment, and checked and revised all text. Two attackers involve language models by design: H1 is a language model acting as the focal provider, and H4 was written by a fresh session of an OpenAI model, started by the author, against the frozen defenders (Appendix~\ref{sec:app-design}). Drafts of the protocol, code and paper were reviewed by OpenAI GPT models and by Claude, read-only; each correction was checked against the repository before it was adopted. No AI tool is an author.
 
 \appendix
 \FloatBarrier

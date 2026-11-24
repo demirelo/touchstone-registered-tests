@@ -56,3 +56,17 @@ def test_dates_paths_model_and_timestamps_are_masked():
     assert A.problems(out) == [], A.problems(out)
     assert "\\pdfinfoomitdate=1" in out and "\\date{}" in out and "\\section{The first test}" in out
     assert len(A.problems(tex)) >= 6
+
+
+def test_pdf_check_flags_the_public_title():
+    import check_anon_pdf as C
+    assert C.findings("Checking Newcomers When\nIdentities Are Free: Registered Tests")
+    assert C.findings("Checking newcomers is an old idea.") == []
+
+
+def test_author_to_authors_keeps_verb_agreement():
+    # "the author is" became "the authors is" in the AI-use statement (2026-11-24).
+    import re
+    for d in ("paper-v2", "paper-weis"):
+        out = A.anonymize((Path(__file__).resolve().parents[1] / d / "main.tex").read_text())
+        assert not re.search(r"\bthe authors (is|was|has|does)\b", out), d
