@@ -4,5 +4,8 @@
  "abs_ch_inc": "WEIS abstract shortened; the flagged-search count is in the churn appendix (site ch_inc).",
  "abs_ch_q5": "WEIS abstract shortened; the p = 0.05 contrast is in Section 10 (site ch_q_5).",
  "abs_ch_q5d": "WEIS abstract shortened; the doubled-search value is in the churn appendix (site ch_q_5_d).",
- "abs_q3_w0": "WEIS abstract shortened to about 200 words; the welfare result is in Appendix A (site r_q3_w0)."
+ "abs_q3_w0": "WEIS abstract shortened to about 200 words; the welfare result is in Appendix A (site r_q3_w0).",
+ "c_ch_q5d": "WEIS conclusion shortened; the doubled-search value is in the churn appendix (site ch_q_5_d).",
+ "c_w0": "WEIS conclusion shortened; the welfare efficiency is in Section 1, Results in brief (site int_q3_w0).",
+ "c_w1": "WEIS conclusion shortened; the W1 efficiency is in Section 1, Results in brief (site int_w1)."
 }

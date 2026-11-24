@@ -369,16 +369,6 @@
   "kind": "eff",
   "section": "intro"
  },
- "c_w0": {
-  "path": "q3.welfare.F111.D2+H3.W0.efficiency",
-  "kind": "eff",
-  "section": "conclusion"
- },
- "c_w1": {
-  "path": "q3.welfare.F111.D2+H3.W1.efficiency",
-  "kind": "eff",
-  "section": "conclusion"
- },
  "r_pred_n_ful": {
   "path": "eligibility.tally.numerical.fulfilled",
   "kind": "count",
@@ -1423,11 +1413,6 @@
   "path": "churnpaper.r3_p05.eff_min",
   "kind": "eff",
   "section": "app-churn"
- },
- "c_ch_q5d": {
-  "path": "churn.statistics.doubled.0.05.q.pooled.estimate",
-  "kind": "gain",
-  "section": "conclusion"
  },
  "r_ra_pos": {
   "path": "churnpaper.runner_up.D2+H3|base.positive",
