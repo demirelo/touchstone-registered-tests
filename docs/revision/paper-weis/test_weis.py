@@ -21,3 +21,17 @@ def test_dropped_sites_are_listed_with_reasons():
     full, weis, dropped = _load(FULL / "sites.json"), _load(HERE / "sites.json"), _load(HERE / "dropped.json")
     assert set(full) - set(weis) == set(dropped), "full-paper sites missing from the WEIS version must be listed in dropped.json"
     assert all(isinstance(r, str) and r.strip() for r in dropped.values()), "every dropped site needs a reason"
+
+
+def test_dropped_reasons_name_sites_that_exist_where_stated():
+    """A reason that names a replacement site must name one present in the WEIS version (lesson 2026-11-24)."""
+    import re
+    weis, dropped = _load(HERE / "sites.json"), _load(HERE / "dropped.json")
+    for k, why in dropped.items():
+        for name in re.findall(r"site ([a-z0-9_]+)", why):
+            assert name in weis, f"{k}: reason names {name}, which is not in the WEIS version"
+            sec = weis[name]["section"]
+            if "Appendix" in why or "appendix" in why:
+                assert sec.startswith("app"), f"{k}: reason says appendix, but {name} is in {sec}"
+            if "Section" in why:
+                assert not sec.startswith("app"), f"{k}: reason says a body section, but {name} is in {sec}"

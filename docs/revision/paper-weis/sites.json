@@ -224,11 +224,6 @@
   "kind": "gain",
   "section": "app-results"
  },
- "abs_q3_w0": {
-  "path": "q3.welfare.F111.D2+H3.W0.efficiency",
-  "kind": "eff",
-  "section": "abstract"
- },
  "r_q2_s_x": {
   "path": "q2.searched.X7-SC.S.estimate",
   "kind": "gain",
@@ -1309,16 +1304,6 @@
   "kind": "alloc",
   "section": "abstract"
  },
- "abs_ch_d5": {
-  "path": "churn.statistics.base.0.05.d.pooled.estimate",
-  "kind": "gain",
-  "section": "abstract"
- },
- "abs_ch_q5": {
-  "path": "churn.statistics.base.0.05.q.pooled.estimate",
-  "kind": "gain",
-  "section": "abstract"
- },
  "c_ch_fa1": {
   "path": "churnpaper.rates.0.01.R3.focal_audit_rate",
   "kind": "alloc",
@@ -1393,21 +1378,6 @@
   "path": "churnmid.statistics.doubled.0.03.q.signs.negative",
   "kind": "count",
   "section": "app-churn"
- },
- "abs_ch_q5d": {
-  "path": "churn.statistics.doubled.0.05.q.pooled.estimate",
-  "kind": "gain",
-  "section": "abstract"
- },
- "abs_ch_inc": {
-  "path": "churnpaper.flags.incomplete_n",
-  "kind": "count",
-  "section": "abstract"
- },
- "abs_ch_cells": {
-  "path": "churnpaper.flags.cells",
-  "kind": "count",
-  "section": "abstract"
  },
  "ch_fa_c1": {
   "path": "churnpaper.rates.0.01.C*.focal_audit_rate",
