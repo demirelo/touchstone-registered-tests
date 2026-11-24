@@ -32,3 +32,17 @@ def test_release_links_are_withheld():
     out = A.anonymize(tex)
     assert A.problems(out) == [] and out.count("[withheld for review]") == 2
     assert A.problems(tex)                                    # the raw links are refused
+
+
+def test_release_identifiers_are_masked():
+    tex = (r"block \const{974379}; $H = \const{974451}$; tag \texttt{protocol-v2}; branch \texttt{two20k}; "
+           r"(release v2.1, x); locked on 17 October 2026; (published erratum); committed, timestamped with OpenTimestamps, and published, and")
+    out = A.anonymize(tex)
+    assert A.problems(out) == [] and "[withheld for review]" in out and "protocol-v2" not in out
+    assert len(A.problems(tex)) >= 6                          # each raw identifier is refused
+
+
+def test_pdf_check_flags_identifiers_and_allows_third_party_github():
+    import check_anon_pdf as C
+    assert C.findings("see https://github.com/BOINC/boinc/wiki and block 123") == []
+    assert len(C.findings("Demirel, block 974451, tag protocol-v2, zenodo.24499068")) == 4
