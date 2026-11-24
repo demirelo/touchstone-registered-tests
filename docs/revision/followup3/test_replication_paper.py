@@ -158,10 +158,19 @@ def test_appendix_tables_have_every_row():
 
 def test_check_reports_stale_files(tmp_path):
     an, ex = _analysis(), _extract()
-    RP.write(an, ex, SHA, tmp_path / "s.json", tmp_path / "t.tex")
-    assert RP.check(an, ex, SHA, tmp_path / "s.json", tmp_path / "t.tex") == []
-    (tmp_path / "replication_terms.tex").write_text("stale")
-    assert RP.check(an, ex, SHA, tmp_path / "s.json", tmp_path / "t.tex")
+    (tmp_path / "tables").mkdir(); (tmp_path / "figures").mkdir()      # the paper's layout: tables/ and figures/ side by side
+    tab = tmp_path / "tables" / "t.tex"
+    RP.write(an, ex, SHA, tmp_path / "s.json", tab)
+    assert RP.check(an, ex, SHA, tmp_path / "s.json", tab) == []
+    assert (tmp_path / "figures" / "fig_replication.pdf").stat().st_size > 1000
+    (tmp_path / "tables" / "replication_terms.tex").write_text("stale")
+    assert RP.check(an, ex, SHA, tmp_path / "s.json", tab)
+
+
+def test_figure_data_has_every_market_and_both_sets():
+    d = RP.figure_data(_analysis())
+    assert set(d) == {"primary", "frozen"} and set(d["primary"]["0.05"]["q"]["markets"]) == set(RP.MARKETS)
+    assert d["primary"]["0.05"]["d"]["mean"] != d["primary"]["0.05"]["q"]["mean"]   # contrasts not swapped
 
 
 def test_committed_files_are_current():

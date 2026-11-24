@@ -296,6 +296,37 @@ def table_alloc(summ: dict) -> str:
     return "\n".join(lines + ["\\bottomrule", "\\end{tabular}", ""])
 
 
+def figure_data(analysis: dict) -> dict:
+    """Every plotted value of the replication figure: per winner set, churn rate and contrast, the six market paired
+    changes, their mean and its market t interval."""
+    return {s: {p: {x: {"markets": {m: analysis[s]["paired_changes"][p][x]["markets"][m] for m in MARKETS},
+                        "mean": analysis[s]["paired_changes"][p][x]["mean"], "t95": list(analysis[s]["paired_changes"][p][x]["t95"])}
+                    for x, _ in X} for p in ("0.03", "0.05")} for s, _ in SETS}
+
+
+def draw_figure(data: dict, path) -> None:
+    """Three panels (C*, B3, C-thr minus R3): per churn rate, the six markets' paired changes (filled: primary winners,
+    open: all-frozen winners) and each set's mean with its market t interval; dashed line: the materiality margin."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    fig, axes = plt.subplots(1, 3, figsize=(9, 3.2), sharey=True)
+    for ax, (x, lab) in zip(axes, X):
+        for j, p in enumerate(("0.03", "0.05")):
+            for k, (s, _) in enumerate(SETS):
+                v = data[s][p][x]; base = j + (k - 0.5) * 0.3
+                xs = [base + (i - 2.5) * 0.025 for i in range(len(MARKETS))]
+                ax.scatter(xs, [v["markets"][m] for m in MARKETS], s=14, marker="o",
+                           facecolors="black" if s == "primary" else "none", edgecolors="black", linewidths=0.8, zorder=3)
+                ax.errorbar([base + 0.1], [v["mean"]], yerr=[[v["mean"] - v["t95"][0]], [v["t95"][1] - v["mean"]]],
+                            fmt="s" if s == "primary" else "D", color="black", mfc="black" if s == "primary" else "white", ms=4, capsize=2, lw=0.9)
+        ax.axhline(0, color="grey", lw=0.6); ax.axhline(-0.05, color="grey", lw=0.6, ls="--")
+        ax.set_xticks([0, 1]); ax.set_xticklabels(["$p = 0.03$", "$p = 0.05$"]); ax.set_xlim(-0.6, 1.6)
+        ax.set_title({"d": "C$^*$ minus R3", "q": "B3 minus R3", "u": "C-thr minus R3"}[x], fontsize=9)
+    axes[0].set_ylabel("change from the market's no-churn value")
+    fig.tight_layout(); fig.savefig(path, metadata={"CreationDate": None}); plt.close(fig)
+
+
 def _dump(d: dict) -> str:
     return json.dumps(d, indent=1, sort_keys=True) + "\n"
 
@@ -303,7 +334,8 @@ def _dump(d: dict) -> str:
 def outputs(analysis, extract, analysis_sha, summary_path, table_path) -> dict:
     s = summary(analysis, extract, analysis_sha)
     d = Path(table_path).parent
-    return {Path(summary_path): _dump(s), Path(table_path): table(analysis),
+    fd = d.parent / "figures"
+    return {Path(summary_path): _dump(s), Path(table_path): table(analysis), fd / "fig_replication.data.json": _dump(figure_data(analysis)),
             d / "replication_markets.tex": table_markets(analysis), d / "replication_absolute.tex": table_absolute(analysis),
             d / "replication_terms.tex": table_terms(analysis), d / "replication_alloc.tex": table_alloc(s)}
 
@@ -311,12 +343,17 @@ def outputs(analysis, extract, analysis_sha, summary_path, table_path) -> dict:
 def write(analysis, extract, analysis_sha, summary_path, table_path) -> None:
     for path, text in outputs(analysis, extract, analysis_sha, summary_path, table_path).items():
         path.write_text(text)
+    fd = Path(table_path).parent.parent / "figures"
+    draw_figure(figure_data(analysis), fd / "fig_replication.pdf")
 
 
 def check(analysis, extract, analysis_sha, summary_path, table_path) -> list:
-    return [f"stale: {p} (run replication_paper.py --write)"
-            for p, want in outputs(analysis, extract, analysis_sha, summary_path, table_path).items()
-            if not p.exists() or p.read_text() != want]
+    probs = [f"stale: {p} (run replication_paper.py --write)"
+             for p, want in outputs(analysis, extract, analysis_sha, summary_path, table_path).items()
+             if not p.exists() or p.read_text() != want]
+    if not (Path(table_path).parent.parent / "figures" / "fig_replication.pdf").exists():
+        probs.append("missing: figures/fig_replication.pdf (run replication_paper.py --write)")
+    return probs
 
 
 def main(argv=None) -> int:
