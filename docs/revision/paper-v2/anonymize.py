@@ -6,10 +6,11 @@ from pathlib import Path
 
 # Strings that identify the author or let a reviewer find the repository. Checked case-insensitively.
 FORBIDDEN = [r"ömer", r"demirel", r"progfi", r"house\.markets", r"oemer", r"cba512aa",
-             r"\bthe author\b", r"\\author\{(?!Anonymous submission\})"]
+             r"\bthe author\b", r"\\author\{(?!Anonymous submission\})", r"zenodo\.\d", r"github\.com/"]
 SUBS = [
     (r"\\author\{[^}]*\}", r"\\author{Anonymous submission}"),
     (r"\\texttt\{cba512aa\\ldots\}", "[hash withheld for review]"),
+    (r"\\url\{https://(github\.com|doi\.org)/[^}]*\}", "[withheld for review]"),   # the release repository and its Zenodo records
     (r"\bthe author's\b", "the authors'"),
     (r"\bthe author\b", "the authors"),
 ]

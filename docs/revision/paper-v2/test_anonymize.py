@@ -25,3 +25,10 @@ def test_check_finds_each_identifying_string():
 def test_real_paper_anonymizes_cleanly():
     out = A.anonymize((Path(__file__).resolve().parent / "main.tex").read_text())
     assert A.problems(out) == []
+
+
+def test_release_links_are_withheld():
+    tex = r"public at \url{https://github.com/demirelo/touchstone-registered-tests} (archived at \url{https://doi.org/10.5281/zenodo.24498973})"
+    out = A.anonymize(tex)
+    assert A.problems(out) == [] and out.count("[withheld for review]") == 2
+    assert A.problems(tex)                                    # the raw links are refused
