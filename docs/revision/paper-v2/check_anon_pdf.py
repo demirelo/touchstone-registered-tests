@@ -9,7 +9,7 @@ import zlib
 PDF_FORBIDDEN = [r"ömer", r"demirel", r"oemer", r"progfi", r"house\.markets", r"7556489", r"touchstone-registered",
                  r"zenodo\.2449", r"\b97\d{4}\b", r"protocol-v2", r"two20k", r"17 October 2026", r"cba512aa",
                  r"checking\s+newcomers\s+when", r"identities\s+are\s+free",
-                 r"newest\s+identities\s+first", r"limits\s+under\s+honest\s+turnover"]   # the first WEIS title, made public on 2026-11-25   # the public title (the release carries it)
+                 r"audit\s+the\s+newest\s+identities\s+first", r"limits\s+under\s+honest\s+turnover"]   # the first WEIS title, made public on 2026-11-25   # the public title (the release carries it)
 
 
 def findings(text: str) -> list:

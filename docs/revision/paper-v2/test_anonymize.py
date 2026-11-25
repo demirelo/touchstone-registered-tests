@@ -91,3 +91,4 @@ def test_pdf_check_flags_the_leaked_weis_title():
     import check_anon_pdf as C
     assert C.findings("Audit the Newest Identities First?\nPreregistered Simulation Tests")
     assert C.findings("and Their Limits Under Honest Turnover")
+    assert C.findings("checking the newest\nidentities first lowers the measured gain") == []   # body prose, also in the full paper
