@@ -316,3 +316,7 @@ Mistake: pod 1 was reported as started at 13:53Z when only the launcher process 
 ## 2026-11-25: a plain-language number written from memory
 - Mistake: a chat summary said the audited share of the attacker's jobs fell "from about a third to about a seventh"; the paper's sites say 0.366 to 0.042 (about one in 24).
 - Guard: `docs/revision/plain-summary.md` is checked by `paper-v2/test_plain_summary.py` (run by the gate): every percentage and count must equal a site in `numbers.tex`; a changed number fails it.
+
+## 2026-11-25: abstract word count carried over from memory
+- Mistake: the submission package first said the WEIS abstract has 208 words (an earlier count of a different draft); `wc -w` on the PDF text gives 248.
+- Guard: the package states the count with the command that produced it; any count in a deliverable names its command (CLAUDE.md rule), checked before commit.
