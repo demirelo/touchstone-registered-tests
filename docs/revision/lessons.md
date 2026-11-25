@@ -320,3 +320,7 @@ Mistake: pod 1 was reported as started at 13:53Z when only the launcher process 
 ## 2026-11-25: abstract word count carried over from memory
 - Mistake: the submission package first said the WEIS abstract has 208 words (an earlier count of a different draft); `wc -w` on the PDF text gives 248.
 - Guard: the package states the count with the command that produced it; any count in a deliverable names its command (CLAUDE.md rule), checked before commit.
+
+## 2026-11-25: the WEIS copy pushed to the public repository
+- Mistake: the WEIS copy (its distinct title and the anonymous PDF) was committed on the branch that the author pushes to `public`; the push made the WEIS title searchable, which the distinct title was meant to prevent. The push note listed the files but did not flag the risk.
+- Guard: a `pre-push` hook (main checkout `.git/hooks/pre-push`) refuses any push to touchstone-registered-tests whose tree contains `docs/revision/paper-weis` or `docs/revision/weis-submission` (tested: refuses weis-private, passes the public line). The WEIS copy lives only on the private branch `weis-private`; the anonymity check now also refuses the leaked first WEIS title.

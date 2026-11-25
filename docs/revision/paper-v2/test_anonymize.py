@@ -84,3 +84,10 @@ def test_pdf_check_scans_compressed_streams_for_embedded_dates(tmp_path):
                     + b"\nendstream endobj\n%%EOF")
     assert C.raw_findings(pdf.read_bytes())
     assert C.raw_findings(b"%PDF-1.5 plain /Producer (pdfTeX)") == []
+
+
+def test_pdf_check_flags_the_leaked_weis_title():
+    # The first WEIS title reached the public repository on 2026-11-25; it is now as searchable as the full title.
+    import check_anon_pdf as C
+    assert C.findings("Audit the Newest Identities First?\nPreregistered Simulation Tests")
+    assert C.findings("and Their Limits Under Honest Turnover")
