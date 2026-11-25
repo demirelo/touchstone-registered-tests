@@ -312,3 +312,7 @@ Mistake: pod 1 was reported as started at 13:53Z when only the launcher process 
 ## 2026-11-25: figure creation dates inside the anonymized PDF
 - Mistake: `check_anon_pdf.py` read only pdftotext and pdfinfo, so the figures' own creation dates (`D:20261104...`, inside compressed streams) passed the anonymity check; two reviewers found them.
 - Guard: `raw_findings` scans the raw file and every Flate stream for dates and identifiers (`test_pdf_check_scans_compressed_streams_for_embedded_dates`; the round-2 PDF fails it); the anonymizer adds `\pdfsuppressptexinfo=-1` so embedded figure info is not copied.
+
+## 2026-11-25: a plain-language number written from memory
+- Mistake: a chat summary said the audited share of the attacker's jobs fell "from about a third to about a seventh"; the paper's sites say 0.366 to 0.042 (about one in 24).
+- Guard: `docs/revision/plain-summary.md` is checked by `paper-v2/test_plain_summary.py` (run by the gate): every percentage and count must equal a site in `numbers.tex`; a changed number fails it.
